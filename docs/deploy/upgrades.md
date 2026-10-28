@@ -1,5 +1,25 @@
 # Upgrades
 
+## Local checkpoint: browser resource and recorder retirement
+
+Browser background display/capture and recording writes now retain their
+original environment authority independently of the viewer or Agent that started
+them. A transition fence stops new guarded effects and retires quiet tabs; other
+conversations in the shared workspace browser remain available. Ordinary
+controller takeover or Agent turn completion does not stop an authorized recording.
+
+Recorder shutdown now retains an independent child-exit observer even if its
+caller disconnects or drops the stop request. Encoding errors remain visible but
+do not by themselves mean the encoder is still running; an unconfirmed exit
+continues to block confirmed close. Already-buffered data may flush before exit.
+No claim is made about complete Chromium network/worker containment or arbitrary
+descendants/descriptors. Public switching and U1 activation remain disabled.
+
+This slice is local only. It changes no schema, dependency, package version or Nix
+hash, and does not deploy or activate existing transitions. See the
+[resource checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-browser-resource-guards-and-recorder-retirement-2026-10-28)
+for validation scope and remaining work.
+
 ## Unreleased checkpoint: foreground browser admission
 
 Browser actions now retain the original controller or Agent epoch/cancellation

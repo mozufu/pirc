@@ -1,5 +1,5 @@
-//! Request-scoped admission for foreground browser effects. Authority travels
-//! with each queued CDP command, never with the shared browser connection.
+//! Caller-scoped foreground admission and environment-scoped browser resources.
+//! Authority travels with queued effects, never the shared browser connection.
 use crate::error::{ApiError, ApiResult};
 use std::{
     future::Future,
@@ -63,6 +63,7 @@ pub(crate) enum Caller {
 tokio::task_local! {
     static CALLER: Caller;
     static EFFECT: Guard;
+    static RESOURCE: Guard;
 }
 pub(crate) fn caller() -> Option<Caller> {
     CALLER.try_with(Clone::clone).ok()
@@ -90,10 +91,17 @@ pub(crate) async fn scope<T>(guard: Guard, future: impl Future<Output = T>) -> T
 /// context maintenance deliberately do not inherit one caller's authority.
 pub(crate) fn inherit<F: Future>(future: F) -> impl Future<Output = F::Output> {
     let guard = current();
+    let resource = resource();
     async move {
-        match guard {
-            Some(guard) => scope(guard, future).await,
-            None => future.await,
+        let request = async move {
+            match guard {
+                Some(guard) => scope(guard, future).await,
+                None => future.await,
+            }
+        };
+        match resource {
+            Some(resource) => with_resource(resource, request).await,
+            None => request.await,
         }
     }
 }
@@ -105,4 +113,19 @@ pub(crate) fn run<T>(effect: impl FnOnce() -> T) -> ApiResult<T> {
 }
 pub(crate) fn check() -> ApiResult<()> {
     run(|| ())
+}
+
+/// A browser resource outlives a foreground request/controller. Its scope only
+/// carries the original environment and group, never one viewer's lease.
+pub(crate) fn resource() -> Option<Guard> {
+    RESOURCE.try_with(Clone::clone).ok()
+}
+pub(crate) async fn with_resource<T>(guard: Guard, future: impl Future<Output = T>) -> T {
+    RESOURCE.scope(guard, future).await
+}
+pub(crate) async fn background<T>(guard: Option<Guard>, future: impl Future<Output = T>) -> T {
+    match guard {
+        Some(guard) => scope(guard.clone(), with_resource(guard, future)).await,
+        None => future.await,
+    }
 }

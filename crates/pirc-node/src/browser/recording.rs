@@ -13,17 +13,23 @@
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::os::fd::OwnedFd;
+use std::pin::Pin;
 use std::process::Stdio;
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    Arc, Mutex,
+    atomic::{AtomicBool, Ordering},
+};
+use std::task::Poll;
 use std::time::Duration;
 
 use command_fds::{CommandFdExt as _, FdMapping};
 use serde_json::{Value, json};
-use tokio::io::{AsyncReadExt as _, AsyncWriteExt as _};
+use tokio::io::{AsyncReadExt as _, AsyncWrite};
 use tokio::process::Command;
-use tokio::sync::{oneshot, watch};
+use tokio::sync::watch;
 use tokio::time::MissedTickBehavior;
 
+use super::effects::Guard;
 use crate::error::ApiError;
 
 /// Frames written per second (`RECORD_FPS`).
@@ -94,9 +100,10 @@ pub struct Recording {
     /// The exit code once ffmpeg is gone (`None` inside: killed by a signal
     /// or never started).
     exited: watch::Receiver<Option<Option<i32>>>,
-    /// Ends the writer: no more frames, then stdin closes (`stdin.end()`).
-    end: Option<oneshot::Sender<()>>,
-    kill: Option<oneshot::Sender<()>>,
+    stop: Arc<watch::Sender<bool>>,
+    confirmed: Arc<AtomicBool>,
+    timed_out: Arc<AtomicBool>,
+    stop_wait: Duration,
 }
 
 /// Why a recording failed (shared with its [`Recording`]).
@@ -122,6 +129,8 @@ pub struct Stopped {
     pub started_at: i64,
     pub exit: Exit,
     pub failed: Option<String>,
+    /// The direct child was observed gone, independently of video validity.
+    pub confirmed: bool,
 }
 
 impl Recording {
@@ -139,10 +148,32 @@ impl Recording {
         frames: FrameSource,
         still_current: StillCurrent,
     ) -> Self {
+        Self::start_with_timeout(
+            ffmpeg,
+            env,
+            output,
+            relative,
+            frames,
+            still_current,
+            STOP_TIMEOUT,
+        )
+    }
+
+    fn start_with_timeout(
+        ffmpeg: &str,
+        env: &BTreeMap<String, String>,
+        output: File,
+        relative: String,
+        frames: FrameSource,
+        still_current: StillCurrent,
+        grace: Duration,
+    ) -> Self {
         let failed = Arc::new(Mutex::new(None::<String>));
         let (exited_tx, exited) = watch::channel(None);
-        let (end, end_rx) = oneshot::channel::<()>();
-        let (kill, kill_rx) = oneshot::channel::<()>();
+        let stop = Arc::new(watch::channel(false).0);
+        let confirmed = Arc::new(AtomicBool::new(false));
+        let timed_out = Arc::new(AtomicBool::new(false));
+        let authority = super::effects::resource();
         let output = Arc::new(output);
         let mut command = Command::new(ffmpeg);
         let mapped = match output.try_clone() {
@@ -169,11 +200,14 @@ impl Recording {
             started_at: crate::util::now_ms(),
             failed: failed.clone(),
             exited,
-            end: Some(end),
-            kill: Some(kill),
+            stop: stop.clone(),
+            confirmed: confirmed.clone(),
+            timed_out: timed_out.clone(),
+            stop_wait: grace + Duration::from_secs(5),
         };
         if let Err(error) = mapped {
             *lock(&failed) = Some(error.to_string());
+            confirmed.store(true, Ordering::Release);
             exited_tx.send_replace(Some(None));
             return recording;
         }
@@ -185,6 +219,7 @@ impl Recording {
                 } else {
                     error.to_string()
                 });
+                confirmed.store(true, Ordering::Release);
                 exited_tx.send_replace(Some(None));
                 return recording;
             }
@@ -201,54 +236,74 @@ impl Recording {
                 }
             })
         });
-        if let Some(mut stdout) = child.stdout.take() {
+        let stdout_task = child.stdout.take().map(|mut stdout| {
             tokio::spawn(async move {
                 let mut buffer = vec![0u8; 4096];
                 while let Ok(1..) = stdout.read(&mut buffer).await {}
-            });
-        }
-        if let Some(mut stdin) = child.stdin.take() {
+            })
+        });
+        let writer = child.stdin.take().map(|mut stdin| {
             let failed = failed.clone();
+            let stop = stop.clone();
             tokio::spawn(async move {
-                // Screencast frames only arrive when the page changes: repeat
-                // the latest at a fixed rate so the video plays in real time.
                 let period = Duration::from_millis(1000 / RECORD_FPS);
                 let mut ticks =
                     tokio::time::interval_at(tokio::time::Instant::now() + period, period);
                 ticks.set_missed_tick_behavior(MissedTickBehavior::Skip);
-                let mut end_rx = end_rx;
-                let mut broken = false;
+                let mut stopping = stop.subscribe();
                 loop {
                     tokio::select! {
-                        _ = &mut end_rx => break,
-                        _ = ticks.tick() => {
-                            if broken || lock(&failed).is_some() {
-                                continue;
-                            }
-                            let Some(frame) = frames() else { continue };
-                            // Write errors are ignored (`stdin.on('error')`).
-                            broken = stdin.write_all(&frame).await.is_err();
+                        biased;
+                        _ = wait_stop(&mut stopping) => break,
+                        _ = ticks.tick() => {}
+                    }
+                    let frame = match &authority {
+                        Some(guard) => guard.run(|| frames()),
+                        None => Ok(frames()),
+                    };
+                    let outcome = match frame {
+                        Err(error) => FrameWrite::Denied(error),
+                        Ok(None) => continue,
+                        Ok(Some(frame)) => {
+                            write_frame(&mut stdin, &frame, authority.as_ref(), &mut stopping).await
+                        }
+                    };
+                    match outcome {
+                        FrameWrite::Complete => {}
+                        FrameWrite::Stopped | FrameWrite::Broken => break,
+                        FrameWrite::Denied(error) => {
+                            *lock(&failed) = Some(error.message);
+                            stop.send_replace(true);
+                            break;
                         }
                     }
                 }
-                let _ = stdin.shutdown().await;
-            });
-        }
+                // Dropping stdin interrupts even a backpressured partial JPEG;
+                // it is private to this recorder, unlike a shared CDP frame.
+            })
+        });
         tokio::spawn(async move {
-            // Only an explicit kill (a stop that timed out) kills ffmpeg: a
-            // dropped `Recording` drops the sender, which disables this
-            // branch, and ffmpeg ends with its input.
+            // This supervisor owns stop/escalation even when Recording or its
+            // stop waiter is dropped. Only this owned Child is ever signaled.
+            let mut stopping = stop.subscribe();
             let status = tokio::select! {
                 status = child.wait() => status,
-                Ok(()) = kill_rx => {
-                    let _ = child.start_kill();
-                    child.wait().await
+                _ = wait_stop(&mut stopping) => {
+                    match tokio::time::timeout(grace, child.wait()).await {
+                        Ok(status) => status,
+                        Err(_) => {
+                            timed_out.store(true, Ordering::Release);
+                            let _ = child.start_kill();
+                            child.wait().await
+                        }
+                    }
                 }
             };
-            // The failure message is ffmpeg's stderr: read it to the end.
-            if let Some(task) = stderr_task {
-                let _ = tokio::time::timeout(Duration::from_secs(1), task).await;
-            }
+            stop.send_replace(true);
+            confirmed.store(status.is_ok(), Ordering::Release);
+            finish_pipe_task(writer).await;
+            finish_pipe_task(stderr_task).await;
+            finish_pipe_task(stdout_task).await;
             let code = status.ok().and_then(|status| status.code());
             let stderr = lock(&stderr_text).clone();
             {
@@ -272,44 +327,103 @@ impl Recording {
         Failure(self.failed.clone())
     }
 
-    /// `stopRecording` after the tab let go of it: stdin ends now; the
-    /// returned future waits for ffmpeg (30 s, then SIGKILL).
-    pub fn stop(mut self) -> impl Future<Output = Stopped> + Send + 'static {
-        if let Some(end) = self.end.take() {
-            let _ = end.send(());
-        }
+    /// Request stop immediately; the independent supervisor owns timeout,
+    /// signaling and reaping even if nobody polls the returned future.
+    pub fn stop(self) -> impl Future<Output = Stopped> + Send + 'static {
+        self.stop.send_replace(true);
         async move {
             let mut exited = self.exited.clone();
-            let exit =
-                match tokio::time::timeout(STOP_TIMEOUT, exited.wait_for(Option::is_some)).await {
-                    Ok(Ok(code)) => Exit::Code((*code).flatten()),
-                    Ok(Err(_)) => Exit::Code(None),
-                    Err(_) => {
-                        if let Some(kill) = self.kill.take() {
-                            let _ = kill.send(());
-                        }
+            let observed =
+                tokio::time::timeout(self.stop_wait, exited.wait_for(Option::is_some)).await;
+            let (exit, confirmed) = match observed {
+                Ok(Ok(code)) => (
+                    if self.timed_out.load(Ordering::Acquire) {
                         Exit::Timeout
-                    }
-                };
+                    } else {
+                        Exit::Code((*code).flatten())
+                    },
+                    self.confirmed.load(Ordering::Acquire),
+                ),
+                _ => (Exit::Timeout, false),
+            };
             Stopped {
                 failed: self.failed(),
                 output: self.output.clone(),
                 relative: self.relative.clone(),
                 started_at: self.started_at,
                 exit,
+                confirmed,
             }
         }
     }
 }
 
 impl Drop for Recording {
-    /// A recording dropped without [`Recording::stop`] (a failed start)
-    /// stops writing; ffmpeg ends with its input and is not killed.
     fn drop(&mut self) {
-        if let Some(end) = self.end.take() {
-            let _ = end.send(());
+        self.stop.send_replace(true);
+    }
+}
+
+async fn wait_stop(stop: &mut watch::Receiver<bool>) {
+    let _ = stop.wait_for(|stopped| *stopped).await;
+}
+
+async fn finish_pipe_task(task: Option<tokio::task::JoinHandle<()>>) {
+    if let Some(mut task) = task
+        && tokio::time::timeout(Duration::from_secs(1), &mut task)
+            .await
+            .is_err()
+    {
+        task.abort();
+        let _ = task.await;
+    }
+}
+
+enum FrameWrite {
+    Complete,
+    Stopped,
+    Broken,
+    Denied(ApiError),
+}
+
+/// The resource gate surrounds each nonblocking poll, not a readiness wait.
+/// Cancellation/revocation is also checked while a child never drains stdin.
+async fn write_frame(
+    stdin: &mut (impl AsyncWrite + Unpin),
+    frame: &[u8],
+    guard: Option<&Guard>,
+    stop: &mut watch::Receiver<bool>,
+) -> FrameWrite {
+    let mut offset = 0;
+    while offset < frame.len() {
+        let write = std::future::poll_fn(|cx| {
+            let mut effect = || Pin::new(&mut *stdin).poll_write(cx, &frame[offset..]);
+            let result = match guard {
+                Some(guard) => guard.run(effect),
+                None => Ok(effect()),
+            };
+            match result {
+                Ok(Poll::Pending) => Poll::Pending,
+                Ok(Poll::Ready(result)) => Poll::Ready(Ok(result)),
+                Err(error) => Poll::Ready(Err(error)),
+            }
+        });
+        tokio::select! {
+            biased;
+            _ = wait_stop(stop) => return FrameWrite::Stopped,
+            result = write => match result {
+                Ok(Ok(n)) if n > 0 => offset += n,
+                Ok(_) => return FrameWrite::Broken,
+                Err(error) => return FrameWrite::Denied(error),
+            },
+            _ = tokio::time::sleep(Duration::from_millis(50)) => {
+                if let Some(guard) = guard && let Err(error) = guard.run(|| ()) {
+                    return FrameWrite::Denied(error);
+                }
+            }
         }
     }
+    FrameWrite::Complete
 }
 
 impl Stopped {
@@ -387,6 +501,139 @@ pub(crate) mod test_support {
 mod tests {
     use super::test_support::fake_ffmpeg;
     use super::*;
+
+    #[tokio::test]
+    async fn stop_supervision_survives_dropped_waiters_and_waits_for_exit() {
+        for drop_waiter in [false, true] {
+            let dir = tempfile::tempdir().unwrap();
+            let ffmpeg = fake_ffmpeg(dir.path(), "exec /bin/sleep 30");
+            let recording = Recording::start_with_timeout(
+                &ffmpeg,
+                &sh_env(),
+                create(&dir.path().join("video")),
+                "r".into(),
+                no_frames(),
+                Arc::new(|| false),
+                Duration::from_millis(50),
+            );
+            let mut exited = recording.exited.clone();
+            let confirmed = recording.confirmed.clone();
+            let timed_out = recording.timed_out.clone();
+            if drop_waiter {
+                drop(recording.stop());
+            } else {
+                drop(recording);
+            }
+            tokio::time::timeout(Duration::from_secs(3), exited.wait_for(Option::is_some))
+                .await
+                .unwrap()
+                .unwrap();
+            assert!(confirmed.load(Ordering::Acquire));
+            assert!(timed_out.load(Ordering::Acquire));
+            assert_eq!(*exited.borrow(), Some(None));
+        }
+    }
+
+    #[tokio::test]
+    async fn resource_revocation_stops_a_backpressured_recorder_without_touching_a_peer() {
+        let dir = tempfile::tempdir().unwrap();
+        let ffmpeg = fake_ffmpeg(dir.path(), "printf ready >&3; exec /bin/sleep 30");
+        let allowed = Arc::new(Mutex::new(true));
+        let guard = Guard::new({
+            let allowed = allowed.clone();
+            move |effect| {
+                let allowed = allowed.lock().unwrap();
+                if !*allowed {
+                    return Err(ApiError::conflict("environment revoked"));
+                }
+                effect();
+                Ok(())
+            }
+        });
+        let output = dir.path().join("video");
+        let frames_seen = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let frames: FrameSource = {
+            let count = frames_seen.clone();
+            Arc::new(move || {
+                count.fetch_add(1, Ordering::SeqCst);
+                Some(Arc::new(vec![1; 2_000_000]))
+            })
+        };
+        let recording = super::super::effects::with_resource(guard, async {
+            Recording::start_with_timeout(
+                &ffmpeg,
+                &sh_env(),
+                create(&output),
+                "r".into(),
+                frames,
+                Arc::new(|| true),
+                Duration::from_millis(50),
+            )
+        })
+        .await;
+        let mut peer = Command::new("/bin/sleep")
+            .arg("30")
+            .kill_on_drop(true)
+            .spawn()
+            .unwrap();
+        tokio::time::timeout(Duration::from_secs(3), async {
+            while frames_seen.load(Ordering::SeqCst) == 0
+                || std::fs::read(&output).unwrap() != b"ready"
+            {
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await
+        .unwrap();
+        *allowed.lock().unwrap() = false;
+        let mut exited = recording.exited.clone();
+        tokio::time::timeout(Duration::from_secs(3), exited.wait_for(Option::is_some))
+            .await
+            .unwrap()
+            .unwrap();
+        let stopped = recording.stop().await;
+        assert!(stopped.confirmed);
+        assert_eq!(stopped.failed.as_deref(), Some("environment revoked"));
+        assert!(peer.try_wait().unwrap().is_none());
+        peer.kill().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn pending_frame_writes_recheck_revocation_without_pipe_readiness() {
+        use tokio::io::AsyncReadExt;
+        let (mut writer, mut reader) = tokio::io::duplex(4);
+        let allowed = Arc::new(Mutex::new(true));
+        let guard = Guard::new({
+            let allowed = allowed.clone();
+            move |effect| {
+                let allowed = allowed.lock().unwrap();
+                if !*allowed {
+                    return Err(ApiError::conflict("revoked"));
+                }
+                effect();
+                Ok(())
+            }
+        });
+        let (_stop, mut stopped) = watch::channel(false);
+        let work = tokio::spawn(async move {
+            write_frame(&mut writer, b"123456789", Some(&guard), &mut stopped).await
+        });
+        // Read the actual first prefix, then leave the rest backpressured.
+        let mut first = [0; 1];
+        reader.read_exact(&mut first).await.unwrap();
+        assert_eq!(first, *b"1");
+        *allowed.lock().unwrap() = false;
+        assert!(matches!(
+            tokio::time::timeout(Duration::from_secs(2), work)
+                .await
+                .unwrap()
+                .unwrap(),
+            FrameWrite::Denied(_)
+        ));
+        let mut remaining = Vec::new();
+        reader.read_to_end(&mut remaining).await.unwrap();
+        assert!(remaining.len() <= 4, "no bytes admitted after the denial");
+    }
 
     #[test]
     fn keeps_the_end_of_stderr() {

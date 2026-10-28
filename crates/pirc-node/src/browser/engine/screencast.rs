@@ -133,66 +133,80 @@ pub async fn start_on(
         "maxHeight": max.1,
     });
     let restart = start.clone();
-    let task = tokio::spawn(async move {
-        // Until a first frame went out, one whose image is not of its
-        // page's size is held back for the one Chromium sends next (see
-        // [`has_page_shape`]); without one soon, the screencast is
-        // restarted once, which makes Chromium send the current one.
-        let mut first = true;
-        let mut restarted = false;
-        let mut held: Option<(ScreencastFrame, tokio::time::Instant)> = None;
-        loop {
-            let event = match &held {
-                Some((_, until)) => match tokio::time::timeout_at(*until, events.recv()).await {
-                    Ok(event) => event,
-                    Err(_) if !restarted => {
-                        restarted = true;
-                        acks.send("Page.stopScreencast", json!({}));
-                        acks.send("Page.startScreencast", restart.clone());
-                        if let Some((_, until)) = &mut held {
-                            *until = tokio::time::Instant::now() + HOLD_AFTER_RESTART;
-                        }
-                        continue;
-                    }
-                    Err(_) => {
-                        if let Some((frame, _)) = held.take() {
-                            first = false;
-                            sink(frame);
-                        }
-                        continue;
-                    }
-                },
-                None => events.recv().await,
-            };
-            let Some(event) = event else {
-                break;
-            };
-            if event.method != "Page.screencastFrame" {
-                continue;
-            }
-            if let Some(frame) = decode_frame(&event.params) {
-                if !first || has_page_shape(&frame, max) {
-                    first = false;
-                    held = None;
-                    sink(frame);
-                } else {
-                    // A stale frame replaces the one held, not its deadline
-                    // (Chromium may send several).
-                    let until = held.as_ref().map_or_else(
-                        || tokio::time::Instant::now() + HOLD_MISSHAPEN,
-                        |(_, until)| *until,
-                    );
-                    held = Some((frame, until));
+    let task = tokio::spawn(crate::browser::effects::background(
+        crate::browser::effects::resource(),
+        async move {
+            // Until a first frame went out, one whose image is not of its
+            // page's size is held back for the one Chromium sends next (see
+            // [`has_page_shape`]); without one soon, the screencast is
+            // restarted once, which makes Chromium send the current one.
+            let mut first = true;
+            let mut restarted = false;
+            let mut held: Option<(ScreencastFrame, tokio::time::Instant)> = None;
+            loop {
+                if crate::browser::effects::check().is_err() {
+                    break;
                 }
+                let event = match &held {
+                    Some((_, until)) => {
+                        match tokio::time::timeout_at(*until, events.recv()).await {
+                            Ok(event) => event,
+                            Err(_) if !restarted => {
+                                restarted = true;
+                                acks.send("Page.stopScreencast", json!({}));
+                                acks.send("Page.startScreencast", restart.clone());
+                                if let Some((_, until)) = &mut held {
+                                    *until = tokio::time::Instant::now() + HOLD_AFTER_RESTART;
+                                }
+                                continue;
+                            }
+                            Err(_) => {
+                                if crate::browser::effects::check().is_err() {
+                                    break;
+                                }
+                                if let Some((frame, _)) = held.take() {
+                                    first = false;
+                                    sink(frame);
+                                }
+                                continue;
+                            }
+                        }
+                    }
+                    None => events.recv().await,
+                };
+                if crate::browser::effects::check().is_err() {
+                    break;
+                }
+                let Some(event) = event else {
+                    break;
+                };
+                if event.method != "Page.screencastFrame" {
+                    continue;
+                }
+                if let Some(frame) = decode_frame(&event.params) {
+                    if !first || has_page_shape(&frame, max) {
+                        first = false;
+                        held = None;
+                        sink(frame);
+                    } else {
+                        // A stale frame replaces the one held, not its deadline
+                        // (Chromium may send several).
+                        let until = held.as_ref().map_or_else(
+                            || tokio::time::Instant::now() + HOLD_MISSHAPEN,
+                            |(_, until)| *until,
+                        );
+                        held = Some((frame, until));
+                    }
+                }
+                let _ = acks
+                    .call(
+                        "Page.screencastFrameAck",
+                        json!({ "sessionId": event.params["sessionId"] }),
+                    )
+                    .await;
             }
-            let _ = acks
-                .call(
-                    "Page.screencastFrameAck",
-                    json!({ "sessionId": event.params["sessionId"] }),
-                )
-                .await;
-        }
-    });
+        },
+    ));
     // A start that raced this one (both past their stop) is replaced, not
     // left feeding its sink.
     if let Some(previous) = state.running.lock().unwrap().replace(task) {
@@ -445,6 +459,76 @@ mod tests {
         // What cannot be checked goes out.
         assert!(has_page_shape(&frame(vec![1, 2], 1280, 800), max));
         assert!(has_page_shape(&frame(jpeg(1280, 713), 0, 0), max));
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn a_revoked_resource_cannot_restart_the_screencast_but_cleanup_can_stop_it() {
+        use super::super::cdp::Fake;
+        use crate::browser::effects;
+        let mut fake = Fake::new();
+        let session = fake.connection.session("source");
+        let state = ScreencastState::default();
+        let allowed = Arc::new(Mutex::new(true));
+        let guard = effects::Guard::new({
+            let allowed = allowed.clone();
+            move |effect| {
+                let allowed = allowed.lock().unwrap();
+                if !*allowed {
+                    return Err(crate::error::ApiError::conflict("revoked"));
+                }
+                effect();
+                Ok(())
+            }
+        });
+        let started = effects::background(
+            Some(guard.clone()),
+            start_on(
+                &session,
+                &state,
+                ScreencastOptions {
+                    width: 1280,
+                    height: 800,
+                    quality: 60,
+                },
+                Arc::new(|_| panic!("the stale frame must not escape")),
+            ),
+        );
+        let peer = async {
+            let start = fake.command().await;
+            assert_eq!(start["method"], "Page.startScreencast");
+            fake.send(json!({"id":start["id"],"sessionId":"source","result":{}}))
+                .await;
+        };
+        let (started, ()) = tokio::join!(started, peer);
+        started.unwrap();
+        let data = base64::engine::general_purpose::STANDARD.encode(jpeg(1280, 713));
+        fake.send(json!({"method":"Page.screencastFrame","sessionId":"source","params":{"data":data,"sessionId":1,"metadata":{"deviceWidth":1280,"deviceHeight":800}}})).await;
+        let ack = fake.command().await;
+        assert_eq!(ack["method"], "Page.screencastFrameAck");
+        fake.send(json!({"id":ack["id"],"sessionId":"source","result":{}}))
+            .await;
+        *allowed.lock().unwrap() = false;
+        tokio::time::timeout(Duration::from_secs(2), async {
+            while guard.failure().is_none() {
+                tokio::time::sleep(Duration::from_millis(10)).await;
+            }
+        })
+        .await
+        .unwrap();
+        fake.connection
+            .session("peer")
+            .send("peer-command", json!({}));
+        assert_eq!(fake.command().await["method"], "peer-command");
+        let stopped = stop_on(&session, &state);
+        let cleanup = async {
+            let stop = fake.command().await;
+            assert_eq!(stop["method"], "Page.stopScreencast");
+            fake.send(json!({"id":stop["id"],"sessionId":"source","result":{}}))
+                .await;
+        };
+        let (stopped, ()) = tokio::join!(stopped, cleanup);
+        stopped.unwrap();
+        assert!(!fake.connection.is_closed());
     }
 
     /// On paused time: the fake browser's pipes are in-process, so its

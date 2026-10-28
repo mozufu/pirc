@@ -1953,3 +1953,212 @@ async fn foreground_authority_survives_spawn_and_is_rechecked_after_shared_launc
         fixture.manager.shutdown().await;
     }
 }
+
+/// Real Node authority and durable receipts, with only Chromium substituted.
+#[tokio::test]
+async fn resource_retirement_survives_takeover_and_preserves_a_shared_peer() {
+    use crate::browser::{effects, tracked::Tracked};
+    use crate::store::Store;
+    let node_fixture = crate::workspace_memory::tests::Fixture::new().await;
+    let node = &node_fixture.node;
+    let root: PathBuf = node
+        .db
+        .lock()
+        .get_workspace("repo")
+        .unwrap()
+        .canonical_path
+        .into();
+    let peer = node
+        .db
+        .lock()
+        .create_session("repo", root.join("peer-history").to_str().unwrap(), "alice")
+        .unwrap();
+    let source = BrowserTarget {
+        session_id: node_fixture.current.clone(),
+        workspace_id: "repo".into(),
+        root: root.clone(),
+    };
+    let peer_target = BrowserTarget {
+        session_id: peer.id.clone(),
+        ..source.clone()
+    };
+    // Exit with an encoding error after EOF: closure must still be confirmed.
+    let scripts = tempfile::tempdir().unwrap();
+    let ffmpeg = fake_ffmpeg(
+        scripts.path(),
+        "while read -r _; do :; done; printf done >&3; exit 3",
+    );
+    let context = FakeContext::new();
+    let fixture = with_ffmpeg(&context, &ffmpeg);
+    let manager = &fixture.manager;
+    let tracked = Tracked::new(Arc::downgrade(node), manager.clone());
+    let phone = node
+        .db
+        .lock()
+        .acquire_lease(&source.session_id, "phone", false, 60_000)
+        .unwrap();
+    let open = Arc::new(Mutex::new(true));
+    effects::from(
+        effects::Caller::Viewer {
+            client: "phone".into(),
+            generation: phone.generation,
+            open: open.clone(),
+        },
+        tracked.handle(source.clone(), "snapshot".into(), json!({})),
+    )
+    .await
+    .unwrap();
+    effects::from(
+        effects::Caller::Test,
+        tracked.handle(peer_target, "snapshot".into(), json!({})),
+    )
+    .await
+    .unwrap();
+    let tab = manager.inner.lock().tabs[&source.session_id].clone();
+    let resource = tab
+        .resource
+        .clone()
+        .expect("the resource must survive the foreground spawn");
+    let web = node
+        .db
+        .lock()
+        .acquire_lease(&source.session_id, "web", true, 60_000)
+        .unwrap();
+    *open.lock().unwrap() = false;
+    node.db
+        .lock()
+        .execute(
+            "UPDATE sessions SET runner_epoch=1 WHERE id=?1",
+            [&source.session_id],
+        )
+        .unwrap();
+    assert!(
+        resource.run(|| ()).is_ok(),
+        "a takeover/new agent is not resource revocation"
+    );
+    let (sink, source_frames) = viewer();
+    let source_detach = tracked.attach(&source.session_id, sink);
+    let (sink, peer_frames) = viewer();
+    let peer_detach = tracked.attach(&peer.id, sink);
+    settle().await;
+    let recorded = effects::from(
+        effects::Caller::Agent {
+            epoch: 1,
+            abort: Arc::new(watch::channel(false).0),
+        },
+        tracked.handle(source.clone(), "record".into(), json!({"action":"start"})),
+    )
+    .await
+    .unwrap();
+    let late_sink = context.page(0).cast.lock().unwrap().clone().unwrap();
+    let old_frame = tab.lock().last_frame.as_ref().unwrap().jpeg.clone();
+    source_frames.lock().unwrap().clear();
+    // A title request already waiting at revocation cannot publish its result.
+    context
+        .page(0)
+        .title_delays
+        .lock()
+        .unwrap()
+        .push_back(Duration::from_millis(400));
+    manager.inner.emit_state(&tab);
+    settle().await;
+    crate::execution_fences::accept(
+        &node.db.lock(),
+        "alice",
+        &source.session_id,
+        &crate::execution_fences::Intent {
+            operation_id: "background-retire".into(),
+            plan_hash: "c".repeat(64),
+            expected_workspace_id: "repo".into(),
+            expected_runner_epoch: 1,
+        },
+        "web",
+        web.generation,
+    )
+    .unwrap();
+    source_frames.lock().unwrap().clear();
+    late_sink(ScreencastFrame {
+        jpeg: Arc::new(b"revoked-frame".to_vec()),
+        width: 800,
+        height: 600,
+    });
+    assert_eq!(*tab.lock().last_frame.as_ref().unwrap().jpeg, *old_frame);
+    let popup = FakePage::new("https://late.example");
+    context.page(0).emit(|| PageEvent::Popup(popup.clone()));
+    context.page(1).frame(b"peer-live");
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while !tab.closed() || !popup.is_closed() {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    tracked.close_session(&source.session_id).await.unwrap();
+    let summary = serde_json::to_value(
+        crate::browser::journal::summary(&node.db.lock(), &source.session_id).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(summary["unresolved"], 0);
+    assert_eq!(summary["observersSettled"], 1);
+    assert!(!popup.shows_actions.load(Ordering::SeqCst));
+    assert_eq!(context.stats().1, 0, "a peer still owns this context");
+    assert!(context.page(1).casting());
+    assert!(sent_frames(&peer_frames).contains(&"peer-live".to_owned()));
+    assert!(!sent_frames(&source_frames).contains(&"revoked-frame".to_owned()));
+    assert!(
+        of_type(&source_frames, "state")
+            .iter()
+            .all(|message| message["state"]["title"] != "Fake")
+    );
+    let output = root.join(recorded["path"].as_str().unwrap());
+    assert_eq!(std::fs::read(output).unwrap(), b"done");
+    source_detach();
+    peer_detach();
+    tracked.close_session(&peer.id).await.unwrap();
+    tracked.shutdown().await;
+    node.close().await;
+}
+
+#[tokio::test]
+async fn a_revoked_record_start_does_not_create_files_after_a_page_wait() {
+    use crate::browser::effects;
+    let context = FakeContext::new();
+    let (release, wait) = oneshot::channel();
+    *context.page_gate.lock().unwrap() = Some(wait);
+    let fixture = ready(&context);
+    let root = tempfile::tempdir().unwrap();
+    let target = BrowserTarget {
+        root: root.path().to_owned(),
+        ..target("source", "w")
+    };
+    let allowed = Arc::new(Mutex::new(true));
+    let guard = effects::Guard::new({
+        let allowed = allowed.clone();
+        move |effect| {
+            if !*allowed.lock().unwrap() {
+                return Err(ApiError::conflict("revoked"));
+            }
+            effect();
+            Ok(())
+        }
+    });
+    let manager = fixture.manager.clone();
+    let request = tokio::spawn(effects::scope(guard, async move {
+        manager
+            .handle(target, "record".into(), json!({"action":"start"}))
+            .await
+    }));
+    tokio::time::timeout(Duration::from_secs(3), async {
+        while context.page_gate.lock().unwrap().is_some() {
+            tokio::task::yield_now().await;
+        }
+    })
+    .await
+    .unwrap();
+    *allowed.lock().unwrap() = false;
+    release.send(()).unwrap();
+    assert!(request.await.unwrap().is_err());
+    assert!(!root.path().join(".pirc").exists());
+    fixture.manager.close_session("source").await.unwrap();
+    fixture.manager.shutdown().await;
+}

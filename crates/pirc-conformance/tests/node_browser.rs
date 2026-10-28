@@ -787,3 +787,124 @@ async fn node_browser_close() {
     b.t.note("a viewer of the deleted chat", images(&reopened));
     insta::assert_json_snapshot!("node_browser_close", b.t.into_value());
 }
+
+/// A real Node, Chromium and ffmpeg: resource retirement is independent of
+/// the actor that opened the tab, and does not close a workspace peer's tab.
+#[tokio::test(flavor = "multi_thread")]
+async fn node_browser_fence_retires_recording_without_closing_a_workspace_peer() {
+    if ffmpeg().is_none() {
+        assert!(!required(), "PIRC_BROWSER_REQUIRED=1 needs ffmpeg");
+        eprintln!("no ffmpeg; skipping the browser fence scenario");
+        return;
+    }
+    let Some(mut b) = start(false, &[]).await else {
+        return;
+    };
+    let (source, source_generation) = b.session("test").await;
+    let (peer, peer_generation) = b.session("test").await;
+    let mut source_view = Viewer::open(&mut b.gw, "fenced-browser", &source).await;
+    let mut peer_view = Viewer::open(&mut b.gw, "peer-browser", &peer).await;
+    source_view.wait(&mut b.gw, kind("log")).await;
+    peer_view.wait(&mut b.gw, kind("log")).await;
+    for (session, generation, recording) in [
+        (&source, &source_generation, true),
+        (&peer, &peer_generation, false),
+    ] {
+        b.gw.prompt(session, generation, session, "Open the fixture page")
+            .await;
+        let first = b.model_start().await;
+        let mut body = format!(
+            "await call('browser_navigate', {{ url: {} }});",
+            js(&b.site.a("/form.html"))
+        );
+        if recording {
+            body.push_str("await call('browser_record', { action: 'start' });");
+        }
+        let (next, result) = b.run(&first, session, &body).await;
+        let calls = result["calls"].as_array().expect("browser tool results");
+        assert_eq!(calls.len(), if recording { 2 } else { 1 }, "{result}");
+        assert!(calls.iter().all(|call| call["error"].is_null()), "{result}");
+        // Ending the original Agent turn must not revoke its live resources.
+        finish(&mut b, &next, session).await;
+    }
+    source_view
+        .wait(&mut b.gw, state(|s| s["recording"].is_object()))
+        .await;
+    peer_view
+        .wait(&mut b.gw, state(|s| s["title"] == "Form"))
+        .await;
+    let base = format!("/api/sessions/{source}");
+    let snapshot = b.gw.ask("GET", &format!("{base}/snapshot"), None).await;
+    assert_eq!(snapshot["data"]["status"], 200, "{snapshot}");
+    let epoch = snapshot["data"]["body"]["session"]["runnerEpoch"].clone();
+    assert!(epoch.is_number(), "{snapshot}");
+    source_view.now(&mut b.gw);
+    let accepted =
+        b.gw.ask(
+            "POST",
+            &format!("{base}/execution-fences"),
+            Some(json!({
+                "intent": {
+                    "operationId": "browser-resource-fence",
+                    "planHash": "a".repeat(64),
+                    "expectedWorkspaceId": "test",
+                    "expectedRunnerEpoch": epoch
+                },
+                "clientId": "browser",
+                "generation": source_generation
+            })),
+        )
+        .await;
+    assert_eq!(accepted["data"]["status"], 200, "{accepted}");
+    // No explicit close/drain yet: even a quiet page has a retirement observer.
+    source_view
+        .wait(&mut b.gw, state(|s| s["active"] == false))
+        .await;
+    let drained =
+        b.gw.ask(
+            "POST",
+            &format!("{base}/execution-fences/browser-resource-fence/drain"),
+            Some(json!({})),
+        )
+        .await;
+    assert_eq!(drained["data"]["status"], 200, "{drained}");
+    let transition = &drained["data"]["body"]["transition"];
+    assert_eq!(transition["state"], "supervisor_drained", "{drained}");
+    assert_eq!(transition["revocationConfirmed"], false, "{drained}");
+    assert_eq!(transition["targetInstalled"], false, "{drained}");
+
+    // New work in the shared browser context still succeeds after retirement.
+    peer_view.now(&mut b.gw);
+    b.gw.prompt(
+        &peer,
+        &peer_generation,
+        "peer-after-fence",
+        "Navigate again",
+    )
+    .await;
+    let first = b.model_start().await;
+    let body = format!(
+        "await call('browser_navigate', {{ url: {} }});",
+        js(&b.site.a("/details.html"))
+    );
+    let (next, result) = b.run(&first, "peer-after-fence", &body).await;
+    assert_eq!(
+        result["calls"].as_array().map(Vec::len),
+        Some(1),
+        "{result}"
+    );
+    assert!(result["calls"][0]["error"].is_null(), "{result}");
+    peer_view
+        .wait(
+            &mut b.gw,
+            state(|s| {
+                s["url"]
+                    .as_str()
+                    .is_some_and(|url| url.ends_with("/details.html"))
+            }),
+        )
+        .await;
+    finish(&mut b, &next, &peer).await;
+    source_view.close(&mut b.gw).await;
+    peer_view.close(&mut b.gw).await;
+}

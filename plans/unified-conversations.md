@@ -4,7 +4,7 @@
 
 Status: adopted architecture baseline with an authorized staged implementation
 covering first Send, environment bindings, resource transitions, canonical tasks/
-collaboration and bounded pots. The published baseline is `c50af1b0` (2026-10-28),
+collaboration and bounded pots. The published baseline is `798aa817` (2026-10-28),
 including U1 recovery/native acceptance, U2 provenance and U4 supervision. Its full
 Check, native Linux sandbox/checkpoints, Nix, size and Android jobs all passed.
 Subsequent local changes are recorded below with their own narrower evidence.
@@ -47,6 +47,9 @@ U4 has begun with an [internal Node admission fence](#u4-implementation-checkpoi
 and tracked supervisor drain, followed by [runner-scoped inference retirement](#u4-implementation-checkpoint-runner-scoped-inference-retirement-2026-10-28). Linux process scopes now have a [durable launch journal and bounded restart reconciliation](#u4-implementation-checkpoint-durable-sandbox-launch-journal-2026-10-28), followed by [guarded startup](#u4-implementation-checkpoint-guarded-native-linux-launch-2026-10-28) and [terminal effect-boundary checks](#u4-implementation-checkpoint-fenced-terminal-input-2026-10-28). [Approved host-command supervision](#u4-implementation-checkpoint-supervised-host-commands-2026-10-28) now joins Stop/drain with durable launch evidence. Its receipts explicitly deny revocation/installation
 completion. Durable terminal and [browser group supervision](#u4-implementation-checkpoint-durable-browser-supervision-2026-10-28) now also retain uncertain outcomes across restart. No public workspace switch or new resource grant is enabled; Gateway
 coordination, OS enforcement, replacement binding and Web/App controls remain.
+The current local [browser-resource checkpoint](#u4-implementation-checkpoint-browser-resource-guards-and-recorder-retirement-2026-10-28)
+scopes manager background effects and recorder writes/exit observation to the
+original environment, independently of foreground controller/Agent lifetimes.
 
 Delivered U1 behavior:
 
@@ -104,7 +107,7 @@ The backend [nonce retirement](#u1-implementation-checkpoint-gateway-retirement-
 slice retains 329 Gateway tests and five process cases. These are bounded proofs,
 not the full permission/Stop/delete matrix or Android OS/device acceptance.
 Live-client tests are explicitly run and ignored by the default suite;
-the later published green CI is `c50af1b0`; the explicit live-client fault
+the later published green CI is `798aa817`; the explicit live-client fault
 scenarios above remain separately recorded evidence, not implied by default CI.
 
 | Stage                             | Current status                                                                                 | Next deliverable                                                                                                    |
@@ -4116,5 +4119,75 @@ Prettier, local document targets and diff checks passed. No dependencies, schema
 package versions or Nix hashes changed. The authorized `git pull --rebase origin main` found no upstream changes or
 conflicts after implementation commit `00a72a16`. The completed isolated build/log
 directory (about 2.0 GiB) was removed; APKs, shared caches and user data were
-retained. This batch is ready for publication and remote CI; the green `c50af1b0`
-baseline remains separate evidence until those jobs finish.
+retained. The batch was subsequently published at `798aa817`: all five jobs
+passed ([Check/native Linux/Nix/sizes](https://github.com/mozufu/pirc/actions/runs/40653077860),
+[Android](https://github.com/mozufu/pirc/actions/runs/40653077926)). Subsequent work
+remains local unless the user explicitly requests another push.
+
+## U4 implementation checkpoint: browser resource guards and recorder retirement (2026-10-28)
+
+Local implementation; no push, rebase, deployment, release or activation in this
+slice. Browser tabs capture the original Node group and environment separately
+from the initiating request's controller lease/Agent epoch. Legitimate takeover,
+viewer disconnect and a later Agent turn do not revoke an otherwise authorized
+resource. Binding/mode changes, an accepted transition fence, group closure and
+Node shutdown do. Foreground requests retain their stricter caller checks.
+
+The resource guard now covers delayed title/state and frame delivery, popup
+adoption/overlay startup, screencast start/restart/acknowledgement and recorder
+frame writes. Spawned manager tasks preserve both scopes explicitly. New
+nonblocking CDP and recorder-pipe writes check authority under the Node gate;
+async waits never hold that gate. An independent 250 ms observer retires a quiet
+session's tab even when it produces no frames or commands. Cleanup stays possible
+after authority is gone and targets that session, preserving peer tabs in the
+shared workspace context.
+
+Recording output creation and encoder spawn also check the original caller after
+page waits. A backpressured encoder pipe checks resource authority even without
+write readiness. Stop requests survive a dropped `Recording` or unpolled/cancelled
+stop waiter: an independent supervisor closes input, waits a bounded grace,
+then signals and reaps only its owned ffmpeg child. Manager cleanup retains its
+own observation lease. Encoding failure or partial output is distinct from an
+unconfirmed child exit; only the latter blocks a successful close receipt.
+
+Limits remain explicit: frames/commands already admitted may complete, and
+ffmpeg can flush already-buffered data before exit. This observes the direct
+encoder child, not arbitrary detached descendants or duplicated descriptors.
+Shared Chromium context setup and autonomous page/network/shared-worker activity
+still need complete ownership/containment. These manager/recorder guards are not
+proof of full browser or OS revocation. Gateway coordination, replacement policy
+installation/acknowledgement and Web/App transition controls remain open.
+`revocationConfirmed: false`, `targetInstalled: false`, Node enforcement
+`not_tracked` and U1 `canSubmit: false` remain unchanged. No schemas, wire formats,
+dependencies, package versions or Nix hashes change.
+
+Local validation: **563 Node library cases passed** (four top-level ignored
+subprocess helpers run through their parent tests), strict all-target Node/
+conformance Clippy and fmt passed, and rebuilt binaries passed **22 required
+real-process regressions** for checkpoints, admission/creation, execution fences,
+host commands, inference, memory, Node links/terminals, project deletion and streams.
+Six new unit cases exercise delayed resource effects, control/Agent changes,
+revocation during record startup/backpressure, abandoned stop waiters and shared
+peer preservation. Production frontend code is unchanged; no Flutter/device
+acceptance is claimed.
+
+A dedicated **Chrome for Testing Headless Shell 153.0.8010.12** with isolated
+profiles/local fixture pages passed all **three real browser-manager tests**.
+The Node/Agent/Chromium/ffmpeg conformance suite passed **6 of 7 cases**, including
+the new fence case: the original Agent turn ends, a live recording is retired by
+a fence before an explicit drain, and another conversation in the same workspace
+can navigate afterward. Drain still reports no full revocation or installation.
+
+One existing `node_browser_fetch` golden assertion differs locally: the blocked
+iframe lacks Chromium's internal “This page has been blocked by Chromium” text
+(116 versus 171 characters). An isolated rebuild of unmodified `798aa817` with
+the same browser reproduces the failure, and its complete fetch transcript is
+identical to the candidate's. The original snapshot remains unchanged. This is a
+recorded local/browser compatibility gap, not a green full browser suite or proof
+that this revision passed Linux CI. Current changes have no new remote CI, local
+Nix, emulator or device result.
+
+Changed-document formatting, local link targets and diff checks pass. The owned
+build/baseline/log directory (about **3.0 GiB**) and generated rejected snapshot
+are removed after validation; dedicated browser cache, APKs, SDKs, user data and
+other agents' work remain. The slice is committed locally without rebase/push.

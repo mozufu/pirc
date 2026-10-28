@@ -7,7 +7,7 @@ use std::time::Duration;
 use pirc_agent::tools::js::truthy;
 use serde_json::{Map, Value, json};
 
-use futures_util::StreamExt as _;
+use futures_util::{FutureExt as _, StreamExt as _};
 
 use super::seam::{PageEvent, PageRef, Selector};
 use super::view::base64;
@@ -719,9 +719,6 @@ impl Inner {
                 format!(".pirc/recordings/{file_name}: {error}"),
             )
         };
-        let dir = crate::private_dir::open_dir(&tab.target.root, &[".pirc", "recordings"])
-            .map_err(browser_error)?;
-        let output = crate::private_dir::create_new(&dir, &file_name).map_err(browser_error)?;
         let relative = format!(".pirc/recordings/{file_name}");
         // Current from now on, also before it is installed: a fast ffmpeg
         // failure is the recording's (`tab.recording === recording`).
@@ -747,14 +744,19 @@ impl Inner {
                 })
             })
         };
-        let recording = Recording::start(
-            &self.settings.ffmpeg,
-            &self.env,
-            output,
-            relative.clone(),
-            frames,
-            still_current,
-        );
+        let recording = crate::browser::effects::run(|| {
+            let dir = crate::private_dir::open_dir(&tab.target.root, &[".pirc", "recordings"])
+                .map_err(browser_error)?;
+            let output = crate::private_dir::create_new(&dir, &file_name).map_err(browser_error)?;
+            Ok::<_, ApiError>(Recording::start(
+                &self.settings.ffmpeg,
+                &self.env,
+                output,
+                relative.clone(),
+                frames,
+                still_current,
+            ))
+        })??;
         let failed = recording.failure();
         let limit = {
             let inner = Arc::downgrade(self);
@@ -777,17 +779,30 @@ impl Inner {
                 }
             })
         };
-        let (needs_seed, active) = {
+        let mut recording = Some(ActiveRecording {
+            seq,
+            recording,
+            limit,
+        });
+        let installed = crate::browser::effects::run(|| {
             let mut st = tab.lock();
-            // The reservation kept the slot empty.
+            if st.closed {
+                return Err(closing_error());
+            }
             debug_assert!(st.recording.is_none());
             st.recording_starting = None;
-            st.recording = Some(ActiveRecording {
-                seq,
-                recording,
-                limit,
-            });
-            (st.last_frame.is_none(), st.active.clone())
+            st.recording = recording.take();
+            Ok((st.last_frame.is_none(), st.active.clone()))
+        })
+        .and_then(|r| r);
+        let (needs_seed, active) = match installed {
+            Ok(installed) => installed,
+            Err(error) => {
+                if let Some(recording) = recording {
+                    let _ = self.finish_recording(tab, recording).await;
+                }
+                return Err(error);
+            }
         };
         drop(reservation);
         // Seed a frame so the video starts with the current page.
@@ -826,8 +841,8 @@ impl Inner {
                     None
                 }
             };
-            if let Some(limit) = taken.and_then(|active| active.limit) {
-                limit.abort();
+            if let Some(active) = taken {
+                let _ = self.finish_recording(tab, active).await;
             }
             self.sync_screencast(tab);
             return Err(ApiError::runner_unavailable(reason));
@@ -855,13 +870,37 @@ impl Inner {
             limit.abort();
         }
         let stopping = active.recording.stop();
+        let cleanup = self.begin_cleanup(tab.session());
         let inner = self.clone();
         let tab = tab.clone();
-        async move {
-            let stopped = stopping.await;
+        let task = tokio::spawn(async move {
+            let _cleanup = cleanup;
+            let result = match std::panic::AssertUnwindSafe(stopping).catch_unwind().await {
+                Ok(stopped) => {
+                    if !stopped.confirmed {
+                        inner
+                            .lock()
+                            .unconfirmed_sessions
+                            .insert(tab.session().to_owned());
+                    }
+                    stopped.result()
+                }
+                Err(_) => {
+                    inner
+                        .lock()
+                        .unconfirmed_sessions
+                        .insert(tab.session().to_owned());
+                    Err(crate::browser::journal::unresolved())
+                }
+            };
             inner.sync_screencast(&tab);
             inner.emit_state(&tab);
-            stopped.result()
+            result
+        });
+        // Dropping this waiter does not abandon the observer or its cleanup slot.
+        async move {
+            task.await
+                .map_err(|_| crate::browser::journal::unresolved())?
         }
     }
 }

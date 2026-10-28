@@ -31,6 +31,8 @@ The [browser-supervision checkpoint](unified-conversations.md#u4-implementation-
 
 The [foreground browser-effect checkpoint](unified-conversations.md#u4-implementation-checkpoint-foreground-browser-effect-admission-2026-10-28) checks captured actor/binding authority at the first CDP pipe write. Already-started frames finish for protocol integrity; shared background resources and complete revocation remain unverified.
 
+The local [browser-resource checkpoint](unified-conversations.md#u4-implementation-checkpoint-browser-resource-guards-and-recorder-retirement-2026-10-28) adds environment-scoped manager background effects and recorder writes/exit observation. These resources survive ordinary controller/Agent changes; a fence retires the affected session without closing its workspace peers. Shared Chromium engine/network resources, descendant/descriptor containment and complete revocation remain open.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.

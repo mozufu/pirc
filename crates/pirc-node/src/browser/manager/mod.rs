@@ -375,6 +375,7 @@ type Waiter = (u64, oneshot::Sender<Option<ApiError>>);
 /// `Tab` of `browser.ts`: a session's pages and everything viewers see.
 pub(crate) struct Tab {
     target: BrowserTarget,
+    resource: Option<super::effects::Guard>,
     state: Mutex<TabState>,
     /// Agent operations run one at a time: they share the active page.
     busy: tokio::sync::Mutex<()>,
@@ -415,6 +416,7 @@ impl Tab {
     fn new(target: BrowserTarget) -> Self {
         Self {
             target,
+            resource: super::effects::resource(),
             state: Mutex::new(TabState {
                 closed: false,
                 pages: Vec::new(),
@@ -820,13 +822,14 @@ impl Inner {
         };
         *created = Some(tab.clone());
         self.start_sweeper();
+        self.watch_resource(&tab);
         // A fresh persistent context opens with one blank page nobody owns.
         let spare = context
             .pages()
             .into_iter()
             .find(|page| !owned.iter().any(|o| same(o, page)) && page.url() == "about:blank");
         match spare {
-            Some(page) => self.adopt(&tab, page),
+            Some(page) => self.adopt(&tab, page)?,
             None => {
                 self.new_page(&tab).await?;
             }
@@ -854,33 +857,74 @@ impl Inner {
         }
         let context = self.context(&tab.target.workspace_id).await?;
         let page = context.new_page().await?;
-        self.adopt(tab, page.clone());
+        self.adopt(tab, page.clone())?;
         Ok(page)
     }
 
-    /// `adopt(tab, page)`: the page joins the tab as its active page.
-    fn adopt(self: &Arc<Self>, tab: &Arc<Tab>, page: PageRef) {
-        let events = page.subscribe();
-        {
+    /// Retire only this session's resources when its original environment is
+    /// no longer authorized. Effect checks also run at each CDP write; this
+    /// observer catches quiet resources with no incoming frames or commands.
+    fn watch_resource(self: &Arc<Self>, tab: &Arc<Tab>) {
+        let Some(guard) = tab.resource.clone() else {
+            return;
+        };
+        let inner = Arc::downgrade(self);
+        let tab = Arc::downgrade(tab);
+        spawn(async move {
+            loop {
+                tokio::time::sleep(Duration::from_millis(250)).await;
+                let (Some(inner), Some(tab)) = (inner.upgrade(), tab.upgrade()) else {
+                    return;
+                };
+                if tab.closed() {
+                    return;
+                }
+                if guard.run(|| ()).is_err() {
+                    // Cleanup must remain possible after the resource grant is
+                    // gone. No foreground/resource scope is inherited here.
+                    let _ = inner.close_session(tab.session()).await;
+                    return;
+                }
+            }
+        });
+    }
+
+    /// `adopt(tab, page)`: admission and registration share the resource gate.
+    fn adopt(self: &Arc<Self>, tab: &Arc<Tab>, page: PageRef) -> ApiResult<()> {
+        let adopt = || {
             let state = self.lock();
             let mut st = tab.lock();
             if state.closing || state.closing_sessions.contains(tab.session()) || st.closed {
-                drop(st);
-                drop(state);
-                self.retire_popup(tab, page);
-                return;
+                return Err(closing_error());
             }
             st.pages.push(page.clone());
             st.active = Some(page.clone());
             tab.listeners.fetch_add(1, Ordering::AcqRel);
+            Ok(())
+        };
+        let events = page.subscribe();
+        let result = match &tab.resource {
+            Some(guard) => guard.run(adopt).and_then(|r| r),
+            None => adopt(),
+        };
+        if let Err(error) = result {
+            self.retire_popup(tab, page);
+            return Err(error);
         }
         let overlay = page.clone();
-        spawn(async move {
-            let _ = overlay.show_actions().await;
-        });
+        spawn(super::effects::background(
+            tab.resource.clone(),
+            async move {
+                if super::effects::check().is_ok() {
+                    let _ = overlay.show_actions().await;
+                }
+            },
+        ));
+        // Event cleanup remains unscoped; new page adoption is guarded above.
         spawn(listen(Arc::downgrade(self), tab.clone(), page, events));
         self.sync_screencast(tab);
         self.emit_state(tab);
+        Ok(())
     }
 
     fn on_popup(self: &Arc<Self>, tab: &Arc<Tab>, popup: PageRef) {
@@ -897,8 +941,9 @@ impl Inner {
             }
         }
         let url = popup.url();
-        self.adopt(tab, popup);
-        self.log(tab, "agent", &format!("Popup opened: {url}"), None);
+        if self.adopt(tab, popup).is_ok() {
+            self.log(tab, "agent", &format!("Popup opened: {url}"), None);
+        }
     }
 
     fn on_page_closed(self: &Arc<Self>, tab: &Arc<Tab>, page: &PageRef) {
@@ -934,16 +979,8 @@ impl Inner {
             (st.recording.take(), empty_seq)
         };
         if let Some(recording) = stop {
-            let stopping = self.finish_recording(tab, recording);
-            let cleanup = self.begin_cleanup(tab.session());
-            let inner = self.clone();
-            let session = tab.session().to_owned();
-            spawn(async move {
-                let _cleanup = cleanup;
-                if stopping.await.is_err() {
-                    inner.lock().unconfirmed_sessions.insert(session);
-                }
-            });
+            // finish_recording starts an independent cleanup observer now.
+            drop(self.finish_recording(tab, recording));
         }
         {
             let mut state = self.lock();
@@ -1034,7 +1071,9 @@ impl Inner {
             .unwrap_or_default();
         if let Some(tab) = &tab {
             if let Some(stopping) = self.stop_recording(tab) {
-                confirmed &= stopping.await.is_ok();
+                // Encoding failure is distinct from an unconfirmed process exit.
+                // The owned recorder observer records the latter in the manager.
+                let _ = stopping.await;
             }
             self.drop_tab(tab);
         }

@@ -186,7 +186,8 @@ impl Inner {
             .states_emitted
             .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let sent = tab.states_sent.clone();
-        spawn(async move {
+        let resource = tab.resource.clone();
+        spawn(crate::browser::effects::background(resource, async move {
             let in_order = async {
                 let mut earlier = sent.subscribe();
                 let _ = tokio::time::timeout(
@@ -195,7 +196,11 @@ impl Inner {
                 )
                 .await;
             };
-            if !inner.has_viewers(&session) {
+            let operation = inner.begin_operation(&session);
+            if operation.is_err()
+                || crate::browser::effects::check().is_err()
+                || !inner.has_viewers(&session)
+            {
                 in_order.await;
                 sent.send_modify(|done| *done = (*done).max(seq + 1));
                 return;
@@ -217,9 +222,11 @@ impl Inner {
             }
             state["title"] = Value::String(active_title);
             in_order.await;
-            inner.broadcast(&session, &json!({ "type": "state", "state": state }));
+            let _ = crate::browser::effects::run(|| {
+                inner.broadcast(&session, &json!({ "type": "state", "state": state }))
+            });
             sent.send_modify(|done| *done = (*done).max(seq + 1));
-        });
+        }));
     }
 
     /// `dropTab`'s `view(undefined)`: the empty state as the tab's state
@@ -317,13 +324,19 @@ impl Inner {
     /// viewers or records; changes run one at a time.
     pub(super) fn sync_screencast(self: &Arc<Self>, tab: &Arc<Tab>) {
         let inner = self.clone();
+        let cleanup = self.begin_cleanup(tab.session());
         let tab = tab.clone();
         spawn(async move {
+            let _cleanup = cleanup;
             let _chain = tab.cast.lock().await;
+            let authorized = tab
+                .resource
+                .as_ref()
+                .is_none_or(|guard| guard.run(|| ()).is_ok());
             let watched = inner.has_viewers(tab.session());
             let old = {
                 let mut st = tab.lock();
-                let want = if !st.closed && (watched || st.recording.is_some()) {
+                let want = if authorized && !st.closed && (watched || st.recording.is_some()) {
                     st.active.clone()
                 } else {
                     None
@@ -349,7 +362,15 @@ impl Inner {
                 quality: 60,
             };
             let sink = frame_sink(Arc::downgrade(&inner), Arc::downgrade(&tab), &want);
-            if want.start_screencast(options, sink).await.is_err() {
+            let started = crate::browser::effects::background(tab.resource.clone(), async {
+                if crate::browser::effects::check().is_err() {
+                    return false;
+                }
+                let started = want.start_screencast(options, sink).await.is_ok();
+                started && crate::browser::effects::check().is_ok()
+            })
+            .await;
+            if !started {
                 let mut st = tab.lock();
                 if st.screencast.as_ref().is_some_and(|cast| same(cast, &want)) {
                     st.screencast = None;
@@ -370,7 +391,8 @@ impl Inner {
         });
         let inner = self.clone();
         let tab = tab.clone();
-        st.frame_timer = spawn(async move {
+        let resource = tab.resource.clone();
+        st.frame_timer = spawn(crate::browser::effects::background(resource, async move {
             tokio::time::sleep(wait).await;
             let frame = {
                 let mut st = tab.lock();
@@ -380,9 +402,11 @@ impl Inner {
             };
             let Some(frame) = frame else { return };
             if inner.has_viewers(tab.session()) {
-                inner.broadcast(tab.session(), &frame_message(&frame));
+                let _ = crate::browser::effects::run(|| {
+                    inner.broadcast(tab.session(), &frame_message(&frame))
+                });
             }
-        });
+        }));
     }
 
     // ---- control ------------------------------------------------------------
@@ -426,15 +450,22 @@ fn frame_sink(
         else {
             return;
         };
-        let mut st = tab.lock();
-        if !st.screencast.as_ref().is_some_and(|cast| same(cast, &page)) {
-            return;
+        let accept = || {
+            let mut st = tab.lock();
+            if !st.screencast.as_ref().is_some_and(|cast| same(cast, &page)) {
+                return;
+            }
+            st.last_frame = Some(LastFrame {
+                jpeg: frame.jpeg,
+                width: frame.width,
+                height: frame.height,
+            });
+            inner.schedule_frame(&tab, &mut st);
+        };
+        if let Some(guard) = &tab.resource {
+            let _ = guard.run(accept);
+        } else {
+            accept();
         }
-        st.last_frame = Some(LastFrame {
-            jpeg: frame.jpeg,
-            width: frame.width,
-            height: frame.height,
-        });
-        inner.schedule_frame(&tab, &mut st);
     })
 }

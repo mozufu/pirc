@@ -120,7 +120,7 @@ impl Inner {
     fn authority(
         &self,
         operation: &Operation,
-        caller: effects::Caller,
+        caller: Option<effects::Caller>,
         close: bool,
     ) -> effects::Guard {
         let weak = self.node.clone();
@@ -166,7 +166,8 @@ impl Inner {
                 return Err(journal::unresolved());
             }
             match &caller {
-                effects::Caller::Agent { epoch, abort } => {
+                None => effect(),
+                Some(effects::Caller::Agent { epoch, abort }) => {
                     let aborted = abort.borrow();
                     if *epoch != row.runner_epoch || *aborted {
                         return Err(ApiError::new(
@@ -177,11 +178,11 @@ impl Inner {
                     }
                     effect();
                 }
-                effects::Caller::Viewer {
+                Some(effects::Caller::Viewer {
                     client,
                     generation,
                     open,
-                } => {
+                }) => {
                     db.validate_lease(&row.id, client, *generation)?;
                     let connected = lock(open);
                     if !*connected {
@@ -189,7 +190,7 @@ impl Inner {
                     }
                     effect();
                 }
-                effects::Caller::Observer { open } => {
+                Some(effects::Caller::Observer { open }) => {
                     let connected = lock(open);
                     if !*connected {
                         return Err(ApiError::not_found("Browser viewer is closed"));
@@ -197,7 +198,7 @@ impl Inner {
                     effect();
                 }
                 #[cfg(test)]
-                effects::Caller::Test => effect(),
+                Some(effects::Caller::Test) => effect(),
             }
             if close {
                 *closing = true;
@@ -290,7 +291,9 @@ impl BrowserService for Tracked {
         Box::pin(async move {
             let caller = effects::require_caller(false)?;
             let operation = self.inner.begin(&target)?;
-            let guard = self.inner.authority(&operation, caller, op == "close");
+            let guard = self
+                .inner
+                .authority(&operation, Some(caller), op == "close");
             guard.run(|| ())?;
             if op == "close" {
                 let group = operation.group.clone();
@@ -298,9 +301,13 @@ impl BrowserService for Tracked {
                 self.inner.close_group(group).await?;
                 return Ok(serde_json::json!({"closed":true}));
             }
-            let result = effects::scope(guard.clone(), async {
-                self.inner.browser.handle(target, op, args).await
-            })
+            let resource = self.inner.authority(&operation, None, false);
+            let result = effects::with_resource(
+                resource,
+                effects::scope(guard.clone(), async {
+                    self.inner.browser.handle(target, op, args).await
+                }),
+            )
             .await;
             guard.failure().map_or(result, Err)
         })
@@ -315,7 +322,9 @@ impl BrowserService for Tracked {
         Box::pin(async move {
             let caller = effects::require_caller(false)?;
             let operation = self.inner.begin(&target)?;
-            let guard = self.inner.authority(&operation, caller, op == "close");
+            let guard = self
+                .inner
+                .authority(&operation, Some(caller), op == "close");
             guard.run(|| ())?;
             if op == "close" {
                 let group = operation.group.clone();
@@ -323,12 +332,16 @@ impl BrowserService for Tracked {
                 self.inner.close_group(group).await?;
                 return Ok(serde_json::json!({"closed":true}));
             }
-            let result = effects::scope(guard.clone(), async {
-                self.inner
-                    .browser
-                    .handle_with_abort(target, op, args, abort)
-                    .await
-            })
+            let resource = self.inner.authority(&operation, None, false);
+            let result = effects::with_resource(
+                resource,
+                effects::scope(guard.clone(), async {
+                    self.inner
+                        .browser
+                        .handle_with_abort(target, op, args, abort)
+                        .await
+                }),
+            )
             .await;
             guard.failure().map_or(result, Err)
         })
@@ -345,11 +358,15 @@ impl BrowserService for Tracked {
             let observer = message.get("type").and_then(Value::as_str) == Some("log_image");
             let caller = effects::require_caller(observer)?;
             let operation = self.inner.begin(&target)?;
-            let guard = self.inner.authority(&operation, caller, false);
+            let guard = self.inner.authority(&operation, Some(caller), false);
             guard.run(|| ())?;
-            let result = effects::scope(guard.clone(), async {
-                self.inner.browser.input(target, message).await
-            })
+            let resource = self.inner.authority(&operation, None, false);
+            let result = effects::with_resource(
+                resource,
+                effects::scope(guard.clone(), async {
+                    self.inner.browser.input(target, message).await
+                }),
+            )
             .await;
             guard.failure().map_or(result, Err)
         })
