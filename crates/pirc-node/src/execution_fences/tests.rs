@@ -249,3 +249,141 @@ async fn draining_is_idempotent_does_not_touch_files_and_never_claims_revocation
     );
     f.node.close().await;
 }
+
+#[tokio::test]
+async fn failed_or_panicked_participant_does_not_skip_other_stops() {
+    use tokio::sync::oneshot;
+    let (release, held) = oneshot::channel();
+    let (observed, stopped) = oneshot::channel();
+    let task = tokio::spawn(settle_all([
+        async {
+            held.await.unwrap();
+            Ok(())
+        }
+        .boxed(),
+        async {
+            Err(ApiError::new(
+                503,
+                "host_stop_unconfirmed",
+                "synthetic observer failure",
+            ))
+        }
+        .boxed(),
+        async {
+            panic!("synthetic observer panic");
+            #[allow(unreachable_code)]
+            Ok(())
+        }
+        .boxed(),
+        async {
+            observed.send(()).unwrap();
+            Ok(())
+        }
+        .boxed(),
+    ]));
+    tokio::time::timeout(Duration::from_secs(1), stopped)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        !task.is_finished(),
+        "pending participant must not be reported as stopped"
+    );
+    release.send(()).unwrap();
+    assert_eq!(
+        task.await.unwrap().unwrap_err().code,
+        "host_stop_unconfirmed"
+    );
+    let panic_only = settle_all([
+        async {
+            panic!("synthetic sole failure");
+            #[allow(unreachable_code)]
+            Ok(())
+        }
+        .boxed(),
+        async { Ok(()) }.boxed(),
+    ])
+    .await
+    .unwrap_err();
+    assert_eq!(panic_only.code, ApiError::internal().code);
+}
+
+#[tokio::test]
+async fn unknown_host_history_does_not_leave_live_terminals_running() {
+    let f = crate::workspace_memory::tests::Fixture::new().await;
+    let row = f.node.db.lock().get_session(&f.current).unwrap();
+    let root: std::path::PathBuf = f
+        .node
+        .db
+        .lock()
+        .get_workspace("repo")
+        .unwrap()
+        .canonical_path
+        .into();
+    let lease = f
+        .node
+        .db
+        .lock()
+        .acquire_lease(&f.current, "phone", false, 60_000)
+        .unwrap();
+    f.node
+        .terminals
+        .create(&f.current, &root, None, None, ("phone", lease.generation))
+        .unwrap();
+    let peer = f
+        .node
+        .db
+        .lock()
+        .create_session("repo", "/unused-peer", "alice")
+        .unwrap();
+    let peer_lease = f
+        .node
+        .db
+        .lock()
+        .acquire_lease(&peer.id, "phone", false, 60_000)
+        .unwrap();
+    let peer_terminal = f
+        .node
+        .terminals
+        .create(
+            &peer.id,
+            &root,
+            None,
+            None,
+            ("phone", peer_lease.generation),
+        )
+        .unwrap();
+    f.node.db.lock().execute(
+        "INSERT INTO host_command_runs VALUES('lost',?1,'repo',0,'previous-incarnation','request','running',1,1)", [&f.current],
+    ).unwrap();
+    accept(
+        &f.node.db.lock(),
+        "alice",
+        &f.current,
+        &Intent {
+            operation_id: "unknown-host".into(),
+            plan_hash: "a".repeat(64),
+            expected_workspace_id: "repo".into(),
+            expected_runner_epoch: row.runner_epoch,
+        },
+        "phone",
+        lease.generation,
+    )
+    .unwrap();
+    for _ in 0..2 {
+        let result = drain(&f.node, "alice", &f.current, "unknown-host")
+            .await
+            .unwrap();
+        assert_eq!(result.state, "blocked");
+        assert_eq!(result.error_code.as_deref(), Some("host_stop_unconfirmed"));
+        assert!(!result.revocation_confirmed && !result.target_installed);
+        let receipt = serde_json::to_value(result).unwrap();
+        assert_eq!(receipt["hostCommands"]["unresolved"], 1);
+        assert_eq!(receipt["terminals"]["observersSettled"], 1);
+        assert_eq!(receipt["terminals"]["unresolved"], 0);
+        assert!(f.node.terminals.list(&f.current).is_empty());
+        assert_eq!(f.node.terminals.list(&peer.id)[0].id, peer_terminal.id);
+        assert!(require_open(&f.node.db.lock(), &f.current).is_err());
+    }
+    f.node.close().await;
+}

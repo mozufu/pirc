@@ -15,11 +15,11 @@ use futures_util::{
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::time::Duration;
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
+use std::{panic::AssertUnwindSafe, time::Duration};
 
 type Drain = Shared<BoxFuture<'static, ApiResult<Receipt>>>;
 #[derive(Default)]
@@ -188,6 +188,39 @@ fn stage(
     db.execute("UPDATE execution_fences SET state=?4,error_code=?5,updated_at=?6 WHERE owner_user=?1 AND session_id=?2 AND operation_id=?3 AND state NOT IN ('deleted','supervisor_drained')",params![owner,session,op,state,error,now_ms()])?;
     receipt(db, owner, session, op)?.ok_or_else(|| ApiError::not_found("Transition not found"))
 }
+/// Every participant must be polled even when another fails, panics or remains
+/// pending. These are cleanup observations, not a fail-fast transaction. Keep
+/// input order for stable error selection, independent of completion order.
+async fn settle_all<'a>(
+    participants: impl IntoIterator<Item = BoxFuture<'a, ApiResult<()>>>,
+) -> ApiResult<()> {
+    let observations = participants.into_iter().map(|participant| async move {
+        AssertUnwindSafe(participant)
+            .catch_unwind()
+            .await
+            .unwrap_or_else(|_| Err(ApiError::internal()))
+    });
+    let results = futures_util::future::join_all(observations).await;
+    results.into_iter().collect()
+}
+
+async fn stop_resources(node: &Node, session: &str) -> ApiResult<()> {
+    // Runner stop can wait for a command/startup lock. Host commands must receive
+    // cancellation now, not only after that lock opens. The durable admission
+    // fence prevents a new launch while the independent observers are retiring.
+    let _host_stop = node.host_commands.stop(session);
+    settle_all([
+        node.runners.stop_session(session).boxed(),
+        crate::process_journal::retire_saved(node, session).boxed(),
+        node.host_commands.wait_session(node, session).boxed(),
+        node.terminals.dispose_session(session).boxed(),
+        // Construct inside the observed future so a synchronous service panic
+        // cannot prevent the other cleanup branches from being polled.
+        async { node.browser.close_session(session).await }.boxed(),
+    ])
+    .await
+}
+
 pub(crate) async fn drain(node: &Node, owner: &str, session: &str, op: &str) -> ApiResult<Receipt> {
     let work = {
         // One process owns the work, not the request waiting for its reply.
@@ -221,14 +254,7 @@ pub(crate) async fn drain(node: &Node, owner: &str, session: &str, op: &str) -> 
                     stage(&db, &owner, &session, &op, "stopping", None)?;
                     node.inference.revoke_session(&session);
                 }
-                let stopped = async {
-                    node.runners.stop_session(&session).await?;
-                    crate::process_journal::retire_saved(&node, &session).await?;
-                    node.terminals.dispose_session(&session).await?;
-                    node.browser.close_session(&session).await?;
-                    Ok::<(), ApiError>(())
-                }
-                .await;
+                let stopped = stop_resources(&node, &session).await;
                 let (state, error) = match stopped {
                     Ok(()) => ("supervisor_drained", None),
                     Err(error) => (

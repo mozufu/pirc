@@ -74,6 +74,8 @@
 //!   relayed request) goes away.
 
 mod command_gate;
+#[cfg(test)]
+mod drain_tests;
 pub mod framing;
 pub(crate) mod host;
 mod process;

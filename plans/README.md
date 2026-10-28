@@ -137,6 +137,7 @@ Memory cold cutover now holds Node admission through its checked durable append 
 Node schema 2017 retains panel-terminal launch and stop observations across close/cancellation/restart. Unknown shells block deletion and drain instead of disappearing with their UI; see the [terminal-supervision checkpoint](unified-conversations.md#u4-implementation-checkpoint-durable-terminal-supervision-2026-10-28).
 Node schema 2018 retains browser group origins and close outcomes, including canceled requests, late popups and uncertain prior groups. Unconfirmed closure blocks deletion/drain; see the [browser-supervision checkpoint](unified-conversations.md#u4-implementation-checkpoint-durable-browser-supervision-2026-10-28).
 Foreground browser commands now retain their caller and recheck at the first pipe write; later queued commands cannot reuse revoked authority. Background browser resources and complete retirement remain open.
+The local [independent-drain checkpoint](unified-conversations.md#u4-implementation-checkpoint-independent-resource-drain-2026-10-28) prevents runner locks and failed observations from skipping other resource stops. Unknown historical processes remain blocked; no public transition is enabled.
 Resource grants, project moves and full effect fences remain open. U1 still needs device/deployment acceptance
 before activation. Detailed validation and the previously reproduced macOS snapshot
 limitation are recorded in the checkpoints; no full Linux/device acceptance is claimed.

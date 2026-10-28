@@ -176,3 +176,141 @@ async fn approved_host_commands_settle_before_stop_and_transition_acknowledgemen
     assert_eq!(std::fs::read_to_string(first).unwrap(), first_pid);
     assert_eq!(std::fs::read_to_string(second).unwrap(), second_pid);
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn crash_lost_host_observation_does_not_skip_terminal_shutdown_on_drain() {
+    let server = FakeGateway::bind().await;
+    let Some(mut node) = LoneNode::start_with(
+        server.port(),
+        NodeOptions {
+            env: vec![
+                ("PIRC_BROWSER", "false".into()),
+                ("PIRC_TERMINAL_SHELL", "/bin/sh".into()),
+                ("TMPDIR", "{run_dir}".into()),
+            ],
+            ..Default::default()
+        },
+    ) else {
+        return;
+    };
+    let mut gw = Gateway::new(server.accept().await);
+    gw.link.recv().await;
+    gw.link
+        .send(&registered(models("fake", "fake-model", "low"), json!({})))
+        .await;
+    let (source, control) = gw.session().await;
+    let marker = node.dir.path().join("workspace/crash-host");
+    approved(&mut gw, &source, &control, "crash-host", &marker).await;
+    let pid = std::fs::read_to_string(&marker).unwrap();
+    // Kill only this fixture's Node. Its durable host launch now has no observer;
+    // the replacement Node must not manufacture a settled receipt or signal a PID
+    // from that historical journal.
+    node.restart(true);
+    drop(gw);
+    let mut gw = Gateway::new(server.accept().await);
+    gw.link.recv().await;
+    gw.link
+        .send(&registered(models("fake", "fake-model", "low"), json!({})))
+        .await;
+    let base = format!("/api/sessions/{source}");
+    let acquired = gw
+        .ask(
+            "POST",
+            &format!("{base}/control/acquire"),
+            Some(json!({"clientId":"browser","force":true})),
+        )
+        .await;
+    assert_eq!(acquired["data"]["status"], 200, "{acquired}");
+    let control = acquired["data"]["body"]["lease"]["generation"].clone();
+    let (peer, peer_control) = gw.session().await;
+    for (session, generation) in [(&source, &control), (&peer, &peer_control)] {
+        let created = gw
+            .ask(
+                "POST",
+                &format!("/api/sessions/{session}/terminals"),
+                Some(json!({"clientId":"browser","generation":generation})),
+            )
+            .await;
+        assert_eq!(created["data"]["status"], 201, "{created}");
+    }
+    let before = gw.ask("GET", &format!("{base}/snapshot"), None).await;
+    let accepted = gw.ask("POST", &format!("{base}/execution-fences"), Some(json!({
+        "intent":{"operationId":"lost-host","planHash":"c".repeat(64),"expectedWorkspaceId":"test",
+        "expectedRunnerEpoch":before["data"]["body"]["session"]["runnerEpoch"]},
+        "clientId":"browser","generation":control
+    }))).await;
+    assert_eq!(accepted["data"]["status"], 200, "{accepted}");
+    let path = format!("{base}/execution-fences/lost-host");
+    for _ in 0..2 {
+        let drained = gw
+            .ask("POST", &format!("{path}/drain"), Some(json!({})))
+            .await;
+        assert_eq!(drained["data"]["status"], 200, "{drained}");
+        let receipt = &drained["data"]["body"]["transition"];
+        assert_eq!(receipt["state"], "blocked", "{drained}");
+        assert_eq!(receipt["errorCode"], "host_stop_unconfirmed");
+        assert_eq!(receipt["hostCommands"]["unresolved"], 1);
+        assert_eq!(receipt["terminals"]["observersSettled"], 1);
+        assert_eq!(receipt["terminals"]["unresolved"], 0);
+        assert_eq!(receipt["revocationConfirmed"], false);
+        assert_eq!(receipt["targetInstalled"], false);
+        let terminals = gw.ask("GET", &format!("{base}/terminals"), None).await;
+        assert_eq!(terminals["data"]["body"]["terminals"], json!([]));
+        let peer_terminals = gw
+            .ask("GET", &format!("/api/sessions/{peer}/terminals"), None)
+            .await;
+        assert_eq!(
+            peer_terminals["data"]["body"]["terminals"]
+                .as_array()
+                .unwrap()
+                .len(),
+            1
+        );
+    }
+    let denied = gw
+        .ask(
+            "POST",
+            &format!("{base}/terminals"),
+            Some(json!({"clientId":"browser","generation":control})),
+        )
+        .await;
+    assert_eq!(denied["data"]["status"], 409, "{denied}");
+    assert_eq!(
+        denied["data"]["body"]["error"]["code"],
+        "environment_transition_pending"
+    );
+    node.restart(false);
+    drop(gw);
+    let mut gw = Gateway::new(server.accept().await);
+    gw.link.recv().await;
+    gw.link
+        .send(&registered(models("fake", "fake-model", "low"), json!({})))
+        .await;
+    let retained = gw.ask("GET", &path, None).await;
+    assert_eq!(retained["data"]["body"]["transition"]["state"], "blocked");
+    assert_eq!(
+        retained["data"]["body"]["transition"]["hostCommands"]["unresolved"],
+        1
+    );
+    assert_eq!(
+        retained["data"]["body"]["transition"]["terminals"]["observersSettled"],
+        1
+    );
+    assert_eq!(std::fs::read_to_string(&marker).unwrap(), pid);
+    // The deliberately orphaned fixture command has a finite lifetime. Wait for
+    // its own exit rather than leaving test work behind or killing by saved PID.
+    tokio::time::timeout(Duration::from_secs(35), async {
+        while std::process::Command::new("/bin/kill")
+            .args(["-0", pid.trim()])
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .status()
+            .unwrap()
+            .success()
+        {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+    })
+    .await
+    .expect("bounded fixture host command exits without journal-based signaling");
+}

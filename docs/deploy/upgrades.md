@@ -273,6 +273,8 @@ There is deliberately no release/regrant API before replacement-policy installat
 and acknowledgement are implemented. Delete follows its existing destructive
 semantics; it is not a substitute for a non-destructive transition recovery flow.
 
+Local drain handling now starts independent resource cleanup together: an unresolved host command or waiting runner cannot prevent terminal/browser stop attempts. It still waits for every participant and retains uncertainty; clearing a journal is not recovery. A canceled request does not cancel the owned drain. This is a behavior-only change, with no schema migration.
+
 `supervisor_drained` records tracked supervisor shutdown only. Every response still
 says `revocationConfirmed: false`, `targetInstalled: false`; never treat it as a
 ready environment. OS descendants/descriptors, pending effects, crash recovery and

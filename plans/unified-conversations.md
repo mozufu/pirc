@@ -4259,3 +4259,56 @@ or publication was performed. The owned build/log directory and temporary browse
 launcher (about **2.5 GiB**) plus the generated rejected snapshot are removed after
 validation. APKs, SDKs, shared browser caches, user data and other agents' work
 remain. This checkpoint is committed locally; the full goal remains open.
+
+## U4 implementation checkpoint: independent resource drain (2026-10-28)
+
+Local-only continuation of `ab94a678`. The transition drain previously awaited
+runner shutdown, saved sandbox identities, terminals and browser cleanup in
+sequence with early error returns. An unknown host-command observation could
+therefore block terminal/browser shutdown, and a runner command lock could delay
+all other resource stops.
+
+Drain now starts the independent observers together and waits for all of their
+results. Host commands receive cancellation before waiting for the runner lock.
+A failed or unwinding observer does not skip other participants; error selection
+has a stable order, while each resource journal retains its own evidence. The
+existing owned drain survives a canceled request; duplicate requests join the
+same operation. A still-pending participant keeps the operation stopping. An
+unknown historical host process remains blocked even after the live terminal
+observer settles; no saved numeric PID is used to invent a successful stop.
+Another conversation's terminals and admission remain unaffected.
+
+This does not add a public switch, Gateway coordinator, replacement mount/policy
+installation or complete OS revocation. The receipt still reports
+`revocationConfirmed: false` and `targetInstalled: false`; U1 remains gated,
+and Node environment enforcement remains `not_tracked`. All schema, protocol,
+dependency, package version and Nix hash versions are unchanged.
+
+Validation: **569 Node library cases passed** (four top-level subprocess helper
+entrypoints remain ignored). New cases cover a held runner command lock with live
+host/terminal retirement, an abandoned drain waiter, failures/panic isolation and
+a historical unknown host observation with peer preservation. Strict all-target
+Node/conformance Clippy, Rust fmt, changed-document formatting, diff checks and
+149 local document targets passed.
+
+Rebuilt Node/Gateway binaries passed **23 required real-process cases** for
+checkpoints, first-send admission/creation, execution/host/inference fences, memory,
+Node links/terminals, project deletion and streams. The new process case crashes
+the fixture Node during an approved bounded host command, restarts it, creates
+new terminals and drains twice: host uncertainty remains, the source terminal
+settles, the peer terminal survives, and a second restart retains the receipt.
+The bounded orphan fixture command exits without journal-based signaling.
+
+The focused **real Chromium/ffmpeg browser fence case also passed**, verifying
+recording retirement and subsequent work in another conversation sharing the
+workspace. It used the dedicated Chrome for Testing Headless Shell
+153.0.8010.12 and isolated local fixtures; user Chrome was not used or closed.
+This is one focused case, not a rerun or a green claim for the entire browser
+golden suite; the earlier blocked-iframe snapshot difference remains recorded.
+
+No Web/Flutter code changed and no device/emulator, local Nix, remote CI,
+deployment or publication was performed. The owned build/log directory (about
+**2.0 GiB**) is removed after testing; APKs, SDKs, shared browser caches, user data
+and other agents' work remain. This checkpoint is committed locally. Gateway
+transition coordination, full resource revocation proof, replacement-policy
+installation and Web/App transition controls remain outstanding.
