@@ -83,6 +83,12 @@ impl FakePage {
 }
 
 impl PageApi for FakePage {
+    // This engine has no autonomous CDP/network tasks. Real pages must bind the
+    // guard; the required trait method prevents a future engine silently omitting it.
+    fn bind_resource(&self, _guard: crate::browser::effects::Guard) -> crate::error::ApiResult<()> {
+        Ok(())
+    }
+
     fn subscribe(&self) -> BoxStream<'static, PageEvent> {
         let (send, receive) = mpsc::unbounded_channel();
         self.subscribers.lock().unwrap().push(send);

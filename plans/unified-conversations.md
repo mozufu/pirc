@@ -49,7 +49,10 @@ completion. Durable terminal and [browser group supervision](#u4-implementation-
 coordination, OS enforcement, replacement binding and Web/App controls remain.
 The current local [browser-resource checkpoint](#u4-implementation-checkpoint-browser-resource-guards-and-recorder-retirement-2026-10-28)
 scopes manager background effects and recorder writes/exit observation to the
-original environment, independently of foreground controller/Agent lifetimes.
+original environment, independently of foreground controller/Agent lifetimes. The following
+[page-resource checkpoint](#u4-implementation-checkpoint-page-owned-engine-and-network-admission-2026-10-28)
+extends that authority into engine background initialization and intercepted
+network requests, including decisions delayed by DNS.
 
 Delivered U1 behavior:
 
@@ -4191,3 +4194,68 @@ Changed-document formatting, local link targets and diff checks pass. The owned
 build/baseline/log directory (about **3.0 GiB**) and generated rejected snapshot
 are removed after validation; dedicated browser cache, APKs, SDKs, user data and
 other agents' work remain. The slice is committed locally without rebase/push.
+
+## U4 implementation checkpoint: page-owned engine and network admission (2026-10-28)
+
+Local-only continuation of `d500f2d3`; publication remains at `798aa817`.
+Manager adoption now binds an engine page to the original resource guard. The
+binding is assigned once and cannot silently change to another conversation.
+Page background tasks created before adoption consult the current binding at the
+actual effect, rather than keeping an unbound result forever. Popups inherit the
+opener's binding before initialization; dedicated workers, out-of-process iframes,
+dialog handling, isolated-world creation and their nested initialization use the
+same resource scope. Foreground callers retain their stricter actor checks.
+
+Network event handlers explicitly carry that authority into their spawned tasks.
+Every intercepted request/redirect, preflight response, authentication response
+and WebSocket-mock verdict rechecks at its CDP write. A DNS lookup begun before
+revocation cannot later authorize a request. Trusted cleanup may only fail a
+paused request or cancel authentication; it does not resume a target or evaluate
+page JavaScript after revocation. A peer conversation's CDP session remains usable.
+Locks are released before asynchronous DNS/reply waits; adoption and an unbound
+startup write are serialized, without holding the page binding lock while entering
+the Node authority gate.
+
+This is not complete browser containment. Shared browser-session backstop and
+context startup, unowned/initial targets and service/shared workers still need
+ownership/retirement contracts; they do not borrow a random page's grant. Already
+admitted writes/requests, established WebSockets and other egress outside Fetch
+cannot be recalled by these checks. A pending DNS task is prevented from a later
+allow effect, not proven stopped by a close receipt. The previous host-policy
+gaps remain. Full OS/descriptor/descendant proof, Gateway coordination, replacement
+policy acknowledgement and Web/App transition controls are still outstanding.
+No public switch/activation, schema, wire format, dependency, package version or
+Nix hash changes: revocation/installation flags remain false and U1 stays gated.
+
+Validation: **566 Node library cases passed**, with four subprocess helper
+entrypoints ignored at the top level but invoked by parent cases. The final
+browser-only rerun passed **98 cases**; strict all-target Node/conformance Clippy,
+Rust fmt, changed-document formatting and local link/diff checks passed. Three
+new cases exercise late page binding, rejected rebinding, popup inheritance,
+initialization denial, trusted target close, DNS-delayed HTTP/WebSocket verdicts,
+preflight/authentication refusal and preservation of an unrelated CDP session.
+The fake-page close fixture supplies the expected close event; its corrected
+final run completes rather than leaving a waiter behind.
+
+Rebuilt Node/Gateway binaries passed **22 required process regressions** for
+checkpoints, conversation admission/creation, execution fences, host commands,
+inference, memory, Node links/terminals, project deletion and streams. These
+remain separate from full OS revocation/target installation acceptance.
+
+Real-browser validation used the existing dedicated Headless Shell
+**153.0.8010.12**, isolated profiles and local fixture pages. Its default launch
+kept cross-site frames in-process, so three engine cases requiring OOPIFs failed.
+An owned temporary launcher added **`--site-per-process`** to the same executable:
+all **19 engine cases and 3 manager cases passed**, including iframe swaps/crashes.
+This is an explicit test precondition, not a change to production launch flags.
+The real Node/Agent/Chromium/ffmpeg suite passed **6 of 7 cases**. The sole fetch
+snapshot difference remains precisely the previously documented blocked-iframe
+text and length (171→116); every other field matches the original golden.
+The original snapshot stays unchanged. The prior `798aa817` control experiment
+reproduced that difference; this turn does not claim a green full browser suite.
+
+No Web/Flutter code changed; no device/emulator, local Nix, remote CI, deployment
+or publication was performed. The owned build/log directory and temporary browser
+launcher (about **2.5 GiB**) plus the generated rejected snapshot are removed after
+validation. APKs, SDKs, shared browser caches, user data and other agents' work
+remain. This checkpoint is committed locally; the full goal remains open.

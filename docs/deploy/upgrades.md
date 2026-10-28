@@ -1,5 +1,21 @@
 # Upgrades
 
+## Local checkpoint: page-owned engine and network admission
+
+A managed page now passes its original resource authority to background engine
+initialization and intercepted network requests. Popup/iframe/dedicated-worker
+initialization, DNS-delayed HTTP decisions, authentication and WebSocket-mock
+verdicts cannot start a new guarded effect after that authority is revoked.
+Cleanup can refuse a paused request or cancel authentication without closing a
+peer conversation's shared connection. A page cannot be rebound to a different
+resource owner.
+
+This adds no schema or deployment migration. It is local-only code and does not
+enable workspace switching or first-Send activation. Shared context/unowned
+resources and established connections still require separate containment; see the
+[page-resource checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-page-owned-engine-and-network-admission-2026-10-28)
+for the exact validation scope and remaining limits.
+
 ## Local checkpoint: browser resource and recorder retirement
 
 Browser background display/capture and recording writes now retain their

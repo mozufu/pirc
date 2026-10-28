@@ -129,3 +129,61 @@ pub(crate) async fn background<T>(guard: Option<Guard>, future: impl Future<Outp
         None => future.await,
     }
 }
+
+/// A page is initialized as a blank target before the manager adopts it. Its
+/// existing background tasks must see the authority assigned at adoption. Popups
+/// and their frame/worker tasks share this slot with their opener; it cannot be
+/// rebound to another conversation. Before adoption, blank-target startup keeps
+/// the context's existing authority; unowned targets require separate containment.
+#[derive(Clone)]
+pub(crate) struct PageResource {
+    bound: Arc<Mutex<Option<Guard>>>,
+    guard: Guard,
+}
+impl Default for PageResource {
+    fn default() -> Self {
+        let bound = Arc::new(Mutex::new(None::<Guard>));
+        let guard = Guard::new({
+            let bound = bound.clone();
+            move |effect| {
+                let slot = lock(&bound);
+                match slot.clone() {
+                    Some(guard) => {
+                        // Node gates precede page locks during adoption. Never
+                        // retain this lock while entering the Node gate.
+                        drop(slot);
+                        guard.run(effect)
+                    }
+                    None => {
+                        // Serialize unbound startup effects with first adoption.
+                        effect();
+                        Ok(())
+                    }
+                }
+            }
+        });
+        Self { bound, guard }
+    }
+}
+impl PageResource {
+    pub(crate) fn bind(&self, guard: Guard) -> ApiResult<()> {
+        let mut slot = lock(&self.bound);
+        if let Some(previous) = &*slot {
+            if !Arc::ptr_eq(&previous.gate, &guard.gate) {
+                return Err(ApiError::conflict(
+                    "Browser page already belongs to another resource",
+                ));
+            }
+        } else {
+            *slot = Some(guard);
+        }
+        Ok(())
+    }
+    pub(crate) fn spawn<F>(self, future: F) -> tokio::task::JoinHandle<F::Output>
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
+    {
+        tokio::spawn(background(Some(self.guard), future))
+    }
+}

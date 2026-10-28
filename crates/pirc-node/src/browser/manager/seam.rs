@@ -121,6 +121,8 @@ pub enum Selector {
 
 /// `Page` as the manager uses it.
 pub trait PageApi: Send + Sync {
+    /// Attach resource authority to already-running engine background tasks.
+    fn bind_resource(&self, guard: crate::browser::effects::Guard) -> crate::error::ApiResult<()>;
     /// Events from now on, ending after [`PageEvent::Closed`].
     fn subscribe(&self) -> BoxStream<'static, PageEvent>;
     fn url(&self) -> String;
@@ -220,6 +222,10 @@ pub fn without_argument(function: &str) -> String {
 }
 
 impl PageApi for Page {
+    fn bind_resource(&self, guard: crate::browser::effects::Guard) -> crate::error::ApiResult<()> {
+        Page::bind_resource(self, guard)
+    }
+
     fn subscribe(&self) -> BoxStream<'static, PageEvent> {
         futures_util::stream::unfold(Page::subscribe(self), |mut events| async move {
             let event = match events.recv().await? {

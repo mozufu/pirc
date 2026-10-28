@@ -71,6 +71,13 @@ pub struct Page {
 }
 
 impl Page {
+    pub(crate) fn bind_resource(
+        &self,
+        guard: crate::browser::effects::Guard,
+    ) -> crate::error::ApiResult<()> {
+        self.shared.resource.bind(guard)
+    }
+
     /// The CDP target id (stable for the page's life).
     pub fn target_id(&self) -> &str {
         &self.shared.target_id
@@ -403,6 +410,7 @@ pub(super) struct Shared {
     pub(super) browser: Session,
     /// `__playwright_utility_world_<guid>`.
     pub(super) world: String,
+    resource: crate::browser::effects::PageResource,
     mac: bool,
     installer: Installer,
     pub(super) state: Mutex<State>,
@@ -719,6 +727,11 @@ impl Page {
             world,
             mac: setup.mac,
             installer: setup.installer,
+            resource: setup
+                .opener
+                .as_ref()
+                .map(|opener| opener.shared.resource.clone())
+                .unwrap_or_default(),
             state: Mutex::new(State {
                 closed: false,
                 crashed: false,
@@ -746,7 +759,7 @@ impl Page {
         setup.session.listen_into(events);
         {
             let shared = shared.clone();
-            tokio::spawn(async move {
+            shared.resource.clone().spawn(async move {
                 let mut changed = shared.changed.subscribe();
                 loop {
                     tokio::select! {
@@ -768,7 +781,7 @@ impl Page {
             let session = setup.session.clone();
             let target = setup.target_id.clone();
             let opener = setup.opener;
-            tokio::spawn(async move {
+            shared.resource.clone().spawn(async move {
                 // `new CRPage`: a popup takes the size its opener's latest
                 // `window.open` asked for; that event came before this
                 // target, possibly still queued in the opener's loop.
@@ -1279,7 +1292,7 @@ fn frame_event(shared: &Arc<Shared>, state: &mut State, target: &str, event: &Ev
             // `beforeunload` and dismissing the others.
             let accept = params["type"].as_str() == Some("beforeunload");
             let session = state.sessions[target].session.clone();
-            tokio::spawn(async move {
+            shared.resource.clone().spawn(async move {
                 let _ = session
                     .call("Page.handleJavaScriptDialog", json!({ "accept": accept }))
                     .await;
@@ -1395,7 +1408,7 @@ fn echo_event(shared: &Arc<Shared>, state: &mut State, target: &str, params: &Va
             for frame_id in local {
                 let session = session.session.clone();
                 let world = shared.world.clone();
-                tokio::spawn(async move {
+                shared.resource.clone().spawn(async move {
                     let _ = session
                         .call(
                             "Page.createIsolatedWorld",
@@ -1790,7 +1803,7 @@ fn attached(shared: &Arc<Shared>, state: &mut State, target: &str, params: &Valu
                 .insert(session_id.to_owned(), Route::Frame(child.clone()));
             session.listen_into(shared.events.clone());
             let shared = shared.clone();
-            tokio::spawn(async move {
+            shared.resource.clone().spawn(async move {
                 let _ = init_session(&shared, child, session, false, None).await;
             });
         }
@@ -1817,7 +1830,7 @@ fn attached(shared: &Arc<Shared>, state: &mut State, target: &str, params: &Valu
             let shared = shared.clone();
             let owner = target.to_owned();
             let session_id = session_id.to_owned();
-            tokio::spawn(async move {
+            shared.resource.clone().spawn(async move {
                 let _ = session.call("Runtime.enable", json!({})).await;
                 let _ = session.call("Network.enable", json!({})).await;
                 let Ok((installed, replies)) =
@@ -1852,7 +1865,7 @@ fn attached(shared: &Arc<Shared>, state: &mut State, target: &str, params: &Valu
         }
         _ => {
             let session_id = session_id.to_owned();
-            tokio::spawn(async move {
+            shared.resource.clone().spawn(async move {
                 let _ = session
                     .call("Runtime.runIfWaitingForDebugger", json!({}))
                     .await;
@@ -1886,7 +1899,7 @@ fn detached(shared: &Arc<Shared>, state: &mut State, target: &str, params: &Valu
     }
     let session = state.sessions[target].session.clone();
     let events = shared.events.clone();
-    tokio::spawn(async move {
+    shared.resource.clone().spawn(async move {
         let _ = session
             .call_echo(
                 "Page.enable",
@@ -1989,7 +2002,7 @@ fn start_idle_timer(shared: &Arc<Shared>, state: &mut State, key: FrameKey) {
         return;
     }
     let weak = Arc::downgrade(shared);
-    let task = tokio::spawn(async move {
+    let task = shared.resource.clone().spawn(async move {
         tokio::time::sleep(Duration::from_millis(500)).await;
         let Some(shared) = weak.upgrade() else {
             return;
@@ -2423,6 +2436,94 @@ impl std::fmt::Debug for Page {
 mod tests {
     use super::super::cdp::Fake;
     use super::*;
+
+    #[tokio::test]
+    async fn late_page_binding_fences_initialization_and_is_inherited_by_popups() {
+        use crate::browser::effects::Guard;
+        let mut fake = Fake::new();
+        let connection = fake.connection.clone();
+        let installer: Installer = Arc::new(|_, _| {
+            Box::pin(async {
+                Ok((
+                    None,
+                    Box::pin(async { Ok(()) }) as super::super::network::Replies,
+                ))
+            })
+        });
+        let page = Page::attach(PageSetup {
+            target_id: "T".into(),
+            session: connection.session("S"),
+            browser: connection.browser(),
+            installer: installer.clone(),
+            viewport: (1280, 800),
+            mac: false,
+            opener: None,
+        });
+        let window = fake.command().await;
+        assert_eq!(window["method"], "Browser.getWindowForTarget");
+        let allowed = Arc::new(Mutex::new(true));
+        let guard = Guard::new({
+            let allowed = allowed.clone();
+            move |effect| {
+                let allowed = allowed.lock().unwrap();
+                if !*allowed {
+                    return Err(crate::error::ApiError::conflict("revoked"));
+                }
+                effect();
+                Ok(())
+            }
+        });
+        page.bind_resource(guard.clone()).unwrap();
+        page.bind_resource(guard).unwrap();
+        assert!(
+            page.bind_resource(Guard::new(|effect| {
+                effect();
+                Ok(())
+            }))
+            .is_err()
+        );
+        *allowed.lock().unwrap() = false;
+        fake.send(json!({"id":window["id"],"sessionId":"S","result":{"windowId":1}}))
+            .await;
+        let initialized = tokio::time::timeout(
+            Duration::from_secs(2),
+            page.shared.wait(|s| s.initialized.clone()),
+        )
+        .await
+        .unwrap();
+        assert!(initialized.is_err());
+        let popup = Page::attach(PageSetup {
+            target_id: "P".into(),
+            session: connection.session("popup"),
+            browser: connection.browser(),
+            installer,
+            viewport: (1280, 800),
+            mac: false,
+            opener: Some(page.clone()),
+        });
+        let initialized = tokio::time::timeout(
+            Duration::from_secs(2),
+            popup.shared.wait(|s| s.initialized.clone()),
+        )
+        .await
+        .unwrap();
+        assert!(initialized.is_err());
+        connection.session("peer").send("peer-sentinel", json!({}));
+        assert_eq!(fake.command().await["method"], "peer-sentinel");
+        // Trusted target close is outside the retired background scope.
+        let close = popup.close();
+        let reply = async {
+            let close = fake.command().await;
+            assert_eq!(close["method"], "Target.closeTarget");
+            fake.send(json!({"id":close["id"],"result":{"success":true}}))
+                .await;
+            popup.did_close();
+        };
+        let (closed, ()) = tokio::join!(close, reply);
+        closed.unwrap();
+        page.did_close();
+        popup.did_close();
+    }
 
     #[tokio::test]
     async fn lets_the_target_run_once_every_initialization_command_is_sent() {

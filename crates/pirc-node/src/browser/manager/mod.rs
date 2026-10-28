@@ -897,6 +897,9 @@ impl Inner {
             if state.closing || state.closing_sessions.contains(tab.session()) || st.closed {
                 return Err(closing_error());
             }
+            if let Some(guard) = &tab.resource {
+                page.bind_resource(guard.clone())?;
+            }
             st.pages.push(page.clone());
             st.active = Some(page.clone());
             tab.listeners.fetch_add(1, Ordering::AcqRel);

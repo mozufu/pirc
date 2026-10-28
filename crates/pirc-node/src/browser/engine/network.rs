@@ -115,6 +115,14 @@
 //!   the same socket. A page `close()` before the verdict is relayed as
 //!   Playwright's client does (`closeServer`, then `closePage`).
 //!
+//! Page-owned background handlers inherit the page's resource authority, which
+//! the manager binds at adoption and popups inherit from their opener. DNS waits
+//! do not preserve an old allow decision: the actual CDP write rechecks authority.
+//! A retired request/challenge can still be refused by trusted cleanup, but no
+//! page JavaScript is evaluated to deliver a late WebSocket verdict. This does
+//! not scope the shared browser-session backstop or revoke established sockets;
+//! those still need context/OS containment and observed resource retirement.
+//!
 //! Accepted gaps (decided with the user on 2026-10-12): each is equal to
 //! TS, whose Playwright guard has the same holes, and through each an
 //! untrusted page reaches a blocked host (verified with Chromium 153
@@ -173,8 +181,8 @@ use futures_util::future::{BoxFuture, join_all};
 
 use super::Result;
 use super::cdp::{CdpError, Event, Session};
-use crate::browser::assets;
 use crate::browser::hosts::HostGuard;
+use crate::browser::{assets, effects};
 
 /// What kind of target a session is (`targetInfo.type`).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -326,7 +334,11 @@ pub async fn install_split(
     }
     // Listen before anything can pause.
     let events = session.listen();
-    let task = tokio::spawn(handle_events(session.clone(), events, guard));
+    let task = tokio::spawn(effects::inherit(handle_events(
+        session.clone(),
+        events,
+        guard,
+    )));
     let installed = Installed { task: Some(task) };
     if kind == TargetKind::Browser {
         session
@@ -419,23 +431,27 @@ async fn handle_events(
                 let session = session.clone();
                 let guard = guard.clone();
                 let continued = continued.clone();
-                tokio::spawn(async move {
+                tokio::spawn(effects::inherit(async move {
                     on_request_paused(&session, &guard, &continued, event.params).await;
-                });
+                }));
             }
             "Fetch.authRequired" => {
                 let session = session.clone();
-                tokio::spawn(async move {
-                    let _ = session
+                tokio::spawn(effects::inherit(async move {
+                    let request = event.params["requestId"].clone();
+                    let result = session
                         .call(
                             "Fetch.continueWithAuth",
                             json!({
-                                "requestId": event.params["requestId"],
-                                "authChallengeResponse": { "response": "Default" },
+                                "requestId": request,
+                                "authChallengeResponse": { "response": "Default" }
                             }),
                         )
                         .await;
-                });
+                    if result.is_err() && effects::check().is_err() {
+                        reject_fetch(&session, request, true).await;
+                    }
+                }));
             }
             "Network.loadingFinished" | "Network.loadingFailed" => {
                 if let Some(id) = event.params["requestId"].as_str() {
@@ -445,9 +461,9 @@ async fn handle_events(
             "Runtime.bindingCalled" if event.params["name"] == PLAYWRIGHT_BINDING => {
                 let session = session.clone();
                 let guard = guard.clone();
-                tokio::spawn(
-                    async move { on_binding_called(&session, &guard, event.params).await },
-                );
+                tokio::spawn(effects::inherit(async move {
+                    on_binding_called(&session, &guard, event.params).await
+                }));
             }
             _ => {}
         }
@@ -499,6 +515,10 @@ async fn on_request_paused(
     paused: Value,
 ) {
     let request_id = paused["requestId"].clone();
+    if effects::check().is_err() {
+        reject_fetch(session, request_id, false).await;
+        return;
+    }
     let network_id = paused["networkId"].as_str();
     let hop = network_id.is_some_and(|id| continued.contains(id));
     // A frame's navigation (not one of its hops) forgets the hop refused in
@@ -546,7 +566,38 @@ async fn on_request_paused(
             None => proceed(),
         },
     };
-    let _ = session.call(method, params).await;
+    if session.call(method, params).await.is_err() && effects::check().is_err() {
+        reject_fetch(session, request_id, false).await;
+    }
+}
+
+/// Only a refusal may bypass retired authority. Do not resume the target or
+/// evaluate page JavaScript in this cleanup task; other sessions stay connected.
+async fn reject_fetch(session: &Session, request: Value, auth: bool) {
+    let session = session.clone();
+    let _ = tokio::spawn(async move {
+        if auth {
+            session
+                .call(
+                    "Fetch.continueWithAuth",
+                    json!({
+                        "requestId": request,
+                        "authChallengeResponse": { "response": "CancelAuth" }
+                    }),
+                )
+                .await
+        } else {
+            session
+                .call(
+                    "Fetch.failRequest",
+                    json!({
+                        "requestId": request, "errorReason": "BlockedByClient"
+                    }),
+                )
+                .await
+        }
+    })
+    .await;
 }
 
 /// A WebSocket mock's report (`binding({type, id, ...})`) and what
@@ -608,6 +659,9 @@ pub fn socket_action(payload: &str) -> SocketAction {
 }
 
 async fn on_binding_called(session: &Session, guard: &HostGuard, params: Value) {
+    if effects::check().is_err() {
+        return;
+    }
     let context = params["executionContextId"].clone();
     let request = match socket_action(params["payload"].as_str().unwrap_or_default()) {
         SocketAction::Ignore => return,
@@ -632,6 +686,174 @@ async fn on_binding_called(session: &Session, guard: &HostGuard, params: Value) 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn resource_revocation_during_dns_refuses_fetch_and_auth_but_preserves_a_peer() {
+        use super::super::cdp::Fake;
+        use crate::browser::effects::{Guard, PageResource};
+        let mut fake = Fake::new();
+        let session = fake.connection.session("source");
+        let lookup = Arc::new(tokio::sync::Notify::new());
+        let release = Arc::new(tokio::sync::Notify::new());
+        let host = Arc::new(HostGuard::from_policy::<&str>(
+            &[],
+            None,
+            &[],
+            Arc::new({
+                let lookup = lookup.clone();
+                let release = release.clone();
+                move |_| {
+                    let lookup = lookup.clone();
+                    let release = release.clone();
+                    Box::pin(async move {
+                        lookup.notify_one();
+                        release.notified().await;
+                        Ok(vec!["8.8.8.8".parse().unwrap()])
+                    })
+                }
+            }),
+        ));
+        let resource = PageResource::default();
+        // Initialization precedes manager adoption. Its event task must see a
+        // later binding, not capture an unbound/allow verdict forever.
+        let install = resource.clone().spawn({
+            let session = session.clone();
+            let host = host.clone();
+            async move { install(&session, TargetKind::Browser, host).await }
+        });
+        let command = fake.command().await;
+        assert_eq!(command["method"], "Fetch.enable");
+        fake.send(json!({"id":command["id"],"sessionId":"source","result":{}}))
+            .await;
+        let _installed = install.await.unwrap().unwrap();
+        let allowed = Arc::new(Mutex::new(true));
+        resource
+            .bind(Guard::new({
+                let allowed = allowed.clone();
+                move |effect| {
+                    let allowed = allowed.lock().unwrap();
+                    if !*allowed {
+                        return Err(crate::error::ApiError::conflict("revoked"));
+                    }
+                    effect();
+                    Ok(())
+                }
+            }))
+            .unwrap();
+        fake.send(json!({"sessionId":"source","method":"Fetch.requestPaused","params":{
+            "requestId":"dns-wait","request":{"url":"https://fixture.example/path","method":"GET"}
+        }})).await;
+        tokio::time::timeout(std::time::Duration::from_secs(2), lookup.notified())
+            .await
+            .unwrap();
+        *allowed.lock().unwrap() = false;
+        release.notify_one();
+        let denied = fake.command().await;
+        assert_eq!(denied["method"], "Fetch.failRequest", "{denied}");
+        assert_eq!(denied["params"]["requestId"], "dns-wait");
+        fake.send(json!({"id":denied["id"],"sessionId":"source","result":{}}))
+            .await;
+        for (event, params, method, field, value) in [
+            (
+                "Fetch.authRequired",
+                json!({"requestId":"auth"}),
+                "Fetch.continueWithAuth",
+                "authChallengeResponse",
+                json!({"response":"CancelAuth"}),
+            ),
+            (
+                "Fetch.requestPaused",
+                json!({"requestId":"preflight","request":{"url":"https://fixture.example/","method":"OPTIONS","headers":{"Access-Control-Request-Method":"POST"}}}),
+                "Fetch.failRequest",
+                "errorReason",
+                json!("BlockedByClient"),
+            ),
+        ] {
+            fake.send(json!({"sessionId":"source","method":event,"params":params}))
+                .await;
+            let denied = fake.command().await;
+            assert_eq!(denied["method"], method, "{denied}");
+            assert_eq!(denied["params"][field], value, "{denied}");
+            fake.send(json!({"id":denied["id"],"sessionId":"source","result":{}}))
+                .await;
+        }
+        let peer = fake.connection.session("peer");
+        let continued = Continued::default();
+        let peer_request = on_request_paused(
+            &peer,
+            &host,
+            &continued,
+            json!({
+                "requestId":"healthy","request":{"url":"https://8.8.8.8/","method":"GET"}
+            }),
+        );
+        let reply = async {
+            let command = fake.command().await;
+            assert_eq!(command["sessionId"], "peer");
+            assert_eq!(command["method"], "Fetch.continueRequest");
+            fake.send(json!({"id":command["id"],"sessionId":"peer","result":{}}))
+                .await;
+        };
+        tokio::join!(peer_request, reply);
+        assert!(!fake.connection.is_closed());
+    }
+
+    #[tokio::test]
+    async fn a_socket_verdict_waiting_on_dns_cannot_resume_a_revoked_page() {
+        use super::super::cdp::Fake;
+        let mut fake = Fake::new();
+        let source = fake.connection.session("source");
+        let lookup = Arc::new(tokio::sync::Notify::new());
+        let release = Arc::new(tokio::sync::Notify::new());
+        let allowed = Arc::new(Mutex::new(true));
+        let guard = effects::Guard::new({
+            let allowed = allowed.clone();
+            move |effect| {
+                let allowed = allowed.lock().unwrap();
+                if !*allowed {
+                    return Err(crate::error::ApiError::conflict("revoked"));
+                }
+                effect();
+                Ok(())
+            }
+        });
+        let host = HostGuard::from_policy::<&str>(
+            &[],
+            None,
+            &[],
+            Arc::new({
+                let lookup = lookup.clone();
+                let release = release.clone();
+                move |_| {
+                    let lookup = lookup.clone();
+                    let release = release.clone();
+                    Box::pin(async move {
+                        lookup.notify_one();
+                        release.notified().await;
+                        Ok(vec!["8.8.8.8".parse().unwrap()])
+                    })
+                }
+            }),
+        );
+        let pending = tokio::spawn(effects::background(Some(guard), async move {
+            on_binding_called(&source, &host, json!({"executionContextId":1,"payload":json!({
+                "name":WEBSOCKET_BINDING,"serializedArgs":[{"type":"onCreate","id":"s","url":"wss://fixture.example/"}]
+            }).to_string()})).await;
+        }));
+        tokio::time::timeout(std::time::Duration::from_secs(2), lookup.notified())
+            .await
+            .unwrap();
+        *allowed.lock().unwrap() = false;
+        release.notify_one();
+        tokio::time::timeout(std::time::Duration::from_secs(2), pending)
+            .await
+            .unwrap()
+            .unwrap();
+        fake.connection
+            .session("peer")
+            .send("peer-sentinel", json!({}));
+        assert_eq!(fake.command().await["method"], "peer-sentinel");
+    }
 
     #[test]
     fn classifies_paused_requests() {

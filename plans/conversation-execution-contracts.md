@@ -33,6 +33,8 @@ The [foreground browser-effect checkpoint](unified-conversations.md#u4-implement
 
 The local [browser-resource checkpoint](unified-conversations.md#u4-implementation-checkpoint-browser-resource-guards-and-recorder-retirement-2026-10-28) adds environment-scoped manager background effects and recorder writes/exit observation. These resources survive ordinary controller/Agent changes; a fence retires the affected session without closing its workspace peers. Shared Chromium engine/network resources, descendant/descriptor containment and complete revocation remain open.
 
+The local [page-resource checkpoint](unified-conversations.md#u4-implementation-checkpoint-page-owned-engine-and-network-admission-2026-10-28) binds engine initialization and intercepted network decisions to the owning page's environment. A late DNS result cannot authorize HTTP, authentication or a WebSocket-mock connection after revocation. Shared-context/unowned resources, established connections and full OS revocation remain outside this evidence.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.
