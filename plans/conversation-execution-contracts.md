@@ -37,6 +37,8 @@ The local [page-resource checkpoint](unified-conversations.md#u4-implementation-
 
 The local [independent-drain checkpoint](unified-conversations.md#u4-implementation-checkpoint-independent-resource-drain-2026-10-28) starts runner, saved-process, host-command, terminal and browser shutdown observations together. A blocked/failed participant cannot skip the others; waiting or unknown results still prevent a successful overall receipt. This remains supervisor cleanup, not installed-policy or full-revocation proof.
 
+The local [Gateway preview checkpoint](unified-conversations.md#u4-implementation-checkpoint-durable-gateway-transition-previews-2026-10-28) records immutable review intent and detects stale versions/Node connections. Its capability observations are not grants or full resource preflight; confirmation and execution remain unavailable.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.

@@ -51,6 +51,7 @@ impl Binding {
 
 pub mod commands;
 pub mod policies;
+pub mod transitions;
 
 #[cfg(test)]
 mod tests;

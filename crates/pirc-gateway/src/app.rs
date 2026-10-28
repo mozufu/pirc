@@ -340,6 +340,7 @@ pub fn forward(response: NodeHttpResponse) -> Response {
 pub fn router(app: AppState) -> Router {
     Router::new()
         .merge(crate::conversation_submissions::router())
+        .merge(crate::conversation_bindings::transitions::router())
         .route("/node/connect", get(sockets::node_connect))
         .route("/api/events", get(sockets::events))
         .route(
@@ -494,6 +495,14 @@ const PARAM_ROUTES: &[(&str, &str)] = &[
     ("POST", "/api/sessions/{id}/read"),
     ("GET", "/api/sessions/{id}/snapshot"),
     ("GET", "/api/sessions/{id}/environment"),
+    (
+        "POST",
+        "/api/sessions/{id}/environment-transitions/previews",
+    ),
+    (
+        "GET",
+        "/api/sessions/{id}/environment-transitions/previews/{operation}",
+    ),
     ("GET", "/api/sessions/{id}/checkpoints"),
     ("POST", "/api/sessions/{id}/checkpoints/{capture}/preview"),
     (

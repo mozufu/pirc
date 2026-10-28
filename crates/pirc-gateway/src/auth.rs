@@ -292,6 +292,29 @@ pub fn requires_origin(method: &Method) -> bool {
     !matches!(*method, Method::GET | Method::HEAD | Method::OPTIONS)
 }
 
+/// Revalidate native authorization after asynchronous work; caller owns DB snapshot.
+pub(crate) fn require_current_device(
+    app: &crate::app::AppState,
+    db: &rusqlite::Connection,
+    identity: &Identity,
+) -> ApiResult<()> {
+    use crate::util::now_ms;
+    use rusqlite::params;
+    if let Some(device) = &identity.device_id {
+        let stamp = now_ms();
+        let idle = i64::try_from(app.config.device_token_idle_ms).unwrap_or(i64::MAX);
+        let live: bool = db.query_row("SELECT EXISTS(SELECT 1 FROM device_tokens WHERE id=?1 AND owner_user=?2 AND expires_at>?3 AND last_used_at>?4)",params![device,identity.user,stamp,stamp.saturating_sub(idle)],|r|r.get(0))?;
+        if !live {
+            return Err(ApiError::new(
+                401,
+                "unauthorized",
+                "The paired device is no longer authorized",
+            ));
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::HashSet;

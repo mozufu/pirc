@@ -1,3 +1,5 @@
+-- Test-only reconstruction before 1026.
+DROP TABLE conversation_transition_previews;
 -- Test-only reconstruction before 1025.
 DROP TRIGGER command_environment_immutable;
 DROP TABLE command_environments;

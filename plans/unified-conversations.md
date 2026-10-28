@@ -22,7 +22,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1025**, Node **2018**, protocol **15**, client contract **2**,
+formats: Gateway **1026**, Node **2018**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -118,7 +118,7 @@ scenarios above remain separately recorded evidence, not implied by default CI.
 | U1 — first Send                   | Implementation present; activation blocked on remaining acceptance                             | Ambiguous journal recovery, actual client/backend failure matrix, Android process/device and rollout/rollback proof |
 | U2 — bindings                     | Bindings, policy/memory/saved-upload provenance and Gateway/Node command admission implemented | Live-resource provenance and effect-boundary version fencing                                                        |
 | U3 — navigation/UI                | Explicitly deferred                                                                            | Necessary functional controls only until the core model is stable                                                   |
-| U4 — resource transitions         | Internal Node admission fence and tracked supervisor drain; no public switch                   | Gateway coordination, OS revocation/replacement acknowledgement and offline recovery                                |
+| U4 — resource transitions         | Durable Gateway review previews; Node admission fence and tracked drain; no public switch      | Gateway coordination, OS revocation/replacement acknowledgement and offline recovery                                |
 | U5 — canonical work/collaboration | Existing primitives available; unified mapping pending                                         | Common task/attempt identities, shared notes and resource waits without overwrites                                  |
 | U6 — proactive pots               | Existing progress observation/explicit dispatch; content analysis pending                      | Separate observation/execution grants, finite budgets and quiet synchronized suggestions                            |
 
@@ -4312,3 +4312,72 @@ deployment or publication was performed. The owned build/log directory (about
 and other agents' work remain. This checkpoint is committed locally. Gateway
 transition coordination, full resource revocation proof, replacement-policy
 installation and Web/App transition controls remain outstanding.
+
+## U4 implementation checkpoint: durable Gateway transition previews (2026-10-28)
+
+Local-only continuation of `fddd9ca3`. Gateway schema **1026** adds immutable,
+owner-scoped review snapshots for switching an existing conversation to an
+existing workspace. This begins Gateway coordination; it does not accept a switch.
+The HTTP routes are:
+
+- `POST /api/sessions/{id}/environment-transitions/previews` with
+  `operationId`, `targetWorkspaceId` and `expectedBinding`.
+- `GET /api/sessions/{id}/environment-transitions/previews/{operation}`.
+
+A preview freezes the source identity/binding, project and configured policy
+versions, cached runner epoch/activity, and target Node/mode/workspace policy.
+Its hash includes the owner. Repeating identical intent returns that same snapshot
+across Gateway restart; reusing the identity for a different target, binding or
+conversation conflicts. A stale source binding cannot reserve a new preview.
+Concurrent devices reserve one row. Current source/target visibility is checked
+on both preparation and lookup. The record is review metadata with no authority;
+source-session or target-workspace deletion cascades it. It does not introduce
+age expiry for accepted messages, files, memory or tasks.
+
+Lookup makes a read-only, connection-scoped Node capability probe, then rechecks
+current policy/visibility and native-device authorization after the wait. Changed
+policy marks the frozen preview stale; a replaced Node connection invalidates its
+observation. Offline/incompatible Nodes are explicit. Only known capability fields
+are returned, not arbitrary Node response/error bodies. A Web request and a paired
+native HTTP request read the same owner-scoped record without keeping Web open.
+
+Every result still says `canConfirm: false`: the executable coordinator,
+authoritative resource/path preflight, context handoff, full source revocation,
+target installation/acknowledgement and confirmation UI are not implemented by
+this slice. Even a Node claiming stronger capabilities cannot bypass that gate.
+No Node fence, control transfer, file allocation/copy, Agent command or binding
+change follows a preview. The recorded activity is explicitly cached, not proof
+that a host is idle or safe to switch. Future acceptance must revalidate all of
+these facts and persist its own accepted transition; it must not treat this hash
+or capability observation as a grant.
+
+Node schema stays **2018**, protocol/client/private-envelope formats stay **15/2/3**,
+and U1 remains gated. No package/dependency/Nix hash changes. Older Gateway binaries
+refuse 1026; rollback requires the matching binary/state backup, not deleting
+preview tables or lowering the database version. Legacy migration fixtures now
+remove the new review table when reconstructing pre-1026 databases; production
+migration keeps strict schema checks.
+
+Validation: **395 Gateway tests passed**, including eight new preview cases,
+existing first-send/native-authorization coverage and historical migrations with
+concurrent opens/large memory histories. The first full run exposed 13 old-schema
+fixture reconstructions that retained the new table; the fixtures were corrected
+to represent their stated version, and the full final logic run passed. No
+production migration check was relaxed.
+
+Rebuilt binaries passed **10 required real-process cases**: the new Gateway
+preview restart/offline/reconnect case, three native checkpoint cases, two
+conversation admission cases, two creation cases, memory and project deletion.
+The preview process case preserves the same recorded plan across a hard Gateway
+restart and a Node outage/reconnect, leaves the binding unchanged, and retains
+ordinary control/snapshot access. The different-target and private-target
+semantics are covered in the Gateway tests; the process case uses the existing
+workspace and correctly reports it unchanged.
+
+Strict all-target Gateway/conformance Clippy, Rust fmt, changed-document
+formatting, diff checks and 152 local document targets pass. The paired-native
+coverage is authenticated HTTP/router testing, not Flutter rendering or Android
+OS/device acceptance. No Web/Flutter code changed; no local Nix, emulator/device,
+remote CI, deployment or publication was performed. The owned build/log tree
+(about **1.9 GiB**) is removed after testing, preserving APKs, SDKs, shared caches,
+user data and other agents' work. This checkpoint is committed locally.

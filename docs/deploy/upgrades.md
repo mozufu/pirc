@@ -1,5 +1,23 @@
 # Upgrades
 
+## Local checkpoint: durable transition previews
+
+Gateway schema **1026** stores owner-scoped immutable environment review snapshots.
+Repeated preparation and lookup recover the same intent; changed policy is reported
+as stale. Previewing performs only Node capability reads, never fences a session,
+allocates folders, changes bindings or starts work. Paired-device HTTP can query
+this state directly. Confirmation remains disabled until resource preflight,
+revocation and replacement installation are implemented.
+
+Source-session or target-workspace deletion removes these review snapshots. No
+accepted-message, attachment, memory or task retention changes. Node remains
+2018; protocol/client/private-envelope remain 15/2/3. Package/dependency versions
+and Nix hashes are unchanged. This update is local only. Before eventual
+deployment, back up consistent Gateway state; older binaries refuse 1026 and
+rollback requires a matching backup rather than editing the version or tables.
+See the [preview checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-durable-gateway-transition-previews-2026-10-28)
+for validation scope and remaining work.
+
 ## Local checkpoint: page-owned engine and network admission
 
 A managed page now passes its original resource authority to background engine

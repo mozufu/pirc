@@ -93,7 +93,7 @@ Release or activation is implied by a completed slice.
 | U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                                                                                                                                                         | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle      |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
-not enable it. Current formats are Gateway schema **1025**, Node schema **2018**,
+not enable it. Current formats are Gateway schema **1026**, Node schema **2018**,
 protocol **15**, client recovery contract **2**, and Web IndexedDB/native private
 envelope **3**. Existing ordinary session APIs remain available. Unaccepted
 Gateway attachment staging expires after **seven days**; accepted attachments and
@@ -138,6 +138,7 @@ Node schema 2017 retains panel-terminal launch and stop observations across clos
 Node schema 2018 retains browser group origins and close outcomes, including canceled requests, late popups and uncertain prior groups. Unconfirmed closure blocks deletion/drain; see the [browser-supervision checkpoint](unified-conversations.md#u4-implementation-checkpoint-durable-browser-supervision-2026-10-28).
 Foreground browser commands now retain their caller and recheck at the first pipe write; later queued commands cannot reuse revoked authority. Background browser resources and complete retirement remain open.
 The local [independent-drain checkpoint](unified-conversations.md#u4-implementation-checkpoint-independent-resource-drain-2026-10-28) prevents runner locks and failed observations from skipping other resource stops. Unknown historical processes remain blocked; no public transition is enabled.
+Gateway schema 1026 adds [durable transition review previews](unified-conversations.md#u4-implementation-checkpoint-durable-gateway-transition-previews-2026-10-28), with owner/version checks, reconnect-aware capability observations and paired-device HTTP access. Confirmation remains disabled; no switch or Node fence follows a preview.
 Resource grants, project moves and full effect fences remain open. U1 still needs device/deployment acceptance
 before activation. Detailed validation and the previously reproduced macOS snapshot
 limitation are recorded in the checkpoints; no full Linux/device acceptance is claimed.
