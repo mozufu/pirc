@@ -39,6 +39,8 @@ The local [independent-drain checkpoint](unified-conversations.md#u4-implementat
 
 The local [Gateway preview checkpoint](unified-conversations.md#u4-implementation-checkpoint-durable-gateway-transition-previews-2026-10-28) records immutable review intent and detects stale versions/Node connections. Its capability observations are not grants or full resource preflight; confirmation and execution remain unavailable.
 
+The local [workspace-panel checkpoint](unified-conversations.md#u4-implementation-checkpoint-workspace-panel-authority-2026-11-04) binds asynchronous inspection to the captured source environment, stops owned Git groups after fencing and suppresses late output. This is a host-effect prerequisite, not full OS revocation or target installation evidence.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.

@@ -41,6 +41,7 @@ use regex_lite::Regex;
 use serde_json::{Map, Value, json};
 use tokio::io::AsyncReadExt as _;
 
+use super::access;
 use crate::error::{ApiError, ApiResult};
 use crate::sandbox::{Prepared, ReadonlyInput, Sandbox, SandboxStatus};
 
@@ -142,6 +143,8 @@ pub(crate) async fn checkpoint_files(
 
 /// Why git did not give a result.
 enum GitError {
+    /// Revocation/staleness is never a successful empty repository.
+    Authority(ApiError),
     /// 400 from its exit code (or anything the caller answers as such).
     Api(ApiError),
     /// It could not start (TS: `Bun.spawn` threw).
@@ -154,7 +157,7 @@ enum GitError {
 impl From<GitError> for ApiError {
     fn from(error: GitError) -> Self {
         match error {
-            GitError::Api(error) | GitError::Sandbox(error) => error,
+            GitError::Api(error) | GitError::Sandbox(error) | GitError::Authority(error) => error,
             GitError::Spawn(error) => internal("git could not start", error),
         }
     }
@@ -214,7 +217,10 @@ async fn git(
     args: &[&str],
     env: &ChildEnv,
 ) -> Result<GitResult, GitError> {
-    if let SandboxStatus::Unavailable { reason } = sandbox.check().await {
+    access::check().map_err(GitError::Authority)?;
+    let status = sandbox.check().await;
+    access::check().map_err(GitError::Authority)?;
+    if let SandboxStatus::Unavailable { reason } = status {
         return Err(GitError::Sandbox(git_unavailable(&reason)));
     }
     let command: Vec<OsString> = [
@@ -236,15 +242,16 @@ async fn git(
             workspace_root: root.to_path_buf(),
             command,
         })
-        .await
-        .map_err(|error| {
-            // Refused after the probe passed (a plan refusal, a profile too
-            // long): the Git panel's words, not an agent start's.
-            GitError::Sandbox(match crate::sandbox::unavailable_reason(&error) {
-                Some(reason) => git_unavailable(reason),
-                None => error,
-            })
-        })?;
+        .await;
+    access::check().map_err(GitError::Authority)?;
+    let prepared = prepared.map_err(|error| {
+        // Refused after the probe passed (a plan refusal, a profile too
+        // long): the Git panel's words, not an agent start's.
+        GitError::Sandbox(match crate::sandbox::unavailable_reason(&error) {
+            Some(reason) => git_unavailable(reason),
+            None => error,
+        })
+    })?;
     let result = run_prepared(&prepared, root, env, GIT_TIMEOUT).await;
     prepared.cleanup();
     result
@@ -289,9 +296,8 @@ async fn run_prepared(
     timeout: Duration,
 ) -> Result<GitResult, GitError> {
     let limit = DIFF_LIMIT;
-    let mut child = prepared
-        .command()
-        .map_err(GitError::Spawn)?
+    let mut command = prepared.command().map_err(GitError::Spawn)?;
+    command
         .current_dir(cwd)
         .env_clear()
         .envs(env)
@@ -311,8 +317,9 @@ async fn run_prepared(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .process_group(0)
-        .kill_on_drop(true)
-        .spawn()
+        .kill_on_drop(true);
+    let mut child = access::run(|| Ok(command.spawn()))
+        .map_err(GitError::Authority)?
         .map_err(GitError::Spawn)?;
     let mut group = Group(child.id().and_then(|pid| i32::try_from(pid).ok()));
     let mut stdout = child.stdout.take().expect("piped stdout");
@@ -327,11 +334,21 @@ async fn run_prepared(
     let timer = tokio::time::sleep(timeout);
     tokio::pin!(timer);
     let mut timed_out = false;
+    let mut revoked = None;
+    let mut authority_poll = tokio::time::interval(Duration::from_millis(50));
+    authority_poll.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
     let mut out = Vec::new();
     let mut truncated = false;
     let mut chunk = vec![0; 64 * 1024];
     loop {
         tokio::select! {
+            _ = authority_poll.tick() => {
+                if let Err(error) = access::check() {
+                    revoked = Some(error);
+                    group.kill();
+                    break;
+                }
+            },
             read = stdout.read(&mut chunk) => match read {
                 Ok(0) | Err(_) => break,
                 Ok(n) => {
@@ -358,6 +375,12 @@ async fn run_prepared(
     let status = loop {
         tokio::select! {
             status = child.wait() => break status,
+            _ = authority_poll.tick(), if revoked.is_none() => {
+                if let Err(error) = access::check() {
+                    revoked = Some(error);
+                    group.kill();
+                }
+            },
             () = &mut timer, if !timed_out => {
                 timed_out = true;
                 group.kill();
@@ -373,6 +396,10 @@ async fn run_prepared(
             Vec::new()
         }
     };
+    if let Some(error) = revoked {
+        return Err(GitError::Authority(error));
+    }
+    access::check().map_err(GitError::Authority)?;
     // Bun's `exited` is 128 + the signal for a killed process.
     let code = match status {
         Ok(status) => {
@@ -462,10 +489,10 @@ fn pathspec(root: &Path, relative: &str) -> ApiResult<String> {
 /// `git rev-parse` and `git status` of the workspace: `{repo:false}`, or
 /// the branch, its upstream and the changed files (at most 5000).
 pub async fn git_status(sandbox: &dyn Sandbox, root: &Path, env: &ChildEnv) -> ApiResult<Value> {
-    let root = real_root(root)?;
+    let root = access::run(|| real_root(root))?;
     let top = match git(sandbox, &root, &["rev-parse", "--show-toplevel"], env).await {
         Ok(top) => top,
-        Err(GitError::Sandbox(error)) => return Err(error),
+        Err(GitError::Sandbox(error) | GitError::Authority(error)) => return Err(error),
         Err(_) => return Ok(json!({ "repo": false })),
     };
     let top = trim(&top.stdout).to_owned();
@@ -578,14 +605,17 @@ pub async fn git_diff(
     untracked: bool,
 ) -> ApiResult<Value> {
     let base = ["diff", "--no-color", "--no-ext-diff", "--no-textconv", "-M"];
-    let root = real_root(root)?;
+    let root = access::run(|| real_root(root))?;
     // `path` is falsy when empty (TS), so `?path=` is the whole workspace.
     let path = path.filter(|path| !path.is_empty());
     if untracked && let Some(path) = path {
-        let file = resolve_inside(&root, path)?;
-        let is_file = std::fs::metadata(&file)
-            .map_err(|error| internal("stat", error))?
-            .is_file();
+        let (file, is_file) = access::run(|| {
+            let file = resolve_inside(&root, path)?;
+            let is_file = std::fs::metadata(&file)
+                .map_err(|error| internal("stat", error))?
+                .is_file();
+            Ok((file, is_file))
+        })?;
         if !is_file {
             return Err(ApiError::bad_request("Not a file"));
         }
@@ -596,7 +626,7 @@ pub async fn git_diff(
         return Ok(json!({ "diff": result.stdout, "truncated": result.truncated }));
     }
     let spec = match path {
-        Some(path) => pathspec(&root, path)?,
+        Some(path) => access::run(|| pathspec(&root, path))?,
         None => ".".to_owned(),
     };
     let mut args = base.to_vec();
@@ -643,7 +673,7 @@ pub async fn git_log(
     .await
     {
         Ok(_) => {}
-        Err(GitError::Sandbox(error)) => return Err(error),
+        Err(GitError::Sandbox(error) | GitError::Authority(error)) => return Err(error),
         Err(_) => return Ok(json!({ "commits": [], "more": false })),
     }
     let max_count = format!("--max-count={}", limit + 1);

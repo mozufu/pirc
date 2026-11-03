@@ -4381,3 +4381,62 @@ OS/device acceptance. No Web/Flutter code changed; no local Nix, emulator/device
 remote CI, deployment or publication was performed. The owned build/log tree
 (about **1.9 GiB**) is removed after testing, preserving APKs, SDKs, shared caches,
 user data and other agents' work. This checkpoint is committed locally.
+
+## U4 implementation checkpoint: workspace panel authority (2026-11-04)
+
+Local continuation of `24a2c7a0`. Node workspace inspection now captures the
+request owner, conversation/workspace, runner epoch, private session identity,
+workspace path and effective mode before waiting. Bounded synchronous file,
+directory and recording reads run under that authority; context/config reads
+recheck after Agent RPC waits. Late success and error bodies are discarded when
+the source has been fenced, deleted or changed. Taking control on another device
+does not revoke an authorized viewer's read access.
+
+Git panel requests recheck after sandbox probing/preparation and admit process
+spawn under the same authority lock. While waiting for stdout or process exit,
+they check every 50 ms and kill/reap their own wrapper process group when authority
+is lost. Subsequent Git subcommands and response publication also recheck. A
+revoked request is an explicit error, never a successful empty history or a false
+"not a repository" response. Other conversations in the same workspace and later
+user edits survive. Large memory-panel calculations occur outside the DB gate;
+no authority lock spans an asynchronous wait.
+
+This closes a source-effect prerequisite found while preparing Gateway
+coordination. It does not implement confirmed-transition acceptance, target
+preflight/installation, mount/alias removal or complete descriptor/descendant
+revocation. The Git wrapper uses the existing read-only sandbox; process-group
+retirement is not new kernel containment evidence. Checkpoint Git helpers retain
+their existing independent isolation/admission scope. Bytes already admitted for
+delivery cannot be recalled. Gateway/Node schemas stay **1026/2018**, U1 stays
+gated, preview `canConfirm` stays false and Node enforcement remains not tracked.
+No dependency, Nix hash or package-version changes are required.
+
+Validation: **575 Node unit tests passed, four existing opt-in tests ignored**,
+including large memory histories and revocation cases. **24 focused panel tests**
+passed; after strengthening the late-error timing case, its six authority tests
+passed again. Strict Node/conformance all-target Clippy, Rust fmt and document
+format/diff checks passed.
+
+**17 required real-process cases passed** with final binaries: four execution
+fence cases (including an in-flight real Git filter), seven existing panel cases,
+three native checkpoints, Gateway preview restart/offline behavior, memory and
+project deletion. A standalone panel-memory snapshot case still differs from its
+checked-in token counters by `42 -> 53` and `142 -> 153` in three fields. The
+unmodified local HEAD reproduces exactly those differences. Its snapshot remains
+unchanged and that known baseline failure is excluded from the 17 passing cases;
+this is not a claim that the complete snapshot suite passes.
+
+The baseline comparison also exposed Cargo's shared-target collision: the
+baseline Node executable/library could remain at the top-level path despite an
+incremental build reporting freshness. The final process run used a clean rebuild
+of **only this run's Node artifacts**, with the new gate verified in the binary
+before execution. Future baseline comparisons should use distinct target/bin
+directories. No production code was weakened for the comparison.
+
+No Web/Flutter code changed, and there was no emulator/device, local Nix, browser,
+remote CI, deployment or publication. The owned temporary build/log/baseline tree
+(about **2.4 GiB**) and this run's rejected snapshot/script are removed after
+verification. APKs, SDKs, shared caches, user data and other agents' work are
+preserved. This checkpoint is committed locally; executable transition acceptance,
+full revocation proof, replacement installation and the necessary Web/App controls
+remain the next U4 work. U5/U6 and U1 activation acceptance remain open.

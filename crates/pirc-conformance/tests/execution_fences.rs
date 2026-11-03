@@ -437,3 +437,155 @@ async fn terminal_observation_survives_restart_and_an_unknown_shell_blocks_delet
         );
     }
 }
+
+/// Real Node and Git processes with the conformance sandbox stand-in. This
+/// proves request retirement/output gating, not native OS descendant revocation.
+#[tokio::test(flavor = "multi_thread")]
+async fn in_flight_git_panel_stops_on_fence_and_peer_file_reads_survive() {
+    use std::{fs, process::Command, time::Duration};
+    let gateway = FakeGateway::bind().await;
+    let Some(node) = LoneNode::start_with(
+        gateway.port(),
+        NodeOptions {
+            chat_node: false,
+            agent_core_only: true,
+            env: vec![("PIRC_BROWSER", "false".into())],
+        },
+    ) else {
+        return;
+    };
+    let mut link = register(&gateway).await;
+    let root = node.dir.path().canonicalize().unwrap().join("workspace");
+    let git = |args: &[&str]| {
+        let output = Command::new("git")
+            .args(args)
+            .current_dir(&root)
+            .env("GIT_CONFIG_NOSYSTEM", "1")
+            .env("GIT_CONFIG_GLOBAL", "/dev/null")
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "git {args:?}: {output:?}");
+    };
+    git(&["init", "-q"]);
+    fs::write(root.join("file.txt"), "original\n").unwrap();
+    git(&["add", "file.txt"]);
+    git(&[
+        "-c",
+        "user.name=Test",
+        "-c",
+        "user.email=test@example.invalid",
+        "commit",
+        "-qm",
+        "initial",
+    ]);
+    fs::write(root.join("file.txt"), "later user edit\n").unwrap();
+    // The stand-in permits this marker. Production read-only policies do not
+    // gain write access; no test filter is installed in the real repository.
+    fs::write(
+        root.join("slow-filter.sh"),
+        "printf '%s' \"$$\" > panel-filter-started\nexec sleep 30\n",
+    )
+    .unwrap();
+    fs::write(root.join(".gitattributes"), "file.txt filter=paneltest\n").unwrap();
+    git(&["config", "filter.paneltest.clean", "sh slow-filter.sh"]);
+    let mut sessions = Vec::new();
+    for name in ["source", "peer"] {
+        let created = link
+            .request(
+                &format!("panel-create-{name}"),
+                req("POST", "/api/sessions", json!({"workspaceId":"test"})),
+            )
+            .await;
+        assert_eq!(created["data"]["status"], 201, "{created}");
+        sessions.push(created["data"]["body"]["session"].clone());
+    }
+    let base = format!("/api/sessions/{}", sessions[0]["id"].as_str().unwrap());
+    let control = link
+        .request(
+            "panel-lease",
+            req(
+                "POST",
+                &format!("{base}/control/acquire"),
+                json!({"clientId":"phone"}),
+            ),
+        )
+        .await;
+    assert_eq!(control["data"]["status"], 200, "{control}");
+    let generation = &control["data"]["body"]["lease"]["generation"];
+    link.send(&json!({"type":"request","requestId":"slow-panel","data":req("GET", &format!("{base}/git/diff?path=file.txt"), Value::Null)})).await;
+    tokio::time::timeout(Duration::from_secs(10), async {
+        loop {
+            if fs::read_to_string(root.join("panel-filter-started"))
+                .is_ok_and(|p| p.parse::<u32>().is_ok())
+            {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .expect("Git filter must actually start before fencing");
+    let accepted = link.request("fence-panel", req("POST", &format!("{base}/execution-fences"), json!({
+        "intent":{"operationId":"panel-switch","planHash":"a".repeat(64),"expectedWorkspaceId":"test","expectedRunnerEpoch":sessions[0]["runnerEpoch"]},
+        "clientId":"phone","generation":generation
+    }))).await;
+    assert_eq!(accepted["data"]["status"], 200, "{accepted}");
+    let result = if let Some(i) = link
+        .skipped
+        .iter()
+        .position(|v| v["type"] == "response" && v["requestId"] == "slow-panel")
+    {
+        link.skipped.remove(i)
+    } else {
+        tokio::time::timeout(
+            Duration::from_secs(5),
+            link.recv_where(|v| v["type"] == "response" && v["requestId"] == "slow-panel"),
+        )
+        .await
+        .unwrap()
+    };
+    assert_eq!(result["data"]["status"], 409, "{result}");
+    assert_eq!(
+        result["data"]["body"]["error"]["code"],
+        "environment_transition_pending"
+    );
+    assert!(!result.to_string().contains("later user edit"));
+    for suffix in [
+        "/files",
+        "/files/content?path=file.txt",
+        "/git/status",
+        "/git/log",
+        "/panel/state",
+        "/panel/context",
+    ] {
+        let denied = link
+            .request(
+                "fenced-panel-read",
+                req("GET", &format!("{base}{suffix}"), Value::Null),
+            )
+            .await;
+        assert_eq!(
+            denied["data"]["body"]["error"]["code"], "environment_transition_pending",
+            "{denied}"
+        );
+    }
+    let peer = link
+        .request(
+            "peer-panel-read",
+            req(
+                "GET",
+                &format!(
+                    "/api/sessions/{}/files/content?path=file.txt",
+                    sessions[1]["id"].as_str().unwrap()
+                ),
+                Value::Null,
+            ),
+        )
+        .await;
+    assert_eq!(peer["data"]["status"], 200, "{peer}");
+    assert!(peer.to_string().contains("later user edit"));
+    assert_eq!(
+        fs::read_to_string(root.join("file.txt")).unwrap(),
+        "later user edit\n"
+    );
+}

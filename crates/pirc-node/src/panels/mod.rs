@@ -13,6 +13,7 @@
 //! `z.coerce.number()` (JS `Number(text)`, so `?limit=` is 0), lengths are
 //! UTF-16 units, and every failure is 400 `invalid_input` "Invalid request".
 
+mod access;
 pub mod inspect;
 
 use std::path::{Path, PathBuf};
@@ -45,7 +46,10 @@ pub fn routes() -> Vec<Route> {
             let local = local(&node, &request)?;
             let env = child_env(&node);
             Ok(Response::json(
-                inspect::git_status(&*node.sandbox, &local.root, &env).await?,
+                local
+                    .access
+                    .inspect(inspect::git_status(&*node.sandbox, &local.root, &env))
+                    .await?,
             ))
         }),
         get("/api/sessions/:id/git/diff", |node, request| async move {
@@ -54,15 +58,17 @@ pub fn routes() -> Vec<Route> {
             let staged = flag(&request, "staged")?;
             let untracked = flag(&request, "untracked")?;
             let env = child_env(&node);
-            let diff = inspect::git_diff(
-                &*node.sandbox,
-                &local.root,
-                &env,
-                path.as_deref(),
-                staged,
-                untracked,
-            )
-            .await?;
+            let diff = local
+                .access
+                .inspect(inspect::git_diff(
+                    &*node.sandbox,
+                    &local.root,
+                    &env,
+                    path.as_deref(),
+                    staged,
+                    untracked,
+                ))
+                .await?;
             Ok(Response::json(diff))
         }),
         get("/api/sessions/:id/git/log", |node, request| async move {
@@ -70,9 +76,16 @@ pub fn routes() -> Vec<Route> {
             let skip = coerce_int(&request, "skip", 0.0, 1_000_000.0, 0.0)?;
             let limit = coerce_int(&request, "limit", 1.0, 200.0, 50.0)?;
             let env = child_env(&node);
-            let log =
-                inspect::git_log(&*node.sandbox, &local.root, &env, skip as u64, limit as u64)
-                    .await?;
+            let log = local
+                .access
+                .inspect(inspect::git_log(
+                    &*node.sandbox,
+                    &local.root,
+                    &env,
+                    skip as u64,
+                    limit as u64,
+                ))
+                .await?;
             Ok(Response::json(log))
         }),
         get(
@@ -85,14 +98,21 @@ pub fn routes() -> Vec<Route> {
                 }
                 let env = child_env(&node);
                 Ok(Response::json(
-                    inspect::git_show(&*node.sandbox, &local.root, &env, sha).await?,
+                    local
+                        .access
+                        .inspect(inspect::git_show(&*node.sandbox, &local.root, &env, sha))
+                        .await?,
                 ))
             },
         ),
         get("/api/sessions/:id/files", |node, request| async move {
             let local = local(&node, &request)?;
             let path = optional_string(&request, "path", 0, 4096)?.unwrap_or_default();
-            Ok(Response::json(inspect::list_directory(&local.root, &path)?))
+            Ok(Response::json(
+                local
+                    .access
+                    .run(|| inspect::list_directory(&local.root, &path))?,
+            ))
         }),
         get(
             "/api/sessions/:id/files/content",
@@ -100,24 +120,31 @@ pub fn routes() -> Vec<Route> {
                 let local = local(&node, &request)?;
                 let path = optional_string(&request, "path", 1, 4096)?
                     .ok_or_else(ApiError::invalid_input)?;
-                Ok(Response::json(inspect::read_workspace_file(
-                    &local.root,
-                    &path,
-                )?))
+                Ok(Response::json(local.access.run(|| {
+                    inspect::read_workspace_file(&local.root, &path)
+                })?))
             },
         ),
         get(
             "/api/sessions/:id/panel/state",
             |node, request| async move {
                 let local = local(&node, &request)?;
-                panel_state(&node, &local).await.map(Response::json)
+                local
+                    .access
+                    .inspect(panel_state(&node, &local))
+                    .await
+                    .map(Response::json)
             },
         ),
         get(
             "/api/sessions/:id/panel/context",
             |node, request| async move {
                 let local = local(&node, &request)?;
-                panel_context(&node, &local).await.map(Response::json)
+                local
+                    .access
+                    .inspect(panel_context(&node, &local))
+                    .await
+                    .map(Response::json)
             },
         ),
         get(
@@ -131,7 +158,10 @@ pub fn routes() -> Vec<Route> {
                 command.insert("type".into(), json!("background_output"));
                 command.insert("taskId".into(), json!(task_id));
                 command.insert("lines".into(), json!(lines as u64));
-                background_answer(runner.request(command).await?)
+                local
+                    .access
+                    .inspect(async { background_answer(runner.request(command).await?) })
+                    .await
             },
         ),
         // Stopping a background task needs the control lease, like prompting
@@ -208,12 +238,9 @@ pub fn routes() -> Vec<Route> {
                 let offset = coerce_int(&request, "offset", 0.0, f64::INFINITY, 0.0)?;
                 let chunk = RECORDING_CHUNK_BYTES as f64;
                 let length = coerce_int(&request, "length", 1.0, chunk, chunk)?;
-                Ok(Response::json(inspect::read_recording_chunk(
-                    &local.root,
-                    &path,
-                    offset as u64,
-                    length as u64,
-                )?))
+                Ok(Response::json(local.access.run(|| {
+                    inspect::read_recording_chunk(&local.root, &path, offset as u64, length as u64)
+                })?))
             },
         ),
     ]
@@ -225,6 +252,7 @@ static RECORDING_PATH: LazyLock<Regex> = LazyLock::new(|| {
 
 /// What `local` gives a handler: the claimed session and where it works.
 struct Local {
+    access: access::Access,
     session: SessionRow,
     root: PathBuf,
 }
@@ -237,12 +265,29 @@ fn claim(node: &Node, request: &Request) -> ApiResult<SessionRow> {
 }
 
 fn local(node: &Node, request: &Request) -> ApiResult<Local> {
-    let session = claim(node, request)?;
-    crate::execution_fences::require_open(&node.db.lock(), &session.id)?;
-    let workspace = node.db.lock().get_workspace(&session.workspace_id)?;
-    let root =
-        crate::chat::session_root(&workspace, &session.id, &node.workspace_mode(&workspace)?)?;
-    Ok(Local { session, root })
+    let db = node.db.lock();
+    let session = db.claim_session(
+        request.param("id").unwrap_or_default(),
+        &request.user,
+        false,
+    )?;
+    crate::execution_fences::require_open(&db, &session.id)?;
+    let workspace = db.get_workspace(&session.workspace_id)?;
+    let mode = node.workspace_mode(&workspace)?;
+    let access = access::Access::new(
+        node.clone(),
+        request.user.clone(),
+        session.clone(),
+        workspace.clone(),
+        mode.clone(),
+    );
+    drop(db);
+    let root = access.run(|| crate::chat::session_root(&workspace, &session.id, &mode))?;
+    Ok(Local {
+        access,
+        session,
+        root,
+    })
 }
 
 fn terminals_enabled(node: &Node) -> ApiResult<()> {
@@ -337,21 +382,24 @@ async fn panel_state(node: &Node, local: &Local) -> ApiResult<Value> {
                 .map(|window| window as u64);
         }
     }
-    let branch = node
-        .branches
-        .read(Path::new(&local.session.private_session_path))
-        .map_err(|error| {
-            crate::log::error(&format!("session branch: {error}"));
-            ApiError::internal()
-        })?;
+    let branch = access::run(|| {
+        node.branches
+            .read(Path::new(&local.session.private_session_path))
+            .map_err(|error| {
+                crate::log::error(&format!("session branch: {error}"));
+                ApiError::internal()
+            })
+    })?;
     let mut features = Map::new();
     let env = |name: &str| node.env.get(name).map(str::to_owned);
     // An invalid configuration falls back to the defaults.
-    if let Ok(config) = pirc_agent::config::load_agent_config(
-        &local.root.to_string_lossy(),
-        node.models.current(),
-        &env,
-    ) {
+    if let Ok(config) = access::run(|| {
+        Ok(pirc_agent::config::load_agent_config(
+            &local.root.to_string_lossy(),
+            node.models.current(),
+            &env,
+        ))
+    })? {
         features = config.features.clone();
         // A stopped agent: the session's current model decides a ratio-mode
         // threshold.
@@ -420,41 +468,45 @@ async fn panel_context(node: &Node, local: &Local) -> ApiResult<Value> {
             snapshot = response.get("data").cloned();
         }
     }
-    let live = snapshot.is_some();
-    let snapshot = match snapshot {
-        Some(snapshot) => snapshot,
-        None => pirc_agent::context::read_context(Path::new(&local.session.private_session_path))
-            .map_err(|error| {
-                crate::log::error(&format!("context snapshot: {error}"));
-                ApiError::internal()
-            })?
-            .ok_or_else(|| {
-                ApiError::new(
-                    404,
-                    "no_context",
-                    "Send a message first to inspect its context",
-                )
-            })?,
-    };
-    let Value::Object(mut snapshot) = snapshot else {
-        crate::log::error("context snapshot: not an object");
-        return Err(ApiError::internal());
-    };
-    let Some(Value::Array(sections)) = snapshot.get("sections") else {
-        crate::log::error("context snapshot: no sections");
-        return Err(ApiError::internal());
-    };
-    let sections: Vec<Value> = sections
-        .iter()
-        .map(|section| link_section(&local.root, section))
-        .collect();
-    // `{...snapshot, sections}`: the key keeps its place.
-    snapshot.insert("sections".into(), Value::Array(sections));
-    Ok(json!({
-        "snapshot": snapshot,
-        "agentRunning": runner.is_some_and(|runner| runner.alive()),
-        "source": if live { "live" } else { "snapshot" },
-    }))
+    access::run(|| {
+        let live = snapshot.is_some();
+        let snapshot = match snapshot {
+            Some(snapshot) => snapshot,
+            None => {
+                pirc_agent::context::read_context(Path::new(&local.session.private_session_path))
+                    .map_err(|error| {
+                        crate::log::error(&format!("context snapshot: {error}"));
+                        ApiError::internal()
+                    })?
+                    .ok_or_else(|| {
+                        ApiError::new(
+                            404,
+                            "no_context",
+                            "Send a message first to inspect its context",
+                        )
+                    })?
+            }
+        };
+        let Value::Object(mut snapshot) = snapshot else {
+            crate::log::error("context snapshot: not an object");
+            return Err(ApiError::internal());
+        };
+        let Some(Value::Array(sections)) = snapshot.get("sections") else {
+            crate::log::error("context snapshot: no sections");
+            return Err(ApiError::internal());
+        };
+        let sections: Vec<Value> = sections
+            .iter()
+            .map(|section| link_section(&local.root, section))
+            .collect();
+        // `{...snapshot, sections}`: the key keeps its place.
+        snapshot.insert("sections".into(), Value::Array(sections));
+        Ok(json!({
+            "snapshot": snapshot,
+            "agentRunning": runner.is_some_and(|runner| runner.alive()),
+            "source": if live { "live" } else { "snapshot" },
+        }))
+    })
 }
 
 /// A section whose absolute `source` is a readable regular file inside the

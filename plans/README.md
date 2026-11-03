@@ -80,6 +80,11 @@ Local commit `d500f2d3` added [browser resource guards and recorder retirement](
 The next local slice adds [page-owned engine/network admission](unified-conversations.md#u4-implementation-checkpoint-page-owned-engine-and-network-admission-2026-10-28), including delayed DNS decisions and popup/iframe/worker initialization.
 It preserves shared-workspace peers and does not enable public transitions or
 claim complete browser/OS revocation.
+Local `24a2c7a0` adds [durable Gateway review previews](unified-conversations.md#u4-implementation-checkpoint-durable-gateway-transition-previews-2026-10-28).
+The following [workspace-panel authority checkpoint](unified-conversations.md#u4-implementation-checkpoint-workspace-panel-authority-2026-11-04)
+rechecks asynchronous Git/panel reads and discards revoked results while preserving
+peer conversations. Accepted coordination, target installation and public switching
+remain pending.
 Subsequent work remains local by default: no push, deployment, version change,
 Release or activation is implied by a completed slice.
 
