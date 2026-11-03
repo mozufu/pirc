@@ -1,5 +1,7 @@
 //! Durable review of an existing-workspace transition, not acceptance or grants.
 //! A preview cannot retire the source, allocate folders or publish a new binding.
+mod preflight;
+
 use axum::{
     Extension, Json, Router,
     extract::{Path, State},
@@ -206,11 +208,19 @@ async fn describe(app: &AppState, identity: &Identity, row: Preview) -> ApiResul
     }
     let mut observations = Vec::new();
     let mut connections = Vec::new();
+    let mut resource_preflight = if source != target {
+        json!({"status":"cross_node_unsupported"})
+    } else {
+        json!({"status":"unsupported_or_unavailable"})
+    };
     for node in nodes {
         let connection = match app.nodes.connection(node) {
             Ok(c) => c,
             Err(_) => {
                 observations.push(json!({"nodeId":node,"status":"offline"}));
+                if source == Some(node) && source == target {
+                    resource_preflight = json!({"status":"offline"});
+                }
                 continue;
             }
         };
@@ -252,6 +262,15 @@ async fn describe(app: &AppState, identity: &Identity, row: Preview) -> ApiResul
         } else {
             observations.push(json!({"nodeId":node,"status":"unsupported_or_unavailable"}));
         }
+        if source == Some(node)
+            && source == target
+            && value["resourcePreflightVersion"] == 1
+            && observations
+                .last()
+                .is_some_and(|v| v["status"] == "observed")
+        {
+            resource_preflight = preflight::observe(app, identity, &row, node, connection).await?;
+        }
         connections.push((node.to_owned(), connection));
     }
     // Network waits cannot extend a device grant or freeze a stale policy as current.
@@ -271,9 +290,35 @@ async fn describe(app: &AppState, identity: &Identity, row: Preview) -> ApiResul
             && let Some(value) = observations.iter_mut().find(|v| v["nodeId"] == node)
         {
             *value = json!({"nodeId":node,"status":"connection_changed"});
+            resource_preflight = json!({"status":"connection_changed"});
         }
     }
-    let mut blockers = vec!["coordinator_not_available", "resource_preflight_required"];
+    if stale {
+        resource_preflight = json!({"status":"preview_stale"});
+    }
+    let mut blockers = vec!["coordinator_not_available"];
+    if resource_preflight["status"] != "observed" {
+        blockers.push("resource_preflight_required");
+    } else {
+        let observation = &resource_preflight["observation"];
+        if observation["policiesMatch"] != true {
+            blockers.push("node_policy_mismatch");
+        }
+        if observation["overlap"] == true {
+            blockers.push("resource_overlap_requires_review");
+        }
+        if observation["sourceResource"]["state"] != "observed"
+            || observation["targetResource"]["state"] != "observed"
+        {
+            blockers.push("resource_unavailable");
+        }
+        if observation["activity"]["pendingRecords"] == true {
+            blockers.push("source_has_pending_work");
+        }
+        if observation["activity"]["fenced"] == true {
+            blockers.push("source_already_fenced");
+        }
+    }
     if row.plan["source"]["environment"]["modePolicy"]["definition"].is_null()
         || row.plan["target"]["modePolicy"]["definition"].is_null()
     {
@@ -305,7 +350,7 @@ async fn describe(app: &AppState, identity: &Identity, row: Preview) -> ApiResul
     }
     Ok(
         json!({"preview":row,"state":if stale {"stale"}else{"preview"},
-        "canConfirm":false,"blockedBy":blockers,"nodeObservations":observations}),
+        "canConfirm":false,"blockedBy":blockers,"nodeObservations":observations,"resourcePreflight":resource_preflight}),
     )
 }
 #[cfg(test)]

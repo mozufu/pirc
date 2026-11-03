@@ -12,14 +12,16 @@ use std::{
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct Input {
     expected_workspace_id: String,
-    expected_runner_epoch: i64,
+    expected_runner_epoch: Option<i64>,
     target_workspace_id: String,
 }
 fn invalid(input: &Input) -> bool {
     [&input.expected_workspace_id, &input.target_workspace_id]
         .iter()
         .any(|id| id.is_empty() || id.len() > 1024 || id.contains('\0'))
-        || !(0..=9_007_199_254_740_991).contains(&input.expected_runner_epoch)
+        || input
+            .expected_runner_epoch
+            .is_some_and(|epoch| !(0..=9_007_199_254_740_991).contains(&epoch))
 }
 fn root(workspace: &crate::store::Workspace, session: &str, mode: &pirc_protocol::Mode) -> PathBuf {
     let root = PathBuf::from(&workspace.canonical_path);
@@ -61,7 +63,9 @@ fn observe(node: &Node, request: &Request, input: &Input) -> ApiResult<Value> {
     let id = request.param("id").unwrap_or_default();
     let session = db.claim_session(id, &request.user, false)?;
     if session.workspace_id != input.expected_workspace_id
-        || session.runner_epoch != input.expected_runner_epoch
+        || input
+            .expected_runner_epoch
+            .is_some_and(|epoch| session.runner_epoch != epoch)
     {
         return Err(ApiError::new(
             409,
@@ -184,7 +188,7 @@ mod tests {
         };
         let input = Input {
             expected_workspace_id: "repo".into(),
-            expected_runner_epoch: session.runner_epoch,
+            expected_runner_epoch: Some(session.runner_epoch),
             target_workspace_id: "target".into(),
         };
         (dir, node, request, input)
@@ -196,6 +200,12 @@ mod tests {
         let a = observe(&node, &request, &input).unwrap();
         let b = observe(&node, &request, &input).unwrap();
         assert_eq!(a, b);
+        let discovery = Input {
+            expected_workspace_id: input.expected_workspace_id.clone(),
+            expected_runner_epoch: None,
+            target_workspace_id: input.target_workspace_id.clone(),
+        };
+        assert_eq!(observe(&node, &request, &discovery).unwrap(), a);
         assert_eq!(a["canConfirm"], false);
         assert_eq!(a["historyComplete"], false);
         assert_eq!(a["evidence"]["overlap"], false);
@@ -239,12 +249,12 @@ mod tests {
     #[tokio::test]
     async fn stale_deleted_and_other_owner_sources_are_refused() {
         let (_dir, node, mut request, mut input) = fixture().await;
-        input.expected_runner_epoch += 1;
+        input.expected_runner_epoch = Some(input.expected_runner_epoch.unwrap() + 1);
         assert_eq!(
             observe(&node, &request, &input).unwrap_err().code,
             "stale_environment"
         );
-        input.expected_runner_epoch -= 1;
+        input.expected_runner_epoch = Some(input.expected_runner_epoch.unwrap() - 1);
         request.user = "other".into();
         assert!(observe(&node, &request, &input).is_err());
         request.user = "test-user".into();
@@ -325,7 +335,7 @@ mod tests {
                 operation_id: "preflight".into(),
                 plan_hash: "a".repeat(64),
                 expected_workspace_id: "repo".into(),
-                expected_runner_epoch: input.expected_runner_epoch,
+                expected_runner_epoch: input.expected_runner_epoch.unwrap(),
             },
             "phone",
             lease.generation,

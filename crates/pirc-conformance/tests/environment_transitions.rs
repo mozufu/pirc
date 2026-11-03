@@ -37,6 +37,16 @@ async fn preview_survives_gateway_restart_and_node_offline_without_changing_bind
     assert_eq!(prepared.status, 200, "{}", prepared.body);
     assert_eq!(prepared.body["canConfirm"], false);
     assert_eq!(
+        prepared.body["resourcePreflight"]["status"], "observed",
+        "{}",
+        prepared.body
+    );
+    assert!(
+        prepared.body["resourcePreflight"]
+            .get("observation")
+            .is_some()
+    );
+    assert_eq!(
         prepared.body["nodeObservations"][0]["confirmsRevocation"],
         false
     );
@@ -68,6 +78,11 @@ async fn preview_survives_gateway_restart_and_node_offline_without_changing_bind
     assert_eq!(offline.status, 200, "{}", offline.body);
     assert_eq!(offline.body["preview"], prepared.body["preview"]);
     assert_eq!(offline.body["canConfirm"], false);
+    assert!(
+        offline.body["resourcePreflight"]
+            .get("observation")
+            .is_none()
+    );
     assert_eq!(offline.body["nodeObservations"][0]["status"], "offline");
     let after = api
         .send("GET", &format!("{base}/environment"), &headers, None)
@@ -79,6 +94,26 @@ async fn preview_survives_gateway_restart_and_node_offline_without_changing_bind
     assert_eq!(resumed.status, 200, "{}", resumed.body);
     assert_eq!(resumed.body["preview"], prepared.body["preview"]);
     assert_eq!(resumed.body["canConfirm"], false);
+    // Recovery can change cached activity while retaining the same binding.
+    if resumed.body["state"] == "stale" {
+        assert_eq!(resumed.body["resourcePreflight"]["status"], "preview_stale");
+        assert!(
+            resumed.body["resourcePreflight"]
+                .get("observation")
+                .is_none()
+        );
+    } else {
+        assert_eq!(resumed.body["resourcePreflight"]["status"], "observed");
+    }
+    let fresh=api.send("POST",&format!("{base}/environment-transitions/previews"),&headers,
+        Some(json!({"operationId":"review-after-reconnect","targetWorkspaceId":WORKSPACE_ID,"expectedBinding":binding}))).await;
+    assert_eq!(fresh.status, 200, "{}", fresh.body);
+    assert_eq!(
+        fresh.body["resourcePreflight"]["status"], "observed",
+        "{}",
+        fresh.body
+    );
+    assert_eq!(fresh.body["canConfirm"], false);
     let control = api
         .send(
             "POST",

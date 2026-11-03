@@ -88,6 +88,9 @@ remain pending.
 The [Node resource preflight](unified-conversations.md#u4-implementation-checkpoint-node-resource-preflight-2026-11-04)
 now supplies read-only local path/alias and activity evidence without allocating
 target directories. It grants no switch authority; Gateway consumption remains open.
+The [Gateway resource observations](unified-conversations.md#u4-implementation-checkpoint-gateway-resource-observations-2026-11-04)
+now consume same-connection Node preflight with device/policy rechecks and sanitized
+resource/activity diagnostics. Public confirmation and execution remain gated.
 Subsequent work remains local by default: no push, deployment, version change,
 Release or activation is implied by a completed slice.
 

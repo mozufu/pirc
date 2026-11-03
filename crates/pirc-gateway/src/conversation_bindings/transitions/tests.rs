@@ -349,6 +349,15 @@ async fn http(
 #[tokio::test]
 async fn web_and_paired_native_share_preview_without_browser_connection() {
     let (app, _dir, id) = app();
+    let row = saved(&app, &id);
+    let response = preflight_reply(&app, &id, &row);
+    app.nodes.set_test_node(node(), move |r| {
+        Ok(if r.method == HttpMethod::Get {
+            preflight_caps()
+        } else {
+            response.clone()
+        })
+    });
     let (device, token) = app.devices.create("alice", "Android").unwrap();
     let payload = serde_json::to_value(input(&app.db.lock(), &id)).unwrap();
     let prepare_path = format!("/api/sessions/{id}/environment-transitions/previews");
@@ -359,6 +368,207 @@ async fn web_and_paired_native_share_preview_without_browser_connection() {
     let status_path = format!("/api/sessions/{id}/environment-transitions/previews/move-1");
     assert_eq!(http(&app, &status_path, None, Some(&token)).await, native);
     assert_eq!(native.1["canConfirm"], false);
+    assert_eq!(native.1["resourcePreflight"]["status"], "observed");
     app.devices.revoke("alice", &device.id).unwrap();
     assert_eq!(http(&app, &status_path, None, Some(&token)).await.0, 401);
+}
+
+fn preflight_caps() -> NodeHttpResponse {
+    let mut result = caps();
+    result.body.as_mut().unwrap()["resourcePreflightVersion"] = json!(1);
+    result
+}
+fn preflight_reply(app: &AppState, id: &str, row: &Preview) -> NodeHttpResponse {
+    let session = app.db.lock().get_session(id).unwrap();
+    let evidence = json!({"version":1,"sessionId":session.pi_session_id,"sourceWorkspaceId":"repo","targetWorkspaceId":"target",
+        "runnerEpoch":777,
+        "sourceMode":{"id":"directory","definitionHash":payload_hash(&row.plan["source"]["environment"]["modePolicy"]["definition"])},
+        "targetMode":{"id":"directory","definitionHash":payload_hash(&row.plan["target"]["modePolicy"]["definition"])},
+        "sourceResource":{"state":"observed","identity":"a".repeat(64),"privatePath":"/private/never-expose"},
+        "targetResource":{"state":"observed","identity":"b".repeat(64)},"overlap":false,
+        "activity":{"pendingRecords":false,"runnerPresent":false,"runnerStarting":false,"writeClaimsPresent":false,"fenced":false},
+        "unrecognizedSecret":"never-expose"});
+    NodeHttpResponse {
+        status: 200,
+        body: Some(
+            json!({"evidenceHash":payload_hash(&evidence),"evidence":evidence,"canConfirm":false,"historyComplete":false}),
+        ),
+    }
+}
+#[tokio::test]
+async fn resource_preflight_uses_original_mapping_and_never_forwards_private_node_fields() {
+    let (app, _dir, id) = app();
+    let row = saved(&app, &id);
+    let response = preflight_reply(&app, &id, &row);
+    let calls = Arc::new(Mutex::new(Vec::new()));
+    let seen = calls.clone();
+    app.nodes.set_test_node(node(), move |r| {
+        seen.lock().unwrap().push(r.clone());
+        Ok(if r.method == HttpMethod::Get {
+            preflight_caps()
+        } else {
+            response.clone()
+        })
+    });
+    let result = describe(&app, &identity(), row).await.unwrap();
+    assert_eq!(result["resourcePreflight"]["status"], "observed");
+    assert_eq!(
+        result["resourcePreflight"]["observation"]["policiesMatch"],
+        true
+    );
+    assert_eq!(result["canConfirm"], false);
+    assert!(!result.to_string().contains("never-expose"));
+    let calls = calls.lock().unwrap();
+    assert_eq!(calls.len(), 2);
+    assert_eq!(
+        calls[1].url,
+        "/api/sessions/Private/execution-fences/preflight"
+    );
+    assert_eq!(
+        calls[1].payload.as_ref().unwrap()["expectedWorkspaceId"],
+        "repo"
+    );
+    assert_eq!(
+        calls[1].payload.as_ref().unwrap()["targetWorkspaceId"],
+        "target"
+    );
+    assert_eq!(
+        app.db.lock().get_session(&id).unwrap().workspace_id,
+        "node:repo"
+    );
+}
+#[tokio::test]
+async fn resource_preflight_rejects_wrong_identity_hash_and_arbitrary_error_bodies() {
+    for kind in 0..3 {
+        let (app, _dir, id) = app();
+        let row = saved(&app, &id);
+        let mut response = preflight_reply(&app, &id, &row);
+        if kind == 0 {
+            let body = response.body.as_mut().unwrap();
+            body["evidence"]["sessionId"] = json!("other-session");
+            body["evidenceHash"] = json!(payload_hash(&body["evidence"]));
+        }
+        if kind == 1 {
+            response.body.as_mut().unwrap()["evidenceHash"] = json!("0".repeat(64));
+        }
+        if kind == 2 {
+            response.status = 500;
+            response.body = Some(json!({"secret":"never-expose"}));
+        }
+        app.nodes.set_test_node(node(), move |r| {
+            Ok(if r.method == HttpMethod::Get {
+                preflight_caps()
+            } else {
+                response.clone()
+            })
+        });
+        let result = describe(&app, &identity(), row).await.unwrap();
+        assert_ne!(result["resourcePreflight"]["status"], "observed");
+        assert!(!result.to_string().contains("other-session"));
+        assert!(!result.to_string().contains("never-expose"));
+        assert_eq!(result["canConfirm"], false);
+    }
+}
+#[tokio::test]
+async fn resource_preflight_discards_policy_or_connection_changes_during_host_wait() {
+    for replace in [false, true] {
+        let (app, _dir, id) = app();
+        let row = saved(&app, &id);
+        let response = preflight_reply(&app, &id, &row);
+        let db = app.db.clone();
+        let nodes = app.nodes.clone();
+        app.nodes.set_test_node(node(), move |r| {
+            if r.method == HttpMethod::Get {
+                return Ok(preflight_caps());
+            }
+            if replace {
+                nodes.set_test_node(node(), |_| Ok(caps()));
+            } else {
+                db.lock()
+                    .patch_workspace_capabilities(
+                        "node:target",
+                        &serde_json::from_value::<CapabilitiesPatch>(json!({"web_search":false}))
+                            .unwrap(),
+                    )
+                    .unwrap();
+            }
+            Ok(response.clone())
+        });
+        let result = describe(&app, &identity(), row).await.unwrap();
+        assert_eq!(
+            result["resourcePreflight"]["status"],
+            if replace {
+                "connection_changed"
+            } else {
+                "preview_stale"
+            }
+        );
+        assert!(result["resourcePreflight"].get("observation").is_none());
+    }
+}
+#[tokio::test]
+async fn resource_preflight_rechecks_native_device_after_the_host_read() {
+    let (app, _dir, id) = app();
+    let row = saved(&app, &id);
+    let response = preflight_reply(&app, &id, &row);
+    let (device, _) = app.devices.create("alice", "Android").unwrap();
+    let device_id = device.id.clone();
+    let devices = app.devices.clone();
+    app.nodes.set_test_node(node(), move |r| {
+        if r.method == HttpMethod::Get {
+            return Ok(preflight_caps());
+        }
+        devices.revoke("alice", &device_id).unwrap();
+        Ok(response.clone())
+    });
+    let mut caller = identity();
+    caller.device_id = Some(device.id);
+    assert_eq!(describe(&app, &caller, row).await.unwrap_err().status, 401);
+}
+
+#[tokio::test]
+async fn capability_wait_cannot_extend_device_or_policy_authority_to_host_inspection() {
+    for revoke_device in [false, true] {
+        let (app, _dir, id) = app();
+        let row = saved(&app, &id);
+        let (device, _) = app.devices.create("alice", "Android").unwrap();
+        let devices = app.devices.clone();
+        let device_id = device.id.clone();
+        let db = app.db.clone();
+        let posts = Arc::new(Mutex::new(0));
+        let seen = posts.clone();
+        app.nodes.set_test_node(node(), move |r| {
+            if r.method == HttpMethod::Post {
+                *seen.lock().unwrap() += 1;
+            }
+            if revoke_device {
+                devices.revoke("alice", &device_id).unwrap();
+            } else {
+                db.lock()
+                    .patch_workspace_capabilities(
+                        "node:target",
+                        &serde_json::from_value::<CapabilitiesPatch>(json!({"web_search":false}))
+                            .unwrap(),
+                    )
+                    .unwrap();
+            }
+            Ok(preflight_caps())
+        });
+        let mut caller = identity();
+        caller.device_id = Some(device.id);
+        let result = describe(&app, &caller, row).await;
+        if revoke_device {
+            assert_eq!(result.unwrap_err().status, 401);
+        } else {
+            assert_eq!(
+                result.unwrap()["resourcePreflight"]["status"],
+                "preview_stale"
+            );
+        }
+        assert_eq!(
+            *posts.lock().unwrap(),
+            0,
+            "stale authority must not inspect host resources"
+        );
+    }
 }

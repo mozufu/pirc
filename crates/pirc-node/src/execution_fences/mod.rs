@@ -295,7 +295,7 @@ pub(crate) async fn drain(node: &Node, owner: &str, session: &str, op: &str) -> 
 }
 pub async fn capabilities(_node: Node, _request: Request) -> ApiResult<Response> {
     Ok(Response::json(
-        json!({"version":1,"durableAdmissionFence":true,"trackedSupervisorDrain":true,"installsEnvironment":false,"confirmsRevocation":false}),
+        json!({"version":1,"resourcePreflightVersion":1,"durableAdmissionFence":true,"trackedSupervisorDrain":true,"installsEnvironment":false,"confirmsRevocation":false}),
     ))
 }
 pub async fn create(node: Node, request: Request) -> ApiResult<Response> {

@@ -54,6 +54,12 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
+Latest U4 delivery: [Gateway resource observations](#u4-implementation-checkpoint-gateway-resource-observations-2026-11-04)
+now consume the [Node preflight](#u4-implementation-checkpoint-node-resource-preflight-2026-11-04)
+with connection/device/policy checks and separate Gateway/Node epoch identities.
+Confirmation, accepted-transition recovery, full revocation and target installation
+remain open; read-only observations do not enable a workspace switch.
+
 Delivered U1 behavior:
 
 - Persist account-scoped immutable first-message intent and original attachment
@@ -4492,3 +4498,75 @@ with APKs, SDKs, shared caches, user state and other agents' work preserved. Thi
 slice is committed locally. Gateway consumption/confirmation, durable accepted
 coordination, real access retirement and replacement installation remain U4
 requirements; U1 activation, U5/U6 and necessary client operations stay open.
+
+## U4 implementation checkpoint: Gateway resource observations (2026-11-04)
+
+Local continuation of `97bd0303`. Node advertises additive
+`resourcePreflightVersion: 1`; Gateway previews consume the read-only preflight
+only for a supported same-Node source/target using the connection already probed.
+Existing Nodes without this capability keep their previous capability-only flow.
+Local workspace IDs come from the stored `Workspace::local_id` mapping; the Node
+session URL is encoded from the stored remote identity, never the public session
+ID or user-supplied path.
+
+Before the additional host read, Gateway rechecks current device and frozen
+policy/visibility. It rechecks them after the wait and invalidates replaced Node
+connections. Stale previews do not trigger a host inspection; stale/replaced
+observations are discarded. Wrong source/target/session/mode identities, malformed Node epochs,
+unsupported evidence versions, malformed fingerprints and evidence-hash mismatches
+are refused. Arbitrary Node errors and unknown fields are not forwarded. The
+paired-device and browser routes share the same preview without an active Web
+connection, including the sanitized resource observation.
+
+`resourcePreflight` now has explicit observed/offline/unsupported/stale/connection
+states. An observation includes resource fingerprints/states, policy-match and
+overlap diagnostics, and known boolean activity fields. Its `observationHash` is
+bound to the owner-scoped frozen plan. It omits private Node session IDs, absolute
+paths, full modes, arbitrary Node bodies and supervisor inventories. Mode mismatch,
+missing resources, overlapping roots, pending work and an existing fence remain
+explicit blockers. This observation is refreshed on lookup, not stored as a new
+grant or substituted for the immutable review plan.
+
+Gateway's event epoch and Node's runner epoch are distinct namespaces. The real
+restart test exposed this: registration increments the Gateway event epoch even
+without a Node runner change. Gateway therefore never sends its event epoch as
+`expectedRunnerEpoch`. Initial read-only preflight discovers the Node epoch and
+includes it in the sanitized observation/hash; Node callers may still supply a
+known Node epoch to enforce a strict precondition. Confirmation must recheck that
+observed Node epoch, connection and resource identity before any accepted effects.
+A reconnected Node invalidates the old frozen Gateway preview; a fresh preview
+can obtain new host observations without changing the conversation binding.
+
+Every preview still reports `canConfirm: false`. Durable accepted coordination,
+confirmation tied to a fresh resource observation, complete old-authority
+retirement, target preparation/installation acknowledgement and necessary Web/App
+controls remain U4 work. Empty activity is not full idle proof. Gateway/Node
+schemas stay **1026/2018**; protocol/client/private-envelope versions and U1's
+activation gate are unchanged. There are no dependency, Nix hash or data-lifetime
+changes.
+
+Validation: **400 Gateway tests passed**, including five new preflight integration
+cases and the strengthened paired-native/Web HTTP test. Coverage includes old
+Nodes without preflight, encoded/stored identity mapping, response whitelisting,
+wrong identity/hash/error bodies, changes during both capability and resource
+waits, and native-device revocation before or after inspection. Test Nodes use a
+runner epoch different from Gateway's event epoch to prevent conflating them.
+**13 Node fence/preflight tests passed**, including discovery without a known
+Node epoch and strict rejection when an explicitly pinned Node epoch is stale.
+
+**14 required real-process cases passed**: the updated preview/restart/offline/
+reconnect case, four Node fences, three native checkpoints, two conversation
+admissions, two conversation creations, memory and project deletion. The first
+integration run exposed the separate epoch namespaces; production was corrected
+to discover the Node epoch instead of relaxing known-epoch checks. The preview
+case retains the old frozen plan, discards stale observations and performs a new
+review after reconnect; the original binding, files and conversation remain.
+
+Strict Gateway/Node/conformance all-target Clippy, Rust fmt, changed-document
+formatting and diff checks passed. Paired-native evidence is HTTP/router coverage,
+not Android OS/device acceptance. No Flutter/Web sources changed, and no local
+Nix, emulator, browser or remote CI acceptance is claimed. The owned temporary
+build/log tree (about **2.3 GiB**) is removed after verification; APKs, SDKs, shared
+caches, user state and other agents' work are preserved. This slice is committed
+locally; accepted coordination/installation and the remaining U1/U4–U6 gates stay
+open.

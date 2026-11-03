@@ -43,6 +43,8 @@ The local [workspace-panel checkpoint](unified-conversations.md#u4-implementatio
 
 The [Node resource preflight](unified-conversations.md#u4-implementation-checkpoint-node-resource-preflight-2026-11-04) adds owner-scoped, non-allocating physical-directory and activity observations. Its hashes are point-in-time evidence, never grants or revocation/installation acknowledgement.
 
+The [Gateway resource-observation checkpoint](unified-conversations.md#u4-implementation-checkpoint-gateway-resource-observations-2026-11-04) consumes the same-Node preflight through the captured connection, rechecks authority before/after inspection and discards stale results. Its refreshed observation hash is not an accepted transition or installed-policy acknowledgement.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.
