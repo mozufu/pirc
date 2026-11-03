@@ -1,6 +1,9 @@
 //! Node half of a future environment transition: durable admission fencing and
 //! tracked supervisor shutdown. No release/install route exists yet. Drained
 //! supervisors are NOT evidence that all descendants or OS grants are revoked.
+mod preflight;
+pub(crate) use preflight::handle as preflight;
+
 use crate::{
     error::{ApiError, ApiResult},
     router::{Request, Response},

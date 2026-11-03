@@ -75,6 +75,10 @@ pub fn routes(config: &NodeConfig) -> Vec<Route> {
             crate::execution_fences::capabilities,
         ),
         post(
+            "/api/sessions/:id/execution-fences/preflight",
+            crate::execution_fences::preflight,
+        ),
+        post(
             "/api/sessions/:id/execution-fences",
             crate::execution_fences::create,
         ),

@@ -85,6 +85,9 @@ The following [workspace-panel authority checkpoint](unified-conversations.md#u4
 rechecks asynchronous Git/panel reads and discards revoked results while preserving
 peer conversations. Accepted coordination, target installation and public switching
 remain pending.
+The [Node resource preflight](unified-conversations.md#u4-implementation-checkpoint-node-resource-preflight-2026-11-04)
+now supplies read-only local path/alias and activity evidence without allocating
+target directories. It grants no switch authority; Gateway consumption remains open.
 Subsequent work remains local by default: no push, deployment, version change,
 Release or activation is implied by a completed slice.
 

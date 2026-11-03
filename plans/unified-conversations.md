@@ -4440,3 +4440,55 @@ verification. APKs, SDKs, shared caches, user data and other agents' work are
 preserved. This checkpoint is committed locally; executable transition acceptance,
 full revocation proof, replacement installation and the necessary Web/App controls
 remain the next U4 work. U5/U6 and U1 activation acceptance remain open.
+
+## U4 implementation checkpoint: Node resource preflight (2026-11-04)
+
+Local continuation of `133c32c3`. The new read-only Node route
+`POST /api/sessions/:id/execution-fences/preflight` accepts
+`expectedWorkspaceId`, `expectedRunnerEpoch` and `targetWorkspaceId`. It checks
+conversation ownership, source epoch/workspace, both local workspace modes and
+checkpoint continuation ownership before observing filesystem resources. Foreign
+Node workspaces are refused; deletion or missing modes remain explicit errors.
+
+The response contains source/target resource states and opaque fingerprints of
+canonical path bytes/device/inode, mode-definition hashes, overlap observations,
+current runner/startup/write-claim and pending command/run observations, plus the
+existing supervisor-journal summaries. It returns neither absolute host paths nor
+private session-file paths. Replacing a directory or changing its physical alias
+changes the evidence; absent/unreadable/non-directory resources are explicit.
+Per-session target paths are computed without calling `session_root`, allocating
+folders, copying files, acquiring control or dispatching work. An existing fence
+can be observed after restart without reopening admission.
+
+This is point-in-time local evidence, not a durable reservation or grant. Every
+response keeps `canConfirm: false`, `historyComplete: false`, revocation and target
+installation blockers. Shared/overlapping resources need review; an empty runner
+registry is not proof of idle processes or retired descriptors. No arbitrary
+mount/project-file inventory, live permission replacement or cross-Node handoff
+is claimed. Gateway currently only performs its existing capability preview;
+consuming this resource preflight in an accepted coordinator remains next work.
+Web/App confirmation stays unavailable until that coordinator, full revocation
+and target installation/acknowledgement are complete.
+
+Gateway/Node schemas remain **1026/2018**, protocol **15**, and U1 stays gated.
+There are no dependency, package-version, Nix hash or lifetime/deletion changes.
+Validation: **13 focused Node execution-fence/preflight tests passed**, including
+six new preflight tests for stable read-only observations, stale/deleted/foreign
+owners, changed/missing/aliased resources, pending/fenced work, private checkpoint
+targets and non-allocation of per-session target directories. The per-session
+fixture uses a mode ID explicitly allowed by its test Node; production mode
+rejection was retained.
+
+**Eight required real-process cases passed**: four Node execution-fence cases,
+three native checkpoints, and Gateway preview restart/offline behavior. The
+existing fence/reboot case now calls the real preflight route before acceptance
+and after a hard Node restart; the persisted fence is reported without releasing
+it or claiming installation. Strict Node/conformance all-target Clippy, Rust fmt,
+changed-document formatting and diff checks passed. No full workspace suite,
+Flutter/device, local Nix or remote CI run is claimed.
+
+The owned isolated build/log tree (about **2.5 GiB**) is removed after testing,
+with APKs, SDKs, shared caches, user state and other agents' work preserved. This
+slice is committed locally. Gateway consumption/confirmation, durable accepted
+coordination, real access retirement and replacement installation remain U4
+requirements; U1 activation, U5/U6 and necessary client operations stay open.

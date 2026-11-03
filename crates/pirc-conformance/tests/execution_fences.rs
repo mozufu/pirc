@@ -68,6 +68,23 @@ async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() 
     assert_eq!(control["data"]["status"], 200, "{control}");
     let generation = control["data"]["body"]["lease"]["generation"].clone();
     assert!(generation.is_number(), "{control}");
+    let preflight_request = req(
+        "POST",
+        &format!("{base}/execution-fences/preflight"),
+        json!({
+            "expectedWorkspaceId":"chats", "expectedRunnerEpoch":epoch, "targetWorkspaceId":"chats"
+        }),
+    );
+    let preflight = link
+        .request("preflight-before", preflight_request.clone())
+        .await;
+    assert_eq!(preflight["data"]["status"], 200, "{preflight}");
+    assert_eq!(preflight["data"]["body"]["canConfirm"], false);
+    assert_eq!(preflight["data"]["body"]["historyComplete"], false);
+    assert_eq!(
+        preflight["data"]["body"]["evidence"]["activity"]["fenced"],
+        false
+    );
     let acceptance = req(
         "POST",
         &format!("{base}/execution-fences"),
@@ -91,6 +108,15 @@ async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() 
         status["data"]["body"]["transition"]["state"], "fenced",
         "{status}"
     );
+    let observed = link
+        .request("preflight-after-reboot", preflight_request)
+        .await;
+    assert_eq!(observed["data"]["status"], 200, "{observed}");
+    assert_eq!(
+        observed["data"]["body"]["evidence"]["activity"]["fenced"],
+        true
+    );
+    assert_eq!(observed["data"]["body"]["canConfirm"], false);
     let replay = link.request("duplicate", acceptance).await;
     assert_eq!(replay["data"]["body"], status["data"]["body"]);
     let mut conflicting = req(

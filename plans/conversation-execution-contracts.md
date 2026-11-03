@@ -41,6 +41,8 @@ The local [Gateway preview checkpoint](unified-conversations.md#u4-implementatio
 
 The local [workspace-panel checkpoint](unified-conversations.md#u4-implementation-checkpoint-workspace-panel-authority-2026-11-04) binds asynchronous inspection to the captured source environment, stops owned Git groups after fencing and suppresses late output. This is a host-effect prerequisite, not full OS revocation or target installation evidence.
 
+The [Node resource preflight](unified-conversations.md#u4-implementation-checkpoint-node-resource-preflight-2026-11-04) adds owner-scoped, non-allocating physical-directory and activity observations. Its hashes are point-in-time evidence, never grants or revocation/installation acknowledgement.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.
