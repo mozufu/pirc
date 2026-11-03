@@ -181,6 +181,7 @@ async fn saved_unresolved_terminal_blocks_drain_and_deletion_without_erasing_fil
             plan_hash: "a".repeat(64),
             expected_workspace_id: "repo".into(),
             expected_runner_epoch: 0,
+            preflight: None,
         };
         crate::execution_fences::accept(
             &f.node.db.lock(),

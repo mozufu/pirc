@@ -53,15 +53,58 @@ fn resource(path: &Path) -> (Value, Option<PathBuf>) {
     }
 }
 fn observe(node: &Node, request: &Request, input: &Input) -> ApiResult<Value> {
+    observe_at(
+        node,
+        &node.db.lock(),
+        &request.user,
+        request.param("id").unwrap_or_default(),
+        input,
+    )
+}
+pub(super) fn check_proof(
+    node: &Node,
+    db: &Connection,
+    owner: &str,
+    id: &str,
+    intent: &Intent,
+) -> ApiResult<()> {
+    let Some(proof) = &intent.preflight else {
+        return Ok(());
+    };
+    let current = observe_at(
+        node,
+        db,
+        owner,
+        id,
+        &Input {
+            expected_workspace_id: intent.expected_workspace_id.clone(),
+            expected_runner_epoch: Some(intent.expected_runner_epoch),
+            target_workspace_id: proof.target_workspace_id.clone(),
+        },
+    )?;
+    if current["evidenceHash"] != proof.evidence_hash {
+        return Err(ApiError::new(
+            409,
+            "stale_resource_preflight",
+            "The reviewed resources or activity changed; refresh before accepting",
+        ));
+    }
+    Ok(())
+}
+fn observe_at(
+    node: &Node,
+    db: &Connection,
+    owner: &str,
+    id: &str,
+    input: &Input,
+) -> ApiResult<Value> {
     if invalid(input) {
         return Err(ApiError::invalid_input());
     }
-    let db = node.db.lock();
     if node.closing() {
         return Err(ApiError::runner_unavailable("Node is stopping"));
     }
-    let id = request.param("id").unwrap_or_default();
-    let session = db.claim_session(id, &request.user, false)?;
+    let session = db.claim_session(id, owner, false)?;
     if session.workspace_id != input.expected_workspace_id
         || input
             .expected_runner_epoch
@@ -81,11 +124,7 @@ fn observe(node: &Node, request: &Request, input: &Input) -> ApiResult<Value> {
                 "Cross-Node resource preflight is not supported",
             ));
         }
-        crate::checkpoints::continuation::require_workspace_owner(
-            &db,
-            &workspace.id,
-            &request.user,
-        )?;
+        crate::checkpoints::continuation::require_workspace_owner(db, &workspace.id, owner)?;
         if db.workspace_deletion(&workspace.id)?.is_some() {
             return Err(ApiError::not_found("Workspace not found"));
         }
@@ -97,7 +136,7 @@ fn observe(node: &Node, request: &Request, input: &Input) -> ApiResult<Value> {
     let overlap = source_path
         .zip(target_path)
         .map(|(a, b)| a.starts_with(&b) || b.starts_with(&a));
-    let fenced = match require_open(&db, id) {
+    let fenced = match require_open(db, id) {
         Ok(()) => false,
         Err(error) if error.code == "environment_transition_pending" => true,
         Err(error) => return Err(error),
@@ -109,10 +148,10 @@ fn observe(node: &Node, request: &Request, input: &Input) -> ApiResult<Value> {
         "sourceResource":source_resource,"targetResource":target_resource,"overlap":overlap,
         "activity":{"pendingRecords":pending,"runnerPresent":node.runners.get(id).is_some(),"runnerStarting":node.runners.is_starting(id),
             "writeClaimsPresent":!node.writes.leases(id).is_empty(),"fenced":fenced},
-        "sandboxProcesses":crate::process_journal::summary(&db,id)?,
-        "hostCommands":crate::host_commands::summary(&db,id)?,
-        "terminals":crate::terminals::journal::summary(&db,id)?,
-        "browser":crate::browser::journal::summary(&db,id)?});
+        "sandboxProcesses":crate::process_journal::summary(db,id)?,
+        "hostCommands":crate::host_commands::summary(db,id)?,
+        "terminals":crate::terminals::journal::summary(db,id)?,
+        "browser":crate::browser::journal::summary(db,id)?});
     let mut blockers = vec!["revocation_unconfirmed", "target_installation_unavailable"];
     if source.id == target.id {
         blockers.push("environment_unchanged");
@@ -153,10 +192,10 @@ pub(crate) async fn handle(node: Node, request: Request) -> ApiResult<Response> 
 }
 
 #[cfg(test)]
-mod tests {
+pub(super) mod tests {
     use super::*;
     use crate::{router::Body, store::ModeId};
-    async fn fixture() -> (tempfile::TempDir, Node, Request, Input) {
+    pub(super) async fn fixture() -> (tempfile::TempDir, Node, Request, Input) {
         let (dir, node) = crate::app::tests::workspace_test_node().await;
         let root = dir.path().canonicalize().unwrap();
         for id in ["repo", "target"] {
@@ -336,6 +375,7 @@ mod tests {
                 plan_hash: "a".repeat(64),
                 expected_workspace_id: "repo".into(),
                 expected_runner_epoch: input.expected_runner_epoch.unwrap(),
+                preflight: None,
             },
             "phone",
             lease.generation,
@@ -344,6 +384,184 @@ mod tests {
         let fenced = observe(&node, &request, &input).unwrap();
         assert_eq!(fenced["evidence"]["activity"]["fenced"], true);
         assert_eq!(fenced["canConfirm"], false);
+        node.close().await;
+    }
+}
+
+#[cfg(test)]
+mod acceptance_tests {
+    use super::tests::fixture;
+    use super::*;
+    fn checked(
+        node: &Node,
+        request: &Request,
+        intent: &Intent,
+        generation: i64,
+    ) -> ApiResult<Receipt> {
+        let db = node.db.lock();
+        let id = request.param("id").unwrap();
+        super::super::accept_with(&db, &request.user, id, intent, "phone", generation, |tx| {
+            check_proof(node, tx, &request.user, id, intent)
+        })
+    }
+    fn intent(node: &Node, request: &Request, input: &Input) -> (Intent, i64) {
+        let id = request.param("id").unwrap();
+        let lease = node
+            .db
+            .lock()
+            .acquire_lease(id, "phone", false, 60000)
+            .unwrap();
+        let observed = observe(node, request, input).unwrap();
+        (
+            Intent {
+                operation_id: "bound-transition".into(),
+                plan_hash: "a".repeat(64),
+                expected_workspace_id: input.expected_workspace_id.clone(),
+                expected_runner_epoch: input.expected_runner_epoch.unwrap(),
+                preflight: Some(ResourceProof {
+                    target_workspace_id: input.target_workspace_id.clone(),
+                    evidence_hash: observed["evidenceHash"].as_str().unwrap().into(),
+                }),
+            },
+            lease.generation,
+        )
+    }
+    #[tokio::test]
+    async fn changed_resource_rejects_before_fencing_and_replay_keeps_original_proof() {
+        let (dir, node, request, input) = fixture().await;
+        let (mut intent, generation) = intent(&node, &request, &input);
+        let root = dir.path().canonicalize().unwrap();
+        std::fs::rename(root.join("target"), root.join("saved-target")).unwrap();
+        assert_eq!(
+            checked(&node, &request, &intent, generation)
+                .unwrap_err()
+                .code,
+            "stale_resource_preflight"
+        );
+        require_open(&node.db.lock(), request.param("id").unwrap()).unwrap();
+        intent.preflight.as_mut().unwrap().evidence_hash = observe(&node, &request, &input)
+            .unwrap()["evidenceHash"]
+            .as_str()
+            .unwrap()
+            .into();
+        let receipt = checked(&node, &request, &intent, generation).unwrap();
+        assert_eq!(receipt.state, "fenced");
+        assert!(!receipt.revocation_confirmed && !receipt.target_installed);
+        // Receipt replay is reconciliation, not a new check or resource grant.
+        node.db
+            .lock()
+            .acquire_lease(request.param("id").unwrap(), "other-device", true, 60000)
+            .unwrap();
+        let replay = checked(&node, &request, &intent, generation).unwrap();
+        assert_eq!(replay.intent, receipt.intent);
+        let mut conflict = intent.clone();
+        conflict.preflight.as_mut().unwrap().evidence_hash = "b".repeat(64);
+        assert_eq!(
+            checked(&node, &request, &conflict, generation)
+                .unwrap_err()
+                .code,
+            "conflict"
+        );
+        assert!(!root.join("target").exists());
+        assert!(root.join("saved-target").is_dir());
+        node.close().await;
+    }
+    #[tokio::test]
+    async fn activity_changes_and_failed_commits_leave_source_open() {
+        let (_dir, node, request, input) = fixture().await;
+        let (mut intent, generation) = intent(&node, &request, &input);
+        let id = request.param("id").unwrap();
+        let run = node.db.lock().create_run(id).unwrap();
+        assert_eq!(
+            checked(&node, &request, &intent, generation)
+                .unwrap_err()
+                .code,
+            "stale_resource_preflight"
+        );
+        require_open(&node.db.lock(), id).unwrap();
+        node.db
+            .lock()
+            .update_run(&run, crate::store::RunStatus::Succeeded, None)
+            .unwrap();
+        intent.preflight.as_mut().unwrap().evidence_hash = observe(&node, &request, &input)
+            .unwrap()["evidenceHash"]
+            .as_str()
+            .unwrap()
+            .into();
+        node.db.lock().execute_batch("CREATE TRIGGER refuse_bound_fence BEFORE INSERT ON execution_fences BEGIN SELECT RAISE(ABORT,'simulated disk failure'); END;").unwrap();
+        assert!(checked(&node, &request, &intent, generation).is_err());
+        require_open(&node.db.lock(), id).unwrap();
+        assert_eq!(node.db.lock().get_session(id).unwrap().workspace_id, "repo");
+        node.close().await;
+    }
+    #[tokio::test]
+    async fn semantic_upgrade_preserves_legacy_receipts_and_does_not_invent_proofs() {
+        let (_dir, node, request, input) = fixture().await;
+        let (mut intent, generation) = intent(&node, &request, &input);
+        intent.preflight = None;
+        let id = request.param("id").unwrap();
+        super::super::accept(
+            &node.db.lock(),
+            &request.user,
+            id,
+            &intent,
+            "phone",
+            generation,
+        )
+        .unwrap();
+        let path = node.config.database_path.clone();
+        node.db
+            .lock()
+            .pragma_update(None, "user_version", 2018)
+            .unwrap();
+        node.close().await;
+        drop(node);
+        let db = crate::store::Db::open(&path).unwrap();
+        let db = db.lock();
+        assert_eq!(
+            db.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))
+                .unwrap(),
+            2019
+        );
+        let saved = receipt(&db, &request.user, id, &intent.operation_id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(saved.intent, intent);
+        assert!(
+            serde_json::to_value(saved).unwrap()["intent"]
+                .get("preflight")
+                .is_none()
+        );
+        assert_eq!(
+            require_open(&db, id).unwrap_err().code,
+            "environment_transition_pending"
+        );
+    }
+    #[tokio::test]
+    async fn bare_acceptance_cannot_bypass_resource_validation() {
+        let (_dir, node, request, input) = fixture().await;
+        let (intent, generation) = intent(&node, &request, &input);
+        let id = request.param("id").unwrap();
+        assert_eq!(
+            super::super::accept(
+                &node.db.lock(),
+                &request.user,
+                id,
+                &intent,
+                "phone",
+                generation
+            )
+            .unwrap_err()
+            .code,
+            "resource_preflight_required"
+        );
+        require_open(&node.db.lock(), id).unwrap();
+        assert!(checked(&node, &request, &intent, generation + 1).is_err());
+        require_open(&node.db.lock(), id).unwrap();
+        assert_eq!(
+            serde_json::to_value(&intent).unwrap()["preflight"]["evidenceHash"],
+            intent.preflight.as_ref().unwrap().evidence_hash
+        );
         node.close().await;
     }
 }

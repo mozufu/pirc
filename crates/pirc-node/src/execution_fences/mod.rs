@@ -48,6 +48,14 @@ pub(crate) struct Intent {
     pub plan_hash: String,
     pub expected_workspace_id: String,
     pub expected_runner_epoch: i64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preflight: Option<ResourceProof>,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub(crate) struct ResourceProof {
+    pub target_workspace_id: String,
+    pub evidence_hash: String,
 }
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -134,6 +142,7 @@ fn receipt(db: &Connection, owner: &str, session: &str, op: &str) -> ApiResult<O
     })
     .transpose()
 }
+#[cfg(test)]
 pub(crate) fn accept(
     db: &Connection,
     owner: &str,
@@ -142,7 +151,39 @@ pub(crate) fn accept(
     client: &str,
     generation: i64,
 ) -> ApiResult<Receipt> {
+    accept_with(db, owner, session, intent, client, generation, |_| {
+        if intent.preflight.is_some() {
+            return Err(ApiError::new(
+                409,
+                "resource_preflight_required",
+                "Resource-bound acceptance requires the Node resource check",
+            ));
+        }
+        Ok(())
+    })
+}
+fn accept_with(
+    db: &Connection,
+    owner: &str,
+    session: &str,
+    intent: &Intent,
+    client: &str,
+    generation: i64,
+    resource_check: impl FnOnce(&Connection) -> ApiResult<()>,
+) -> ApiResult<Receipt> {
     validate(intent)?;
+    if let Some(proof) = &intent.preflight
+        && (proof.target_workspace_id.is_empty()
+            || proof.target_workspace_id.len() > 1024
+            || proof.target_workspace_id.contains('\0')
+            || proof.evidence_hash.len() != 64
+            || !proof
+                .evidence_hash
+                .bytes()
+                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b)))
+    {
+        return Err(ApiError::invalid_input());
+    }
     atomic(db, |tx| {
         if let Some(saved) = receipt(tx, owner, session, &intent.operation_id)? {
             if saved.intent != *intent {
@@ -166,6 +207,7 @@ pub(crate) fn accept(
         }
         tx.get_workspace(&current.workspace_id)?;
         require_open(tx, session)?;
+        resource_check(tx)?;
         let stamp = now_ms();
         tx.execute(
             "INSERT INTO execution_fences VALUES(?1,?2,?3,?4,'fenced',NULL,?5,?5)",
@@ -295,20 +337,22 @@ pub(crate) async fn drain(node: &Node, owner: &str, session: &str, op: &str) -> 
 }
 pub async fn capabilities(_node: Node, _request: Request) -> ApiResult<Response> {
     Ok(Response::json(
-        json!({"version":1,"resourcePreflightVersion":1,"durableAdmissionFence":true,"trackedSupervisorDrain":true,"installsEnvironment":false,"confirmsRevocation":false}),
+        json!({"version":1,"resourcePreflightVersion":1,"resourceFenceVersion":1,"durableAdmissionFence":true,"trackedSupervisorDrain":true,"installsEnvironment":false,"confirmsRevocation":false}),
     ))
 }
 pub async fn create(node: Node, request: Request) -> ApiResult<Response> {
     let body: Acceptance = request.parse_body()?;
     let result = {
         let db = node.db.lock();
-        let result = accept(
+        let session = request.param("id").unwrap_or_default();
+        let result = accept_with(
             &db,
             &request.user,
-            request.param("id").unwrap_or_default(),
+            session,
             &body.intent,
             &body.client_id,
             body.generation,
+            |tx| preflight::check_proof(&node, tx, &request.user, session, &body.intent),
         )?;
         node.inference
             .revoke_session(request.param("id").unwrap_or_default());

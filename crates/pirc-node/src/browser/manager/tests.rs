@@ -2077,6 +2077,7 @@ async fn resource_retirement_survives_takeover_and_preserves_a_shared_peer() {
             plan_hash: "c".repeat(64),
             expected_workspace_id: "repo".into(),
             expected_runner_epoch: 1,
+            preflight: None,
         },
         "web",
         web.generation,

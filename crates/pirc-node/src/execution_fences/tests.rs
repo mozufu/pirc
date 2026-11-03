@@ -21,6 +21,7 @@ fn setup(db: &Connection) -> (String, Intent, i64) {
             plan_hash: "a".repeat(64),
             expected_workspace_id: "repo".into(),
             expected_runner_epoch: s.runner_epoch,
+            preflight: None,
         },
         lease.generation,
     )
@@ -214,6 +215,7 @@ async fn draining_is_idempotent_does_not_touch_files_and_never_claims_revocation
         plan_hash: "a".repeat(64),
         expected_workspace_id: "repo".into(),
         expected_runner_epoch: row.runner_epoch,
+        preflight: None,
     };
     accept(
         &f.node.db.lock(),
@@ -365,6 +367,7 @@ async fn unknown_host_history_does_not_leave_live_terminals_running() {
             plan_hash: "a".repeat(64),
             expected_workspace_id: "repo".into(),
             expected_runner_epoch: row.runner_epoch,
+            preflight: None,
         },
         "phone",
         lease.generation,

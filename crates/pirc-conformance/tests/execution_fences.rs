@@ -88,7 +88,7 @@ async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() 
     let acceptance = req(
         "POST",
         &format!("{base}/execution-fences"),
-        json!({"intent":{"operationId":"move-1","planHash":"a".repeat(64),"expectedWorkspaceId":"chats","expectedRunnerEpoch":epoch},"clientId":"phone","generation":generation}),
+        json!({"intent":{"operationId":"move-1","planHash":"a".repeat(64),"expectedWorkspaceId":"chats","expectedRunnerEpoch":epoch,"preflight":{"targetWorkspaceId":"chats","evidenceHash":preflight["data"]["body"]["evidenceHash"]}},"clientId":"phone","generation":generation}),
     );
     // Once acceptance commits, discard that result. A hard restart must not reopen admission.
     link.send(&json!({"type":"request","requestId":"lost-acceptance","data":acceptance.clone()}))
@@ -97,6 +97,10 @@ async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() 
         .recv_where(|v| v["type"] == "response" && v["requestId"] == "lost-acceptance")
         .await;
     assert_eq!(accepted["data"]["status"], 200, "{accepted}");
+    assert_eq!(
+        accepted["data"]["body"]["transition"]["intent"]["preflight"]["evidenceHash"],
+        preflight["data"]["body"]["evidenceHash"]
+    );
     node.restart(true);
     drop(link);
     let mut link = register(&gateway).await;

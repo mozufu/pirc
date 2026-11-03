@@ -1,5 +1,28 @@
 # Upgrades
 
+## Local checkpoint: resource-bound transition admission
+
+Node schema **2019** is a semantic upgrade for durable execution-fence intents
+that optionally contain a target workspace ID and the reviewed Node evidence hash.
+Before first acceptance, Node re-observes the source/target and activity under the
+same database transaction as the fence insert. Changed evidence rejects the
+request without a fence; an identical retry returns its retained receipt.
+
+The upgrade performs no SQL reshaping or resource allocation. Legacy intents
+remain readable without inventing proofs. Older Node binaries refuse 2019, since
+their strict receipt decoder cannot read the new optional intent property. Before
+eventual deployment, back up consistent Node state and retain its matching binary;
+rollback requires that backup, not lowering `user_version`. Gateway stays 1026,
+protocol/client/private-envelope stay 15/2/3, and versions/dependencies/Nix hashes
+are unchanged. The work remains local; no deployment is implied.
+
+Gateway preview observations now expose the opaque `nodeEvidenceHash` alongside
+the Node runner epoch, bound into the Gateway observation hash. Neither is a
+grant. Node capability `resourceFenceVersion: 1` identifies checked admission;
+legacy fence requests remain admission-only. All receipts still explicitly deny
+full revocation and replacement installation, and public switching remains gated.
+See the [resource-bound admission checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-resource-bound-node-admission-2026-11-04).
+
 ## Local checkpoint: durable transition previews
 
 Gateway schema **1026** stores owner-scoped immutable environment review snapshots.

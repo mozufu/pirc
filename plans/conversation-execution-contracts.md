@@ -45,6 +45,8 @@ The [Node resource preflight](unified-conversations.md#u4-implementation-checkpo
 
 The [Gateway resource-observation checkpoint](unified-conversations.md#u4-implementation-checkpoint-gateway-resource-observations-2026-11-04) consumes the same-Node preflight through the captured connection, rechecks authority before/after inspection and discards stale results. Its refreshed observation hash is not an accepted transition or installed-policy acknowledgement.
 
+The [resource-bound admission checkpoint](unified-conversations.md#u4-implementation-checkpoint-resource-bound-node-admission-2026-11-04) atomically compares reviewed Node evidence with the admission-fence insert and keeps that proof in the immutable intent. Node schema 2019 protects receipt decoding; full revocation and target installation remain unacknowledged.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.

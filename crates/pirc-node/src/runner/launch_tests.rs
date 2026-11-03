@@ -147,6 +147,7 @@ async fn transition_during_observation_prevents_later_release() {
                 plan_hash: "a".repeat(64),
                 expected_workspace_id: "repo".into(),
                 expected_runner_epoch: 1,
+                preflight: None,
             },
             "phone",
             lease.generation,

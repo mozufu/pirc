@@ -686,6 +686,7 @@ async fn transition_blocks_queued_input_and_late_approval_but_keeps_stop_availab
         plan_hash: "a".repeat(64),
         expected_workspace_id: "repo".into(),
         expected_runner_epoch: runner.epoch(),
+        preflight: None,
     };
     crate::execution_fences::accept(
         &f.node.db.lock(),
@@ -781,6 +782,7 @@ async fn disconnected_drain_caller_does_not_abandon_or_duplicate_supervisor_shut
         plan_hash: "a".repeat(64),
         expected_workspace_id: "repo".into(),
         expected_runner_epoch: runner.epoch(),
+        preflight: None,
     };
     crate::execution_fences::accept(
         &f.node.db.lock(),

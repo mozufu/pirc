@@ -200,6 +200,7 @@ async fn real_node_gate_rechecks_epoch_workspace_mode_and_durable_fence_after_bo
                 plan_hash: "a".repeat(64),
                 expected_workspace_id: "repo".into(),
                 expected_runner_epoch: 1,
+                preflight: None,
             },
             "phone",
             control.generation,

@@ -66,7 +66,7 @@ fn sanitized(
         == payload_hash(&row.plan["source"]["environment"]["modePolicy"]["definition"])
         && e["targetMode"]["definitionHash"]
             == payload_hash(&row.plan["target"]["modePolicy"]["definition"]);
-    let observation = json!({"nodeRunnerEpoch":e["runnerEpoch"],"sourceResource":resource(&e["sourceResource"])?,"targetResource":resource(&e["targetResource"])?,
+    let observation = json!({"nodeEvidenceHash":body["evidenceHash"],"nodeRunnerEpoch":e["runnerEpoch"],"sourceResource":resource(&e["sourceResource"])?,"targetResource":resource(&e["targetResource"])?,
         "sourceModeHash":e["sourceMode"]["definitionHash"],"targetModeHash":e["targetMode"]["definitionHash"],
         "policiesMatch":policies_match,"overlap":e["overlap"],"activity":activity});
     Some(

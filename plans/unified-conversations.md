@@ -22,7 +22,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1026**, Node **2018**, protocol **15**, client contract **2**,
+formats: Gateway **1026**, Node **2019**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -53,6 +53,10 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 [page-resource checkpoint](#u4-implementation-checkpoint-page-owned-engine-and-network-admission-2026-10-28)
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
+
+Latest U4 delivery now also includes [resource-bound Node admission](#u4-implementation-checkpoint-resource-bound-node-admission-2026-11-04),
+which pins reviewed evidence in the durable fence before the Gateway coordinator
+can safely use it. Node schema is now 2019; receipt flags remain incomplete.
 
 Latest U4 delivery: [Gateway resource observations](#u4-implementation-checkpoint-gateway-resource-observations-2026-11-04)
 now consume the [Node preflight](#u4-implementation-checkpoint-node-resource-preflight-2026-11-04)
@@ -4570,3 +4574,62 @@ build/log tree (about **2.3 GiB**) is removed after verification; APKs, SDKs, sh
 caches, user state and other agents' work are preserved. This slice is committed
 locally; accepted coordination/installation and the remaining U1/U4–U6 gates stay
 open.
+
+## U4 implementation checkpoint: resource-bound Node admission (2026-11-04)
+
+Local continuation of `afc360a6`. A necessary acceptance boundary was identified
+before adding the Gateway coordinator: accepting only workspace/runner epoch and
+an opaque plan hash could fence an intent after the reviewed resources changed.
+The Node fence route now accepts an optional immutable `intent.preflight` with
+`targetWorkspaceId` and the raw Node `evidenceHash`. Capability
+`resourceFenceVersion: 1` advertises this checked path.
+
+First acceptance validates owner, lease, source workspace/Node runner epoch and
+absence of an existing fence, then re-observes resources/modes/activity within the
+same SQLite transaction before inserting the durable fence. A different evidence
+hash returns `stale_resource_preflight`; failed checks or insertion roll back with
+the source open. The target/evidence proof is stored in the immutable intent.
+An identical replay returns the prior receipt before rechecking mutable resources
+or an expired/taken-over lease. A different proof under the same identity conflicts.
+This is reconciliation, not a fresh effect or access grant. Existing requests
+without a proof retain their admission-only behavior and legacy serialization.
+
+Gateway's sanitized observation now exposes `nodeEvidenceHash` and includes it in
+the plan-bound observation hash, so a future coordinator can pin the original
+Node evidence and Node runner epoch. No complete Node bodies or paths are exposed.
+The acceptance itself revokes admission only; filesystem names may still change
+outside SQLite, and descriptors/descendants remain unproven. Target preparation,
+policy installation and new-generation binding commit still require further
+checks and acknowledgements. All receipts keep `revocationConfirmed: false` and
+`targetInstalled: false`; the public Gateway preview remains `canConfirm: false`.
+
+Node schema **2019** adds a semantic version fence with no table reshaping. New
+readers preserve old intents with no invented proof; old strict intent readers
+must not open a 2019 database. Rollback requires a matching Node state/binary
+backup. Gateway schema remains **1026**, protocol/client/envelope stay **15/2/3**,
+and U1 stays gated. No dependency/Nix hash, package version or retention changes.
+
+Validation: **585 Node unit tests passed, four existing opt-in tests ignored**,
+including four new resource-bound acceptance/upgrade cases, existing parallel
+intent tests, large memory histories and checkpoint isolation. New cases exercise
+changed resources/activity before acceptance, insertion failure rollback, retained
+proof after control takeover, conflicting proof identities, refusal of an
+unvalidated internal helper and 2018-to-2019 legacy-receipt preservation. Existing
+Intent fixtures explicitly use `preflight: None`; legacy JSON remains unchanged.
+**400 Gateway tests passed**, including sanitized evidence/epoch/native access.
+
+**14 required real-process cases passed**: the Node fence/reboot case now accepts
+and retains the actual preflight evidence hash before a hard restart, then
+recovers the same receipt, rejects conflicting intent and preserves the source
+context/binding. The other cases cover three more Node fences, Gateway preview,
+three native checkpoints, two conversation admissions, two creations, memory and
+project deletion. Strict Node/Gateway/conformance all-target Clippy, Rust fmt,
+changed-document formatting and diff checks passed.
+
+No Web/Flutter source changed; no device/emulator, local Nix, browser, remote CI,
+deployment or publication was performed. The owned temporary build/log tree
+(about **2.3 GiB**) and this run's edit helper are removed after verification,
+preserving APKs, SDKs, shared caches, user data and other agents' work. This slice
+is committed locally. Gateway acceptance/dispatch fencing/reconciliation, full
+old-authority retirement, replacement installation and required client operations
+remain U4 work; U1 activation and U5/U6 remain open.

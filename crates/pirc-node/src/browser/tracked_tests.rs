@@ -224,6 +224,7 @@ async fn a_transition_fence_blocks_new_browser_work_and_reports_saved_unknown_gr
             plan_hash: "a".repeat(64),
             expected_workspace_id: "repo".into(),
             expected_runner_epoch: 0,
+            preflight: None,
         };
         crate::execution_fences::accept(
             &f.node.db.lock(),
@@ -377,6 +378,7 @@ async fn foreground_guard_rechecks_control_epoch_binding_and_fences_at_the_effec
                             plan_hash: "b".repeat(64),
                             expected_workspace_id: "repo".into(),
                             expected_runner_epoch: 0,
+                            preflight: None,
                         },
                         "phone",
                         control.generation,

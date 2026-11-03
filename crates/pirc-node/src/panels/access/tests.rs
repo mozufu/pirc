@@ -55,6 +55,7 @@ fn fence(node: &Node, session: &SessionRow) {
             plan_hash: "a".repeat(64),
             expected_workspace_id: session.workspace_id.clone(),
             expected_runner_epoch: session.runner_epoch,
+            preflight: None,
         },
         "phone",
         lease.generation,

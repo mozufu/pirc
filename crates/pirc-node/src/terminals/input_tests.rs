@@ -90,6 +90,7 @@ fn fence(f: &Fixture, control: &Control) {
             plan_hash: "a".repeat(64),
             expected_workspace_id: session.workspace_id,
             expected_runner_epoch: session.runner_epoch,
+            preflight: None,
         },
         &control.client,
         control.generation,

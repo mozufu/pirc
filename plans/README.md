@@ -91,6 +91,10 @@ target directories. It grants no switch authority; Gateway consumption remains o
 The [Gateway resource observations](unified-conversations.md#u4-implementation-checkpoint-gateway-resource-observations-2026-11-04)
 now consume same-connection Node preflight with device/policy rechecks and sanitized
 resource/activity diagnostics. Public confirmation and execution remain gated.
+[Resource-bound Node admission](unified-conversations.md#u4-implementation-checkpoint-resource-bound-node-admission-2026-11-04)
+now compares reviewed evidence inside the durable fence transaction and retains it
+for retries. It remains admission-only; accepted Gateway coordination and full
+revocation/replacement installation are still open.
 Subsequent work remains local by default: no push, deployment, version change,
 Release or activation is implied by a completed slice.
 
@@ -104,7 +108,7 @@ Release or activation is implied by a completed slice.
 | U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                                                                                                                                                         | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle      |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
-not enable it. Current formats are Gateway schema **1026**, Node schema **2018**,
+not enable it. Current formats are Gateway schema **1026**, Node schema **2019**,
 protocol **15**, client recovery contract **2**, and Web IndexedDB/native private
 envelope **3**. Existing ordinary session APIs remain available. Unaccepted
 Gateway attachment staging expires after **seven days**; accepted attachments and

@@ -81,6 +81,7 @@ async fn pending_runner_and_lost_waiter_do_not_delay_host_or_terminal_retirement
             plan_hash: "a".repeat(64),
             expected_workspace_id: "repo".into(),
             expected_runner_epoch: row.runner_epoch,
+            preflight: None,
         },
         "phone",
         lease.generation,
