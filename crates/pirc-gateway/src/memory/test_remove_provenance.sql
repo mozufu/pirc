@@ -1,5 +1,5 @@
 -- Test-only reconstruction before 1027.
-DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences;
+DROP TRIGGER conversation_transition_acceptance_session_deleted; DROP TABLE conversation_transition_acceptances; DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences;
 -- Test-only reconstruction before 1026.
 DROP TABLE conversation_transition_previews;
 -- Test-only reconstruction before 1025.

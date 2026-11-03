@@ -1,5 +1,6 @@
 //! Durable review of an existing-workspace transition, not acceptance or grants.
 //! A preview cannot retire the source, allocate folders or publish a new binding.
+mod acceptance;
 mod preflight;
 mod receipts;
 pub(crate) use receipts::require_open;
@@ -157,8 +158,21 @@ fn reserve(db: &Connection, user: &str, session: &str, input: &Input) -> ApiResu
     })
 }
 
+/// Runtime status is separate from the frozen policy snapshot used for review.
+/// Another device can discover the operation without knowing its original ID.
+pub(crate) fn active(db: &Connection, user: &str, session: &str) -> ApiResult<Option<Value>> {
+    let row:Option<(String,String)>=db.query_row(
+        "SELECT operation_id,state FROM (SELECT operation_id,state,0 AS priority FROM conversation_transition_acceptances WHERE owner_user=?1 AND session_id=?2 AND state!='deleted' UNION ALL SELECT operation_id,state,1 AS priority FROM conversation_node_fences WHERE owner_user=?1 AND session_id=?2 AND state='fenced') ORDER BY priority LIMIT 1",
+        params![user,session],|r|Ok((r.get(0)?,r.get(1)?))).optional()?;
+    Ok(row.map(|(op,state)|json!({"operationId":op,"state":state,"revocationConfirmed":false,"targetInstalled":false})))
+}
+
 pub fn router() -> Router<AppState> {
     Router::new()
+        .route(
+            "/api/sessions/{id}/environment-transitions/previews/{operation}/confirm",
+            post(acceptance::confirm_route),
+        )
         .route(
             "/api/sessions/{id}/environment-transitions/previews",
             post(prepare),

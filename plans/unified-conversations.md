@@ -23,7 +23,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1027**, Node **2019**, protocol **15**, client contract **2**,
+formats: Gateway **1028**, Node **2019**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -55,10 +55,13 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest U4 delivery: [Gateway Node-fence receipt reconciliation](#u4-implementation-checkpoint-gateway-node-fence-receipt-reconciliation-2026-11-04)
-now mirrors verified prior Node acceptance into a persistent Gateway command fence,
-with Stop/receipt/peer preservation. Initial Gateway acceptance before remote
-Node effects remains open; Gateway schema is now 1027.
+Latest local U4 delivery: [Gateway accepted-intent journal](#u4-implementation-checkpoint-gateway-accepted-intent-journal-2026-11-04)
+adds a durable command barrier before a single Node admission attempt, unknown-outcome
+recovery and cross-device discovery. The new-acceptance path is implemented/tested
+behind a disabled public confirmation gate; it does not yet enable switching.
+Gateway schema is **1028**. The preceding
+[Node-fence receipt reconciliation](#u4-implementation-checkpoint-gateway-node-fence-receipt-reconciliation-2026-11-04)
+remains available for verified prior Node facts.
 
 Latest U4 delivery now also includes [resource-bound Node admission](#u4-implementation-checkpoint-resource-bound-node-admission-2026-11-04),
 which pins reviewed evidence in the durable fence before the Gateway coordinator
@@ -4803,3 +4806,86 @@ and collaboration identities, and U6 bounded proactive pots remain open. UI
 redesign/navigation, Flutter Web, App connection topology and iOS stay deferred.
 Remote CI for this new publication must be assessed at its pushed revision;
 `9eccd9e1`'s green workflows are previous-baseline evidence only.
+
+## U4 implementation checkpoint: Gateway accepted-intent journal (2026-11-04)
+
+Local continuation after publication `b6f2f41f`. Gateway schema **1028** adds
+immutable, owner-scoped acceptance identities, frozen Node request/mapping and a
+monotonic `accepted → outcome_unknown → node_fenced` journal. Acceptance commits
+before any Node mutation, and immediately blocks new ordinary/first-message
+commands and pending Node command-authority callbacks. Existing receipts, Stop,
+control acquisition, source deletion and unrelated conversations retain their
+paths. One active acceptance per source is enforced in SQLite. Duplicate input
+returns the retained identity; changed review/control input conflicts.
+
+The acceptance service rechecks device/source/target access, source binding and
+configured policy snapshots, controller lease/user, captured Node connection,
+reviewed observation hash, policies/resources/overlap/activity and Node evidence.
+Its dispatch phase rechecks current policy/access/control before atomically moving
+to `outcome_unknown`, then attempts exactly one captured-connection Node POST.
+The pre-send gap is deliberately uncertain after a crash: neither that gap nor
+an error, malformed receipt, offline Node or HTTP rejection silently releases
+the command barrier or retries the mutation. This is not a complete cancellation
+or rollback protocol; an unresolved acceptance remains blocked for later recovery.
+
+Frozen intent contains the Node/private-session/local-workspace mapping, original
+plan hash, Node epoch/evidence, controller client/generation and public target ID.
+It is private Gateway state and is never returned in client JSON. Target/preview
+removal does not erase it. Canonical source deletion closes the retained identity
+and clears its frozen payload; the remaining owner/operation/session/digest/state/
+time tombstone prevents identity reuse. SQL rejects deletion, premature closure,
+state rewind and frozen-payload mutation. It does not save dialogue or memory.
+
+Existing reconcile routes consult an accepted journal before the preview. They
+use only Node GET, match the exact frozen intent and atomically persist the Node
+receipt and `node_fenced` stage. They recheck current device/source mapping and
+captured connection; they do not require the target or original preview still to
+exist. Missing/offline/replaced results retain the stage and expose a separate
+`reconciliationState`; matching acceptance notifies other devices. No lookup
+performs drain, install, directory allocation, binding replacement or resubmission.
+Read-only receipt/confirmation replay remains possible after control changes and
+preview cleanup, subject to current source/device ownership.
+
+`GET /api/sessions/{id}/environment` now includes a sanitized `activeTransition`
+(or null), allowing Web/paired Android to discover the operation and stage without
+the original browser or operation ID. This runtime status is kept outside the
+frozen policy snapshot so that acceptance itself cannot invalidate a reviewed
+plan hash. `enforcement` remains `not_tracked`; all revocation/installation flags
+remain false.
+
+**Public confirmation is deliberately disabled.**
+`POST /api/sessions/{id}/environment-transitions/previews/{operation}/confirm`
+returns `transition_coordinator_unavailable` for new acceptances, without writes
+or Node calls. Identical already-accepted replay is read-only. The service and its
+one-attempt dispatch are tested internally, not exposed as a one-way user switch.
+Removing this gate requires complete coordinator recovery/cancellation, verified
+old-resource revocation, target installation/acknowledgement and client recovery.
+Neither a `node_fenced` record nor supervisor drain proves a completed transition.
+
+Validation: **416 Gateway tests passed**, including ten new acceptance cases
+covering committed-before-POST ordering, at-most-one send, new-command rejection,
+Stop/peer preservation, concurrent duplicate/conflicting confirmations, policy/
+controller/connection changes, missing/error receipts, read-only recovery after
+preview/target removal, a reopened SQLite snapshot, device revocation, both
+pre-send and receipt-commit failures, schema 1027 migration, canonical deletion
+redaction and disabled public confirmation. Web/paired-native HTTP see the same
+status/discovery/replay without a browser connection. Positive adoption uses Node
+response stand-ins, not a real complete coordinator or Android OS.
+
+**14 required real-process cases passed**: three native checkpoints, two first
+message admissions, two conversation creations, preview/restart/offline, four
+Node fences, memory and project deletion. The real preview case also verifies
+that the new public confirmation route stays disabled and invents no acceptance.
+Strict Gateway/Node/conformance all-target Clippy and Rust/document/diff/link
+checks passed. No Flutter code changed; no full workspace/browser/device/local
+Nix or new remote-CI acceptance is claimed. The owned test/build/log tree (about
+**2.1 GiB**) is removed after verification; existing APKs, SDKs, shared caches,
+user data and other agents' work are preserved.
+
+Node remains **2019**, protocol/client/private-envelope **15/2/3**. Package,
+dependencies, lockfiles and Nix hashes are unchanged. Older Gateways refuse 1028;
+rollback requires matching state/binary backups. This work stays local with the
+goal active. Next U4 work remains complete coordinator recovery/cancellation and
+positive composed acceptance testing, full OS/resource/alias/descriptor/descendant
+revocation, replacement installation, project mounts/rules and necessary client
+operations. U1 activation and U5/U6 remain open; UI redesign stays deferred.

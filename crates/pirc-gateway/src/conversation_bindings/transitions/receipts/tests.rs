@@ -315,7 +315,7 @@ fn migration_preserves_previews_without_inventing_node_acceptance() {
         let db = db.lock();
         let id = seed(&db);
         let row = reserve(&db, "alice", &id, &input(&db, &id)).unwrap();
-        db.execute_batch("DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences; PRAGMA user_version=1026;")
+        db.execute_batch("DROP TRIGGER conversation_transition_acceptance_session_deleted; DROP TABLE conversation_transition_acceptances; DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences; PRAGMA user_version=1026;")
             .unwrap();
         (id, row.plan_hash)
     };
@@ -327,7 +327,7 @@ fn migration_preserves_previews_without_inventing_node_acceptance() {
     assert_eq!(
         db.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))
             .unwrap(),
-        1027
+        crate::db::SCHEMA_VERSION
     );
 }
 

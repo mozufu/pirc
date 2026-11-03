@@ -152,8 +152,18 @@ pub async fn get_environment(
     State(app): State<AppState>,
     Extension(identity): Extension<Identity>,
     Path(id): Path<String>,
-) -> ApiResult<Json<Environment>> {
-    Ok(Json(environment(&app.db.lock(), &identity.user, &id)?))
+) -> ApiResult<Json<serde_json::Value>> {
+    let db = app.db.lock();
+    crate::auth::require_current_device(&app, &db, &identity)?;
+    let result = atomic(&db, |tx| {
+        let mut result = serde_json::to_value(environment(tx, &identity.user, &id)?)
+            .map_err(|_| ApiError::internal())?;
+        result["activeTransition"] =
+            serde_json::to_value(super::transitions::active(tx, &identity.user, &id)?)
+                .map_err(|_| ApiError::internal())?;
+        Ok(result)
+    })?;
+    Ok(Json(result))
 }
 
 #[cfg(test)]

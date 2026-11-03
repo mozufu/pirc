@@ -505,6 +505,10 @@ const PARAM_ROUTES: &[(&str, &str)] = &[
     ),
     (
         "POST",
+        "/api/sessions/{id}/environment-transitions/previews/{operation}/confirm",
+    ),
+    (
+        "POST",
         "/api/sessions/{id}/environment-transitions/previews/{operation}/reconcile",
     ),
     (

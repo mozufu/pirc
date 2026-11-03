@@ -56,6 +56,13 @@ records explicit authorization to push `0c8fb22c` with refreshed progress. Futur
 work retains the local-commit default; initial acceptance, full revocation and
 installation remain open.
 
+The local [accepted-intent journal](unified-conversations.md#u4-implementation-checkpoint-gateway-accepted-intent-journal-2026-11-04)
+adds Gateway schema 1028, a pre-mutation command barrier, one-attempt Node dispatch,
+read-only unknown-outcome recovery and cross-device active-operation discovery.
+New public acceptance remains disabled. Internal service/HTTP and required process
+evidence do not prove a full accepted switch, resource revocation or installation.
+Complete coordinator recovery/cancellation and client controls remain open.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.

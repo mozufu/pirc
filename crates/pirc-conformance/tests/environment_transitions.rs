@@ -61,6 +61,24 @@ async fn preview_survives_gateway_restart_and_node_offline_without_changing_bind
             .contains(&json!("environment_unchanged"))
     );
     let path = format!("{base}/environment-transitions/previews/review-existing");
+    let blocked = api
+        .send(
+            "POST",
+            &format!("{path}/confirm"),
+            &headers,
+            Some(json!({
+                "planHash":prepared.body["preview"]["planHash"],
+                "observationHash":prepared.body["resourcePreflight"]["observationHash"],
+                "clientId":"review-client","generation":1
+            })),
+        )
+        .await;
+    assert_eq!(blocked.status, 409, "{}", blocked.body);
+    assert_eq!(
+        blocked.body["error"]["code"],
+        "transition_coordinator_unavailable"
+    );
+
     let reconcile_path = format!("{path}/reconcile");
     let absent = api
         .send("POST", &reconcile_path, &headers, Some(json!({})))

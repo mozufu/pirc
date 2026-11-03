@@ -1,5 +1,28 @@
 # Upgrades
 
+## Local checkpoint: Gateway accepted transition intent
+
+Gateway schema **1028** adds retained transition acceptance identities and a
+frozen private request/mapping. The internal service commits the command fence
+before a single Node admission POST, and persists `outcome_unknown` before the
+attempt. Repeated confirmations and missing/error/replaced Node responses never
+resubmit or silently reopen dispatch. Read-only recovery survives target/preview
+removal. Existing receipt, Stop, takeover and source deletion paths remain.
+
+New public confirmation remains **disabled** until complete coordinator recovery,
+old-resource revocation and target installation are proved. Its new route returns
+`transition_coordinator_unavailable` without writes/effects; an already-accepted
+identical replay returns stored status. Environment reads expose only sanitized
+`activeTransition`, not the frozen private request. Canonical source deletion
+clears frozen data and retains a minimal anti-reuse identity tombstone.
+
+Before eventual deployment, back up consistent Gateway state. Older Gateway
+binaries refuse 1028; rollback needs matching state/binary backups. Node stays
+**2019**, protocol/client/private-envelope **15/2/3**. No package/dependency/
+lockfile/Nix hash changes. This is local implementation, with no deployment or
+new release. See the [acceptance checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-gateway-accepted-intent-journal-2026-11-04)
+for exact test scope and remaining limitations.
+
 ## Local checkpoint: Gateway Node-fence receipt reconciliation
 
 Gateway schema **1027** adds a minimal retained record of a Node that has already

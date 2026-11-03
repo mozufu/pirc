@@ -4,7 +4,7 @@ use super::*;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-struct Saved {
+pub(super) struct Saved {
     operation_id: String,
     session_id: String,
     state: String,
@@ -12,10 +12,16 @@ struct Saved {
     revocation_confirmed: bool,
     target_installed: bool,
 }
-fn read_saved(db: &Connection, user: &str, session: &str, op: &str) -> ApiResult<Option<Saved>> {
+pub(super) fn read_saved(
+    db: &Connection,
+    user: &str,
+    session: &str,
+    op: &str,
+) -> ApiResult<Option<Saved>> {
     Ok(db.query_row("SELECT operation_id,session_id,state,created_at FROM conversation_node_fences WHERE owner_user=?1 AND session_id=?2 AND operation_id=?3",params![user,session,op],|r|Ok(Saved{operation_id:r.get(0)?,session_id:r.get(1)?,state:r.get(2)?,created_at:r.get(3)?,revocation_confirmed:false,target_installed:false})).optional()?)
 }
 pub(super) fn require_unused(db: &Connection, user: &str, op: &str) -> ApiResult<()> {
+    acceptance::require_unused(db, user, op)?;
     let exists:bool=db.query_row("SELECT EXISTS(SELECT 1 FROM conversation_node_fences WHERE owner_user=?1 AND operation_id=?2)",params![user,op],|r|r.get(0))?;
     if exists {
         return Err(ApiError::new(
@@ -27,6 +33,10 @@ pub(super) fn require_unused(db: &Connection, user: &str, op: &str) -> ApiResult
     Ok(())
 }
 pub(crate) fn require_open(db: &Connection, session: &str) -> ApiResult<()> {
+    acceptance::require_open(db, session)?;
+    require_no_receipt(db, session)
+}
+fn require_no_receipt(db: &Connection, session: &str) -> ApiResult<()> {
     let op:Option<String>=db.query_row("SELECT operation_id FROM conversation_node_fences WHERE session_id=? AND state='fenced'",[session],|r|r.get(0)).optional()?;
     if let Some(op) = op {
         return Err(ApiError::new(409,"environment_transition_pending","The source environment is fenced; reconcile its transition before starting new work")
@@ -34,14 +44,14 @@ pub(crate) fn require_open(db: &Connection, session: &str) -> ApiResult<()> {
     }
     Ok(())
 }
-fn digest(value: &Value) -> bool {
+pub(super) fn digest(value: &Value) -> bool {
     value.as_str().is_some_and(|s| {
         s.len() == 64
             && s.bytes()
                 .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
     })
 }
-fn record(
+pub(super) fn record(
     db: &Connection,
     user: &str,
     row: &Preview,
@@ -95,7 +105,7 @@ fn record(
                 true,
             ));
         }
-        require_open(tx, &row.session_id)?;
+        require_no_receipt(tx, &row.session_id)?;
         tx.execute(
             "INSERT INTO conversation_node_fences VALUES(?1,?2,?3,?4,'fenced',?5)",
             params![user, row.operation_id, row.session_id, hash, now_ms()],
@@ -107,14 +117,14 @@ fn record(
         ))
     })
 }
-fn access(
+pub(super) fn access(
     app: &AppState,
     identity: &Identity,
     row: &Preview,
 ) -> ApiResult<(String, String, String, String)> {
     access_at(app, &app.db.lock(), identity, row)
 }
-fn access_at(
+pub(super) fn access_at(
     app: &AppState,
     db: &Connection,
     identity: &Identity,
@@ -232,6 +242,9 @@ pub(super) async fn reconcile_route(
     Extension(identity): Extension<Identity>,
     Path((id, op)): Path<(String, String)>,
 ) -> ApiResult<Json<Value>> {
+    if let Some(saved) = acceptance::reconcile(&app, &identity, &id, &op).await? {
+        return Ok(Json(saved));
+    }
     let row = read(&app.db.lock(), &identity.user, &id, &op)?;
     reconcile(&app, &identity, row).await.map(Json)
 }
@@ -240,6 +253,9 @@ pub(super) async fn status_route(
     Extension(identity): Extension<Identity>,
     Path((id, op)): Path<(String, String)>,
 ) -> ApiResult<Json<Value>> {
+    if let Some(saved) = acceptance::status_if_present(&app, &identity, &id, &op)? {
+        return Ok(Json(saved));
+    }
     let db = app.db.lock();
     crate::auth::require_current_device(&app, &db, &identity)?;
     db.claim_session(&id, &identity.user, false)?;
