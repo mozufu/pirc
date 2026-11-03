@@ -4,10 +4,11 @@
 
 Status: adopted architecture baseline with an authorized staged implementation
 covering first Send, environment bindings, resource transitions, canonical tasks/
-collaboration and bounded pots. The published baseline is `798aa817` (2026-10-28),
+collaboration and bounded pots. The last fully CI-verified remote baseline is `798aa817` (2026-10-28),
 including U1 recovery/native acceptance, U2 provenance and U4 supervision. Its full
 Check, native Linux sandbox/checkpoints, Nix, size and Android jobs all passed.
-Subsequent local changes are recorded below with their own narrower evidence.
+The eight accumulated commits through `b1cc9d28` are included in the 2026-11-04
+publication checkpoint below, with their own narrower evidence.
 UI redesign/navigation reorganization remains deferred;
 Web/Android changes are limited to necessary functional integration. Use only
 focused simple Flutter checks when Flutter changes.
@@ -123,14 +124,14 @@ Live-client tests are explicitly run and ignored by the default suite;
 the later published green CI is `798aa817`; the explicit live-client fault
 scenarios above remain separately recorded evidence, not implied by default CI.
 
-| Stage                             | Current status                                                                                 | Next deliverable                                                                                                    |
-| --------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| U1 — first Send                   | Implementation present; activation blocked on remaining acceptance                             | Ambiguous journal recovery, actual client/backend failure matrix, Android process/device and rollout/rollback proof |
-| U2 — bindings                     | Bindings, policy/memory/saved-upload provenance and Gateway/Node command admission implemented | Live-resource provenance and effect-boundary version fencing                                                        |
-| U3 — navigation/UI                | Explicitly deferred                                                                            | Necessary functional controls only until the core model is stable                                                   |
-| U4 — resource transitions         | Durable Gateway review previews; Node admission fence and tracked drain; no public switch      | Gateway coordination, OS revocation/replacement acknowledgement and offline recovery                                |
-| U5 — canonical work/collaboration | Existing primitives available; unified mapping pending                                         | Common task/attempt identities, shared notes and resource waits without overwrites                                  |
-| U6 — proactive pots               | Existing progress observation/explicit dispatch; content analysis pending                      | Separate observation/execution grants, finite budgets and quiet synchronized suggestions                            |
+| Stage                             | Current status                                                                                                | Next deliverable                                                                                                    |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| U1 — first Send                   | Implementation present; activation blocked on remaining acceptance                                            | Ambiguous journal recovery, actual client/backend failure matrix, Android process/device and rollout/rollback proof |
+| U2 — bindings                     | Bindings, policy/memory/saved-upload provenance and Gateway/Node command admission implemented                | Live-resource provenance and effect-boundary version fencing                                                        |
+| U3 — navigation/UI                | Explicitly deferred                                                                                           | Necessary functional controls only until the core model is stable                                                   |
+| U4 — resource transitions         | Durable Gateway previews/host observations; evidence-bound Node admission and tracked drain; no public switch | Gateway coordination, OS revocation/replacement acknowledgement and offline recovery                                |
+| U5 — canonical work/collaboration | Existing primitives available; unified mapping pending                                                        | Common task/attempt identities, shared notes and resource waits without overwrites                                  |
+| U6 — proactive pots               | Existing progress observation/explicit dispatch; content analysis pending                                     | Separate observation/execution grants, finite budgets and quiet synchronized suggestions                            |
 
 Immediate U1 queue:
 
@@ -4633,3 +4634,56 @@ preserving APKs, SDKs, shared caches, user data and other agents' work. This sli
 is committed locally. Gateway acceptance/dispatch fencing/reconciliation, full
 old-authority retirement, replacement installation and required client operations
 remain U4 work; U1 activation and U5/U6 remain open.
+
+## Integration and publication checkpoint (2026-11-04)
+
+The user explicitly requested pulling/rebasing and publishing current progress
+with refreshed plans. `git pull --rebase origin main` completed against `798aa817`
+with no incoming changes or conflicts. Eight source commits, `d500f2d3` through
+`b1cc9d28`, are included in this publication; the [work queue](README.md#current-implementation-status-2026-10-28)
+lists each delivery. The source is unchanged from the completed local validation.
+
+Current formats are Gateway **1026**, Node **2019**, protocol **15**, client
+contract **2**, Web IndexedDB **3**, Android private envelope **3**. Package and
+dependency versions, lockfiles and Nix hashes are unchanged. Node 2019 prevents
+older strict receipt readers from opening resource-bound intent state; use a
+matching state/binary backup for rollback, as described in [upgrades](../docs/deploy/upgrades.md).
+
+Delivered U4 foundations now include browser/page/recorder effect checks, independent
+resource drain, panel/Git source authority, durable Gateway review previews,
+Node path/alias/activity observations, Gateway rechecks and separate event/runner
+epoch identities, and resource evidence pinned in immutable Node fence receipts.
+They retain original conversation/history, user files, peer work, memory deletion
+and checkpoint isolation. They do not constitute complete Chat/Work unification.
+
+Latest completed local tests at `b1cc9d28`: **585 Node unit tests passed** with
+four existing opt-in cases ignored, **400 Gateway tests passed**, **14 required
+real-process cases passed**, and strict all-target Node/Gateway/conformance Clippy
+passed. The process cases include native checkpoints, first-message admission/
+creation, previews and Node fences across restart, memory and project deletion.
+Paired Android evidence is HTTP/router/native-engine testing where recorded;
+Android OS/device acceptance remains open. The known memory-panel snapshot
+counter discrepancy was reproduced on the prior unmodified baseline and remains
+an explicit limitation. No complete browser/full-workspace/Flutter/device/local
+Nix acceptance is implied by these narrower tests.
+
+Post-rebase publication checks cover Rust/document formatting, diff integrity,
+schema consistency, local document targets and exclusion of generated artifacts.
+No source rebasing or conflict repair required retesting. Earlier remote CI green
+results apply to `798aa817`; new CI must be assessed at the pushed revision.
+The prior rounds' owned build/test outputs have been removed. This documentation
+update creates no APK, emulator or build output and preserves existing APKs,
+SDKs, shared caches, user data and other agents' work.
+
+Remaining priority is U4 Gateway accepted-intent journaling, dispatch fencing and
+reconciliation, full old-authority/alias/descriptor/descendant retirement, replacement
+installation/acknowledgement, project mounts/rules and necessary Web/App operations.
+U1 activation still requires its client/device/rollout proof; U2 live-resource
+provenance, U5 canonical task/collaboration and U6 bounded proactive pots remain
+open. `canSubmit`, public transition `canConfirm`, and revocation/installation
+completion flags remain gated. UI redesign/navigation, Flutter Web, new App
+connection topology and iOS remain deferred.
+
+The implementation goal stays **paused**. This publication request does not resume
+feature work, deploy services, enable the gated flows or create a Release. Future
+work retains the local-commit default unless the user explicitly authorizes a push.

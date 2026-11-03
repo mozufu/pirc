@@ -47,6 +47,8 @@ The [Gateway resource-observation checkpoint](unified-conversations.md#u4-implem
 
 The [resource-bound admission checkpoint](unified-conversations.md#u4-implementation-checkpoint-resource-bound-node-admission-2026-11-04) atomically compares reviewed Node evidence with the admission-fence insert and keeps that proof in the immutable intent. Node schema 2019 protects receipt decoding; full revocation and target installation remain unacknowledged.
 
+The [2026-11-04 integration/publication checkpoint](unified-conversations.md#integration-and-publication-checkpoint-2026-11-04) consolidates the eight accumulated deliveries, current formats, local validation and outstanding acceptance gates. Publication is explicitly authorized; the implementation goal remains paused.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.

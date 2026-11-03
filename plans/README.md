@@ -71,41 +71,53 @@ approval to implement every unchecked stage.
 
 ## Current implementation status (2026-10-28)
 
-The published baseline is `798aa817` (2026-10-28), including foreground CDP
-admission (`00a72a16`) and the accumulated U1/U2/U4 checkpoints. All five remote
-jobs passed: [Check, native Linux sandbox/checkpoints, Nix and executable sizes](https://github.com/mozufu/pirc/actions/runs/40653077860),
-and [Android](https://github.com/mozufu/pirc/actions/runs/40653077926).
-This evidence applies to that revision, not subsequent local changes.
-Local commit `d500f2d3` added [browser resource guards and recorder retirement](unified-conversations.md#u4-implementation-checkpoint-browser-resource-guards-and-recorder-retirement-2026-10-28).
-The next local slice adds [page-owned engine/network admission](unified-conversations.md#u4-implementation-checkpoint-page-owned-engine-and-network-admission-2026-10-28), including delayed DNS decisions and popup/iframe/worker initialization.
-It preserves shared-workspace peers and does not enable public transitions or
-claim complete browser/OS revocation.
-Local `24a2c7a0` adds [durable Gateway review previews](unified-conversations.md#u4-implementation-checkpoint-durable-gateway-transition-previews-2026-10-28).
-The following [workspace-panel authority checkpoint](unified-conversations.md#u4-implementation-checkpoint-workspace-panel-authority-2026-11-04)
-rechecks asynchronous Git/panel reads and discards revoked results while preserving
-peer conversations. Accepted coordination, target installation and public switching
-remain pending.
-The [Node resource preflight](unified-conversations.md#u4-implementation-checkpoint-node-resource-preflight-2026-11-04)
-now supplies read-only local path/alias and activity evidence without allocating
-target directories. It grants no switch authority; Gateway consumption remains open.
-The [Gateway resource observations](unified-conversations.md#u4-implementation-checkpoint-gateway-resource-observations-2026-11-04)
-now consume same-connection Node preflight with device/policy rechecks and sanitized
-resource/activity diagnostics. Public confirmation and execution remain gated.
-[Resource-bound Node admission](unified-conversations.md#u4-implementation-checkpoint-resource-bound-node-admission-2026-11-04)
-now compares reviewed evidence inside the durable fence transaction and retains it
-for retries. It remains admission-only; accepted Gateway coordination and full
-revocation/replacement installation are still open.
-Subsequent work remains local by default: no push, deployment, version change,
-Release or activation is implied by a completed slice.
+Progress refreshed **2026-11-04** for the user's explicit pull/rebase and push
+request. `git pull --rebase origin main` found the remote baseline `798aa817`
+already integrated; there were no incoming changes or conflicts. This publication
+includes eight previously local source commits, ending at `b1cc9d28`:
 
-| Area                                           | Current state                                                                                                                                                                                                                                                                                                                                 | Remaining delivery                                                                                                  |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| U1 — reliable first Send                       | Gateway/Node durable intents, original files, admission/Stop/delete fences, explicit rejected-message retries and Gateway nonce retirement; Web/private Android drafts and recovery controls are implemented                                                                                                                                  | Live-client failure/local-write matrix, Android process/device and rollout/rollback gates                           |
-| U2 — conversation/project/environment bindings | Durable bindings/membership/policy histories, frozen memory origins and cleanup receipts; captured command intent with Gateway/Node rechecks; frozen saved-upload origins                                                                                                                                                                     | Live-resource provenance, effect-boundary fencing and acknowledged transitions                                      |
-| U3 — unified navigation/UI                     | Deferred by the user                                                                                                                                                                                                                                                                                                                          | Revisit after core contracts; current clients receive necessary functional controls only                            |
-| U4 — mount/workspace transitions               | Node admission fence, scoped inference retirement, Linux pidfd scope, durable journal/reconciliation, guarded native startup, terminal effect checks and durable terminal/host-command/browser supervision and foreground CDP admission; local browser resource/recorder guards and page-owned engine/network admission; transitions disabled | Gateway coordinator, OS revocation proof, replacement policy/acknowledgement and project resources                  |
-| U5 — canonical tasks and collaboration         | Existing pots/task/team/goal/todo foundations remain                                                                                                                                                                                                                                                                                          | Map common task/attempt identities, shared notes and structured waits; preserve other writers and memory provenance |
-| U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                                                                                                                                                         | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle      |
+| Commit     | Delivered scope                                                                                                 |
+| ---------- | --------------------------------------------------------------------------------------------------------------- |
+| `d500f2d3` | Browser resource guards, recorder retirement and retained close evidence                                        |
+| `ab94a678` | Page-owned engine/background/network admission, including delayed DNS                                           |
+| `fddd9ca3` | Independent runner/process/host-command/terminal/browser drain                                                  |
+| `24a2c7a0` | Durable owner-scoped Gateway review previews, schema 1026                                                       |
+| `133c32c3` | Workspace panel/Git authority checks across waits and stale-result suppression                                  |
+| `97bd0303` | Non-allocating Node resource/alias/activity preflight                                                           |
+| `afc360a6` | Gateway consumption of resource observations with connection/device/policy checks and separate epoch namespaces |
+| `b1cc9d28` | Evidence-bound Node admission receipts and Node schema 2019 semantic upgrade                                    |
+
+Latest completed local validation at `b1cc9d28`: **585 Node tests passed** (four
+existing opt-in tests ignored), **400 Gateway tests passed**, **14 required
+real-process cases passed**, and strict Node/Gateway/conformance all-target
+Clippy passed. These include old-receipt migration, concurrent intents, large
+memory histories, paired-native HTTP, repeated requests, restart/offline behavior,
+resource changes, revocation and native checkpoint isolation. Individual slices
+and their limits are linked from the [main plan](unified-conversations.md#integration-and-publication-checkpoint-2026-11-04).
+
+Remote green Check/native Linux/Nix/size and Android evidence for the previous
+baseline is retained at [Check](https://github.com/mozufu/pirc/actions/runs/40653077860)
+and [Android](https://github.com/mozufu/pirc/actions/runs/40653077926). It does not
+prove CI for this new publication. This rebase changed no source; publication
+checks cover formatting, diff integrity, schemas and document links without
+repeating unchanged completed test runs. No new device/emulator, local Nix or
+Flutter acceptance is claimed. The known panel-memory token snapshot discrepancy
+remains recorded in its [checkpoint](unified-conversations.md#u4-implementation-checkpoint-workspace-panel-authority-2026-11-04).
+
+The implementation goal is **paused** at the user's request. This is a one-off
+authorization to integrate and publish the accumulated work and progress notes.
+Future implementation remains local by default until explicitly authorized to
+push. Public switching and first-Send activation remain gated; deployment,
+package-version changes and a Release are outside this publication.
+
+| Area                                           | Current state                                                                                                                                                                                                | Remaining delivery                                                                                                  |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| U1 — reliable first Send                       | Gateway/Node durable intents, original files, admission/Stop/delete fences, explicit rejected-message retries and Gateway nonce retirement; Web/private Android drafts and recovery controls are implemented | Live-client failure/local-write matrix, Android process/device and rollout/rollback gates                           |
+| U2 — conversation/project/environment bindings | Durable bindings/membership/policy histories, frozen memory origins and cleanup receipts; captured command intent with Gateway/Node rechecks; frozen saved-upload origins                                    | Live-resource provenance, effect-boundary fencing and acknowledged transitions                                      |
+| U3 — unified navigation/UI                     | Deferred by the user                                                                                                                                                                                         | Revisit after core contracts; current clients receive necessary functional controls only                            |
+| U4 — mount/workspace transitions               | Durable Gateway previews and scoped host observations; evidence-bound Node admission, independent drain and browser/panel effect checks; public transitions remain gated                                     | Gateway coordinator, OS revocation proof, replacement policy/acknowledgement and project resources                  |
+| U5 — canonical tasks and collaboration         | Existing pots/task/team/goal/todo foundations remain                                                                                                                                                         | Map common task/attempt identities, shared notes and structured waits; preserve other writers and memory provenance |
+| U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                        | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle      |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
 not enable it. Current formats are Gateway schema **1026**, Node schema **2019**,
