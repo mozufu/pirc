@@ -50,6 +50,9 @@ pub fn receive(
             }
             return Ok((command, true));
         }
+        if payload["type"] != "stop" {
+            super::transitions::require_open(tx, &current.id)?;
+        }
         if current.binding != captured.binding {
             return Err(changed(&current.binding));
         }
@@ -98,6 +101,7 @@ pub fn authorize(
         }
         tx.validate_lease(&current.id, client_id, generation)?;
         tx.validate_lease_user(&current.id, user)?;
+        super::transitions::require_open(tx, &current.id)?;
         if current.binding != *expected {
             return Err(changed(&current.binding));
         }

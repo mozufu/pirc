@@ -144,6 +144,7 @@ fn validated_send(
     require_caller(app, db, identity)?;
     require_current(app, db, &identity.user, &row, &target)?;
     let claimed = db.claim_session(&row.session_id, &identity.user, false)?;
+    crate::conversation_bindings::transitions::require_open(db, &row.session_id)?;
     let expected:Option<String>=db.query_row("SELECT node_session_id FROM conversation_submission_acceptances WHERE owner_user=?1 AND operation_id=?2",params![identity.user,op],|r|r.get(0))?;
     if expected.is_none()
         || expected != claimed.pi_session_id

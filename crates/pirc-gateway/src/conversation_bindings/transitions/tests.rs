@@ -3,7 +3,7 @@ use crate::db::{CapabilitiesPatch, Db};
 use pirc_protocol::{ModeId, NodeHttpResponse};
 use std::sync::{Arc, Mutex};
 
-fn seed(db: &Connection) -> String {
+pub(super) fn seed(db: &Connection) -> String {
     db.sync_remote_workspaces(
         "node",
         &["repo", "target", "third"]
@@ -21,7 +21,7 @@ fn seed(db: &Connection) -> String {
     .unwrap()
     .id
 }
-fn input(db: &Connection, id: &str) -> Input {
+pub(super) fn input(db: &Connection, id: &str) -> Input {
     Input {
         operation_id: "move-1".into(),
         target_workspace_id: "node:target".into(),
@@ -36,7 +36,7 @@ fn count(db: &Connection) -> i64 {
     )
     .unwrap()
 }
-fn identity() -> Identity {
+pub(super) fn identity() -> Identity {
     Identity {
         user: "alice".into(),
         device_id: None,
@@ -171,7 +171,7 @@ fn migration_preserves_old_binding_without_inventing_previews() {
         let db = Db::open(&path).unwrap();
         let db = db.lock();
         let id = seed(&db);
-        db.execute_batch("DROP TABLE conversation_transition_previews; PRAGMA user_version=1025;")
+        db.execute_batch("DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences; DROP TABLE conversation_transition_previews; PRAGMA user_version=1025;")
             .unwrap();
         id
     };
@@ -183,7 +183,7 @@ fn migration_preserves_old_binding_without_inventing_previews() {
     );
 }
 
-fn app() -> (AppState, tempfile::TempDir, String) {
+pub(super) fn app() -> (AppState, tempfile::TempDir, String) {
     let dir = tempfile::tempdir().unwrap();
     let state = dir.path().join("state");
     let env = pirc_config::Env::new(
@@ -215,7 +215,7 @@ fn app() -> (AppState, tempfile::TempDir, String) {
     );
     (app, dir, id)
 }
-fn node() -> crate::nodes::ConnectedNode {
+pub(super) fn node() -> crate::nodes::ConnectedNode {
     crate::nodes::ConnectedNode {
         id: "node".into(),
         role: pirc_protocol::NodeRole::Node,
@@ -309,7 +309,7 @@ async fn revoked_device_cannot_receive_a_preview_after_the_probe() {
     assert_eq!(result.unwrap_err().status, 401);
 }
 
-async fn http(
+pub(super) async fn http(
     app: &AppState,
     path: &str,
     payload: Option<Value>,

@@ -104,10 +104,14 @@ repeating unchanged completed test runs. No new device/emulator, local Nix or
 Flutter acceptance is claimed. The known panel-memory token snapshot discrepancy
 remains recorded in its [checkpoint](unified-conversations.md#u4-implementation-checkpoint-workspace-panel-authority-2026-11-04).
 
-The implementation goal is **paused** at the user's request. This is a one-off
-authorization to integrate and publish the accumulated work and progress notes.
+The user resumed the implementation goal on **2026-11-04** after the one-off
+publication. New work again stays local by default. The publication checkpoint
+records the previously paused state and its bounded push authorization.
 Future implementation remains local by default until explicitly authorized to
-push. Public switching and first-Send activation remain gated; deployment,
+push. [Node-fence receipt reconciliation](unified-conversations.md#u4-implementation-checkpoint-gateway-node-fence-receipt-reconciliation-2026-11-04)
+now records verified existing Node acceptance and blocks new session commands at
+Gateway, while retaining Stop/receipts and peer work. Initial accepted-intent
+coordination and full revocation/installation remain open. Public switching and first-Send activation remain gated; deployment,
 package-version changes and a Release are outside this publication.
 
 | Area                                           | Current state                                                                                                                                                                                                | Remaining delivery                                                                                                  |
@@ -115,12 +119,12 @@ package-version changes and a Release are outside this publication.
 | U1 — reliable first Send                       | Gateway/Node durable intents, original files, admission/Stop/delete fences, explicit rejected-message retries and Gateway nonce retirement; Web/private Android drafts and recovery controls are implemented | Live-client failure/local-write matrix, Android process/device and rollout/rollback gates                           |
 | U2 — conversation/project/environment bindings | Durable bindings/membership/policy histories, frozen memory origins and cleanup receipts; captured command intent with Gateway/Node rechecks; frozen saved-upload origins                                    | Live-resource provenance, effect-boundary fencing and acknowledged transitions                                      |
 | U3 — unified navigation/UI                     | Deferred by the user                                                                                                                                                                                         | Revisit after core contracts; current clients receive necessary functional controls only                            |
-| U4 — mount/workspace transitions               | Durable Gateway previews and scoped host observations; evidence-bound Node admission, independent drain and browser/panel effect checks; public transitions remain gated                                     | Gateway coordinator, OS revocation proof, replacement policy/acknowledgement and project resources                  |
+| U4 — mount/workspace transitions               | Durable Gateway previews/host observations and Node-receipt recovery with command fencing; evidence-bound Node admission, independent drain and browser/panel effect checks; public transitions remain gated | Gateway coordinator, OS revocation proof, replacement policy/acknowledgement and project resources                  |
 | U5 — canonical tasks and collaboration         | Existing pots/task/team/goal/todo foundations remain                                                                                                                                                         | Map common task/attempt identities, shared notes and structured waits; preserve other writers and memory provenance |
 | U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                        | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle      |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
-not enable it. Current formats are Gateway schema **1026**, Node schema **2019**,
+not enable it. Current formats are Gateway schema **1027**, Node schema **2019**,
 protocol **15**, client recovery contract **2**, and Web IndexedDB/native private
 envelope **3**. Existing ordinary session APIs remain available. Unaccepted
 Gateway attachment staging expires after **seven days**; accepted attachments and

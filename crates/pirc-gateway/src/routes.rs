@@ -1288,6 +1288,9 @@ pub async fn command(
                 "The conversation environment changed; refresh it before starting this action",
             ));
         }
+        if payload["type"] != "stop" {
+            crate::conversation_bindings::transitions::require_open(tx, session_id)?;
+        }
         tx.update_command(&input.command_id, "dispatched", None, None)
     });
     if let Err(error) = ready {

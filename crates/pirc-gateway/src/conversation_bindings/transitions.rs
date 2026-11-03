@@ -1,6 +1,8 @@
 //! Durable review of an existing-workspace transition, not acceptance or grants.
 //! A preview cannot retire the source, allocate folders or publish a new binding.
 mod preflight;
+mod receipts;
+pub(crate) use receipts::require_open;
 
 use axum::{
     Extension, Json, Router,
@@ -127,6 +129,7 @@ fn reserve(db: &Connection, user: &str, session: &str, input: &Input) -> ApiResu
             }
             return Ok(row);
         }
+        receipts::require_unused(db, user, &input.operation_id)?;
         if serde_json::to_value(&input.expected_binding).map_err(|_| ApiError::internal())?
             != plan["source"]["environment"]["binding"]
         {
@@ -163,6 +166,14 @@ pub fn router() -> Router<AppState> {
         .route(
             "/api/sessions/{id}/environment-transitions/previews/{operation}",
             get(status),
+        )
+        .route(
+            "/api/sessions/{id}/environment-transitions/previews/{operation}/reconcile",
+            post(receipts::reconcile_route),
+        )
+        .route(
+            "/api/sessions/{id}/environment-transitions/receipts/{operation}",
+            get(receipts::status_route),
         )
 }
 async fn prepare(

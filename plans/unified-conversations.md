@@ -23,7 +23,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1026**, Node **2019**, protocol **15**, client contract **2**,
+formats: Gateway **1027**, Node **2019**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -54,6 +54,11 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 [page-resource checkpoint](#u4-implementation-checkpoint-page-owned-engine-and-network-admission-2026-10-28)
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
+
+Latest local U4 delivery: [Gateway Node-fence receipt reconciliation](#u4-implementation-checkpoint-gateway-node-fence-receipt-reconciliation-2026-11-04)
+now mirrors verified prior Node acceptance into a persistent Gateway command fence,
+with Stop/receipt/peer preservation. Initial Gateway acceptance before remote
+Node effects remains open; Gateway schema is now 1027.
 
 Latest U4 delivery now also includes [resource-bound Node admission](#u4-implementation-checkpoint-resource-bound-node-admission-2026-11-04),
 which pins reviewed evidence in the durable fence before the Gateway coordinator
@@ -124,14 +129,14 @@ Live-client tests are explicitly run and ignored by the default suite;
 the later published green CI is `798aa817`; the explicit live-client fault
 scenarios above remain separately recorded evidence, not implied by default CI.
 
-| Stage                             | Current status                                                                                                | Next deliverable                                                                                                    |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| U1 — first Send                   | Implementation present; activation blocked on remaining acceptance                                            | Ambiguous journal recovery, actual client/backend failure matrix, Android process/device and rollout/rollback proof |
-| U2 — bindings                     | Bindings, policy/memory/saved-upload provenance and Gateway/Node command admission implemented                | Live-resource provenance and effect-boundary version fencing                                                        |
-| U3 — navigation/UI                | Explicitly deferred                                                                                           | Necessary functional controls only until the core model is stable                                                   |
-| U4 — resource transitions         | Durable Gateway previews/host observations; evidence-bound Node admission and tracked drain; no public switch | Gateway coordination, OS revocation/replacement acknowledgement and offline recovery                                |
-| U5 — canonical work/collaboration | Existing primitives available; unified mapping pending                                                        | Common task/attempt identities, shared notes and resource waits without overwrites                                  |
-| U6 — proactive pots               | Existing progress observation/explicit dispatch; content analysis pending                                     | Separate observation/execution grants, finite budgets and quiet synchronized suggestions                            |
+| Stage                             | Current status                                                                                                                     | Next deliverable                                                                                                    |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| U1 — first Send                   | Implementation present; activation blocked on remaining acceptance                                                                 | Ambiguous journal recovery, actual client/backend failure matrix, Android process/device and rollout/rollback proof |
+| U2 — bindings                     | Bindings, policy/memory/saved-upload provenance and Gateway/Node command admission implemented                                     | Live-resource provenance and effect-boundary version fencing                                                        |
+| U3 — navigation/UI                | Explicitly deferred                                                                                                                | Necessary functional controls only until the core model is stable                                                   |
+| U4 — resource transitions         | Durable Gateway previews/host observations and receipt recovery; evidence-bound Node admission and tracked drain; no public switch | Gateway coordination, OS revocation/replacement acknowledgement and offline recovery                                |
+| U5 — canonical work/collaboration | Existing primitives available; unified mapping pending                                                                             | Common task/attempt identities, shared notes and resource waits without overwrites                                  |
+| U6 — proactive pots               | Existing progress observation/explicit dispatch; content analysis pending                                                          | Separate observation/execution grants, finite budgets and quiet synchronized suggestions                            |
 
 Immediate U1 queue:
 
@@ -4687,3 +4692,83 @@ connection topology and iOS remain deferred.
 The implementation goal stays **paused**. This publication request does not resume
 feature work, deploy services, enable the gated flows or create a Release. Future
 work retains the local-commit default unless the user explicitly authorizes a push.
+
+## U4 implementation checkpoint: Gateway Node-fence receipt reconciliation (2026-11-04)
+
+The user resumed the goal after publication `9eccd9e1`. New work is local only.
+Gateway schema **1027** adds retained, owner-scoped facts that Node has already
+accepted a resource-bound source admission fence. This is a recovery component,
+not the initial Gateway acceptance transaction before remote effects.
+
+The existing preview gains an explicit metadata reconciliation action:
+`POST /api/sessions/{id}/environment-transitions/previews/{operation}/reconcile`.
+It sends only `GET` to the captured Node/session/operation, validates the original
+plan hash, local source/target IDs, Node epoch and resource proof, and rechecks
+scope/device/mapping/connection after the wait and at persistence. Event-epoch or
+policy revisions do not erase a historical acceptance; current visibility and
+source mapping are still required. Unknown/mismatched bodies never create a
+fence or expose arbitrary Node data. Missing/offline/replaced replies are explicit
+and cannot clear an existing receipt or trigger another Node operation.
+
+`GET /api/sessions/{id}/environment-transitions/receipts/{operation}` gives Web and
+paired devices the same stored state without Web staying open. It requires current
+device/source ownership. The retained row contains only owner/operation/session
+IDs, a digest of the validated immutable intent, state and creation time. It does
+not contain private Node IDs, paths, full Node receipts, context, files or memory.
+Only canonical session deletion can close the minimal tombstone; SQL refuses
+premature closure while the source still exists. Target/preview deletion never
+reopens source dispatch. An accepted operation ID cannot be reused after preview
+cleanup. Parallel matching receipts create one identity; changed intent conflicts.
+
+New ordinary commands check this fence before admission, again after capability
+waits before dispatch, and at Node command-authority callbacks. First-message
+reservation/rechecks also reject new work under a known fence. Existing command
+receipts remain queryable without redispatch; Stop and control acquisition retain
+their paths, and peer conversations remain writable. Sessions-changed hints notify
+other devices after first persistence. This is command admission fencing, not
+complete Gateway Agent-effect or OS revocation coverage.
+
+The recovered state remains `fenced`, with `revocationConfirmed: false` and
+`targetInstalled: false`; it never becomes Ready from a supervisor receipt. No
+acceptance, drain, directory allocation, mount replacement or binding change is
+sent by reconciliation. Before first mirroring, an unavailable/deleted preview or
+scope can still prevent recovery of the Node fact; the future initial Gateway
+accepted-intent journal must close that pre-acknowledgement window. Full accepted
+coordination, installation acknowledgement, resource/alias/descriptor/descendant
+revocation, project mounts and client controls remain requirements.
+
+Node schema stays **2019**, protocol/client/envelope stay **15/2/3**, and U1 stays
+gated. No package/dependency/lockfile/Nix hash changes. Older Gateways refuse 1027;
+rollback requires a matching state/binary backup. Existing schema reconstruction
+fixtures remove both the receipt table and its parent-session deletion trigger;
+production migrations retain their strict checks.
+
+Validation: **406 Gateway tests passed**, including six new receipt cases:
+durable adoption/reopen, duplicate and peer/Stop behavior, four-way parallel
+receipts, intent conflicts, malformed/error/failed-insert rejection, device and
+connection changes, migration from 1026, and a fence arriving during command
+capability waits. Existing command receipts survive while the waiting new command
+is rejected before forwarding; Node authority callbacks reject previously pending
+commands. Paired-native and Web HTTP read/adoption use the same record. Target
+removal retains the source fence and cannot free the operation ID; source deletion
+through the canonical Store path closes it, with direct premature closure refused.
+
+**14 required real-process cases passed**: Gateway preview/restart/offline,
+four Node fence cases, three native checkpoints, two conversation admissions,
+two creations, memory and project deletion. The preview case now exercises the
+new real reconciliation route with no accepted Node receipt and during outage;
+it creates no accepted record. Positive receipt adoption/restart durability is
+currently covered by Gateway tests with Node response stand-ins and a reopened
+SQLite snapshot. The separate Node process cases prove the resource-bound receipt
+format/replay. A positive composed Gateway/Node acceptance-and-recovery scenario
+remains required with the future initial coordinator; it is not claimed here.
+
+Strict Gateway/Node/conformance all-target Clippy, Rust fmt, changed-document
+formatting and diff checks passed. No full workspace/browser/Flutter/device or
+local Nix run is claimed. The prior published revision `9eccd9e1` has Android CI
+success; its Check workflow was still running when inspected. That evidence is
+separate from this local-only 1027 change. The owned temporary build/log tree (about **2.1 GiB**) is
+removed after verification, preserving APKs, SDKs, shared caches, user data and
+other agents' work. Initial Gateway acceptance/remote-effect journaling, complete
+revocation/installation and necessary client operations remain U4 work; U1
+activation and U5/U6 stay open.

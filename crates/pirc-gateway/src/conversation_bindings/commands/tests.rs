@@ -322,7 +322,7 @@ fn migration_does_not_invent_an_environment_for_historical_commands() {
             &prompt(),
         )
         .unwrap();
-        conn.execute_batch("DROP TABLE conversation_transition_previews; DROP TRIGGER command_environment_immutable; DROP TABLE command_environments; PRAGMA user_version=1024;").unwrap();
+        conn.execute_batch("DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences; DROP TABLE conversation_transition_previews; DROP TRIGGER command_environment_immutable; DROP TABLE command_environments; PRAGMA user_version=1024;").unwrap();
         session
     };
     let db = Db::open(&path).unwrap();

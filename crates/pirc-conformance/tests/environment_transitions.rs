@@ -61,6 +61,25 @@ async fn preview_survives_gateway_restart_and_node_offline_without_changing_bind
             .contains(&json!("environment_unchanged"))
     );
     let path = format!("{base}/environment-transitions/previews/review-existing");
+    let reconcile_path = format!("{path}/reconcile");
+    let absent = api
+        .send("POST", &reconcile_path, &headers, Some(json!({})))
+        .await;
+    assert_eq!(absent.status, 200, "{}", absent.body);
+    assert_eq!(absent.body["state"], "receipt_unavailable");
+    assert!(absent.body["transition"].is_null());
+    let receipt = api
+        .send(
+            "GET",
+            &format!("{base}/environment-transitions/receipts/review-existing"),
+            &headers,
+            None,
+        )
+        .await;
+    assert_eq!(
+        receipt.status, 404,
+        "A preview must not invent Node acceptance"
+    );
     cluster.restart_gateway(true).await;
     let api = cluster.api();
     let replay = api
@@ -84,6 +103,12 @@ async fn preview_survives_gateway_restart_and_node_offline_without_changing_bind
             .is_none()
     );
     assert_eq!(offline.body["nodeObservations"][0]["status"], "offline");
+    let missing = api
+        .send("POST", &reconcile_path, &headers, Some(json!({})))
+        .await;
+    assert_eq!(missing.status, 200, "{}", missing.body);
+    assert_eq!(missing.body["state"], "node_unavailable");
+    assert!(missing.body["transition"].is_null());
     let after = api
         .send("GET", &format!("{base}/environment"), &headers, None)
         .await;

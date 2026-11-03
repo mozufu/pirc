@@ -1018,7 +1018,7 @@ fn migration_from_1023_does_not_invent_cleanup_receipts() {
         .unwrap()
         .0;
     conn.begin_workspace_deletion("node:a", USER).unwrap();
-    conn.execute_batch("DROP TABLE conversation_transition_previews; DROP TRIGGER command_environment_immutable; DROP TABLE command_environments; DROP TABLE project_memory_cleanup_sessions; DROP TABLE project_memory_cleanup; PRAGMA user_version=1023;").unwrap();
+    conn.execute_batch("DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences; DROP TABLE conversation_transition_previews; DROP TRIGGER command_environment_immutable; DROP TABLE command_environments; DROP TABLE project_memory_cleanup_sessions; DROP TABLE project_memory_cleanup; PRAGMA user_version=1023;").unwrap();
     drop(conn);
     drop(db);
     let db = Db::open(&path).unwrap();

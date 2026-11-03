@@ -503,6 +503,14 @@ const PARAM_ROUTES: &[(&str, &str)] = &[
         "GET",
         "/api/sessions/{id}/environment-transitions/previews/{operation}",
     ),
+    (
+        "POST",
+        "/api/sessions/{id}/environment-transitions/previews/{operation}/reconcile",
+    ),
+    (
+        "GET",
+        "/api/sessions/{id}/environment-transitions/receipts/{operation}",
+    ),
     ("GET", "/api/sessions/{id}/checkpoints"),
     ("POST", "/api/sessions/{id}/checkpoints/{capture}/preview"),
     (

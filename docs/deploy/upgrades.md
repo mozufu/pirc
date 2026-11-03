@@ -1,5 +1,28 @@
 # Upgrades
 
+## Local checkpoint: Gateway Node-fence receipt reconciliation
+
+Gateway schema **1027** adds a minimal retained record of a Node that has already
+accepted a resource-bound admission fence. Reconciliation sends only a Node GET,
+validates the frozen plan/source/target/Node intent and current device/access, then
+records a digest and blocks new ordinary/first-message dispatch for that session.
+Existing command receipts, Stop, control takeover and unrelated sessions remain
+available. A missing or offline receipt creates no accepted record; an existing
+fence is retained through offline/unknown replies and target/preview deletion.
+
+The record holds owner/operation/session IDs, an intent digest, state and creation
+time. It stores no Node response body, private Node session ID, paths, history,
+attachments or memory. Canonical session deletion closes the record as a minimal
+tombstone. Accepted operation IDs cannot be reused after their preview disappears.
+
+Node remains **2019**, protocol/client/private-envelope stay **15/2/3**. There are
+no lockfile, dependency, Nix hash or package-version changes. Before eventual
+deployment, back up consistent Gateway state; older Gateway binaries refuse 1027,
+and rollback requires a matching state/binary backup. No deployment is authorized.
+This is recovery of an already-accepted Node fact; initial Gateway acceptance
+before remote effects, full revocation and replacement installation remain open.
+See the [receipt reconciliation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-gateway-node-fence-receipt-reconciliation-2026-11-04).
+
 ## Local checkpoint: resource-bound transition admission
 
 Node schema **2019** is a semantic upgrade for durable execution-fence intents

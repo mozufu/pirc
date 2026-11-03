@@ -159,6 +159,7 @@ fn migrates_the_first_rust_schema() {
             .replace(include_str!("../memory/project_cleanup.sql"), "")
             .replace(include_str!("../conversation_bindings/commands.sql"), "")
             .replace(include_str!("../conversation_bindings/transitions.sql"), "")
+            .replace(include_str!("../conversation_bindings/transitions/receipts.sql"), "")
             .replace(include_str!("../conversation_submissions/schema.sql"), "")
             .replace(include_str!("../conversation_submissions/pre_stop.sql"), "")
             .replace(include_str!("../conversation_submissions/retries.sql"), "")
@@ -292,6 +293,10 @@ fn reconciles_upstream_memory_and_local_calendar_checkpoint_schemas() {
             .replace(include_str!("../memory/project_cleanup.sql"), "")
             .replace(include_str!("../conversation_bindings/commands.sql"), "")
             .replace(include_str!("../conversation_bindings/transitions.sql"), "")
+            .replace(
+                include_str!("../conversation_bindings/transitions/receipts.sql"),
+                "",
+            )
             .replace(include_str!("../conversation_submissions/schema.sql"), "")
             .replace(include_str!("../conversation_submissions/pre_stop.sql"), "")
             .replace(include_str!("../conversation_submissions/retries.sql"), "")

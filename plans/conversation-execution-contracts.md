@@ -49,6 +49,8 @@ The [resource-bound admission checkpoint](unified-conversations.md#u4-implementa
 
 The [2026-11-04 integration/publication checkpoint](unified-conversations.md#integration-and-publication-checkpoint-2026-11-04) consolidates the eight accumulated deliveries, current formats, local validation and outstanding acceptance gates. Publication is explicitly authorized; the implementation goal remains paused.
 
+The [Gateway Node-fence receipt checkpoint](unified-conversations.md#u4-implementation-checkpoint-gateway-node-fence-receipt-reconciliation-2026-11-04) recovers already-accepted, resource-bound Node facts into a retained Gateway command fence. It does not implement initial Gateway acceptance before Node effects or full revocation/installation. The user resumed implementation after publication; subsequent work remains local.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.
