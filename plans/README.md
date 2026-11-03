@@ -71,8 +71,8 @@ approval to implement every unchecked stage.
 
 ## Current implementation status (2026-10-28)
 
-Progress refreshed **2026-11-04** for the user's explicit pull/rebase and push
-request. `git pull --rebase origin main` found the remote baseline `798aa817`
+The earlier publication `9eccd9e1` refreshed progress on **2026-11-04** for the
+user's explicit pull/rebase and push request. `git pull --rebase origin main` found the remote baseline `798aa817`
 already integrated; there were no incoming changes or conflicts. This publication
 includes eight previously local source commits, ending at `b1cc9d28`:
 
@@ -95,24 +95,29 @@ memory histories, paired-native HTTP, repeated requests, restart/offline behavio
 resource changes, revocation and native checkpoint isolation. Individual slices
 and their limits are linked from the [main plan](unified-conversations.md#integration-and-publication-checkpoint-2026-11-04).
 
-Remote green Check/native Linux/Nix/size and Android evidence for the previous
-baseline is retained at [Check](https://github.com/mozufu/pirc/actions/runs/40653077860)
-and [Android](https://github.com/mozufu/pirc/actions/runs/40653077926). It does not
-prove CI for this new publication. This rebase changed no source; publication
-checks cover formatting, diff integrity, schemas and document links without
-repeating unchanged completed test runs. No new device/emulator, local Nix or
-Flutter acceptance is claimed. The known panel-memory token snapshot discrepancy
-remains recorded in its [checkpoint](unified-conversations.md#u4-implementation-checkpoint-workspace-panel-authority-2026-11-04).
+The published revision `9eccd9e1` now has successful completed
+[Check](https://github.com/mozufu/pirc/actions/runs/41678942853) and
+[Android](https://github.com/mozufu/pirc/actions/runs/41678943035) workflows.
+Those results do not prove CI for the newer source commit below. The known
+panel-memory token snapshot discrepancy remains recorded in its
+[checkpoint](unified-conversations.md#u4-implementation-checkpoint-workspace-panel-authority-2026-11-04).
 
-The user resumed the implementation goal on **2026-11-04** after the one-off
-publication. New work again stays local by default. The publication checkpoint
-records the previously paused state and its bounded push authorization.
-Future implementation remains local by default until explicitly authorized to
-push. [Node-fence receipt reconciliation](unified-conversations.md#u4-implementation-checkpoint-gateway-node-fence-receipt-reconciliation-2026-11-04)
-now records verified existing Node acceptance and blocks new session commands at
-Gateway, while retaining Stop/receipts and peer work. Initial accepted-intent
-coordination and full revocation/installation remain open. Public switching and first-Send activation remain gated; deployment,
-package-version changes and a Release are outside this publication.
+The user resumed implementation after that publication and now explicitly requests
+publishing current progress. `git pull --rebase origin main` completed against
+`9eccd9e1` without incoming changes or conflicts. This publication adds
+`0c8fb22c`: [Node-fence receipt reconciliation](unified-conversations.md#u4-implementation-checkpoint-gateway-node-fence-receipt-reconciliation-2026-11-04),
+which records verified existing Node acceptance and blocks new session commands
+at Gateway while preserving Stop, receipts and peer work. Its completed local
+validation is **406 Gateway tests**, **14 required real-process cases** and strict
+Gateway/Node/conformance all-target Clippy. The owned **2.1 GiB** temporary tree
+has been removed. No unchanged source tests were repeated for this conflict-free
+rebase; publication checks cover formatting, diff integrity and document targets.
+
+See the [receipt publication checkpoint](unified-conversations.md#node-fence-receipt-publication-checkpoint-2026-11-04)
+for scope and remaining gates. Initial accepted-intent coordination and full
+revocation/installation remain open. Public switching and first-Send activation
+stay gated. Future work remains local unless explicitly authorized to push;
+deployment, package-version changes and a Release are outside this request.
 
 | Area                                           | Current state                                                                                                                                                                                                | Remaining delivery                                                                                                  |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |

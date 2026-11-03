@@ -47,9 +47,14 @@ The [Gateway resource-observation checkpoint](unified-conversations.md#u4-implem
 
 The [resource-bound admission checkpoint](unified-conversations.md#u4-implementation-checkpoint-resource-bound-node-admission-2026-11-04) atomically compares reviewed Node evidence with the admission-fence insert and keeps that proof in the immutable intent. Node schema 2019 protects receipt decoding; full revocation and target installation remain unacknowledged.
 
-The [2026-11-04 integration/publication checkpoint](unified-conversations.md#integration-and-publication-checkpoint-2026-11-04) consolidates the eight accumulated deliveries, current formats, local validation and outstanding acceptance gates. Publication is explicitly authorized; the implementation goal remains paused.
+The [2026-11-04 integration/publication checkpoint](unified-conversations.md#integration-and-publication-checkpoint-2026-11-04) consolidates the eight accumulated deliveries, current formats, local validation and outstanding acceptance gates. That earlier publication was explicitly authorized while the implementation goal
+was paused; the user subsequently resumed it.
 
-The [Gateway Node-fence receipt checkpoint](unified-conversations.md#u4-implementation-checkpoint-gateway-node-fence-receipt-reconciliation-2026-11-04) recovers already-accepted, resource-bound Node facts into a retained Gateway command fence. It does not implement initial Gateway acceptance before Node effects or full revocation/installation. The user resumed implementation after publication; subsequent work remains local.
+The [Gateway Node-fence receipt checkpoint](unified-conversations.md#u4-implementation-checkpoint-gateway-node-fence-receipt-reconciliation-2026-11-04) recovers already-accepted, resource-bound Node facts into a retained Gateway command fence. It does not implement initial Gateway acceptance before Node effects or full revocation/installation. The user resumed implementation after publication. The subsequent
+[receipt publication checkpoint](unified-conversations.md#node-fence-receipt-publication-checkpoint-2026-11-04)
+records explicit authorization to push `0c8fb22c` with refreshed progress. Future
+work retains the local-commit default; initial acceptance, full revocation and
+installation remain open.
 
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below

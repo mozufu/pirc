@@ -4,11 +4,11 @@
 
 Status: adopted architecture baseline with an authorized staged implementation
 covering first Send, environment bindings, resource transitions, canonical tasks/
-collaboration and bounded pots. The last fully CI-verified remote baseline is `798aa817` (2026-10-28),
-including U1 recovery/native acceptance, U2 provenance and U4 supervision. Its full
-Check, native Linux sandbox/checkpoints, Nix, size and Android jobs all passed.
-The eight accumulated commits through `b1cc9d28` are included in the 2026-11-04
-publication checkpoint below, with their own narrower evidence.
+collaboration and bounded pots. The latest published baseline with completed green
+Check and Android workflows is `9eccd9e1` (2026-11-04). The newer receipt-recovery
+source commit `0c8fb22c` has the local evidence below; its remote CI is not yet
+claimed. The eight accumulated commits through `b1cc9d28` were included in the
+prior publication checkpoint.
 UI redesign/navigation reorganization remains deferred;
 Web/Android changes are limited to necessary functional integration. Use only
 focused simple Flutter checks when Flutter changes.
@@ -55,7 +55,7 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local U4 delivery: [Gateway Node-fence receipt reconciliation](#u4-implementation-checkpoint-gateway-node-fence-receipt-reconciliation-2026-11-04)
+Latest U4 delivery: [Gateway Node-fence receipt reconciliation](#u4-implementation-checkpoint-gateway-node-fence-receipt-reconciliation-2026-11-04)
 now mirrors verified prior Node acceptance into a persistent Gateway command fence,
 with Stop/receipt/peer preservation. Initial Gateway acceptance before remote
 Node effects remains open; Gateway schema is now 1027.
@@ -4695,7 +4695,8 @@ work retains the local-commit default unless the user explicitly authorizes a pu
 
 ## U4 implementation checkpoint: Gateway Node-fence receipt reconciliation (2026-11-04)
 
-The user resumed the goal after publication `9eccd9e1`. New work is local only.
+The user resumed the goal after publication `9eccd9e1`. This slice was completed
+locally as `0c8fb22c` and is included in the explicitly requested publication below.
 Gateway schema **1027** adds retained, owner-scoped facts that Node has already
 accepted a resource-bound source admission fence. This is a recovery component,
 not the initial Gateway acceptance transaction before remote effects.
@@ -4765,10 +4766,40 @@ remains required with the future initial coordinator; it is not claimed here.
 
 Strict Gateway/Node/conformance all-target Clippy, Rust fmt, changed-document
 formatting and diff checks passed. No full workspace/browser/Flutter/device or
-local Nix run is claimed. The prior published revision `9eccd9e1` has Android CI
-success; its Check workflow was still running when inspected. That evidence is
-separate from this local-only 1027 change. The owned temporary build/log tree (about **2.1 GiB**) is
+local Nix run is claimed. The prior published revision `9eccd9e1` now has completed successful
+[Check](https://github.com/mozufu/pirc/actions/runs/41678942853) and
+[Android](https://github.com/mozufu/pirc/actions/runs/41678943035) workflows. That
+evidence is separate from this newer 1027 change. The owned temporary build/log tree (about **2.1 GiB**) is
 removed after verification, preserving APKs, SDKs, shared caches, user data and
 other agents' work. Initial Gateway acceptance/remote-effect journaling, complete
 revocation/installation and necessary client operations remain U4 work; U1
 activation and U5/U6 stay open.
+
+## Node-fence receipt publication checkpoint (2026-11-04)
+
+The user explicitly requested another pull/rebase, progress refresh and push.
+`git pull --rebase origin main` completed against `9eccd9e1` without incoming
+changes or conflicts. This publication adds source commit `0c8fb22c` and this
+plan refresh. The source is unchanged from the completed 406 Gateway tests,
+14 required real-process cases and strict all-target Clippy recorded above.
+Formatting, diff integrity, local document targets and artifact exclusion are
+checked again for publication. The owned 2.1 GiB test tree is already removed;
+no new build, APK, browser or emulator output is created by this documentation
+and rebase step.
+
+Current formats are Gateway **1027**, Node **2019**, protocol **15**, client
+contract **2**, Web IndexedDB/native private envelope **3**. No package version,
+lockfile, dependency or Nix hash changes. This request authorizes source and plan
+publication only; it does not deploy, create a Release or enable gated flows.
+The implementation goal remains active; future work retains the local-commit
+default unless another push is explicitly requested.
+
+Next U4 work is initial Gateway accepted-intent journaling before remote effects,
+unknown-outcome recovery and coordinator dispatch, complete old-authority
+revocation, replacement installation/acknowledgement, project mounts/rules and
+necessary Web/App controls. The recovered Node fact alone cannot prove Ready.
+U1 activation/client/device/rollout gates, U2 live-resource provenance, U5 task
+and collaboration identities, and U6 bounded proactive pots remain open. UI
+redesign/navigation, Flutter Web, App connection topology and iOS stay deferred.
+Remote CI for this new publication must be assessed at its pushed revision;
+`9eccd9e1`'s green workflows are previous-baseline evidence only.
