@@ -243,9 +243,9 @@ expression: t.into_value()
   {
     "observed": {
       "id": "node-sandbox-<uuid:9>",
-      "message": "$ touch denied.txt\n\nin <tmp>/workspace\n\nReason: nix build\n\nIt runs with this node account's full access (without the node's own secrets).",
+      "message": "$ touch denied.txt\n\nin <tmp>/workspace\n\nReason: nix build\n\nHost management: this command runs outside workspace isolation with this node account's rights (without the node's own secrets). Detached jobs or external effects may survive its shell; a workspace switch remains blocked while their retirement is unconfirmed.",
       "method": "confirm",
-      "title": "Run a command outside the sandbox?",
+      "title": "Allow host management for this command?",
       "toolCallId": "<uuid:10>:op1",
       "type": "extension_ui_request"
     },

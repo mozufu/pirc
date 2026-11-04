@@ -6,6 +6,7 @@ use std::path::Path;
 pub(super) fn origin(f: &Fixture, session: &str, request: &str) -> Origin {
     let row = f.node.db.lock().get_session(session).unwrap();
     Origin {
+        authority: approval::Authority::SupervisorFixture,
         session: session.into(),
         root: f
             .node

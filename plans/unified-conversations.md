@@ -23,7 +23,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1029**, Node **2022**, protocol **15**, client contract **2**,
+formats: Gateway **1029**, Node **2023**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -55,9 +55,14 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local U4 delivery: [terminal I/O settlement](#u4-implementation-checkpoint-terminal-io-settlement-2026-11-04)
+Latest local U4 delivery: [host-management approval origin](#u4-implementation-checkpoint-host-management-approval-origin-2026-11-04)
+adds Node schema **2023**, Node-issued exact-intent confirmation and atomic one-time
+consumption before host spawn. It does not implement isolated terminals, complete
+resource revocation or replacement installation. Public switching stays disabled.
+
+The previous [terminal I/O settlement](#u4-implementation-checkpoint-terminal-io-settlement-2026-11-04)
 waits for both PTY owners before publishing durable settlement and blocks queued
-input during natural-exit cleanup. Node schema is **2022**. The user also adopted
+input during natural-exit cleanup. It introduced Node schema **2022**. The user also adopted
 [isolated work plus explicit host management](execution-isolation.md); its new
 execution adapters and client controls remain the next implementation work.
 
@@ -5144,3 +5149,58 @@ revocation, replacement installation, project mounts/rules, complete coordinator
 recovery/cancellation and necessary Web/App controls. U1 activation/device/rollout,
 U2 live-resource provenance, U5 task/collaboration and U6 bounded proactive pots
 remain open. Goal active; local only, public confirmation disabled.
+
+## U4 implementation checkpoint: host-management approval origin (2026-11-04)
+
+Local continuation of `e1a440ec`, implementing the host-command portion of the
+[adopted execution-path contract](execution-isolation.md). The existing sandbox
+`exec` request now explicitly asks the user to allow host management, showing its
+host-account boundary and the possibility of detached/external effects. Existing
+Web/Android confirmation rendering and direct Gateway routing are reused.
+
+The Node records the interaction's trusted origin before publishing the question,
+binding conversation/workspace/runner epoch/incarnation/request ID and an exact
+SHA-256 intent digest (command, cwd, timeout, workspace path/root and mode). An
+Agent's dialog, `full-access` label or old result is not an authority. Before
+spawn, the matching live positive answer must still exist; source availability,
+mode/path/epoch and request withdrawal are rechecked. Host-run reservation, grant
+consumption and cooperative write ranges commit atomically. A failed commit
+executes nothing. Changed/expired/declined/pending/consumed questions cannot be
+used for a new command; neither duplicate questions nor result loss authorize
+replay. Other resource cleanup participants continue independently as before.
+
+Node schema **2023** adds retained immutable `host_execution_approvals` metadata.
+Its `host_management` path and one-time run link preserve provenance without
+storing additional command/output/credential content. Migration preserves all old
+runs without fabricating approvals; deleted interactions cannot regrant retained
+metadata. `hostManagementApprovalVersion: 1` advertises this limited capability.
+Gateway **1029**, protocol/client/envelope **15/2/3**, package/dependencies/lockfiles
+and Nix hashes stay unchanged. Rollback requires matching binary/state backups.
+
+Validation: **608 Node library tests passed** (four existing opt-in ignores),
+**421 Gateway tests passed**, **18 required real-process cases passed**, and
+strict Gateway/Node/conformance all-target Clippy passed. After test-only lock
+scope cleanup, the seven approval and seven runner host-admission cases also
+passed again. Ten new Node cases cover questions before effects, exact intent,
+competing waiters/stale device answers, invalid/fake/expired grants, atomic
+rollback, retained deletion evidence and migration. Historical schema fixtures
+now remove the new table before rebuilding their actual old version.
+
+The process cases comprise the prior 16 scenarios, the sandbox/network/declined
+host-command flow and a new positive host-management flow through a real Node,
+Agent/PTC and relayed human answer (fake gateway/model). It proves no command
+before approval, duplicate answer rejection, one file write and unchanged peer
+user content. Only the two deliberately changed warning/title strings are
+updated in the sandbox snapshot; all other snapshot content stays unchanged.
+
+This is not isolated-work execution or complete revocation/install proof.
+Existing terminals remain on their current path without being relabeled. Work
+PTY/command adapters, kernel descendant and descriptor closure, project mounts/
+rules, complete coordinator recovery/cancellation, replacement installation and
+necessary Web/App choices remain U4 work. U1 activation/device/rollout, U2 live
+resource provenance, U5 tasks/collaboration and U6 bounded proactive pots remain
+open. Public confirmation and full revocation/installation flags stay disabled.
+Goal active; local only, no deployment/push/Release. No Flutter/browser/device/Nix
+or new remote-CI acceptance is claimed. The **2.4 GiB** owned build/log tree is
+cleaned after verification; APKs, SDKs, shared caches, user data and peer work stay
+intact.

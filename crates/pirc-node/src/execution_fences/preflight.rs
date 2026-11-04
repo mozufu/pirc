@@ -513,6 +513,10 @@ mod acceptance_tests {
         let path = node.config.database_path.clone();
         node.db
             .lock()
+            .execute_batch(include_str!("../host_commands/remove_approval.sql"))
+            .unwrap();
+        node.db
+            .lock()
             .pragma_update(None, "user_version", 2018)
             .unwrap();
         node.close().await;

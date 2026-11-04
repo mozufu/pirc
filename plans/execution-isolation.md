@@ -92,3 +92,36 @@ macOS process groups alone are not kernel descendant containment.
 These adapters and client controls are not delivered by the terminal I/O cleanup
 checkpoint. Public switching and U1 activation remain gated. This plan authorizes
 no deployment, push, release or unrelated operating-system configuration change.
+
+## Local implementation checkpoint: host-management approval origin (2026-11-04)
+
+The existing approved host-command path now asks explicitly for **host management**.
+Before publishing the Node-owned question, it durably binds the interaction to
+its conversation, workspace, runner epoch, Node incarnation, side-request ID and
+an exact-intent digest. The digest includes command, working directory, timeout,
+workspace path, session root and the runner's mode snapshot. An arbitrary Agent
+confirmation, `full-access` label or earlier launch cannot substitute for this
+private Node record.
+
+Admission requires the matching, unexpired, positively answered confirmation.
+The existing current-environment and withdrawal checks still run. Reservation
+of the host run, one-time consumption of that question and cooperative write
+ranges commit together before spawn; database failure rolls them all back. A
+repeated question/request does not grant another execution. Declined, expired,
+unanswered, changed or already-consumed grants are refused. Lost requests and
+restart do not execute a command again.
+
+Node schema **2023** adds immutable retained `host_execution_approvals` metadata,
+with execution path `host_management` and its consumed run ID. It stores no
+additional command/output/credential content. Old runs remain without a new
+approval; migration does not manufacture one, and session deletion cannot turn
+retained evidence into a reusable grant. Capability
+`hostManagementApprovalVersion: 1` describes only this approval-origin contract.
+Gateway schema **1029** and protocol/client/envelope **15/2/3** stay unchanged.
+
+This is the host-command part of step 1 and its existing confirmation flow, not
+completion of both modes. Isolated work/PTY launch adapters, terminal mode choice,
+OS descendant containment, complete source revocation, target installation and
+Web/Android mode controls remain open. Existing terminal execution is unchanged;
+it has not been silently relabeled as isolated or newly authorized host management.
+Public switching remains disabled. See the [validation record](unified-conversations.md#u4-implementation-checkpoint-host-management-approval-origin-2026-11-04).

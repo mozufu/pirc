@@ -20,6 +20,7 @@ use std::{
 };
 use tokio::sync::watch;
 
+pub(crate) mod approval;
 pub(crate) mod resources;
 
 const WAIT: Duration = Duration::from_secs(5);
@@ -44,6 +45,7 @@ impl Commands {
 }
 
 pub(crate) struct Origin {
+    pub authority: approval::Authority,
     pub session: String,
     pub workspace: String,
     pub epoch: i64,
@@ -148,6 +150,7 @@ impl Commands {
         if db.query_row("SELECT EXISTS(SELECT 1 FROM host_command_runs WHERE session_id=?1 AND runner_epoch=?2 AND incarnation=?3 AND request_id=?4)",params![origin.session,origin.epoch,node.incarnation,origin.request],|r|r.get::<_,bool>(0))? {
             return Err(ApiError::conflict("This host command request was already admitted; it will not be replayed"));
         }
+        origin.authority.validate(db, node, &origin)?;
         let paths = node.writes.host_paths(db, &origin, &node.incarnation)?;
         let mut registry = self.lock();
         if registry.closing || registry.stops.contains_key(&origin.session) || node.closing() {
@@ -182,6 +185,7 @@ impl Commands {
                     stamp
                 ],
             )?;
+            origin.authority.consume(db, node, &origin, &id)?;
             resources::record(db, &id, &paths)
         })?;
         node.activity.notify_one();

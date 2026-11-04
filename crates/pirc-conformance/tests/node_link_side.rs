@@ -1228,3 +1228,70 @@ async fn node_link_side_reports_refused_credentials() {
     let _next = server.accept().await;
     assert_eq!(reports(&node), 2, "{}", node.log());
 }
+
+/// Real Node + Agent/PTC + relayed human confirmation, with a fake gateway/model.
+/// The approved shell writes only this fixture; duplicate devices cannot replay it.
+#[tokio::test]
+async fn node_link_side_host_management() {
+    let server = FakeGateway::bind().await;
+    let Some(node) = LoneNode::start(server.port()) else {
+        return;
+    };
+    let mut gw = Gateway::new(server.accept().await);
+    gw.link.recv().await;
+    gw.link
+        .send(&registered(models("fake", "fake-model", "low"), json!({})))
+        .await;
+    gw.wait(|frame| frame["type"] == "activity").await;
+    let (session, generation) = gw.session().await;
+    let marker = node.dir.path().join("workspace/host-management-once.txt");
+    let peer = node.dir.path().join("workspace/user-kept.txt");
+    fs::write(&peer, "keep later user changes").unwrap();
+    gw.prompt(
+        &session,
+        &generation,
+        "host-management",
+        "Run the requested host command",
+    )
+    .await;
+    let start = gw.model_start().await;
+    gw.reply_tool(&start,"host-1","ptc",ptc_script(&[("unsandboxed_bash",json!({
+        "command":"printf 'approved\n' >> host-management-once.txt","reason":"explicit host administration test"
+    }))])).await;
+    let created = gw.wait(node_event("interaction_created", &session)).await;
+    let interaction = &created["event"]["data"];
+    assert_eq!(
+        interaction["request"]["title"],
+        "Allow host management for this command?"
+    );
+    assert!(
+        interaction["request"]["message"]
+            .as_str()
+            .unwrap()
+            .contains("Detached jobs")
+    );
+    assert!(
+        !marker.exists(),
+        "The host command ran before the user's answer"
+    );
+    let path = format!(
+        "/api/sessions/{session}/interactions/{}/answer",
+        interaction["id"].as_str().unwrap()
+    );
+    let answer = json!({"clientId":"browser","generation":generation,"answer":{"confirmed":true}});
+    let response = gw.ask("POST", &path, Some(answer.clone())).await;
+    assert_eq!(response["data"]["status"], 200, "{response}");
+    let duplicate = gw.ask("POST", &path, Some(answer)).await;
+    assert_eq!(duplicate["data"]["status"], 409, "{duplicate}");
+    let start = gw.model_start().await;
+    let result = ptc_result(&start);
+    assert_eq!(result["isError"], false, "{result}");
+    assert_eq!(fs::read_to_string(&marker).unwrap(), "approved\n");
+    assert_eq!(
+        fs::read_to_string(&peer).unwrap(),
+        "keep later user changes"
+    );
+    gw.reply_text(&start, "Done.").await;
+    gw.wait(settled_in(&session)).await;
+    assert_eq!(fs::read_to_string(marker).unwrap(), "approved\n");
+}

@@ -1,5 +1,23 @@
 # Upgrades
 
+## Local checkpoint: host-management approval origin
+
+Node schema **2023** adds `host_execution_approvals`. Node-issued host-management
+questions retain immutable conversation/workspace/epoch/incarnation/request and
+intent-digest metadata, then bind exactly one reserved host run before spawn.
+Existing runs are not backfilled with approvals. Session deletion preserves only
+this evidence; it cannot authorize another command after its interaction is gone.
+
+The existing approved host-exec confirmation now explicitly names host management.
+A model-created question, approval-mode label or expired/changed/consumed grant is
+insufficient. `hostManagementApprovalVersion: 1` identifies this boundary, not
+isolated work support or complete OS resource revocation. Terminals and public
+switching retain their prior state; isolated PTY/command adapters and Web/Android
+mode choices remain open. Gateway schema **1029**, protocol/client/private-envelope
+**15/2/3** and dependency/lockfile/Nix hashes stay unchanged. Older Node binaries
+refuse 2023; use matching state/binary backups for rollback. Local only, no
+migration of a deployed service or Release. See the [execution-path checkpoint](../../plans/execution-isolation.md#local-implementation-checkpoint-host-management-approval-origin-2026-11-04).
+
 ## Local checkpoint: terminal I/O settlement
 
 Node schema **2022** is a semantic reader fence (`SELECT 1`). Terminal settlement

@@ -659,9 +659,10 @@ impl Runner {
         title: &str,
         message: &str,
         tool_call_id: Option<String>,
-    ) -> Result<bool, String> {
+        host_intent: Option<&str>,
+    ) -> Result<Option<String>, String> {
         if !self.side_live(&self.lock(), side) {
-            return Ok(false);
+            return Ok(None);
         }
         let node = self.node().ok_or("The node is closing")?;
         let rpc_id = format!("{NODE_DIALOG_PREFIX}{}", uuid());
@@ -675,22 +676,40 @@ impl Runner {
             dialog.insert("toolCallId".into(), json!(tool_call_id));
         }
         let ttl = node.config.interaction_ttl_ms;
+        let interaction_id;
         {
             // Created and announced as one step for snapshots, like an
             // agent's own dialog (`Runner::state_at`).
             let _view = self.view();
-            let interaction = node
-                .db
-                .lock()
-                .create_interaction(
+            let db = node.db.lock();
+            let interaction = crate::store::atomic(&db, |db| {
+                let interaction = db.create_interaction(
                     &self.session_id,
                     self.epoch,
                     &rpc_id,
                     "confirm",
                     &dialog,
                     now_ms().saturating_add(i64::try_from(ttl).unwrap_or(i64::MAX)),
-                )
-                .map_err(|error| error.message)?;
+                )?;
+                if let Some(intent_hash) = host_intent {
+                    crate::host_commands::approval::record(
+                        db,
+                        &node,
+                        crate::host_commands::approval::Request {
+                            session: &self.session_id,
+                            workspace: &self.workspace.id,
+                            epoch: self.epoch,
+                            request: &side.id,
+                            intent_hash,
+                        },
+                        &interaction.id,
+                    )?;
+                }
+                Ok(interaction)
+            })
+            .map_err(|error| error.message)?;
+            interaction_id = interaction.id.clone();
+            drop(db);
             self.publish(
                 "interaction_created",
                 serde_json::to_value(&interaction).unwrap_or_default(),
@@ -706,7 +725,7 @@ impl Runner {
                 // while the dialog opened: withdraw it at once.
                 self.lock().node_dialogs.insert(rpc_id.clone(), answer);
                 self.withdraw(&rpc_id);
-                return Ok(false);
+                return Ok(None);
             }
             inner.node_dialogs.insert(rpc_id.clone(), answer);
             // Linked under the same lock: a later cancel withdraws it.
@@ -716,12 +735,13 @@ impl Runner {
         }
         drop(node);
         match tokio::time::timeout(Duration::from_millis(ttl), answered).await {
-            Ok(Ok(confirmed)) => Ok(confirmed),
+            Ok(Ok(true)) => Ok(Some(interaction_id)),
+            Ok(Ok(false)) => Ok(None),
             // Withdrawn (the dialog's sender went with it).
-            Ok(Err(_)) => Ok(false),
+            Ok(Err(_)) => Ok(None),
             Err(_) => {
                 self.withdraw(&rpc_id);
-                Ok(false)
+                Ok(None)
             }
         }
     }
@@ -845,9 +865,15 @@ impl Runner {
                 .join("\n\n");
                 self.start_sandbox(id, move |runner, side| async move {
                     let confirmed = runner
-                        .confirm_from_node(&side, "Allow network access?", &text, tool_call_id)
+                        .confirm_from_node(
+                            &side,
+                            "Allow network access?",
+                            &text,
+                            tool_call_id,
+                            None,
+                        )
                         .await?;
-                    if !confirmed {
+                    if confirmed.is_none() {
                         runner.sandbox_ok(&side.id, json!({ "granted": [], "denied": missing }));
                         return Ok(());
                     }
@@ -909,29 +935,31 @@ impl Runner {
                     format!("$ {command}"),
                     format!("in {cwd}"),
                     format!("Reason: {reason}"),
-                    "It runs with this node account's full access (without the node's own secrets)."
-                        .to_owned(),
+                    "Host management: this command runs outside workspace isolation with this node account's rights (without the node's own secrets). Detached jobs or external effects may survive its shell; a workspace switch remains blocked while their retirement is unconfirmed.".to_owned(),
                 ]
                 .join("\n\n");
                 self.start_sandbox(id, move |runner, side| async move {
-                    let confirmed = runner
+                    let timeout = Duration::from_millis(timeout as u64);
+                    let intent = runner.host_intent(&side, &command, &cwd, timeout)?;
+                    let approval = runner
                         .confirm_from_node(
                             &side,
-                            "Run a command outside the sandbox?",
+                            "Allow host management for this command?",
                             &text,
                             tool_call_id,
+                            Some(&intent),
                         )
                         .await?;
-                    if !confirmed {
+                    let Some(approval) = approval else {
                         runner.sandbox_fail(
                             &side.id,
                             "denied",
                             "The user did not approve running this outside the sandbox",
                         );
                         return Ok(());
-                    }
+                    };
                     let ticket = runner
-                        .start_host(&side, &command, &cwd, Duration::from_millis(timeout as u64))
+                        .start_host(&side, &command, &cwd, timeout, &approval)
                         .map_err(|error| error.message)?;
                     let result = ticket.result().await.map_err(|error| error.message)?;
                     runner.sandbox_ok(&side.id, result);
@@ -943,6 +971,34 @@ impl Runner {
         Ok(())
     }
 
+    /// Fingerprint the host-selected binding and exact command, not model labels.
+    /// The private approval row stores only this digest, never command contents.
+    pub(super) fn host_intent(
+        &self,
+        side: &Side,
+        text: &str,
+        cwd: &str,
+        timeout: Duration,
+    ) -> Result<String, String> {
+        use sha2::{Digest, Sha256};
+        let root =
+            session_root(&self.workspace, &self.session_id, &self.mode).map_err(|e| e.message)?;
+        let body = json!([
+            1,
+            self.session_id,
+            self.workspace.id,
+            self.workspace.canonical_path,
+            self.epoch,
+            self.mode,
+            root,
+            side.id,
+            text,
+            cwd,
+            timeout.as_millis()
+        ]);
+        Ok(format!("{:x}", Sha256::digest(body.to_string().as_bytes())))
+    }
+
     /// Revalidate the approved origin at the effect boundary. The same DB lock
     /// serializes transition acceptance; the runner lock serializes withdrawal.
     pub(super) fn start_host(
@@ -951,6 +1007,7 @@ impl Runner {
         text: &str,
         cwd: &str,
         timeout: Duration,
+        approval: &str,
     ) -> crate::error::ApiResult<crate::host_commands::Ticket> {
         use crate::error::ApiError;
         let node = self
@@ -1018,6 +1075,12 @@ impl Runner {
             &node,
             &db,
             crate::host_commands::Origin {
+                authority: crate::host_commands::approval::Authority::HostManagement {
+                    interaction: approval.to_owned(),
+                    intent_hash: self
+                        .host_intent(side, text, cwd, timeout)
+                        .map_err(|_| ApiError::internal())?,
+                },
                 session: self.session_id.clone(),
                 workspace: workspace.id,
                 epoch: self.epoch,

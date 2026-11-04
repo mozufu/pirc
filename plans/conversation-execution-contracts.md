@@ -83,6 +83,11 @@ escalation. The local [terminal I/O checkpoint](unified-conversations.md#u4-impl
 adds Node schema 2022 and joins PTY owners before settlement; this is independent
 of the new runtime adapters and does not prove full descendant containment.
 
+The local [host-management approval checkpoint](unified-conversations.md#u4-implementation-checkpoint-host-management-approval-origin-2026-11-04)
+adds Node schema **2023**: a Node-issued, exact-intent, live positive confirmation
+is consumed with host-run/write reservation before spawn. Old runs receive no new
+grants. This does not deliver isolated terminals or full revocation/install proof.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.

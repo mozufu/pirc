@@ -58,6 +58,7 @@ async fn pending_runner_and_lost_waiter_do_not_delay_host_or_terminal_retirement
             &f.node,
             &f.node.db.lock(),
             Origin {
+                authority: crate::host_commands::approval::Authority::SupervisorFixture,
                 session: f.current.clone(),
                 workspace: "repo".into(),
                 epoch: row.runner_epoch,
