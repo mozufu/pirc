@@ -123,7 +123,7 @@ pub(super) fn authorized<T>(
                 return Err(closed());
             }
             let mut state = entry.state();
-            if state.closing || state.info.exited {
+            if state.closing || state.info.exited || *entry.stopping.borrow() {
                 return Err(closed());
             }
             effect(&mut state)
@@ -131,7 +131,7 @@ pub(super) fn authorized<T>(
         #[cfg(test)]
         Authority::Test => {
             let mut state = entry.state();
-            if state.closing || state.info.exited {
+            if state.closing || state.info.exited || *entry.stopping.borrow() {
                 return Err(closed());
             }
             effect(&mut state)

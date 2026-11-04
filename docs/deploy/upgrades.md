@@ -1,5 +1,22 @@
 # Upgrades
 
+## Local checkpoint: terminal I/O settlement
+
+Node schema **2022** is a semantic reader fence (`SELECT 1`). Terminal settlement
+now follows bounded final-output draining and observed completion of both PTY I/O
+owners. A direct shell exit or an abort request alone cannot release quota/notify
+a successful disposal while the master is still owned. Missing/panicked task
+completion stays unconfirmed. Natural exit retains output/history and refuses new
+input during cleanup. `terminalIoClosureVersion: 1` identifies the new barrier.
+
+Gateway stays **1029**, protocol/client/private-envelope **15/2/3**. Existing rows
+and identities are preserved; old binaries refuse 2022, requiring matching
+binary/state backups for rollback. This does not invent descendant/history proof,
+enable public switching or implement the newly adopted isolated-work/host-management
+adapters. Package/dependency/lockfile/Nix hashes remain unchanged; local only, no
+deployment or Release. See the [validation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-terminal-io-settlement-2026-11-04)
+and [adopted execution-path contract](../../plans/execution-isolation.md).
+
 ## Local checkpoint: native proxy retirement
 
 Node schema **2021** is a semantic reader fence (`SELECT 1`). The native Linux/

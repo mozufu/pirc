@@ -23,7 +23,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1029**, Node **2021**, protocol **15**, client contract **2**,
+formats: Gateway **1029**, Node **2022**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -55,7 +55,13 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local U4 delivery: [native proxy retirement](#u4-implementation-checkpoint-native-proxy-retirement-2026-11-04)
+Latest local U4 delivery: [terminal I/O settlement](#u4-implementation-checkpoint-terminal-io-settlement-2026-11-04)
+waits for both PTY owners before publishing durable settlement and blocks queued
+input during natural-exit cleanup. Node schema is **2022**. The user also adopted
+[isolated work plus explicit host management](execution-isolation.md); its new
+execution adapters and client controls remain the next implementation work.
+
+The previous [native proxy retirement](#u4-implementation-checkpoint-native-proxy-retirement-2026-11-04)
 closes the source's native proxy I/O admission across fence commit, cancels existing
 HTTP/SOCKS connections and waits for socket/lookup closure. Node schema is **2021**;
 full OS/resource revocation and target installation remain unconfirmed.
@@ -5072,3 +5078,69 @@ not silently reopened for a target; installation needs its own new binding/grant
 acknowledgement. U1 activation/device/rollout, U2 live-resource provenance, U5
 canonical tasks/collaboration and U6 bounded proactive pots stay open. The goal
 remains active and this work remains local only.
+
+## Adopted execution-path decision (2026-11-04)
+
+The user chose **isolated work + explicit host management** after reviewing that
+terminal/approved-host process containment may change host administration behavior.
+The [execution isolation contract](execution-isolation.md) records the defaults,
+permission boundaries, legacy treatment, capability gating and acceptance cases.
+General new work will use isolation; host management requires an explicit user
+choice, with workspace transitions blocked while its surviving access/work is
+unconfirmed. `full-access` approval mode does not implicitly grant that escape.
+Unsupported isolation cannot silently fall back to host execution. This decision
+is adopted, not an outstanding question; its execution adapters are not implemented
+by the I/O settlement fix below.
+
+## U4 implementation checkpoint: terminal I/O settlement (2026-11-04)
+
+Local continuation of `2361e1bc`. The prior terminal observer saved `settled`,
+released quota and notified disposal waiters immediately after observing its
+direct shell, then delayed and aborted the PTY read/write tasks without joining
+them. Those tasks could still own the master FD after successful disposal.
+
+The observer now first closes input admission under the terminal entry lock,
+retains the bounded final-output drain, cancels **both** I/O pumps and joins their
+completion. Durable settlement, `info.exited` and the disposal acknowledgement
+follow that barrier. A panic, missing completion or bounded join failure cannot
+produce a settled receipt; the other pump is still canceled/joined. Unknown state
+retains the existing live quota and uncertainty rules. The batch deadline covers
+shell grace/reap, output drain and I/O join once for the whole batch, not per entry.
+
+Natural exit keeps its final output and retained history visible. Its queued/new
+input is refused as soon as stopping begins, independently of the later exited
+flag; manual panel-close hiding remains immediate. No more numeric group signals
+are introduced, and unrelated terminals keep their own resources. This proves
+Node-owned PTY I/O retirement, not closure of detached foreground jobs, descendants
+or descriptors outside the Node. Terminal `historyComplete` remains false, as do
+full revocation/installation flags. The new two-mode execution decision remains
+separate future runtime work.
+
+Node schema **2022** is a semantic reader fence (`SELECT 1`); Gateway stays **1029**,
+protocol/client/envelope **15/2/3**. `terminalIoClosureVersion: 1` advertises the new
+supervisor barrier. Existing rows/history/identities stay intact, without invented
+historical containment proof. Older Node binaries refuse the store; rollback needs
+matching backups. Package/dependency/lockfile/Nix hashes do not change.
+
+Validation: **598 Node library tests passed** (four existing opt-in ignores),
+**421 Gateway tests passed**, **16 required real-process cases passed**, and strict
+Gateway/Node/conformance all-target Clippy passed. Four new tests cover actual PTY
+master ownership dropping before acknowledgement, a panicked reader with continued
+writer retirement, retained final output/history after natural exit, and input
+refusal while stopping but not yet exited/hidden. Existing canceled-disposal,
+failed-journal, fenced-input, peer independence, concurrent writer, large-memory
+and checkpoint unit cases remain green.
+
+The process cases include the prior 14 checkpoint/conversation/fence/memory/project
+cases plus two terminal scenarios, with snapshot compatibility retained. No native
+OS descendant containment, host-mode adapters, full workspace/browser/Flutter/
+device/local Nix/new remote-CI acceptance is claimed. The owned temporary build/log
+tree (about **2.3 GiB**) is cleaned after verification, preserving APKs, SDKs,
+shared caches, user data and other agents' work.
+
+Next U4 work follows the adopted execution-path contract: isolated execution and
+explicit host-management grants, complete resource/OS/alias/descriptor/descendant
+revocation, replacement installation, project mounts/rules, complete coordinator
+recovery/cancellation and necessary Web/App controls. U1 activation/device/rollout,
+U2 live-resource provenance, U5 task/collaboration and U6 bounded proactive pots
+remain open. Goal active; local only, public confirmation disabled.

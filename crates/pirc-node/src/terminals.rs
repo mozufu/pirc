@@ -642,7 +642,14 @@ fn run(
     tokio::spawn(async move {
         let observed = supervision::observe(child, entry.stopping.subscribe()).await;
         let code = observed.as_ref().ok().and_then(|status| status.code());
-        let mut result = observed.map(|_| ());
+        // A natural child exit must also stop queued input immediately. Keep
+        // this separate from `closing`, which hides manually closed panels.
+        {
+            let _state = entry.state();
+            entry.stopping.send_replace(true);
+        }
+        let io = supervision::retire_io(reading, writing).await;
+        let mut result = observed.map(|_| ()).and(io);
         if let Some(record) = &entry.record {
             result = node
                 .upgrade()
@@ -671,10 +678,8 @@ fn run(
             }
         }
         exited.send_replace(Some(result));
-        // Drain what the PTY still holds, then close it and tell listeners.
-        tokio::time::sleep(DRAIN).await;
-        reading.abort();
-        writing.abort();
+        // Successful disposal above requires both I/O owners to have settled.
+        // An unconfirmed result retains uncertainty rather than claiming closure.
         let listeners: Vec<Listener> = entry
             .state()
             .listeners

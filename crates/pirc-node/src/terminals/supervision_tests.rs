@@ -278,3 +278,118 @@ fn migration_does_not_invent_pre_journal_terminal_history() {
         json!({"launches":0,"notStarted":0,"observersSettled":0,"unresolved":0,"historyComplete":false})
     );
 }
+
+#[tokio::test]
+async fn io_retirement_joins_both_owners_before_releasing_the_master() {
+    let (master, _slave) = pty::open(24, 80).unwrap();
+    let master = Arc::new(master);
+    let weak = Arc::downgrade(&master);
+    let reader = master.clone();
+    let writer = master.clone();
+    drop(master);
+    let reading = tokio::spawn(async move {
+        let mut bytes = [0; 1];
+        let _ = reader.read(&mut bytes).await;
+    });
+    let writing = tokio::spawn(async move {
+        let _owner = writer;
+        std::future::pending::<()>().await;
+    });
+    assert!(weak.upgrade().is_some());
+    supervision::retire_io(reading, writing).await.unwrap();
+    assert!(
+        weak.upgrade().is_none(),
+        "Settlement retained an owned master FD"
+    );
+}
+#[tokio::test]
+async fn a_panicked_pump_does_not_skip_the_other_owner_or_produce_settlement() {
+    let (master, _slave) = pty::open(24, 80).unwrap();
+    let master = Arc::new(master);
+    let weak = Arc::downgrade(&master);
+    let writer = master.clone();
+    drop(master);
+    let reading = tokio::spawn(async {
+        panic!("synthetic terminal reader panic");
+    });
+    let writing = tokio::spawn(async move {
+        let _owner = writer;
+        std::future::pending::<()>().await;
+    });
+    tokio::task::yield_now().await;
+    assert_eq!(
+        supervision::retire_io(reading, writing)
+            .await
+            .unwrap_err()
+            .code,
+        "terminal_stop_unconfirmed"
+    );
+    assert!(weak.upgrade().is_none());
+}
+#[tokio::test]
+async fn natural_exit_retains_final_output_and_history_after_settlement() {
+    let f = Fixture::new().await;
+    let cwd = root(&f);
+    let script = cwd.join("last-output-shell");
+    crate::test_support::executable(
+        &script,
+        "#!/bin/sh\nprintf 'final-output-sentinel\\n'\nexit 7\n",
+    );
+    let terminal = open(&f, &cwd, script.to_str().unwrap()).unwrap();
+    let entry = f.node.terminals.lookup(&f.current, &terminal.id).unwrap();
+    supervision::settle(vec![entry.clone()]).await.unwrap();
+    assert_eq!(entry.state().info.exit_code, Some(7));
+    assert!(entry.state().info.exited);
+    assert!(*entry.stopping.borrow());
+    assert!(
+        !entry.state().closing,
+        "Natural exit must not hide retained history"
+    );
+    assert!(
+        input::authorized(&Arc::downgrade(&f.node), &entry, &Authority::Test, |_| Ok(
+            ()
+        ))
+        .is_err()
+    );
+    let output = entry
+        .state()
+        .scrollback
+        .iter()
+        .flatten()
+        .copied()
+        .collect::<Vec<_>>();
+    assert!(String::from_utf8_lossy(&output).contains("final-output-sentinel"));
+    assert!(
+        f.node
+            .terminals
+            .list(&f.current)
+            .iter()
+            .any(|t| t.id == terminal.id)
+    );
+    f.node.close().await;
+}
+
+#[tokio::test]
+async fn stopping_rejects_input_before_io_settlement_without_hiding_history() {
+    let f = Fixture::new().await;
+    let cwd = root(&f);
+    let terminal = open(&f, &cwd, "/bin/sh").unwrap();
+    let entry = f.node.terminals.lookup(&f.current, &terminal.id).unwrap();
+    {
+        let _state = entry.state();
+        entry.stopping.send_replace(true);
+    }
+    assert!(!entry.state().info.exited);
+    assert!(!entry.state().closing);
+    assert!(
+        input::authorized(
+            &Arc::downgrade(&f.node),
+            &entry,
+            &Authority::Test,
+            |_| -> ApiResult<()> { panic!("stopping admitted new input") }
+        )
+        .is_err()
+    );
+    supervision::settle(vec![entry]).await.unwrap();
+    f.node.close().await;
+}

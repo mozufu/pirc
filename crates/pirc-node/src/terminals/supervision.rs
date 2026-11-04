@@ -30,10 +30,33 @@ pub(super) async fn observe(
         .map_err(|_| journal::unresolved())
 }
 
+/// Finish the bounded final-output drain, cancel both pumps and observe their
+/// destruction. Merely calling abort does not prove the master FD was released.
+pub(super) async fn retire_io(
+    reading: tokio::task::JoinHandle<()>,
+    writing: tokio::task::JoinHandle<()>,
+) -> ApiResult<()> {
+    tokio::time::sleep(DRAIN).await;
+    reading.abort();
+    writing.abort();
+    let joined = tokio::time::timeout(KILL_GRACE, async {
+        let (read, write) = tokio::join!(reading, writing);
+        [read, write]
+            .into_iter()
+            .all(|result| result.is_ok() || result.is_err_and(|error| error.is_cancelled()))
+    })
+    .await
+    .map_err(|_| journal::unresolved())?;
+    if !joined {
+        return Err(journal::unresolved());
+    }
+    Ok(())
+}
+
 pub(super) async fn settle(entries: Vec<Arc<Entry>>) -> ApiResult<()> {
     // All stop requests were sent before joining; the deadline covers the
     // whole batch, not another grace period per terminal.
-    tokio::time::timeout(KILL_GRACE * 2 + Duration::from_secs(1), async {
+    tokio::time::timeout(KILL_GRACE * 3 + DRAIN + Duration::from_secs(1), async {
         let mut failure = None;
         for entry in entries {
             let mut done = entry.exited.clone();

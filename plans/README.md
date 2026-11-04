@@ -149,6 +149,19 @@ process cases** and strict all-target Clippy passed. Real local proxy/router tes
 use a test adapter; native OS/full-coordinator/device acceptance remains open.
 The **2.7 GiB** owned output tree is cleaned. No public switching is enabled.
 
+Latest local continuation of `2361e1bc`:
+[terminal I/O settlement](unified-conversations.md#u4-implementation-checkpoint-terminal-io-settlement-2026-11-04)
+joins both PTY owners before saving/notifying settlement and rejects input during
+natural-exit cleanup while retaining output/history. **598 Node library tests**
+passed (four existing opt-in ignores), **421 Gateway tests**, **16 required
+process cases** and strict all-target Clippy passed. The **2.3 GiB** owned output
+is cleaned. Full descendant containment and switching stay unconfirmed.
+
+The user adopted [isolated work + explicit host management](execution-isolation.md).
+This is no longer an approval question. New adapters/grant origins and necessary
+Web/Android mode controls remain implementation work; no implicit host fallback
+or `full-access` escalation is authorized by the design.
+
 | Area                                           | Current state                                                                                                                                                                                                | Remaining delivery                                                                                                    |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
 | U1 — reliable first Send                       | Gateway/Node durable intents, original files, admission/Stop/delete fences, explicit rejected-message retries and Gateway nonce retirement; Web/private Android drafts and recovery controls are implemented | Live-client failure/local-write matrix, Android process/device and rollout/rollback gates                             |
@@ -159,7 +172,7 @@ The **2.7 GiB** owned output tree is cleaned. No public switching is enabled.
 | U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                        | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle        |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
-not enable it. Current formats are Gateway schema **1029**, Node schema **2021**,
+not enable it. Current formats are Gateway schema **1029**, Node schema **2022**,
 protocol **15**, client recovery contract **2**, and Web IndexedDB/native private
 envelope **3**. Existing ordinary session APIs remain available. Unaccepted
 Gateway attachment staging expires after **seven days**; accepted attachments and

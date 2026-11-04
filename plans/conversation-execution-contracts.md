@@ -76,6 +76,13 @@ closure observations and restart registration fences in Node schema 2021. This
 covers the native filtering proxy, not all direct/delegated network paths, OS
 resources or replacement-policy installation. Public confirmation remains disabled.
 
+The user adopted the [two execution paths](execution-isolation.md): ordinary work
+is isolated, and host management is a separate explicit user choice. Unknown host
+descendants keep transitions blocked; no automatic host fallback or approval-mode
+escalation. The local [terminal I/O checkpoint](unified-conversations.md#u4-implementation-checkpoint-terminal-io-settlement-2026-11-04)
+adds Node schema 2022 and joins PTY owners before settlement; this is independent
+of the new runtime adapters and does not prove full descendant containment.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.
