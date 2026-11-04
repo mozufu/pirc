@@ -55,8 +55,9 @@ pub(super) async fn retire_io(
 
 pub(super) async fn settle(entries: Vec<Arc<Entry>>) -> ApiResult<()> {
     // All stop requests were sent before joining; the deadline covers the
-    // whole batch, not another grace period per terminal.
-    tokio::time::timeout(KILL_GRACE * 3 + DRAIN + Duration::from_secs(1), async {
+    // whole batch, including a native scope wait and both I/O owners, not
+    // another grace period per terminal.
+    tokio::time::timeout(KILL_GRACE * 4 + DRAIN + Duration::from_secs(1), async {
         let mut failure = None;
         for entry in entries {
             let mut done = entry.exited.clone();

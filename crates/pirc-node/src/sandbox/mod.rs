@@ -67,6 +67,7 @@ pub mod macos;
 pub mod processes;
 pub mod proxy;
 pub mod srt;
+pub(crate) mod terminal_gate;
 pub mod unavailable;
 
 use std::ffi::OsString;
@@ -133,6 +134,24 @@ pub struct ReadonlyInput {
 
 /// The sandbox backend.
 pub trait Sandbox: Send + Sync {
+    /// Guarded PTY launches with a kernel-owned descendant scope. No host fallback.
+    fn isolated_terminals(&self) -> bool {
+        false
+    }
+    fn prepare_terminal(
+        &self,
+        _input: PrepareInput,
+        _shell: PathBuf,
+    ) -> BoxFuture<'_, ApiResult<Prepared>> {
+        Box::pin(async {
+            Err(ApiError::new(
+                503,
+                "isolated_terminal_unavailable",
+                "This backend cannot launch a guarded isolated work terminal",
+            ))
+        })
+    }
+
     /// Native per-session proxy ownership, independent of runner cleanup.
     /// External wrappers cannot supply this proof through an empty default.
     fn network_scopes(&self) -> Option<&proxy::Scopes> {
@@ -159,6 +178,14 @@ pub trait Sandbox: Send + Sync {
 /// How a running session's network allowlist grows: srt's fd 3, or the
 /// native proxy's allowlist.
 pub trait NetworkControl: Send + Sync {
+    fn prepare_terminal(
+        &self,
+        _command: &mut tokio::process::Command,
+        _gate: std::os::fd::OwnedFd,
+    ) -> std::io::Result<()> {
+        Err(std::io::Error::other("guarded terminals are unsupported"))
+    }
+
     /// Called on the agent's command before it is spawned (srt: map the
     /// control pipe's read end to fd 3).
     fn prepare_command(&self, command: &mut tokio::process::Command) -> std::io::Result<()>;
@@ -215,6 +242,7 @@ impl WrapperStatus for StderrPrefixes {
 
 /// One session's sandbox: the command that runs the agent inside it.
 pub struct Prepared {
+    terminal_guard: bool,
     recovery: Mutex<Option<crate::checkpoints::isolation::RecoveryIsolation>>,
     /// The program to spawn (srt, bubblewrap).
     pub program: PathBuf,
@@ -246,6 +274,7 @@ impl Prepared {
         cleanup: impl FnOnce() + Send + 'static,
     ) -> Self {
         Self {
+            terminal_guard: false,
             recovery: Mutex::new(None),
             program,
             args,
@@ -258,6 +287,30 @@ impl Prepared {
             processes: None,
             cleanup: Mutex::new(Some(Box::new(cleanup))),
         }
+    }
+
+    #[must_use]
+    pub(crate) fn with_terminal_guard(mut self) -> Self {
+        self.terminal_guard = true;
+        self
+    }
+    #[doc(hidden)]
+    pub fn terminal_command(
+        &self,
+        gate: std::os::fd::OwnedFd,
+    ) -> std::io::Result<tokio::process::Command> {
+        if !self.terminal_guard || !self.requires_launch_guard() {
+            return Err(std::io::Error::other(
+                "guarded terminal scope is unavailable",
+            ));
+        }
+        let mut command = tokio::process::Command::new(&self.program);
+        command.args(&self.args);
+        self.control
+            .as_ref()
+            .ok_or_else(|| std::io::Error::other("terminal control is unavailable"))?
+            .prepare_terminal(&mut command, gate)?;
+        Ok(command)
     }
 
     #[must_use]

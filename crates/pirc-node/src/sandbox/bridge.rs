@@ -43,13 +43,23 @@ pub fn run(args: Vec<String>) -> ExitCode {
         return usage();
     }
     let socket = PathBuf::from(socket);
-    // Only stdio is meant to reach the agent: the node closed what it
-    // inherited at start-up; this is the second line (`super::fds`).
-    super::fds::close_inherited();
-    if std::env::var_os(super::launch_guard::ENV).is_some()
-        && (std::env::var(super::launch_guard::ENV).as_deref() != Ok("1")
-            || super::launch_guard::wait(&io::stdin(), std::time::Duration::from_secs(10)).is_err())
-    {
+    let guard = std::env::var(super::launch_guard::ENV);
+    let authorized = match guard.as_deref() {
+        Ok(super::terminal_gate::MODE) => super::terminal_gate::enter(),
+        Ok("1") => {
+            super::fds::close_inherited();
+            super::launch_guard::wait(&io::stdin(), std::time::Duration::from_secs(10))
+        }
+        Err(std::env::VarError::NotPresent) => {
+            super::fds::close_inherited();
+            Ok(())
+        }
+        _ => Err(io::Error::new(
+            io::ErrorKind::PermissionDenied,
+            "invalid launch mode",
+        )),
+    };
+    if authorized.is_err() {
         eprintln!("pirc-node sandbox-bridge: launch was not authorized");
         return ExitCode::from(125);
     }

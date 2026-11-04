@@ -166,6 +166,15 @@ opt-in ignores), **421 Gateway tests**, **18 required process cases** and strict
 all-target Clippy passed; the **2.4 GiB** owned outputs are cleaned. Isolated
 terminals, complete revocation/install and mode controls remain open.
 
+Latest local continuation of `7e05a6df`:
+[guarded isolated work terminals](unified-conversations.md#u4-implementation-checkpoint-guarded-isolated-work-terminals-2026-11-04)
+adds the explicit native Linux path, private PTY-independent permit and shared
+journal identity (Node **2024**). Unsupported backends refuse host fallback.
+**613 Node tests** passed (five child/opt-in ignores), **421 Gateway tests**,
+**19 required process cases** and strict all-target Clippy passed; the **2.4 GiB**
+owned outputs are cleaned. Actual Linux namespace CI, lost-I/O-owner recovery,
+client mode choice/host-terminal grants and default rollout remain open.
+
 The user adopted [isolated work + explicit host management](execution-isolation.md).
 This is no longer an approval question. New adapters/grant origins and necessary
 Web/Android mode controls remain implementation work; no implicit host fallback
@@ -181,7 +190,7 @@ or `full-access` escalation is authorized by the design.
 | U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                        | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle        |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
-not enable it. Current formats are Gateway schema **1029**, Node schema **2023**,
+not enable it. Current formats are Gateway schema **1029**, Node schema **2024**,
 protocol **15**, client recovery contract **2**, and Web IndexedDB/native private
 envelope **3**. Existing ordinary session APIs remain available. Unaccepted
 Gateway attachment staging expires after **seven days**; accepted attachments and

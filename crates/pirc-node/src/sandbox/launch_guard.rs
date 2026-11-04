@@ -107,6 +107,20 @@ pub(crate) fn release(output: &impl AsFd) -> io::Result<()> {
 }
 
 #[cfg(test)]
+pub(crate) fn wait_readable_for_test(input: &impl AsFd, timeout: Duration) -> io::Result<()> {
+    let mut fds = [PollFd::new(input, PollFlags::IN)];
+    let timeout = Timespec::try_from(timeout).map_err(io::Error::other)?;
+    if poll(&mut fds, Some(&timeout))? > 0 {
+        Ok(())
+    } else {
+        Err(io::Error::new(
+            io::ErrorKind::TimedOut,
+            "fixture stdin timed out",
+        ))
+    }
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::io::{Read, Write};

@@ -17,6 +17,33 @@ pub(super) fn unresolved() -> ApiError {
     )
 }
 impl Record {
+    /// Both rows share the actual launch identity and commit before spawn.
+    pub(super) fn scoped(
+        node: &Node,
+        db: &Connection,
+        session: &str,
+        workspace: &str,
+        cwd: &Path,
+        launch: &crate::process_journal::Launch,
+    ) -> ApiResult<Self> {
+        if db.is_autocommit() {
+            return Err(ApiError::internal());
+        }
+        let at = now_ms();
+        db.execute(
+            "INSERT INTO terminal_runs VALUES(?1,?2,?3,?4,?5,'launching',?6,?6)",
+            params![
+                launch.id(),
+                session,
+                workspace,
+                cwd.to_string_lossy(),
+                node.incarnation,
+                at
+            ],
+        )?;
+        Ok(Self(launch.id().to_owned()))
+    }
+
     pub(super) fn reserve(
         node: &Node,
         db: &Connection,

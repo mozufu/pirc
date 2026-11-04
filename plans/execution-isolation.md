@@ -125,3 +125,55 @@ OS descendant containment, complete source revocation, target installation and
 Web/Android mode controls remain open. Existing terminal execution is unchanged;
 it has not been silently relabeled as isolated or newly authorized host management.
 Public switching remains disabled. See the [validation record](unified-conversations.md#u4-implementation-checkpoint-host-management-approval-origin-2026-11-04).
+
+## Local implementation checkpoint: guarded isolated work terminals (2026-11-04)
+
+An explicit `executionPath: "isolated_work"` terminal request now uses the native
+Linux policy planner, filtering proxy and captured PID-namespace scope, with the
+configured shell in place of the agent. Agent/readonly preparation still uses
+its existing command and policy. External wrappers, macOS and unavailable
+backends return `isolated_terminal_unavailable`; they do not execute a host
+replacement or reserve a terminal/kernel launch.
+
+A private FD 5 gate is distinct from PTY stdin. Status/seccomp/gate descriptors
+are installed in one mapping. The sandbox invocation itself forces the terminal
+gate mode, so an ordinary command builder or cleared caller env fails closed.
+The trusted bridge closes unrelated inherited
+FDs, consumes the permit and closes its copy before proxies/login hooks/shell
+code start. It acquires this terminal's own controlling PTY for job control.
+Loader/shell bootstrap hooks are rejected before the guarded wrapper starts.
+The terminal and kernel journal rows share the same actual launch ID and commit
+before spawn. Captured kernel identity, current control lease, mode/binding and
+source fence are rechecked before a single permit is delivered. Request loss
+does not abandon the Node-owned observer or replay a command.
+
+Stop retires the captured kernel scope independently of direct-shell/group
+observation and joins both PTY pumps before terminal settlement. Missing identity,
+failed observations or failed persistence stay unconfirmed. Only current known
+kernel observations can settle a scoped terminal. Restart uses the existing
+fenced kernel-journal reconciliation; no PID guessing or relaunch is added.
+A lost terminal I/O observer is not converted into a settled terminal merely
+because its namespace is gone. Automatic recovery of that acknowledgement needs
+additional old-owner/descriptor closure proof and remains open.
+
+Node schema **2024** is a semantic reader fence (`SELECT 1`). The scope association
+is an atomic join of existing journal identities, not a second launch table or
+backfilled grant. `isolatedTerminalVersion: 1` is advertised only by the native
+Linux adapter; live isolated terminal metadata has `executionPath: "isolated_work"`.
+Old metadata stays unclassified. Gateway **1029**, protocol/client/envelope
+**15/2/3**, package/dependencies/lockfiles/Nix hashes stay unchanged.
+
+**Rollout remains incomplete:** the omitted-path compatibility request still
+uses its existing behavior while Web/Android mode controls and default migration
+are implemented. An explicit `host_management` label is not accepted as a
+terminal grant. There is no silent fallback from a failed isolated request.
+Host-management terminal grants, client choices and isolated-by-default rollout
+remain next work. The already-delivered exact-intent host-command approval remains
+separate. Public switching and full revocation/installation stay disabled.
+
+Native Linux coverage includes a new login-hook/PTY/privacy/detached-writer case
+in the existing `sandbox_native` CI target. It is not executable on this macOS
+host and has not been accepted as passed locally. Current Node/PTY fixtures use
+a synthetic kernel adapter; the standalone gate test checks actual PTY/control
+FD behavior. Full external/delegated effects, project resources and environment
+installation still need independent evidence.

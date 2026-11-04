@@ -1410,3 +1410,104 @@ async fn a_dropped_start_leaves_no_temp_dir() {
         )
     });
 }
+
+/// The actual PID namespace must retire a detached writer, not just its login
+/// shell. This test runs in the existing Linux bubblewrap CI job, not on macOS.
+#[tokio::test]
+async fn isolated_work_terminal_guards_start_and_retires_detached_writers() {
+    let Some(f) = fixture("work-terminal") else {
+        return;
+    };
+    let workspace = f.root.join("workspace");
+    let shell = workspace.join("work-shell");
+    let marker = workspace.join("started");
+    let detached = workspace.join("detached-output");
+    let peer = f.root.join("outside/user-kept");
+    fs::write(&peer, "later user change").unwrap();
+    fs::write(&shell,format!("#!/bin/sh\n: </dev/tty || exit 72\ncat '{}' > '{}' 2>/dev/null || :\nprintf changed > '{}' 2>/dev/null || :\nsetsid /bin/sh -c 'exec 3>"$1"; while :; do printf x >&3; sleep 0.05; done' detached '{}' &\nprintf ready > '{}'\nwait\n",f.root.join("state/secret").display(),workspace.join("leaked").display(),peer.display(),detached.display(),marker.display())).unwrap();
+    use std::os::unix::fs::PermissionsExt;
+    fs::set_permissions(&shell, fs::Permissions::from_mode(0o700)).unwrap();
+    let session = f.config.sessions_dir.join("work-terminal");
+    fs::create_dir_all(&session).unwrap();
+    let prepared = f
+        .sandbox
+        .prepare_terminal(
+            PrepareInput {
+                recovery: None,
+                session_id: "work-terminal".into(),
+                workspace_root: workspace.clone(),
+                session_dir: session,
+                inference_socket: None,
+                protected_paths: vec![],
+                workspace_memory_file: None,
+                project_files_dir: None,
+            },
+            shell,
+        )
+        .await
+        .unwrap();
+    let (read, mut gate) = std::io::pipe().unwrap();
+    let mut command = prepared.terminal_command(read.into()).unwrap();
+    command
+        .current_dir(&workspace)
+        .env_clear()
+        .env("PATH", std::env::var("PATH").unwrap_or_default())
+        .env("HOME", f.root.join("home"))
+        .envs(prepared.env.iter().map(|(k, v)| (k, v)))
+        .env("PIRC_NATIVE_LAUNCH_GUARD", "terminal-v1");
+    let (master, slave) = pirc_node::terminals::pty::open(24, 80).unwrap();
+    let pump = tokio::spawn(async move {
+        let mut bytes = [0u8; 4096];
+        while let Ok(1..) = master.read(&mut bytes).await {}
+    });
+    let mut child = pirc_node::terminals::pty::spawn_isolated(slave, command).unwrap();
+    prepared.process_spawned(child.id().unwrap());
+    use pirc_node::sandbox::processes::State;
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while prepared.process_scope_state() == State::Observing {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    assert_eq!(prepared.process_scope_state(), State::Running);
+    assert!(prepared.process_snapshot().identity.is_some());
+    assert!(
+        !marker.exists(),
+        "Login hooks ran before the private permit"
+    );
+    gate.write_all(b"PIRC-LAUNCH-1\n").unwrap();
+    drop(gate);
+    tokio::time::timeout(Duration::from_secs(5), async {
+        while !marker.exists() || fs::metadata(&detached).map_or(true, |m| m.len() == 0) {
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    assert_eq!(fs::read_to_string(&peer).unwrap(), "later user change");
+    assert!(
+        !fs::read_to_string(workspace.join("leaked"))
+            .unwrap_or_default()
+            .contains("node secret")
+    );
+    prepared.terminate_processes();
+    assert_eq!(
+        prepared.wait_processes(Duration::from_secs(5)).await,
+        State::Terminated
+    );
+    tokio::time::timeout(Duration::from_secs(5), child.wait())
+        .await
+        .unwrap()
+        .unwrap();
+    let bytes = fs::metadata(&detached).unwrap().len();
+    tokio::time::sleep(Duration::from_millis(150)).await;
+    assert_eq!(
+        fs::metadata(detached).unwrap().len(),
+        bytes,
+        "A detached writer survived scope retirement"
+    );
+    prepared.cleanup();
+    pump.abort();
+    let _ = pump.await;
+}

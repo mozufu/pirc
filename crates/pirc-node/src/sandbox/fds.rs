@@ -52,9 +52,13 @@ pub fn open_fds() -> Vec<RawFd> {
 /// owns one yet: at the start of `main`, single-threaded. Returns the
 /// descriptors closed (the listing's own, already gone, is not counted).
 pub fn close_inherited() -> Vec<RawFd> {
+    close_except(&[])
+}
+/// Only trusted bootstrap code may temporarily keep an owned private gate.
+pub(crate) fn close_except(keep: &[RawFd]) -> Vec<RawFd> {
     open_fds()
         .into_iter()
-        .filter(|fd| *fd >= FIRST)
+        .filter(|fd| *fd >= FIRST && !keep.contains(fd))
         .filter(|fd| nix::unistd::close(*fd).is_ok())
         .collect()
 }

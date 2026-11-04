@@ -23,7 +23,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1029**, Node **2023**, protocol **15**, client contract **2**,
+formats: Gateway **1029**, Node **2024**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -55,7 +55,13 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local U4 delivery: [host-management approval origin](#u4-implementation-checkpoint-host-management-approval-origin-2026-11-04)
+Latest local U4 delivery: [guarded isolated work terminals](#u4-implementation-checkpoint-guarded-isolated-work-terminals-2026-11-04)
+adds an explicit native Linux terminal path, private non-keyboard permit gate and
+shared kernel/terminal launch identities (Node **2024**). Unsupported paths refuse
+host fallback. Client mode selection/default rollout and native Linux acceptance
+remain open; full workspace switching stays disabled.
+
+The previous [host-management approval origin](#u4-implementation-checkpoint-host-management-approval-origin-2026-11-04)
 adds Node schema **2023**, Node-issued exact-intent confirmation and atomic one-time
 consumption before host spawn. It does not implement isolated terminals, complete
 resource revocation or replacement installation. Public switching stays disabled.
@@ -5204,3 +5210,69 @@ Goal active; local only, no deployment/push/Release. No Flutter/browser/device/N
 or new remote-CI acceptance is claimed. The **2.4 GiB** owned build/log tree is
 cleaned after verification; APKs, SDKs, shared caches, user data and peer work stay
 intact.
+
+## U4 implementation checkpoint: guarded isolated work terminals (2026-11-04)
+
+Local continuation of `7e05a6df`. The Node terminal POST supports explicit
+`executionPath: "isolated_work"`, using the existing native Linux filesystem,
+network/proxy and captured PID-namespace machinery for the configured shell.
+Unsupported backends return 503 without host fallback, launch rows or a terminal.
+Invalid paths and a bare `host_management` label cannot authorize a new host-mode
+terminal. Existing Gateway relay and ordinary terminal wire frames are reused.
+
+A private FD 5 carries only Node launch permission, independent of keyboard input.
+Its mapping is installed with status FD 3/seccomp FD 4. The sandbox invocation
+forces this gate mode, so ordinary command construction or cleared caller env
+cannot bypass it. The bridge closes unrelated
+FDs and consumes/closes the gate before proxies or user hooks start. The shell
+gets its own controlling PTY. Bootstrap environment hooks cannot run before that
+barrier. Both journals reserve the same actual launch ID atomically before spawn;
+there is no second supervisor/journal identity or fabricated old approval.
+
+The original binding/current lease/mode and source fence are checked after policy
+preparation and during capture, then held through the committed one-time release.
+The independent Node observer survives request loss. Stop retires the kernel
+scope separately from direct-child observation, records current identity evidence
+and joins PTY owners before successful settlement. Missing identity/closure or
+persistence remains unconfirmed; the bounded batch deadline includes this new
+scope wait. Existing fenced kernel restart reconciliation applies without command
+replay or signals from saved numeric PIDs. Lost terminal I/O observation remains
+unconfirmed even if the kernel namespace reconciles; automatic terminal restart
+settlement still needs additional old-owner/descriptor closure evidence. User/peer files and checkpoint/memory behavior
+are not reset as part of this change.
+
+Node schema **2024** is a semantic reader fence (`SELECT 1`). New scoped terminal
+rows join the kernel journal by the shared launch ID; old rows receive no scope
+or grant. `isolatedTerminalVersion` is 1 only on the native Linux adapter. Live
+scoped metadata adds `executionPath: "isolated_work"`; unclassified compatibility
+frames keep their old shape. Gateway **1029**, protocol/client/envelope **15/2/3**,
+package/dependencies/lockfiles and Nix hashes stay unchanged. Rollback requires
+matching state/binary backups.
+
+Validation: **613 Node library tests passed** (four existing opt-in ignores and
+one child fixture executed by its parent tests), **421 Gateway tests passed**,
+**19 required real-process cases passed**, and strict Gateway/Node/conformance
+all-target Clippy passed. Five new Node/real PTY cases cover keyboard data
+independence, controlling terminal/FD closure, shared journal ordering/retirement,
+failed guard commits, controller takeover/fences during capture, unsupported
+backend refusal and unchanged peer data. The real Gateway/Node terminal suite
+also passed again against the final binary after forcing gate mode inside the
+sandbox invocation. A new case covers unsupported/invalid path refusal without
+a host terminal. Existing compatibility snapshots are unchanged.
+
+The new native Linux `sandbox_native` case checks login hooks before/after gate,
+private-state denial, unchanged outside user files and retirement of a detached
+`setsid` writer. This macOS machine cannot execute the Linux backend, so that
+case remains unverified pending native CI. Synthetic scope observations in local
+Node fixtures are not native namespace proof. No Flutter/browser/device/Nix or
+new remote-CI acceptance is claimed.
+
+Client mode choice, host-management terminal grants and isolated-by-default rollout
+remain open: omitted-path compatibility requests still use their existing path
+and are not relabeled. Complete project mounts/rules, coordinator recovery,
+OS/descriptor/external/delegated revocation and replacement installation remain
+U4 work. U1 activation/device/rollout, U2 live-resource provenance, U5 tasks and U6
+bounded proactive pots remain open. Public switching/full revocation/install
+flags remain false. Goal active; local only, no push/deployment/Release. Owned
+outputs (about **2.4 GiB**) are cleaned after verification, preserving APKs,
+SDKs, shared caches, user data and other agents' work.

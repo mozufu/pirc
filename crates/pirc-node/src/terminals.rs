@@ -1,7 +1,9 @@
 //! Interactive shells for the side panel (`node/terminals.ts`). Owner:
 //! **panels** (M6); M7: **hardening** (the PTY, `terminals/pty.rs`). Not a
-//! sandbox: a terminal has the node account's rights, and agents cannot
-//! reach it.
+//! sandbox in the compatibility path: it has the node account's rights.
+//! Explicit `isolated_work` terminals use a guarded native sandbox and the
+//! kernel journal; unsupported backends refuse that path. Agents cannot reach
+//! the human terminal stream.
 //!
 //! A PTY (`terminals/pty.rs`: its master close-on-exec from the start,
 //! security audit S9) running `/bin/sh -c 'exec "$0" -l' <shell>` as a
@@ -41,6 +43,9 @@ use crate::services::WeakNode;
 use crate::store::Store;
 
 mod input;
+mod isolated;
+#[cfg(test)]
+mod isolated_tests;
 pub(crate) mod journal;
 pub(crate) mod pty;
 mod supervision;
@@ -64,6 +69,8 @@ const KILL_GRACE: Duration = Duration::from_secs(2);
 pub struct TerminalInfo {
     /// 8 hex digits.
     pub id: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub execution_path: Option<String>,
     pub session_id: String,
     /// The shell's file name.
     pub title: String,
@@ -132,6 +139,7 @@ enum Action {
 }
 
 struct Environment<'a> {
+    work: Option<isolated::Work>,
     vars: BTreeMap<String, String>,
     binding: Option<Binding>,
     journal: Option<(&'a crate::services::Node, &'a rusqlite::Connection)>,
@@ -241,6 +249,7 @@ impl Terminals {
             rows.map_or(f64::NAN, |rows| rows as f64),
             &shell,
             Environment {
+                work: None,
                 vars: env,
                 binding: Some(binding),
                 journal: Some((&node, &db)),
@@ -259,6 +268,7 @@ impl Terminals {
         environment: Environment<'_>,
     ) -> ApiResult<TerminalInfo> {
         let Environment {
+            mut work,
             vars: mut env,
             binding,
             journal,
@@ -294,12 +304,33 @@ impl Terminals {
         env.insert("COLORTERM".into(), "truecolor".into());
         env.insert("PIRC_TERMINAL".into(), "1".into());
 
-        let record = journal
-            .map(|(node, db)| {
-                let workspace = &binding.as_ref().ok_or_else(ApiError::internal)?.workspace;
-                journal::Record::reserve(node, db, session_id, workspace, cwd)
-            })
-            .transpose()?;
+        let (record, launch) = if work.is_some() {
+            let (node, db) = journal.ok_or_else(ApiError::internal)?;
+            let workspace = &binding.as_ref().ok_or_else(ApiError::internal)?.workspace;
+            let (record, launch) = crate::store::atomic(db, |db| {
+                let row = db.get_session(session_id)?;
+                let launch = crate::process_journal::reserve_with_guard(
+                    db,
+                    session_id,
+                    workspace,
+                    row.runner_epoch,
+                    &node.incarnation,
+                    true,
+                )?;
+                let record =
+                    journal::Record::scoped(node, db, session_id, workspace, cwd, &launch)?;
+                Ok((record, launch))
+            })?;
+            (Some(record), Some(launch))
+        } else {
+            let record = journal
+                .map(|(node, db)| {
+                    let workspace = &binding.as_ref().ok_or_else(ApiError::internal)?.workspace;
+                    journal::Record::reserve(node, db, session_id, workspace, cwd)
+                })
+                .transpose()?;
+            (record, None)
+        };
         let launched = (|| {
             let (pty, slave) = pty::open(rows, cols).map_err(|error| {
                 crate::log::error(&format!("terminal: no PTY: {error}"));
@@ -309,7 +340,28 @@ impl Terminals {
             // zsh) come up without the PTY as their controlling terminal and
             // lose job control. It is a session leader (Bun's `detached`), so a
             // hangup to the group reaches its jobs too.
-            let child = pty::spawn(slave, shell, cwd, &env).map_err(|error| {
+            let spawned = if let Some(work) = &mut work {
+                let (gate, writer) =
+                    crate::sandbox::terminal_gate::pipe().map_err(|_| ApiError::internal())?;
+                let mut command = work
+                    .prepared
+                    .terminal_command(gate)
+                    .map_err(|_| ApiError::internal())?;
+                env.extend(work.prepared.env.iter().cloned());
+                env.remove("SSH_AUTH_SOCK");
+                crate::sandbox::launch_guard::validate_bootstrap(&env)
+                    .map_err(|e| ApiError::runner_unavailable(e.to_string()))?;
+                env.insert(
+                    crate::sandbox::launch_guard::ENV.into(),
+                    crate::sandbox::terminal_gate::MODE.into(),
+                );
+                command.current_dir(cwd).env_clear().envs(&env);
+                work.gate = Some(writer);
+                pty::spawn_isolated(slave, command)
+            } else {
+                pty::spawn(slave, shell, cwd, &env)
+            };
+            let child = spawned.map_err(|error| {
                 ApiError::new(
                     500,
                     "runner_unavailable",
@@ -325,11 +377,17 @@ impl Terminals {
             Ok(pair) => pair,
             Err(error) => {
                 if let (Some(record), Some((_, db))) = (&record, journal) {
+                    if let Some(launch) = &launch {
+                        crate::process_journal::not_started(db, launch)?;
+                    }
                     record.finish(db, "not_started")?;
                 }
                 return Err(error);
             }
         };
+        if let (Some(work), Some(pid)) = (&work, child.id()) {
+            work.prepared.process_spawned(pid);
+        }
         // Once spawn succeeds, the observer must own the child even if the
         // journal update fails. A request error cannot drop supervision.
         let running = match (&record, journal) {
@@ -339,6 +397,7 @@ impl Terminals {
         let (exited_tx, exited) = watch::channel(None);
         let (commands, receiver) = mpsc::unbounded_channel();
         let info = TerminalInfo {
+            execution_path: work.as_ref().map(|_| "isolated_work".into()),
             id: id.clone(),
             session_id: session_id.to_owned(),
             title: shell.rsplit('/').next().unwrap_or("shell").to_owned(),
@@ -373,7 +432,10 @@ impl Terminals {
             self.node.clone(),
             Arc::downgrade(&self.registry),
             entry,
-            child,
+            ObservedChild {
+                child,
+                work: work.zip(launch),
+            },
             pty,
             receiver,
             exited_tx,
@@ -598,16 +660,22 @@ fn output(entry: &Entry, chunk: &[u8]) {
     }
 }
 
+struct ObservedChild {
+    child: Box<dyn process_wrap::tokio::ChildWrapper>,
+    work: Option<(isolated::Work, crate::process_journal::Launch)>,
+}
+
 /// The terminal's tasks: see the module documentation.
 fn run(
     node: WeakNode,
     registry: Weak<Mutex<Registry>>,
     entry: Arc<Entry>,
-    child: Box<dyn process_wrap::tokio::ChildWrapper>,
+    observed: ObservedChild,
     pty: pty::Master,
     mut commands: mpsc::UnboundedReceiver<PtyCommand>,
     exited: watch::Sender<Option<ApiResult<()>>>,
 ) {
+    let ObservedChild { child, work } = observed;
     let reader = Arc::new(pty);
     let writer = reader.clone();
     let reading = {
@@ -640,7 +708,11 @@ fn run(
         })
     };
     tokio::spawn(async move {
-        let observed = supervision::observe(child, entry.stopping.subscribe()).await;
+        let observed = if let Some((work, launch)) = work {
+            isolated::observe(&node, &entry, child, work, launch).await
+        } else {
+            supervision::observe(child, entry.stopping.subscribe()).await
+        };
         let code = observed.as_ref().ok().and_then(|status| status.code());
         // A natural child exit must also stop queued input immediately. Keep
         // this separate from `closing`, which hides manually closed panels.

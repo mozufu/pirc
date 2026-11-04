@@ -89,6 +89,13 @@ impl Scope {
     /// All inherited FD mappings must be applied together (command-fds mappings
     /// in separate calls can collide). The pipe is never agent stdout or an RPC.
     pub fn prepare_command(&self, command: &mut tokio::process::Command) -> io::Result<()> {
+        self.prepare_with_gate(command, None)
+    }
+    pub(crate) fn prepare_with_gate(
+        &self,
+        command: &mut tokio::process::Command,
+        gate: Option<std::os::fd::OwnedFd>,
+    ) -> io::Result<()> {
         let mut inner = self.inner.lock().unwrap_or_else(|p| p.into_inner());
         if inner.spawned || inner.retiring {
             return Err(io::Error::other("sandbox process scope cannot be reused"));
@@ -103,6 +110,12 @@ impl Scope {
             child_fd: STATUS_FD,
         }];
         mappings.extend(super::seccomp::mapping()?);
+        if let Some(gate) = gate {
+            mappings.push(FdMapping {
+                parent_fd: gate,
+                child_fd: crate::sandbox::terminal_gate::FD,
+            });
+        }
         command.fd_mappings(mappings).map_err(io::Error::other)?;
         inner.reader = Some(reader);
         inner.bytes.clear();

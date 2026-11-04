@@ -203,13 +203,29 @@ pub fn routes() -> Vec<Route> {
                 &session.id,
                 &node.workspace_mode(&workspace)?,
             )?;
-            let terminal = node.terminals.create(
-                &session.id,
-                &cwd,
-                Some(cols.unwrap_or(80)),
-                Some(rows.unwrap_or(24)),
-                (&client_id, generation),
-            )?;
+            let terminal = match body.get("executionPath") {
+                None => node.terminals.create(
+                    &session.id,
+                    &cwd,
+                    Some(cols.unwrap_or(80)),
+                    Some(rows.unwrap_or(24)),
+                    (&client_id, generation),
+                )?,
+                Some(Value::String(path)) if path == "isolated_work" => {
+                    node.terminals
+                        .create_isolated(
+                            &session.id,
+                            &cwd,
+                            Some(cols.unwrap_or(80)),
+                            Some(rows.unwrap_or(24)),
+                            (&client_id, generation),
+                        )
+                        .await?
+                }
+                // Host-management terminal grants/client selection are separate work;
+                // an arbitrary model/client label cannot authorize the old host path.
+                _ => return Err(ApiError::invalid_input()),
+            };
             Ok(Response::status(201, json!({ "terminal": terminal })))
         }),
         post(

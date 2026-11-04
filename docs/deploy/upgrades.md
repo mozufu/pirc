@@ -1,5 +1,23 @@
 # Upgrades
 
+## Local checkpoint: guarded isolated work terminals
+
+Node schema **2024** is a semantic reader fence (`SELECT 1`). Explicit isolated
+work terminals share one actual launch identity across the existing terminal and
+kernel journals, with Node-owned observation and a private non-keyboard permit.
+Old terminal rows receive no containment proof or host-management grant.
+
+`isolatedTerminalVersion: 1` describes the native Linux adapter; other backends
+refuse this path without host fallback. Live isolated metadata adds `executionPath`.
+The omitted-path compatibility request remains unchanged pending client choices,
+host-terminal grants and default rollout. A model/client label alone does not
+authorize host management. Public switching and full revocation/install remain
+false. Linux detached-writer/native-PTY acceptance is not verified on this macOS
+host. Gateway **1029**, protocol/client/private-envelope **15/2/3**, dependencies,
+lockfiles and Nix hashes stay unchanged. Older binaries refuse 2024; rollback needs
+matching state/binary backups. Local only, no deployment/Release. See the
+[execution-path checkpoint](../../plans/execution-isolation.md#local-implementation-checkpoint-guarded-isolated-work-terminals-2026-11-04).
+
 ## Local checkpoint: host-management approval origin
 
 Node schema **2023** adds `host_execution_approvals`. Node-issued host-management

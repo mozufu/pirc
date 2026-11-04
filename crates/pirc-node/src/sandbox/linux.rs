@@ -534,6 +534,128 @@ impl NativeSandbox {
     }
 }
 
+impl NativeSandbox {
+    async fn prepare_command(
+        &self,
+        input: PrepareInput,
+        agent: Vec<OsString>,
+        terminal: bool,
+    ) -> ApiResult<Prepared> {
+        let Session {
+            tmp,
+            policy,
+            warnings,
+        } = common::spawn_session(&self.config, &self.env, &self.node_tmp, &input).await?;
+        let fail = |tmp: &Path, error: ApiError| {
+            Session::remove_tmp(tmp);
+            Err(error)
+        };
+        let bwrap = match self.bwrap().await {
+            Ok(bwrap) => bwrap,
+            Err(error) => return fail(&tmp, error),
+        };
+        let (filesystem, mounts) = match plan_for(
+            &self.config,
+            &self.env,
+            &policy,
+            &input.workspace_root,
+            session_sockets(&policy),
+        )
+        .await
+        {
+            Ok(plan) => plan,
+            Err(reason) => return fail(&tmp, super::unavailable_error(&reason)),
+        };
+        let socket = tmp.join(PROXY_SOCKET);
+        let listener = match tokio::net::UnixListener::bind(&socket) {
+            Ok(listener) => listener,
+            Err(error) => {
+                crate::log::error(&format!("cannot start the sandbox proxy: {error}"));
+                return fail(&tmp, ApiError::internal());
+            }
+        };
+        let tmp_text = tmp.display().to_string();
+        let auth = Arc::new(proxy::ProxyAuth::generate());
+        let proxy_env = self.proxy_env(&auth);
+        let mut options = bwrap_args(
+            filesystem,
+            &tmp_text,
+            &socket.display().to_string(),
+            &proxy_env,
+        );
+        options.options.extend([
+            "--json-status-fd".to_owned(),
+            processes::STATUS_FD.to_string(),
+        ]);
+        if terminal {
+            // Force the private gate inside the sandbox too. Accidentally using
+            // ordinary Prepared::command or clearing caller env must fail closed.
+            options.options.extend([
+                "--setenv".into(),
+                super::launch_guard::ENV.into(),
+                super::terminal_gate::MODE.into(),
+            ]);
+        }
+        let processes = Arc::new(processes::Scope::default());
+        let tail = self.command_args(Vec::new(), &socket, &agent);
+        let invocation = match args::render(
+            &bwrap,
+            options.options,
+            options.mounts,
+            tail,
+            args::byte_budget(),
+            &common::tmpdir(&self.env),
+        ) {
+            Ok(invocation) => invocation,
+            Err(reason) => return fail(&tmp, super::unavailable_error(&reason)),
+        };
+        let allowlist = Arc::new(Allowlist::new(
+            policy.network.allowed_domains.clone(),
+            policy.network.denied_domains.clone(),
+        ));
+        let proxy = match self.network.start(
+            &input.session_id,
+            ProxyListener::Unix(listener),
+            allowlist.clone(),
+            auth,
+            self.connections.clone(),
+        ) {
+            Ok(lease) => lease,
+            Err(error) => {
+                Session::remove_tmp(&tmp);
+                return Err(error);
+            }
+        };
+        caps::warn_if_setfcap_missing();
+        let profile = invocation.profile;
+        let prepared = Prepared::new(
+            invocation.program,
+            invocation.args,
+            vec![("CLAUDE_CODE_TMPDIR".to_owned(), tmp_text)],
+            policy,
+            warnings,
+            Some(Box::new(NativeControl {
+                allowlist,
+                authority: proxy.authority(),
+                processes: processes.clone(),
+            })),
+            move || {
+                drop(proxy);
+                drop(profile);
+                drop(mounts);
+                Session::remove_tmp(&tmp);
+            },
+        )
+        .with_process_scope(processes)
+        .with_recovery(input.recovery);
+        Ok(if terminal {
+            prepared.with_terminal_guard()
+        } else {
+            prepared
+        })
+    }
+}
+
 impl Sandbox for NativeSandbox {
     fn network_scopes(&self) -> Option<&proxy::Scopes> {
         Some(&self.network)
@@ -542,109 +664,20 @@ impl Sandbox for NativeSandbox {
         Box::pin(self.probe.get(|| self.probe()))
     }
 
+    fn isolated_terminals(&self) -> bool {
+        cfg!(target_os = "linux")
+    }
+    fn prepare_terminal(
+        &self,
+        input: PrepareInput,
+        shell: PathBuf,
+    ) -> BoxFuture<'_, ApiResult<Prepared>> {
+        Box::pin(self.prepare_command(input, vec![shell.into(), "-l".into()], true))
+    }
     fn prepare(&self, input: PrepareInput) -> BoxFuture<'_, ApiResult<Prepared>> {
-        Box::pin(async move {
-            let Session {
-                tmp,
-                policy,
-                warnings,
-            } = common::spawn_session(&self.config, &self.env, &self.node_tmp, &input).await?;
-            let fail = |tmp: &Path, error: ApiError| {
-                Session::remove_tmp(tmp);
-                Err(error)
-            };
-            let bwrap = match self.bwrap().await {
-                Ok(bwrap) => bwrap,
-                Err(error) => return fail(&tmp, error),
-            };
-            let (filesystem, mounts) = match plan_for(
-                &self.config,
-                &self.env,
-                &policy,
-                &input.workspace_root,
-                session_sockets(&policy),
-            )
-            .await
-            {
-                Ok(plan) => plan,
-                Err(reason) => return fail(&tmp, super::unavailable_error(&reason)),
-            };
-            let socket = tmp.join(PROXY_SOCKET);
-            let listener = match tokio::net::UnixListener::bind(&socket) {
-                Ok(listener) => listener,
-                Err(error) => {
-                    crate::log::error(&format!("cannot start the sandbox proxy: {error}"));
-                    return fail(&tmp, ApiError::internal());
-                }
-            };
-            let tmp_text = tmp.display().to_string();
-            let mut agent: Vec<OsString> = vec![self.config.agent_command.clone().into()];
-            agent.extend(self.config.agent_args.iter().map(OsString::from));
-            let auth = Arc::new(proxy::ProxyAuth::generate());
-            let proxy_env = self.proxy_env(&auth);
-            let mut options = bwrap_args(
-                filesystem,
-                &tmp_text,
-                &socket.display().to_string(),
-                &proxy_env,
-            );
-            options.options.extend([
-                "--json-status-fd".to_owned(),
-                processes::STATUS_FD.to_string(),
-            ]);
-            let processes = Arc::new(processes::Scope::default());
-            let tail = self.command_args(Vec::new(), &socket, &agent);
-            let invocation = match args::render(
-                &bwrap,
-                options.options,
-                options.mounts,
-                tail,
-                args::byte_budget(),
-                &common::tmpdir(&self.env),
-            ) {
-                Ok(invocation) => invocation,
-                Err(reason) => return fail(&tmp, super::unavailable_error(&reason)),
-            };
-            let allowlist = Arc::new(Allowlist::new(
-                policy.network.allowed_domains.clone(),
-                policy.network.denied_domains.clone(),
-            ));
-            let proxy = match self.network.start(
-                &input.session_id,
-                ProxyListener::Unix(listener),
-                allowlist.clone(),
-                auth,
-                self.connections.clone(),
-            ) {
-                Ok(lease) => lease,
-                Err(error) => {
-                    Session::remove_tmp(&tmp);
-                    return Err(error);
-                }
-            };
-            caps::warn_if_setfcap_missing();
-            let profile = invocation.profile;
-            Ok(Prepared::new(
-                invocation.program,
-                invocation.args,
-                vec![("CLAUDE_CODE_TMPDIR".to_owned(), tmp_text)],
-                policy,
-                warnings,
-                Some(Box::new(NativeControl {
-                    allowlist,
-                    authority: proxy.authority(),
-                    processes: processes.clone(),
-                })),
-                move || {
-                    drop(proxy);
-                    drop(profile);
-                    drop(mounts);
-                    Session::remove_tmp(&tmp);
-                },
-            )
-            .with_process_scope(processes)
-            .with_recovery(input.recovery))
-        })
+        let mut agent = vec![self.config.agent_command.clone().into()];
+        agent.extend(self.config.agent_args.iter().map(OsString::from));
+        Box::pin(self.prepare_command(input, agent, false))
     }
 
     fn prepare_readonly(&self, input: ReadonlyInput) -> BoxFuture<'_, ApiResult<Prepared>> {
@@ -666,6 +699,14 @@ struct NativeControl {
 }
 
 impl NetworkControl for NativeControl {
+    fn prepare_terminal(
+        &self,
+        command: &mut tokio::process::Command,
+        gate: std::os::fd::OwnedFd,
+    ) -> std::io::Result<()> {
+        self.processes.prepare_with_gate(command, Some(gate))
+    }
+
     /// Map bubblewrap's seccomp filter and private process-status pipe together.
     fn prepare_command(&self, command: &mut tokio::process::Command) -> std::io::Result<()> {
         self.processes.prepare_command(command)

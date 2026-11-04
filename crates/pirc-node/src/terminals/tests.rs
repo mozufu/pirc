@@ -28,6 +28,7 @@ fn open(terminals: &Terminals, session: &str, cols: f64, rows: f64) -> ApiResult
         rows,
         "/bin/sh",
         Environment {
+            work: None,
             vars: env(),
             binding: None,
             journal: None,
@@ -118,6 +119,7 @@ fn scrollback_drops_whole_chunks_but_never_the_last() {
         state: Mutex::new(EntryState {
             closing: false,
             info: TerminalInfo {
+                execution_path: None,
                 id: "t".into(),
                 session_id: "s".into(),
                 title: "sh".into(),

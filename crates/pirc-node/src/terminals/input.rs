@@ -38,7 +38,7 @@ impl Authority {
 pub(super) struct Binding {
     pub(super) workspace: String,
     path: String,
-    mode: Mode,
+    pub(super) mode: Mode,
 }
 impl Binding {
     pub(super) fn capture(
@@ -66,7 +66,7 @@ impl Binding {
             mode,
         })
     }
-    fn check(&self, node: &Node, db: &Connection, session: &str) -> ApiResult<()> {
+    pub(super) fn check(&self, node: &Node, db: &Connection, session: &str) -> ApiResult<()> {
         if node.closing() || !node.config.terminals_enabled {
             return Err(ApiError::forbidden(
                 "Terminals are unavailable on this node",

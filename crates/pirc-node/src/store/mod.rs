@@ -33,7 +33,7 @@ use crate::util::{now_ms, prefix_uuid, safe_json};
 /// the gateway's migrations (1 to 19) and the Rust gateway's schema is 1000;
 /// the node's line starts apart from both, so each is recognized.
 /// 2001: uploads record their workspace and session; `workspace_deletions`.
-pub const SCHEMA_VERSION: i64 = 2023;
+pub const SCHEMA_VERSION: i64 = 2024;
 /// Upgrades from each earlier node schema, applied in order.
 const MIGRATIONS: &[(i64, &str)] = &[
     (
@@ -87,6 +87,8 @@ CREATE TABLE IF NOT EXISTS checkpoint_workspaces (
     // Terminal settlement now acknowledges both PTY I/O owners as well as the child.
     (2022, "SELECT 1;"),
     (2023, include_str!("../host_commands/approval.sql")),
+    // Isolated terminal rows share a guarded kernel launch identity.
+    (2024, "SELECT 1;"),
 ];
 /// The first node schema.
 const FIRST_SCHEMA_VERSION: i64 = 2000;

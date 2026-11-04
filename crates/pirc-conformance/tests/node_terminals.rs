@@ -593,3 +593,33 @@ async fn node_terminals_disabled() {
     }
     insta::assert_json_snapshot!("node_terminals_disabled", t.into_value());
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn isolated_terminal_never_falls_back_to_host_on_an_unsupported_backend() {
+    let Some(cluster) = Cluster::start_with(terminal_env()).await else {
+        return;
+    };
+    let api = cluster.api();
+    let (mut session, _) = Session::create(&api).await;
+    session.acquire().await;
+    let request = json!({"clientId":session.client,"generation":session.generation,"executionPath":"isolated_work"});
+    let response = session.post("/terminals", request).await;
+    assert_eq!(response.status, 503, "{response:?}");
+    assert_eq!(
+        response.body["error"]["code"],
+        "isolated_terminal_unavailable"
+    );
+    let listed = session.get("/terminals").await;
+    assert_eq!(listed.body["terminals"], json!([]));
+    // Explicit path selection cannot be used to relabel the compatibility path.
+    for path in [
+        json!("host_management"),
+        json!("unknown"),
+        json!(true),
+        Value::Null,
+    ] {
+        let response=session.post("/terminals",json!({"clientId":session.client,"generation":session.generation,"executionPath":path})).await;
+        assert_eq!(response.status, 400, "{response:?}");
+    }
+    assert_eq!(session.get("/terminals").await.body["terminals"], json!([]));
+}

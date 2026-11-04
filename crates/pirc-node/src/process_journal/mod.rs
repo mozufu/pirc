@@ -22,6 +22,11 @@ pub(crate) struct Launch {
     epoch: i64,
     incarnation: String,
 }
+impl Launch {
+    pub(crate) fn id(&self) -> &str {
+        &self.id
+    }
+}
 #[derive(Clone, Default, Debug, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct Summary {

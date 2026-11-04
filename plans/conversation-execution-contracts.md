@@ -88,6 +88,12 @@ adds Node schema **2023**: a Node-issued, exact-intent, live positive confirmati
 is consumed with host-run/write reservation before spawn. Old runs receive no new
 grants. This does not deliver isolated terminals or full revocation/install proof.
 
+The local [guarded work-terminal checkpoint](unified-conversations.md#u4-implementation-checkpoint-guarded-isolated-work-terminals-2026-11-04)
+adds an explicit native Linux path and shared kernel/terminal identity (Node
+**2024**). Its private permit is independent of PTY input; invalid/unsupported
+paths do not fall back. Actual Linux acceptance, client mode choice/host-terminal
+grants, default rollout and complete revocation/install remain open.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.

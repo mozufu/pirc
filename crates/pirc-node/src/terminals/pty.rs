@@ -43,6 +43,9 @@ pub struct Slave {
 
 #[cfg(test)]
 impl Slave {
+    pub(crate) fn clone_stdio(&self) -> io::Result<std::process::Stdio> {
+        Ok(self.fd.try_clone()?.into())
+    }
     pub(super) fn raw_reader(&self) -> io::Result<std::fs::File> {
         let mut attrs = rustix::termios::tcgetattr(&self.fd)?;
         attrs.make_raw();
@@ -77,6 +80,10 @@ pub fn open(rows: u16, cols: u16) -> io::Result<(Master, Slave)> {
 }
 
 impl Master {
+    #[cfg(test)]
+    pub(crate) fn write_test(&self, bytes: &[u8]) -> io::Result<usize> {
+        Ok(rustix::io::write(self.0.get_ref(), bytes)?)
+    }
     /// `TIOCSWINSZ`.
     pub fn resize(&self, rows: u16, cols: u16) -> io::Result<()> {
         rustix::termios::tcsetwinsize(
@@ -110,6 +117,22 @@ impl Master {
     ) -> io::Result<tokio::io::unix::AsyncFdReadyGuard<'_, OwnedFd>> {
         self.0.writable().await
     }
+}
+
+/// A trusted sandbox/bridge command receives only this terminal's private slave.
+/// FD setup for the sandbox's gate/status was already installed atomically.
+#[doc(hidden)]
+pub fn spawn_isolated(
+    slave: Slave,
+    mut command: tokio::process::Command,
+) -> io::Result<Box<dyn ChildWrapper>> {
+    command
+        .stdin(slave.fd.try_clone()?)
+        .stdout(slave.fd.try_clone()?)
+        .stderr(slave.fd)
+        .process_group(0)
+        .kill_on_drop(true);
+    Ok(CommandWrap::from(command).spawn()?.into_inner())
 }
 
 /// Run `shell -l` on the PTY of `slave`: `/bin/sh -c 'exec "$0" -l

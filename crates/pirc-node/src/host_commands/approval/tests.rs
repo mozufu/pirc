@@ -294,7 +294,7 @@ fn migration_preserves_legacy_runs_without_inventing_user_approvals() {
     assert_eq!(
         db.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))
             .unwrap(),
-        2023
+        crate::store::SCHEMA_VERSION
     );
 }
 

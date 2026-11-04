@@ -264,6 +264,7 @@ async fn partial_write_rechecks_after_backpressure_and_does_not_send_the_tail() 
             state: Mutex::new(EntryState {
                 closing: false,
                 info: TerminalInfo {
+                    execution_path: None,
                     id: "blocked-pty".into(),
                     session_id: f.current.clone(),
                     title: "test".into(),
