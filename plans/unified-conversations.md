@@ -23,7 +23,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1029**, Node **2026**, protocol **15**, client contract **2**,
+formats: Gateway **1029**, Node **2027**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -55,7 +55,13 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local U4 delivery: [terminal I/O owner recovery](#u4-implementation-checkpoint-terminal-io-owner-recovery-2026-11-04)
+Latest local U4 delivery: [host terminal review and once-only launch](#u4-implementation-checkpoint-host-terminal-review-and-once-only-launch-2026-11-04)
+adds a human review/confirmation contract, atomic grant/launch reservation and
+read-only result recovery (Node **2027**). Detached host work remains unconfirmed
+after direct-shell closure. Web/Android mode controls, isolated-by-default rollout
+and full revocation/install acceptance remain open.
+
+The previous [terminal I/O owner recovery](#u4-implementation-checkpoint-terminal-io-owner-recovery-2026-11-04)
 adds immutable old-Node process identity and requires both namespace termination
 and old I/O-owner exit before restart settlement (Node **2026**). Unknown, missing
 or mismatched evidence stays blocked; no saved owner PID is signaled. Full mode
@@ -5382,3 +5388,77 @@ work without a false success. Linux-only pidfd/namespace acceptance remains pend
 no Flutter, browser, emulator, device or Nix validation was run for this Node-only
 change. The owned **2.9 GiB** build/log tree is removed after verification; shared
 caches, APKs and user/peer data are retained. Local commit only, no push or Release.
+
+## U4 implementation checkpoint: host terminal review and once-only launch (2026-11-04)
+
+Node schema **2027** adds retained `terminal_host_requests` for the human terminal
+path. A body label, `full-access`, Agent confirmation, old run or omitted mode is
+not a host-terminal grant. `hostTerminalReviewVersion: 1` advertises the new backend
+contract. Gateway **1029** and protocol/client/private-envelope **15/2/3** stay
+unchanged; no dependency, package, lockfile or Nix hash changes are required.
+
+The existing authenticated terminal relay now supports:
+
+1. `POST .../terminals` with `executionPath: "host_management"`, `action: "review"`,
+   a stable `requestId` and current `clientId`/`generation`. It returns Node-issued
+   review ID/hash, expiry and the shell, root, size and host-effects warning. Review
+   alone creates no terminal. Repeating identical intent returns the same review;
+   changed intent under that identity is refused. Expiry uses the existing Node
+   interaction TTL, with no new product timeout setting.
+2. `action: "confirm"`, the same request and mode/control/size, exact `reviewId`
+   and `reviewHash`, plus boolean `confirmed: true`. Admission compares the stored
+   digest against current owner/session/workspace, runner epoch, path, mode rules,
+   shell, size, control lease and Node incarnation. The source fence and terminal
+   capability still apply. Review consumption and the durable terminal reservation
+   commit together **before** PTY/spawn. Failure rolls both back. SQL constraints
+   also prohibit consuming a review into another source's run.
+3. `GET .../terminals?hostRequestId=<requestId>` reads the owner's result without
+   acquiring control, Web state or starting a runner, including after new terminals
+   are disabled. Accepted retries and parallel
+   confirmations return the same attempt. A lost/restarted live registry reports
+   `outcome_unknown`, never replays the shell, and preserves its terminal ID.
+   Pending old-incarnation or expired reviews cannot authorize a new launch.
+
+The public review excludes private session storage/mode content; these are only
+inputs to its digest. Immutable retained evidence stores no typed terminal input,
+output, credentials or saved signaling PID. Legacy records receive no new grant.
+A failed spawn keeps the consumed identity with `not_started`; a new attempt needs
+new explicit review instead of reusing that authority. Old binaries reject 2027;
+rollback needs matching state/binary backups.
+
+Live host metadata/ready frames identify `executionPath: "host_management"`.
+Closure uses immutable execution provenance, never this mutable display field;
+changing presentation cannot manufacture scoped termination evidence.
+The existing host PTY still allows its configured account/SSH environment. When its
+direct shell and both I/O owners have closed, `TerminalInfo.exited` can be true,
+but its durable terminal outcome remains **unconfirmed**: this is not proof that
+detached work or external effects stopped. Stop/deletion/transition settlement
+therefore remains blocked. Isolated owner recovery cannot borrow a host terminal's
+record; it has no matching scoped kernel launch. No force-clear, inferred closure,
+process-name kill or new full-revocation acknowledgement is added.
+
+This delivers the backend grant/result part of the accepted two-mode direction.
+Web/Android mode choice, persisted client request recovery and warnings, default
+migration of the omitted-path compatibility API, Linux native acceptance,
+complete OS/project/delegated resource retirement and replacement installation
+remain open. The compatibility path keeps its prior classification; no existing
+terminal is silently relabeled. Public switching, `canSubmit`, revocation and
+installation completion flags remain disabled. No Flutter or visual redesign is
+included in this Node/API slice.
+
+Validation: **639 Node library tests passed** (five existing child/opt-in ignores),
+**421 Gateway tests**, **20 required real Node/Gateway process cases** and strict
+all-target Node/Gateway/conformance Clippy passed. Final focused checks passed
+**49 terminal tests** (including **10 host-terminal tests**), with immutable-origin
+closure despite changed display metadata, disabled-new-terminal read recovery and an
+actual transition drain that remains `blocked`/`terminal_stop_unconfirmed` after
+host-shell closure. Coverage includes eight concurrent confirmations yielding
+one run, changed/foreign/declined/expired authority, atomic reservation failures,
+known spawn failure without retry, real SQLite restart after pre-spawn consumption,
+legacy upgrade and SQL peer-origin rejection. The added Gateway/WebSocket case
+reviews, confirms, runs input, closes, queries and repeats confirmation without a
+second terminal. This is actual host-PTY evidence on macOS, not native Linux
+sandbox acceptance or Android/device proof. No Flutter/Nix/browser/emulator/device
+validation is run for this backend-only slice. The owned **2.9 GiB** build/log
+tree is cleaned; APKs, shared caches and user/peer data remain. Local commit only,
+no push, deployment or Release.

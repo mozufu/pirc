@@ -28,6 +28,7 @@ fn open(terminals: &Terminals, session: &str, cols: f64, rows: f64) -> ApiResult
         rows,
         "/bin/sh",
         Environment {
+            host: None,
             work: None,
             vars: env(),
             binding: None,
@@ -113,6 +114,7 @@ fn scrollback_drops_whole_chunks_but_never_the_last() {
     let (pty, _) = mpsc::unbounded_channel();
     let (_, exited) = watch::channel(None);
     let entry = Entry {
+        host_management: false,
         record: None,
         binding: None,
         stopping: watch::channel(false).0,

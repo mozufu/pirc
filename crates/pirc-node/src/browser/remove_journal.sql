@@ -1,3 +1,8 @@
+-- Test fixtures only, before removing earlier terminal schemas.
+DROP TRIGGER terminal_host_identity;
+DROP TRIGGER terminal_host_once;
+DROP TRIGGER terminal_host_retained;
+DROP TABLE terminal_host_requests;
 -- Test fixtures only: restore the earlier immutable terminal outcome rule.
 DROP TRIGGER terminal_runs_terminal;
 CREATE TRIGGER terminal_runs_terminal BEFORE UPDATE OF state ON terminal_runs

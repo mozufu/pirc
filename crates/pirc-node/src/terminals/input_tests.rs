@@ -258,6 +258,7 @@ async fn partial_write_rechecks_after_backpressure_and_does_not_send_the_tail() 
         let cwd = root(&f);
         let binding = Binding::capture(&f.node, &f.node.db.lock(), &f.current, &cwd).unwrap();
         let entry = Arc::new(Entry {
+            host_management: false,
             record: None,
             binding: Some(binding),
             stopping: watch::channel(false).0,

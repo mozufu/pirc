@@ -42,6 +42,7 @@ use crate::error::{ApiError, ApiResult};
 use crate::services::WeakNode;
 use crate::store::Store;
 
+pub(crate) mod host;
 mod input;
 pub(crate) mod io_owners;
 mod isolated;
@@ -110,6 +111,8 @@ struct Registry {
 }
 
 struct Entry {
+    // Immutable execution provenance; display metadata is not closure authority.
+    host_management: bool,
     record: Option<journal::Record>,
     binding: Option<Binding>,
     stopping: watch::Sender<bool>,
@@ -141,6 +144,7 @@ enum Action {
 
 struct Environment<'a> {
     work: Option<isolated::Work>,
+    host: Option<host::Grant>,
     vars: BTreeMap<String, String>,
     binding: Option<Binding>,
     journal: Option<(&'a crate::services::Node, &'a rusqlite::Connection)>,
@@ -225,6 +229,18 @@ impl Terminals {
         rows: Option<i64>,
         control: (&str, i64),
     ) -> ApiResult<TerminalInfo> {
+        self.create_selected(session_id, cwd, cols, rows, control, None)
+    }
+
+    fn create_selected(
+        &self,
+        session_id: &str,
+        cwd: &Path,
+        cols: Option<i64>,
+        rows: Option<i64>,
+        control: (&str, i64),
+        host: Option<host::Grant>,
+    ) -> ApiResult<TerminalInfo> {
         let node = self.node.upgrade().ok_or_else(ApiError::internal)?;
         let shell = default_shell(node.config.terminal_shell.as_deref(), node.env.get("SHELL"));
         let mut env = pirc_config::env_allowlist::without_secrets(&node.env, &[]);
@@ -251,6 +267,7 @@ impl Terminals {
             &shell,
             Environment {
                 work: None,
+                host,
                 vars: env,
                 binding: Some(binding),
                 journal: Some((&node, &db)),
@@ -270,10 +287,14 @@ impl Terminals {
     ) -> ApiResult<TerminalInfo> {
         let Environment {
             mut work,
+            host,
             vars: mut env,
             binding,
             journal,
         } = environment;
+        if work.is_some() && host.is_some() {
+            return Err(ApiError::internal());
+        }
         let mut registry = self.registry();
         if registry.closing {
             return Err(ApiError::runner_unavailable("Gateway is shutting down"));
@@ -301,6 +322,28 @@ impl Terminals {
         let cols = clamp(cols, 20, 500, 80);
         let rows = clamp(rows, 5, 200, 24);
         let id = crate::util::uuid()[..8].to_owned();
+        if registry.terminals.contains_key(&id) {
+            return Err(ApiError::conflict(
+                "Terminal identity collision; request again",
+            ));
+        }
+        let info = TerminalInfo {
+            execution_path: if work.is_some() {
+                Some("isolated_work".into())
+            } else {
+                host.as_ref().map(|_| "host_management".into())
+            },
+            id: id.clone(),
+            session_id: session_id.into(),
+            title: shell.rsplit('/').next().unwrap_or("shell").into(),
+            cwd: cwd.to_string_lossy().into_owned(),
+            cols,
+            rows,
+            created_at: crate::util::now_ms(),
+            exit_code: None,
+            exited: false,
+        };
+
         env.insert("TERM".into(), "xterm-256color".into());
         env.insert("COLORTERM".into(), "truecolor".into());
         env.insert("PIRC_TERMINAL".into(), "1".into());
@@ -327,6 +370,15 @@ impl Terminals {
                 Ok((record, launch))
             })?;
             (Some(record), Some(launch))
+        } else if let Some(grant) = &host {
+            let (node, db) = journal.ok_or_else(ApiError::internal)?;
+            let workspace = &binding.as_ref().ok_or_else(ApiError::internal)?.workspace;
+            let record = crate::store::atomic(db, |db| {
+                let record = journal::Record::reserve_atomic(node, db, session_id, workspace, cwd)?;
+                host::consume(db, node, grant, &info, &record)?;
+                Ok(record)
+            })?;
+            (Some(record), None)
         } else {
             let record = journal
                 .map(|(node, db)| {
@@ -401,19 +453,8 @@ impl Terminals {
         };
         let (exited_tx, exited) = watch::channel(None);
         let (commands, receiver) = mpsc::unbounded_channel();
-        let info = TerminalInfo {
-            execution_path: work.as_ref().map(|_| "isolated_work".into()),
-            id: id.clone(),
-            session_id: session_id.to_owned(),
-            title: shell.rsplit('/').next().unwrap_or("shell").to_owned(),
-            cwd: cwd.to_string_lossy().into_owned(),
-            cols,
-            rows,
-            created_at: crate::util::now_ms(),
-            exit_code: None,
-            exited: false,
-        };
         let entry = Arc::new(Entry {
+            host_management: host.is_some(),
             record,
             binding,
             stopping: watch::channel(false).0,
@@ -741,7 +782,7 @@ fn run(
                     record
                         .finish(
                             &node.db.lock(),
-                            if result.is_ok() {
+                            if result.is_ok() && !entry.host_management {
                                 "settled"
                             } else {
                                 "unconfirmed"
@@ -753,7 +794,8 @@ fn run(
         }
         {
             let mut state = entry.state();
-            // Unknown outcomes never free the live quota or imply an exit.
+            // Only confirmed direct-shell/I/O closure frees the live quota.
+            // Detached host authority remains durably unconfirmed separately.
             state.info.exited = result.is_ok();
             state.info.exit_code = code;
             if result.is_err() {

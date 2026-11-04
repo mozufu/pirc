@@ -183,6 +183,12 @@ pub fn routes() -> Vec<Route> {
             },
         ),
         get("/api/sessions/:id/terminals", |node, request| async move {
+            if let Some(id) = request.single_query("hostRequestId")? {
+                // Retained outcomes remain readable even if new terminals were disabled.
+                let session = claim(&node, &request)?;
+                return crate::terminals::host::status(&node, &request.user, &session.id, id)
+                    .map(Response::json);
+            }
             let session = terminal_session(&node, &request)?;
             Ok(Response::json(
                 json!({ "terminals": node.terminals.list(&session.id) }),
@@ -203,6 +209,23 @@ pub fn routes() -> Vec<Route> {
                 &session.id,
                 &node.workspace_mode(&workspace)?,
             )?;
+            if body.get("executionPath").and_then(Value::as_str) == Some("host_management") {
+                return crate::terminals::host::handle(
+                    &node,
+                    &request.user,
+                    &session.id,
+                    &cwd,
+                    body,
+                    (&client_id, generation),
+                    (cols, rows),
+                );
+            }
+            if ["action", "reviewId", "reviewHash", "confirmed"]
+                .iter()
+                .any(|key| body.get(*key).is_some())
+            {
+                return Err(ApiError::invalid_input());
+            }
             let terminal = match body.get("executionPath") {
                 None => node.terminals.create(
                     &session.id,
@@ -222,8 +245,8 @@ pub fn routes() -> Vec<Route> {
                         )
                         .await?
                 }
-                // Host-management terminal grants/client selection are separate work;
-                // an arbitrary model/client label cannot authorize the old host path.
+                // Explicit host requests must use the review contract above.
+                // Other labels never authorize the compatibility host path.
                 _ => return Err(ApiError::invalid_input()),
             };
             Ok(Response::status(201, json!({ "terminal": terminal })))

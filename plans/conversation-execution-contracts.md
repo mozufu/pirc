@@ -106,6 +106,13 @@ thread-group exit. Missing or unknown owners stay blocked; migration invents no
 proof and no saved owner PID is signaled. Complete revocation/install and client
 mode rollout remain open; actual Linux acceptance is still required.
 
+The [human host-terminal review](unified-conversations.md#u4-implementation-checkpoint-host-terminal-review-and-once-only-launch-2026-11-04)
+adds Node schema **2027** and `hostTerminalReviewVersion: 1`. Exact human review,
+current control/environment and atomic one-time consumption precede host spawn;
+read-only result recovery cannot relaunch. Direct-shell/I/O closure still leaves
+uncontained host work unconfirmed and source settlement blocked. Client choice,
+default rollout and complete revocation/install remain open.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.

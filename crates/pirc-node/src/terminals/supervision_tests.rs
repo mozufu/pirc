@@ -27,6 +27,7 @@ fn open(f: &Fixture, cwd: &Path, shell: &str) -> ApiResult<TerminalInfo> {
         24.0,
         shell,
         Environment {
+            host: None,
             work: None,
             vars: BTreeMap::from([("HOME".into(), "/nonexistent".into())]),
             binding: Some(binding),

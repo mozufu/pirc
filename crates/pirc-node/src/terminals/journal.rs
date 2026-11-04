@@ -54,6 +54,27 @@ impl Record {
         if !db.is_autocommit() {
             return Err(ApiError::internal());
         }
+        Self::insert(node, db, session, workspace, cwd)
+    }
+    pub(super) fn reserve_atomic(
+        node: &Node,
+        db: &Connection,
+        session: &str,
+        workspace: &str,
+        cwd: &Path,
+    ) -> ApiResult<Self> {
+        if db.is_autocommit() {
+            return Err(ApiError::internal());
+        }
+        Self::insert(node, db, session, workspace, cwd)
+    }
+    fn insert(
+        node: &Node,
+        db: &Connection,
+        session: &str,
+        workspace: &str,
+        cwd: &Path,
+    ) -> ApiResult<Self> {
         let id = uuid();
         let at = now_ms();
         db.execute(

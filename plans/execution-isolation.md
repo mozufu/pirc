@@ -234,3 +234,33 @@ remain open. Full switch/U1 flags remain disabled. See the
 Validation: **629 Node**, **421 Gateway** and **19 required process cases** passed,
 with strict all-target Clippy. The owned **2.9 GiB** outputs are cleaned. Actual
 Linux owner/namespace and client rollout acceptance remain outstanding.
+
+## Local implementation checkpoint: human host-terminal review (2026-11-04)
+
+The explicit host terminal backend now requires a Node-generated review followed
+by confirmation of its exact ID/hash and current control/environment. The existing
+terminal endpoint accepts `action: "review"` or `action: "confirm"`, with a stable
+request ID and `executionPath: "host_management"`; only a positive confirmation
+can consume the review. Review expiry reuses Node's existing interaction TTL.
+Node schema **2027** retains immutable metadata, and consumes authority atomically
+with the terminal reservation before spawn. A SQL origin check rejects peer runs.
+Retries query the same attempt; restart/unknown outcomes never launch again.
+
+An owner can query results through `GET .../terminals?hostRequestId=...`, independent
+of control acquisition or an open Web client. Pending stale/expired reviews and
+changed rules/control/epoch are refused. Old records gain no approval. Live host
+terminal/ready metadata identifies the path. Direct-shell/I/O exit does not retire
+all detached host work: the durable outcome remains unconfirmed and blocks source
+settlement/deletion. Isolated recovery cannot clear it. No force-clear is added.
+
+`hostTerminalReviewVersion: 1` describes backend availability, not completed client
+rollout. Web/Android mode controls, durable client retry state and warnings,
+isolated-by-default migration, native Linux acceptance and full revocation/install
+remain open. The omitted-path compatibility API is not newly classified. See the
+[validation record](unified-conversations.md#u4-implementation-checkpoint-host-terminal-review-and-once-only-launch-2026-11-04).
+
+Validation: **639 Node**, **421 Gateway**, **20 required process cases**, final
+**49 focused terminal cases** (including 10 host-terminal cases) and strict all-target Clippy passed. Read-only
+recovery works after new terminals are disabled; host-source Stop remains blocked
+without descendant proof. The owned **2.9 GiB** outputs are cleaned. Native Linux,
+client rollout and full revocation/install remain unaccepted.

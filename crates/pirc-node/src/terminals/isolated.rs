@@ -93,6 +93,7 @@ impl Terminals {
                 rows.map_or(24.0, |n| n as f64),
                 &shell,
                 Environment {
+                    host: None,
                     work: Some(Work {
                         owner,
                         prepared,

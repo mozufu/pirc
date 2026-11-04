@@ -196,6 +196,18 @@ client mode/default rollout and complete revocation/install remain open.
 strict all-target Clippy passed. The owned **2.9 GiB** outputs are cleaned; this
 delivery stays local.
 
+Latest local host-terminal delivery:
+[human review and once-only launch](unified-conversations.md#u4-implementation-checkpoint-host-terminal-review-and-once-only-launch-2026-11-04)
+adds a Node-generated, exact-environment review, explicit positive confirmation,
+atomic grant/launch reservation and request-bound result lookup (Node **2027**).
+Accepted retries/restarts never relaunch. Direct-shell closure keeps uncontained
+host work unconfirmed and source settlement blocked. Necessary Web/Android mode
+controls and warnings, client recovery/default rollout and full revocation/install
+remain open.
+**639 Node tests**, **421 Gateway tests**, **20 required process cases**, final
+**49 focused terminal cases** and strict all-target Clippy passed; the
+owned **2.9 GiB** outputs are cleaned. This delivery remains local.
+
 The user adopted [isolated work + explicit host management](execution-isolation.md).
 This is no longer an approval question. New adapters/grant origins and necessary
 Web/Android mode controls remain implementation work; no implicit host fallback
@@ -211,7 +223,7 @@ or `full-access` escalation is authorized by the design.
 | U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                        | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle        |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
-not enable it. Current formats are Gateway schema **1029**, Node schema **2026**,
+not enable it. Current formats are Gateway schema **1029**, Node schema **2027**,
 protocol **15**, client recovery contract **2**, and Web IndexedDB/native private
 envelope **3**. Existing ordinary session APIs remain available. Unaccepted
 Gateway attachment staging expires after **seven days**; accepted attachments and

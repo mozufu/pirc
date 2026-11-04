@@ -623,3 +623,84 @@ async fn isolated_terminal_never_falls_back_to_host_on_an_unsupported_backend() 
     }
     assert_eq!(session.get("/terminals").await.body["terminals"], json!([]));
 }
+
+/// Human review/confirmation uses the ordinary authenticated Gateway relay. This
+/// case is a real host shell in an owned fixture, not native sandbox acceptance.
+#[tokio::test(flavor = "multi_thread")]
+async fn node_host_terminal_review() {
+    let Some(cluster) = Cluster::start_with(terminal_env()).await else {
+        return;
+    };
+    let api = cluster.api();
+    let (mut s, _) = Session::create(&api).await;
+    s.acquire().await;
+    let mut body = json!({"clientId":s.client,"generation":s.generation,"executionPath":"host_management","requestId":"host-terminal-once","action":"review"});
+    let reviewed = s.post("/terminals", body.clone()).await;
+    assert_eq!(reviewed.status, 200, "{reviewed:?}");
+    assert_eq!(reviewed.body["hostManagement"]["state"], "review");
+    assert_eq!(
+        s.get("/terminals").await.body["terminals"]
+            .as_array()
+            .unwrap()
+            .len(),
+        0
+    );
+    body["action"] = json!("confirm");
+    body["confirmed"] = json!(false);
+    body["reviewId"] = reviewed.body["hostManagement"]["id"].clone();
+    body["reviewHash"] = reviewed.body["hostManagement"]["reviewHash"].clone();
+    assert_eq!(s.post("/terminals", body.clone()).await.status, 409);
+    body["confirmed"] = json!(true);
+    let opened = s.post("/terminals", body.clone()).await;
+    assert_eq!(opened.status, 201, "{opened:?}");
+    assert_eq!(opened.body["terminal"]["executionPath"], "host_management");
+    let terminal = opened.body["terminal"]["id"].as_str().unwrap();
+    let retried = s.post("/terminals", body.clone()).await;
+    assert_eq!(retried.status, 200, "{retried:?}");
+    assert_eq!(retried.body["hostManagement"]["terminalId"], terminal);
+    assert_eq!(
+        s.get("/terminals").await.body["terminals"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    let mut socket = stream(&api, &s.id, terminal, &browser_headers())
+        .await
+        .open();
+    let (ready, _) = next_event(&mut socket).await.unwrap();
+    assert_eq!(ready["terminal"]["executionPath"], "host_management");
+    socket.send_json(&json!({"type":"input","clientId":s.client,"generation":s.generation,"data":"printf 'HOST-%s\\n' $((6*7))\n"})).await;
+    let (_, out) = tokio::time::timeout(
+        std::time::Duration::from_secs(10),
+        output_until(&mut socket, "HOST-42"),
+    )
+    .await
+    .unwrap();
+    assert!(out.contains("HOST-42"));
+    let closed = s
+        .post(
+            &format!("/terminals/{terminal}/close"),
+            json!({"clientId":s.client,"generation":s.generation}),
+        )
+        .await;
+    assert_eq!(closed.status, 204, "{closed:?}");
+    tokio::time::timeout(std::time::Duration::from_secs(10), async {
+        loop {
+            let result = s.get("/terminals?hostRequestId=host-terminal-once").await;
+            assert_eq!(result.status, 200);
+            if result.body["hostManagement"]["state"] == "unconfirmed" {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        }
+    })
+    .await
+    .unwrap();
+    // Shell/I/O closure does not prove detached host work ended. The consumed
+    // approval still returns this same attempt, even after its panel is closed.
+    let closed_retry = s.post("/terminals", body).await;
+    assert_eq!(closed_retry.status, 200);
+    assert_eq!(closed_retry.body["hostManagement"]["terminalId"], terminal);
+    assert_eq!(closed_retry.body["hostManagement"]["state"], "unconfirmed");
+}

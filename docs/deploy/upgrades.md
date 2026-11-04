@@ -1,5 +1,25 @@
 # Upgrades
 
+## Local checkpoint: explicit human host-terminal review
+
+Node schema **2027** adds retained `terminal_host_requests`. New explicit host
+terminals require a Node-generated review ID/hash and current human confirmation
+bound to the environment/control lease. Consumption and terminal reservation
+commit together before spawn. Accepted retries/restarts only query the original
+attempt, retaining unknown outcomes rather than executing again. Legacy records
+receive no new approvals; the omitted-path compatibility API keeps its prior
+classification pending client/default migration.
+
+`hostTerminalReviewVersion: 1` advertises this backend contract. Direct shell/I/O
+closure does not settle uncontained host work: Stop/deletion/transition settlement
+remains blocked. A failed spawn retains `not_started` and requires a new review
+for another attempt. Metadata contains no terminal input/output or credentials.
+Gateway **1029**, protocol/client/private-envelope **15/2/3**, lockfiles and Nix
+hashes remain unchanged. Back up Node state with its binary; older readers reject
+2027 and rollback requires matching state/binary backups. Web/Android controls,
+client recovery, isolated-by-default rollout and full revocation/install remain
+open. Local code only, no deployment or Release. See the [validation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-host-terminal-review-and-once-only-launch-2026-11-04).
+
 ## Local checkpoint: terminal I/O owner recovery
 
 Node schema **2026** adds retained `terminal_io_owners` metadata and protects
