@@ -316,6 +316,7 @@ pub struct NativeSandbox {
     node_tmp: common::NodeTmp,
     /// Connections every session's proxy may still open together.
     connections: Arc<tokio::sync::Semaphore>,
+    network: proxy::Scopes,
 }
 
 impl NativeSandbox {
@@ -328,6 +329,7 @@ impl NativeSandbox {
             probe: ProbeCache::default(),
             node_tmp,
             connections: Arc::new(tokio::sync::Semaphore::new(proxy::MAX_NODE_CONNECTIONS)),
+            network: proxy::Scopes::default(),
         }
     }
 
@@ -533,6 +535,9 @@ impl NativeSandbox {
 }
 
 impl Sandbox for NativeSandbox {
+    fn network_scopes(&self) -> Option<&proxy::Scopes> {
+        Some(&self.network)
+    }
     fn check(&self) -> BoxFuture<'_, SandboxStatus> {
         Box::pin(self.probe.get(|| self.probe()))
     }
@@ -604,12 +609,19 @@ impl Sandbox for NativeSandbox {
                 policy.network.allowed_domains.clone(),
                 policy.network.denied_domains.clone(),
             ));
-            let proxy = tokio::spawn(proxy::serve(
+            let proxy = match self.network.start(
+                &input.session_id,
                 ProxyListener::Unix(listener),
                 allowlist.clone(),
                 auth,
                 self.connections.clone(),
-            ));
+            ) {
+                Ok(lease) => lease,
+                Err(error) => {
+                    Session::remove_tmp(&tmp);
+                    return Err(error);
+                }
+            };
             caps::warn_if_setfcap_missing();
             let profile = invocation.profile;
             Ok(Prepared::new(
@@ -620,10 +632,11 @@ impl Sandbox for NativeSandbox {
                 warnings,
                 Some(Box::new(NativeControl {
                     allowlist,
+                    authority: proxy.authority(),
                     processes: processes.clone(),
                 })),
                 move || {
-                    proxy.abort();
+                    drop(proxy);
                     drop(profile);
                     drop(mounts);
                     Session::remove_tmp(&tmp);
@@ -648,6 +661,7 @@ impl Sandbox for NativeSandbox {
 /// Approvals widen the proxy's allowlist directly.
 struct NativeControl {
     allowlist: Arc<Allowlist>,
+    authority: Arc<proxy::Authority>,
     processes: Arc<processes::Scope>,
 }
 
@@ -658,12 +672,13 @@ impl NetworkControl for NativeControl {
     }
 
     fn is_open(&self) -> bool {
-        true
+        self.authority.is_open()
     }
 
     fn approve(&self, approved: &[String]) -> Result<(), String> {
-        self.allowlist.set_approved(approved);
-        Ok(())
+        self.authority
+            .admit(|| self.allowlist.set_approved(approved))
+            .map_err(|_| "The sandbox network scope was revoked".to_owned())
     }
 }
 

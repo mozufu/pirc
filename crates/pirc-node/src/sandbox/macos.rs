@@ -345,6 +345,7 @@ pub struct MacSandbox {
     session_suffix: String,
     /// Connections every session's proxy may still open together.
     connections: Arc<tokio::sync::Semaphore>,
+    network: proxy::Scopes,
 }
 
 impl MacSandbox {
@@ -357,6 +358,7 @@ impl MacSandbox {
             node_tmp,
             session_suffix: profile::session_suffix(),
             connections: Arc::new(tokio::sync::Semaphore::new(proxy::MAX_NODE_CONNECTIONS)),
+            network: proxy::Scopes::default(),
         }
     }
 
@@ -485,6 +487,9 @@ fn internal(what: &str, error: impl std::fmt::Display) -> ApiError {
 }
 
 impl Sandbox for MacSandbox {
+    fn network_scopes(&self) -> Option<&proxy::Scopes> {
+        Some(&self.network)
+    }
     fn check(&self) -> BoxFuture<'_, SandboxStatus> {
         Box::pin(self.probe.get(|| self.probe()))
     }
@@ -557,21 +562,31 @@ impl Sandbox for MacSandbox {
                 Some((port, &auth)),
                 policy.network.allow_local_binding,
             );
-            let proxy = tokio::spawn(proxy::serve(
+            let proxy = match self.network.start(
+                &input.session_id,
                 listener,
                 allowlist.clone(),
                 auth,
                 self.connections.clone(),
-            ));
+            ) {
+                Ok(lease) => lease,
+                Err(error) => {
+                    Session::remove_tmp(&tmp);
+                    return Err(error);
+                }
+            };
             Ok(Prepared::new(
                 PathBuf::from(SANDBOX_EXEC),
                 exec_args(profile, agent),
                 env,
                 policy,
                 warnings,
-                Some(Box::new(MacControl { allowlist })),
+                Some(Box::new(MacControl {
+                    allowlist,
+                    authority: proxy.authority(),
+                })),
                 move || {
-                    proxy.abort();
+                    drop(proxy);
                     Session::remove_tmp(&tmp);
                 },
             )
@@ -644,6 +659,7 @@ impl Sandbox for MacSandbox {
 /// Approvals widen the proxy's allowlist directly.
 struct MacControl {
     allowlist: Arc<Allowlist>,
+    authority: Arc<proxy::Authority>,
 }
 
 impl NetworkControl for MacControl {
@@ -653,12 +669,13 @@ impl NetworkControl for MacControl {
     }
 
     fn is_open(&self) -> bool {
-        true
+        self.authority.is_open()
     }
 
     fn approve(&self, approved: &[String]) -> Result<(), String> {
-        self.allowlist.set_approved(approved);
-        Ok(())
+        self.authority
+            .admit(|| self.allowlist.set_approved(approved))
+            .map_err(|_| "The sandbox network scope was revoked".to_owned())
     }
 }
 

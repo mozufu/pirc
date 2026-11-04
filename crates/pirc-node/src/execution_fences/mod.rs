@@ -79,6 +79,7 @@ pub(crate) struct Receipt {
     pub host_commands: crate::host_commands::Summary,
     pub terminals: crate::terminals::journal::Summary,
     pub browser: crate::browser::journal::Summary,
+    pub native_proxy: crate::sandbox::proxy::Summary,
 }
 fn valid_id(s: &str) -> bool {
     !s.is_empty()
@@ -139,6 +140,7 @@ fn receipt(db: &Connection, owner: &str, session: &str, op: &str) -> ApiResult<O
             host_commands: crate::host_commands::summary(db, session)?,
             terminals: crate::terminals::journal::summary(db, session)?,
             browser: crate::browser::journal::summary(db, session)?,
+            native_proxy: Default::default(),
         })
     })
     .transpose()
@@ -255,11 +257,22 @@ async fn stop_resources(node: &Node, session: &str) -> ApiResult<()> {
     // cancellation now, not only after that lock opens. The durable admission
     // fence prevents a new launch while the independent observers are retiring.
     let _host_stop = node.host_commands.stop(session);
+    if let Some(scopes) = node.sandbox.network_scopes() {
+        scopes.revoke(session);
+    }
+
     settle_all([
         node.runners.stop_session(session).boxed(),
         crate::process_journal::retire_saved(node, session).boxed(),
         node.host_commands.wait_session(node, session).boxed(),
         node.terminals.dispose_session(session).boxed(),
+        async {
+            if let Some(scopes) = node.sandbox.network_scopes() {
+                scopes.wait(Some(session), Duration::from_secs(5)).await?;
+            }
+            Ok(())
+        }
+        .boxed(),
         // Construct inside the observed future so a synchronous service panic
         // cannot prevent the other cleanup branches from being polled.
         async { node.browser.close_session(session).await }.boxed(),
@@ -309,6 +322,8 @@ pub(crate) async fn drain(node: &Node, owner: &str, session: &str, op: &str) -> 
                             "host_stop_unconfirmed"
                         } else if error.code == "terminal_stop_unconfirmed" {
                             "terminal_stop_unconfirmed"
+                        } else if error.code == "network_stop_unconfirmed" {
+                            "network_stop_unconfirmed"
                         } else if error.code == "browser_stop_unconfirmed" {
                             "browser_stop_unconfirmed"
                         } else {
@@ -336,9 +351,9 @@ pub(crate) async fn drain(node: &Node, owner: &str, session: &str, op: &str) -> 
             .ok_or_else(|| ApiError::not_found("Transition not found")),
     }
 }
-pub async fn capabilities(_node: Node, _request: Request) -> ApiResult<Response> {
+pub async fn capabilities(node: Node, _request: Request) -> ApiResult<Response> {
     Ok(Response::json(
-        json!({"version":1,"resourcePreflightVersion":1,"resourceFenceVersion":1,"stopCommandVersion":1,"durableAdmissionFence":true,"trackedSupervisorDrain":true,"installsEnvironment":false,"confirmsRevocation":false}),
+        json!({"version":1,"resourcePreflightVersion":1,"resourceFenceVersion":1,"stopCommandVersion":1,"nativeProxyRevocationVersion":if node.sandbox.network_scopes().is_some(){1}else{0},"durableAdmissionFence":true,"trackedSupervisorDrain":true,"installsEnvironment":false,"confirmsRevocation":false}),
     ))
 }
 pub async fn create(node: Node, request: Request) -> ApiResult<Response> {
@@ -346,19 +361,42 @@ pub async fn create(node: Node, request: Request) -> ApiResult<Response> {
     let result = {
         let db = node.db.lock();
         let session = request.param("id").unwrap_or_default();
-        let result = accept_with(
-            &db,
-            &request.user,
-            session,
-            &body.intent,
-            &body.client_id,
-            body.generation,
-            |tx| preflight::check_proof(&node, tx, &request.user, session, &body.intent),
-        )?;
+        let cached:bool=db.query_row("SELECT EXISTS(SELECT 1 FROM execution_fences WHERE owner_user=?1 AND session_id=?2 AND operation_id=?3)",params![request.user,session,body.intent.operation_id],|r|r.get(0))?;
+        if !cached {
+            // Store ownership checks are read-only; reject other users before
+            // pausing this source's I/O for the acceptance transaction.
+            db.claim_session(session, &request.user, false)?;
+        }
+        let accept = || {
+            let result = accept_with(
+                &db,
+                &request.user,
+                session,
+                &body.intent,
+                &body.client_id,
+                body.generation,
+                |tx| preflight::check_proof(&node, tx, &request.user, session, &body.intent),
+            );
+            if result.is_err() {
+                // A known rollback leaves the prior proxy usable. Failed rollback
+                // or unreadable commit outcome cannot release network authority.
+                let rollback_known=db.is_autocommit() && db.query_row("SELECT NOT EXISTS(SELECT 1 FROM execution_fences WHERE session_id=?1 AND state!='deleted')",[session],|r|r.get::<_,bool>(0)).unwrap_or(false);
+                if !rollback_known && let Some(scopes) = node.sandbox.network_scopes() {
+                    scopes.revoke(session);
+                }
+            }
+            result
+        };
+        let result = if let Some(scopes) = node.sandbox.network_scopes() {
+            scopes.fence(session, accept)?
+        } else {
+            accept()?
+        };
         node.inference
             .revoke_session(request.param("id").unwrap_or_default());
         result
     };
+    let result = network_observation(&node, request.param("id").unwrap_or_default(), result);
     Ok(Response::json(json!({"transition":result})))
 }
 pub async fn status(node: Node, request: Request) -> ApiResult<Response> {
@@ -369,6 +407,7 @@ pub async fn status(node: Node, request: Request) -> ApiResult<Response> {
         request.param("operation").unwrap_or_default(),
     )?
     .ok_or_else(|| ApiError::not_found("Transition not found"))?;
+    let saved = network_observation(&node, request.param("id").unwrap_or_default(), saved);
     Ok(Response::json(json!({"transition":saved})))
 }
 pub async fn resume(node: Node, request: Request) -> ApiResult<Response> {
@@ -379,7 +418,16 @@ pub async fn resume(node: Node, request: Request) -> ApiResult<Response> {
         request.param("operation").unwrap_or_default(),
     )
     .await?;
+    let saved = network_observation(&node, request.param("id").unwrap_or_default(), saved);
     Ok(Response::json(json!({"transition":saved})))
 }
+fn network_observation(node: &Node, session: &str, mut receipt: Receipt) -> Receipt {
+    receipt.native_proxy = node
+        .sandbox
+        .network_scopes()
+        .map_or_else(Default::default, |scopes| scopes.summary(session));
+    receipt
+}
+
 #[cfg(test)]
 mod tests;

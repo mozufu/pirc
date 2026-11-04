@@ -231,6 +231,21 @@ impl Services {
     ///    `config.json` model and role keys, start the inference socket
     ///    and put its config into `models` before the link connects.
     pub async fn start(config: NodeConfig, env: Env) -> Result<Node, String> {
+        Self::start_inner(config, env, None).await
+    }
+    #[cfg(test)]
+    pub(crate) async fn start_with_sandbox(
+        config: NodeConfig,
+        env: Env,
+        sandbox: Arc<dyn Sandbox>,
+    ) -> Result<Node, String> {
+        Self::start_inner(config, env, Some(sandbox)).await
+    }
+    async fn start_inner(
+        config: NodeConfig,
+        env: Env,
+        sandbox: Option<Arc<dyn Sandbox>>,
+    ) -> Result<Node, String> {
         crate::link::endpoint(&config.daemon_url)?;
         pirc_config::registry::register_node(&config, &env, None)
             .map_err(|error| format!("cannot register node private directories: {error}"))?;
@@ -261,7 +276,22 @@ impl Services {
                 serde_json::json!({ "recovery": recovery })
             ));
         }
-        let sandbox = crate::sandbox::create(&config, &env);
+        let sandbox = sandbox.unwrap_or_else(|| crate::sandbox::create(&config, &env));
+        if let Some(scopes) = sandbox.network_scopes() {
+            let connection = db.lock();
+            let mut statement = connection
+                .prepare("SELECT DISTINCT session_id FROM execution_fences WHERE state!='deleted'")
+                .map_err(|e| e.to_string())?;
+            let sessions = statement
+                .query_map([], |r| r.get::<_, String>(0))
+                .map_err(|e| e.to_string())?
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|e| e.to_string())?;
+            for session in sessions {
+                scopes.revoke(&session);
+            }
+        }
+
         let events = EventHub::new(config.event_buffer_size);
         let router = Router::new(
             crate::app::routes(&config)
@@ -356,6 +386,9 @@ impl Services {
         // TS's order: no reconnect from now on, then the streams, the agent
         // gateway, the mirror and inference, then the socket.
         self.closing.store(true, Ordering::Release);
+        if let Some(scopes) = self.sandbox.network_scopes() {
+            scopes.close_all();
+        }
         self.streams.close_all();
         self.agent_gateway.disconnect();
         self.mirror.disconnect();
@@ -366,6 +399,19 @@ impl Services {
         self.runners.shutdown().await;
         self.host_commands.shutdown().await;
         self.browser.shutdown().await;
+        if let Some(scopes) = self.sandbox.network_scopes()
+            && let Err(error) = scopes
+                .wait(
+                    None,
+                    std::time::Duration::from_millis(self.config.shutdown_grace_ms.max(1000)),
+                )
+                .await
+        {
+            crate::log::warn(&format!(
+                "Native proxy shutdown remains unconfirmed: {}",
+                error.code
+            ));
+        }
     }
 }
 

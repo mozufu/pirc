@@ -133,6 +133,12 @@ pub struct ReadonlyInput {
 
 /// The sandbox backend.
 pub trait Sandbox: Send + Sync {
+    /// Native per-session proxy ownership, independent of runner cleanup.
+    /// External wrappers cannot supply this proof through an empty default.
+    fn network_scopes(&self) -> Option<&proxy::Scopes> {
+        None
+    }
+
     /// Whether this host can sandbox (cached as described above).
     fn check(&self) -> BoxFuture<'_, SandboxStatus>;
 

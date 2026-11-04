@@ -70,6 +70,12 @@ protect the new payload semantics. A confirmed supervisor Stop still does not
 prove OS revocation, installed policy or completed environment switching. Public
 confirmation stays disabled; necessary client operations remain open.
 
+The local [native proxy retirement checkpoint](unified-conversations.md#u4-implementation-checkpoint-native-proxy-retirement-2026-11-04)
+adds a per-source commit/I/O gate, existing tunnel retirement, resolver/connection
+closure observations and restart registration fences in Node schema 2021. This
+covers the native filtering proxy, not all direct/delegated network paths, OS
+resources or replacement-policy installation. Public confirmation remains disabled.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.

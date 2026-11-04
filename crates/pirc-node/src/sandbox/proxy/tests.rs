@@ -733,18 +733,19 @@ async fn clients_without_the_token_cannot_shut_the_session_out() {
 #[tokio::test]
 async fn lookups_hold_a_session_permit_until_they_return() {
     let lookups = Arc::new(Semaphore::new(1));
+    let authority = Arc::new(Authority::default());
     let held = lookups.clone().acquire_owned().await.unwrap();
     // No permit: the lookup waits (and the dial's deadline would end it).
     let waiting = tokio::time::timeout(
         Duration::from_millis(100),
-        lookup("localhost", 80, &lookups),
+        lookup("localhost", 80, &lookups, &authority),
     )
     .await;
     assert!(waiting.is_err());
     drop(held);
     let (a, b) = tokio::join!(
-        lookup("localhost", 80, &lookups),
-        lookup("localhost", 80, &lookups)
+        lookup("localhost", 80, &lookups, &authority),
+        lookup("localhost", 80, &lookups, &authority)
     );
     assert!(a.is_ok() && b.is_ok());
     assert_eq!(lookups.available_permits(), 1);

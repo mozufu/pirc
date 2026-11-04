@@ -23,7 +23,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1029**, Node **2020**, protocol **15**, client contract **2**,
+formats: Gateway **1029**, Node **2021**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -55,7 +55,12 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local U4 delivery: [durable transition Stop commands](#u4-implementation-checkpoint-durable-transition-stop-commands-2026-11-04)
+Latest local U4 delivery: [native proxy retirement](#u4-implementation-checkpoint-native-proxy-retirement-2026-11-04)
+closes the source's native proxy I/O admission across fence commit, cancels existing
+HTTP/SOCKS connections and waits for socket/lookup closure. Node schema is **2021**;
+full OS/resource revocation and target installation remain unconfirmed.
+
+The previous [durable transition Stop commands](#u4-implementation-checkpoint-durable-transition-stop-commands-2026-11-04)
 reuses the existing command journal to stop a known source's supervised resources,
 with current-control checks and read-only receipt recovery after reply loss or
 restart. Gateway/Node schemas are **1029/2020**; complete revocation and installation
@@ -4986,3 +4991,84 @@ that retain the reviewed operation/hash and display unresolved status. No receip
 here claims full revocation. U1 activation/device/rollout, U2 live-resource
 provenance, U5 task/collaboration identities and U6 bounded proactive pots remain
 open. The goal remains active and subsequent work remains local by default.
+
+## U4 implementation checkpoint: native proxy retirement (2026-11-04)
+
+Local continuation of `cf2d33fe`. Linux/macOS native session proxies now have a
+session-owned registry and per-proxy authority. Every nonblocking client/upstream
+read, write, flush, shutdown and connect poll checks that authority; plain HTTP,
+CONNECT and SOCKS all use guarded streams. Network approvals also reject retired
+authority. A source fence closes all its current proxy instances and prevents
+later registration under that retired session scope. Other sessions retain their
+own listeners, tokens, connection caps and I/O.
+
+A source-specific read/write admission gate spans the Node acceptance transaction.
+Proxy registration and I/O polls take shared admission; fence acceptance holds
+exclusive admission until the durable result and runtime retirement agree. This
+closes the SQL-commit/runtime-revoke window without locking peer network I/O.
+Known rolled-back acceptance releases the gate without retiring the existing
+proxy. An unreadable/uncertain rollback or a retained active fence cannot reopen
+network authority. Read-only ownership checks precede pausing another source;
+existing cached receipts retain their original identity/replay behavior.
+
+Revocation synchronously prevents new application I/O submissions; it cannot
+recall bytes or external requests already submitted. The proxy then closes its
+listener, aborts and joins all connection tasks and waits for already-admitted
+blocking resolver permits. Canceling an async caller does not pretend its
+`getaddrinfo` worker stopped. Only normal completion marks this proxy closed;
+panic, abort or missing evidence does not manufacture that acknowledgement.
+Source Stop waits for native proxy retirement independently of runner, process,
+host-command, terminal and browser observers. A timeout remains `blocked` with
+`network_stop_unconfirmed`; source execution stays fenced until reconciliation.
+
+Normal Prepared cleanup drops only its own proxy lease. A source fence retires
+all that source's proxies, including a prepare racing with acceptance. Startup
+restores registration barriers from retained execution fences before services are
+exposed. Node shutdown retires all scopes and bounds the wait for their closure.
+Weak ownership avoids retaining streams/credentials through registry entries;
+only session identities and live/closing scope observations are needed. No new
+conversation contents, memory, files or credentials are written into a journal.
+
+The Node capabilities response adds `nativeProxyRevocationVersion` (1 only for
+backends with this registry). Preflight evidence includes native proxy activity,
+and live fence responses add `nativeProxy` with supported/revoked and active/
+pending/closed counts. Unsupported external wrappers explicitly report unsupported,
+not proof derived from zero counts. Gateway/command public state remains fenced,
+with `revocationConfirmed: false` and `targetInstalled: false`. No binding, mount,
+folder allocation, target installation or public confirmation is enabled.
+
+Node schema **2021** is a semantic reader fence (`SELECT 1`); Gateway stays
+**1029**, protocol/client/envelope **15/2/3**. Existing rows and identities are
+preserved; old Node binaries refuse the newer store, requiring matching backups
+for rollback. No package/dependency/lockfile/Nix hash changes. Deployment notes
+and the [sandbox guide](../docs/deploy/sandbox-and-browser.md#source-fences-and-native-proxy-retirement)
+describe the operational limits.
+
+Validation: **594 Node library tests passed** (four existing opt-in tests ignored),
+**421 Gateway tests passed**, **14 required real-process cases passed**, and
+strict Gateway/Node/conformance all-target Clippy passed. Six new scope cases
+cover live authenticated CONNECT/SOCKS tunnel closure with bidirectional peer
+survival, no registration/dial or buffered I/O after revocation, cleanup lease
+drop, blocking resolver work outliving a canceled async caller, deterministic
+cross-thread commit/I/O exclusion and a real Node router/SQLite restart path.
+The last uses a test-only sandbox adapter with real local proxy sockets; it does
+not execute a native OS sandbox. It verifies failed acceptance keeps its tunnel,
+a successful fence closes it, missing closure evidence blocks Stop while peers
+stay usable, later proof allows supervisor drain, and restart restores the gate.
+
+The 14 process cases cover three native checkpoints, two conversation admissions,
+two creations, environment preview, four Node fences, memory and project deletion.
+They remain regression evidence for the new Node, not real native-proxy/full-OS
+sandbox acceptance or a complete Gateway transition. No browser/full-workspace/
+Flutter/device/local Nix/remote-CI acceptance is claimed. The owned temporary
+build/log tree (about **2.7 GiB**) is cleaned after verification, preserving APKs,
+SDKs, shared caches, user data and other agents' work.
+
+Remaining U4: complete coordinator recovery/cancellation and composed acceptance,
+host/terminal/engine containment, aliases/open descriptors/descendants and direct
+or delegated network paths outside this proxy, verified replacement installation,
+project mounts/rules and necessary Web/App controls. Retired source scopes are
+not silently reopened for a target; installation needs its own new binding/grant
+acknowledgement. U1 activation/device/rollout, U2 live-resource provenance, U5
+canonical tasks/collaboration and U6 bounded proactive pots stay open. The goal
+remains active and this work remains local only.

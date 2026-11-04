@@ -1,5 +1,25 @@
 # Upgrades
 
+## Local checkpoint: native proxy retirement
+
+Node schema **2021** is a semantic reader fence (`SELECT 1`). The native Linux/
+macOS proxy's source admission gate now spans fence commit, retires existing
+connections and waits for sockets plus already-admitted blocking lookups. Startup
+restores retired source identities before exposing services. Missing closure proof
+keeps Stop blocked with `network_stop_unconfirmed`; peer proxies stay separate.
+
+Live Node fence/preflight metadata exposes only native proxy support, retirement
+and scope counts. External wrappers remain explicitly unsupported. No full OS
+revocation, new target binding, installation or public switching is enabled.
+Known rolled-back acceptance preserves existing network authority; uncertain
+rollback cannot reopen it. Already-submitted traffic cannot be recalled.
+
+Gateway remains **1029**, protocol/client/private-envelope **15/2/3**. Existing
+rows are unchanged; old Node binaries refuse 2021. Before eventual deployment,
+retain matching binary/state backups for rollback. No package/dependency/lockfile/
+Nix hash changes, deployment or Release. See the [sandbox guide](sandbox-and-browser.md#source-fences-and-native-proxy-retirement)
+and [validation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-native-proxy-retirement-2026-11-04).
+
 ## Local checkpoint: transition supervisor Stop commands
 
 Gateway **1029** and Node **2020** are semantic version fences for the new

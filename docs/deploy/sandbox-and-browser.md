@@ -41,6 +41,28 @@ Records persist across stops and crashes because stopped nodes' data remains sen
 
 Both approvals are the node's own dialogs; nothing the agent prints counts as your answer. Teammates' and subagents' requests are relayed through their parent and say who is asking.
 
+### Source fences and native proxy retirement
+
+The native Linux/macOS filtering proxy belongs to its session. Accepted source
+transition fences close registration and application I/O admission across the
+Node commit, then retire HTTP, CONNECT and SOCKS connections. Peer sessions keep
+their own proxies. Ordinary cleanup retires its own prepared proxy; a source
+fence retires all that source's instances. Startup restores barriers from retained
+fences, so a late prepare cannot revive them after reconnect or restart.
+
+Stop waits for listener/connection task closure and already-admitted resolver
+work. System `getaddrinfo` cannot be forcibly canceled by dropping its async
+waiter. Missing closure evidence remains `network_stop_unconfirmed`, with source
+execution blocked. A known rollback preserves the prior proxy; an uncertain
+acceptance outcome is not permission to reopen it. Traffic already submitted to
+the kernel or another service cannot be recalled.
+
+This proof covers the native proxy only. External `PIRC_SANDBOX_SRT` wrappers
+report unsupported; direct/Unix-socket/delegated paths and full process/descriptor
+containment still need their own evidence. Native proxy counts alone never mean
+`revocationConfirmed` or `targetInstalled`; public environment switching remains
+disabled until all required resource and installation checks are complete.
+
 ### Private process channels and state
 
 On Linux the builtin agent and PTC guest set `PR_SET_DUMPABLE=0` before reading private configuration, and set no-new-privileges. Same-user tool processes without `CAP_SYS_PTRACE` cannot reopen their `/proc/<pid>/fd` pipes or inspect their memory. This does not isolate signals between processes of the same UID or protect a custom agent executable that omits this hardening.

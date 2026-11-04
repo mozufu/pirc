@@ -148,6 +148,7 @@ fn observe_at(
         "sourceResource":source_resource,"targetResource":target_resource,"overlap":overlap,
         "activity":{"pendingRecords":pending,"runnerPresent":node.runners.get(id).is_some(),"runnerStarting":node.runners.is_starting(id),
             "writeClaimsPresent":!node.writes.leases(id).is_empty(),"fenced":fenced},
+        "nativeProxy":node.sandbox.network_scopes().map_or_else(crate::sandbox::proxy::Summary::default,|scopes|scopes.summary(id)),
         "sandboxProcesses":crate::process_journal::summary(db,id)?,
         "hostCommands":crate::host_commands::summary(db,id)?,
         "terminals":crate::terminals::journal::summary(db,id)?,

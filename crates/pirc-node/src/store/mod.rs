@@ -33,7 +33,7 @@ use crate::util::{now_ms, prefix_uuid, safe_json};
 /// the gateway's migrations (1 to 19) and the Rust gateway's schema is 1000;
 /// the node's line starts apart from both, so each is recognized.
 /// 2001: uploads record their workspace and session; `workspace_deletions`.
-pub const SCHEMA_VERSION: i64 = 2020;
+pub const SCHEMA_VERSION: i64 = 2021;
 /// Upgrades from each earlier node schema, applied in order.
 const MIGRATIONS: &[(i64, &str)] = &[
     (
@@ -82,6 +82,8 @@ CREATE TABLE IF NOT EXISTS checkpoint_workspaces (
     (2019, "SELECT 1;"),
     // Stop-transition command payloads and receipt recovery require this reader.
     (2020, "SELECT 1;"),
+    // Native proxy retirement participates in transition Stop receipts.
+    (2021, "SELECT 1;"),
 ];
 /// The first node schema.
 const FIRST_SCHEMA_VERSION: i64 = 2000;

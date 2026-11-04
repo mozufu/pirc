@@ -24,10 +24,12 @@
 
 use std::io;
 
+use super::scopes::Guarded;
+use tokio::io::ReadHalf;
 use tokio::io::{
     AsyncBufRead, AsyncBufReadExt, AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt, BufReader,
 };
-use tokio::net::tcp::OwnedReadHalf;
+use tokio::net::TcpStream;
 
 use super::pattern::{format_authority, strip_brackets};
 use super::{DialError, Gate, Reader, Session, Writer, dial, relay};
@@ -398,7 +400,7 @@ async fn forward(
         head.extend_from_slice(b"\r\n");
     }
     head.extend_from_slice(b"Connection: close\r\n\r\n");
-    let (upstream_read, mut upstream_write) = upstream.into_split();
+    let (upstream_read, mut upstream_write) = tokio::io::split(upstream);
     upstream_write.write_all(&head).await?;
     let upload = async {
         let sent = forward_body(&mut reader, &mut upstream_write, &body).await;
@@ -484,7 +486,10 @@ async fn read_line(reader: &mut (impl AsyncBufRead + Unpin)) -> io::Result<Vec<u
 /// The response: interim (1xx) heads as they are, the final head without
 /// hop-by-hop headers and with `Connection: close`, then the rest as it
 /// comes until the destination closes.
-async fn forward_response(upstream: OwnedReadHalf, writer: &mut Writer) -> io::Result<()> {
+async fn forward_response(
+    upstream: ReadHalf<Guarded<TcpStream>>,
+    writer: &mut Writer,
+) -> io::Result<()> {
     let mut upstream = BufReader::new(upstream);
     let mut sent = false;
     loop {

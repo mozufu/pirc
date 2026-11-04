@@ -62,7 +62,9 @@ mod address;
 mod env;
 mod http;
 mod pattern;
+mod scopes;
 mod socks;
+pub use scopes::{Authority, Scopes, Summary};
 
 use std::collections::VecDeque;
 use std::net::{IpAddr, SocketAddr};
@@ -314,6 +316,7 @@ struct Session {
     connections: Arc<Semaphore>,
     /// [`MAX_LOOKUPS`].
     lookups: Arc<Semaphore>,
+    authority: Arc<Authority>,
 }
 
 /// [`Gate::state`]: still waiting for the token (evictable).
@@ -397,17 +400,36 @@ pub async fn serve(
     auth: Arc<ProxyAuth>,
     node: Arc<Semaphore>,
 ) {
+    serve_until(
+        listener,
+        allowlist,
+        auth,
+        node,
+        Arc::new(Authority::default()),
+    )
+    .await;
+}
+async fn serve_until(
+    listener: ProxyListener,
+    allowlist: Arc<Allowlist>,
+    auth: Arc<ProxyAuth>,
+    node: Arc<Semaphore>,
+    authority: Arc<Authority>,
+) {
     let session = Arc::new(Session {
         allowlist,
         auth,
         connections: Arc::new(Semaphore::new(MAX_CONNECTIONS)),
         lookups: Arc::new(Semaphore::new(MAX_LOOKUPS)),
+        authority: authority.clone(),
     });
     let mut waiting = VecDeque::with_capacity(MAX_UNAUTHENTICATED);
     let mut connections = JoinSet::new();
     loop {
         tokio::select! {
-            accepted = listener.accept() => {
+            biased;
+            ()=authority.cancelled()=>break,
+            accepted = scopes::admitted(authority.clone(),listener.accept()) => {
                 let Ok(client) = accepted else {
                     tokio::time::sleep(ACCEPT_BACKOFF).await;
                     continue;
@@ -426,6 +448,7 @@ pub async fn serve(
                 };
                 let session = session.clone();
                 let task = connections.spawn(async move {
+                    let client:Box<dyn Client>=Box::new(scopes::Guarded::new(client,session.authority.clone()));
                     let _ = handle(client, &session, gate).await;
                     drop(permit);
                 });
@@ -433,6 +456,22 @@ pub async fn serve(
             }
             Some(_) = connections.join_next(), if !connections.is_empty() => {}
         }
+    }
+    drop(listener);
+    connections.abort_all();
+    while connections.join_next().await.is_some() {}
+    // getaddrinfo cannot be forcibly canceled. Keep retirement unconfirmed
+    // until every already-admitted blocking lookup has returned its permit.
+    settle_lookups(&session.lookups).await;
+}
+async fn settle_lookups(lookups: &Arc<Semaphore>) {
+    if lookups
+        .clone()
+        .acquire_many_owned(MAX_LOOKUPS as u32)
+        .await
+        .is_err()
+    {
+        std::future::pending::<()>().await;
     }
 }
 
@@ -466,12 +505,16 @@ enum DialError {
 /// `dialDirect` with the guard's lookup: an IP literal is connected to as
 /// it is; a name is resolved once, its addresses vetted, and the survivors
 /// tried in the resolver's order (Node's family fallback).
-async fn dial(host: &str, port: u16, session: &Session) -> Result<TcpStream, DialError> {
+async fn dial(
+    host: &str,
+    port: u16,
+    session: &Session,
+) -> Result<scopes::Guarded<TcpStream>, DialError> {
     let attempt = async {
         let addresses: Vec<IpAddr> = match pattern::parse_ip(host) {
             Some(address) => vec![address],
             None => {
-                let resolved = lookup(host, port, &session.lookups).await?;
+                let resolved = lookup(host, port, &session.lookups, &session.authority).await?;
                 session
                     .allowlist
                     .guard()
@@ -480,9 +523,14 @@ async fn dial(host: &str, port: u16, session: &Session) -> Result<TcpStream, Dia
             }
         };
         for address in addresses {
-            if let Ok(stream) = TcpStream::connect(SocketAddr::new(address, port)).await {
+            if let Ok(stream) = scopes::admitted(
+                session.authority.clone(),
+                TcpStream::connect(SocketAddr::new(address, port)),
+            )
+            .await
+            {
                 let _ = stream.set_nodelay(true);
-                return Ok(stream);
+                return Ok(scopes::Guarded::new(stream, session.authority.clone()));
             }
         }
         Err(DialError::Failed)
@@ -495,31 +543,50 @@ async fn dial(host: &str, port: u16, session: &Session) -> Result<TcpStream, Dia
 /// `tokio::net::lookup_host`, holding one of the session's
 /// [`MAX_LOOKUPS`] until the blocking lookup itself returns (not only
 /// until the dial gives up on it).
-async fn lookup(host: &str, port: u16, lookups: &Arc<Semaphore>) -> Result<Vec<IpAddr>, DialError> {
+async fn lookup(
+    host: &str,
+    port: u16,
+    lookups: &Arc<Semaphore>,
+    authority: &Arc<Authority>,
+) -> Result<Vec<IpAddr>, DialError> {
     use std::net::ToSocketAddrs;
-    let permit = lookups
-        .clone()
-        .acquire_owned()
-        .await
-        .map_err(|_| DialError::Failed)?;
     let host = host.to_owned();
-    tokio::task::spawn_blocking(move || {
-        let _permit = permit;
+    lookup_with(lookups, authority, move || {
         (host.as_str(), port)
             .to_socket_addrs()
             .map(|addresses| addresses.map(|address| address.ip()).collect())
     })
     .await
-    .map_err(|_| DialError::Failed)?
-    .map_err(|_| DialError::Failed)
+}
+async fn lookup_with(
+    lookups: &Arc<Semaphore>,
+    authority: &Arc<Authority>,
+    resolve: impl FnOnce() -> std::io::Result<Vec<IpAddr>> + Send + 'static,
+) -> Result<Vec<IpAddr>, DialError> {
+    let permit = lookups
+        .clone()
+        .acquire_owned()
+        .await
+        .map_err(|_| DialError::Failed)?;
+    authority
+        .admit(|| {
+            tokio::task::spawn_blocking(move || {
+                let _permit = permit;
+                resolve()
+            })
+        })
+        .map_err(|_| DialError::Failed)?
+        .await
+        .map_err(|_| DialError::Failed)?
+        .map_err(|_| DialError::Failed)
 }
 
 /// An established tunnel: each direction relayed on its own, so a client
 /// that half-closes still gets the reply; once the destination is done
 /// (or the client fails), the connection ends, as srt's `close` handlers
 /// do.
-async fn relay(mut reader: Reader, mut writer: Writer, upstream: TcpStream) {
-    let (mut upstream_read, mut upstream_write) = upstream.into_split();
+async fn relay(mut reader: Reader, mut writer: Writer, upstream: scopes::Guarded<TcpStream>) {
+    let (mut upstream_read, mut upstream_write) = tokio::io::split(upstream);
     let upload = async {
         if tokio::io::copy(&mut reader, &mut upstream_write)
             .await
