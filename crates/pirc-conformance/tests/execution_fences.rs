@@ -157,23 +157,44 @@ async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() 
         denied["data"]["body"]["error"]["code"],
         "environment_transition_pending"
     );
-    let drained = link
+    let stop = req(
+        "POST",
+        &format!("{base}/commands"),
+        json!({
+            "commandId":"stop-transition","clientId":"web","generation":takeover["data"]["body"]["lease"]["generation"],
+            "payload":{"type":"stop_transition","operationId":"move-1","planHash":"a".repeat(64)}
+        }),
+    );
+    let stopped = link.request("stop-transition", stop.clone()).await;
+    assert_eq!(stopped["data"]["status"], 202, "{stopped}");
+    let result = &stopped["data"]["body"]["command"]["result"]["data"]["transition"];
+    assert_eq!(result["state"], "supervisor_drained");
+    assert_eq!(result["revocationConfirmed"], false);
+    assert_eq!(result["targetInstalled"], false);
+    assert!(result.get("intent").is_none());
+    let duplicate = link.request("stop-duplicate", stop).await;
+    assert_eq!(duplicate["data"]["body"]["duplicate"], true);
+    node.restart(true);
+    drop(link);
+    let mut link = register(&gateway).await;
+    let stopped_receipt = link
         .request(
-            "drain",
-            req("POST", &format!("{status_path}/drain"), json!({})),
+            "stop-receipt",
+            req(
+                "GET",
+                &format!("{base}/commands/stop-transition"),
+                Value::Null,
+            ),
         )
         .await;
+    assert_eq!(stopped_receipt["data"]["status"], 200, "{stopped_receipt}");
     assert_eq!(
-        drained["data"]["body"]["transition"]["state"], "supervisor_drained",
-        "{drained}"
+        stopped_receipt["data"]["body"]["command"]["status"],
+        "accepted"
     );
     assert_eq!(
-        drained["data"]["body"]["transition"]["revocationConfirmed"],
-        false
-    );
-    assert_eq!(
-        drained["data"]["body"]["transition"]["targetInstalled"],
-        false
+        stopped_receipt["data"]["body"]["command"]["result"],
+        stopped["data"]["body"]["command"]["result"]
     );
     let after = link
         .request(

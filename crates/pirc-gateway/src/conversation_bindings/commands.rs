@@ -9,6 +9,50 @@ use crate::{
 use rusqlite::{Connection, OptionalExtension, params};
 use serde_json::{Value, json};
 
+/// Both actions only reduce execution. A transition Stop additionally requires a
+/// known owner/session-bound Node fence, rechecked at final dispatch.
+pub(crate) fn is_stop(payload: &Value) -> bool {
+    matches!(payload["type"].as_str(), Some("stop" | "stop_transition"))
+}
+pub(crate) fn require_transition_stop(
+    db: &Connection,
+    user: &str,
+    session: &str,
+    payload: &Value,
+) -> ApiResult<()> {
+    if payload["type"] != "stop_transition" {
+        return Ok(());
+    }
+    let op = payload["operationId"]
+        .as_str()
+        .filter(|s| !s.is_empty() && s.len() <= 200)
+        .ok_or_else(ApiError::invalid_input)?;
+    let hash = payload["planHash"]
+        .as_str()
+        .filter(|s| {
+            s.len() == 64
+                && s.bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        })
+        .ok_or_else(ApiError::invalid_input)?;
+    let known:bool=db.query_row("SELECT EXISTS(SELECT 1 FROM conversation_node_fences WHERE owner_user=?1 AND session_id=?2 AND operation_id=?3 AND state='fenced')",params![user,session,op],|r|r.get(0))?;
+    if !known {
+        return Err(ApiError::new(
+            409,
+            "transition_receipt_required",
+            "Reconcile the accepted Node fence before stopping its resources",
+        ));
+    }
+    let frozen_hash:Option<String>=db.query_row("SELECT json_extract(frozen_json,'$.planHash') FROM conversation_transition_acceptances WHERE owner_user=?1 AND session_id=?2 AND operation_id=?3 AND state!='deleted'",params![user,session,op],|r|r.get(0)).optional()?;
+    if frozen_hash.is_some_and(|old| old != hash) {
+        return Err(ApiError::new(
+            409,
+            "conflict",
+            "Stop targets a different accepted transition plan",
+        ));
+    }
+    Ok(())
+}
 fn changed(current: &Binding) -> ApiError {
     ApiError::new(
         409,
@@ -40,7 +84,7 @@ pub fn receive(
             if let (Some(origin), Some(expected)) = (origin, expected) {
                 let origin: Binding =
                     serde_json::from_str(&origin).map_err(|_| ApiError::internal())?;
-                if payload["type"] != "stop" && origin != *expected {
+                if !is_stop(payload) && origin != *expected {
                     return Err(ApiError::new(
                         409,
                         "conflict",
@@ -50,13 +94,14 @@ pub fn receive(
             }
             return Ok((command, true));
         }
-        if payload["type"] != "stop" {
+        require_transition_stop(tx, user, &current.id, payload)?;
+        if !is_stop(payload) {
             super::transitions::require_open(tx, &current.id)?;
         }
         if current.binding != captured.binding {
             return Err(changed(&current.binding));
         }
-        if payload["type"] != "stop" {
+        if !is_stop(payload) {
             match expected {
                 Some(expected) if expected == &current.binding => {}
                 Some(_) => return Err(changed(&current.binding)),
@@ -166,6 +211,38 @@ pub(crate) async fn supported(
             409,
             "command_environment_unsupported",
             "Upgrade this Node before sending versioned conversation commands",
+        ));
+    }
+    app.nodes.require_connection(node, connection)?;
+    Ok(connection)
+}
+
+pub(crate) async fn transition_stop_supported(
+    app: &crate::app::AppState,
+    node: &str,
+    user: &str,
+) -> ApiResult<crate::nodes::NodeConnection> {
+    let connection = app.nodes.connection(node)?;
+    let response = app
+        .nodes
+        .request_on(
+            node,
+            connection,
+            pirc_protocol::NodeHttpRequest {
+                method: pirc_protocol::HttpMethod::Get,
+                url: "/api/execution-fences/capabilities".into(),
+                user: user.into(),
+                payload: None,
+                body_base64: None,
+                content_type: None,
+            },
+        )
+        .await?;
+    if response.status != 200 || response.body.is_none_or(|b| b["stopCommandVersion"] != 1) {
+        return Err(ApiError::new(
+            409,
+            "transition_stop_unsupported",
+            "Upgrade this Node before stopping transition resources",
         ));
     }
     app.nodes.require_connection(node, connection)?;

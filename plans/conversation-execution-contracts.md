@@ -63,6 +63,13 @@ New public acceptance remains disabled. Internal service/HTTP and required proce
 evidence do not prove a full accepted switch, resource revocation or installation.
 Complete coordinator recovery/cancellation and client controls remain open.
 
+The local [transition Stop command checkpoint](unified-conversations.md#u4-implementation-checkpoint-durable-transition-stop-commands-2026-11-04)
+uses the existing command journal for scoped supervisor shutdown, current control
+checks and read-only uncertain-result recovery. Gateway/Node schemas 1029/2020
+protect the new payload semantics. A confirmed supervisor Stop still does not
+prove OS revocation, installed policy or completed environment switching. Public
+confirmation stays disabled; necessary client operations remain open.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.

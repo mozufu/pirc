@@ -321,6 +321,7 @@ pub(crate) async fn command_status(
     if command.session_id != session.id {
         return Err(ApiError::not_found("Command not found"));
     }
+    let command = crate::execution_fences::stop_command::refresh(&db, &request.user, command)?;
     Ok(Response::json(json!({"command":command})))
 }
 #[cfg(test)]

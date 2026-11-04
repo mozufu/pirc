@@ -129,17 +129,27 @@ real-process cases** and strict all-target Clippy pass; the owned **2.1 GiB** tr
 is cleaned. Positive acceptance uses Node stand-ins; device/full-coordinator
 acceptance remains open. This continuation is local only; the goal stays active.
 
+Latest local continuation of `3e80ad6f`:
+[durable transition Stop commands](unified-conversations.md#u4-implementation-checkpoint-durable-transition-stop-commands-2026-11-04)
+reuse existing command identities for a known source's supervised-resource Stop.
+Node rechecks operation/plan/source/control; Web/paired Android share deduplicated
+commands and read-only recovery after reply loss/restart. Full revocation, target
+installation, public confirmation and client controls remain open. **588 Node
+library tests** passed (four existing opt-in ignores), **421 Gateway tests**,
+**14 required real-process cases** and strict all-target Clippy passed. The
+**2.7 GiB** owned output tree is cleaned. This continuation stays local.
+
 | Area                                           | Current state                                                                                                                                                                                                | Remaining delivery                                                                                                    |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
 | U1 — reliable first Send                       | Gateway/Node durable intents, original files, admission/Stop/delete fences, explicit rejected-message retries and Gateway nonce retirement; Web/private Android drafts and recovery controls are implemented | Live-client failure/local-write matrix, Android process/device and rollout/rollback gates                             |
 | U2 — conversation/project/environment bindings | Durable bindings/membership/policy histories, frozen memory origins and cleanup receipts; captured command intent with Gateway/Node rechecks; frozen saved-upload origins                                    | Live-resource provenance, effect-boundary fencing and acknowledged transitions                                        |
 | U3 — unified navigation/UI                     | Deferred by the user                                                                                                                                                                                         | Revisit after core contracts; current clients receive necessary functional controls only                              |
-| U4 — mount/workspace transitions               | Gateway accepted-intent journal/one-attempt admission (publicly gated), previews, receipt recovery and cross-device discovery; Node evidence-bound fences and independent drain                              | Complete coordinator recovery/cancellation, OS revocation, replacement acknowledgement, project resources and clients |
+| U4 — mount/workspace transitions               | Gateway accepted-intent journal (publicly gated), cross-device discovery and durable supervisor Stop commands; Node evidence-bound fences and tracked drain                                                  | Complete coordinator recovery/cancellation, OS revocation, replacement acknowledgement, project resources and clients |
 | U5 — canonical tasks and collaboration         | Existing pots/task/team/goal/todo foundations remain                                                                                                                                                         | Map common task/attempt identities, shared notes and structured waits; preserve other writers and memory provenance   |
 | U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                        | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle        |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
-not enable it. Current formats are Gateway schema **1028**, Node schema **2019**,
+not enable it. Current formats are Gateway schema **1029**, Node schema **2020**,
 protocol **15**, client recovery contract **2**, and Web IndexedDB/native private
 envelope **3**. Existing ordinary session APIs remain available. Unaccepted
 Gateway attachment staging expires after **seven days**; accepted attachments and

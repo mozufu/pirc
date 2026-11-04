@@ -2,6 +2,7 @@
 //! tracked supervisor shutdown. No release/install route exists yet. Drained
 //! supervisors are NOT evidence that all descendants or OS grants are revoked.
 mod preflight;
+pub(crate) mod stop_command;
 pub(crate) use preflight::handle as preflight;
 
 use crate::{
@@ -282,7 +283,7 @@ pub(crate) async fn drain(node: &Node, owner: &str, session: &str, op: &str) -> 
         } else {
             let saved = receipt(&node.db.lock(), owner, session, op)?
                 .ok_or_else(|| ApiError::not_found("Transition not found"))?;
-            if saved.state == "deleted" {
+            if matches!(saved.state.as_str(), "deleted" | "supervisor_drained") {
                 return Ok(saved);
             }
             let node = node.clone();
@@ -337,7 +338,7 @@ pub(crate) async fn drain(node: &Node, owner: &str, session: &str, op: &str) -> 
 }
 pub async fn capabilities(_node: Node, _request: Request) -> ApiResult<Response> {
     Ok(Response::json(
-        json!({"version":1,"resourcePreflightVersion":1,"resourceFenceVersion":1,"durableAdmissionFence":true,"trackedSupervisorDrain":true,"installsEnvironment":false,"confirmsRevocation":false}),
+        json!({"version":1,"resourcePreflightVersion":1,"resourceFenceVersion":1,"stopCommandVersion":1,"durableAdmissionFence":true,"trackedSupervisorDrain":true,"installsEnvironment":false,"confirmsRevocation":false}),
     ))
 }
 pub async fn create(node: Node, request: Request) -> ApiResult<Response> {

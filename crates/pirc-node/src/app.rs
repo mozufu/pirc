@@ -1401,6 +1401,17 @@ fn command_payload(value: &Value) -> ApiResult<CommandPayload> {
             entry_id: string(map, "entryId", false, 1, 200)?,
         },
         "stop" => CommandPayload::Stop,
+        "stop_transition" => {
+            let operation_id = string(map, "operationId", false, 1, 200)?;
+            let plan_hash = string(map, "planHash", false, 64, 64)?;
+            if !hex_id(&plan_hash, 64) {
+                return Err(ApiError::invalid_input());
+            }
+            CommandPayload::StopTransition {
+                operation_id,
+                plan_hash,
+            }
+        }
         "clear_queue" => CommandPayload::ClearQueue,
         "send_now" => CommandPayload::SendNow {
             queue: enumerated(map, "queue", &["steering", "followUp"])?,
@@ -1436,7 +1447,10 @@ async fn command(node: Node, request: Request) -> ApiResult<Response> {
     let (client_id, generation) = held_lease(map)?;
     let payload = command_payload(map.get("payload").unwrap_or(&Value::Null))?;
     // Stopping is the only action allowed after a mode is removed.
-    if !matches!(payload, CommandPayload::Stop) {
+    if !matches!(
+        payload,
+        CommandPayload::Stop | CommandPayload::StopTransition { .. }
+    ) {
         crate::pots::require_generic_input(&node.db.lock(), &session.id)?;
         crate::session_creation::admission::require_generic(&node.db.lock(), &session.id)?;
         node.session_mode(&session.id)?;
@@ -1451,13 +1465,30 @@ async fn command(node: Node, request: Request) -> ApiResult<Response> {
         crate::command_environment::record(
             &tx,
             &command_id,
-            if matches!(payload, CommandPayload::Stop) {
+            if matches!(
+                payload,
+                CommandPayload::Stop | CommandPayload::StopTransition { .. }
+            ) {
                 None
             } else {
                 map.get("commandEnvironment")
             },
             duplicate,
         )?;
+        if !duplicate
+            && let CommandPayload::StopTransition {
+                operation_id,
+                plan_hash,
+            } = &payload
+        {
+            crate::execution_fences::stop_command::check(
+                &tx,
+                &request.user,
+                &session.id,
+                operation_id,
+                plan_hash,
+            )?;
+        }
         let initial_stop = !duplicate
             && matches!(payload, CommandPayload::Stop)
             && crate::session_creation::admission::request_stop(&tx, &session.id, &request.user)?;
@@ -1466,6 +1497,32 @@ async fn command(node: Node, request: Request) -> ApiResult<Response> {
     };
     if duplicate {
         return Ok(Response::json(json!({ "command": row, "duplicate": true })));
+    }
+    if let CommandPayload::StopTransition {
+        operation_id,
+        plan_hash,
+    } = payload
+    {
+        crate::execution_fences::stop_command::dispatch(
+            &node,
+            &request.user,
+            &session.id,
+            &command_id,
+            &operation_id,
+            &plan_hash,
+            (&client_id, generation),
+        )
+        .await?;
+        let command = node.db.lock().get_command(&command_id)?;
+        let status = if command.status == crate::store::CommandStatus::Accepted {
+            202
+        } else {
+            503
+        };
+        return Ok(Response::status(
+            status,
+            json!({"command":command,"duplicate":false}),
+        ));
     }
     if initial_stop && node.runners.get(&session.id).is_none_or(|r| !r.alive()) {
         // A missing runner does not prove its approved host work settled. Join

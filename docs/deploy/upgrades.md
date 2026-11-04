@@ -1,5 +1,27 @@
 # Upgrades
 
+## Local checkpoint: transition supervisor Stop commands
+
+Gateway **1029** and Node **2020** are semantic version fences for the new
+`stop_transition` payload in the existing session command API. Both migrations
+are `SELECT 1`; existing command, environment and receipt rows are preserved.
+Older binaries refuse these stores. Before eventual deployment, retain matching
+binary/state backups; rollback is not lowering `user_version`.
+
+Gateway requires an owner/session-bound known Node fence and the captured Node's
+`stopCommandVersion: 1`. Node verifies the plan/source and current controller
+before admitting/dispatching Stop. Commands retain their stable identity; repeat
+POSTs do not rerun Stop, while GET can reconcile saved supervisor completion after
+reply loss/restart. Unsupported/offline or unresolved cases cannot reopen source
+execution. Results expose no private Node intent and still mark full revocation
+and target installation false. Source binding/history/files and peer work remain.
+
+No target installation, public switching, package/dependency/lockfile/Nix hash
+change, deployment or release is implied. Protocol/client/private-envelope stay
+**15/2/3**. Web/paired devices use the existing API; no Flutter code changed and
+client controls remain pending. See the [Stop checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-durable-transition-stop-commands-2026-11-04)
+for unit/HTTP/process evidence and remaining acceptance gaps.
+
 ## Local checkpoint: Gateway accepted transition intent
 
 Gateway schema **1028** adds retained transition acceptance identities and a

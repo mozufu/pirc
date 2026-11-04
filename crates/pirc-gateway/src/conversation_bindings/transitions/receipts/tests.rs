@@ -407,3 +407,217 @@ async fn fence_received_during_capability_wait_prevents_dispatch_and_node_reauth
         "environment_transition_pending"
     );
 }
+
+fn stop_setup(app: &AppState, id: &str) -> (Value, String) {
+    let row = preview(&app.db, id);
+    record(
+        &app.db.lock(),
+        "alice",
+        &row,
+        "Private",
+        "repo",
+        "target",
+        &reply(&row),
+    )
+    .unwrap();
+    app.db
+        .lock()
+        .mirror_lease(
+            id,
+            &crate::db::Lease {
+                client_id: "phone".into(),
+                generation: 1,
+                expires_at: now_ms() + 60000,
+            },
+            "alice",
+            false,
+        )
+        .unwrap();
+    (
+        json!({"commandId":"transition-stop","clientId":"phone","generation":1,"payload":{"type":"stop_transition","operationId":"move-1","planHash":row.plan_hash}}),
+        row.operation_id,
+    )
+}
+#[tokio::test]
+async fn web_native_transition_stop_reuses_command_identity_and_keeps_source_fenced() {
+    let (app, _dir, id) = app();
+    let (mut body, _op) = stop_setup(&app, &id);
+    body["payload"]["message"] = json!("must be dropped from Stop intent");
+    let posts = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let seen = posts.clone();
+    let captured = app.db.clone();
+    let source = id.clone();
+    app.nodes.set_test_node(node(),move |r| {
+        if r.method==HttpMethod::Get {assert_eq!(r.url,"/api/execution-fences/capabilities");return Ok(NodeHttpResponse{status:200,body:Some(json!({"stopCommandVersion":1}))});}
+        seen.fetch_add(1,std::sync::atomic::Ordering::SeqCst);
+        assert_eq!(captured.lock().get_command("transition-stop").unwrap().status,"dispatched");
+        assert!(require_open(&captured.lock(),&source).is_err());
+        let payload=r.payload.unwrap();assert_eq!(payload["payload"]["operationId"],"move-1");
+        assert!(payload.get("commandEnvironment").is_none());
+        Ok(NodeHttpResponse{status:202,body:Some(json!({"command":{"id":"transition-stop","status":"accepted","result":{"success":true,"data":{"transition":{"operationId":"move-1","state":"supervisor_drained","revocationConfirmed":false,"targetInstalled":false}}}}}))})
+    });
+    let path = format!("/api/sessions/{id}/commands");
+    let result = http(&app, &path, Some(body.clone()), None).await;
+    assert_eq!(result.0, 202, "{result:?}");
+    assert_eq!(
+        result.1["command"]["result"]["data"]["transition"]["state"],
+        "supervisor_drained"
+    );
+    let (_device, token) = app.devices.create("alice", "Android").unwrap();
+    let duplicate = http(&app, &path, Some(body.clone()), Some(&token)).await;
+    assert_eq!(duplicate.0, 200, "{duplicate:?}");
+    assert_eq!(duplicate.1["duplicate"], true);
+    assert_eq!(posts.load(std::sync::atomic::Ordering::SeqCst), 1);
+    let read = http(&app, &format!("{path}/transition-stop"), None, Some(&token)).await;
+    assert_eq!(read.0, 200);
+    assert_eq!(read.1["command"]["status"], "accepted");
+    assert!(require_open(&app.db.lock(), &id).is_err());
+    assert_eq!(
+        app.db.lock().get_session(&id).unwrap().workspace_id,
+        "node:repo"
+    );
+}
+#[tokio::test]
+async fn lost_stop_reply_reconciles_with_get_and_never_resends_to_node() {
+    let (app, _dir, id) = app();
+    let (body, _op) = stop_setup(&app, &id);
+    let hash = payload_hash(&body["payload"]);
+    let posts = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let seen = posts.clone();
+    app.nodes.set_test_node(node(),move |r| {
+        if r.url=="/api/execution-fences/capabilities" {return Ok(NodeHttpResponse{status:200,body:Some(json!({"stopCommandVersion":1}))});}
+        if r.method==HttpMethod::Post {seen.fetch_add(1,std::sync::atomic::Ordering::SeqCst);return Err(ApiError::new(503,"lost_reply","Unknown Stop outcome"));}
+        assert_eq!(r.method,HttpMethod::Get);assert_eq!(r.url,"/api/sessions/Private/commands/transition-stop");
+        Ok(NodeHttpResponse{status:200,body:Some(json!({"command":{"id":"transition-stop","sessionId":"Private","payloadHash":hash,"status":"accepted","result":{"success":true,"data":{"transition":{"operationId":"move-1","state":"supervisor_drained","revocationConfirmed":false,"targetInstalled":false}}}}}))})
+    });
+    let path = format!("/api/sessions/{id}/commands");
+    let lost = http(&app, &path, Some(body.clone()), None).await;
+    assert_eq!(lost.0, 503);
+    assert_eq!(lost.1["command"]["status"], "outcome_unknown");
+    let duplicate = http(&app, &path, Some(body), None).await;
+    assert_eq!(duplicate.1["duplicate"], true);
+    let read = http(&app, &format!("{path}/transition-stop"), None, None).await;
+    assert_eq!(read.0, 200, "{read:?}");
+    assert_eq!(read.1["command"]["status"], "accepted");
+    assert_eq!(posts.load(std::sync::atomic::Ordering::SeqCst), 1);
+    assert!(require_open(&app.db.lock(), &id).is_err());
+}
+#[tokio::test]
+async fn unknown_transition_and_takeover_during_capability_wait_cannot_stop() {
+    let (app, _dir, id) = app();
+    let (mut body, _op) = stop_setup(&app, &id);
+    body["payload"]["operationId"] = json!("unaccepted");
+    let path = format!("/api/sessions/{id}/commands");
+    let rejected = http(&app, &path, Some(body.clone()), None).await;
+    assert_eq!(rejected.0, 409);
+    assert!(app.db.lock().get_command("transition-stop").is_err());
+    body["payload"]["operationId"] = json!("move-1");
+    let db = app.db.clone();
+    let source = id.clone();
+    app.nodes.set_test_node(node(), move |r| {
+        assert_eq!(r.method, HttpMethod::Get);
+        db.lock()
+            .mirror_lease(
+                &source,
+                &crate::db::Lease {
+                    client_id: "web".into(),
+                    generation: 2,
+                    expires_at: now_ms() + 60000,
+                },
+                "alice",
+                false,
+            )
+            .unwrap();
+        Ok(NodeHttpResponse {
+            status: 200,
+            body: Some(json!({"stopCommandVersion":1})),
+        })
+    });
+    let rejected = http(&app, &path, Some(body), None).await;
+    assert_eq!(rejected.0, 409, "{rejected:?}");
+    assert_eq!(
+        app.db.lock().get_command("transition-stop").unwrap().status,
+        "rejected"
+    );
+    assert!(require_open(&app.db.lock(), &id).is_err());
+}
+
+#[tokio::test]
+async fn an_older_node_cannot_silently_ignore_transition_stop() {
+    let (app, _dir, id) = app();
+    let (body, _op) = stop_setup(&app, &id);
+    app.nodes.set_test_node(node(), |r| {
+        assert_eq!(r.method, HttpMethod::Get);
+        Ok(NodeHttpResponse {
+            status: 200,
+            body: Some(json!({"version":1,"trackedSupervisorDrain":true})),
+        })
+    });
+    let result = http(
+        &app,
+        &format!("/api/sessions/{id}/commands"),
+        Some(body),
+        None,
+    )
+    .await;
+    assert_eq!(result.0, 409);
+    assert_eq!(result.1["error"]["code"], "transition_stop_unsupported");
+    assert_eq!(
+        app.db.lock().get_command("transition-stop").unwrap().status,
+        "rejected"
+    );
+    assert!(require_open(&app.db.lock(), &id).is_err());
+}
+#[tokio::test]
+async fn command_receipt_wait_cannot_extend_device_connection_or_source_authority() {
+    for change in ["device", "connection", "policy"] {
+        let (app, _dir, id) = app();
+        let (body, _op) = stop_setup(&app, &id);
+        {
+            let db = app.db.lock();
+            let source = db.get_session(&id).unwrap();
+            crate::conversation_bindings::commands::receive(
+                &db,
+                &source,
+                "alice",
+                "transition-stop",
+                &body["payload"],
+                None,
+            )
+            .unwrap();
+            db.update_command("transition-stop", "outcome_unknown", None, None)
+                .unwrap();
+        }
+        let hash = payload_hash(&body["payload"]);
+        let (device, token) = app.devices.create("alice", "Android").unwrap();
+        let devices = app.devices.clone();
+        let nodes = app.nodes.clone();
+        let db = app.db.clone();
+        app.nodes.set_test_node(node(),move |r| {
+            assert_eq!(r.method,HttpMethod::Get);
+            match change {
+                "device"=>devices.revoke("alice",&device.id).unwrap(),
+                "connection"=>nodes.set_test_node(node(),|_|Ok(NodeHttpResponse{status:404,body:None})),
+                _=>{db.lock().patch_workspace_capabilities("node:repo",&serde_json::from_value::<crate::db::CapabilitiesPatch>(json!({"web_search":false})).unwrap()).unwrap();}
+            }
+            Ok(NodeHttpResponse{status:200,body:Some(json!({"command":{"id":"transition-stop","sessionId":"Private","payloadHash":hash,"status":"accepted","result":{"private":"must not escape stale authority"}}}))})
+        });
+        let response = http(
+            &app,
+            &format!("/api/sessions/{id}/commands/transition-stop"),
+            None,
+            Some(&token),
+        )
+        .await;
+        assert_eq!(
+            response.0,
+            if change == "device" { 401 } else { 409 },
+            "{change}: {response:?}"
+        );
+        assert!(!response.1.to_string().contains("must not escape"));
+        assert_eq!(
+            app.db.lock().get_command("transition-stop").unwrap().status,
+            "outcome_unknown"
+        );
+    }
+}

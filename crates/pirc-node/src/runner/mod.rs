@@ -140,6 +140,10 @@ pub enum CommandPayload {
         entry_id: String,
     },
     Stop,
+    StopTransition {
+        operation_id: String,
+        plan_hash: String,
+    },
     ClearQueue,
     SendNow {
         /// `steering` or `followUp`.
@@ -1217,6 +1221,9 @@ fn build_rpc(
             rpc.insert("queue".into(), json!(queue));
             rpc.insert("index".into(), json!(index));
             rpc.insert("message".into(), json!(message));
+        }
+        CommandPayload::StopTransition { .. } => {
+            return Err(Failure::Api(ApiError::invalid_input()));
         }
         CommandPayload::Stop | CommandPayload::ClearQueue => {
             rpc.insert("type".into(), json!(kind));

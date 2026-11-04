@@ -41,7 +41,7 @@ pub(crate) use sql_text_enum;
 /// numbered 1 to 19; the Rust line starts far above them, at
 /// [`FIRST_SCHEMA_VERSION`], so a TS-era database is recognized and refused
 /// rather than misread.
-pub const SCHEMA_VERSION: i64 = 1028;
+pub const SCHEMA_VERSION: i64 = 1029;
 /// The first Rust schema; later ones are reached through [`MIGRATIONS`].
 const FIRST_SCHEMA_VERSION: i64 = 1000;
 const SCHEMA: &str = concat!(
@@ -152,6 +152,8 @@ const MIGRATIONS: &[(i64, &str)] = &[
     (1026, include_str!("conversation_bindings/transitions.sql")),
     (1027, include_str!("conversation_bindings/transitions/receipts.sql")),
     (1028, include_str!("conversation_bindings/transitions/acceptance.sql")),
+    // Transition Stop commands reuse commands, with new guarded semantics.
+    (1029, "SELECT 1;"),
 ];
 
 /// Placeholder name of a new session until the agent's title replaces it.

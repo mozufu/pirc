@@ -1154,7 +1154,7 @@ struct CommandBody {
 }
 
 /// Keys a command payload may have (the node's `commandPayload` union).
-const COMMAND_KEYS: [&str; 10] = [
+const COMMAND_KEYS: [&str; 12] = [
     "type",
     "message",
     "uploadIds",
@@ -1165,6 +1165,8 @@ const COMMAND_KEYS: [&str; 10] = [
     "modelId",
     "level",
     "mode",
+    "operationId",
+    "planHash",
 ];
 /// `message` limit, in UTF-16 units, as the node's.
 const COMMAND_MESSAGE_MAX: usize = 1_000_000;
@@ -1178,7 +1180,15 @@ const COMMAND_STRING_MAX: usize = 1_000;
 /// never larger than a prompt (security audit L8). The node still checks
 /// the payload's shape.
 fn command_payload(mut payload: Map<String, Value>) -> Result<Map<String, Value>, ApiError> {
-    payload.retain(|key, _| COMMAND_KEYS.contains(&key.as_str()));
+    let transition_stop = payload.get("type").and_then(Value::as_str) == Some("stop_transition");
+    payload.retain(|key, _| {
+        if transition_stop {
+            matches!(key.as_str(), "type" | "operationId" | "planHash")
+        } else {
+            COMMAND_KEYS.contains(&key.as_str())
+                && !matches!(key.as_str(), "operationId" | "planHash")
+        }
+    });
     for (key, value) in &payload {
         match (key.as_str(), value) {
             ("message", Value::String(text)) => length_within(text, 0, COMMAND_MESSAGE_MAX)?,
@@ -1216,7 +1226,7 @@ pub async fn command(
     }
     let session_id = claimed.session.id.as_str();
     let payload = Value::Object(command_payload(input.payload)?);
-    if payload["type"] != "stop" {
+    if !crate::conversation_bindings::commands::is_stop(&payload) {
         app.require_writable(&claimed.session)?;
         crate::conversation_submissions::require_initial_submission_complete(
             &app.db.lock(),
@@ -1254,15 +1264,25 @@ pub async fn command(
         )?;
         return Err(ApiError::new(503, "node_offline", "Node is offline").into());
     }
-    let versioned = input.expected_binding.is_some() && payload["type"] != "stop";
-    let connection = if versioned {
-        match crate::conversation_bindings::commands::supported(
-            &app,
-            &claimed.node_id,
-            &identity.user,
-        )
-        .await
-        {
+    let versioned = input.expected_binding.is_some()
+        && !crate::conversation_bindings::commands::is_stop(&payload);
+    let connection = if versioned || payload["type"] == "stop_transition" {
+        let support = if payload["type"] == "stop_transition" {
+            crate::conversation_bindings::commands::transition_stop_supported(
+                &app,
+                &claimed.node_id,
+                &identity.user,
+            )
+            .await
+        } else {
+            crate::conversation_bindings::commands::supported(
+                &app,
+                &claimed.node_id,
+                &identity.user,
+            )
+            .await
+        };
+        match support {
             Ok(connection) => Some(connection),
             Err(error) => {
                 app.db.lock().update_command(
@@ -1278,6 +1298,7 @@ pub async fn command(
         None
     };
     let ready = atomic(&app.db.lock(), |tx| {
+        crate::auth::require_current_device(&app, tx, &identity)?;
         let current = tx.claim_session(session_id, &identity.user, false)?;
         tx.validate_lease(session_id, &input.client_id, input.generation as i64)?;
         tx.validate_lease_user(session_id, &identity.user)?;
@@ -1288,7 +1309,13 @@ pub async fn command(
                 "The conversation environment changed; refresh it before starting this action",
             ));
         }
-        if payload["type"] != "stop" {
+        crate::conversation_bindings::commands::require_transition_stop(
+            tx,
+            &identity.user,
+            session_id,
+            &payload,
+        )?;
+        if !crate::conversation_bindings::commands::is_stop(&payload) {
             crate::conversation_bindings::transitions::require_open(tx, session_id)?;
         }
         tx.update_command(&input.command_id, "dispatched", None, None)
@@ -1422,6 +1449,10 @@ pub async fn command_receipt(
     };
     refresh_command_receipt(&app, &identity, &session, &command).await?;
     let db = app.db.lock();
+    crate::auth::require_current_device(&app, &db, &identity)?;
+    if db.get_session(&session.id)?.owner_user.as_deref() != Some(identity.user.as_str()) {
+        return Err(ApiError::not_found("Command not found").into());
+    }
     if db.session_deletion(&session.id)?.is_some() {
         return Err(ApiError::not_found("Command not found").into());
     }
@@ -1445,18 +1476,36 @@ async fn refresh_command_receipt(
     let (Some(node), Some(remote)) = (&session.node_id, &session.pi_session_id) else {
         return Ok(());
     };
+    let Ok(connection) = app.nodes.connection(node) else {
+        return Ok(());
+    };
+    {
+        let db = app.db.lock();
+        crate::auth::require_current_device(app, &db, identity)?;
+    }
     let Ok(response) = app
-        .relay(
+        .nodes
+        .request_on(
             node,
-            identity,
-            HttpMethod::Get,
-            format!("/api/sessions/{remote}/commands/{}", command.id),
-            None,
+            connection,
+            pirc_protocol::NodeHttpRequest {
+                method: HttpMethod::Get,
+                url: format!(
+                    "/api/sessions/{}/commands/{}",
+                    urlencoding_component(remote),
+                    urlencoding_component(&command.id)
+                ),
+                user: identity.user.clone(),
+                payload: None,
+                body_base64: None,
+                content_type: None,
+            },
         )
         .await
     else {
         return Ok(());
     };
+    app.nodes.require_connection(node, connection)?;
     if response.status >= 400 {
         return Ok(());
     }
@@ -1475,6 +1524,19 @@ async fn refresh_command_receipt(
         return Ok(());
     };
     let db = app.db.lock();
+    crate::auth::require_current_device(app, &db, identity)?;
+    let current = db.claim_session(&session.id, &identity.user, false)?;
+    if current.node_id != session.node_id
+        || current.pi_session_id != session.pi_session_id
+        || current.binding != session.binding
+    {
+        return Err(ApiError::new(
+            409,
+            "source_binding_changed",
+            "The command source changed during receipt reconciliation",
+        ));
+    }
+    app.nodes.require_connection(node, connection)?;
     if db.session_deletion(&session.id)?.is_none()
         && db.get_command(&command.id)?.status != "accepted"
     {

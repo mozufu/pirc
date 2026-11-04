@@ -23,7 +23,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1028**, Node **2019**, protocol **15**, client contract **2**,
+formats: Gateway **1029**, Node **2020**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -55,7 +55,13 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local U4 delivery: [Gateway accepted-intent journal](#u4-implementation-checkpoint-gateway-accepted-intent-journal-2026-11-04)
+Latest local U4 delivery: [durable transition Stop commands](#u4-implementation-checkpoint-durable-transition-stop-commands-2026-11-04)
+reuses the existing command journal to stop a known source's supervised resources,
+with current-control checks and read-only receipt recovery after reply loss or
+restart. Gateway/Node schemas are **1029/2020**; complete revocation and installation
+remain unconfirmed. No new public switching or client UI is enabled.
+
+The previous [Gateway accepted-intent journal](#u4-implementation-checkpoint-gateway-accepted-intent-journal-2026-11-04)
 adds a durable command barrier before a single Node admission attempt, unknown-outcome
 recovery and cross-device discovery. The new-acceptance path is implemented/tested
 behind a disabled public confirmation gate; it does not yet enable switching.
@@ -4889,3 +4895,94 @@ goal active. Next U4 work remains complete coordinator recovery/cancellation and
 positive composed acceptance testing, full OS/resource/alias/descriptor/descendant
 revocation, replacement installation, project mounts/rules and necessary client
 operations. U1 activation and U5/U6 remain open; UI redesign stays deferred.
+
+## U4 implementation checkpoint: durable transition Stop commands (2026-11-04)
+
+Local continuation of `3e80ad6f`; no push, deployment or release. A transition's
+source supervisor Stop now uses the existing Gateway/Node command journal instead
+of a second task or operation system. Send it through the existing session command
+endpoint, with stable `commandId`, current `clientId`/`generation` and payload:
+
+```json
+{
+  "type": "stop_transition",
+  "operationId": "reviewed-transition-id",
+  "planHash": "the-exact-reviewed-64-character-plan-hash"
+}
+```
+
+Gateway requires an owner/session-bound retained Node fence for this operation,
+checks the frozen plan hash where an initial acceptance exists, and requires the
+captured Node's `stopCommandVersion: 1`. It repeats control/device/source/fence
+checks after capability waits before dispatch. An unsupported Node is rejected
+before POST. Only the three recognized payload fields survive normalization;
+normal commands cannot use these fields to evade their usual fence. Existing
+command identities, payload conflict detection and uncertain-result lookup apply.
+This Stop does not run a model, create a target or bypass ordinary execution
+prohibitions; it only reduces the known fenced source's supervised activity.
+
+Node checks the immutable operation/plan, owner, source workspace and controller
+lease at command admission and again immediately before persisting dispatch. The
+accepted command is stored before the source drain can begin. A task owns the
+completion independently of the caller's HTTP wait; the existing per-operation
+tracked drain joins overlapping cleanup. Already-drained receipts return without
+rerunning supervisor shutdown. The current conversation/history, source binding,
+files, peer conversations and memory/checkpoint ownership stay in place.
+
+The command result exposes only operation ID, supervisor stage, a bounded error
+code and false revocation/installation flags. `accepted` is recorded only after
+`supervisor_drained` (or a deleted receipt), and means this supervisor Stop is
+confirmed, never that the environment switch is Ready. A fenced/stopping/blocked
+or failed result stays `outcome_unknown`; a prior confirmed result cannot be
+rewound by a later uncertain observer. Repeated command POSTs return the saved
+command and cannot restart the Stop. An explicit later cleanup attempt requires
+its own new command identity/current authority; it cannot grant source access.
+
+Node command GET may refresh an already-dispatched uncertain Stop using its
+saved fence. It starts no task/runner, sends no command and renews no lease. A
+`received` row left before dispatch cannot execute or become accepted from a GET.
+Gateway command GET now captures the Node connection, encodes path components and
+rechecks device, source mapping/binding and connection after the wait before
+saving a result. Replacement/revoked authority cannot publish a late receipt.
+Web and paired Android use the same ordinary command endpoints without an active
+browser or new management grant.
+
+Gateway schema **1029** and Node schema **2020** are semantic reader fences
+(`SELECT 1` migrations); existing rows, bindings and receipt formats are preserved.
+Old binaries refuse the newer stores, so rollback needs matching binary/state
+backups. Protocol/client/envelope remain **15/2/3**; there are no package,
+dependency, lockfile or Nix hash changes. Public new-transition confirmation and
+U1 activation remain disabled. The legacy internal drain route remains separate;
+this checkpoint's controller checks and command deduplication cover the new
+command path, not a claim that every legacy internal API was redesigned.
+
+Validation: **588 Node library tests passed**, with four existing opt-in cases
+ignored; **421 Gateway tests passed**. Three new Node cases cover scoped command
+Stop/deduplication without runner startup or rebinding, wrong-plan/owner/control
+rejection and saved-completion lookup without dispatch. Five new Gateway cases
+cover Web/paired-native duplicate receipts, unknown POST followed only by GET,
+unknown-operation and capability-wait takeover rejection, old Node rejection and
+device/connection/policy changes during receipt waits. Existing concurrent intents,
+large-history memory, deletion, first Send and checkpoint unit cases remain green.
+An initial migration test expected literal 2019; it now checks the current schema
+constant and still verifies old receipt preservation without invented proofs.
+
+**14 required real-process cases passed**, including three native checkpoints,
+two conversation admissions, two creations, environment preview, four Node fence
+cases, memory and project deletion. The Node fence/restart case now stops through
+the real command endpoint after controller takeover, verifies duplicate receipts,
+hard-restarts again and reads the retained Stop result/history/binding. This is
+positive real Node evidence; Gateway/paired-native routing is separately tested
+with Node response stand-ins, not full accepted-coordinator or Android OS proof.
+Strict Gateway/Node/conformance all-target Clippy, Rust/document/diff/link checks
+pass. No full workspace/browser/Flutter/device/local Nix/remote-CI acceptance is
+claimed. The owned build/log tree (about **2.7 GiB**) is cleaned after verification,
+preserving APKs, SDKs, shared caches, user data and other agents' work.
+
+Remaining U4: complete coordinator recovery/cancellation and positive composed
+acceptance, full resource/OS/alias/descriptor/descendant revocation, replacement
+installation/acknowledgement, project mounts/rules and necessary Web/App controls
+that retain the reviewed operation/hash and display unresolved status. No receipt
+here claims full revocation. U1 activation/device/rollout, U2 live-resource
+provenance, U5 task/collaboration identities and U6 bounded proactive pots remain
+open. The goal remains active and subsequent work remains local by default.

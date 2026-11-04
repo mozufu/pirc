@@ -521,7 +521,7 @@ mod acceptance_tests {
         assert_eq!(
             db.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))
                 .unwrap(),
-            2019
+            crate::store::SCHEMA_VERSION
         );
         let saved = receipt(&db, &request.user, id, &intent.operation_id)
             .unwrap()
