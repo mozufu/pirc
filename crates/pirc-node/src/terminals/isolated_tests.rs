@@ -19,6 +19,7 @@ use std::{
 
 #[derive(Default)]
 struct Scope {
+    identity_index: AtomicUsize,
     ready: AtomicBool,
     retired: AtomicBool,
     spawned: AtomicUsize,
@@ -46,9 +47,9 @@ impl ProcessScope for Scope {
             identity: self.ready.load(Ordering::SeqCst).then(|| Identity {
                 boot_id: "11111111-2222-3333-4444-555555555555".into(),
                 observer_namespace: 10,
-                namespace: 11,
-                pid: 22,
-                start_ticks: 100,
+                namespace: 11 + self.identity_index.load(Ordering::SeqCst) as u64,
+                pid: 22 + self.identity_index.load(Ordering::SeqCst) as u32,
+                start_ticks: 100 + self.identity_index.load(Ordering::SeqCst) as u64,
             }),
         }
     }
@@ -80,6 +81,7 @@ impl NetworkControl for Control {
     }
 }
 struct Backend {
+    prepared: AtomicUsize,
     scope: Arc<Scope>,
     report: PathBuf,
 }
@@ -101,8 +103,17 @@ impl Sandbox for Backend {
         Box::pin(async { Err(ApiError::internal()) })
     }
     fn prepare_terminal(&self, _: PrepareInput, _: PathBuf) -> BoxFuture<'_, ApiResult<Prepared>> {
-        let scope = self.scope.clone();
-        let report = self.report.clone();
+        let count = self.prepared.fetch_add(1, Ordering::SeqCst);
+        let (scope, report) = if count == 0 {
+            (self.scope.clone(), self.report.clone())
+        } else {
+            let scope = Arc::new(Scope::default());
+            scope.identity_index.store(count, Ordering::SeqCst);
+            scope
+                .ready
+                .store(self.scope.ready.load(Ordering::SeqCst), Ordering::SeqCst);
+            (scope, self.report.with_extension(count.to_string()))
+        };
         Box::pin(async move {
             Ok(Prepared::new(
                 std::env::current_exe().unwrap(),
@@ -178,6 +189,7 @@ impl Fixture {
             config,
             env,
             Arc::new(Backend {
+                prepared: AtomicUsize::new(0),
                 scope: scope.clone(),
                 report: report.clone(),
             }),
@@ -363,5 +375,64 @@ async fn unsupported_backend_does_not_open_a_host_terminal_or_create_launch_rows
         serde_json::to_value(journal::summary(&f.node.db.lock(), &f.current).unwrap()).unwrap()["launches"],
         0
     );
+    f.node.close().await;
+}
+
+#[tokio::test]
+async fn an_agent_and_multiple_work_terminals_keep_independent_epoch_slots_and_scopes() {
+    let f = Fixture::new(true).await;
+    crate::process_journal::reserve_with_guard(
+        &f.node.db.lock(),
+        &f.session,
+        "repo",
+        0,
+        &f.node.incarnation,
+        true,
+    )
+    .unwrap();
+    let (a, b) = tokio::join!(f.open(), f.open());
+    let a = a.unwrap().unwrap();
+    let b = b.unwrap().unwrap();
+    assert_ne!(a.id, b.id);
+    until(|| f.report.exists() && f.report.with_extension("1").exists()).await;
+    assert_eq!(f.node.terminals.list(&f.session).len(), 2);
+    assert_eq!(f.node.db.lock().query_row("SELECT count(DISTINCT identity_json) FROM sandbox_launches WHERE resource_kind='terminal' AND session_id=?1",[&f.session],|r|r.get::<_,i64>(0)).unwrap(),2);
+    assert!(
+        crate::process_journal::reserve_with_guard(
+            &f.node.db.lock(),
+            &f.session,
+            "repo",
+            0,
+            &f.node.incarnation,
+            true
+        )
+        .is_err()
+    );
+    let control = Arc::new(super::input::Control {
+        client: "phone".into(),
+        generation: f.generation,
+        open: Arc::new(Mutex::new(true)),
+        rejected: Arc::new(|e| panic!("peer input was rejected: {e:?}")),
+    });
+    let first = f.node.terminals.lookup(&f.session, &a.id).unwrap();
+    let second = f.node.terminals.lookup(&f.session, &b.id).unwrap();
+    f.node
+        .terminals
+        .input_controlled(&f.session, &a.id, "finish\n", control.clone())
+        .unwrap();
+    until(|| first.state().info.exited).await;
+    assert!(
+        !second.state().info.exited,
+        "One terminal retired its peer's scope"
+    );
+    f.node
+        .terminals
+        .input_controlled(&f.session, &b.id, "finish\n", control)
+        .unwrap();
+    until(|| second.state().info.exited).await;
+    let summary = crate::process_journal::summary(&f.node.db.lock(), &f.session).unwrap();
+    assert_eq!(summary.launches, 3);
+    assert_eq!(summary.terminated, 2);
+    assert_eq!(summary.unresolved, 1);
     f.node.close().await;
 }

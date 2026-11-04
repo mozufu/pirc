@@ -23,7 +23,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1029**, Node **2024**, protocol **15**, client contract **2**,
+formats: Gateway **1029**, Node **2025**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -55,7 +55,12 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local U4 delivery: [guarded isolated work terminals](#u4-implementation-checkpoint-guarded-isolated-work-terminals-2026-11-04)
+Latest local U4 fix: [Agent and terminal journal slots](#u4-implementation-checkpoint-agent-and-terminal-journal-slots-2026-11-04)
+lets an Agent and multiple work terminals coexist in the same epoch without
+weakening Agent deduplication (Node **2025**). Terminal gates/scopes remain
+independent; full rollout and revocation/install acceptance remain open.
+
+The previous [guarded isolated work terminals](#u4-implementation-checkpoint-guarded-isolated-work-terminals-2026-11-04)
 adds an explicit native Linux terminal path, private non-keyboard permit gate and
 shared kernel/terminal launch identities (Node **2024**). Unsupported paths refuse
 host fallback. Client mode selection/default rollout and native Linux acceptance
@@ -5276,3 +5281,41 @@ bounded proactive pots remain open. Public switching/full revocation/install
 flags remain false. Goal active; local only, no push/deployment/Release. Owned
 outputs (about **2.4 GiB**) are cleaned after verification, preserving APKs,
 SDKs, shared caches, user data and other agents' work.
+
+## U4 implementation checkpoint: Agent and terminal journal slots (2026-11-04)
+
+Local correction to `3112df72`: the reused kernel journal still had a global
+unique `(session_id,runner_epoch)` slot. An Agent or the first isolated terminal
+could therefore block another terminal in that epoch. Node schema **2025** adds
+immutable `resource_kind` and an Agent-only unique epoch index. Terminal attempts
+reuse the binding epoch while retaining separate launch IDs, private permits and
+scope identities. Agent duplicate admission and one-time guard release remain
+protected; typed lookup/reconciliation cannot borrow another resource's kind.
+
+The existing startup write transaction rebuilds this table atomically, preserving
+all IDs/origins/timestamps, kernel/guard evidence and outcomes. An old terminal
+classification requires the exact retained terminal/kernel ID and matching
+session/workspace/incarnation; a mismatched row cannot reclassify an Agent. DDL
+failure rolls back schema version, rows and guard triggers. Existing history is
+not granted new authority or marked closed. Gateway **1029**, protocol/client/
+envelope **15/2/3**, dependencies/lockfiles/Nix hashes remain unchanged. Old Node
+binaries refuse 2025; rollback requires matching binary/state backups.
+
+Validation: **618 Node library tests passed** (five child/opt-in ignores),
+**421 Gateway tests**, **19 required real-process cases** and strict Gateway/
+Node/conformance all-target Clippy passed. The multi-terminal fixture also passed
+again after assigning different synthetic kernel identities to its terminals.
+Five new cases exercise concurrent Agent/multi-terminal slots, independent peer
+retirement, Agent deduplication/reused guard refusal, retained exact-origin
+migration and failed-DDL rollback. The real Node/PTY fixture uses a synthetic
+kernel adapter; no new native Linux/device/UI/Nix/remote-CI acceptance is claimed.
+Compatibility snapshots are unchanged.
+
+Lost-I/O-owner/descriptor restart evidence remains next U4 recovery work, along
+with terminal host-management grants/client choices/default rollout, native
+Linux acceptance, complete coordinator/project resource revocation and target
+installation. U1 activation/device/rollout, U2 provenance, U5 tasks and U6 bounded
+pots remain open. Public switching and full revocation/install stay false.
+Goal active; local only, no push/deployment/Release. The owned **2.4 GiB** output
+tree is cleaned after verification, preserving APKs, SDKs, shared caches and
+peer/user data.

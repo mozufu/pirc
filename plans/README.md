@@ -175,6 +175,15 @@ journal identity (Node **2024**). Unsupported backends refuse host fallback.
 owned outputs are cleaned. Actual Linux namespace CI, lost-I/O-owner recovery,
 client mode choice/host-terminal grants and default rollout remain open.
 
+Latest local correction to `3112df72`:
+[Agent and terminal journal slots](unified-conversations.md#u4-implementation-checkpoint-agent-and-terminal-journal-slots-2026-11-04)
+replace the shared epoch uniqueness with an Agent-only constraint and immutable
+resource kinds (Node **2025**). An Agent plus multiple terminals can coexist
+without sharing a kernel scope or weakening Agent/guard deduplication.
+**618 Node tests**, **421 Gateway tests**, **19 required process cases** and
+strict all-target Clippy passed; **2.4 GiB** owned outputs are cleaned. Owner
+recovery and client rollout remain open.
+
 The user adopted [isolated work + explicit host management](execution-isolation.md).
 This is no longer an approval question. New adapters/grant origins and necessary
 Web/Android mode controls remain implementation work; no implicit host fallback
@@ -190,7 +199,7 @@ or `full-access` escalation is authorized by the design.
 | U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                        | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle        |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
-not enable it. Current formats are Gateway schema **1029**, Node schema **2024**,
+not enable it. Current formats are Gateway schema **1029**, Node schema **2025**,
 protocol **15**, client recovery contract **2**, and Web IndexedDB/native private
 envelope **3**. Existing ordinary session APIs remain available. Unaccepted
 Gateway attachment staging expires after **seven days**; accepted attachments and

@@ -94,6 +94,11 @@ adds an explicit native Linux path and shared kernel/terminal identity (Node
 paths do not fall back. Actual Linux acceptance, client mode choice/host-terminal
 grants, default rollout and complete revocation/install remain open.
 
+The [journal-slot correction](unified-conversations.md#u4-implementation-checkpoint-agent-and-terminal-journal-slots-2026-11-04)
+uses Node schema **2025** to preserve one Agent admission per epoch while allowing
+separate terminal launch identities in that epoch. Resource kinds are immutable;
+this is not an additional grant or completed rollout/revocation proof.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.

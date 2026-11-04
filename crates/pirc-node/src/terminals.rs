@@ -309,13 +309,12 @@ impl Terminals {
             let workspace = &binding.as_ref().ok_or_else(ApiError::internal)?.workspace;
             let (record, launch) = crate::store::atomic(db, |db| {
                 let row = db.get_session(session_id)?;
-                let launch = crate::process_journal::reserve_with_guard(
+                let launch = crate::process_journal::reserve_terminal(
                     db,
                     session_id,
                     workspace,
                     row.runner_epoch,
                     &node.incarnation,
-                    true,
                 )?;
                 let record =
                     journal::Record::scoped(node, db, session_id, workspace, cwd, &launch)?;

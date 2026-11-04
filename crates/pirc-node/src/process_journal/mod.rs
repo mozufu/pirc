@@ -15,8 +15,29 @@ use serde::Serialize;
 #[cfg(test)]
 mod tests;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Kind {
+    Agent,
+    Terminal,
+}
+impl Kind {
+    fn text(self) -> &'static str {
+        match self {
+            Self::Agent => "agent",
+            Self::Terminal => "terminal",
+        }
+    }
+    fn parse(text: &str) -> ApiResult<Self> {
+        match text {
+            "agent" => Ok(Self::Agent),
+            "terminal" => Ok(Self::Terminal),
+            _ => Err(ApiError::internal()),
+        }
+    }
+}
 #[derive(Clone, Debug)]
 pub(crate) struct Launch {
+    kind: Kind,
     id: String,
     pub session: String,
     epoch: i64,
@@ -56,6 +77,41 @@ pub(crate) fn reserve_with_guard(
     incarnation: &str,
     guarded: bool,
 ) -> ApiResult<Launch> {
+    reserve_resource(
+        db,
+        session,
+        workspace,
+        epoch,
+        incarnation,
+        if guarded { Some(Kind::Agent) } else { None },
+    )
+}
+/// Terminal attempts share the current agent epoch without reserving its slot.
+pub(crate) fn reserve_terminal(
+    db: &Connection,
+    session: &str,
+    workspace: &str,
+    epoch: i64,
+    incarnation: &str,
+) -> ApiResult<Launch> {
+    reserve_resource(
+        db,
+        session,
+        workspace,
+        epoch,
+        incarnation,
+        Some(Kind::Terminal),
+    )
+}
+fn reserve_resource(
+    db: &Connection,
+    session: &str,
+    workspace: &str,
+    epoch: i64,
+    incarnation: &str,
+    guard: Option<Kind>,
+) -> ApiResult<Launch> {
+    let kind = guard.unwrap_or(Kind::Agent);
     db.require_session_available(session)?;
     crate::execution_fences::require_open(db, session)?;
     let current = db.get_session(session)?;
@@ -63,6 +119,7 @@ pub(crate) fn reserve_with_guard(
         return Err(ApiError::conflict("Sandbox launch environment changed"));
     }
     let launch = Launch {
+        kind,
         id: prefix_uuid("launch_"),
         session: session.into(),
         epoch,
@@ -70,14 +127,14 @@ pub(crate) fn reserve_with_guard(
     };
     let now = now_ms();
     db.execute(
-        "INSERT INTO sandbox_launches(launch_id,session_id,workspace_id,runner_epoch,incarnation,state,identity_json,created_at,updated_at,guard_state) VALUES(?1,?2,?3,?4,?5,'launching',NULL,?6,?6,?7)",
-        params![launch.id, session, workspace, epoch, incarnation, now, if guarded {"waiting"} else {"untracked"}],
+        "INSERT INTO sandbox_launches(launch_id,session_id,workspace_id,runner_epoch,incarnation,state,identity_json,created_at,updated_at,guard_state,resource_kind) VALUES(?1,?2,?3,?4,?5,'launching',NULL,?6,?6,?7,?8)",
+        params![launch.id, session, workspace, epoch, incarnation, now, if guard.is_some() {"waiting"} else {"untracked"},kind.text()],
     )?;
     Ok(launch)
 }
 fn saved(db: &Connection, launch: &Launch) -> ApiResult<(String, Option<String>)> {
-    db.query_row("SELECT state,identity_json FROM sandbox_launches WHERE launch_id=?1 AND session_id=?2 AND runner_epoch=?3 AND incarnation=?4",
-        params![launch.id,launch.session,launch.epoch,launch.incarnation], |r| Ok((r.get(0)?,r.get(1)?)))
+    db.query_row("SELECT state,identity_json FROM sandbox_launches WHERE launch_id=?1 AND session_id=?2 AND runner_epoch=?3 AND incarnation=?4 AND resource_kind=?5",
+        params![launch.id,launch.session,launch.epoch,launch.incarnation,launch.kind.text()], |r| Ok((r.get(0)?,r.get(1)?)))
         .optional()?.ok_or_else(ApiError::internal)
 }
 pub(crate) fn not_started(db: &Connection, launch: &Launch) -> ApiResult<()> {
@@ -188,21 +245,23 @@ fn pending(db: &Connection, session: &str) -> ApiResult<Vec<(Launch, Identity)>>
     // This transition prevents any future release. Missing identity still does
     // not prove kernel exit; expose the separate pre-execution denial evidence.
     db.execute("UPDATE sandbox_launches SET guard_state='denied' WHERE launch_id IN (SELECT launch_id FROM sandbox_launches WHERE session_id=?1 AND guard_state='waiting' ORDER BY created_at,rowid LIMIT 64)",[session])?;
-    let mut statement = db.prepare("SELECT launch_id,runner_epoch,incarnation,identity_json FROM sandbox_launches WHERE session_id=?1 AND state IN ('running','unconfirmed','launching') AND identity_json IS NOT NULL ORDER BY updated_at,rowid LIMIT 64")?;
+    let mut statement = db.prepare("SELECT launch_id,runner_epoch,incarnation,identity_json,resource_kind FROM sandbox_launches WHERE session_id=?1 AND state IN ('running','unconfirmed','launching') AND identity_json IS NOT NULL ORDER BY updated_at,rowid LIMIT 64")?;
     let rows = statement.query_map([session], |r| {
         Ok((
             r.get::<_, String>(0)?,
             r.get::<_, i64>(1)?,
             r.get::<_, String>(2)?,
             r.get::<_, String>(3)?,
+            r.get::<_, String>(4)?,
         ))
     })?;
     let mut out = Vec::new();
     for row in rows {
-        let (id, epoch, incarnation, identity) = row?;
+        let (id, epoch, incarnation, identity, kind) = row?;
         let identity = serde_json::from_str(&identity).map_err(|_| ApiError::internal())?;
         out.push((
             Launch {
+                kind: Kind::parse(&kind)?,
                 id,
                 session: session.into(),
                 epoch,

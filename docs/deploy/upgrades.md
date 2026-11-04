@@ -1,5 +1,21 @@
 # Upgrades
 
+## Local fix: Agent and terminal journal slots
+
+Node schema **2025** transactionally rebuilds `sandbox_launches` with immutable
+`resource_kind`. Only Agent rows retain the unique conversation/epoch constraint;
+work terminals keep separate launch IDs and scopes without blocking an Agent or
+other terminals. IDs, origins, kernel identity, guard states, timestamps and
+outcomes are retained. Historical terminal classification requires an exact
+matching terminal/kernel origin. Failure rolls back the entire schema update;
+no old row gains a grant, release or closure acknowledgement.
+
+This fixes multi-terminal/Agent coexistence; lost-I/O-owner recovery, mode choices
+and default rollout remain open. Gateway **1029**, protocol/client/private-envelope
+**15/2/3**, dependency/lockfile/Nix hashes stay unchanged. Older binaries refuse
+2025; rollback requires matching state/binary backups. Local only, no deployment
+or Release. See the [validation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-agent-and-terminal-journal-slots-2026-11-04).
+
 ## Local checkpoint: guarded isolated work terminals
 
 Node schema **2024** is a semantic reader fence (`SELECT 1`). Explicit isolated

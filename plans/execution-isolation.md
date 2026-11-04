@@ -177,3 +177,31 @@ host and has not been accepted as passed locally. Current Node/PTY fixtures use
 a synthetic kernel adapter; the standalone gate test checks actual PTY/control
 FD behavior. Full external/delegated effects, project resources and environment
 installation still need independent evidence.
+
+## Local fix: Agent and terminal journal slots (2026-11-04)
+
+Review found that the shared kernel journal's original table-level
+`UNIQUE(session_id,runner_epoch)` also limited work terminals: an existing Agent
+or another terminal in the same epoch could prevent a terminal from opening.
+Node schema **2025** replaces that constraint with immutable `resource_kind` and
+an **Agent-only** unique epoch index. Each terminal keeps its own launch ID,
+private gate and scope; it does not increment or borrow the Agent's epoch slot.
+Typed lookup/reconciliation retains the resource kind so an observer cannot
+substitute a peer/Agent launch.
+
+The transactional migration preserves launch IDs, origins, timestamps, kernel
+identity, guard state and outcomes. Only an existing exact terminal/kernel
+identity-and-origin join classifies an old row as a terminal; other historical
+rows keep their Agent classification. No new grant, release or closure is
+created. A failed rebuild rolls back rows, triggers and schema version together.
+Agent duplicate admission and one-time guard release stay enforced.
+
+Validation: **618 Node tests passed** (five child/opt-in ignores), **421 Gateway
+tests**, **19 required real-process cases** and strict all-target Clippy passed.
+Five new journal/migration and real Node/PTY cases cover an Agent reservation
+plus two simultaneous terminals,
+independent identities and retirement, repeated Agent rejection, exact-origin
+migration and DDL failure rollback. The kernel adapter in that local fixture is
+synthetic; native Linux and full revocation/installation acceptance remain open.
+The owned **2.4 GiB** build/log tree is cleaned after verification.
+Lost-I/O-owner recovery, terminal mode controls and default rollout still follow.
