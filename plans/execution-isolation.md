@@ -205,3 +205,32 @@ migration and DDL failure rollback. The kernel adapter in that local fixture is
 synthetic; native Linux and full revocation/installation acceptance remain open.
 The owned **2.4 GiB** build/log tree is cleaned after verification.
 Lost-I/O-owner recovery, terminal mode controls and default rollout still follow.
+
+## Local implementation checkpoint: terminal I/O owner recovery (2026-11-04)
+
+Node schema **2026** captures the Node's own immutable boot/PID-view/process-birth
+identity atomically with each new guarded terminal reservation. Recovery requires
+an accepted source fence, exact terminal/kernel origin, confirmed namespace
+termination and read-only proof that the old Node thread group has exited. This
+uses Linux pidfds without the thread-only flag; see the upstream
+[pidfd_open manual](https://man7.org/linux/man-pages/man2/pidfd_open.2.html).
+The checker never signals a saved owner PID. PID reuse does not target the new
+process; unknown/live/missing/mismatched evidence stays blocked.
+
+Owner exit and terminal settlement persist together, with immutable identities
+and monotonic retained outcomes. Failure rolls both updates back; no command
+replay or new grant is introduced. Pre-2026 rows are not backfilled. Kernel and
+owner scans use bounded keyset pages so early unresolved rows cannot hide later
+history. Cleanup still starts independent participants and requires their own
+outcomes; a stopped kernel alone cannot retire a live I/O owner.
+
+`terminalIoOwnerRecoveryVersion: 1` is not a full revocation acknowledgement.
+Native Linux execution still requires Linux acceptance; local recovery fixtures
+inject the OS observations. Host-management terminal grants, Web/Android choices,
+compatibility/default migration, project/delegated resources and target install
+remain open. Full switch/U1 flags remain disabled. See the
+[validation record](unified-conversations.md#u4-implementation-checkpoint-terminal-io-owner-recovery-2026-11-04).
+
+Validation: **629 Node**, **421 Gateway** and **19 required process cases** passed,
+with strict all-target Clippy. The owned **2.9 GiB** outputs are cleaned. Actual
+Linux owner/namespace and client rollout acceptance remain outstanding.

@@ -183,8 +183,7 @@ pub(super) fn reopen(_: &Identity) -> io::Result<Option<Arc<dyn Handle>>> {
     Err(io::Error::other("saved PID namespace requires Linux"))
 }
 
-#[cfg(any(target_os = "linux", test))]
-fn validate(identity: &Identity) -> io::Result<()> {
+pub(super) fn validate(identity: &Identity) -> io::Result<()> {
     if identity.pid <= 1
         || identity.pid > i32::MAX as u32
         || identity.namespace == 0
@@ -206,7 +205,7 @@ fn validate(identity: &Identity) -> io::Result<()> {
 }
 
 #[cfg(any(target_os = "linux", test))]
-fn start_ticks(stat: &str) -> io::Result<u64> {
+pub(super) fn start_ticks(stat: &str) -> io::Result<u64> {
     // The comm field may contain spaces and parentheses; fields after the last
     // closing parenthesis begin at field 3, starttime is field 22.
     stat.rsplit_once(')')

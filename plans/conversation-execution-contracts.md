@@ -99,6 +99,13 @@ uses Node schema **2025** to preserve one Agent admission per epoch while allowi
 separate terminal launch identities in that epoch. Resource kinds are immutable;
 this is not an additional grant or completed rollout/revocation proof.
 
+The [terminal I/O owner recovery](unified-conversations.md#u4-implementation-checkpoint-terminal-io-owner-recovery-2026-11-04)
+adds Node schema **2026**. An isolated terminal can recover closure only under its
+own source fence, after exact kernel termination and read-only proof of old Node
+thread-group exit. Missing or unknown owners stay blocked; migration invents no
+proof and no saved owner PID is signaled. Complete revocation/install and client
+mode rollout remain open; actual Linux acceptance is still required.
+
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below
 are logical concepts, not finalized API fields, database schemas or Rust types.

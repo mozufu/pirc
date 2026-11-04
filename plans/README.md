@@ -184,6 +184,18 @@ without sharing a kernel scope or weakening Agent/guard deduplication.
 strict all-target Clippy passed; **2.4 GiB** owned outputs are cleaned. Owner
 recovery and client rollout remain open.
 
+Latest local recovery delivery:
+[terminal I/O owner recovery](unified-conversations.md#u4-implementation-checkpoint-terminal-io-owner-recovery-2026-11-04)
+records the old Node process identity before isolated-terminal spawn (Node **2026**).
+Restart settlement needs both exact namespace termination and read-only old-owner
+exit proof under a source fence. Unknown evidence remains blocked; no PID-based
+kill, command replay or legacy proof backfill. Keyset history scans prevent early
+unknown rows from starving later recoverable work. Native Linux acceptance,
+client mode/default rollout and complete revocation/install remain open.
+**629 Node tests**, **421 Gateway tests**, **19 required process cases** and
+strict all-target Clippy passed. The owned **2.9 GiB** outputs are cleaned; this
+delivery stays local.
+
 The user adopted [isolated work + explicit host management](execution-isolation.md).
 This is no longer an approval question. New adapters/grant origins and necessary
 Web/Android mode controls remain implementation work; no implicit host fallback
@@ -199,7 +211,7 @@ or `full-access` escalation is authorized by the design.
 | U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                        | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle        |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
-not enable it. Current formats are Gateway schema **1029**, Node schema **2025**,
+not enable it. Current formats are Gateway schema **1029**, Node schema **2026**,
 protocol **15**, client recovery contract **2**, and Web IndexedDB/native private
 envelope **3**. Existing ordinary session APIs remain available. Unaccepted
 Gateway attachment staging expires after **seven days**; accepted attachments and

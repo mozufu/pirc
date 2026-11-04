@@ -261,11 +261,27 @@ async fn stop_resources(node: &Node, session: &str) -> ApiResult<()> {
         scopes.revoke(session);
     }
 
+    // Share one kernel retirement, including panic conversion, with terminal
+    // recovery. Both still start independently of a blocked runner/command.
+    let kernel = AssertUnwindSafe(crate::process_journal::retire_saved(node, session))
+        .catch_unwind()
+        .map(|result| result.unwrap_or_else(|_| Err(ApiError::internal())))
+        .boxed()
+        .shared();
+    let terminal_kernel = kernel.clone();
     settle_all([
         node.runners.stop_session(session).boxed(),
-        crate::process_journal::retire_saved(node, session).boxed(),
+        kernel.boxed(),
         node.host_commands.wait_session(node, session).boxed(),
-        node.terminals.dispose_session(session).boxed(),
+        async {
+            let live = node.terminals.stop_live(session).await;
+            let _ = terminal_kernel.await; // Its result is retained by the sibling participant.
+            let recovered = crate::terminals::io_owners::recover(node, session).await;
+            live?;
+            recovered?;
+            node.terminals.require_settled(session)
+        }
+        .boxed(),
         async {
             if let Some(scopes) = node.sandbox.network_scopes() {
                 scopes.wait(Some(session), Duration::from_secs(5)).await?;
@@ -353,7 +369,7 @@ pub(crate) async fn drain(node: &Node, owner: &str, session: &str, op: &str) -> 
 }
 pub async fn capabilities(node: Node, _request: Request) -> ApiResult<Response> {
     Ok(Response::json(
-        json!({"version":1,"resourcePreflightVersion":1,"resourceFenceVersion":1,"stopCommandVersion":1,"terminalIoClosureVersion":1,"hostManagementApprovalVersion":1,"isolatedTerminalVersion":if node.sandbox.isolated_terminals(){1}else{0},"nativeProxyRevocationVersion":if node.sandbox.network_scopes().is_some(){1}else{0},"durableAdmissionFence":true,"trackedSupervisorDrain":true,"installsEnvironment":false,"confirmsRevocation":false}),
+        json!({"version":1,"resourcePreflightVersion":1,"resourceFenceVersion":1,"stopCommandVersion":1,"terminalIoClosureVersion":1,"terminalIoOwnerRecoveryVersion":1,"hostManagementApprovalVersion":1,"isolatedTerminalVersion":if node.sandbox.isolated_terminals(){1}else{0},"nativeProxyRevocationVersion":if node.sandbox.network_scopes().is_some(){1}else{0},"durableAdmissionFence":true,"trackedSupervisorDrain":true,"installsEnvironment":false,"confirmsRevocation":false}),
     ))
 }
 pub async fn create(node: Node, request: Request) -> ApiResult<Response> {

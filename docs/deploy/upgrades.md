@@ -1,5 +1,24 @@
 # Upgrades
 
+## Local checkpoint: terminal I/O owner recovery
+
+Node schema **2026** adds retained `terminal_io_owners` metadata and protects
+recovery of unresolved isolated terminals. New launches atomically capture the
+Node boot/PID-view/process-birth identity with terminal/kernel reservations. Old
+records receive no inferred owner, grant or closure fact. On Linux, source-fenced
+recovery requires exact kernel termination plus read-only old Node thread-group
+exit proof. Missing, live, invalid or unobservable owners remain blocked. No saved
+owner PID is signaled and no command is replayed. Owner exit/terminal settlement
+commit together; failed persistence remains retryable.
+
+`terminalIoOwnerRecoveryVersion: 1` does not acknowledge full OS revocation or
+target installation. Gateway **1029**, protocol/client/private-envelope **15/2/3**,
+lockfiles and Nix hashes remain unchanged. Back up Node state with its matching
+binary before upgrade; older readers reject 2026. Rollback requires restoring
+matching binary/state backups. This is local code only, with no deployment or
+Release. Actual Linux runtime acceptance, host-terminal grants and client/default
+rollout remain open. See the [validation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-terminal-io-owner-recovery-2026-11-04).
+
 ## Local fix: Agent and terminal journal slots
 
 Node schema **2025** transactionally rebuilds `sandbox_launches` with immutable

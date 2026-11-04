@@ -15,6 +15,7 @@ use tokio::task::AbortHandle;
 use crate::sandbox::processes::{Identity, ProcessScope, Snapshot, State};
 
 mod kernel;
+pub(crate) mod owner;
 #[cfg(test)]
 mod tests;
 

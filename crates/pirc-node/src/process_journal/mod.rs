@@ -231,7 +231,19 @@ pub(crate) fn summary(db: &Connection, session: &str) -> ApiResult<Summary> {
 /// Reconciliation is performed only within an accepted, durable transition fence.
 /// Batch old launches so a very large history does not monopolize a drain. Missing
 /// identities are deliberately left unresolved, never converted to successful exit.
+#[cfg(test)]
 fn pending(db: &Connection, session: &str) -> ApiResult<Vec<(Launch, Identity)>> {
+    Ok(pending_page(db, session, 0, i64::MAX)?
+        .into_iter()
+        .filter_map(|(_, launch, identity)| identity.map(|identity| (launch, identity)))
+        .collect())
+}
+fn pending_page(
+    db: &Connection,
+    session: &str,
+    after: i64,
+    ceiling: i64,
+) -> ApiResult<Vec<(i64, Launch, Option<Identity>)>> {
     let fenced: bool = db.query_row(
         "SELECT EXISTS(SELECT 1 FROM execution_fences WHERE session_id=?1 AND state!='deleted')",
         [session],
@@ -245,21 +257,24 @@ fn pending(db: &Connection, session: &str) -> ApiResult<Vec<(Launch, Identity)>>
     // This transition prevents any future release. Missing identity still does
     // not prove kernel exit; expose the separate pre-execution denial evidence.
     db.execute("UPDATE sandbox_launches SET guard_state='denied' WHERE launch_id IN (SELECT launch_id FROM sandbox_launches WHERE session_id=?1 AND guard_state='waiting' ORDER BY created_at,rowid LIMIT 64)",[session])?;
-    let mut statement = db.prepare("SELECT launch_id,runner_epoch,incarnation,identity_json,resource_kind FROM sandbox_launches WHERE session_id=?1 AND state IN ('running','unconfirmed','launching') AND identity_json IS NOT NULL ORDER BY updated_at,rowid LIMIT 64")?;
-    let rows = statement.query_map([session], |r| {
+    let mut statement = db.prepare("SELECT launch_id,runner_epoch,incarnation,identity_json,resource_kind,rowid FROM sandbox_launches WHERE session_id=?1 AND rowid>?2 AND rowid<=?3 AND state IN ('running','unconfirmed','launching') AND identity_json IS NOT NULL ORDER BY rowid LIMIT 64")?;
+    let rows = statement.query_map(params![session, after, ceiling], |r| {
         Ok((
             r.get::<_, String>(0)?,
             r.get::<_, i64>(1)?,
             r.get::<_, String>(2)?,
             r.get::<_, String>(3)?,
             r.get::<_, String>(4)?,
+            r.get::<_, i64>(5)?,
         ))
     })?;
     let mut out = Vec::new();
     for row in rows {
-        let (id, epoch, incarnation, identity, kind) = row?;
-        let identity = serde_json::from_str(&identity).map_err(|_| ApiError::internal())?;
+        let (id, epoch, incarnation, identity, kind, rowid) = row?;
+        // Malformed evidence remains unresolved without starving later rows.
+        let identity = serde_json::from_str(&identity).ok();
         out.push((
+            rowid,
             Launch {
                 kind: Kind::parse(&kind)?,
                 id,
@@ -274,8 +289,22 @@ fn pending(db: &Connection, session: &str) -> ApiResult<Vec<(Launch, Identity)>>
 }
 
 pub(crate) async fn retire_saved(node: &Node, session: &str) -> ApiResult<()> {
-    let rows = pending(&node.db.lock(), session)?;
-    let mut work = stream::iter(rows)
+    let ceiling = node.db.lock().query_row(
+        "SELECT coalesce(max(rowid),0) FROM sandbox_launches WHERE session_id=?1",
+        [session],
+        |r| r.get::<_, i64>(0),
+    )?;
+    let mut after = 0;
+    let mut malformed = false;
+    loop {
+        let rows = pending_page(&node.db.lock(), session, after, ceiling)?;
+        let Some(last) = rows.last() else { break };
+        after = last.0;
+        malformed |= rows.iter().any(|(_, _, identity)| identity.is_none());
+        let mut work = stream::iter(
+            rows.into_iter()
+                .filter_map(|(_, launch, identity)| identity.map(|identity| (launch, identity))),
+        )
         .map(|(launch, identity)| async move {
             let state = crate::sandbox::linux::processes::retire_saved(&identity).await;
             (
@@ -287,8 +316,15 @@ pub(crate) async fn retire_saved(node: &Node, session: &str) -> ApiResult<()> {
             )
         })
         .buffer_unordered(4);
-    while let Some((launch, snapshot)) = work.next().await {
-        observe(&node.db.lock(), &launch, &snapshot)?;
+        while let Some((launch, snapshot)) = work.next().await {
+            observe(&node.db.lock(), &launch, &snapshot)?;
+        }
+        tokio::task::yield_now().await;
     }
-    Ok(())
+    // Preserve failure for malformed evidence, after attempting later scopes.
+    if malformed {
+        Err(ApiError::internal())
+    } else {
+        Ok(())
+    }
 }

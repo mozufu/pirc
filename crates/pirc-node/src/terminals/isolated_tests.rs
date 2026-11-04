@@ -86,6 +86,15 @@ struct Backend {
     report: PathBuf,
 }
 impl Sandbox for Backend {
+    fn terminal_io_owner(&self) -> std::io::Result<crate::sandbox::processes::ObserverIdentity> {
+        Ok(crate::sandbox::processes::ObserverIdentity {
+            version: 1,
+            boot_id: "11111111-2222-3333-4444-555555555555".into(),
+            observer_namespace: 10,
+            pid: 999,
+            start_ticks: 100,
+        })
+    }
     fn isolated_terminals(&self) -> bool {
         true
     }
@@ -435,4 +444,27 @@ async fn an_agent_and_multiple_work_terminals_keep_independent_epoch_slots_and_s
     assert_eq!(summary.terminated, 2);
     assert_eq!(summary.unresolved, 1);
     f.node.close().await;
+}
+
+#[tokio::test]
+async fn owner_kernel_and_terminal_reservations_commit_together_before_spawn() {
+    for table in ["terminal_io_owners", "sandbox_launches", "terminal_runs"] {
+        let f = Fixture::new(true).await;
+        f.node.db.lock().execute_batch(&format!("CREATE TRIGGER fail_reservation BEFORE INSERT ON {table} BEGIN SELECT RAISE(ABORT,'disk full'); END;")).unwrap();
+        assert!(f.open().await.unwrap().is_err());
+        assert_eq!(f.scope.spawned.load(Ordering::SeqCst), 0);
+        assert!(!f.report.exists());
+        {
+            let db = f.node.db.lock();
+            for table in ["terminal_io_owners", "sandbox_launches", "terminal_runs"] {
+                assert_eq!(
+                    db.query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r
+                        .get::<_, i64>(0))
+                        .unwrap(),
+                    0
+                );
+            }
+        }
+        f.node.close().await;
+    }
 }

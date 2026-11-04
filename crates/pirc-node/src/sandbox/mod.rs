@@ -134,6 +134,11 @@ pub struct ReadonlyInput {
 
 /// The sandbox backend.
 pub trait Sandbox: Send + Sync {
+    /// Trusted host observation for the Node's own PTY pumps. No agent PID input.
+    fn terminal_io_owner(&self) -> std::io::Result<processes::ObserverIdentity> {
+        linux::processes::owner::current()
+    }
+
     /// Guarded PTY launches with a kernel-owned descendant scope. No host fallback.
     fn isolated_terminals(&self) -> bool {
         false

@@ -6,6 +6,7 @@ use std::{io::PipeWriter, path::PathBuf, process::ExitStatus};
 use tokio::sync::oneshot;
 
 pub(super) struct Work {
+    pub owner: crate::sandbox::processes::ObserverIdentity,
     pub prepared: Prepared,
     pub gate: Option<PipeWriter>,
     pub client: String,
@@ -41,6 +42,13 @@ impl Terminals {
                 "This backend cannot launch a guarded isolated work terminal; no host command was started",
             ));
         }
+        let owner = node.sandbox.terminal_io_owner().map_err(|_| {
+            ApiError::new(
+                503,
+                "isolated_terminal_unavailable",
+                "The terminal I/O owner could not be captured; no terminal was started",
+            )
+        })?;
         let shell = default_shell(node.config.terminal_shell.as_deref(), node.env.get("SHELL"));
         let prepared = node
             .sandbox
@@ -86,6 +94,7 @@ impl Terminals {
                 &shell,
                 Environment {
                     work: Some(Work {
+                        owner,
                         prepared,
                         gate: None,
                         client: control.0.into(),

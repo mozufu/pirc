@@ -27,6 +27,18 @@ pub struct Identity {
     pub start_ticks: u64,
 }
 
+/// The Node process that owns host-side PTY I/O, not a namespace init and never
+/// a signal target. Its whole thread group must end before restart settlement.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ObserverIdentity {
+    pub version: u32,
+    pub boot_id: String,
+    pub observer_namespace: u64,
+    pub pid: u32,
+    pub start_ticks: u64,
+}
+
 #[derive(Clone, Debug)]
 pub struct Snapshot {
     pub state: State,

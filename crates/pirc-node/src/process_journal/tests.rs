@@ -260,7 +260,11 @@ fn unresolved_reconciliation_does_not_starve_later_launches() {
             db.increment_epoch(&a).unwrap();
         }
         let launch = reserve(&db, &a, "repo", epoch, "old-node").unwrap();
-        observe(&db, &launch, &snapshot(State::Running, epoch as u32 + 20)).unwrap();
+        if epoch == 1 {
+            db.execute("UPDATE sandbox_launches SET state='unconfirmed',identity_json='{}' WHERE launch_id=?1", [&launch.id]).unwrap();
+        } else {
+            observe(&db, &launch, &snapshot(State::Running, epoch as u32 + 20)).unwrap();
+        }
         db.execute(
             "UPDATE sandbox_launches SET updated_at=?2 WHERE launch_id=?1",
             params![launch.id, epoch],
@@ -283,9 +287,12 @@ fn unresolved_reconciliation_does_not_starve_later_launches() {
         control.generation,
     )
     .unwrap();
-    let first = pending(&db, &a).unwrap();
+    let first = pending_page(&db, &a, 0, i64::MAX).unwrap();
     assert_eq!(first.len(), 64);
-    for (launch, identity) in first {
+    let after = first.last().unwrap().0;
+    assert!(first[0].2.is_none()); // Corrupt evidence is not a signaling target.
+    for (_, launch, identity) in first {
+        let Some(identity) = identity else { continue };
         observe(
             &db,
             &launch,
@@ -296,8 +303,9 @@ fn unresolved_reconciliation_does_not_starve_later_launches() {
         )
         .unwrap();
     }
-    let next = pending(&db, &a).unwrap();
-    assert_eq!(next[0].0.epoch, 65);
+    let next = pending_page(&db, &a, after, i64::MAX).unwrap();
+    assert_eq!(next.len(), 1);
+    assert_eq!(next[0].1.epoch, 65);
     assert_eq!(summary(&db, &a).unwrap().unresolved, 65);
     assert_eq!(summary(&db, &a).unwrap().terminated, 0);
 }
@@ -525,6 +533,8 @@ fn terminal_settlement_does_not_retire_agent_or_peer_terminal_in_the_same_epoch(
 }
 
 fn old_resource_schema(db: &Connection) {
+    db.execute_batch(include_str!("../terminals/remove_io_owners.sql"))
+        .unwrap();
     db.execute_batch(include_str!("remove_schema.sql")).unwrap();
     db.execute_batch(concat!(
         include_str!("schema.sql"),
@@ -641,4 +651,50 @@ fn failed_resource_migration_rolls_back_schema_version_rows_and_guards() {
         .unwrap(),
         "agent"
     );
+}
+
+#[tokio::test]
+async fn saved_retirement_processes_later_pages_before_reporting_malformed_evidence() {
+    let f = crate::workspace_memory::tests::Fixture::new().await;
+    let later;
+    let peer_launch;
+    {
+        let db = f.node.db.lock();
+        for _ in 0..130 {
+            let launch = reserve_terminal(&db, &f.current, "repo", 0, "old-node").unwrap();
+            db.execute("UPDATE sandbox_launches SET state='unconfirmed',identity_json='{}' WHERE launch_id=?1", [&launch.id]).unwrap();
+        }
+        later = reserve_terminal(&db, &f.current, "repo", 0, "old-node").unwrap();
+        observe(&db, &later, &snapshot(State::Running, 100)).unwrap();
+        let peer = db.create_session("repo", "/peer", "alice").unwrap();
+        peer_launch = reserve_terminal(&db, &peer.id, "repo", 0, "old-node").unwrap();
+        observe(&db, &peer_launch, &snapshot(State::Running, 101)).unwrap();
+        let control = db.acquire_lease(&f.current, "phone", true, 60_000).unwrap();
+        crate::execution_fences::accept(
+            &db,
+            "alice",
+            &f.current,
+            &crate::execution_fences::Intent {
+                operation_id: "retire-corrupt-history".into(),
+                plan_hash: "a".repeat(64),
+                expected_workspace_id: "repo".into(),
+                expected_runner_epoch: 0,
+                preflight: None,
+            },
+            "phone",
+            control.generation,
+        )
+        .unwrap();
+    }
+    assert!(retire_saved(&f.node, &f.current).await.is_err());
+    {
+        let db = f.node.db.lock();
+        // Synthetic foreign-boot evidence cannot signal or prove termination;
+        // its changed state proves the later page was nevertheless observed.
+        assert_eq!(saved(&db, &later).unwrap().0, "unconfirmed");
+        assert_eq!(saved(&db, &peer_launch).unwrap().0, "running");
+        assert_eq!(summary(&db, &f.current).unwrap().unresolved, 131);
+        assert_eq!(summary(&db, &f.current).unwrap().terminated, 0);
+    }
+    f.node.close().await;
 }

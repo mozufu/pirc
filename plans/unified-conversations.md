@@ -23,7 +23,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1029**, Node **2025**, protocol **15**, client contract **2**,
+formats: Gateway **1029**, Node **2026**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -55,7 +55,13 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local U4 fix: [Agent and terminal journal slots](#u4-implementation-checkpoint-agent-and-terminal-journal-slots-2026-11-04)
+Latest local U4 delivery: [terminal I/O owner recovery](#u4-implementation-checkpoint-terminal-io-owner-recovery-2026-11-04)
+adds immutable old-Node process identity and requires both namespace termination
+and old I/O-owner exit before restart settlement (Node **2026**). Unknown, missing
+or mismatched evidence stays blocked; no saved owner PID is signaled. Full mode
+rollout and revocation/install acceptance remain open.
+
+The previous [Agent and terminal journal slots](#u4-implementation-checkpoint-agent-and-terminal-journal-slots-2026-11-04)
 lets an Agent and multiple work terminals coexist in the same epoch without
 weakening Agent deduplication (Node **2025**). Terminal gates/scopes remain
 independent; full rollout and revocation/install acceptance remain open.
@@ -5319,3 +5325,60 @@ pots remain open. Public switching and full revocation/install stay false.
 Goal active; local only, no push/deployment/Release. The owned **2.4 GiB** output
 tree is cleaned after verification, preserving APKs, SDKs, shared caches and
 peer/user data.
+
+## U4 implementation checkpoint: terminal I/O owner recovery (2026-11-04)
+
+Node schema **2026** records a trusted Node I/O-owner identity in the same atomic
+transaction as the isolated terminal/kernel reservation, before spawn. It contains
+version, host boot ID, observing PID-namespace inode, Node thread-group PID and
+start ticks, bound immutably to the Node incarnation. Capture or reservation failure
+starts no terminal. Existing rows receive no guessed owner identity or approval.
+
+A retained source fence is required for recovery. The terminal's exact ID, session,
+workspace and incarnation must join a **terminal** kernel row already confirmed
+terminated. The saved owner must match its host boot/PID view. Linux then uses a
+read-only pidfd observation, without `PIDFD_THREAD`, to confirm that the old Node
+thread group has ended. The owner checker has no signaling operation: PID reuse
+can prove the old identity gone, but cannot authorize killing the new occupant.
+Another boot/view, permission or observation failure, live owner, missing metadata,
+invalid identity and an unretired kernel scope all remain unresolved. A shell exit,
+new incarnation or empty in-memory registry is not proof.
+
+Confirmed owner exit and terminal settlement commit together. Owner facts cannot
+be revived, replaced or deleted; a failed write retains the unresolved states for
+retry. Another conversation may reuse the physical owner-exit fact only under its
+own accepted fence and exact terminal/kernel join. No command is replayed, source
+fence released, file tree reset, peer stopped, or user edit overwritten.
+
+Kernel retirement is shared by the kernel and terminal cleanup participants, so
+restart recovery can consume newly persisted termination evidence in the same
+Stop. A failure/panic still lets other cleanup participants run. Kernel and owner
+history use bounded 64-row keyset pages with a captured upper row boundary; early
+unknown or malformed rows cannot starve later history. Owner probes use a bounded
+cache and blocking pool, yielding between pages. This is bounded working memory,
+not a promise that all historical work completes in constant time.
+
+`terminalIoOwnerRecoveryVersion: 1` describes this recovery contract; native Linux
+provides the OS observation. Gateway **1029**, protocol/client/private-envelope
+**15/2/3**, package/dependency versions, lockfiles and Nix hashes are unchanged.
+Older Node binaries reject 2026; rollback requires matching binary/state backups.
+
+Acceptance limits: local owner/kernel recovery tests inject OS observations; actual
+Linux pidfd/namespace execution is not validated on this macOS host. Existing
+pre-2026 unresolved terminals remain blocked without an owner record. Terminal
+host-management grants, necessary Web/Android mode controls, isolated-by-default
+rollout, complete OS/project/delegated revocation and target installation remain
+open. Public transition confirmation stays disabled; `canSubmit: false`,
+`revocationConfirmed: false` and `targetInstalled: false` are unchanged.
+
+Validation: **629 Node library tests passed** (five existing child/opt-in ignores),
+**421 Gateway tests**, **19 required actual Node/Gateway process cases** and
+strict all-target Node/Gateway/conformance Clippy passed. Focused recovery and
+journal cases cover live/missing/invalid/wrong-view owners, source fences and peer
+preservation, rollback/retry, immutable capture, migration without proof backfill,
+atomic pre-spawn failure at each reservation, 130 early unresolved owners followed
+by 1,200 recoverable rows, and malformed kernel pages followed by observable later
+work without a false success. Linux-only pidfd/namespace acceptance remains pending;
+no Flutter, browser, emulator, device or Nix validation was run for this Node-only
+change. The owned **2.9 GiB** build/log tree is removed after verification; shared
+caches, APKs and user/peer data are retained. Local commit only, no push or Release.

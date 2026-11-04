@@ -43,6 +43,7 @@ use crate::services::WeakNode;
 use crate::store::Store;
 
 mod input;
+pub(crate) mod io_owners;
 mod isolated;
 #[cfg(test)]
 mod isolated_tests;
@@ -308,6 +309,11 @@ impl Terminals {
             let (node, db) = journal.ok_or_else(ApiError::internal)?;
             let workspace = &binding.as_ref().ok_or_else(ApiError::internal)?.workspace;
             let (record, launch) = crate::store::atomic(db, |db| {
+                io_owners::record(
+                    db,
+                    &node.incarnation,
+                    &work.as_ref().ok_or_else(ApiError::internal)?.owner,
+                )?;
                 let row = db.get_session(session_id)?;
                 let launch = crate::process_journal::reserve_terminal(
                     db,
@@ -603,9 +609,15 @@ impl Terminals {
     /// Close a session's terminals and wait for their processes to exit
     /// (chat deletion, before its files go).
     pub async fn dispose_session(&self, session_id: &str) -> ApiResult<()> {
-        supervision::settle(self.close_session(session_id)).await?;
+        self.stop_live(session_id).await?;
+        self.require_settled(session_id)
+    }
+    pub(crate) async fn stop_live(&self, session: &str) -> ApiResult<()> {
+        supervision::settle(self.close_session(session)).await
+    }
+    pub(crate) fn require_settled(&self, session: &str) -> ApiResult<()> {
         if let Some(node) = self.node.upgrade() {
-            journal::require_settled(&node.db.lock(), session_id)?;
+            journal::require_settled(&node.db.lock(), session)?;
         }
         Ok(())
     }
