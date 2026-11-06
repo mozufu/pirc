@@ -19,6 +19,17 @@ import 'gateway.dart';
 /// advertises less needs an update instead of an adapted client.
 const minWorkTerminalRequestVersion = 2;
 
+/// Acknowledgement of unconfirmed starts and the specific
+/// `terminal_request_not_found`/`terminal_capacity` codes arrived in 3.
+const acknowledgeWorkTerminalRequestVersion = 3;
+
+/// The only `404` that means "not admitted": the session exists but this
+/// request ID does not. Any other `404` (a missing session) is a refusal.
+const terminalRequestNotFound = 'terminal_request_not_found';
+
+/// A terminal quota refusal: definite, nothing was admitted.
+const terminalCapacity = 'terminal_capacity';
+
 int _version(dynamic value) => value is num ? value.toInt() : 0;
 int? _int(dynamic value) => value is num ? value.toInt() : null;
 String? _text(dynamic value) => value is String ? value : null;
@@ -26,6 +37,12 @@ String? _text(dynamic value) => value is String ? value : null;
 /// HTTP error code from the native bridge, such as `work_terminal_request_conflict`.
 String? terminalRequestErrorCode(Object error) =>
     error is PlatformException ? _text(obj(error.details)['code']) : null;
+
+/// `404 terminal_request_not_found`: not admitted, so the same ID may be
+/// re-POSTed with the same intent.
+bool terminalRequestNotAdmitted(Object error) =>
+    _status(error) == 404 &&
+    terminalRequestErrorCode(error) == terminalRequestNotFound;
 
 int? _status(Object error) => error is PlatformException
     ? _int(obj(error.details)['status']) ??
@@ -108,6 +125,12 @@ class TerminalCapabilities {
 
   /// The separate, explicit host-management action. Never offered while
   /// isolation is available, and never used as a fallback by this client.
+  /// `outcome_unknown` requests can be acknowledged (Node 2030). This needs
+  /// the control lease but not `enabled`.
+  bool get acknowledgesUnknown =>
+      known &&
+      workTerminalRequestVersion >= acknowledgeWorkTerminalRequestVersion;
+
   bool get offersHostManagement =>
       availability == TerminalAvailability.isolationUnavailable &&
       hostTerminalReviewVersion >= 1;
@@ -212,6 +235,10 @@ class TerminalRequestResult {
   String? get errorCode => _text(raw['errorCode']);
   String? get terminalId => _text(raw['terminalId']);
 
+  /// Set once the user acknowledged an unconfirmed start. The state stays
+  /// `outcome_unknown`; this is not a closure.
+  int? get acknowledgedAt => _int(raw['acknowledgedAt']);
+
   /// Host only: the exact review identity a confirmation must echo.
   String? get reviewId => _text(raw['id']);
   String? get reviewHash => _text(raw['reviewHash']);
@@ -314,7 +341,31 @@ class TerminalRequestApi {
     ),
   );
 
-  /// The retained result, or null on `404`: the request was not admitted.
+  /// Record the user's acknowledgement of an `outcome_unknown` request:
+  /// exactly one ID and the current lease, no other fields.
+  Future<TerminalRequestResult> acknowledge(
+    String session,
+    TerminalRequestKind kind,
+    String requestId, {
+    required String clientId,
+    required Object generation,
+  }) async => TerminalRequestResult.parse(
+    await gateway.request(
+      _path(session),
+      method: 'POST',
+      body: {
+        'action': 'acknowledge',
+        'clientId': clientId,
+        'generation': generation,
+        kind == TerminalRequestKind.work ? 'workRequestId' : 'hostRequestId':
+            requestId,
+      },
+    ),
+  );
+
+  /// The retained result, or null on `404 terminal_request_not_found`: the
+  /// request was not admitted. Any other failure, including a `404` for a
+  /// missing session, is rethrown.
   Future<TerminalRequestResult?> read(
     String session,
     TerminalRequestKind kind,
@@ -328,7 +379,7 @@ class TerminalRequestApi {
         await gateway.request('${_path(session)}?$key=${enc(requestId)}'),
       );
     } on PlatformException catch (e) {
-      if (_status(e) == 404) return null;
+      if (terminalRequestNotAdmitted(e)) return null;
       rethrow;
     }
   }
@@ -374,7 +425,8 @@ enum TerminalRequestStatus {
   /// The POST outcome is unknown (504/503/5xx/connection loss); GET resolves it.
   ambiguous,
 
-  /// GET answered `404` after an ambiguous POST: not admitted yet.
+  /// GET answered `404 terminal_request_not_found` after an ambiguous POST:
+  /// not admitted yet.
   notAdmitted,
 
   /// `409 work_terminal_request_conflict`: this ID has a different intent.
@@ -382,6 +434,9 @@ enum TerminalRequestStatus {
 
   /// A definite 4xx refusal; nothing was admitted by this POST.
   rejected,
+
+  /// `409 terminal_capacity`: too many open or preparing terminals.
+  capacity,
   review,
   stale,
   expired,
@@ -411,6 +466,10 @@ enum TerminalRequestAction {
   /// A new user action with a new ID (Try again, or a new host review).
   startOver,
 
+  /// Record a retained acknowledgement of an `outcome_unknown` request on
+  /// the Node (v3). It hides the request from discovery; it is not a closure.
+  acknowledge,
+
   /// The explicit host-management action, offered after an isolated
   /// no-start when the Node offers it. Never chosen automatically.
   hostManagement,
@@ -435,6 +494,9 @@ class TerminalRequestEntry {
   Object? error;
   bool polling = false;
   String? get errorCode => result?.errorCode;
+
+  /// The Node retains the user's acknowledgement; no longer pending.
+  bool get acknowledged => result?.acknowledgedAt != null;
 }
 
 TerminalRequestStatus terminalStatusFor(TerminalRequestPhase phase) =>
@@ -476,6 +538,10 @@ Set<TerminalRequestAction> terminalRequestActions(
       TerminalRequestAction.startOver,
       dismiss,
     },
+    TerminalRequestStatus.capacity => {
+      TerminalRequestAction.startOver,
+      dismiss,
+    },
     TerminalRequestStatus.review => {
       if (_confirmIntent(entry, current) != null) TerminalRequestAction.confirm,
       refresh,
@@ -492,16 +558,24 @@ Set<TerminalRequestAction> terminalRequestActions(
         TerminalRequestAction.hostManagement,
       dismiss,
     },
-    TerminalRequestStatus.outcomeUnknown => {refresh, dismiss},
+    TerminalRequestStatus.outcomeUnknown => {
+      refresh,
+      if (current != null &&
+          capabilities?.acknowledgesUnknown == true &&
+          entry.result != null &&
+          !entry.acknowledged)
+        TerminalRequestAction.acknowledge,
+      dismiss,
+    },
     TerminalRequestStatus.settled ||
     TerminalRequestStatus.unconfirmed => {dismiss},
     TerminalRequestStatus.unrecognized => {refresh, dismiss},
   };
 }
 
-/// The intent a host confirmation is sent with: the review's own intent while
-/// it is still current, or for a discovered review the current lease with the
-/// reviewed size (Node refuses it if the lease differs from the review's).
+/// The intent a host confirmation is sent with: the current lease with the
+/// reviewed `cols`/`rows`. A review this client made needs its own intent to be
+/// still current; for a discovered review Node refuses a different lease.
 TerminalIntent? _confirmIntent(
   TerminalRequestEntry entry,
   TerminalIntent? current,
@@ -513,7 +587,7 @@ TerminalIntent? _confirmIntent(
       result.reviewHash == null) {
     return null;
   }
-  if (entry.intent != null) return entry.intent == current ? current : null;
+  if (entry.intent != null && entry.intent != current) return null;
   final review = result.review;
   return TerminalIntent(
     sessionId: current.sessionId,
@@ -559,6 +633,14 @@ class TerminalRequestTracker extends ChangeNotifier {
 
   bool _alive(TerminalRequestEntry entry) =>
       !disposed && entries.contains(entry);
+
+  /// Requests still needing a decision: not attached as a live terminal and
+  /// not acknowledged on the Node.
+  List<TerminalRequestEntry> get pending => [
+    for (final entry in entries)
+      if (entry.status != TerminalRequestStatus.live && !entry.acknowledged)
+        entry,
+  ];
 
   Set<TerminalRequestAction> actions(TerminalRequestEntry entry) =>
       terminalRequestActions(
@@ -638,10 +720,11 @@ class TerminalRequestTracker extends ChangeNotifier {
       await _read(entry);
       return;
     }
-    entry.status =
-        terminalRequestErrorCode(error) == 'work_terminal_request_conflict'
-        ? TerminalRequestStatus.conflict
-        : TerminalRequestStatus.rejected;
+    entry.status = switch (terminalRequestErrorCode(error)) {
+      'work_terminal_request_conflict' => TerminalRequestStatus.conflict,
+      terminalCapacity => TerminalRequestStatus.capacity,
+      _ => TerminalRequestStatus.rejected,
+    };
     _emit();
   }
 
@@ -680,6 +763,11 @@ class TerminalRequestTracker extends ChangeNotifier {
     } catch (e) {
       if (_alive(entry)) {
         entry.error = e;
+        // Any other 404 (a missing session) is a definite refusal, not
+        // "not admitted": the same ID is never re-POSTed for it.
+        if (_status(e) == 404 && entry.result == null) {
+          entry.status = TerminalRequestStatus.rejected;
+        }
         _emit();
       }
       return false;
@@ -740,6 +828,45 @@ class TerminalRequestTracker extends ChangeNotifier {
       // A refused confirmation consumed nothing; the review result decides.
       entry.status = TerminalRequestStatus.rejected;
       _emit();
+    }
+  }
+
+  /// Acknowledge an `outcome_unknown` request on the Node (v3). The state
+  /// stays `outcome_unknown`; the entry only stops being pending.
+  Future<void> acknowledge(TerminalRequestEntry entry) async {
+    final lease = current(), previous = entry.result;
+    if (!actions(entry).contains(TerminalRequestAction.acknowledge) ||
+        lease == null ||
+        previous == null) {
+      return;
+    }
+    entry
+      ..status = TerminalRequestStatus.submitting
+      ..error = null;
+    _emit();
+    try {
+      final result = await api.acknowledge(
+        session,
+        entry.kind,
+        entry.requestId,
+        clientId: lease.clientId,
+        generation: lease.generation,
+      );
+      if (_alive(entry)) _apply(entry, result);
+    } catch (e) {
+      if (!_alive(entry)) return;
+      entry.error = e;
+      final ambiguous = terminalOutcomeAmbiguous(e);
+      // A definite refusal recorded nothing; keep the previous result.
+      entry.status = ambiguous
+          ? TerminalRequestStatus.ambiguous
+          : terminalStatusFor(previous.phase);
+      _emit();
+      // Unknown outcome, or the state moved on: the retained result decides.
+      if (ambiguous ||
+          terminalRequestErrorCode(e) == 'terminal_request_not_unknown') {
+        await _read(entry);
+      }
     }
   }
 

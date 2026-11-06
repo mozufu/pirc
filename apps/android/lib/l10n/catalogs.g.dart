@@ -3423,6 +3423,9 @@ const englishMessages = <String, String>{
   "Shell: {0}": "Shell: {0}",
   "Directory: {0}": "Directory: {0}",
   "Size: {0}×{1}": "Size: {0}×{1}",
+  "Too many terminals are open or preparing. Close one and try again.": "Too many terminals are open or preparing. Close one and try again.",
+  "Acknowledge": "Acknowledge",
+  "Acknowledged. The start is still not confirmed, and workspace switching may stay blocked.": "Acknowledged. The start is still not confirmed, and workspace switching may stay blocked.",
 };
 const traditionalChineseMessages = <String, String>{
   "無法確認最新狀態，請重試": "無法確認最新狀態，請重試",
@@ -6329,4 +6332,7 @@ const traditionalChineseMessages = <String, String>{
   "Shell: {0}": "Shell：{0}",
   "Directory: {0}": "目錄：{0}",
   "Size: {0}×{1}": "大小：{0}×{1}",
+  "Too many terminals are open or preparing. Close one and try again.": "開啟或準備中的終端機過多。請關閉一個後再試。",
+  "Acknowledge": "確認知悉",
+  "Acknowledged. The start is still not confirmed, and workspace switching may stay blocked.": "已確認知悉。仍無法確認是否已啟動，切換工作區可能仍會受阻。",
 };

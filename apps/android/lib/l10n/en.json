@@ -2586,5 +2586,8 @@
   "Host management terminal…": "Host management terminal…",
   "Shell: {0}": "Shell: {0}",
   "Directory: {0}": "Directory: {0}",
-  "Size: {0}×{1}": "Size: {0}×{1}"
+  "Size: {0}×{1}": "Size: {0}×{1}",
+  "Too many terminals are open or preparing. Close one and try again.": "Too many terminals are open or preparing. Close one and try again.",
+  "Acknowledge": "Acknowledge",
+  "Acknowledged. The start is still not confirmed, and workspace switching may stay blocked.": "Acknowledged. The start is still not confirmed, and workspace switching may stay blocked."
 }

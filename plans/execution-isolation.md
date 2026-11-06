@@ -780,3 +780,45 @@ This is conservative, and it only affects Nodes older than 2030.
 
 Still open: rediscovery after a Gateway reconnect without reload, real browser
 journeys and the new UI. Local commit only, no push, deployment or Release.
+
+## Local implementation checkpoint: Android terminal contract v3 (2026-11-06)
+
+Android adopts the [Node 2030](#local-implementation-checkpoint-terminal-request-acknowledgement-and-specific-errors-2026-11-06)
+additions (`workTerminalRequestVersion: 3`) in the same interface layer
+(`apps/android/lib/live/terminal_requests.dart`), with the throwaway pane wiring
+unchanged apart from the new action and text.
+
+- **Specific errors.** Only `404 terminal_request_not_found` makes a GET
+  "not admitted" (`terminalRequestNotAdmitted`), which allows the same-ID
+  re-POST. Any other `404`, such as a missing session, is rethrown: before a
+  result it becomes the definite `rejected` status; for a known request it stays
+  an error on the last result. `409 terminal_capacity` gets its own `capacity`
+  status ("Too many terminals are open or preparing…") with _Try again_ (new ID)
+  and _Dismiss_, for work requests and host reviews alike. A v2 Node's generic
+  `404` therefore never allows a re-POST.
+- **Acknowledgement.** `TerminalRequestApi.acknowledge` POSTs exactly
+  `{"action":"acknowledge","clientId","generation","workRequestId"|"hostRequestId"}`.
+  `TerminalRequestResult.acknowledgedAt` is parsed for both shapes. The new
+  `TerminalRequestAction.acknowledge` is offered only for `outcomeUnknown`, only
+  when `TerminalCapabilities.acknowledgesUnknown` (version ≥ 3, also while new
+  terminals are disabled), only with the current control lease and only before
+  `acknowledgedAt` is set. On success the state stays `outcome_unknown` and the
+  entry leaves `TerminalRequestTracker.pending`/`pendingRequests`, with text that
+  says the start is still unconfirmed and claims no closure. `409
+  terminal_request_not_unknown` and ambiguous replies are resolved by GET;
+  other refusals keep the request pending with its error. Local _Dismiss_ is
+  unchanged and separate.
+- Host confirmation now always sends the reviewed `cols`/`rows`, as the updated
+  state table requires. Three new en/zh-TW strings.
+
+Validation: `flutter test test/terminal_requests_test.dart` **57 passed** (13 new:
+specific vs generic `404` on read, a missing session after an ambiguous POST,
+a generic `404` for a known request, `terminal_capacity` for work and host,
+`acknowledgedAt` parsing, the exact acknowledge bodies, the offer matrix across
+every state and v2/v3/disabled/no-lease capabilities, success leaving pending,
+`terminal_request_not_unknown` re-read, ambiguous acknowledgement, a definite
+refusal, no POST on v2 or without a lease, and pane acknowledgement). Existing
+`terminal_parity` **8**, `terminal_extra_keys` **4**,
+`terminal_keyboard_performance` **1**, `terminal_zoom` **2** and `i18n` **3**
+passed; `flutter analyze` of the whole package found no issues. No device,
+emulator or APK run. Local commit only, no push, deployment or Release.

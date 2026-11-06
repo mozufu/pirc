@@ -63,19 +63,32 @@ Json tty(String id, [String path = 'isolated_work']) => {
   'rows': 24,
   'exited': false,
 };
-Json work(String id, String state, {String? error, Json? terminal}) => {
+Json work(
+  String id,
+  String state, {
+  String? error,
+  Json? terminal,
+  int? acknowledgedAt,
+}) => {
   'workRequest': {
     'version': 1,
     'requestId': id,
     'state': state,
     'errorCode': error,
     'terminalId': terminal?['id'],
+    'acknowledgedAt': acknowledgedAt,
   },
   'terminal': terminal,
 };
 const warning =
     "Runs with the Node account's host permissions. Detached jobs and external effects may survive closing this terminal and keep workspace switching blocked.";
-Json host(String id, String state, {String? error, Json? terminal}) => {
+Json host(
+  String id,
+  String state, {
+  String? error,
+  Json? terminal,
+  int? acknowledgedAt,
+}) => {
   'hostManagement': {
     'version': 1,
     'requestId': id,
@@ -96,6 +109,7 @@ Json host(String id, String state, {String? error, Json? terminal}) => {
     'state': state,
     'errorCode': error,
     'terminalId': terminal?['id'],
+    'acknowledgedAt': acknowledgedAt,
   },
   'terminal': terminal,
 };
@@ -474,7 +488,7 @@ void main() {
           if (++posted == 1) throw http(504, 'node_timeout');
           return work('req-1', 'running', terminal: tty('t'));
         }
-        throw http(404, 'not_found');
+        throw http(404, 'terminal_request_not_found');
       });
       final flow = tracker(node);
       final entry = await flow.openWork();
@@ -538,7 +552,7 @@ void main() {
       final node = Node((c) {
         if (isCaps(c)) return caps();
         if (c.method == 'POST') throw http(504, 'node_timeout');
-        throw http(404, 'not_found');
+        throw http(404, 'terminal_request_not_found');
       });
       final flow = tracker(node);
       final entry = await flow.openWork();
@@ -844,7 +858,7 @@ void main() {
               },
             };
           }
-          throw http(404, 'not_found');
+          throw http(404, 'terminal_request_not_found');
         });
         final flow = tracker(node);
         await flow.recover();
@@ -858,6 +872,316 @@ void main() {
         expect(node.posts, isEmpty);
       },
     );
+  });
+
+  group('v3 specific errors', () {
+    test('only 404 terminal_request_not_found means not admitted', () async {
+      final node = Node((_) => throw http(404, 'not_found'));
+      await expectLater(
+        node.api.read('s', TerminalRequestKind.work, 'w'),
+        throwsA(isA<PlatformException>()),
+      );
+      node.route = (_) => throw http(404, terminalRequestNotFound);
+      expect(await node.api.read('s', TerminalRequestKind.host, 'h'), isNull);
+    });
+
+    test('a missing session after an ambiguous POST is a refusal', () async {
+      final node = Node((c) {
+        if (isCaps(c)) return caps(work: 3);
+        if (c.method == 'POST') throw http(504, 'node_timeout');
+        throw http(404, 'not_found');
+      });
+      final flow = tracker(node);
+      final entry = await flow.openWork();
+      expect(entry!.status, TerminalRequestStatus.rejected);
+      expect(
+        flow.actions(entry),
+        isNot(contains(TerminalRequestAction.resubmit)),
+      );
+      await flow.resubmit(entry);
+      expect(node.posts.length, 1);
+    });
+
+    test('a generic 404 never marks an admitted request missing', () async {
+      final node = Node((c) {
+        if (c.path.contains('unresolvedRequests')) {
+          return {
+            'terminalRequests': {
+              'version': 1,
+              'items': [work('w1', 'outcome_unknown')],
+              'next': null,
+            },
+          };
+        }
+        throw http(404, 'not_found');
+      });
+      final flow = tracker(node);
+      await flow.recover();
+      final entry = flow.entries.single;
+      await flow.refresh(entry);
+      expect(entry.status, TerminalRequestStatus.outcomeUnknown);
+      expect(entry.error, isNotNull);
+      expect(node.posts, isEmpty);
+    });
+
+    test('409 terminal_capacity is its own definite refusal', () async {
+      final node = Node((c) {
+        if (isCaps(c)) return caps(work: 3);
+        throw http(409, terminalCapacity);
+      });
+      final flow = tracker(node);
+      final entry = await flow.openWork();
+      expect(entry!.status, TerminalRequestStatus.capacity);
+      expect(flow.actions(entry), {
+        TerminalRequestAction.startOver,
+        TerminalRequestAction.dismiss,
+      });
+      expect(node.reads('workRequestId'), isEmpty);
+      expect(terminalRequestMessage(entry), contains('Too many terminals'));
+      // A host review refused by quota is the same refusal.
+      final mac = Node((c) {
+        if (isCaps(c)) return caps(isolated: 0, work: 3);
+        throw http(409, terminalCapacity);
+      });
+      final host = await tracker(mac).reviewHost();
+      expect(host!.status, TerminalRequestStatus.capacity);
+    });
+  });
+
+  group('v3 acknowledgement', () {
+    Json unresolved(Json item) => {
+      'terminalRequests': {
+        'version': 1,
+        'items': [item],
+        'next': null,
+      },
+    };
+
+    test('acknowledgedAt parses in both result shapes', () {
+      expect(
+        TerminalRequestResult.parse(
+          work('w', 'outcome_unknown', acknowledgedAt: 5),
+        ).acknowledgedAt,
+        5,
+      );
+      expect(
+        TerminalRequestResult.parse(
+          host('h', 'outcome_unknown', acknowledgedAt: 6),
+        ).acknowledgedAt,
+        6,
+      );
+      expect(
+        TerminalRequestResult.parse(
+          work('w', 'outcome_unknown'),
+        ).acknowledgedAt,
+        isNull,
+      );
+    });
+
+    test('the API sends exactly one ID and the current lease', () async {
+      final node = Node(
+        (c) => c.body!.containsKey('workRequestId')
+            ? work('w1', 'outcome_unknown', acknowledgedAt: 9)
+            : host('h1', 'outcome_unknown', acknowledgedAt: 9),
+      );
+      final w = await node.api.acknowledge(
+        's',
+        TerminalRequestKind.work,
+        'w1',
+        clientId: 'phone',
+        generation: 7,
+      );
+      final h = await node.api.acknowledge(
+        's',
+        TerminalRequestKind.host,
+        'h1',
+        clientId: 'phone',
+        generation: 7,
+      );
+      expect(node.posts.map((c) => c.path).toSet(), {
+        '/api/sessions/s/terminals',
+      });
+      expect(node.posts[0].body, {
+        'action': 'acknowledge',
+        'clientId': 'phone',
+        'generation': 7,
+        'workRequestId': 'w1',
+      });
+      expect(node.posts[1].body, {
+        'action': 'acknowledge',
+        'clientId': 'phone',
+        'generation': 7,
+        'hostRequestId': 'h1',
+      });
+      expect((w.acknowledgedAt, h.acknowledgedAt), (9, 9));
+      expect(w.state, 'outcome_unknown');
+    });
+
+    test('offered only for outcome_unknown on v3 with the lease', () {
+      final v3 = TerminalCapabilities.parse(caps(work: 3));
+      final v3Disabled = TerminalCapabilities.parse(
+        caps(work: 3, enabled: false),
+      );
+      final v2 = TerminalCapabilities.parse(caps());
+      TerminalRequestEntry entry(Json data) {
+        final result = TerminalRequestResult.parse(data);
+        return TerminalRequestEntry(result.kind, result.requestId, null)
+          ..result = result
+          ..status = terminalStatusFor(result.phase);
+      }
+
+      bool offered(
+        TerminalRequestEntry e,
+        TerminalCapabilities c, [
+        TerminalIntent? lease,
+      ]) => terminalRequestActions(
+        e,
+        current: lease,
+        capabilities: c,
+      ).contains(TerminalRequestAction.acknowledge);
+      final unknown = entry(work('w', 'outcome_unknown'));
+      expect(v3.acknowledgesUnknown, true);
+      expect(v2.acknowledgesUnknown, false);
+      expect(offered(unknown, v3, intent()), true);
+      expect(offered(entry(host('h', 'outcome_unknown')), v3, intent()), true);
+      // Works while new terminals are disabled; needs the control lease.
+      expect(offered(unknown, v3Disabled, intent()), true);
+      expect(offered(unknown, v3), false);
+      expect(offered(unknown, v2, intent()), false);
+      final done = entry(work('w', 'outcome_unknown', acknowledgedAt: 1));
+      expect(offered(done, v3, intent()), false);
+      for (final data in [
+        work('w', 'preparing'),
+        work('w', 'running', terminal: tty('t')),
+        work('w', 'not_started'),
+        work('w', 'settled'),
+        host('h', 'review'),
+        host('h', 'stale'),
+        host('h', 'expired'),
+        host('h', 'unconfirmed'),
+      ]) {
+        expect(offered(entry(data), v3, intent()), false, reason: '$data');
+      }
+    });
+
+    test('success keeps outcome_unknown and leaves pending', () async {
+      final node = Node((c) {
+        if (isCaps(c)) return caps(work: 3);
+        if (c.path.contains('unresolvedRequests')) {
+          return unresolved(work('w1', 'outcome_unknown'));
+        }
+        return work('w1', 'outcome_unknown', acknowledgedAt: 42);
+      });
+      final flow = tracker(node);
+      await flow.loadCapabilities();
+      await flow.recover();
+      final entry = flow.entries.single;
+      expect(flow.pending, [entry]);
+      expect(flow.actions(entry), contains(TerminalRequestAction.acknowledge));
+      await flow.acknowledge(entry);
+      expect(node.posts.single.body!['workRequestId'], 'w1');
+      expect(entry.status, TerminalRequestStatus.outcomeUnknown);
+      expect(entry.acknowledged, true);
+      expect(flow.pending, isEmpty);
+      expect(flow.entries, [entry]);
+      expect(
+        flow.actions(entry),
+        isNot(contains(TerminalRequestAction.acknowledge)),
+      );
+      final message = terminalRequestMessage(entry);
+      expect(message, contains('still not confirmed'));
+      expect(message, isNot(contains('closed')));
+      await flow.acknowledge(entry);
+      expect(node.posts.length, 1);
+    });
+
+    test('409 terminal_request_not_unknown re-reads the result', () async {
+      final node = Node((c) {
+        if (isCaps(c)) return caps(work: 3);
+        if (c.path.contains('unresolvedRequests')) {
+          return unresolved(host('h1', 'outcome_unknown'));
+        }
+        if (c.method == 'POST') {
+          throw http(409, 'terminal_request_not_unknown');
+        }
+        return host('h1', 'unconfirmed');
+      });
+      final flow = tracker(node);
+      await flow.loadCapabilities();
+      await flow.recover();
+      final entry = flow.entries.single;
+      await flow.acknowledge(entry);
+      expect(node.reads('hostRequestId=h1').length, 1);
+      expect(entry.status, TerminalRequestStatus.unconfirmed);
+      expect(entry.acknowledged, false);
+      expect(node.posts.length, 1);
+    });
+
+    test('an ambiguous acknowledgement is resolved by GET', () async {
+      final node = Node((c) {
+        if (isCaps(c)) return caps(work: 3);
+        if (c.path.contains('unresolvedRequests')) {
+          return unresolved(work('w1', 'outcome_unknown'));
+        }
+        if (c.method == 'POST') throw http(504, 'node_timeout');
+        return work('w1', 'outcome_unknown', acknowledgedAt: 3);
+      });
+      final flow = tracker(node);
+      await flow.loadCapabilities();
+      await flow.recover();
+      final entry = flow.entries.single;
+      await flow.acknowledge(entry);
+      expect(node.posts.length, 1);
+      expect(node.reads('workRequestId=w1').length, 1);
+      expect(entry.status, TerminalRequestStatus.outcomeUnknown);
+      expect(entry.acknowledged, true);
+      expect(flow.pending, isEmpty);
+    });
+
+    test('a definite refusal keeps the request pending', () async {
+      final node = Node((c) {
+        if (isCaps(c)) return caps(work: 3);
+        if (c.path.contains('unresolvedRequests')) {
+          return unresolved(work('w1', 'outcome_unknown'));
+        }
+        throw http(409, 'stale_control');
+      });
+      final flow = tracker(node);
+      await flow.loadCapabilities();
+      await flow.recover();
+      final entry = flow.entries.single;
+      await flow.acknowledge(entry);
+      expect(entry.status, TerminalRequestStatus.outcomeUnknown);
+      expect(entry.error, isNotNull);
+      expect(flow.pending, [entry]);
+      expect(node.reads('workRequestId'), isEmpty);
+    });
+
+    test('a v2 Node or no lease sends no acknowledgement', () async {
+      final node = Node(
+        (c) => isCaps(c) ? caps() : unresolved(work('w1', 'outcome_unknown')),
+      );
+      final flow = tracker(node);
+      await flow.loadCapabilities();
+      await flow.recover();
+      await flow.acknowledge(flow.entries.single);
+      expect(node.posts, isEmpty);
+      final v3 = Node(
+        (c) => isCaps(c)
+            ? caps(work: 3)
+            : unresolved(work('w1', 'outcome_unknown')),
+      );
+      final noLease = TerminalRequestTracker(
+        api: v3.api,
+        session: 's',
+        current: () => null,
+      );
+      trackers.add(noLease);
+      await noLease.loadCapabilities();
+      await noLease.recover();
+      await noLease.acknowledge(noLease.entries.single);
+      expect(v3.posts, isEmpty);
+    });
   });
 
   group('terminal pane state', () {
@@ -901,6 +1225,11 @@ void main() {
         expect(post['generation'], 4);
         expect(post['requestId'], matches(RegExp(r'^[0-9a-f-]{36}$')));
         expect(s.pendingRequests.length, 1);
+        // v2 capabilities: no acknowledgement; dismiss is local only.
+        expect(
+          s.requests!.actions(s.pendingRequests.single),
+          isNot(contains(TerminalRequestAction.acknowledge)),
+        );
         await s.perform(
           s.pendingRequests.single,
           TerminalRequestAction.dismiss,
@@ -910,6 +1239,46 @@ void main() {
         c.dispose();
       },
     );
+
+    test('acknowledging drops a request from the pane', () async {
+      final node = Node((c) {
+        if (isCaps(c)) return caps(work: 3);
+        if (c.path.contains('unresolvedRequests')) {
+          return {
+            'terminalRequests': {
+              'version': 1,
+              'items': [work('old', 'outcome_unknown')],
+              'next': null,
+            },
+          };
+        }
+        if (c.method == 'POST') {
+          return work('old', 'outcome_unknown', acknowledgedAt: 8);
+        }
+        return {'terminals': []};
+      });
+      final c = LiveController(node.gateway)
+        ..sessionId = 's'
+        ..clientId = 'phone'
+        ..control = {'held': true, 'generation': 4};
+      final s = TerminalPaneState(c);
+      await settle();
+      final entry = s.pendingRequests.single;
+      await s.perform(entry, TerminalRequestAction.acknowledge);
+      expect(node.posts.single.body, {
+        'action': 'acknowledge',
+        'clientId': 'phone',
+        'generation': 4,
+        'workRequestId': 'old',
+      });
+      expect(s.pendingRequests, isEmpty);
+      expect(
+        s.requests!.entries.single.status,
+        TerminalRequestStatus.outcomeUnknown,
+      );
+      s.dispose();
+      c.dispose();
+    });
 
     test('isolation unavailable explains itself and never POSTs', () async {
       final node = Node((c) {

@@ -60,6 +60,9 @@ String terminalRequestMessage(TerminalRequestEntry entry) {
       "The terminal request was refused: {0}",
       [terminalError(entry.error ?? '', tr("Unable to open a terminal."))],
     ),
+    TerminalRequestStatus.capacity => tr(
+      "Too many terminals are open or preparing. Close one and try again.",
+    ),
     TerminalRequestStatus.review => tr("Review the host management terminal"),
     TerminalRequestStatus.stale => tr(
       "This review is from an earlier Node run and cannot be confirmed.",
@@ -72,6 +75,9 @@ String terminalRequestMessage(TerminalRequestEntry entry) {
     TerminalRequestStatus.notStarted => tr("The terminal did not start: {0}", [
       code.isEmpty ? '—' : code,
     ]),
+    TerminalRequestStatus.outcomeUnknown when entry.acknowledged => tr(
+      "Acknowledged. The start is still not confirmed, and workspace switching may stay blocked.",
+    ),
     TerminalRequestStatus.outcomeUnknown => tr(
       "Start not confirmed. Workspace switching may stay blocked until the Node resolves it.",
     ),
@@ -87,6 +93,7 @@ String terminalRequestMessage(TerminalRequestEntry entry) {
   final failure = entry.error;
   return failure != null &&
           entry.status != TerminalRequestStatus.rejected &&
+          entry.status != TerminalRequestStatus.capacity &&
           entry.status != TerminalRequestStatus.conflict
       ? '$message (${terminalError(failure, tr("Unable to open a terminal."))})'
       : message;
@@ -102,6 +109,7 @@ String terminalRequestActionLabel(
   TerminalRequestAction.attach => tr("Open terminal"),
   TerminalRequestAction.startOver =>
     kind == TerminalRequestKind.host ? tr("New review") : tr("Try again"),
+  TerminalRequestAction.acknowledge => tr("Acknowledge"),
   TerminalRequestAction.hostManagement => tr("Host management terminal…"),
   TerminalRequestAction.dismiss => tr("Dismiss"),
 };
@@ -133,11 +141,10 @@ class TerminalPaneState extends ChangeNotifier {
     return TerminalIntent(sessionId: id, clientId: owner, generation: value);
   }
 
-  /// Requests to show: everything not yet attached as a live terminal tab.
-  List<TerminalRequestEntry> get pendingRequests => [
-    for (final entry in requests?.entries ?? const <TerminalRequestEntry>[])
-      if (entry.status != TerminalRequestStatus.live) entry,
-  ];
+  /// Requests to show: not attached as a live terminal tab and not
+  /// acknowledged on the Node.
+  List<TerminalRequestEntry> get pendingRequests =>
+      requests?.pending ?? const [];
   bool valid(int e) =>
       !disposed &&
       e == epoch &&
@@ -281,6 +288,8 @@ class TerminalPaneState extends ChangeNotifier {
         await flow.resubmit(entry);
       case TerminalRequestAction.confirm:
         await flow.confirm(entry);
+      case TerminalRequestAction.acknowledge:
+        await flow.acknowledge(entry);
       case TerminalRequestAction.attach:
         final terminal = entry.result?.terminal;
         if (terminal != null) attach(terminal);
