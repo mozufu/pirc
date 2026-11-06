@@ -33,6 +33,15 @@ export async function request<T>(
   init: RequestInit = {},
   options: RequestOptions = {},
 ): Promise<T> {
+  return (await requestWithStatus<T>(path, init, options)).body;
+}
+
+/** {@link request}, keeping the success status (e.g. to tell `201` from `202`). */
+export async function requestWithStatus<T>(
+  path: string,
+  init: RequestInit = {},
+  options: RequestOptions = {},
+): Promise<{ status: number; body: T }> {
   const headers = new Headers(init.headers);
   if (
     init.body &&
@@ -51,8 +60,8 @@ export async function request<T>(
       body?.error?.code ?? body?.code,
     );
   }
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+  if (response.status === 204) return { status: 204, body: undefined as T };
+  return { status: response.status, body: (await response.json()) as T };
 }
 
 /** True for the rejection of an aborted request. */

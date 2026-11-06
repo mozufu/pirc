@@ -514,3 +514,71 @@ quality, placement and polish are out of scope.
 Native Linux acceptance of the isolated adapter, complete revocation/installation
 and public switching remain gated as above. This contract authorizes no push,
 deployment or release.
+
+## Local implementation checkpoint: Web terminal contract client (2026-11-06)
+
+The Web client now implements the
+[client terminal execution-path contract v1](#client-terminal-execution-path-contract-v1-frozen-for-webandroid)
+against Node `workTerminalRequestVersion` **2**. Per the user's 2026-11-06 scope rule,
+only the interface layer is meant to be correct; the `TerminalTab.svelte` wiring is
+throwaway UI for the coming redesign, with no navigation or visual work.
+
+- **Interface** (`apps/web/src/lib/terminal-requests.ts`): `terminalRequestApi`
+  (`capabilities`, `submitWork`, `workResult`, `reviewHost`, `confirmHost`,
+  `hostResult`, `unresolvedPage`, `unresolved`), `parseCapabilities`/`terminalOffer`
+  (`update_node`, `disabled`, `isolated`, `isolation_unavailable` with an explicit
+  `hostManagement` flag; a missing field is 0, a missing document or version < 2
+  asks to update the Node), `phaseOf`, `allowedActions`, `blocksTransitions`,
+  `classifyFailure` and the in-memory `TerminalRequests` controller
+  (`openWork`, `reviewHost`, `confirmHost`, `resubmit`, `refresh`, `dismiss`,
+  `recover`, `dispose`). `http.ts` gains `requestWithStatus` so `201`/`200`/`202`
+  stay distinct.
+- **Identity and recovery**: one new `requestId` per user action; `202` and
+  discovered `preparing` requests are polled by GET only; a `409` conflict or
+  `host_terminal_review_required` reads the ID's retained result; any network loss
+  or 5xx (including `504 node_timeout`/`503 node_offline`) is resolved by GET. A
+  GET `404` offers _Send again_ with the same ID only while the lease, client and
+  size are unchanged; otherwise only reading remains. Nothing retries or clears by
+  itself. Discovery follows `next` through short or empty pages and stops on a
+  cursor that does not advance. Pending IDs live in memory only; IndexedDB stays
+  at **3**.
+- **States**: every row of the state table maps to a client phase (`review`,
+  `review_unusable`, `preparing`, `live`, `not_started`, `start_unconfirmed`,
+  `closed`, `closed_unconfirmed`, plus `unknown_state` for future values) and
+  local delivery phases (`submitting`, `checking`, `unknown_delivery`,
+  `not_admitted`, `rejected`). A live state attaches through the existing
+  `TerminalView` stream. Terminal chips show an isolated/host-management path
+  label; untagged legacy terminals stay unlabeled.
+- **No host fallback**: the omitted-path `panelApi.createTerminal` is removed. With
+  isolation unavailable the ordinary action is disabled and a separate _Host
+  management terminal…_ action reviews first (shell, directory, size and the
+  `warning` verbatim), then confirms with the exact `reviewId`/`reviewHash`,
+  `confirmed: true` and the size the Node reviewed.
+- en/zh-TW strings for the throwaway wiring only.
+
+Contract notes found while implementing (Node unchanged):
+
+1. A host confirm must repeat the **reviewed** (Node-clamped) `cols`/`rows`: the
+   review digest covers them, so another size returns
+   `409 host_terminal_review_required`. The contract table names only
+   `reviewId`/`reviewHash`/`confirmed`; the Web client sends `review.cols/rows`.
+2. A review discovered after reload does not say which lease made it; the digest
+   binds `clientId`/`generation`, so only the same lease can confirm it. The client
+   lets the Node decide and otherwise shows the `409` and the review's state.
+3. `outcome_unknown` work requests stay in `unresolvedRequests` permanently,
+   because no client action can resolve them (by design, no force-clear). The list
+   only grows across Node restarts; this belongs with decision 3 above.
+4. A POST `404` (for example a missing session) is treated as a definite refusal;
+   only a GET `404` means "not admitted".
+
+Validation: `npx vitest run` in `apps/web`: **69 files, 622 tests** passed
+(566 before; **53** new in `terminal-requests.test.ts` and **3** in
+`TerminalTab.test.ts`). `svelte-check` found 0 errors and 0 warnings, and Prettier
+check passed on all changed files. Rust, Gateway, Node, lockfiles and package
+versions are unchanged.
+
+Still open: real browser journeys against a live Gateway/Node, the new UI (placement
+of the host-management action, the review dialog, progress), rediscovery on a
+Gateway reconnect without a reload (the throwaway wiring rediscovers on mount and
+session change only), and Android parity. Local commit only, no push, deployment
+or Release.

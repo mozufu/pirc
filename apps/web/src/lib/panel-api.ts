@@ -323,6 +323,8 @@ export interface PanelState {
 }
 export interface TerminalInfo {
   id: string;
+  /** Set by Nodes with the execution-path contract; untagged legacy terminals omit it. */
+  executionPath?: 'isolated_work' | 'host_management' | string;
   sessionId: string;
   title: string;
   cwd: string;
@@ -475,11 +477,6 @@ export const panelApi = {
     ),
   terminals: (sessionId: string, signal?: AbortSignal) =>
     get<{ terminals: TerminalInfo[] }>(`${base(sessionId)}/terminals`, signal),
-  createTerminal: (sessionId: string, generation: number, cols: number, rows: number) =>
-    request<{ terminal: TerminalInfo }>(`${base(sessionId)}/terminals`, {
-      method: 'POST',
-      body: JSON.stringify({ clientId: getClientId(), generation, cols, rows }),
-    }),
   closeTerminal: (sessionId: string, terminalId: string, generation: number) =>
     request<void>(`${base(sessionId)}/terminals/${encodeURIComponent(terminalId)}/close`, {
       method: 'POST',
