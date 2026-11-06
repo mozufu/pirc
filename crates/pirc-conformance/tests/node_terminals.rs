@@ -24,6 +24,8 @@ fn terminal_env() -> GatewayOptions {
         env: vec![("PIRC_ALLOWED_USERS", users.clone())],
         node_env: vec![
             ("PIRC_TERMINAL_SHELL", "/bin/sh".to_owned()),
+            // Most cases cover the compatibility path; its default refusal has its own case.
+            ("PIRC_LEGACY_HOST_TERMINALS", "1".to_owned()),
             ("PIRC_ALLOWED_USERS", users),
         ],
         ..GatewayOptions::default()
@@ -832,4 +834,38 @@ async fn terminal_request_errors_and_acknowledgement_are_specific_through_the_ga
         s.get("/terminals?capabilities=1").await.body["terminalCapabilities"]["workTerminalRequestVersion"],
         3
     );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn old_clients_without_an_execution_path_are_asked_to_update_by_default() {
+    let mut options = terminal_env();
+    options
+        .node_env
+        .retain(|(name, _)| *name != "PIRC_LEGACY_HOST_TERMINALS");
+    let Some(cluster) = Cluster::start_with(options).await else {
+        return;
+    };
+    let (mut s, _) = Session::create(&cluster.api()).await;
+    s.acquire().await;
+    let lease = json!({"clientId":s.client,"generation":s.generation});
+    let refused = s.post("/terminals", lease.clone()).await;
+    assert_eq!(refused.status, 426, "{refused:?}");
+    assert_eq!(
+        refused.body["error"]["code"],
+        "terminal_execution_path_required"
+    );
+    assert_eq!(s.get("/terminals").await.body["terminals"], json!([]));
+    // The explicit paths remain available without the compatibility setting.
+    let mut host = json!({"clientId":s.client,"generation":s.generation,"executionPath":"host_management","requestId":"after-legacy","action":"review"});
+    let reviewed = s.post("/terminals", host.clone()).await;
+    assert_eq!(reviewed.status, 200, "{reviewed:?}");
+    host["action"] = json!("confirm");
+    host["confirmed"] = json!(true);
+    host["reviewId"] = reviewed.body["hostManagement"]["id"].clone();
+    host["reviewHash"] = reviewed.body["hostManagement"]["reviewHash"].clone();
+    let opened = s.post("/terminals", host).await;
+    assert_eq!(opened.status, 201, "{opened:?}");
+    let terminal = opened.body["terminal"]["id"].as_str().unwrap();
+    let closed = s.post(&format!("/terminals/{terminal}/close"), lease).await;
+    assert_eq!(closed.status, 204, "{closed:?}");
 }

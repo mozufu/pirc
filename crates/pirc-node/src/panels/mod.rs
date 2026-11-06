@@ -331,6 +331,14 @@ pub fn routes() -> Vec<Route> {
                 .await;
             }
             let terminal = match body.get("executionPath") {
+                // Old clients: an unreviewed host shell, only when explicitly allowed.
+                None if !node.config.legacy_host_terminals => {
+                    return Err(ApiError::new(
+                        426,
+                        "terminal_execution_path_required",
+                        "Update this client: new terminals need isolated work or a reviewed host-management terminal",
+                    ));
+                }
                 None => node.terminals.create(
                     &session.id,
                     &cwd,

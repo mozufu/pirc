@@ -230,6 +230,7 @@ async fn terminal_stream_reports_the_fence_while_a_peer_remains_interactive() {
             env: vec![
                 ("PIRC_BROWSER", "false".into()),
                 ("PIRC_TERMINAL_SHELL", "/bin/sh".into()),
+                ("PIRC_LEGACY_HOST_TERMINALS", "1".into()),
             ],
         },
     ) else {
@@ -367,6 +368,7 @@ async fn terminal_observation_survives_restart_and_an_unknown_shell_blocks_delet
                 env: vec![
                     ("PIRC_BROWSER", "false".into()),
                     ("PIRC_TERMINAL_SHELL", "/bin/sh".into()),
+                    ("PIRC_LEGACY_HOST_TERMINALS", "1".into()),
                 ],
             },
         ) else {

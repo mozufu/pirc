@@ -186,6 +186,8 @@ async fn crash_lost_host_observation_does_not_skip_terminal_shutdown_on_drain() 
             env: vec![
                 ("PIRC_BROWSER", "false".into()),
                 ("PIRC_TERMINAL_SHELL", "/bin/sh".into()),
+                // These fences cover existing compatibility-path terminals.
+                ("PIRC_LEGACY_HOST_TERMINALS", "1".into()),
                 ("TMPDIR", "{run_dir}".into()),
             ],
             ..Default::default()

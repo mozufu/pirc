@@ -519,10 +519,10 @@ quality, placement and polish are out of scope.
 1. ~~Where macOS offers the explicit host-management terminal.~~ Deferred to the
    new design (2026-11-06). The interface layer only exposes both actions, keeps
    them separate and never auto-switches; the temporary UI may place them anywhere.
-2. When old clients that send the omitted-path request stop being able to open host
-   terminals (isolated-by-default migration). Recommended: keep it until both new
-   clients are released, then gate it behind a Node setting with a visible update
-   prompt. Never reclassify existing terminals.
+2. ~~When old omitted-path clients stop opening host terminals.~~ **Decided
+   2026-11-06:** refused by default behind `PIRC_LEGACY_HOST_TERMINALS`, which
+   re-allows them for old APKs ([checkpoint](#local-implementation-checkpoint-compatibility-host-terminals-off-by-default-2026-11-06)). Existing terminals are never
+   reclassified.
 3. ~~What to do with requests left `outcome_unknown`.~~ **Decided 2026-11-06:**
    the user chose a retained acknowledgement marker that hides the request from
    discovery without claiming closure ([Node 2030](#local-implementation-checkpoint-terminal-request-acknowledgement-and-specific-errors-2026-11-06)). No force-clear is
@@ -844,5 +844,36 @@ Accepted consequence: against a pre-2030 Node, a lost POST stays readable but is
 no longer re-sent under the same ID, because the generic 404 cannot be told apart
 from a missing session. This is the safe direction. Remaining open items: reconnect
 discovery in the new UI (follow-up 4), real browser/device journeys, native Linux
-acceptance, isolated-by-default rollout (decision 2) and a guided inspection path
+acceptance, isolated-by-default rollout (decided and delivered in the next
+checkpoint) and a guided inspection path
 for `unconfirmed`.
+
+## Local implementation checkpoint: compatibility host terminals off by default (2026-11-06)
+
+The user decided on **2026-11-06** to refuse the omitted-path terminal request by
+default, behind a Node setting. That request opens an unreviewed host shell and
+is used only by clients that predate isolated work and host-management review;
+both current clients stopped sending it.
+
+- New Node setting `PIRC_LEGACY_HOST_TERMINALS` (default `false`). While off,
+  `POST .../terminals` without `executionPath` returns
+  `426 terminal_execution_path_required` ("update this client"), creates no run,
+  journal row or PTY, and leaves explicit isolated/host-management requests
+  unaffected. Setting it to `true` restores the previous behavior for old APKs.
+- Existing terminals, records and results are not reclassified or closed, and
+  results stay readable. The setting is not a grant: it never makes an omitted
+  path count as host-management review.
+- Conformance fixtures that exercise compatibility terminals (terminal routes,
+  execution fences, host-command fences) enable the setting explicitly. A new
+  process case checks the default refusal and that a reviewed host terminal still
+  opens. The deploy docs list the setting.
+
+No schema, capability, protocol, client or lockfile change.
+
+Validation: `pirc-config` **49 tests**, **658 Node library tests** (five existing ignores),
+**421 Gateway tests**, **32 required real Gateway/Node process cases** across 12
+suites (terminals now 8) plus the route snapshot case, `cargo fmt --check` and
+strict all-target Node/Gateway/conformance/config Clippy passed. Local commit only.
+
+Next: U4 step 3 (bind complete source revocation and target installation to the
+frozen transition), chosen by the user on 2026-11-06. Its design comes first.

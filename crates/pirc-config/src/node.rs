@@ -117,6 +117,10 @@ pub struct NodeConfig {
     pub upload_max_bytes: usize,
     /// Interactive shells in the web side panel (`PIRC_TERMINALS`, default on).
     pub terminals_enabled: bool,
+    /// Accept the old terminal request without `executionPath`, which opens an
+    /// unreviewed host shell (`PIRC_LEGACY_HOST_TERMINALS`, default off). Only for
+    /// clients that predate isolated work and host-management review.
+    pub legacy_host_terminals: bool,
     /// `PIRC_TERMINAL_SHELL`, default `$SHELL`.
     pub terminal_shell: Option<String>,
     pub browser: BrowserSettings,
@@ -236,6 +240,7 @@ impl NodeConfig {
             rpc_max_line_bytes: integer(env.get("PIRC_RPC_MAX_LINE_BYTES"), 1_048_576) as usize,
             upload_max_bytes,
             terminals_enabled: bool_var(env.get("PIRC_TERMINALS"), true),
+            legacy_host_terminals: bool_var(env.get("PIRC_LEGACY_HOST_TERMINALS"), false),
             terminal_shell: truthy("PIRC_TERMINAL_SHELL").map(str::to_owned),
             browser,
             sandbox: SandboxSettings {
@@ -524,6 +529,7 @@ mod tests {
         assert_eq!(config.rpc_max_line_bytes, 1_048_576);
         assert_eq!(config.upload_max_bytes, 10_485_760);
         assert!(config.terminals_enabled);
+        assert!(!config.legacy_host_terminals);
         assert_eq!(config.lease_ttl_ms, 30_000);
         assert_eq!(config.interaction_ttl_ms, 3_600_000);
         assert_eq!(config.shutdown_grace_ms, 5_000);
