@@ -196,13 +196,20 @@ client mode/default rollout and complete revocation/install remain open.
 strict all-target Clippy passed. The owned **2.9 GiB** outputs are cleaned; this
 delivery stays local.
 
-Latest local terminal delivery:
+Latest local client delivery:
+[Web and Android terminal contract clients](execution-isolation.md#integration-checkpoint-web-and-android-terminal-contract-clients-2026-11-06)
+adopt the frozen terminal contract as interface layers with throwaway UI; no
+format changes. Web **622 tests** with clean svelte-check, Android **62 focused
+tests** with clean `flutter analyze`. Four follow-ups are recorded; the growth of
+unresolved `outcome_unknown` requests needs a user decision. Local only.
+
+Previous local terminal delivery:
 [terminal request discovery and result parity](unified-conversations.md#u4-implementation-checkpoint-terminal-request-discovery-and-result-parity-2026-11-06)
 closes the client-contract Node gaps (Node **2029**): unresolved-request paging,
 matching host/work results with retained start-failure reasons, required request
 IDs for isolated work and a bounded `202` first reply. The
-[client terminal contract](execution-isolation.md#client-terminal-execution-path-contract-v1-frozen-for-webandroid) is frozen; interface-only Web/Android slices
-are next. **655 Node tests**, **421 Gateway tests**, **30 required process cases**
+[client terminal contract](execution-isolation.md#client-terminal-execution-path-contract-v1-frozen-for-webandroid) is frozen; the interface-only
+Web/Android slices followed. **655 Node tests**, **421 Gateway tests**, **30 required process cases**
 and strict all-target Clippy passed. Local only.
 
 Previous local terminal delivery:

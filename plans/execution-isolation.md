@@ -420,6 +420,8 @@ necessary controls in the existing style, with no navigation or visual redesign.
   `200` repeats an existing request, `202` means admitted but still preparing
   after the bounded wait. The body has the same `workRequest` shape in all three.
   On `202` the client polls the GET; the worker continues on the Node.
+  The status code is advisory: the paired Android bridge returns only bodies, so
+  clients decide by `state` (`preparing` means poll) and never by status alone.
 - Node waits at most **20 s** for the worker, below the Gateway's **30 s** relay
   timeout. A relay `504 node_timeout` or `503 node_offline` is still an ambiguous
   outcome, handled by the GET above, not by a new request.
@@ -446,16 +448,16 @@ necessary controls in the existing style, with no navigation or visual redesign.
 
 ### Result states and client behavior
 
-| State (`workRequest.state` / `hostManagement.state`) | Meaning                                                                     | Client behavior                                                                                                                    |
-| ---------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `review` (host only)                                 | Node-issued review is pending                                               | Show shell, root, size and the host-effects `warning` verbatim; confirm sends exact `reviewId`/`reviewHash` and `confirmed: true`  |
-| `stale` / `expired` (host only)                      | Review from an earlier Node incarnation, or past its TTL                    | Cannot be confirmed; a new review is a new user action with a new ID                                                               |
-| `preparing` (work only)                              | Admitted; preparation is running in this Node incarnation                   | Show progress and poll with GET; do not POST again                                                                                 |
-| `launching` / `running` with `terminal`              | Live terminal linked to this request                                        | Attach to the existing stream for `terminal.id`                                                                                    |
-| `not_started`                                        | Known no-start; `errorCode` says why (`isolated_terminal_unavailable`, …)   | Show the reason; _Try again_ is a new action; an unavailable path may offer the explicit host-management action, never auto-switch |
-| `outcome_unknown`                                    | Start or liveness cannot be confirmed (restart, panic, lost registry)       | Show "start not confirmed"; no automatic retry; explain that workspace switching may stay blocked                                  |
-| `settled`                                            | Terminal ended with confirmed retirement                                    | Closed                                                                                                                             |
-| `unconfirmed`                                        | Direct shell closed but retirement is not proven (host detached work, etc.) | Show as closed but unconfirmed; transitions stay blocked; no force-clear action                                                    |
+| State (`workRequest.state` / `hostManagement.state`) | Meaning                                                                     | Client behavior                                                                                                                                               |
+| ---------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `review` (host only)                                 | Node-issued review is pending                                               | Show shell, root, size and the host-effects `warning` verbatim; confirm sends exact `reviewId`/`reviewHash`, `confirmed: true` and the reviewed `cols`/`rows` |
+| `stale` / `expired` (host only)                      | Review from an earlier Node incarnation, or past its TTL                    | Cannot be confirmed; a new review is a new user action with a new ID                                                                                          |
+| `preparing` (work only)                              | Admitted; preparation is running in this Node incarnation                   | Show progress and poll with GET; do not POST again                                                                                                            |
+| `launching` / `running` with `terminal`              | Live terminal linked to this request                                        | Attach to the existing stream for `terminal.id`                                                                                                               |
+| `not_started`                                        | Known no-start; `errorCode` says why (`isolated_terminal_unavailable`, …)   | Show the reason; _Try again_ is a new action; an unavailable path may offer the explicit host-management action, never auto-switch                            |
+| `outcome_unknown`                                    | Start or liveness cannot be confirmed (restart, panic, lost registry)       | Show "start not confirmed"; no automatic retry; explain that workspace switching may stay blocked                                                             |
+| `settled`                                            | Terminal ended with confirmed retirement                                    | Closed                                                                                                                                                        |
+| `unconfirmed`                                        | Direct shell closed but retirement is not proven (host detached work, etc.) | Show as closed but unconfirmed; transitions stay blocked; no force-clear action                                                                               |
 
 Live terminals and ready frames already carry `executionPath`. Clients show a
 small path label (isolated / host management) on the terminal tab. Untagged
@@ -509,7 +511,9 @@ quality, placement and polish are out of scope.
    prompt. Never reclassify existing terminals.
 3. Whether `outcome_unknown`/`unconfirmed` should offer a guided path, such as
    showing the retained run ID for manual host inspection. No force-clear is
-   authorized either way.
+   authorized either way. Both clients found that `outcome_unknown` work requests
+   stay in `unresolvedRequests` forever; see
+   [follow-up 1](#integration-checkpoint-web-and-android-terminal-contract-clients-2026-11-06).
 
 Native Linux acceptance of the isolated adapter, complete revocation/installation
 and public switching remain gated as above. This contract authorizes no push,
@@ -643,3 +647,45 @@ resolution path exists.
 Open: device/emulator journeys, the real new UI and placement of the host action
 (with the new design), Web parity is a separate slice. Local commit only, no
 push, deployment or Release.
+
+## Integration checkpoint: Web and Android terminal contract clients (2026-11-06)
+
+The two client slices were implemented in parallel worktrees from `0a289a14`
+and integrated onto `codex/app-document-replaced-computed-style` as `d9d2f558`
+(Web) and `0c487aed` (Android). Their own sections above record the design. Per
+the user's 2026-11-06 decision, both are **interface layers with throwaway UI
+wiring** for the coming redesign. Neither changes Rust, Kotlin, dependencies,
+lockfiles, Web IndexedDB **3** or the Android envelope **3**. Both removed the
+client's omitted-path host-terminal call, so no client falls back to it.
+
+Re-run after integration: Web `vitest run` **622 tests in 69 files** (56 new) and
+`svelte-check` with 0 errors/warnings; Android focused Flutter tests **62 passed**
+(44 new request tests plus terminal parity, extra keys, keyboard performance, zoom
+and i18n) and `flutter analyze` with no issues. Rust is unchanged since the Node
+2029 checkpoint. No browser, emulator, device, APK or native Linux validation is
+claimed. Local commits only, no push, deployment or Release.
+
+Contract clarifications now written into the frozen contract above: a host
+confirmation must repeat the reviewed (Node-clamped) `cols`/`rows`, because the
+review hash covers them; a review is bound to the control lease that created it,
+so a review found after reload or on another device gets
+`409 host_terminal_review_required` and needs a new review; clients decide by
+`state`, not HTTP status.
+
+Follow-ups found by the client agents (Node unchanged; each needs its own slice):
+
+1. **`outcome_unknown` never leaves the unresolved list.** Work requests whose
+   start is unconfirmed after a Node restart have no client action that resolves
+   them, so the list only grows. Options: an explicit, retained "acknowledged"
+   marker that hides a request from discovery without claiming closure, or
+   listing only the current incarnation's unknowns. This touches the
+   no-force-clear rule and needs the user's decision (decision 3 above).
+2. **Distinguishable 404s.** A missing session and a missing request both return
+   `404 not_found`. A specific `terminal_request_not_found` code would make the
+   404→same-ID re-POST rule exact.
+3. **Distinguishable capacity refusals.** Terminal quota returns generic
+   `409 conflict`; a specific code would let clients show "too many terminals"
+   instead of a generic rejection.
+4. **Reconnect discovery.** The throwaway Web wiring recovers only on mount or
+   session change. The new UI must call `recover()` after a Gateway reconnect,
+   and the Android tracker likewise after reconnect.

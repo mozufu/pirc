@@ -55,12 +55,18 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local U4 delivery: [terminal request discovery and result parity](#u4-implementation-checkpoint-terminal-request-discovery-and-result-parity-2026-11-06)
+Latest local delivery: [Web and Android terminal contract clients](execution-isolation.md#integration-checkpoint-web-and-android-terminal-contract-clients-2026-11-06)
+implements the frozen terminal contract in both clients as interface layers with
+throwaway UI (the current UI will be replaced by a new design). Formats are
+unchanged. Remaining: four follow-ups (unresolved `outcome_unknown` growth needs a
+user decision), real browser/device journeys and native Linux acceptance.
+
+The previous [terminal request discovery and result parity](#u4-implementation-checkpoint-terminal-request-discovery-and-result-parity-2026-11-06)
 closes the four Node gaps and freezes the [client terminal contract](execution-isolation.md#client-terminal-execution-path-contract-v1-frozen-for-webandroid)
 (Node **2029**, `workTerminalRequestVersion: 2`): unresolved-request paging,
 matching host/work results with retained start-failure reasons, a required
-request ID for isolated work and a bounded `202` first reply. Interface-only Web
-and Android slices are next.
+request ID for isolated work and a bounded `202` first reply. The interface-only
+Web and Android slices followed.
 
 The previous [durable isolated work-terminal requests](#u4-implementation-checkpoint-durable-isolated-work-terminal-requests-2026-11-06)
 gives explicit isolated terminals a retained request identity before preparation,
