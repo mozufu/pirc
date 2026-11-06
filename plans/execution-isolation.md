@@ -876,4 +876,5 @@ suites (terminals now 8) plus the route snapshot case, `cargo fmt --check` and
 strict all-target Node/Gateway/conformance/config Clippy passed. Local commit only.
 
 Next: U4 step 3 (bind complete source revocation and target installation to the
-frozen transition), chosen by the user on 2026-11-06. Its design comes first.
+frozen transition), chosen by the user on 2026-11-06. Its adopted design, with the
+user's three decisions, is [Transition revocation and installation](transition-installation.md).

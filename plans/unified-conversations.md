@@ -59,7 +59,9 @@ Latest local delivery: [compatibility host terminals off by default](execution-i
 refuses the omitted-path terminal request with `426` unless
 `PIRC_LEGACY_HOST_TERMINALS` re-allows it (user decision, 2026-11-06); no format
 change. The user chose U4 step 3 (source revocation plus target installation) as
-the next stream.
+the next stream; its [adopted design](transition-installation.md) records three
+user decisions (explicit acknowledgement for unprovable evidence and hosts without
+containment, explicit late cancel back to the original binding) and slices T1–T5.
 
 The previous [terminal request acknowledgement and specific errors](execution-isolation.md#local-implementation-checkpoint-terminal-request-acknowledgement-and-specific-errors-2026-11-06)
 (Node **2030**, `workTerminalRequestVersion: 3`) adds the user-chosen retained

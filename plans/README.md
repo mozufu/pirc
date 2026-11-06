@@ -199,8 +199,9 @@ delivery stays local.
 Latest local terminal delivery:
 [compatibility host terminals off by default](execution-isolation.md#local-implementation-checkpoint-compatibility-host-terminals-off-by-default-2026-11-06): the
 omitted-path request returns `426` unless `PIRC_LEGACY_HOST_TERMINALS` is set.
-658 Node, 421 Gateway and 32 required process cases passed. Next: U4 step 3
-(revocation plus installation), chosen by the user.
+658 Node, 421 Gateway and 32 required process cases passed. Next: U4 step 3,
+chosen by the user, with its [adopted design](transition-installation.md) and
+slices T1–T5.
 
 Previous local terminal delivery:
 [acknowledgement and specific errors](execution-isolation.md#local-implementation-checkpoint-terminal-request-acknowledgement-and-specific-errors-2026-11-06) (Node **2030**)
