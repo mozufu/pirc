@@ -10,12 +10,14 @@
   import { getClientId } from '../../storage';
   import {
     allowedActions,
+    canAcknowledge,
     canDiscover,
     recordOf,
     terminalOffer,
     terminalRequestApi,
     TerminalRequests,
     type RequestAction,
+    type TerminalCapabilities,
     type TerminalIntent,
     type TerminalOffer,
     type TrackedRequest,
@@ -38,6 +40,7 @@
   let busy = $state(false);
   /** `undefined` until the capability query answers. */
   let offer: TerminalOffer | undefined = $state();
+  let capabilities: TerminalCapabilities | null = $state(null);
   let requests: TrackedRequest[] = $state([]);
   let flow: TerminalRequests | undefined;
 
@@ -62,6 +65,8 @@
       const caps = await terminalRequestApi.capabilities(id);
       if (id !== sessionId) return;
       offer = terminalOffer(caps);
+      capabilities = caps;
+      if (requestFlow) requestFlow.capabilities = caps;
       if (canDiscover(caps)) await requestFlow?.recover();
     } catch (cause) {
       if (id === sessionId)
@@ -113,6 +118,8 @@
     if (action === 'refresh') return run(() => flow?.refresh(request.requestId, request.kind));
     if (!lease) return;
     if (action === 'confirm') return run(() => flow?.confirmHost(request.requestId, lease));
+    if (action === 'acknowledge')
+      return run(() => flow?.acknowledge(request.requestId, lease, request.kind));
     if (action === 'resubmit')
       return run(() => flow?.resubmit(request.requestId, lease, request.kind));
   }
@@ -170,7 +177,9 @@
       case 'not_admitted':
         return tr('The request did not reach the Node.');
       case 'rejected':
-        return request.error?.message ?? tr('Unable to open a terminal.');
+        return request.error?.reason === 'capacity'
+          ? tr('Too many terminals are open or preparing. Close one first.')
+          : (request.error?.message ?? tr('Unable to open a terminal.'));
     }
   }
 
@@ -182,8 +191,16 @@
       resubmit: tr('Send again'),
       new_terminal: tr('New terminal'),
       host_review: tr('Host management terminal…'),
+      acknowledge: tr('Acknowledge'),
       dismiss: tr('Dismiss'),
     })[action];
+
+  const actionsFor = (request: TrackedRequest) =>
+    allowedActions(request, {
+      intent: intent(),
+      offer: offer ?? { kind: 'update_node' },
+      acknowledge: canAcknowledge(capabilities),
+    });
 
   const pathLabel = (terminal: TerminalInfo) =>
     terminal.executionPath === 'isolated_work'
@@ -224,6 +241,7 @@
       terminals = [];
       current = undefined;
       offer = undefined;
+      capabilities = null;
       requests = [];
       // Pending request IDs stay in memory; a reload rediscovers them.
       flow = new TerminalRequests({
@@ -316,7 +334,12 @@
         <p>{tr('Size: {0} × {1}', [host.review.cols, host.review.rows])}</p>
         <p class="warning">{host.review.warning}</p>
       {/if}
-      {#each allowedActions( request, { intent: intent(), offer: offer ?? { kind: 'update_node' } }, ).filter((action) => action !== 'attach') as action (action)}
+      {#if actionsFor(request).includes('acknowledge')}<p class="muted">
+          {tr(
+            'Acknowledging only stops listing this request as pending. It is not closed, and workspace switching may stay blocked.',
+          )}
+        </p>{/if}
+      {#each actionsFor(request).filter((action) => action !== 'attach') as action (action)}
         <button
           class="button small"
           type="button"

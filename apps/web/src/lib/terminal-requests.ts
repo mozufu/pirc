@@ -10,6 +10,8 @@
  *   allows reading. Nothing is retried automatically.
  * - Pending request IDs live in memory only; after a reload they are rediscovered
  *   through `unresolvedRequests`, so no storage format changes.
+ * - v3: an `outcome_unknown` request may be acknowledged. That is a retained user
+ *   decision that hides it from discovery; its state stays `outcome_unknown`.
  */
 import { ApiError, isAbort, requestWithStatus } from './http';
 import { uuid } from './id';
@@ -17,6 +19,8 @@ import type { TerminalInfo } from './panel-api';
 
 /** Discovery and result parity: the oldest Node version this client accepts. */
 export const REQUIRED_WORK_REQUEST_VERSION = 2;
+/** Acknowledgement and the specific error codes. */
+export const ACKNOWLEDGE_VERSION = 3;
 /** How often a `preparing` work request is read again. */
 export const POLL_INTERVAL_MS = 1000;
 /** The Node's largest unresolved-request page. */
@@ -69,6 +73,9 @@ export function terminalOffer(caps: TerminalCapabilities | null): TerminalOffer 
 /** Whether unresolved-request discovery may be read (it needs no new-terminal capability). */
 export const canDiscover = (caps: TerminalCapabilities | null) =>
   !!caps && caps.workTerminalRequestVersion >= REQUIRED_WORK_REQUEST_VERSION;
+/** Whether `outcome_unknown` requests may be acknowledged (it needs no new-terminal capability). */
+export const canAcknowledge = (caps: TerminalCapabilities | null | undefined) =>
+  !!caps && caps.workTerminalRequestVersion >= ACKNOWLEDGE_VERSION;
 
 // ---- wire shapes ----------------------------------------------------------------
 
@@ -78,6 +85,8 @@ export interface WorkRequestResult {
   state: string;
   errorCode: string | null;
   terminalId: string | null;
+  /** v3: when the user acknowledged an `outcome_unknown` request; absent or null otherwise. */
+  acknowledgedAt?: number | null;
 }
 export interface HostReviewDetails {
   version: number;
@@ -209,6 +218,24 @@ export const terminalRequestApi = {
         { signal },
       )
     ).body.terminalRequests,
+  /**
+   * v3: records the user's acknowledgement of an `outcome_unknown` request.
+   * Exactly one ID and the current lease, no other fields; the state stays.
+   */
+  acknowledge: (
+    lease: Pick<TerminalIntent, 'sessionId' | 'clientId' | 'generation'>,
+    kind: RequestKind,
+    requestId: string,
+  ) =>
+    requestWithStatus<TerminalRequestResult>(path(lease.sessionId), {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'acknowledge',
+        clientId: lease.clientId,
+        generation: lease.generation,
+        [kind === 'work' ? 'workRequestId' : 'hostRequestId']: requestId,
+      }),
+    }),
   /** Every unresolved request: pages may be short or empty; follows `next` until null. */
   unresolved: async (sessionId: string, options: { limit?: number } = {}, signal?: AbortSignal) => {
     const items: TerminalRequestResult[] = [];
@@ -232,17 +259,31 @@ export const terminalRequestApi = {
 /**
  * `ambiguous`: the request may or may not have been admitted (network loss,
  * relay `504 node_timeout`/`503 node_offline`, any 5xx); resolve by GET.
- * `not_found`: GET says it was not admitted. `conflict`: the ID belongs to a
- * different intent. `review_required`: a host review that cannot be confirmed
- * as sent. `rejected`: a definite refusal before admission.
+ * `not_found`: only `404 terminal_request_not_found`, the ID was not admitted;
+ * any other `404` (a missing session, an older Node) is `rejected`.
+ * `conflict`: the ID belongs to a different intent. `review_required`: a host
+ * review that cannot be confirmed as sent. `capacity`: `409 terminal_capacity`,
+ * too many terminals. `not_unknown`: acknowledging a request that is no longer
+ * `outcome_unknown`. `rejected`: any other definite refusal.
  */
-export type Failure = 'ambiguous' | 'not_found' | 'conflict' | 'review_required' | 'rejected';
+export type Failure =
+  | 'ambiguous'
+  | 'not_found'
+  | 'conflict'
+  | 'review_required'
+  | 'capacity'
+  | 'not_unknown'
+  | 'rejected';
 export function classifyFailure(error: unknown): Failure {
   if (!(error instanceof ApiError)) return 'ambiguous';
-  if (error.status === 404) return 'not_found';
-  if (error.status === 409 && error.code === 'work_terminal_request_conflict') return 'conflict';
-  if (error.status === 409 && error.code === 'host_terminal_review_required')
-    return 'review_required';
+  if (error.status === 404)
+    return error.code === 'terminal_request_not_found' ? 'not_found' : 'rejected';
+  if (error.status === 409) {
+    if (error.code === 'work_terminal_request_conflict') return 'conflict';
+    if (error.code === 'host_terminal_review_required') return 'review_required';
+    if (error.code === 'terminal_capacity') return 'capacity';
+    if (error.code === 'terminal_request_not_unknown') return 'not_unknown';
+  }
   return error.status >= 500 ? 'ambiguous' : 'rejected';
 }
 
@@ -275,6 +316,7 @@ export type RequestAction =
   | 'resubmit' // same ID, same intent (only after a 404)
   | 'new_terminal' // a new action with a new ID
   | 'host_review' // the explicit host-management action, new ID
+  | 'acknowledge' // v3: retained decision about `outcome_unknown`; hides it from discovery
   | 'dismiss'; // hide locally
 
 /** Maps a Node result state to a client phase. */
@@ -317,8 +359,8 @@ export interface TrackedRequest {
   intent?: TerminalIntent;
   phase: RequestPhase;
   result?: TerminalRequestResult;
-  /** The last failure, for display. */
-  error?: { status?: number; code?: string; message: string };
+  /** The last failure, for display; `reason` tells e.g. `capacity` apart. */
+  error?: { status?: number; code?: string; message: string; reason?: Failure };
   /** A `409` answered with the original request's result. */
   conflict?: boolean;
   /** Polling stopped after a failed read; `refresh` resumes it. */
@@ -329,7 +371,24 @@ export interface ActionContext {
   /** The current lease and size; `undefined` without control. */
   intent?: TerminalIntent;
   offer: TerminalOffer;
+  /** {@link canAcknowledge} for this Node (v3); off by default. */
+  acknowledge?: boolean;
 }
+
+/** An `outcome_unknown` request not acknowledged yet. */
+export function acknowledgeable(request: TrackedRequest): boolean {
+  const record = request.result && recordOf(request.result);
+  return (
+    request.phase === 'start_unconfirmed' &&
+    record?.state === 'outcome_unknown' &&
+    record.acknowledgedAt == null
+  );
+}
+/** Acknowledged and still `outcome_unknown`: no longer pending, and not closed either. */
+const acknowledged = (result: TerminalRequestResult) => {
+  const record = recordOf(result);
+  return record.state === 'outcome_unknown' && record.acknowledgedAt != null;
+};
 
 /** What the user may do with a request now. No automatic retry or force-clear exists. */
 export function allowedActions(request: TrackedRequest, context: ActionContext): RequestAction[] {
@@ -357,6 +416,10 @@ export function allowedActions(request: TrackedRequest, context: ActionContext):
       return [...next, 'dismiss'];
     }
     case 'start_unconfirmed':
+      // Acknowledging needs the current lease, not the one that made the request.
+      return context.acknowledge && context.intent && acknowledgeable(request)
+        ? ['acknowledge', 'refresh', 'dismiss']
+        : ['refresh', 'dismiss'];
     case 'unknown_state':
       return ['refresh', 'dismiss'];
     case 'closed':
@@ -398,6 +461,8 @@ export function confirmIntent(
 
 export interface TerminalRequestsOptions {
   sessionId: string;
+  /** The session's capabilities, if already read; see {@link TerminalRequests.capabilities}. */
+  capabilities?: TerminalCapabilities | null;
   api?: typeof terminalRequestApi;
   /** Called after every change with the current list. */
   onchange?: (requests: TrackedRequest[]) => void;
@@ -422,8 +487,16 @@ const defaultSleep = (ms: number, signal: AbortSignal) =>
 
 const errorOf = (error: unknown): TrackedRequest['error'] =>
   error instanceof ApiError
-    ? { status: error.status, code: error.code, message: error.message }
-    : { message: error instanceof Error ? error.message : String(error) };
+    ? {
+        status: error.status,
+        code: error.code,
+        message: error.message,
+        reason: classifyFailure(error),
+      }
+    : {
+        message: error instanceof Error ? error.message : String(error),
+        reason: 'ambiguous',
+      };
 
 /**
  * The terminal requests of one session, in memory. Request failures are
@@ -432,6 +505,8 @@ const errorOf = (error: unknown): TrackedRequest['error'] =>
  */
 export class TerminalRequests {
   readonly sessionId: string;
+  /** The Node's capabilities; acknowledgement is sent only to a v3 Node. */
+  capabilities: TerminalCapabilities | null;
   private readonly api: typeof terminalRequestApi;
   private readonly onchange: (requests: TrackedRequest[]) => void;
   private readonly onterminal: (terminal: TerminalInfo) => void;
@@ -444,6 +519,7 @@ export class TerminalRequests {
 
   constructor(options: TerminalRequestsOptions) {
     this.sessionId = options.sessionId;
+    this.capabilities = options.capabilities ?? null;
     this.api = options.api ?? terminalRequestApi;
     this.onchange = options.onchange ?? (() => {});
     this.onterminal = options.onterminal ?? (() => {});
@@ -487,6 +563,12 @@ export class TerminalRequests {
     const next: TrackedRequest = { ...base, ...extra, phase, result, stalled: false };
     if (!extra.error) delete next.error;
     if (!extra.conflict) delete next.conflict;
+    if (acknowledged(result)) {
+      // The user's retained decision: no longer pending. Nothing claims it closed.
+      if (!this.disposed && this.requests.delete(this.key(next.kind, next.requestId)))
+        this.onchange(this.list);
+      return next;
+    }
     this.set(next);
     if (phase === 'live' && result.terminal && !this.attached.has(result.terminal.id)) {
       this.attached.add(result.terminal.id);
@@ -638,6 +720,41 @@ export class TerminalRequests {
         return this.set({ ...request, phase: 'not_admitted', error: errorOf(error) });
       this.set({ ...request, stalled: true, error: errorOf(error) });
     }
+  }
+
+  /**
+   * v3: acknowledges an `outcome_unknown` request under the current lease. On
+   * success it leaves this list (as it leaves discovery); its state stays
+   * `outcome_unknown`. A `409 terminal_request_not_unknown` or an ambiguous
+   * reply reads the result again. Returns whether it was sent.
+   */
+  async acknowledge(requestId: string, current: TerminalIntent, kind: RequestKind = 'work') {
+    const request = this.find(kind, requestId);
+    if (
+      !request ||
+      !acknowledgeable(request) ||
+      !canAcknowledge(this.capabilities) ||
+      current.sessionId !== this.sessionId
+    )
+      return false;
+    this.set({ ...request, phase: 'submitting' });
+    try {
+      this.apply(request, (await this.api.acknowledge(current, kind, requestId)).body);
+    } catch (error) {
+      const failure = classifyFailure(error);
+      if (failure !== 'ambiguous' && failure !== 'not_unknown') {
+        this.set({ ...request, error: errorOf(error) });
+        return true;
+      }
+      try {
+        this.apply(request, await this.read(kind, requestId), {
+          error: failure === 'not_unknown' ? errorOf(error) : undefined,
+        });
+      } catch (readError) {
+        if (!isAbort(readError)) this.set({ ...request, error: errorOf(readError) });
+      }
+    }
+    return true;
   }
 
   dismiss(requestId: string, kind: RequestKind = 'work') {

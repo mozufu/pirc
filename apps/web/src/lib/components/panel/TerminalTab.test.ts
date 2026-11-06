@@ -17,6 +17,7 @@ let target: HTMLDivElement;
 function serve(
   caps: Record<string, unknown>,
   respond: (call: Call) => { status: number; body: unknown } | undefined,
+  pending: unknown[] = [],
 ) {
   vi.stubGlobal(
     'fetch',
@@ -32,7 +33,10 @@ function serve(
       if (call.method === 'GET' && params.get('capabilities'))
         reply = { status: 200, body: { terminalCapabilities: caps } };
       else if (call.method === 'GET' && params.get('unresolvedRequests'))
-        reply = { status: 200, body: { terminalRequests: { version: 1, items: [], next: null } } };
+        reply = {
+          status: 200,
+          body: { terminalRequests: { version: 1, items: pending, next: null } },
+        };
       else if (call.method === 'GET' && !call.url.search)
         reply = { status: 200, body: { terminals: [] } };
       else reply = respond(call);
@@ -196,4 +200,89 @@ it('asks to update a Node without the capability query and sends nothing', async
   expect(button('Open terminal')?.disabled).toBe(true);
   // No discovery on an old Node either.
   expect(calls.some((call) => call.url.searchParams.has('unresolvedRequests'))).toBe(false);
+});
+
+const unknownWork = (acknowledgedAt: number | null = null) => ({
+  workRequest: {
+    version: 1,
+    requestId: 'u1',
+    state: 'outcome_unknown',
+    errorCode: 'terminal_start_unconfirmed',
+    terminalId: null,
+    acknowledgedAt,
+  },
+  terminal: null,
+});
+const caps = (workTerminalRequestVersion: number) => ({
+  enabled: true,
+  isolatedTerminalVersion: 1,
+  hostTerminalReviewVersion: 1,
+  workTerminalRequestVersion,
+});
+
+it('acknowledges a recovered unconfirmed start on a v3 Node and stops showing it', async () => {
+  serve(
+    caps(3),
+    (call) =>
+      call.method === 'POST' && call.body?.action === 'acknowledge'
+        ? { status: 200, body: unknownWork(42) }
+        : undefined,
+    [unknownWork()],
+  );
+  component = mount(TerminalTab, {
+    target,
+    props: { sessionId: 's1', generation: 4, hasControl: true },
+  });
+  await settle();
+  expect(target.textContent).toContain('Start not confirmed.');
+  expect(target.textContent).toContain('Acknowledging only stops listing this request as pending.');
+  button('Acknowledge')!.click();
+  await settle();
+  const posts = calls.filter((call) => call.method === 'POST');
+  expect(posts.map((call) => call.body)).toEqual([
+    { action: 'acknowledge', clientId: 'client-a', generation: 4, workRequestId: 'u1' },
+  ]);
+  expect(target.textContent).not.toContain('Start not confirmed.');
+  expect(target.textContent).not.toContain('Terminal closed');
+});
+
+it('offers no acknowledgement on a v2 Node or without control', async () => {
+  serve(caps(2), () => undefined, [unknownWork()]);
+  component = mount(TerminalTab, {
+    target,
+    props: { sessionId: 's1', generation: 4, hasControl: true },
+  });
+  await settle();
+  expect(target.textContent).toContain('Start not confirmed.');
+  expect(button('Acknowledge')).toBeUndefined();
+  await unmount(component);
+  serve(caps(3), () => undefined, [unknownWork()]);
+  component = mount(TerminalTab, {
+    target,
+    props: { sessionId: 's1', generation: undefined, hasControl: false },
+  });
+  await settle();
+  expect(button('Acknowledge')).toBeUndefined();
+});
+
+it('says too many terminals on a capacity refusal', async () => {
+  i18n.setLanguage('zh-TW');
+  serve(caps(3), (call) =>
+    call.method === 'POST'
+      ? {
+          status: 409,
+          body: {
+            error: { code: 'terminal_capacity', message: 'At most 8 terminals per session' },
+          },
+        }
+      : undefined,
+  );
+  component = mount(TerminalTab, {
+    target,
+    props: { sessionId: 's1', generation: 4, hasControl: true },
+  });
+  await settle();
+  button('開啟終端機')!.click();
+  await settle();
+  expect(target.textContent).toContain('開啟或準備中的終端機過多。請先關閉一個。');
 });

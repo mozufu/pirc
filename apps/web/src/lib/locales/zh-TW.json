@@ -1445,5 +1445,8 @@
   "Checking whether the terminal request arrived…": "正在檢查終端機請求是否已送達…",
   "The Node did not answer. Check again to see whether the request arrived.": "節點沒有回應。請再次檢查請求是否已送達。",
   "The request did not reach the Node.": "請求未送達節點。",
-  "This request ID belonged to another terminal request; its original result is shown.": "此請求 ID 屬於另一個終端機請求；顯示的是其原始結果。"
+  "This request ID belonged to another terminal request; its original result is shown.": "此請求 ID 屬於另一個終端機請求；顯示的是其原始結果。",
+  "Acknowledge": "確認知悉",
+  "Too many terminals are open or preparing. Close one first.": "開啟或準備中的終端機過多。請先關閉一個。",
+  "Acknowledging only stops listing this request as pending. It is not closed, and workspace switching may stay blocked.": "確認知悉只會停止將此請求列為待處理。它並未關閉，工作區切換可能仍會受阻。"
 }

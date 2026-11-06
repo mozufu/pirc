@@ -1445,5 +1445,8 @@
   "Checking whether the terminal request arrived…": "Checking whether the terminal request arrived…",
   "The Node did not answer. Check again to see whether the request arrived.": "The Node did not answer. Check again to see whether the request arrived.",
   "The request did not reach the Node.": "The request did not reach the Node.",
-  "This request ID belonged to another terminal request; its original result is shown.": "This request ID belonged to another terminal request; its original result is shown."
+  "This request ID belonged to another terminal request; its original result is shown.": "This request ID belonged to another terminal request; its original result is shown.",
+  "Acknowledge": "Acknowledge",
+  "Too many terminals are open or preparing. Close one first.": "Too many terminals are open or preparing. Close one first.",
+  "Acknowledging only stops listing this request as pending. It is not closed, and workspace switching may stay blocked.": "Acknowledging only stops listing this request as pending. It is not closed, and workspace switching may stay blocked."
 }

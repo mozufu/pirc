@@ -737,3 +737,46 @@ conversation admission/creation/host-command fences 2 each, environment
 transitions, inference fences, memory, project deletion and streams 1 each),
 `cargo fmt --check` and strict all-target Node/Gateway/conformance Clippy passed.
 No native Linux, browser or device validation is claimed. Local commit only. Web and Android adopt v3 in the following client slices.
+
+## Local implementation checkpoint: Web terminal contract v3 (2026-11-06)
+
+The Web interface layer adopts [Node 2030](#local-implementation-checkpoint-terminal-request-acknowledgement-and-specific-errors-2026-11-06)
+(`workTerminalRequestVersion` **3**). As before, only the interface is meant to
+be correct; the `TerminalTab.svelte` wiring stays throwaway UI.
+
+- **Specific errors** (`classifyFailure` in `apps/web/src/lib/terminal-requests.ts`):
+  only `404 terminal_request_not_found` means "not admitted" and allows the
+  same-ID re-POST. Any other `404` (a missing session, or a v2 Node's generic
+  code) is a definite refusal. After an ambiguous POST it leaves the request
+  readable (_Check again_) without a resend. `409 terminal_capacity` is a
+  definite refusal with its own `reason: 'capacity'`, shown as "too many
+  terminals". `409 terminal_request_not_unknown` has its own reason as well.
+  Every recorded error now carries its `reason`.
+- **Acknowledgement**: `terminalRequestApi.acknowledge(lease, kind, requestId)`
+  sends exactly `{action: "acknowledge", clientId, generation,
+workRequestId | hostRequestId}`. `canAcknowledge(caps)` requires version 3.
+  `allowedActions` offers `acknowledge` only for `start_unconfirmed` with state
+  `outcome_unknown` and no `acknowledgedAt`, and only with the current lease
+  (it works while new terminals are disabled). `TerminalRequests.acknowledge`
+  refuses a v2 Node, other states and other sessions without sending. On success
+  the request leaves the in-memory list, as it leaves discovery, and is never shown
+  as closed. A recovered or read result that is already acknowledged is dropped
+  the same way. `409 terminal_request_not_unknown` and ambiguous replies re-read
+  the result by GET; if that shows no `acknowledgedAt`, the action is offered again
+  (the Node repeats it idempotently). A definite refusal keeps the request with its
+  error. `acknowledgedAt` is parsed in both result shapes.
+- en/zh-TW strings: _Acknowledge_, the explanation that acknowledging only stops
+  listing the request (it is not closed and transitions may stay blocked), and the
+  capacity message.
+
+Validation: `npx vitest run` in `apps/web`: **69 files, 637 tests** passed (622
+before; `terminal-requests.test.ts` **53 → 65**, `TerminalTab.test.ts` **3 → 6**).
+`svelte-check` found 0 errors and 0 warnings, and Prettier check passed on all
+changed files. Rust, lockfiles, package versions and IndexedDB **3** are unchanged.
+
+Contract note: a v2 Node answers an unknown request ID with a generic `404`, so on
+v2 a lost POST can no longer be re-sent under its ID. It stays readable instead.
+This is conservative, and it only affects Nodes older than 2030.
+
+Still open: rediscovery after a Gateway reconnect without reload, real browser
+journeys and the new UI. Local commit only, no push, deployment or Release.

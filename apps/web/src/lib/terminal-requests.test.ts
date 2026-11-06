@@ -4,6 +4,7 @@ import { panelApi, type TerminalInfo } from './panel-api';
 import {
   allowedActions,
   blocksTransitions,
+  canAcknowledge,
   classifyFailure,
   parseCapabilities,
   phaseOf,
@@ -90,7 +91,7 @@ const terminal = (id = 't1', executionPath = 'isolated_work'): TerminalInfo => (
 const work = (
   requestId: string,
   state: string,
-  extra: { errorCode?: string; terminal?: TerminalInfo } = {},
+  extra: { errorCode?: string; terminal?: TerminalInfo; acknowledgedAt?: number | null } = {},
 ): TerminalRequestResult => ({
   workRequest: {
     version: 1,
@@ -98,6 +99,7 @@ const work = (
     state,
     errorCode: extra.errorCode ?? null,
     terminalId: extra.terminal?.id ?? null,
+    acknowledgedAt: extra.acknowledgedAt ?? null,
   },
   terminal: extra.terminal ?? null,
 });
@@ -106,7 +108,13 @@ const WARNING =
 const host = (
   requestId: string,
   state: string,
-  extra: { errorCode?: string; terminal?: TerminalInfo; cols?: number; rows?: number } = {},
+  extra: {
+    errorCode?: string;
+    terminal?: TerminalInfo;
+    cols?: number;
+    rows?: number;
+    acknowledgedAt?: number | null;
+  } = {},
 ): TerminalRequestResult => ({
   hostManagement: {
     version: 1,
@@ -128,6 +136,7 @@ const host = (
     state,
     errorCode: extra.errorCode ?? null,
     terminalId: extra.terminal?.id ?? null,
+    acknowledgedAt: extra.acknowledgedAt ?? null,
   },
   terminal: extra.terminal ?? null,
 });
@@ -147,11 +156,18 @@ const read =
 
 const isolated: TerminalOffer = { kind: 'isolated', hostManagement: true };
 const unavailable: TerminalOffer = { kind: 'isolation_unavailable', hostManagement: true };
-function controller(options: { onterminal?: (t: TerminalInfo) => void } = {}) {
+const capsV = (workTerminalRequestVersion: number) => ({
+  enabled: true,
+  isolatedTerminalVersion: 1,
+  hostTerminalReviewVersion: 1,
+  workTerminalRequestVersion,
+});
+function controller(options: { onterminal?: (t: TerminalInfo) => void; version?: number } = {}) {
   return new TerminalRequests({
     sessionId: 's1',
     sleep: async () => {},
     onterminal: options.onterminal,
+    capabilities: capsV(options.version ?? 3),
   });
 }
 
@@ -360,7 +376,14 @@ describe('state table', () => {
     expect(classifyFailure(new ApiError('x', 504, 'node_timeout'))).toBe('ambiguous');
     expect(classifyFailure(new ApiError('x', 503, 'node_offline'))).toBe('ambiguous');
     expect(classifyFailure(new ApiError('x', 502))).toBe('ambiguous');
-    expect(classifyFailure(new ApiError('x', 404, 'not_found'))).toBe('not_found');
+    expect(classifyFailure(new ApiError('x', 404, 'terminal_request_not_found'))).toBe('not_found');
+    // Any other 404, e.g. a missing session or an older Node's generic code, is definite.
+    expect(classifyFailure(new ApiError('x', 404, 'not_found'))).toBe('rejected');
+    expect(classifyFailure(new ApiError('x', 404))).toBe('rejected');
+    expect(classifyFailure(new ApiError('x', 409, 'terminal_capacity'))).toBe('capacity');
+    expect(classifyFailure(new ApiError('x', 409, 'terminal_request_not_unknown'))).toBe(
+      'not_unknown',
+    );
     expect(classifyFailure(new ApiError('x', 409, 'work_terminal_request_conflict'))).toBe(
       'conflict',
     );
@@ -505,7 +528,7 @@ describe('isolated work requests', () => {
   it('re-POSTs the same ID with the same intent after a 404', async () => {
     const requests = controller();
     node(fail(504, 'node_timeout'));
-    node(fail(404, 'not_found'));
+    node(fail(404, 'terminal_request_not_found'));
     const lost = await requests.openWork(intent);
     expect(lost.phase).toBe('not_admitted');
     expect(allowedActions(lost, { intent, offer: isolated })).toEqual(['resubmit', 'dismiss']);
@@ -525,14 +548,14 @@ describe('isolated work requests', () => {
     it(`reads only after the ${name} changed`, async () => {
       const requests = controller();
       node(fail(503, 'node_offline'));
-      node(fail(404, 'not_found'));
+      node(fail(404, 'terminal_request_not_found'));
       const lost = await requests.openWork(intent);
       const current = { ...intent, ...changed };
       expect(allowedActions(lost, { intent: current, offer: isolated })).toEqual(['dismiss']);
       expect(await requests.resubmit(lost.requestId, current)).toBe(false);
       expect(posts()).toHaveLength(1);
       // Reading stays available.
-      node(fail(404, 'not_found'));
+      node(fail(404, 'terminal_request_not_found'));
       await requests.refresh(lost.requestId);
       expect(gets()).toHaveLength(2);
       expect(posts()).toHaveLength(1);
@@ -666,7 +689,7 @@ describe('host management', () => {
   it('re-sends a lost review under the same ID after a 404', async () => {
     const requests = controller();
     node('network');
-    node(fail(404, 'not_found'));
+    node(fail(404, 'terminal_request_not_found'));
     const lost = await requests.reviewHost(intent);
     expect(lost.phase).toBe('not_admitted');
     node(echo(200, (id) => host(id, 'review')));
@@ -775,5 +798,200 @@ describe('unresolved-request recovery', () => {
     node(fail(504, 'node_timeout'));
     await expect(requests.recover()).rejects.toBeInstanceOf(ApiError);
     expect(requests.list).toEqual([]);
+  });
+});
+
+// ---- v3: specific errors ----------------------------------------------------------
+
+describe('specific errors (v3)', () => {
+  it('refuses a full quota with its own reason, without reading or retrying', async () => {
+    const requests = controller();
+    node(fail(409, 'terminal_capacity'));
+    const refused = await requests.openWork(intent);
+    expect(refused).toMatchObject({
+      phase: 'rejected',
+      error: { code: 'terminal_capacity', reason: 'capacity' },
+    });
+    expect(allowedActions(refused, { intent, offer: isolated })).toEqual(['dismiss']);
+    expect(calls).toHaveLength(1);
+  });
+
+  it('treats a POST 404 for a missing session as a definite refusal', async () => {
+    const requests = controller();
+    node(fail(404, 'not_found'));
+    const refused = await requests.openWork(intent);
+    expect(refused).toMatchObject({ phase: 'rejected', error: { reason: 'rejected' } });
+    expect(calls).toHaveLength(1);
+  });
+
+  it('offers no same-ID resend when the GET 404 is not terminal_request_not_found', async () => {
+    const requests = controller();
+    node(fail(504, 'node_timeout'));
+    node(fail(404, 'not_found'));
+    const lost = await requests.openWork(intent);
+    expect(lost.phase).toBe('unknown_delivery');
+    expect(allowedActions(lost, { intent, offer: isolated })).toEqual(['refresh']);
+    expect(await requests.resubmit(lost.requestId, intent)).toBe(false);
+    expect(posts()).toHaveLength(1);
+  });
+});
+
+// ---- v3: acknowledgement ----------------------------------------------------------
+
+describe('acknowledgement (v3)', () => {
+  const unknown = (id = 'u1') =>
+    ({
+      kind: 'work',
+      requestId: id,
+      phase: 'start_unconfirmed',
+      result: work(id, 'outcome_unknown'),
+    }) as TrackedRequest;
+  const page = (...items: TerminalRequestResult[]) => ({
+    status: 200,
+    body: { terminalRequests: { version: 1, items, next: null } },
+  });
+
+  it('needs workTerminalRequestVersion 3', () => {
+    expect(canAcknowledge(null)).toBe(false);
+    expect(canAcknowledge(parseCapabilities({ terminalCapabilities: capsV(2) }))).toBe(false);
+    expect(canAcknowledge(parseCapabilities({ terminalCapabilities: capsV(3) }))).toBe(true);
+    expect(canAcknowledge(parseCapabilities({ terminalCapabilities: { enabled: false } }))).toBe(
+      false,
+    );
+  });
+
+  it('is offered only for outcome_unknown, on v3, with the current lease', () => {
+    const v3 = { intent, offer: isolated, acknowledge: true };
+    expect(allowedActions(unknown(), v3)).toEqual(['acknowledge', 'refresh', 'dismiss']);
+    // Also while new terminals are disabled.
+    expect(allowedActions(unknown(), { ...v3, offer: { kind: 'disabled' } })).toContain(
+      'acknowledge',
+    );
+    expect(allowedActions(unknown(), { intent, offer: isolated })).toEqual(['refresh', 'dismiss']);
+    expect(allowedActions(unknown(), { ...v3, intent: undefined })).toEqual(['refresh', 'dismiss']);
+    const done = { ...unknown(), result: work('u1', 'outcome_unknown', { acknowledgedAt: 5 }) };
+    expect(allowedActions(done, v3)).toEqual(['refresh', 'dismiss']);
+    const liveless = { ...unknown(), result: work('u1', 'running') };
+    expect(liveless.phase).toBe('start_unconfirmed');
+    expect(allowedActions(liveless, v3)).toEqual(['refresh', 'dismiss']);
+    for (const result of [
+      work('u1', 'preparing'),
+      work('u1', 'not_started', { errorCode: 'runner_unavailable' }),
+      host('u1', 'review'),
+      work('u1', 'settled'),
+      host('u1', 'unconfirmed'),
+    ]) {
+      const request = { ...unknown(), result, phase: phaseOf(result) } as TrackedRequest;
+      expect(allowedActions(request, v3)).not.toContain('acknowledge');
+    }
+  });
+
+  for (const kind of ['work', 'host'] as const)
+    it(`acknowledges a recovered ${kind} request and stops listing it`, async () => {
+      const changes: TrackedRequest[][] = [];
+      const requests = new TerminalRequests({
+        sessionId: 's1',
+        sleep: async () => {},
+        capabilities: capsV(3),
+        onchange: (list) => changes.push(list),
+      });
+      const make = kind === 'work' ? work : host;
+      node(page(make('u1', 'outcome_unknown', { errorCode: 'terminal_start_unconfirmed' })));
+      await requests.recover();
+      expect(requests.get('u1', kind)?.phase).toBe('start_unconfirmed');
+      node((call) => ({
+        status: 200,
+        body: make(
+          call.body![kind === 'work' ? 'workRequestId' : 'hostRequestId'],
+          'outcome_unknown',
+          {
+            acknowledgedAt: 1234,
+          },
+        ),
+      }));
+      expect(await requests.acknowledge('u1', { ...intent, generation: 9 }, kind)).toBe(true);
+      expect(posts()[0]!.url.pathname).toBe('/api/sessions/s1/terminals');
+      expect(posts()[0]!.body).toEqual({
+        action: 'acknowledge',
+        clientId: 'client-a',
+        generation: 9,
+        [kind === 'work' ? 'workRequestId' : 'hostRequestId']: 'u1',
+      });
+      expect(requests.get('u1', kind)).toBeUndefined();
+      expect(requests.list).toEqual([]);
+      // Nothing ever showed it as closed.
+      expect(changes.flat().map((r) => r.phase)).not.toContain('closed');
+      // A later recovery that still returned it (it should not) keeps it hidden.
+      node(page(make('u1', 'outcome_unknown', { acknowledgedAt: 1234 })));
+      await requests.recover();
+      expect(requests.list).toEqual([]);
+    });
+
+  it('sends nothing to a v2 Node', async () => {
+    const requests = controller({ version: 2 });
+    node(page(work('u1', 'outcome_unknown')));
+    await requests.recover();
+    expect(await requests.acknowledge('u1', intent)).toBe(false);
+    expect(posts()).toHaveLength(0);
+  });
+
+  it('does not acknowledge other states', async () => {
+    const requests = controller();
+    node(page(work('p1', 'preparing')));
+    node(read('workRequestId', (id) => work(id, 'preparing')));
+    await requests.recover();
+    expect(await requests.acknowledge('p1', intent)).toBe(false);
+    expect(posts()).toHaveLength(0);
+    requests.dispose();
+  });
+
+  it('re-reads the result on 409 terminal_request_not_unknown', async () => {
+    const requests = controller();
+    node(page(work('u1', 'outcome_unknown')));
+    await requests.recover();
+    node(fail(409, 'terminal_request_not_unknown'));
+    node(read('workRequestId', (id) => work(id, 'unconfirmed')));
+    await requests.acknowledge('u1', intent);
+    const after = requests.get('u1')!;
+    expect(after.phase).toBe('closed_unconfirmed');
+    expect(after.error).toMatchObject({
+      code: 'terminal_request_not_unknown',
+      reason: 'not_unknown',
+    });
+    expect(gets()[gets().length - 1]!.url.searchParams.get('workRequestId')).toBe('u1');
+  });
+
+  it('resolves an ambiguous acknowledgement by GET', async () => {
+    const requests = controller();
+    node(page(work('u1', 'outcome_unknown'), work('u2', 'outcome_unknown')));
+    await requests.recover();
+    // Recorded before the reply was lost.
+    node(fail(504, 'node_timeout'));
+    node(read('workRequestId', (id) => work(id, 'outcome_unknown', { acknowledgedAt: 7 })));
+    await requests.acknowledge('u1', intent);
+    expect(requests.get('u1')).toBeUndefined();
+    // Not recorded: still unknown and acknowledgeable again (the Node repeats idempotently).
+    node('network');
+    node(read('workRequestId', (id) => work(id, 'outcome_unknown')));
+    await requests.acknowledge('u2', intent);
+    const still = requests.get('u2')!;
+    expect(still.phase).toBe('start_unconfirmed');
+    expect(allowedActions(still, { intent, offer: isolated, acknowledge: true })).toContain(
+      'acknowledge',
+    );
+    expect(posts()).toHaveLength(2);
+  });
+
+  it('keeps the request on a definite refusal', async () => {
+    const requests = controller();
+    node(page(work('u1', 'outcome_unknown')));
+    await requests.recover();
+    node(fail(409, 'control_lease_stale'));
+    await requests.acknowledge('u1', intent);
+    expect(requests.get('u1')).toMatchObject({
+      phase: 'start_unconfirmed',
+      error: { code: 'control_lease_stale' },
+    });
+    expect(gets()).toHaveLength(1); // only the discovery page
   });
 });
