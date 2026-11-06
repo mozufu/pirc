@@ -183,6 +183,28 @@ pub fn routes() -> Vec<Route> {
             },
         ),
         get("/api/sessions/:id/terminals", |node, request| async move {
+            let capability = request.single_query("capabilities")?;
+            if let Some(value) = capability {
+                if value != "1"
+                    || request.query("workRequestId").is_some()
+                    || request.query("hostRequestId").is_some()
+                {
+                    return Err(ApiError::invalid_input());
+                }
+                claim(&node, &request)?;
+                return Ok(Response::json(
+                    json!({"terminalCapabilities":{"version":1,"enabled":node.config.terminals_enabled && !node.closing(),"isolatedTerminalVersion":if node.sandbox.isolated_terminals(){1}else{0},"hostTerminalReviewVersion":1,"workTerminalRequestVersion":1}}),
+                ));
+            }
+            let work_request = request.single_query("workRequestId")?;
+            if work_request.is_some() && request.query("hostRequestId").is_some() {
+                return Err(ApiError::invalid_input());
+            }
+            if let Some(id) = work_request {
+                let session = claim(&node, &request)?;
+                return crate::terminals::requests::status(&node, &request.user, &session.id, id)
+                    .map(Response::json);
+            }
             if let Some(id) = request.single_query("hostRequestId")? {
                 // Retained outcomes remain readable even if new terminals were disabled.
                 let session = claim(&node, &request)?;
@@ -225,6 +247,29 @@ pub fn routes() -> Vec<Route> {
                 .any(|key| body.get(*key).is_some())
             {
                 return Err(ApiError::invalid_input());
+            }
+            if body.get("requestId").is_some()
+                && body.get("executionPath").and_then(Value::as_str) != Some("isolated_work")
+            {
+                return Err(ApiError::invalid_input());
+            }
+            if body.get("executionPath").and_then(Value::as_str) == Some("isolated_work")
+                && body.get("requestId").is_some()
+            {
+                let id = body
+                    .get("requestId")
+                    .and_then(Value::as_str)
+                    .ok_or_else(ApiError::invalid_input)?;
+                return crate::terminals::requests::create(
+                    &node,
+                    &request.user,
+                    &session.id,
+                    &cwd,
+                    id,
+                    (&client_id, generation),
+                    (cols, rows),
+                )
+                .await;
             }
             let terminal = match body.get("executionPath") {
                 None => node.terminals.create(

@@ -23,7 +23,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1029**, Node **2027**, protocol **15**, client contract **2**,
+formats: Gateway **1029**, Node **2028**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -55,7 +55,15 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local U4 delivery: [host terminal review and once-only launch](#u4-implementation-checkpoint-host-terminal-review-and-once-only-launch-2026-11-04)
+Latest local U4 delivery: [durable isolated work-terminal requests](#u4-implementation-checkpoint-durable-isolated-work-terminal-requests-2026-11-06)
+gives explicit isolated terminals a retained request identity before preparation,
+one worker per request, read-only result recovery and per-session terminal
+capabilities (Node **2028**). Unavailable isolation records `not_started` without
+host fallback. The proposed [client terminal contract](execution-isolation.md#client-terminal-execution-path-contract-v1-proposed-gate-for-webandroid)
+and its four Node gaps are next; Web/Android need interfaces only, as their UI
+will be replaced.
+
+The previous [host terminal review and once-only launch](#u4-implementation-checkpoint-host-terminal-review-and-once-only-launch-2026-11-04)
 adds a human review/confirmation contract, atomic grant/launch reservation and
 read-only result recovery (Node **2027**). Detached host work remains unconfirmed
 after direct-shell closure. Web/Android mode controls, isolated-by-default rollout
@@ -5462,3 +5470,44 @@ sandbox acceptance or Android/device proof. No Flutter/Nix/browser/emulator/devi
 validation is run for this backend-only slice. The owned **2.9 GiB** build/log
 tree is cleaned; APKs, shared caches and user/peer data remain. Local commit only,
 no push, deployment or Release.
+
+## U4 implementation checkpoint: durable isolated work-terminal requests (2026-11-06)
+
+Node schema **2028** adds retained `terminal_work_requests`. An explicit
+`executionPath: "isolated_work"` terminal with a stable `requestId` is admitted
+durably before asynchronous preparation, schedules exactly one worker and links
+to its own terminal-kind kernel scope in the reservation transaction. Retries,
+lost waiters and restarts only read the original result through
+`GET .../terminals?workRequestId=<id>`; old-incarnation or missing live
+terminals report `outcome_unknown` and are never replayed. Unavailable isolation
+records `not_started`/`isolated_terminal_unavailable` without any host launch.
+A changed intent under the same ID returns `409 work_terminal_request_conflict`.
+Preparing requests hold existing terminal quota. `GET .../terminals?capabilities=1`
+and `workTerminalRequestVersion: 1` advertise the backend contract. A `requestId`
+cannot reach the legacy host path.
+
+Triggers keep identity immutable, outcomes monotonic and evidence undeletable,
+and refuse a link to an Agent or peer scope. Upgrade invents no request IDs or
+grants. Gateway **1029** and protocol/client/envelope **15/2/3** stay unchanged;
+no package, lockfile or Nix hash changes. Old binaries reject 2028.
+
+This is backend reconciliation only. The proposed
+[client terminal contract v1](execution-isolation.md#client-terminal-execution-path-contract-v1-proposed-gate-for-webandroid)
+lists four Node gaps to close before Web/Android implement it: unresolved-request
+discovery, host/work shape parity (including the empty `errorCode` after a linked
+spawn failure), refusing the bare non-durable `isolated_work` request, and a
+relay-timeout case. On 2026-11-06 the user stated the current Web/Android UI
+will be replaced by a new design, so client slices only need correct interfaces.
+Native Linux acceptance, isolated-by-default rollout, complete revocation/
+installation and public switching remain open.
+
+Validation: **651 Node library tests** (five existing ignores), **421 Gateway
+tests**, **61 focused terminal tests**, **29 required real Gateway/Node process
+cases** across 12 suites (terminals 5, Node-link side channels 6, execution fences
+4, checkpoints 3, conversation admission/creation/host-command fences 2 each,
+environment transitions, inference fences, memory, project deletion and streams
+1 each), formatting and strict all-target Node/Gateway/conformance Clippy passed.
+The new process case runs through Gateway on macOS (isolation unavailable); the
+Node fixture kernel adapter is synthetic. No Flutter, browser, emulator, device
+or native Linux validation is claimed. Local commit only, no push, deployment or
+Release.

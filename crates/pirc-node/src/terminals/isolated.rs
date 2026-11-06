@@ -6,6 +6,7 @@ use std::{io::PipeWriter, path::PathBuf, process::ExitStatus};
 use tokio::sync::oneshot;
 
 pub(super) struct Work {
+    pub request: Option<requests::Permit>,
     pub owner: crate::sandbox::processes::ObserverIdentity,
     pub prepared: Prepared,
     pub gate: Option<PipeWriter>,
@@ -23,6 +24,18 @@ impl Terminals {
         cols: Option<i64>,
         rows: Option<i64>,
         control: (&str, i64),
+    ) -> ApiResult<TerminalInfo> {
+        self.create_isolated_selected(session, cwd, cols, rows, control, None)
+            .await
+    }
+    pub(super) async fn create_isolated_selected(
+        &self,
+        session: &str,
+        cwd: &Path,
+        cols: Option<i64>,
+        rows: Option<i64>,
+        control: (&str, i64),
+        request: Option<requests::Permit>,
     ) -> ApiResult<TerminalInfo> {
         let node = self.node.upgrade().ok_or_else(ApiError::internal)?;
         let (workspace, row, mode) = {
@@ -95,6 +108,7 @@ impl Terminals {
                 Environment {
                     host: None,
                     work: Some(Work {
+                        request,
                         owner,
                         prepared,
                         gate: None,

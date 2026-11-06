@@ -50,6 +50,7 @@ mod isolated;
 mod isolated_tests;
 pub(crate) mod journal;
 pub(crate) mod pty;
+pub(crate) mod requests;
 mod supervision;
 pub(crate) use input::Control;
 use input::{Authority, Binding};
@@ -367,6 +368,9 @@ impl Terminals {
                 )?;
                 let record =
                     journal::Record::scoped(node, db, session_id, workspace, cwd, &launch)?;
+                if let Some(permit) = work.as_ref().and_then(|work| work.request.as_ref()) {
+                    requests::link(db, node, permit, &info, &record)?;
+                }
                 Ok((record, launch))
             })?;
             (Some(record), Some(launch))

@@ -20,6 +20,7 @@ use std::{
 #[derive(Default)]
 struct Scope {
     identity_index: AtomicUsize,
+    panic_prepare: AtomicBool,
     ready: AtomicBool,
     retired: AtomicBool,
     spawned: AtomicUsize,
@@ -112,6 +113,10 @@ impl Sandbox for Backend {
         Box::pin(async { Err(ApiError::internal()) })
     }
     fn prepare_terminal(&self, _: PrepareInput, _: PathBuf) -> BoxFuture<'_, ApiResult<Prepared>> {
+        assert!(
+            !self.scope.panic_prepare.load(Ordering::SeqCst),
+            "injected prepare panic"
+        );
         let count = self.prepared.fetch_add(1, Ordering::SeqCst);
         let (scope, report) = if count == 0 {
             (self.scope.clone(), self.report.clone())
@@ -467,4 +472,193 @@ async fn owner_kernel_and_terminal_reservations_commit_together_before_spawn() {
         }
         f.node.close().await;
     }
+}
+
+fn work_request(
+    f: &Fixture,
+    request: &str,
+) -> tokio::task::JoinHandle<ApiResult<crate::router::Response>> {
+    let node = f.node.clone();
+    let session = f.session.clone();
+    let root = f.root.clone();
+    let generation = f.generation;
+    let request = request.to_string();
+    tokio::spawn(async move {
+        super::requests::create(
+            &node,
+            "alice",
+            &session,
+            &root,
+            &request,
+            ("phone", generation),
+            (None, None),
+        )
+        .await
+    })
+}
+fn work_status(f: &Fixture, request: &str) -> serde_json::Value {
+    super::requests::status(&f.node, "alice", &f.session, request).unwrap()
+}
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+async fn concurrent_work_requests_create_one_guarded_scope_and_repeat_the_same_result() {
+    let f = Fixture::new(true).await;
+    let mut jobs = Vec::new();
+    for _ in 0..8 {
+        jobs.push(work_request(&f, "same-work"))
+    }
+    for job in jobs {
+        job.await.unwrap().unwrap();
+    }
+    assert_eq!(f.scope.spawned.load(Ordering::SeqCst), 1);
+    let result = work_status(&f, "same-work");
+    assert_eq!(result["workRequest"]["state"], "running");
+    assert_eq!(f.node.terminals.list(&f.session).len(), 1);
+    let changed = super::requests::create(
+        &f.node,
+        "alice",
+        &f.session,
+        &f.root,
+        "same-work",
+        ("phone", f.generation),
+        (Some(100), None),
+    )
+    .await;
+    assert_eq!(changed.unwrap_err().code, "work_terminal_request_conflict");
+    {
+        let db = f.node.db.lock();
+        assert_eq!(
+            db.query_row("SELECT count(*) FROM terminal_work_requests", [], |r| r
+                .get::<_, i64>(0))
+                .unwrap(),
+            1
+        );
+        assert_eq!(
+            db.query_row("SELECT count(*) FROM sandbox_launches", [], |r| r
+                .get::<_, i64>(0))
+                .unwrap(),
+            1
+        );
+    }
+    f.node
+        .terminals
+        .close(&f.session, result["terminal"]["id"].as_str().unwrap())
+        .unwrap();
+    f.node.terminals.dispose_session(&f.session).await.unwrap();
+    let again = work_request(&f, "same-work")
+        .await
+        .unwrap()
+        .unwrap()
+        .body
+        .unwrap();
+    assert_eq!(again["workRequest"]["state"], "settled");
+    assert_eq!(
+        again["workRequest"]["terminalId"],
+        result["workRequest"]["terminalId"]
+    );
+    assert_eq!(f.scope.spawned.load(Ordering::SeqCst), 1);
+    f.node.close().await;
+}
+#[tokio::test]
+async fn lost_work_request_waiter_does_not_abandon_or_repeat_the_one_worker() {
+    let f = Fixture::new(false).await;
+    let original = work_request(&f, "lost-waiter");
+    until(|| f.scope.spawned.load(Ordering::SeqCst) == 1).await;
+    original.abort();
+    assert!(original.await.unwrap_err().is_cancelled());
+    let duplicate = work_request(&f, "lost-waiter").await.unwrap().unwrap();
+    assert_eq!(duplicate.status, 200);
+    assert_eq!(f.scope.spawned.load(Ordering::SeqCst), 1);
+    assert!(!f.report.exists());
+    f.scope.ready.store(true, Ordering::SeqCst);
+    until(|| f.report.exists()).await;
+    let status = work_status(&f, "lost-waiter");
+    assert_eq!(status["workRequest"]["state"], "running");
+    assert_eq!(status["terminal"]["executionPath"], "isolated_work");
+    f.node.close().await;
+}
+#[tokio::test]
+async fn failed_work_request_association_rolls_back_the_whole_scope_without_replay() {
+    let f = Fixture::new(true).await;
+    f.node.db.lock().execute_batch("CREATE TRIGGER fail_work_link BEFORE UPDATE OF run_id ON terminal_work_requests BEGIN SELECT RAISE(ABORT,'disk full'); END;").unwrap();
+    let result = work_request(&f, "failed-link")
+        .await
+        .unwrap()
+        .unwrap()
+        .body
+        .unwrap();
+    assert_eq!(result["workRequest"]["state"], "not_started");
+    assert_eq!(f.scope.spawned.load(Ordering::SeqCst), 0);
+    assert!(!f.report.exists());
+    {
+        let db = f.node.db.lock();
+        for table in ["terminal_runs", "sandbox_launches", "terminal_io_owners"] {
+            assert_eq!(
+                db.query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r
+                    .get::<_, i64>(0))
+                    .unwrap(),
+                0
+            )
+        }
+        db.execute_batch("DROP TRIGGER fail_work_link").unwrap();
+    }
+    let repeated = work_request(&f, "failed-link").await.unwrap().unwrap();
+    assert_eq!(
+        repeated.body.unwrap()["workRequest"]["state"],
+        "not_started"
+    );
+    assert_eq!(f.scope.spawned.load(Ordering::SeqCst), 0);
+    assert!(
+        f.node
+            .db
+            .lock()
+            .execute(
+                "UPDATE terminal_work_requests SET state='accepted',error_code=NULL",
+                []
+            )
+            .is_err()
+    );
+    f.node.close().await;
+}
+#[tokio::test]
+async fn panicked_work_preparation_stays_unknown_and_cannot_schedule_another_worker() {
+    let f = Fixture::new(true).await;
+    f.scope.panic_prepare.store(true, Ordering::SeqCst);
+    let result = work_request(&f, "panicked")
+        .await
+        .unwrap()
+        .unwrap()
+        .body
+        .unwrap();
+    assert_eq!(result["workRequest"]["state"], "outcome_unknown");
+    assert_eq!(
+        result["workRequest"]["errorCode"],
+        "terminal_start_unconfirmed"
+    );
+    f.scope.panic_prepare.store(false, Ordering::SeqCst);
+    let retry = work_request(&f, "panicked")
+        .await
+        .unwrap()
+        .unwrap()
+        .body
+        .unwrap();
+    assert_eq!(retry["workRequest"]["state"], "outcome_unknown");
+    assert_eq!(f.scope.spawned.load(Ordering::SeqCst), 0);
+    f.node.close().await;
+}
+
+#[tokio::test]
+async fn full_work_terminal_quota_still_allows_reading_the_original_request() {
+    let f = Fixture::new(true).await;
+    for n in 0..PER_SESSION {
+        work_request(&f, &format!("work-{n}"))
+            .await
+            .unwrap()
+            .unwrap();
+    }
+    let refused = work_request(&f, "fifth").await.unwrap();
+    assert_eq!(refused.unwrap_err().code, "conflict");
+    let original = work_request(&f, "work-0").await.unwrap().unwrap();
+    assert_eq!(original.status, 200);
+    assert_eq!(f.node.terminals.list(&f.session).len(), PER_SESSION);
+    f.node.close().await;
 }

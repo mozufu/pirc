@@ -1,5 +1,18 @@
 # Upgrades
 
+## Local checkpoint: durable isolated work-terminal requests
+
+Node schema **2028** adds retained `terminal_work_requests`. An explicit isolated
+work terminal with a `requestId` is admitted once before preparation; retries and
+restarts only query the original result and never launch again. Unavailable
+isolation records `not_started` without host fallback. `workTerminalRequestVersion:
+1` and the per-session `?capabilities=1` read advertise the contract. Existing
+terminals and scopes gain no request IDs or grants. Gateway **1029**,
+protocol/client/private-envelope **15/2/3**, lockfiles and Nix hashes remain
+unchanged. Back up Node state with its binary; older readers reject 2028 and
+rollback requires matching state/binary backups. Local code only, no deployment
+or Release. See the [validation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-durable-isolated-work-terminal-requests-2026-11-06).
+
 ## Local checkpoint: explicit human host-terminal review
 
 Node schema **2027** adds retained `terminal_host_requests`. New explicit host

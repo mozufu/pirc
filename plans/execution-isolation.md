@@ -264,3 +264,179 @@ Validation: **639 Node**, **421 Gateway**, **20 required process cases**, final
 recovery works after new terminals are disabled; host-source Stop remains blocked
 without descendant proof. The owned **2.9 GiB** outputs are cleaned. Native Linux,
 client rollout and full revocation/install remain unaccepted.
+
+## Local implementation checkpoint: durable isolated work-terminal requests (2026-11-06)
+
+Node schema **2028** adds retained `terminal_work_requests`, so an explicit
+isolated work terminal has a stable request identity before asynchronous
+preparation starts. This closes the "general isolated terminal reconciliation"
+gap left by the guarded isolated adapter; it does not add client controls.
+
+- The table stores owner/session/request identity, Node incarnation, workspace,
+  runner epoch, cwd and an intent digest, with states `accepted`, `not_started`
+  and `outcome_unknown`. Triggers keep identity immutable, permit exactly one link
+  to this request's own `launching` terminal-kind kernel scope, keep outcomes
+  monotonic and forbid deletion. An Agent launch or peer scope cannot be claimed.
+- `POST .../terminals` with `executionPath: "isolated_work"` and `requestId`
+  admits durably before preparation. Only the first submission schedules a worker;
+  a dropped HTTP waiter does not cancel it. The request links to its terminal/kernel
+  reservation in the same transaction, and a failed link rolls the whole scope back.
+  A known failure before linking records `not_started` with its error code, such as
+  `isolated_terminal_unavailable`; a panic records
+  `outcome_unknown`/`terminal_start_unconfirmed`. Repeating the same intent returns
+  the same result (`200`); a changed intent under the same ID returns
+  `409 work_terminal_request_conflict`. Preparing requests count toward the existing
+  per-session and total terminal limits.
+- `GET .../terminals?workRequestId=<id>` reads the retained result, including
+  at full quota. An old-incarnation request or a missing live terminal reports
+  `outcome_unknown`; nothing is replayed after restart.
+- `GET .../terminals?capabilities=1` returns owned, non-mutating
+  `terminalCapabilities` (`enabled`, `isolatedTerminalVersion`,
+  `hostTerminalReviewVersion`, `workTerminalRequestVersion`). The Node capability
+  document gains `workTerminalRequestVersion: 1`.
+- A `requestId` without `executionPath: "isolated_work"` is refused, so it can
+  never open a legacy host terminal. The bare `isolated_work` request without an
+  ID still works non-durably (see gap 3 below).
+
+Upgrade preserves existing scopes and invents no request IDs or grants. Old binaries
+reject 2028; rollback needs matching state/binary backups. Gateway **1029**,
+protocol/client/envelope **15/2/3**, packages, lockfiles and Nix hashes are
+unchanged. Known limit: when spawn fails **after** linking, the request's state
+comes from the terminal run (`not_started`), but its `errorCode` stays empty;
+this is folded into gap 2 below.
+
+Validation: **651 Node library tests** (five existing child/opt-in ignores),
+**421 Gateway tests**, **61 focused terminal tests** (seven request-module and five
+new isolated-fixture cases among them), **29 required real Gateway/Node process
+cases** across 12 suites (terminals 5, Node-link side channels 6, execution fences
+4, checkpoints 3, conversation admission 2, creation 2, host-command fences 2,
+environment transitions, inference fences, memory, project deletion and streams
+1 each), `cargo fmt --check` and strict all-target Clippy for Node/Gateway/
+conformance passed. The new conformance case drives an isolated request through
+Gateway on macOS: `not_started`/`isolated_terminal_unavailable` without host
+fallback, identical retry, `409` on changed size and query recovery with no
+terminal listed. The kernel adapter in Node fixtures is synthetic; native Linux
+acceptance, Web/Android rollout and full revocation/installation remain open.
+Local commit only, no push, deployment or Release.
+
+## Client terminal execution-path contract v1 (proposed, gate for Web/Android)
+
+Status: **proposed on 2026-11-06**, not implemented by any client. The Node
+side it relies on is the [2028 checkpoint](#local-implementation-checkpoint-durable-isolated-work-terminal-requests-2026-11-06). No Web or
+Android code currently sends `executionPath`, `requestId`, `workRequestId` or
+`hostRequestId`. Both clients must implement this one contract. Close the Node
+gaps below before freezing it, so the two clients cannot diverge. This covers
+step 4 of the [implementation order](#implementation-order-and-acceptance):
+necessary controls in the existing style, with no navigation or visual redesign.
+
+### Discovery
+
+1. Before offering a new terminal, read `GET .../terminals?capabilities=1` for the
+   session through the existing Gateway relay; paired Android calls Gateway directly.
+2. `enabled: false` means no new terminal of any path. Existing terminals and the
+   two result queries stay readable.
+3. `isolatedTerminalVersion >= 1` and `workTerminalRequestVersion >= 1`: the
+   ordinary **New terminal** action uses isolated work.
+4. `isolatedTerminalVersion: 0`, for example on macOS or behind an external wrapper:
+   the ordinary action shows that isolation is unavailable. A separate, explicit
+   **Host management terminal…** action is offered only if
+   `hostTerminalReviewVersion >= 1`. The client never falls back to the omitted-path
+   host terminal by itself.
+5. A missing capability field means version 0. An older Node without the query
+   gets the client's existing "update the Node" state, not a guessed path.
+
+### Request identity and recovery
+
+- Each user action gets a new client-generated `requestId`
+  (`[A-Za-z0-9_-]{1,128}`, a random UUID is enough). Work and host IDs use separate
+  namespaces, but clients must not reuse an ID across them.
+- The digest covers owner, session, workspace and its path, cwd, runner epoch,
+  mode, shell, `clientId`/`generation` and `cols`/`rows`. A POST retry is therefore
+  valid only with the **same control lease and size**. After a reconnect, a lease
+  change or a resize, recovery is **GET only**. A changed intent under the same
+  ID returns `409 work_terminal_request_conflict`.
+- A lost or timed-out POST, or a reload: GET the request. A `404` means it was
+  not admitted yet. The client may re-POST the **same** ID with the same intent
+  (deduplicated), or drop it. It never mints a new ID for the same user action.
+- The first POST waits for preparation. A relay/HTTP timeout is an ambiguous
+  outcome and is handled by the GET above, not by a new request.
+
+### Result states and client behavior
+
+| State (`workRequest.state` / `hostManagement.state`) | Meaning                                                                     | Client behavior                                                                                                                    |
+| ---------------------------------------------------- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `review` (host only)                                 | Node-issued review is pending                                               | Show shell, root, size and the host-effects `warning` verbatim; confirm sends exact `reviewId`/`reviewHash` and `confirmed: true`  |
+| `stale` / `expired` (host only)                      | Review from an earlier Node incarnation, or past its TTL                    | Cannot be confirmed; a new review is a new user action with a new ID                                                               |
+| `preparing` (work only)                              | Admitted; preparation is running in this Node incarnation                   | Show progress and poll with GET; do not POST again                                                                                 |
+| `launching` / `running` with `terminal`              | Live terminal linked to this request                                        | Attach to the existing stream for `terminal.id`                                                                                    |
+| `not_started`                                        | Known no-start; `errorCode` says why (`isolated_terminal_unavailable`, …)   | Show the reason; _Try again_ is a new action; an unavailable path may offer the explicit host-management action, never auto-switch |
+| `outcome_unknown`                                    | Start or liveness cannot be confirmed (restart, panic, lost registry)       | Show "start not confirmed"; no automatic retry; explain that workspace switching may stay blocked                                  |
+| `settled`                                            | Terminal ended with confirmed retirement                                    | Closed                                                                                                                             |
+| `unconfirmed`                                        | Direct shell closed but retirement is not proven (host detached work, etc.) | Show as closed but unconfirmed; transitions stay blocked; no force-clear action                                                    |
+
+Live terminals and ready frames already carry `executionPath`. Clients show a
+small path label (isolated / host management) on the terminal tab. Untagged
+legacy terminals remain unlabeled; they are not shown as isolated.
+
+### Node gaps to close before freezing v1
+
+These are small Node/API slices on top of the 2028 checkpoint, in the same
+worktree lineage. They are the next implementation step:
+
+1. **Unresolved-request discovery.** Add an owner-scoped read listing this
+   session's work/host requests in `preparing`, `review` or `outcome_unknown`
+   (bounded keyset page). Another device, a reload or a cleared browser store can
+   then find them without client persistence, so the Web IndexedDB **3** and
+   Android envelope **3** formats need no bump. Without this, both clients must
+   persist pending IDs and the envelope/schema versions change. Recommended:
+   implement discovery.
+2. **Shape parity.** Add `errorCode` to `hostManagement`, the same as
+   `workRequest`, and document the state union above as one enum. Return the
+   request ID in both shapes. Also report the run's error code when a work request
+   fails after linking, instead of an empty `errorCode`.
+3. **Bare `isolated_work` without `requestId`.** It still opens a non-durable
+   request. New clients must always send `requestId`. Decide whether Node refuses
+   the bare form behind `workTerminalRequestVersion`; recommended: refuse it once
+   both clients ship, since no existing client sends it.
+4. **Relay timeout check.** Confirm the Gateway relay timeout against the worst
+   isolated preparation time. Add a conformance case where the waiter is dropped
+   and a later GET returns the single result.
+
+### Client work split (after the gaps above)
+
+Can run in parallel in separate worktrees, with the frozen contract as their only
+shared input.
+
+The user decided on **2026-11-06** that the current Web/Android UI will be fully
+replaced by a new design that is still in mock-ups. Client slices therefore
+only need **correct interfaces**: API calls, request identity, recovery and the
+state mapping above, with tests. Minimal throwaway UI wiring is enough; visual
+quality, placement and polish are out of scope.
+
+- **Web** (`apps/web/src/lib/panel-api.ts`, `components/panel/TerminalTab.svelte`
+  and locales): capabilities, request create/recover, host review dialog, state
+  rendering and path label; en/zh-TW strings. Vitest cases cover every row of the
+  state table, reload during `preparing`, `409` and the 404→same-ID re-POST.
+- **Android** (`apps/android/lib/live/terminal_pane.dart`, `terminal_state.dart`
+  and `gateway.dart`): the same flow through the direct Gateway connection, with
+  focused simple Flutter tests only (no visual redesign).
+- **Conformance**: one end-to-end case per client path through Gateway: isolated
+  unavailable → explicit host review → confirm → close → `unconfirmed`, plus
+  discovery from a second client.
+
+### Decisions to confirm with the user at client entry
+
+1. ~~Where macOS offers the explicit host-management terminal.~~ Deferred to the
+   new design (2026-11-06). The interface layer only exposes both actions, keeps
+   them separate and never auto-switches; the temporary UI may place them anywhere.
+2. When old clients that send the omitted-path request stop being able to open host
+   terminals (isolated-by-default migration). Recommended: keep it until both new
+   clients are released, then gate it behind a Node setting with a visible update
+   prompt. Never reclassify existing terminals.
+3. Whether `outcome_unknown`/`unconfirmed` should offer a guided path, such as
+   showing the retained run ID for manual host inspection. No force-clear is
+   authorized either way.
+
+Native Linux acceptance of the isolated adapter, complete revocation/installation
+and public switching remain gated as above. This contract authorizes no push,
+deployment or release.

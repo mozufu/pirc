@@ -704,3 +704,45 @@ async fn node_host_terminal_review() {
     assert_eq!(closed_retry.body["hostManagement"]["terminalId"], terminal);
     assert_eq!(closed_retry.body["hostManagement"]["state"], "unconfirmed");
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn isolated_terminal_requests_report_no_start_without_host_fallback() {
+    let Some(cluster) = Cluster::start_with(terminal_env()).await else {
+        return;
+    };
+    let (mut s, _) = Session::create(&cluster.api()).await;
+    s.acquire().await;
+    let mut body =
+        json!({"clientId":s.client,"generation":s.generation,"requestId":"isolated-request-once"});
+    assert_eq!(s.post("/terminals", body.clone()).await.status, 400);
+    body["executionPath"] = json!("isolated_work");
+    for expected in [201, 200] {
+        let response = s.post("/terminals", body.clone()).await;
+        assert_eq!(response.status, expected, "{response:?}");
+        assert_eq!(response.body["workRequest"]["state"], "not_started");
+        assert_eq!(
+            response.body["workRequest"]["errorCode"],
+            "isolated_terminal_unavailable"
+        );
+        assert!(response.body["terminal"].is_null());
+    }
+    body["cols"] = json!(100);
+    let changed = s.post("/terminals", body).await;
+    assert_eq!(changed.status, 409);
+    assert_eq!(
+        changed.body["error"]["code"],
+        "work_terminal_request_conflict"
+    );
+    let queried = s
+        .get("/terminals?workRequestId=isolated-request-once")
+        .await;
+    assert_eq!(queried.status, 200);
+    assert_eq!(queried.body["workRequest"]["state"], "not_started");
+    assert_eq!(
+        s.get("/terminals").await.body["terminals"]
+            .as_array()
+            .unwrap()
+            .len(),
+        0
+    );
+}

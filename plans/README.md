@@ -196,7 +196,17 @@ client mode/default rollout and complete revocation/install remain open.
 strict all-target Clippy passed. The owned **2.9 GiB** outputs are cleaned; this
 delivery stays local.
 
-Latest local host-terminal delivery:
+Latest local terminal delivery:
+[durable isolated work-terminal requests](unified-conversations.md#u4-implementation-checkpoint-durable-isolated-work-terminal-requests-2026-11-06)
+retains an explicit isolated terminal's request identity before preparation, runs
+one worker per request and recovers results read-only (Node **2028**). Unavailable
+isolation never falls back to the host. Next: the four Node gaps in the
+[client terminal contract](execution-isolation.md#client-terminal-execution-path-contract-v1-proposed-gate-for-webandroid),
+then interface-only Web/Android slices (their UI will be replaced).
+**651 Node tests**, **421 Gateway tests**, **29 required process cases**,
+**61 focused terminal cases** and strict all-target Clippy passed. Local only.
+
+Previous local host-terminal delivery:
 [human review and once-only launch](unified-conversations.md#u4-implementation-checkpoint-host-terminal-review-and-once-only-launch-2026-11-04)
 adds a Node-generated, exact-environment review, explicit positive confirmation,
 atomic grant/launch reservation and request-bound result lookup (Node **2027**).
@@ -223,7 +233,7 @@ or `full-access` escalation is authorized by the design.
 | U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                        | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle        |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
-not enable it. Current formats are Gateway schema **1029**, Node schema **2027**,
+not enable it. Current formats are Gateway schema **1029**, Node schema **2028**,
 protocol **15**, client recovery contract **2**, and Web IndexedDB/native private
 envelope **3**. Existing ordinary session APIs remain available. Unaccepted
 Gateway attachment staging expires after **seven days**; accepted attachments and
