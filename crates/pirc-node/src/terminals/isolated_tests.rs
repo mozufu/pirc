@@ -663,7 +663,7 @@ async fn full_work_terminal_quota_still_allows_reading_the_original_request() {
             .unwrap();
     }
     let refused = work_request(&f, "fifth").await.unwrap();
-    assert_eq!(refused.unwrap_err().code, "conflict");
+    assert_eq!(refused.unwrap_err().code, "terminal_capacity");
     let original = work_request(&f, "work-0").await.unwrap().unwrap();
     assert_eq!(original.status, 200);
     assert_eq!(f.node.terminals.list(&f.session).len(), PER_SESSION);

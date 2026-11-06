@@ -273,7 +273,7 @@ async fn limits_and_closing() {
     }
     assert_eq!(
         open(&terminals, "s", 80.0, 24.0).err(),
-        Some(ApiError::conflict("At most 4 terminals per session"))
+        Some(requests::capacity_error("At most 4 terminals per session"))
     );
     // Another session still has room.
     let other = open(&terminals, "t", 80.0, 24.0).unwrap();

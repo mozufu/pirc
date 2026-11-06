@@ -308,12 +308,12 @@ impl Terminals {
             .map(|state| state.info.session_id.clone())
             .collect();
         if live.iter().filter(|id| *id == session_id).count() >= PER_SESSION {
-            return Err(ApiError::conflict(format!(
+            return Err(requests::capacity_error(format!(
                 "At most {PER_SESSION} terminals per session"
             )));
         }
         if live.len() >= TOTAL {
-            return Err(ApiError::conflict("Too many open terminals"));
+            return Err(requests::capacity_error("Too many open terminals"));
         }
         // Opening a new terminal discards this session's exited ones.
         registry.terminals.retain(|_, entry| {

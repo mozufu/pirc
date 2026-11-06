@@ -1,5 +1,19 @@
 # Upgrades
 
+## Local checkpoint: terminal request acknowledgement and specific errors
+
+Node schema **2030** adds once-only `acknowledged_at`/`acknowledged_by` to terminal
+work and host requests. Acknowledging an `outcome_unknown` request hides it from
+`unresolvedRequests`; its outcome, run evidence and transition blocks are
+unchanged. `workTerminalRequestVersion` becomes **3**. Unknown request IDs return
+`404 terminal_request_not_found`; terminal quota refusals, including the
+compatibility API, return `409 terminal_capacity` instead of `conflict`.
+Existing requests stay unacknowledged. Gateway **1029**,
+protocol/client/private-envelope **15/2/3**, lockfiles and Nix hashes remain
+unchanged. Back up Node state with its binary; older readers reject 2030 and
+rollback requires matching state/binary backups. Local code only. See the
+[validation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-terminal-request-acknowledgement-and-specific-errors-2026-11-06).
+
 ## Local checkpoint: terminal request discovery and result parity
 
 Node schema **2029** adds paging indexes for terminal requests, a

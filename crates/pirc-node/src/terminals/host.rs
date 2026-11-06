@@ -21,6 +21,7 @@ pub(super) struct Review {
     id: String,
     request: String,
     error: Option<String>,
+    pub(super) acknowledged: Option<i64>,
     incarnation: String,
     hash: String,
     details: Value,
@@ -52,11 +53,11 @@ pub(super) fn load(
     session: &str,
     request: &str,
 ) -> ApiResult<Option<Review>> {
-    db.query_row("SELECT id,incarnation,intent_hash,review_json,expires_at,run_id,terminal_id,error_code FROM terminal_host_requests WHERE owner_user=?1 AND session_id=?2 AND request_id=?3",params![owner,session,request],|r| {
+    db.query_row("SELECT id,incarnation,intent_hash,review_json,expires_at,run_id,terminal_id,error_code,acknowledged_at FROM terminal_host_requests WHERE owner_user=?1 AND session_id=?2 AND request_id=?3",params![owner,session,request],|r| {
         let json: String=r.get(3)?;
-        Ok((r.get(0)?,r.get(1)?,r.get(2)?,json,r.get(4)?,r.get(5)?,r.get(6)?,r.get(7)?))
-    }).optional()?.map(|(id,incarnation,hash,json,expires,run,terminal,error)| {
-        Ok(Review{id,request:request.into(),error,incarnation,hash,details:serde_json::from_str(&json).map_err(|_|ApiError::internal())?,expires,run,terminal})
+        Ok((r.get(0)?,r.get(1)?,r.get(2)?,json,r.get(4)?,r.get(5)?,r.get(6)?,r.get(7)?,r.get(8)?))
+    }).optional()?.map(|(id,incarnation,hash,json,expires,run,terminal,error,acknowledged)| {
+        Ok(Review{id,request:request.into(),error,acknowledged,incarnation,hash,details:serde_json::from_str(&json).map_err(|_|ApiError::internal())?,expires,run,terminal})
     }).transpose()
 }
 /// Stored digest includes private binding/mode/control inputs; only the minimal
@@ -112,15 +113,14 @@ pub(super) fn response(node: &Node, db: &Connection, review: &Review) -> ApiResu
         "review".into()
     };
     Ok(
-        json!({"hostManagement":{"version":1,"requestId":review.request,"id":review.id,"reviewHash":review.hash,"review":review.details,"expiresAt":review.expires,"state":state,"errorCode":review.error,"terminalId":review.terminal},"terminal":terminal}),
+        json!({"hostManagement":{"version":1,"requestId":review.request,"id":review.id,"reviewHash":review.hash,"review":review.details,"expiresAt":review.expires,"state":state,"errorCode":review.error,"terminalId":review.terminal,"acknowledgedAt":review.acknowledged},"terminal":terminal}),
     )
 }
 pub(crate) fn status(node: &Node, owner: &str, session: &str, request: &str) -> ApiResult<Value> {
     text(&json!({"requestId":request}), "requestId")?;
     let db = node.db.lock();
     db.claim_session(session, owner, false)?;
-    let review = load(&db, owner, session, request)?
-        .ok_or_else(|| ApiError::not_found("Host terminal request not found"))?;
+    let review = load(&db, owner, session, request)?.ok_or_else(super::requests::not_found)?;
     response(node, &db, &review)
 }
 fn insert(

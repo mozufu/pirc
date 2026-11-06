@@ -12,8 +12,9 @@ use serde_json::{Value, json};
 use std::{panic::AssertUnwindSafe, time::Duration};
 
 /// 2: unresolved-request listing, host/work result parity, required request
-/// identity for isolated work and a bounded first reply.
-pub(crate) const VERSION: u8 = 2;
+/// identity for isolated work and a bounded first reply. 3: acknowledgement of
+/// unconfirmed starts and specific not-found/capacity error codes.
+pub(crate) const VERSION: u8 = 3;
 /// How long the first submission waits for its worker. It stays below the
 /// Gateway relay timeout (30 s), so a slow preparation answers `202 preparing`
 /// instead of an ambiguous relay timeout; the worker keeps running.
@@ -50,9 +51,22 @@ struct Saved {
     error: Option<String>,
     run: Option<String>,
     terminal: Option<String>,
+    acknowledged: Option<i64>,
+}
+/// A request ID this owner never submitted for the session (not a missing session).
+pub(super) fn not_found() -> ApiError {
+    ApiError::new(
+        404,
+        "terminal_request_not_found",
+        "No terminal request with this ID was admitted for this session",
+    )
+}
+/// Terminal quota, distinct from request conflicts.
+pub(super) fn capacity_error(message: impl Into<String>) -> ApiError {
+    ApiError::new(409, "terminal_capacity", message)
 }
 fn saved(db: &Connection, owner: &str, session: &str, request: &str) -> ApiResult<Option<Saved>> {
-    Ok(db.query_row("SELECT incarnation,intent_hash,state,error_code,run_id,terminal_id FROM terminal_work_requests WHERE owner_user=?1 AND session_id=?2 AND request_id=?3",params![owner,session,request],|r|Ok(Saved{incarnation:r.get(0)?,hash:r.get(1)?,state:r.get(2)?,error:r.get(3)?,run:r.get(4)?,terminal:r.get(5)?})).optional()?)
+    Ok(db.query_row("SELECT incarnation,intent_hash,state,error_code,run_id,terminal_id,acknowledged_at FROM terminal_work_requests WHERE owner_user=?1 AND session_id=?2 AND request_id=?3",params![owner,session,request],|r|Ok(Saved{incarnation:r.get(0)?,hash:r.get(1)?,state:r.get(2)?,error:r.get(3)?,run:r.get(4)?,terminal:r.get(5)?,acknowledged:r.get(6)?})).optional()?)
 }
 fn capture(
     node: &Node,
@@ -101,16 +115,67 @@ fn reply(node: &Node, db: &Connection, request: &str, saved: Saved) -> ApiResult
         "preparing".into()
     };
     Ok(
-        json!({"workRequest":{"version":1,"requestId":request,"state":state,"errorCode":saved.error,"terminalId":saved.terminal},"terminal":terminal}),
+        json!({"workRequest":{"version":1,"requestId":request,"state":state,"errorCode":saved.error,"terminalId":saved.terminal,"acknowledgedAt":saved.acknowledged},"terminal":terminal}),
     )
 }
 pub(crate) fn status(node: &Node, owner: &str, session: &str, request: &str) -> ApiResult<Value> {
     key(request)?;
     let db = node.db.lock();
     db.claim_session(session, owner, false)?;
-    let saved = saved(&db, owner, session, request)?
-        .ok_or_else(|| ApiError::not_found("Work terminal request not found"))?;
+    let saved = saved(&db, owner, session, request)?.ok_or_else(not_found)?;
     reply(node, &db, request, saved)
+}
+/// Hide an `outcome_unknown` request from discovery, once. This is a retained
+/// user decision, not closure: the outcome, run and transition blocks stay.
+pub(crate) fn acknowledge(
+    node: &Node,
+    owner: &str,
+    session: &str,
+    host: bool,
+    request: &str,
+    client: &str,
+) -> ApiResult<Value> {
+    key(request)?;
+    let db = node.db.lock();
+    db.claim_session(session, owner, false)?;
+    let read = |db: &Connection| -> ApiResult<(Value, bool)> {
+        if host {
+            let review = super::host::load(db, owner, session, request)?.ok_or_else(not_found)?;
+            let done = review.acknowledged.is_some();
+            Ok((super::host::response(node, db, &review)?, done))
+        } else {
+            let row = saved(db, owner, session, request)?.ok_or_else(not_found)?;
+            let done = row.acknowledged.is_some();
+            Ok((reply(node, db, request, row)?, done))
+        }
+    };
+    let (result, done) = read(&db)?;
+    if done {
+        return Ok(result);
+    }
+    let state = result["workRequest"]["state"]
+        .as_str()
+        .or_else(|| result["hostManagement"]["state"].as_str());
+    if state != Some("outcome_unknown") {
+        return Err(ApiError::new(
+            409,
+            "terminal_request_not_unknown",
+            "Only a terminal request whose start is unconfirmed can be acknowledged",
+        ));
+    }
+    let table = if host {
+        "terminal_host_requests"
+    } else {
+        "terminal_work_requests"
+    };
+    let changed = db.execute(
+        &format!("UPDATE {table} SET acknowledged_at=?4,acknowledged_by=?5 WHERE owner_user=?1 AND session_id=?2 AND request_id=?3 AND acknowledged_at IS NULL"),
+        params![owner, session, request, now_ms(), client],
+    )?;
+    if changed != 1 {
+        return Err(ApiError::internal());
+    }
+    Ok(read(&db)?.0)
 }
 fn capacity(node: &Node, db: &Connection, session: &str) -> ApiResult<()> {
     // Use the existing terminal limits before detached async preparation too.
@@ -124,12 +189,12 @@ fn capacity(node: &Node, db: &Connection, session: &str) -> ApiResult<()> {
         }
     }
     if own >= PER_SESSION {
-        return Err(ApiError::conflict(format!(
+        return Err(capacity_error(format!(
             "At most {PER_SESSION} terminals per session"
         )));
     }
     if total >= TOTAL {
-        return Err(ApiError::conflict("Too many open or preparing terminals"));
+        return Err(capacity_error("Too many open or preparing terminals"));
     }
     Ok(())
 }
@@ -183,7 +248,7 @@ pub(super) async fn create_waiting(
             return Ok(Response::json(reply(node, &db, request, saved)?));
         }
         capacity(node, &db, session)?;
-        db.execute("INSERT INTO terminal_work_requests VALUES(?1,?2,?3,?4,?5,?6,?7,?8,'accepted',NULL,NULL,NULL,?9)",params![owner,session,request,node.incarnation,workspace,epoch,cwd.to_string_lossy(),hash,now_ms()])?;
+        db.execute("INSERT INTO terminal_work_requests(owner_user,session_id,request_id,incarnation,workspace_id,runner_epoch,cwd,intent_hash,state,error_code,run_id,terminal_id,created_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,'accepted',NULL,NULL,NULL,?9)",params![owner,session,request,node.incarnation,workspace,epoch,cwd.to_string_lossy(),hash,now_ms()])?;
         permit.hash = hash;
     }
     let reader = node.clone();
@@ -285,9 +350,11 @@ pub(crate) fn unresolved(
     let rows: Vec<(i64, String, String)> = db
         .prepare(&format!("SELECT created_at,kind,request_id FROM (
              SELECT created_at,'host' kind,request_id FROM terminal_host_requests WHERE owner_user=?1 AND session_id=?2
+              AND acknowledged_at IS NULL
               AND ((run_id IS NULL AND incarnation=?3 AND expires_at>?4) OR run_id IN ({live}))
              UNION ALL
              SELECT created_at,'work' kind,request_id FROM terminal_work_requests WHERE owner_user=?1 AND session_id=?2
+              AND acknowledged_at IS NULL
               AND ((run_id IS NULL AND state!='not_started') OR run_id IN ({live})))
              WHERE (created_at,kind,request_id)>(?5,?6,?7) ORDER BY created_at,kind,request_id LIMIT ?8"))?
         .query_map(

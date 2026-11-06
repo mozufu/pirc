@@ -23,7 +23,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1029**, Node **2029**, protocol **15**, client contract **2**,
+formats: Gateway **1029**, Node **2030**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -55,7 +55,13 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local delivery: [Web and Android terminal contract clients](execution-isolation.md#integration-checkpoint-web-and-android-terminal-contract-clients-2026-11-06)
+Latest local delivery: [terminal request acknowledgement and specific errors](execution-isolation.md#local-implementation-checkpoint-terminal-request-acknowledgement-and-specific-errors-2026-11-06)
+(Node **2030**, `workTerminalRequestVersion: 3`) adds the user-chosen retained
+acknowledgement for `outcome_unknown` requests (hidden from discovery, never a
+closure) and specific `terminal_request_not_found`/`terminal_capacity` codes.
+Client adoption of v3 follows.
+
+The previous [Web and Android terminal contract clients](execution-isolation.md#integration-checkpoint-web-and-android-terminal-contract-clients-2026-11-06)
 implements the frozen terminal contract in both clients as interface layers with
 throwaway UI (the current UI will be replaced by a new design). Formats are
 unchanged. Remaining: four follow-ups (unresolved `outcome_unknown` growth needs a
@@ -5575,3 +5581,46 @@ strict all-target Node/Gateway/conformance Clippy passed. The focused terminal
 module passed **65 cases**. No Flutter, browser, emulator, device or native Linux
 validation is claimed; the user deferred Linux tests on 2026-11-06 because this
 host cannot simulate them. Local commit only, no push, deployment or Release.
+
+## U4 implementation checkpoint: terminal request acknowledgement and specific errors (2026-11-06)
+
+Node schema **2030** delivers the three Node follow-ups found by the client
+agents. `workTerminalRequestVersion` becomes **3**.
+
+1. **Acknowledgement (user decision, 2026-11-06).** `POST .../terminals` with
+   `action: "acknowledge"` and exactly one of `workRequestId`/`hostRequestId`
+   records `acknowledged_at`/`acknowledged_by` once for a request whose derived
+   state is `outcome_unknown`. Discovery stops listing it; GET shows
+   `acknowledgedAt`. The state stays `outcome_unknown`, and terminal runs, kernel
+   journals and Stop/deletion/transition blocks are untouched. This is a retained
+   user decision, not a closure or force-clear. Repeats are idempotent. Other
+   states return `409 terminal_request_not_unknown`. It needs the current control
+   lease but works while new terminals are disabled. SQL triggers allow it only
+   once and only while the linked run is unresolved (or there is no run, for a
+   work request that never reached its reservation).
+2. **`404 terminal_request_not_found`** for an unknown work/host request ID
+   (GET and acknowledgement), distinct from a missing session.
+3. **`409 terminal_capacity`** for every terminal quota refusal, including the
+   omitted-path compatibility API, whose snapshot is updated. Message text is
+   unchanged; older clients that only read the status still see `409`.
+
+Positional inserts into `terminal_work_requests` now name their columns, so the
+added columns cannot shift values. Upgrade keeps existing requests unacknowledged
+and invents no decisions. Old binaries reject 2030. Gateway **1029**,
+protocol/client/envelope **15/2/3**, packages, lockfiles and Nix hashes are
+unchanged.
+
+New cases: acknowledgement of old-incarnation work and host unknowns (hidden from
+discovery, state and launching run unchanged, actor retained, idempotent), refusal
+for preparing/no-start/review, unknown IDs and foreign owners, SQL refusal of a
+second or invalid marker, specific not-found codes for both kinds, route
+validation (single ID, no extra fields, current lease), the 2029→2030 upgrade, and
+a Gateway process case for the specific codes and `workTerminalRequestVersion: 3`.
+
+Validation: **658 Node library tests** (five existing ignores), **421 Gateway tests**, **68
+focused terminal tests**, **31 required real Gateway/Node process cases** across 12
+suites (terminals 7, Node-link side channels 6, execution fences 4, checkpoints 3,
+conversation admission/creation/host-command fences 2 each, environment
+transitions, inference fences, memory, project deletion and streams 1 each),
+`cargo fmt --check` and strict all-target Node/Gateway/conformance Clippy passed.
+No native Linux, browser or device validation is claimed. Local commit only.

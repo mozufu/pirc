@@ -381,7 +381,8 @@ closed its four Node gaps. The Node side builds on the
 No Web or Android code sends `executionPath`, `requestId`, `workRequestId`,
 `hostRequestId` or `unresolvedRequests` yet. Both clients must implement this
 one contract, so they cannot diverge. Clients require
-`workTerminalRequestVersion >= 2`. This covers
+`workTerminalRequestVersion >= 2`; acknowledgement and the specific error codes
+below need **3** ([Node 2030](#local-implementation-checkpoint-terminal-request-acknowledgement-and-specific-errors-2026-11-06)). This covers
 step 4 of the [implementation order](#implementation-order-and-acceptance):
 necessary controls in the existing style, with no navigation or visual redesign.
 
@@ -413,8 +414,9 @@ necessary controls in the existing style, with no navigation or visual redesign.
   valid only with the **same control lease and size**. After a reconnect, a lease
   change or a resize, recovery is **GET only**. A changed intent under the same
   ID returns `409 work_terminal_request_conflict`.
-- A lost or timed-out POST, or a reload: GET the request. A `404` means it was
-  not admitted yet. The client may re-POST the **same** ID with the same intent
+- A lost or timed-out POST, or a reload: GET the request. A
+  `404 terminal_request_not_found` means it was not admitted yet; any other
+  `404` (for example a missing session) is a definite refusal. The client may re-POST the **same** ID with the same intent
   (deduplicated), or drop it. It never mints a new ID for the same user action.
 - Isolated POST status codes: `201` is the first submission's finished result,
   `200` repeats an existing request, `202` means admitted but still preparing
@@ -437,6 +439,18 @@ necessary controls in the existing style, with no navigation or visual redesign.
   disabled. Clients use it after reload, reconnect or on a second device, instead
   of persisting pending IDs. Web IndexedDB **3** and Android envelope **3** are
   unchanged.
+- Quota refusals return `409 terminal_capacity` (all terminal paths, including
+  the compatibility path); show "too many terminals", not a generic error.
+- **Acknowledgement (v3):** `POST .../terminals` with
+  `{"action":"acknowledge","clientId","generation","workRequestId"|"hostRequestId"}`
+  (exactly one ID, no other fields) records a retained, once-only user decision
+  for a request whose state is `outcome_unknown`. It needs current control but not
+  the new-terminal capability. The result object gains `acknowledgedAt`, and
+  `unresolvedRequests` stops listing it. The **state stays `outcome_unknown`**:
+  run evidence, Stop/deletion/transition blocks and later reconciliation are
+  unchanged; it is not a force-clear. Repeating it returns the same result. Other
+  states return `409 terminal_request_not_unknown`; an unknown ID returns
+  `404 terminal_request_not_found`.
 - Read kinds (`capabilities`, `workRequestId`, `hostRequestId`,
   `unresolvedRequests`) are mutually exclusive; `after`/`limit` belong to the list
   only. Violations return `400 invalid_input`.
@@ -448,16 +462,16 @@ necessary controls in the existing style, with no navigation or visual redesign.
 
 ### Result states and client behavior
 
-| State (`workRequest.state` / `hostManagement.state`) | Meaning                                                                     | Client behavior                                                                                                                                               |
-| ---------------------------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `review` (host only)                                 | Node-issued review is pending                                               | Show shell, root, size and the host-effects `warning` verbatim; confirm sends exact `reviewId`/`reviewHash`, `confirmed: true` and the reviewed `cols`/`rows` |
-| `stale` / `expired` (host only)                      | Review from an earlier Node incarnation, or past its TTL                    | Cannot be confirmed; a new review is a new user action with a new ID                                                                                          |
-| `preparing` (work only)                              | Admitted; preparation is running in this Node incarnation                   | Show progress and poll with GET; do not POST again                                                                                                            |
-| `launching` / `running` with `terminal`              | Live terminal linked to this request                                        | Attach to the existing stream for `terminal.id`                                                                                                               |
-| `not_started`                                        | Known no-start; `errorCode` says why (`isolated_terminal_unavailable`, …)   | Show the reason; _Try again_ is a new action; an unavailable path may offer the explicit host-management action, never auto-switch                            |
-| `outcome_unknown`                                    | Start or liveness cannot be confirmed (restart, panic, lost registry)       | Show "start not confirmed"; no automatic retry; explain that workspace switching may stay blocked                                                             |
-| `settled`                                            | Terminal ended with confirmed retirement                                    | Closed                                                                                                                                                        |
-| `unconfirmed`                                        | Direct shell closed but retirement is not proven (host detached work, etc.) | Show as closed but unconfirmed; transitions stay blocked; no force-clear action                                                                               |
+| State (`workRequest.state` / `hostManagement.state`) | Meaning                                                                     | Client behavior                                                                                                                                                   |
+| ---------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `review` (host only)                                 | Node-issued review is pending                                               | Show shell, root, size and the host-effects `warning` verbatim; confirm sends exact `reviewId`/`reviewHash`, `confirmed: true` and the reviewed `cols`/`rows`     |
+| `stale` / `expired` (host only)                      | Review from an earlier Node incarnation, or past its TTL                    | Cannot be confirmed; a new review is a new user action with a new ID                                                                                              |
+| `preparing` (work only)                              | Admitted; preparation is running in this Node incarnation                   | Show progress and poll with GET; do not POST again                                                                                                                |
+| `launching` / `running` with `terminal`              | Live terminal linked to this request                                        | Attach to the existing stream for `terminal.id`                                                                                                                   |
+| `not_started`                                        | Known no-start; `errorCode` says why (`isolated_terminal_unavailable`, …)   | Show the reason; _Try again_ is a new action; an unavailable path may offer the explicit host-management action, never auto-switch                                |
+| `outcome_unknown`                                    | Start or liveness cannot be confirmed (restart, panic, lost registry)       | Show "start not confirmed"; no automatic retry; explain that workspace switching may stay blocked; offer **Acknowledge** (v3), which only hides it from discovery |
+| `settled`                                            | Terminal ended with confirmed retirement                                    | Closed                                                                                                                                                            |
+| `unconfirmed`                                        | Direct shell closed but retirement is not proven (host detached work, etc.) | Show as closed but unconfirmed; transitions stay blocked; no force-clear action                                                                                   |
 
 Live terminals and ready frames already carry `executionPath`. Clients show a
 small path label (isolated / host management) on the terminal tab. Untagged
@@ -509,11 +523,10 @@ quality, placement and polish are out of scope.
    terminals (isolated-by-default migration). Recommended: keep it until both new
    clients are released, then gate it behind a Node setting with a visible update
    prompt. Never reclassify existing terminals.
-3. Whether `outcome_unknown`/`unconfirmed` should offer a guided path, such as
-   showing the retained run ID for manual host inspection. No force-clear is
-   authorized either way. Both clients found that `outcome_unknown` work requests
-   stay in `unresolvedRequests` forever; see
-   [follow-up 1](#integration-checkpoint-web-and-android-terminal-contract-clients-2026-11-06).
+3. ~~What to do with requests left `outcome_unknown`.~~ **Decided 2026-11-06:**
+   the user chose a retained acknowledgement marker that hides the request from
+   discovery without claiming closure ([Node 2030](#local-implementation-checkpoint-terminal-request-acknowledgement-and-specific-errors-2026-11-06)). No force-clear is
+   authorized. A guided manual-inspection path for `unconfirmed` stays open.
 
 Native Linux acceptance of the isolated adapter, complete revocation/installation
 and public switching remain gated as above. This contract authorizes no push,
@@ -674,18 +687,53 @@ so a review found after reload or on another device gets
 
 Follow-ups found by the client agents (Node unchanged; each needs its own slice):
 
-1. **`outcome_unknown` never leaves the unresolved list.** Work requests whose
-   start is unconfirmed after a Node restart have no client action that resolves
-   them, so the list only grows. Options: an explicit, retained "acknowledged"
-   marker that hides a request from discovery without claiming closure, or
-   listing only the current incarnation's unknowns. This touches the
-   no-force-clear rule and needs the user's decision (decision 3 above).
-2. **Distinguishable 404s.** A missing session and a missing request both return
-   `404 not_found`. A specific `terminal_request_not_found` code would make the
-   404→same-ID re-POST rule exact.
-3. **Distinguishable capacity refusals.** Terminal quota returns generic
-   `409 conflict`; a specific code would let clients show "too many terminals"
-   instead of a generic rejection.
+1. ~~**`outcome_unknown` never leaves the unresolved list.**~~ Resolved by the
+   user's choice of an acknowledgement marker ([Node 2030](#local-implementation-checkpoint-terminal-request-acknowledgement-and-specific-errors-2026-11-06)).
+2. ~~**Distinguishable 404s.**~~ `terminal_request_not_found` (Node 2030).
+3. ~~**Distinguishable capacity refusals.**~~ `terminal_capacity` (Node 2030).
 4. **Reconnect discovery.** The throwaway Web wiring recovers only on mount or
    session change. The new UI must call `recover()` after a Gateway reconnect,
    and the Android tracker likewise after reconnect.
+
+## Local implementation checkpoint: terminal request acknowledgement and specific errors (2026-11-06)
+
+Node schema **2030** delivers the three Node follow-ups found by the client
+agents. `workTerminalRequestVersion` becomes **3**.
+
+1. **Acknowledgement (user decision, 2026-11-06).** `POST .../terminals` with
+   `action: "acknowledge"` and exactly one of `workRequestId`/`hostRequestId`
+   records `acknowledged_at`/`acknowledged_by` once for a request whose derived
+   state is `outcome_unknown`. Discovery stops listing it; GET shows
+   `acknowledgedAt`. The state stays `outcome_unknown`, and terminal runs, kernel
+   journals and Stop/deletion/transition blocks are untouched. This is a retained
+   user decision, not a closure or force-clear. Repeats are idempotent. Other
+   states return `409 terminal_request_not_unknown`. It needs the current control
+   lease but works while new terminals are disabled. SQL triggers allow it only
+   once and only while the linked run is unresolved (or there is no run, for a
+   work request that never reached its reservation).
+2. **`404 terminal_request_not_found`** for an unknown work/host request ID
+   (GET and acknowledgement), distinct from a missing session.
+3. **`409 terminal_capacity`** for every terminal quota refusal, including the
+   omitted-path compatibility API, whose snapshot is updated. Message text is
+   unchanged; older clients that only read the status still see `409`.
+
+Positional inserts into `terminal_work_requests` now name their columns, so the
+added columns cannot shift values. Upgrade keeps existing requests unacknowledged
+and invents no decisions. Old binaries reject 2030. Gateway **1029**,
+protocol/client/envelope **15/2/3**, packages, lockfiles and Nix hashes are
+unchanged.
+
+New cases: acknowledgement of old-incarnation work and host unknowns (hidden from
+discovery, state and launching run unchanged, actor retained, idempotent), refusal
+for preparing/no-start/review, unknown IDs and foreign owners, SQL refusal of a
+second or invalid marker, specific not-found codes for both kinds, route
+validation (single ID, no extra fields, current lease), the 2029→2030 upgrade, and
+a Gateway process case for the specific codes and `workTerminalRequestVersion: 3`.
+
+Validation: **658 Node library tests** (five existing ignores), **421 Gateway tests**, **68
+focused terminal tests**, **31 required real Gateway/Node process cases** across 12
+suites (terminals 7, Node-link side channels 6, execution fences 4, checkpoints 3,
+conversation admission/creation/host-command fences 2 each, environment
+transitions, inference fences, memory, project deletion and streams 1 each),
+`cargo fmt --check` and strict all-target Node/Gateway/conformance Clippy passed.
+No native Linux, browser or device validation is claimed. Local commit only. Web and Android adopt v3 in the following client slices.

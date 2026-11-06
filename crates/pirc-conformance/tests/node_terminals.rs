@@ -800,3 +800,36 @@ async fn terminal_requests_are_discoverable_through_the_gateway_without_control(
         .await;
     assert_eq!(closed.status, 204, "{closed:?}");
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn terminal_request_errors_and_acknowledgement_are_specific_through_the_gateway() {
+    let Some(cluster) = Cluster::start_with(terminal_env()).await else {
+        return;
+    };
+    let (mut s, _) = Session::create(&cluster.api()).await;
+    s.acquire().await;
+    let missing = s.get("/terminals?workRequestId=never-sent").await;
+    assert_eq!(missing.status, 404, "{missing:?}");
+    assert_eq!(missing.body["error"]["code"], "terminal_request_not_found");
+    let missing = s.get("/terminals?hostRequestId=never-sent").await;
+    assert_eq!(missing.body["error"]["code"], "terminal_request_not_found");
+    let work = json!({"clientId":s.client,"generation":s.generation,"executionPath":"isolated_work","requestId":"known-no-start"});
+    assert_eq!(s.post("/terminals", work).await.status, 201);
+    let ack = |id: &str| json!({"clientId":s.client,"generation":s.generation,"action":"acknowledge","workRequestId":id});
+    // A known no-start is not an unconfirmed start; nothing is hidden.
+    let refused = s.post("/terminals", ack("known-no-start")).await;
+    assert_eq!(refused.status, 409, "{refused:?}");
+    assert_eq!(
+        refused.body["error"]["code"],
+        "terminal_request_not_unknown"
+    );
+    let absent = s.post("/terminals", ack("never-sent")).await;
+    assert_eq!(absent.status, 404, "{absent:?}");
+    assert_eq!(absent.body["error"]["code"], "terminal_request_not_found");
+    let kept = s.get("/terminals?workRequestId=known-no-start").await;
+    assert!(kept.body["workRequest"]["acknowledgedAt"].is_null());
+    assert_eq!(
+        s.get("/terminals?capabilities=1").await.body["terminalCapabilities"]["workTerminalRequestVersion"],
+        3
+    );
+}

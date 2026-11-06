@@ -458,7 +458,7 @@ expression: t.into_value()
   {
     "body": {
       "error": {
-        "code": "conflict",
+        "code": "terminal_capacity",
         "message": "At most 4 terminals per session"
       }
     },

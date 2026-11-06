@@ -238,8 +238,46 @@ pub fn routes() -> Vec<Route> {
             ))
         }),
         post("/api/sessions/:id/terminals", |node, request| async move {
-            let session = terminal_session(&node, &request)?;
             let body = request.json();
+            if body.get("action").and_then(Value::as_str) == Some("acknowledge") {
+                // A retained user decision about an unconfirmed start. It needs
+                // current control but not the new-terminal capability.
+                let session = claim(&node, &request)?;
+                let (client_id, generation) = lease_body(body)?;
+                node.db
+                    .lock()
+                    .validate_lease(&session.id, &client_id, generation)?;
+                let work = body.get("workRequestId").and_then(Value::as_str);
+                let host = body.get("hostRequestId").and_then(Value::as_str);
+                let allowed = [
+                    "action",
+                    "clientId",
+                    "generation",
+                    "workRequestId",
+                    "hostRequestId",
+                ];
+                if body
+                    .as_object()
+                    .is_some_and(|o| o.keys().any(|k| !allowed.contains(&k.as_str())))
+                {
+                    return Err(ApiError::invalid_input());
+                }
+                let (is_host, id) = match (work, host) {
+                    (Some(id), None) => (false, id),
+                    (None, Some(id)) => (true, id),
+                    _ => return Err(ApiError::invalid_input()),
+                };
+                return crate::terminals::requests::acknowledge(
+                    &node,
+                    &request.user,
+                    &session.id,
+                    is_host,
+                    id,
+                    &client_id,
+                )
+                .map(Response::json);
+            }
+            let session = terminal_session(&node, &request)?;
             let (client_id, generation) = lease_body(body)?;
             let cols = optional_int(body, "cols")?;
             let rows = optional_int(body, "rows")?;

@@ -196,7 +196,14 @@ client mode/default rollout and complete revocation/install remain open.
 strict all-target Clippy passed. The owned **2.9 GiB** outputs are cleaned; this
 delivery stays local.
 
-Latest local client delivery:
+Latest local terminal delivery:
+[acknowledgement and specific errors](execution-isolation.md#local-implementation-checkpoint-terminal-request-acknowledgement-and-specific-errors-2026-11-06) (Node **2030**)
+hides acknowledged `outcome_unknown` requests from discovery without closing them
+and adds `terminal_request_not_found`/`terminal_capacity`. **658 Node tests**,
+**421 Gateway tests**, **31 required process cases** and strict Clippy passed.
+Client v3 adoption follows. Local only.
+
+Previous local client delivery:
 [Web and Android terminal contract clients](execution-isolation.md#integration-checkpoint-web-and-android-terminal-contract-clients-2026-11-06)
 adopt the frozen terminal contract as interface layers with throwaway UI; no
 format changes. Web **622 tests** with clean svelte-check, Android **62 focused
@@ -247,7 +254,7 @@ or `full-access` escalation is authorized by the design.
 | U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                        | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle        |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
-not enable it. Current formats are Gateway schema **1029**, Node schema **2029**,
+not enable it. Current formats are Gateway schema **1029**, Node schema **2030**,
 protocol **15**, client recovery contract **2**, and Web IndexedDB/native private
 envelope **3**. Existing ordinary session APIs remain available. Unaccepted
 Gateway attachment staging expires after **seven days**; accepted attachments and

@@ -118,7 +118,8 @@ add Node schema **2028** and `workTerminalRequestVersion: 1`: one durable reques
 identity and one worker per explicit isolated terminal, read-only recovery and no
 host fallback. [Terminal request discovery and result parity](unified-conversations.md#u4-implementation-checkpoint-terminal-request-discovery-and-result-parity-2026-11-06)
 (Node **2029**, `workTerminalRequestVersion: 2`) closed the remaining Node gaps;
-the frozen shared client contract lives in
+[acknowledgement and specific errors](unified-conversations.md#u4-implementation-checkpoint-terminal-request-acknowledgement-and-specific-errors-2026-11-06) (Node **2030**)
+followed; the frozen shared client contract lives in
 [execution isolation](execution-isolation.md#client-terminal-execution-path-contract-v1-frozen-for-webandroid).
 
 The main plan owns domain lifetimes, retained context (decision A), revocation,
