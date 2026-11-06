@@ -805,7 +805,7 @@ unchanged apart from the new action and text.
   `acknowledgedAt` is set. On success the state stays `outcome_unknown` and the
   entry leaves `TerminalRequestTracker.pending`/`pendingRequests`, with text that
   says the start is still unconfirmed and claims no closure. `409
-  terminal_request_not_unknown` and ambiguous replies are resolved by GET;
+terminal_request_not_unknown` and ambiguous replies are resolved by GET;
   other refusals keep the request pending with its error. Local _Dismiss_ is
   unchanged and separate.
 - Host confirmation now always sends the reviewed `cols`/`rows`, as the updated
@@ -822,3 +822,27 @@ refusal, no POST on v2 or without a lease, and pane acknowledgement). Existing
 `terminal_keyboard_performance` **1**, `terminal_zoom` **2** and `i18n` **3**
 passed; `flutter analyze` of the whole package found no issues. No device,
 emulator or APK run. Local commit only, no push, deployment or Release.
+
+## Integration checkpoint: terminal contract v3 clients (2026-11-06)
+
+The Web and Android v3 slices were built in parallel from `9580e53b` and
+integrated as `ac3d68b8` (Web) and `1d725a79` (Android). Both now treat only
+`404 terminal_request_not_found` as "not admitted", show `409 terminal_capacity`
+as its own reason, and offer **Acknowledge** only for `outcome_unknown`, on a v3
+Node, with the current lease. An acknowledged request leaves the client's pending
+list and discovery, and it is never shown as closed. Android host confirmation now
+always repeats the reviewed size. Formats, dependencies and lockfiles are unchanged.
+
+Re-run after integration: Web `vitest run` **637 tests in 69 files** with
+`svelte-check` clean; Android focused Flutter tests **75 passed** (57 request
+tests plus terminal parity, extra keys, keyboard performance, zoom and i18n) and
+`flutter analyze` clean; Prettier clean on the changed files and plans. Rust is
+unchanged since Node 2030. No browser, emulator, device, APK or native Linux
+validation is claimed. Local commits only.
+
+Accepted consequence: against a pre-2030 Node, a lost POST stays readable but is
+no longer re-sent under the same ID, because the generic 404 cannot be told apart
+from a missing session. This is the safe direction. Remaining open items: reconnect
+discovery in the new UI (follow-up 4), real browser/device journeys, native Linux
+acceptance, isolated-by-default rollout (decision 2) and a guided inspection path
+for `unconfirmed`.

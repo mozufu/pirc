@@ -59,7 +59,9 @@ Latest local delivery: [terminal request acknowledgement and specific errors](ex
 (Node **2030**, `workTerminalRequestVersion: 3`) adds the user-chosen retained
 acknowledgement for `outcome_unknown` requests (hidden from discovery, never a
 closure) and specific `terminal_request_not_found`/`terminal_capacity` codes.
-Client adoption of v3 follows.
+Both clients [adopted v3](execution-isolation.md#integration-checkpoint-terminal-contract-v3-clients-2026-11-06) (Web 637 tests, Android 75
+focused tests). Remaining: reconnect discovery in the new UI, browser/device
+journeys, native Linux acceptance and isolated-by-default rollout.
 
 The previous [Web and Android terminal contract clients](execution-isolation.md#integration-checkpoint-web-and-android-terminal-contract-clients-2026-11-06)
 implements the frozen terminal contract in both clients as interface layers with

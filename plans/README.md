@@ -201,7 +201,8 @@ Latest local terminal delivery:
 hides acknowledged `outcome_unknown` requests from discovery without closing them
 and adds `terminal_request_not_found`/`terminal_capacity`. **658 Node tests**,
 **421 Gateway tests**, **31 required process cases** and strict Clippy passed.
-Client v3 adoption follows. Local only.
+Both clients [adopted v3](execution-isolation.md#integration-checkpoint-terminal-contract-v3-clients-2026-11-06): Web **637 tests**, Android
+**75 focused tests**, clean svelte-check and `flutter analyze`. Local only.
 
 Previous local client delivery:
 [Web and Android terminal contract clients](execution-isolation.md#integration-checkpoint-web-and-android-terminal-contract-clients-2026-11-06)
