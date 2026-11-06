@@ -19,6 +19,25 @@ Json terminalInfo(String id, {bool exited = false}) => {
   'cols': 80,
   'rows': 24,
 };
+const isolatedCaps = {
+  'terminalCapabilities': {
+    'version': 1,
+    'enabled': true,
+    'isolatedTerminalVersion': 1,
+    'hostTerminalReviewVersion': 1,
+    'workTerminalRequestVersion': 2,
+  },
+};
+Json isolatedResult(dynamic requestId, Json terminal) => {
+  'workRequest': {
+    'version': 1,
+    'requestId': requestId,
+    'state': 'running',
+    'errorCode': null,
+    'terminalId': terminal['id'],
+  },
+  'terminal': terminal,
+};
 void frame(FakeGateway g, NativeTerminalSession s, Json message) =>
     g.stream.add({
       'type': 'socket',
@@ -34,6 +53,7 @@ void main() {
     g.handler = (_, _) async => {
       'terminals': [terminalInfo('a'), terminalInfo('b', exited: true)],
     };
+    c.clientId = 'phone';
     final s = TerminalPaneState(c);
     await t.pump();
     expect(s.current, 'b');
@@ -45,18 +65,22 @@ void main() {
     c.control = {'held': true, 'generation': 8};
     c.changed();
     final pending = Completer<Json>();
-    g.handler = (_, _) => pending.future;
+    g.handler = (_, a) async => '${a['path']}'.endsWith('?capabilities=1')
+        ? isolatedCaps
+        : pending.future;
     final create = s.create();
     await s.create();
+    await t.pump();
     expect(g.calls.where((x) => x.$2['method'] == 'POST').length, 1);
     final body = g.calls.last.$2['body'];
     expect(body['generation'], 8);
     expect(body['cols'], 80);
     expect(body['rows'], 24);
+    expect(body['executionPath'], 'isolated_work');
     g.handler = (_, _) async => {'terminals': []};
     c.sessionId = 'next';
     c.changed();
-    pending.complete({'terminal': terminalInfo('late')});
+    pending.complete(isolatedResult(body['requestId'], terminalInfo('late')));
     await create;
     await t.pump();
     expect(s.terminals, isEmpty);
@@ -226,10 +250,15 @@ void main() {
               ..sessionId = 's'
               ..control = {'held': true, 'generation': 2};
         var next = 0;
+        c.clientId = 'phone';
         g.handler = (method, a) async {
           if (method != 'request') return null;
+          if ('${a['path']}'.endsWith('?capabilities=1')) return isolatedCaps;
           return a['method'] == 'POST'
-              ? {'terminal': terminalInfo('${++next}')}
+              ? isolatedResult(
+                  a['body']['requestId'],
+                  terminalInfo('${++next}'),
+                )
               : {'terminals': []};
         };
         await t.pumpWidget(

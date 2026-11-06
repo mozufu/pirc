@@ -9,6 +9,7 @@ import 'gateway.dart';
 import 'common.dart';
 import 'web_controls.dart';
 import 'terminal_state.dart';
+import 'terminal_requests.dart';
 import 'terminal_keys.dart';
 
 class TerminalPane extends StatefulWidget {
@@ -229,6 +230,23 @@ class _TerminalPaneState extends State<TerminalPane> {
                                                                     : 'text.secondary',
                                                               ),
                                                             ),
+                                                            if (terminalPathLabel(
+                                                                  terminal,
+                                                                )
+                                                                case final path?) ...[
+                                                              const SizedBox(
+                                                                width: 4,
+                                                              ),
+                                                              Text(
+                                                                path,
+                                                                style: webText(
+                                                                  context,
+                                                                  size: 10,
+                                                                  color:
+                                                                      'text.muted',
+                                                                ),
+                                                              ),
+                                                            ],
                                                           ],
                                                         ),
                                                       ),
@@ -294,6 +312,17 @@ class _TerminalPaneState extends State<TerminalPane> {
                           ? null
                           : state.create,
                     ),
+                    // Explicit and separate; the New terminal action never
+                    // falls back to a host terminal.
+                    if (state.requests?.capabilities?.offersHostManagement ==
+                        true)
+                      WebIconButton(
+                        LucideIcons.shieldAlert,
+                        tr("Host management terminal…"),
+                        onPressed: state.busy || !state.hasControl
+                            ? null
+                            : state.reviewHost,
+                      ),
                   ],
                 ),
               ),
@@ -318,6 +347,8 @@ class _TerminalPaneState extends State<TerminalPane> {
                   ).copyWith(height: 1.45),
                 ),
               ),
+            for (final entry in state.pendingRequests)
+              TerminalRequestNotice(state: state, entry: entry),
             if (state.terminals.isEmpty)
               Expanded(
                 child: Center(
@@ -420,6 +451,70 @@ class _TerminalPaneState extends State<TerminalPane> {
           ],
         );
       },
+    );
+  }
+}
+
+/// Minimal, throwaway rendering of one terminal request and its allowed
+/// actions; the new design replaces it.
+class TerminalRequestNotice extends StatelessWidget {
+  const TerminalRequestNotice({
+    super.key,
+    required this.state,
+    required this.entry,
+  });
+  final TerminalPaneState state;
+  final TerminalRequestEntry entry;
+  @override
+  Widget build(BuildContext context) {
+    final p = palette(context);
+    final review = entry.status == TerminalRequestStatus.review
+        ? entry.result?.review
+        : null;
+    final actions = state.requests?.actions(entry) ?? const {};
+    final small = webText(
+      context,
+      size: 12.5,
+      color: 'text.secondary',
+    ).copyWith(height: 1.45);
+    return Container(
+      key: ValueKey('terminal-request-${entry.requestId}'),
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        border: Border.all(color: p['web.line']),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(terminalRequestMessage(entry), style: small),
+          if (review != null) ...[
+            Text(tr("Shell: {0}", [review.shell]), style: small),
+            Text(tr("Directory: {0}", [review.cwd]), style: small),
+            Text(
+              tr("Size: {0}×{1}", [review.cols ?? '—', review.rows ?? '—']),
+              style: small,
+            ),
+            // Verbatim from the Node: never translated or shortened.
+            Text(
+              review.warning,
+              style: webText(context, size: 12.5, color: 'status.danger'),
+            ),
+          ],
+          Wrap(
+            spacing: 4,
+            children: [
+              for (final action in TerminalRequestAction.values)
+                if (actions.contains(action))
+                  TextButton(
+                    onPressed: () => state.perform(entry, action),
+                    child: Text(terminalRequestActionLabel(action, entry.kind)),
+                  ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

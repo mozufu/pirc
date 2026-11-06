@@ -582,3 +582,64 @@ of the host-management action, the review dialog, progress), rediscovery on a
 Gateway reconnect without a reload (the throwaway wiring rediscovers on mount and
 session change only), and Android parity. Local commit only, no push, deployment
 or Release.
+
+## Local implementation checkpoint: Android terminal contract client (2026-11-06)
+
+Android adopts the [client terminal execution-path contract v1](#client-terminal-execution-path-contract-v1-frozen-for-webandroid)
+through its direct Gateway connection. Per the user's 2026-11-06 decision the
+scope is the **interface layer only**; the terminal pane gets throwaway wiring
+and no visual or navigation redesign.
+
+- New `apps/android/lib/live/terminal_requests.dart`, UI-independent:
+  `TerminalCapabilities` (missing fields mean 0; no `terminalCapabilities`
+  object or `workTerminalRequestVersion < 2` means "update the Node"),
+  `TerminalIntent` (session, `clientId`/`generation`, `cols`/`rows`),
+  `TerminalRequestResult` (one parser for `workRequest`/`hostManagement` from
+  POST, both GETs and discovery items), `TerminalRequestApi` (capabilities,
+  `submitWork`, `reviewHost`, `confirmHost`, `read` with `404` → not admitted,
+  `unresolvedPage`/`unresolved` following `next` through short or empty pages)
+  and `TerminalRequestTracker` (one session's flow).
+- Every contract row maps to a `TerminalRequestStatus` with its allowed
+  `TerminalRequestAction`s (`terminalRequestActions`), plus transport states
+  `submitting`, `ambiguous` (504/503/other 5xx/connection loss: resolved by GET),
+  `notAdmitted` (GET `404`: re-POST the same ID only while lease and size are
+  unchanged), `conflict` (`409 work_terminal_request_conflict`: GET only) and
+  `rejected` (other 4xx). `preparing` polls GET; `launching`/`running` with its
+  `terminal` attaches through the existing PTY stream code, without it it is
+  `outcome_unknown`. There are no automatic POST retries and no force-clear;
+  _dismiss_ only hides an entry locally. _Try again_ and a new host review are new
+  actions with new random UUID request IDs.
+- The ordinary New terminal action re-reads capabilities and POSTs only
+  `isolated_work`; the omitted-path host POST is gone from Android. When
+  isolation is unavailable it explains why, and the separate host-management
+  action (review → verbatim `warning`, shell, cwd, size → confirm with the exact
+  `reviewId`/`reviewHash`, `confirmed: true`) appears only with
+  `hostTerminalReviewVersion >= 1`. Loading a session discovers unresolved
+  requests; nothing is persisted, the private envelope stays at **3**.
+- Terminal tabs show a small isolated / host management label from
+  `executionPath`; untagged terminals stay unlabeled. 29 new en/zh-TW strings.
+
+Validation: `flutter test test/terminal_requests_test.dart` **44 passed** (every
+state row, 201/202 polling to live and to a no-start, failed poll, 409, other
+4xx, 504→404→same-ID re-POST, 503 and connection-loss GET recovery, lease and
+size change → GET only, five unavailable/old/disabled capability shapes with no
+POST, host review/confirm/ambiguous confirm/refused confirm, discovery paging with
+short and empty pages and a stuck cursor, recovery mapping, pane state and one
+pane widget journey). Existing `terminal_parity` **8** (its two creation cases now
+expect the isolated request), `terminal_extra_keys` **4**,
+`terminal_keyboard_performance` **1**, `terminal_zoom` **2** and `i18n` **3**
+passed; `flutter analyze` of the whole package found no issues.
+
+Notes for the coordinator, no Node change made: the native bridge returns only
+response bodies, so Android distinguishes `201`/`200`/`202` by `state`, which
+the contract makes equivalent. A missing session and a missing request both
+answer `404`; a re-POST after the former fails harmlessly. A review discovered
+on another device or lease cannot be confirmed (its digest holds the lease), so
+Node answers `409 host_terminal_review_required` and the client shows a refusal;
+a new review is needed. Old-incarnation `outcome_unknown` work requests stay in
+`unresolvedRequests` indefinitely, so the list can only grow until a later
+resolution path exists.
+
+Open: device/emulator journeys, the real new UI and placement of the host action
+(with the new design), Web parity is a separate slice. Local commit only, no
+push, deployment or Release.
