@@ -17,8 +17,10 @@ pub(super) struct Grant {
     client: String,
     generation: i64,
 }
-struct Review {
+pub(super) struct Review {
     id: String,
+    request: String,
+    error: Option<String>,
     incarnation: String,
     hash: String,
     details: Value,
@@ -44,12 +46,17 @@ fn text<'a>(body: &'a Value, key: &str) -> ApiResult<&'a str> {
         })
         .ok_or_else(ApiError::invalid_input)
 }
-fn load(db: &Connection, owner: &str, session: &str, request: &str) -> ApiResult<Option<Review>> {
-    db.query_row("SELECT id,incarnation,intent_hash,review_json,expires_at,run_id,terminal_id FROM terminal_host_requests WHERE owner_user=?1 AND session_id=?2 AND request_id=?3",params![owner,session,request],|r| {
+pub(super) fn load(
+    db: &Connection,
+    owner: &str,
+    session: &str,
+    request: &str,
+) -> ApiResult<Option<Review>> {
+    db.query_row("SELECT id,incarnation,intent_hash,review_json,expires_at,run_id,terminal_id,error_code FROM terminal_host_requests WHERE owner_user=?1 AND session_id=?2 AND request_id=?3",params![owner,session,request],|r| {
         let json: String=r.get(3)?;
-        Ok((r.get(0)?,r.get(1)?,r.get(2)?,json,r.get(4)?,r.get(5)?,r.get(6)?))
-    }).optional()?.map(|(id,incarnation,hash,json,expires,run,terminal)| {
-        Ok(Review{id,incarnation,hash,details:serde_json::from_str(&json).map_err(|_|ApiError::internal())?,expires,run,terminal})
+        Ok((r.get(0)?,r.get(1)?,r.get(2)?,json,r.get(4)?,r.get(5)?,r.get(6)?,r.get(7)?))
+    }).optional()?.map(|(id,incarnation,hash,json,expires,run,terminal,error)| {
+        Ok(Review{id,request:request.into(),error,incarnation,hash,details:serde_json::from_str(&json).map_err(|_|ApiError::internal())?,expires,run,terminal})
     }).transpose()
 }
 /// Stored digest includes private binding/mode/control inputs; only the minimal
@@ -77,7 +84,7 @@ fn capture(
     );
     Ok((hash, details))
 }
-fn response(node: &Node, db: &Connection, review: &Review) -> ApiResult<Value> {
+pub(super) fn response(node: &Node, db: &Connection, review: &Review) -> ApiResult<Value> {
     let terminal = review
         .terminal
         .as_ref()
@@ -105,7 +112,7 @@ fn response(node: &Node, db: &Connection, review: &Review) -> ApiResult<Value> {
         "review".into()
     };
     Ok(
-        json!({"hostManagement":{"id":review.id,"reviewHash":review.hash,"review":review.details,"expiresAt":review.expires,"state":state,"terminalId":review.terminal},"terminal":terminal}),
+        json!({"hostManagement":{"version":1,"requestId":review.request,"id":review.id,"reviewHash":review.hash,"review":review.details,"expiresAt":review.expires,"state":state,"errorCode":review.error,"terminalId":review.terminal},"terminal":terminal}),
     )
 }
 pub(crate) fn status(node: &Node, owner: &str, session: &str, request: &str) -> ApiResult<Value> {
@@ -129,7 +136,7 @@ fn insert(
     let expires =
         at.saturating_add(i64::try_from(node.config.interaction_ttl_ms).unwrap_or(i64::MAX));
     db.execute(
-        "INSERT INTO terminal_host_requests VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,NULL,NULL)",
+        "INSERT INTO terminal_host_requests(id,owner_user,session_id,request_id,incarnation,intent_hash,review_json,created_at,expires_at) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9)",
         params![
             id,
             grant.owner,

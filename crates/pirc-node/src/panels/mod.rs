@@ -183,24 +183,45 @@ pub fn routes() -> Vec<Route> {
             },
         ),
         get("/api/sessions/:id/terminals", |node, request| async move {
-            let capability = request.single_query("capabilities")?;
-            if let Some(value) = capability {
-                if value != "1"
-                    || request.query("workRequestId").is_some()
-                    || request.query("hostRequestId").is_some()
-                {
+            // Each read kind is exclusive; paging parameters belong to the list only.
+            let kinds = [
+                "capabilities",
+                "workRequestId",
+                "hostRequestId",
+                "unresolvedRequests",
+            ]
+            .iter()
+            .filter(|key| request.query(key).is_some())
+            .count();
+            let paging = request.query("after").is_some() || request.query("limit").is_some();
+            if kinds > 1 || (paging && request.query("unresolvedRequests").is_none()) {
+                return Err(ApiError::invalid_input());
+            }
+            if let Some(value) = request.single_query("capabilities")? {
+                if value != "1" {
                     return Err(ApiError::invalid_input());
                 }
                 claim(&node, &request)?;
                 return Ok(Response::json(
-                    json!({"terminalCapabilities":{"version":1,"enabled":node.config.terminals_enabled && !node.closing(),"isolatedTerminalVersion":if node.sandbox.isolated_terminals(){1}else{0},"hostTerminalReviewVersion":1,"workTerminalRequestVersion":1}}),
+                    json!({"terminalCapabilities":{"version":1,"enabled":node.config.terminals_enabled && !node.closing(),"isolatedTerminalVersion":if node.sandbox.isolated_terminals(){1}else{0},"hostTerminalReviewVersion":1,"workTerminalRequestVersion":crate::terminals::requests::VERSION}}),
                 ));
             }
-            let work_request = request.single_query("workRequestId")?;
-            if work_request.is_some() && request.query("hostRequestId").is_some() {
-                return Err(ApiError::invalid_input());
+            if let Some(value) = request.single_query("unresolvedRequests")? {
+                if value != "1" {
+                    return Err(ApiError::invalid_input());
+                }
+                // Readable without control or new-terminal capability, like results.
+                let session = claim(&node, &request)?;
+                return crate::terminals::requests::unresolved(
+                    &node,
+                    &request.user,
+                    &session.id,
+                    request.single_query("after")?,
+                    request.single_query("limit")?,
+                )
+                .map(Response::json);
             }
-            if let Some(id) = work_request {
+            if let Some(id) = request.single_query("workRequestId")? {
                 let session = claim(&node, &request)?;
                 return crate::terminals::requests::status(&node, &request.user, &session.id, id)
                     .map(Response::json);
@@ -279,16 +300,13 @@ pub fn routes() -> Vec<Route> {
                     Some(rows.unwrap_or(24)),
                     (&client_id, generation),
                 )?,
+                // Isolated work is admitted only with a durable request identity.
                 Some(Value::String(path)) if path == "isolated_work" => {
-                    node.terminals
-                        .create_isolated(
-                            &session.id,
-                            &cwd,
-                            Some(cols.unwrap_or(80)),
-                            Some(rows.unwrap_or(24)),
-                            (&client_id, generation),
-                        )
-                        .await?
+                    return Err(ApiError::new(
+                        400,
+                        "work_terminal_request_required",
+                        "Isolated work terminals need a stable requestId",
+                    ));
                 }
                 // Explicit host requests must use the review contract above.
                 // Other labels never authorize the compatibility host path.

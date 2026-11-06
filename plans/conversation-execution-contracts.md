@@ -116,8 +116,10 @@ default rollout and complete revocation/install remain open.
 [Durable isolated work-terminal requests](unified-conversations.md#u4-implementation-checkpoint-durable-isolated-work-terminal-requests-2026-11-06)
 add Node schema **2028** and `workTerminalRequestVersion: 1`: one durable request
 identity and one worker per explicit isolated terminal, read-only recovery and no
-host fallback. The shared client contract and its remaining Node gaps live in
-[execution isolation](execution-isolation.md#client-terminal-execution-path-contract-v1-proposed-gate-for-webandroid).
+host fallback. [Terminal request discovery and result parity](unified-conversations.md#u4-implementation-checkpoint-terminal-request-discovery-and-result-parity-2026-11-06)
+(Node **2029**, `workTerminalRequestVersion: 2`) closed the remaining Node gaps;
+the frozen shared client contract lives in
+[execution isolation](execution-isolation.md#client-terminal-execution-path-contract-v1-frozen-for-webandroid).
 
 The main plan owns domain lifetimes, retained context (decision A), revocation,
 checkpoints and migration. This document refines those contracts. Names below

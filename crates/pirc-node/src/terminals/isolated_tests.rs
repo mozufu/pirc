@@ -20,6 +20,7 @@ use std::{
 #[derive(Default)]
 struct Scope {
     identity_index: AtomicUsize,
+    missing_program: AtomicBool,
     panic_prepare: AtomicBool,
     ready: AtomicBool,
     retired: AtomicBool,
@@ -128,9 +129,15 @@ impl Sandbox for Backend {
                 .store(self.scope.ready.load(Ordering::SeqCst), Ordering::SeqCst);
             (scope, self.report.with_extension(count.to_string()))
         };
+        // An unspawnable program fails only after the scope was reserved.
+        let program = if self.scope.missing_program.load(Ordering::SeqCst) {
+            PathBuf::from("/nonexistent/pirc-terminal-test")
+        } else {
+            std::env::current_exe().unwrap()
+        };
         Box::pin(async move {
             Ok(Prepared::new(
-                std::env::current_exe().unwrap(),
+                program,
                 vec![
                     "--exact".into(),
                     crate::sandbox::terminal_gate::tests::CHILD.into(),
@@ -660,5 +667,73 @@ async fn full_work_terminal_quota_still_allows_reading_the_original_request() {
     let original = work_request(&f, "work-0").await.unwrap().unwrap();
     assert_eq!(original.status, 200);
     assert_eq!(f.node.terminals.list(&f.session).len(), PER_SESSION);
+    f.node.close().await;
+}
+#[tokio::test]
+async fn slow_preparation_answers_before_the_relay_timeout_and_keeps_one_worker() {
+    let f = Fixture::new(false).await;
+    let response = super::requests::create_waiting(
+        &f.node,
+        "alice",
+        &f.session,
+        &f.root,
+        "slow-start",
+        ("phone", f.generation),
+        (None, None),
+        std::time::Duration::from_millis(50),
+    )
+    .await
+    .unwrap();
+    assert_eq!(response.status, 202);
+    let state = response.body.unwrap()["workRequest"]["state"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    // The waiter answered while the one worker still waits for its scope.
+    assert!(
+        matches!(state.as_str(), "preparing" | "launching" | "running"),
+        "{state}"
+    );
+    assert!(!f.report.exists());
+    f.scope.ready.store(true, Ordering::SeqCst);
+    until(|| f.report.exists()).await;
+    until(|| work_status(&f, "slow-start")["workRequest"]["state"] == "running").await;
+    let repeat = work_request(&f, "slow-start").await.unwrap().unwrap();
+    assert_eq!(repeat.status, 200);
+    assert_eq!(f.scope.spawned.load(Ordering::SeqCst), 1);
+    f.node.close().await;
+}
+#[tokio::test]
+async fn start_failure_after_reservation_keeps_its_reason_once_without_replay() {
+    let f = Fixture::new(true).await;
+    f.scope.missing_program.store(true, Ordering::SeqCst);
+    let first = work_request(&f, "unspawnable").await.unwrap().unwrap();
+    assert_eq!(first.status, 201);
+    let body = first.body.unwrap();
+    assert_eq!(body["workRequest"]["state"], "not_started");
+    assert_eq!(body["workRequest"]["errorCode"], "runner_unavailable");
+    assert!(body["workRequest"]["terminalId"].is_string());
+    assert!(body["terminal"].is_null());
+    f.scope.missing_program.store(false, Ordering::SeqCst);
+    let again = work_request(&f, "unspawnable").await.unwrap().unwrap();
+    assert_eq!(again.status, 200);
+    assert_eq!(again.body.unwrap(), body);
+    {
+        let db = f.node.db.lock();
+        assert!(
+            db.execute("UPDATE terminal_work_requests SET error_code='other'", [])
+                .is_err()
+        );
+        let launches: i64 = db
+            .query_row(
+                "SELECT count(*) FROM sandbox_launches WHERE state='not_started'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(launches, 1);
+    }
+    assert_eq!(f.scope.spawned.load(Ordering::SeqCst), 0);
+    assert!(f.node.terminals.list(&f.session).is_empty());
     f.node.close().await;
 }

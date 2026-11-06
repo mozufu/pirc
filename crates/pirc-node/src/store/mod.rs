@@ -33,7 +33,7 @@ use crate::util::{now_ms, prefix_uuid, safe_json};
 /// the gateway's migrations (1 to 19) and the Rust gateway's schema is 1000;
 /// the node's line starts apart from both, so each is recognized.
 /// 2001: uploads record their workspace and session; `workspace_deletions`.
-pub const SCHEMA_VERSION: i64 = 2028;
+pub const SCHEMA_VERSION: i64 = 2029;
 /// Upgrades from each earlier node schema, applied in order.
 const MIGRATIONS: &[(i64, &str)] = &[
     (
@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS checkpoint_workspaces (
     (2026, include_str!("../terminals/io_owners.sql")),
     (2027, include_str!("../terminals/host.sql")),
     (2028, include_str!("../terminals/requests.sql")),
+    (2029, include_str!("../terminals/request_results.sql")),
 ];
 /// The first node schema.
 const FIRST_SCHEMA_VERSION: i64 = 2000;
@@ -119,7 +120,8 @@ const SCHEMA: &str = concat!(
     include_str!("../process_journal/resource_kinds.sql"),
     include_str!("../terminals/io_owners.sql"),
     include_str!("../terminals/host.sql"),
-    include_str!("../terminals/requests.sql")
+    include_str!("../terminals/requests.sql"),
+    include_str!("../terminals/request_results.sql")
 );
 
 /// Placeholder name of a new session until the agent's title replaces it.

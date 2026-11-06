@@ -252,6 +252,22 @@ async fn capability_reads_are_owned_non_mutating_and_reject_ambiguous_query_kind
         ("alice", "workRequestId=a&hostRequestId=b", 400),
         ("alice", "capabilities=1&capabilities=1", 400),
         ("mallory", "capabilities=1", 403),
+        ("alice", "unresolvedRequests=1", 200),
+        (
+            "alice",
+            "unresolvedRequests=1&limit=100&after=1.work.a",
+            200,
+        ),
+        ("alice", "unresolvedRequests=0", 400),
+        ("alice", "unresolvedRequests=1&capabilities=1", 400),
+        ("alice", "unresolvedRequests=1&hostRequestId=a", 400),
+        ("alice", "unresolvedRequests=1&limit=0", 400),
+        ("alice", "unresolvedRequests=1&limit=101", 400),
+        ("alice", "unresolvedRequests=1&after=1.peer.a", 400),
+        ("alice", "unresolvedRequests=1&after=x.work.a", 400),
+        ("alice", "limit=5", 400),
+        ("alice", "workRequestId=a&after=1.work.a", 400),
+        ("mallory", "unresolvedRequests=1", 403),
     ] {
         let response = router
             .handle(
@@ -267,10 +283,10 @@ async fn capability_reads_are_owned_non_mutating_and_reject_ambiguous_query_kind
             )
             .await;
         assert_eq!(response.status, status, "{query}: {response:?}");
-        if status == 200 {
+        if status == 200 && query.starts_with("capabilities") {
             assert_eq!(
                 response.body.unwrap()["terminalCapabilities"]["workTerminalRequestVersion"],
-                1
+                2
             )
         }
     }
@@ -284,4 +300,134 @@ async fn capability_reads_are_owned_non_mutating_and_reject_ambiguous_query_kind
         0
     );
     f.node.close().await;
+}
+
+#[tokio::test]
+async fn unresolved_requests_list_only_open_decisions_in_stable_pages() {
+    let f = Fixture::new().await;
+    let root = root(&f);
+    {
+        let db = f.node.db.lock();
+        let work = |request: &str, incarnation: &str, state: &str, at: i64, session: &str| {
+            db.execute("INSERT INTO terminal_work_requests VALUES('alice',?1,?2,?3,'repo',0,?4,?5,?6,NULL,NULL,NULL,?7)",params![session,request,incarnation,root.to_string_lossy(),"a".repeat(64),state,at]).unwrap();
+        };
+        work(
+            "w-preparing",
+            &f.node.incarnation,
+            "accepted",
+            10,
+            &f.current,
+        );
+        work("w-unknown", "old-node", "accepted", 20, &f.current);
+        work(
+            "w-failed",
+            &f.node.incarnation,
+            "not_started",
+            30,
+            &f.current,
+        );
+        work(
+            "w-other-session",
+            &f.node.incarnation,
+            "accepted",
+            11,
+            "other-session",
+        );
+        let host = |request: &str, incarnation: &str, at: i64, expires: i64| {
+            db.execute("INSERT INTO terminal_host_requests(id,owner_user,session_id,request_id,incarnation,intent_hash,review_json,created_at,expires_at) VALUES(?1,'alice',?2,?1,?3,?4,'{}',?5,?6)",params![request,f.current,incarnation,"b".repeat(64),at,expires]).unwrap();
+        };
+        host("h-review", &f.node.incarnation, 15, i64::MAX);
+        host("h-expired", &f.node.incarnation, 25, 1);
+        host("h-stale", "old-node", 35, i64::MAX);
+    }
+    let all = unresolved(&f.node, "alice", &f.current, None, None).unwrap();
+    let items = all["terminalRequests"]["items"].as_array().unwrap();
+    let states: Vec<_> = items
+        .iter()
+        .map(|item| {
+            let result = item
+                .get("workRequest")
+                .unwrap_or_else(|| &item["hostManagement"]);
+            (
+                result["requestId"].as_str().unwrap(),
+                result["state"].as_str().unwrap(),
+            )
+        })
+        .collect();
+    assert_eq!(
+        states,
+        [
+            ("w-preparing", "preparing"),
+            ("h-review", "review"),
+            ("w-unknown", "outcome_unknown")
+        ]
+    );
+    assert!(all["terminalRequests"]["next"].is_null());
+    let mut after: Option<String> = None;
+    let mut paged = Vec::new();
+    for _ in 0..5 {
+        let page = unresolved(&f.node, "alice", &f.current, after.as_deref(), Some("1")).unwrap();
+        for item in page["terminalRequests"]["items"].as_array().unwrap() {
+            paged.push(item.clone());
+        }
+        match page["terminalRequests"]["next"].as_str() {
+            Some(next) => after = Some(next.into()),
+            None => break,
+        }
+    }
+    assert_eq!(&paged, items);
+    assert!(unresolved(&f.node, "mallory", &f.current, None, None).is_err());
+    // Reading creates, consumes or changes nothing.
+    assert_eq!(
+        f.node
+            .db
+            .lock()
+            .query_row("SELECT count(*) FROM terminal_runs", [], |r| r
+                .get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+    f.node.close().await;
+}
+
+#[test]
+fn result_layer_upgrade_keeps_requests_and_adds_no_failure_reasons() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("node.sqlite");
+    {
+        let db = Db::open(&file).unwrap();
+        let db = db.lock();
+        db.execute("INSERT INTO terminal_work_requests VALUES('alice','session','kept','old','repo',0,'/repo',?1,'outcome_unknown','terminal_start_unconfirmed',NULL,NULL,1)",["a".repeat(64)]).unwrap();
+        db.execute_batch(include_str!("../remove_request_results.sql"))
+            .unwrap();
+        db.pragma_update(None, "user_version", 2028).unwrap();
+    }
+    let db = Db::open(&file).unwrap();
+    let db = db.lock();
+    let kept: (String, Option<String>) = db
+        .query_row(
+            "SELECT state,error_code FROM terminal_work_requests WHERE request_id='kept'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!(
+        kept,
+        (
+            "outcome_unknown".into(),
+            Some("terminal_start_unconfirmed".into())
+        )
+    );
+    let reasons: i64 = db
+        .query_row(
+            "SELECT count(*) FROM terminal_host_requests WHERE error_code IS NOT NULL",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(reasons, 0);
+    assert!(
+        db.execute("UPDATE terminal_work_requests SET error_code='changed'", [])
+            .is_err()
+    );
 }

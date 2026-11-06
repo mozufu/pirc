@@ -319,13 +319,69 @@ terminal listed. The kernel adapter in Node fixtures is synthetic; native Linux
 acceptance, Web/Android rollout and full revocation/installation remain open.
 Local commit only, no push, deployment or Release.
 
-## Client terminal execution-path contract v1 (proposed, gate for Web/Android)
+## Local implementation checkpoint: terminal request discovery and result parity (2026-11-06)
 
-Status: **proposed on 2026-11-06**, not implemented by any client. The Node
-side it relies on is the [2028 checkpoint](#local-implementation-checkpoint-durable-isolated-work-terminal-requests-2026-11-06). No Web or
-Android code currently sends `executionPath`, `requestId`, `workRequestId` or
-`hostRequestId`. Both clients must implement this one contract. Close the Node
-gaps below before freezing it, so the two clients cannot diverge. This covers
+Node schema **2029** closes the four Node gaps of the client terminal contract,
+which is now frozen for Web/Android. `workTerminalRequestVersion` becomes **2**
+in both the per-session terminal capabilities and the Node capability document.
+
+1. **Discovery.** `GET .../terminals?unresolvedRequests=1[&limit][&after]` lists
+   this owner's work and host requests for the session that still need a client
+   decision (`preparing`, `review`, `outcome_unknown`). It pages by
+   creation time, kind and request ID (default 50, at most 100) over new indexes.
+   Each item is the existing single-request result. Reading needs no control
+   lease and mutates nothing. Clients no longer need to persist pending IDs, so
+   Web IndexedDB **3** and the Android envelope **3** stay unchanged.
+2. **Result parity.** `hostManagement` now carries `version`, `requestId` and
+   `errorCode`, like `workRequest`. A spawn that fails **after** the reservation
+   records its reason in the same transaction as the `not_started` run. SQL
+   triggers allow this only once, only for that request's own not-started run, and
+   never rewrite it. A new `terminal_host_requests.error_code` column starts empty
+   for existing rows.
+3. **Durable isolated path only.** `executionPath: "isolated_work"` without
+   `requestId` returns `400 work_terminal_request_required`. No released client
+   sends the bare form, so keeping it would only leave a second, non-recoverable
+   path. Internal fixtures still call the adapter directly.
+4. **Bounded first reply.** The first POST waits at most **20 s**, below the
+   Gateway's **30 s** relay timeout. After that it answers `202` with the current
+   result, while the single detached worker continues. `201`/`200` keep their
+   meanings.
+
+Upgrade keeps existing work/host requests and their outcomes and adds no failure
+reasons, grants or request IDs. Old binaries reject 2029; rollback needs matching
+state/binary backups. Gateway **1029**, protocol/client/envelope **15/2/3**,
+packages, lockfiles and Nix hashes are unchanged.
+
+New cases: listing filters (preparing, review and old-incarnation unknown kept;
+not-started, expired, stale and other-session rows excluded), paging with `limit=1`
+equals the full list, owner refusal, read-only effect; the 2028→2029 upgrade keeps
+rows without reasons; a post-reservation spawn failure keeps `runner_unavailable`
+once without replay; a slow preparation answers `202` before its one worker
+finishes; host spawn failure exposes and protects its `errorCode`; route-level
+read-kind exclusivity and paging validation. The new Gateway process case reviews
+a host terminal, discovers it with `limit=1` paging through the relay, confirms
+it and sees the list empty, with a not-started isolated request never listed.
+
+Validation: **655 Node library tests** (five existing ignores), **421 Gateway tests**,
+**30 required real Gateway/Node process cases** across 12 suites (terminals 6,
+Node-link side channels 6, execution fences 4, checkpoints 3, conversation
+admission/creation/host-command fences 2 each, environment transitions, inference
+fences, memory, project deletion and streams 1 each), `cargo fmt --check` and
+strict all-target Node/Gateway/conformance Clippy passed. The focused terminal
+module passed **65 cases**. The kernel adapter in Node fixtures is synthetic; per the user
+(2026-11-06), native Linux tests are not run here because this host cannot
+simulate them. Local commit only, no push, deployment or Release.
+
+## Client terminal execution-path contract v1 (frozen for Web/Android)
+
+Status: proposed on 2026-11-06; **frozen for client implementation on
+2026-11-06** after the [Node 2029 checkpoint](#local-implementation-checkpoint-terminal-request-discovery-and-result-parity-2026-11-06)
+closed its four Node gaps. The Node side builds on the
+[2028 checkpoint](#local-implementation-checkpoint-durable-isolated-work-terminal-requests-2026-11-06).
+No Web or Android code sends `executionPath`, `requestId`, `workRequestId`,
+`hostRequestId` or `unresolvedRequests` yet. Both clients must implement this
+one contract, so they cannot diverge. Clients require
+`workTerminalRequestVersion >= 2`. This covers
 step 4 of the [implementation order](#implementation-order-and-acceptance):
 necessary controls in the existing style, with no navigation or visual redesign.
 
@@ -335,8 +391,10 @@ necessary controls in the existing style, with no navigation or visual redesign.
    session through the existing Gateway relay; paired Android calls Gateway directly.
 2. `enabled: false` means no new terminal of any path. Existing terminals and the
    two result queries stay readable.
-3. `isolatedTerminalVersion >= 1` and `workTerminalRequestVersion >= 1`: the
-   ordinary **New terminal** action uses isolated work.
+3. `isolatedTerminalVersion >= 1` and `workTerminalRequestVersion >= 2`: the
+   ordinary **New terminal** action uses isolated work. A Node advertising
+   `workTerminalRequestVersion: 1` lacks discovery and parity; treat it as needing
+   an update rather than adapting to it.
 4. `isolatedTerminalVersion: 0`, for example on macOS or behind an external wrapper:
    the ordinary action shows that isolation is unavailable. A separate, explicit
    **Host management terminal…** action is offered only if
@@ -358,8 +416,33 @@ necessary controls in the existing style, with no navigation or visual redesign.
 - A lost or timed-out POST, or a reload: GET the request. A `404` means it was
   not admitted yet. The client may re-POST the **same** ID with the same intent
   (deduplicated), or drop it. It never mints a new ID for the same user action.
-- The first POST waits for preparation. A relay/HTTP timeout is an ambiguous
-  outcome and is handled by the GET above, not by a new request.
+- Isolated POST status codes: `201` is the first submission's finished result,
+  `200` repeats an existing request, `202` means admitted but still preparing
+  after the bounded wait. The body has the same `workRequest` shape in all three.
+  On `202` the client polls the GET; the worker continues on the Node.
+- Node waits at most **20 s** for the worker, below the Gateway's **30 s** relay
+  timeout. A relay `504 node_timeout` or `503 node_offline` is still an ambiguous
+  outcome, handled by the GET above, not by a new request.
+- `executionPath: "isolated_work"` without `requestId` returns
+  `400 work_terminal_request_required`; there is no non-durable isolated path.
+- **Discovery:** `GET .../terminals?unresolvedRequests=1[&limit=1..100][&after=<next>]`
+  returns `{"terminalRequests":{"version":1,"items":[…],"next":<cursor|null>}}`.
+  Each item is exactly the single-request result object (`workRequest` or
+  `hostManagement`, plus `terminal`). It lists this owner's requests for the
+  session in `preparing`, `review` or `outcome_unknown`, in creation order. A page
+  may hold fewer items than `limit`, or none; continue while `next` is non-null.
+  The read needs no control lease and stays available when new terminals are
+  disabled. Clients use it after reload, reconnect or on a second device, instead
+  of persisting pending IDs. Web IndexedDB **3** and Android envelope **3** are
+  unchanged.
+- Read kinds (`capabilities`, `workRequestId`, `hostRequestId`,
+  `unresolvedRequests`) are mutually exclusive; `after`/`limit` belong to the list
+  only. Violations return `400 invalid_input`.
+- Result shapes match. `workRequest` and `hostManagement` both carry `version: 1`,
+  `requestId`, `state`, `errorCode` and `terminalId`. Host results add `id`,
+  `reviewHash`, `review` and `expiresAt`. `errorCode` is set for a known no-start,
+  including a spawn that failed after the reservation (for example
+  `runner_unavailable`), and is never rewritten.
 
 ### Result states and client behavior
 
@@ -378,31 +461,20 @@ Live terminals and ready frames already carry `executionPath`. Clients show a
 small path label (isolated / host management) on the terminal tab. Untagged
 legacy terminals remain unlabeled; they are not shown as isolated.
 
-### Node gaps to close before freezing v1
+### Node gaps closed (2026-11-06)
 
-These are small Node/API slices on top of the 2028 checkpoint, in the same
-worktree lineage. They are the next implementation step:
+All four were delivered in the [Node 2029 checkpoint](#local-implementation-checkpoint-terminal-request-discovery-and-result-parity-2026-11-06):
 
-1. **Unresolved-request discovery.** Add an owner-scoped read listing this
-   session's work/host requests in `preparing`, `review` or `outcome_unknown`
-   (bounded keyset page). Another device, a reload or a cleared browser store can
-   then find them without client persistence, so the Web IndexedDB **3** and
-   Android envelope **3** formats need no bump. Without this, both clients must
-   persist pending IDs and the envelope/schema versions change. Recommended:
-   implement discovery.
-2. **Shape parity.** Add `errorCode` to `hostManagement`, the same as
-   `workRequest`, and document the state union above as one enum. Return the
-   request ID in both shapes. Also report the run's error code when a work request
-   fails after linking, instead of an empty `errorCode`.
-3. **Bare `isolated_work` without `requestId`.** It still opens a non-durable
-   request. New clients must always send `requestId`. Decide whether Node refuses
-   the bare form behind `workTerminalRequestVersion`; recommended: refuse it once
-   both clients ship, since no existing client sends it.
-4. **Relay timeout check.** Confirm the Gateway relay timeout against the worst
-   isolated preparation time. Add a conformance case where the waiter is dropped
-   and a later GET returns the single result.
+1. ~~Unresolved-request discovery~~: the `unresolvedRequests` read above.
+2. ~~Shape parity~~: matching fields, plus a retained `errorCode` for failures
+   after the reservation.
+3. ~~Bare `isolated_work`~~: refused now rather than after client rollout,
+   because no released client sends it and keeping it would leave a second,
+   non-recoverable path.
+4. ~~Relay timeout~~: Node's bounded 20 s wait and `202`, with a fixture where the
+   waiter answers before the one worker finishes.
 
-### Client work split (after the gaps above)
+### Client work split (next)
 
 Can run in parallel in separate worktrees, with the frozen contract as their only
 shared input.
@@ -416,13 +488,15 @@ quality, placement and polish are out of scope.
 - **Web** (`apps/web/src/lib/panel-api.ts`, `components/panel/TerminalTab.svelte`
   and locales): capabilities, request create/recover, host review dialog, state
   rendering and path label; en/zh-TW strings. Vitest cases cover every row of the
-  state table, reload during `preparing`, `409` and the 404→same-ID re-POST.
+  state table, `202` polling, reload recovery through `unresolvedRequests` paging,
+  `409` and the 404→same-ID re-POST.
 - **Android** (`apps/android/lib/live/terminal_pane.dart`, `terminal_state.dart`
   and `gateway.dart`): the same flow through the direct Gateway connection, with
   focused simple Flutter tests only (no visual redesign).
-- **Conformance**: one end-to-end case per client path through Gateway: isolated
-  unavailable → explicit host review → confirm → close → `unconfirmed`, plus
-  discovery from a second client.
+- **Conformance**: Gateway-level discovery/paging and host review are already
+  covered by `terminal_requests_are_discoverable_through_the_gateway_without_control`.
+  Client slices add their own unit cases against this contract; real browser and
+  device journeys stay with the new UI.
 
 ### Decisions to confirm with the user at client entry
 

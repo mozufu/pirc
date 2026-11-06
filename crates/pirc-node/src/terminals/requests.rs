@@ -9,7 +9,18 @@ use crate::{
 use futures_util::FutureExt;
 use rusqlite::{Connection, OptionalExtension, params};
 use serde_json::{Value, json};
-use std::panic::AssertUnwindSafe;
+use std::{panic::AssertUnwindSafe, time::Duration};
+
+/// 2: unresolved-request listing, host/work result parity, required request
+/// identity for isolated work and a bounded first reply.
+pub(crate) const VERSION: u8 = 2;
+/// How long the first submission waits for its worker. It stays below the
+/// Gateway relay timeout (30 s), so a slow preparation answers `202 preparing`
+/// instead of an ambiguous relay timeout; the worker keeps running.
+pub(crate) const REPLY_WAIT: Duration = Duration::from_secs(20);
+/// Default and largest page of unresolved request results.
+const PAGE: usize = 50;
+const MAX_PAGE: usize = 100;
 
 pub(super) struct Permit {
     owner: String,
@@ -131,6 +142,22 @@ pub(crate) async fn create(
     control: (&str, i64),
     size: (Option<i64>, Option<i64>),
 ) -> ApiResult<Response> {
+    create_waiting(
+        node, owner, session, cwd, request, control, size, REPLY_WAIT,
+    )
+    .await
+}
+#[allow(clippy::too_many_arguments)]
+pub(super) async fn create_waiting(
+    node: &Node,
+    owner: &str,
+    session: &str,
+    cwd: &Path,
+    request: &str,
+    control: (&str, i64),
+    size: (Option<i64>, Option<i64>),
+    wait: Duration,
+) -> ApiResult<Response> {
     key(request)?;
     let mut permit = Permit {
         owner: owner.into(),
@@ -159,10 +186,12 @@ pub(crate) async fn create(
         db.execute("INSERT INTO terminal_work_requests VALUES(?1,?2,?3,?4,?5,?6,?7,?8,'accepted',NULL,NULL,NULL,?9)",params![owner,session,request,node.incarnation,workspace,epoch,cwd.to_string_lossy(),hash,now_ms()])?;
         permit.hash = hash;
     }
+    let reader = node.clone();
+    let (owner, session, request) = (owner.to_owned(), session.to_owned(), request.to_owned());
     let node = node.clone();
     let cwd = cwd.to_owned();
     // Dropping the HTTP waiter does not cancel the one admitted worker.
-    let task = tokio::spawn(async move {
+    let mut task = tokio::spawn(async move {
         let owner = permit.owner.clone();
         let session = permit.session.clone();
         let request = permit.request.clone();
@@ -199,7 +228,97 @@ pub(crate) async fn create(
         }
         status(&node, &owner, &session, &request).map(|value| Response::status(201, value))
     });
-    task.await.map_err(|_| ApiError::internal())?
+    match tokio::time::timeout(wait, &mut task).await {
+        Ok(joined) => joined.map_err(|_| ApiError::internal())?,
+        // Still preparing: the detached worker owns the outcome; clients query.
+        Err(_) => status(&reader, &owner, &session, &request).map(|v| Response::status(202, v)),
+    }
+}
+/// Record why a reserved terminal did not start, in its own transaction with
+/// the `not_started` run outcome. Only the request linked to that run changes.
+pub(super) fn start_failed(db: &Connection, run: &str, code: &str) -> ApiResult<()> {
+    if db.is_autocommit() {
+        return Err(ApiError::internal());
+    }
+    db.execute("UPDATE terminal_work_requests SET error_code=?2 WHERE run_id=?1 AND state='accepted' AND error_code IS NULL",params![run,code])?;
+    db.execute(
+        "UPDATE terminal_host_requests SET error_code=?2 WHERE run_id=?1 AND error_code IS NULL",
+        params![run, code],
+    )?;
+    Ok(())
+}
+fn cursor(text: &str) -> ApiResult<(i64, String, String)> {
+    let mut parts = text.splitn(3, '.');
+    let (Some(at), Some(kind), Some(request)) = (parts.next(), parts.next(), parts.next()) else {
+        return Err(ApiError::invalid_input());
+    };
+    let at = at.parse::<i64>().map_err(|_| ApiError::invalid_input())?;
+    if !["host", "work"].contains(&kind) {
+        return Err(ApiError::invalid_input());
+    }
+    key(request)?;
+    Ok((at, kind.into(), request.into()))
+}
+/// One owner's work and host requests that still need a client decision:
+/// `preparing`, `review` or `outcome_unknown`. Pages follow the raw keyset, so a
+/// page may hold fewer items than the limit; continue while `next` is present.
+pub(crate) fn unresolved(
+    node: &Node,
+    owner: &str,
+    session: &str,
+    after: Option<&str>,
+    limit: Option<&str>,
+) -> ApiResult<Value> {
+    let after = after.map(cursor).transpose()?;
+    let limit = match limit {
+        None => PAGE,
+        Some(text) => text
+            .parse::<usize>()
+            .ok()
+            .filter(|n| (1..=MAX_PAGE).contains(n))
+            .ok_or_else(ApiError::invalid_input)?,
+    };
+    let db = node.db.lock();
+    db.claim_session(session, owner, false)?;
+    let (at, kind, request) = after.unwrap_or((i64::MIN, String::new(), String::new()));
+    let live = "SELECT id FROM terminal_runs WHERE state IN ('launching','running')";
+    let rows: Vec<(i64, String, String)> = db
+        .prepare(&format!("SELECT created_at,kind,request_id FROM (
+             SELECT created_at,'host' kind,request_id FROM terminal_host_requests WHERE owner_user=?1 AND session_id=?2
+              AND ((run_id IS NULL AND incarnation=?3 AND expires_at>?4) OR run_id IN ({live}))
+             UNION ALL
+             SELECT created_at,'work' kind,request_id FROM terminal_work_requests WHERE owner_user=?1 AND session_id=?2
+              AND ((run_id IS NULL AND state!='not_started') OR run_id IN ({live})))
+             WHERE (created_at,kind,request_id)>(?5,?6,?7) ORDER BY created_at,kind,request_id LIMIT ?8"))?
+        .query_map(
+            params![owner, session, node.incarnation, now_ms(), at, kind, request, limit as i64],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )?
+        .collect::<Result<_, _>>()?;
+    let mut items = Vec::new();
+    for (_, kind, request) in &rows {
+        let item = if kind == "work" {
+            let row = saved(&db, owner, session, request)?.ok_or_else(ApiError::internal)?;
+            reply(node, &db, request, row)?
+        } else {
+            let row =
+                super::host::load(&db, owner, session, request)?.ok_or_else(ApiError::internal)?;
+            super::host::response(node, &db, &row)?
+        };
+        let state = item["workRequest"]["state"]
+            .as_str()
+            .or_else(|| item["hostManagement"]["state"].as_str());
+        if matches!(state, Some("preparing" | "review" | "outcome_unknown")) {
+            items.push(item);
+        }
+    }
+    let next = (rows.len() == limit)
+        .then(|| {
+            rows.last()
+                .map(|(at, kind, request)| format!("{at}.{kind}.{request}"))
+        })
+        .flatten();
+    Ok(json!({"terminalRequests":{"version":1,"items":items,"next":next}}))
 }
 pub(super) fn link(
     db: &Connection,

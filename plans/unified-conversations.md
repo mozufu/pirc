@@ -23,7 +23,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1029**, Node **2028**, protocol **15**, client contract **2**,
+formats: Gateway **1029**, Node **2029**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -55,13 +55,18 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local U4 delivery: [durable isolated work-terminal requests](#u4-implementation-checkpoint-durable-isolated-work-terminal-requests-2026-11-06)
+Latest local U4 delivery: [terminal request discovery and result parity](#u4-implementation-checkpoint-terminal-request-discovery-and-result-parity-2026-11-06)
+closes the four Node gaps and freezes the [client terminal contract](execution-isolation.md#client-terminal-execution-path-contract-v1-frozen-for-webandroid)
+(Node **2029**, `workTerminalRequestVersion: 2`): unresolved-request paging,
+matching host/work results with retained start-failure reasons, a required
+request ID for isolated work and a bounded `202` first reply. Interface-only Web
+and Android slices are next.
+
+The previous [durable isolated work-terminal requests](#u4-implementation-checkpoint-durable-isolated-work-terminal-requests-2026-11-06)
 gives explicit isolated terminals a retained request identity before preparation,
 one worker per request, read-only result recovery and per-session terminal
 capabilities (Node **2028**). Unavailable isolation records `not_started` without
-host fallback. The proposed [client terminal contract](execution-isolation.md#client-terminal-execution-path-contract-v1-proposed-gate-for-webandroid)
-and its four Node gaps are next; Web/Android need interfaces only, as their UI
-will be replaced.
+host fallback. Its four client-contract Node gaps followed in Node 2029.
 
 The previous [host terminal review and once-only launch](#u4-implementation-checkpoint-host-terminal-review-and-once-only-launch-2026-11-04)
 adds a human review/confirmation contract, atomic grant/launch reservation and
@@ -5491,9 +5496,9 @@ and refuse a link to an Agent or peer scope. Upgrade invents no request IDs or
 grants. Gateway **1029** and protocol/client/envelope **15/2/3** stay unchanged;
 no package, lockfile or Nix hash changes. Old binaries reject 2028.
 
-This is backend reconciliation only. The proposed
-[client terminal contract v1](execution-isolation.md#client-terminal-execution-path-contract-v1-proposed-gate-for-webandroid)
-lists four Node gaps to close before Web/Android implement it: unresolved-request
+This is backend reconciliation only. The
+[client terminal contract v1](execution-isolation.md#client-terminal-execution-path-contract-v1-frozen-for-webandroid)
+listed four Node gaps to close before Web/Android implement it: unresolved-request
 discovery, host/work shape parity (including the empty `errorCode` after a linked
 spawn failure), refusing the bare non-durable `isolated_work` request, and a
 relay-timeout case. On 2026-11-06 the user stated the current Web/Android UI
@@ -5511,3 +5516,56 @@ The new process case runs through Gateway on macOS (isolation unavailable); the
 Node fixture kernel adapter is synthetic. No Flutter, browser, emulator, device
 or native Linux validation is claimed. Local commit only, no push, deployment or
 Release.
+
+## U4 implementation checkpoint: terminal request discovery and result parity (2026-11-06)
+
+Node schema **2029** closes the four Node gaps of the client terminal contract,
+which is now frozen for Web/Android. `workTerminalRequestVersion` becomes **2**
+in both the per-session terminal capabilities and the Node capability document.
+
+1. **Discovery.** `GET .../terminals?unresolvedRequests=1[&limit][&after]` lists
+   this owner's work and host requests for the session that still need a client
+   decision (`preparing`, `review`, `outcome_unknown`). It pages by
+   creation time, kind and request ID (default 50, at most 100) over new indexes.
+   Each item is the existing single-request result. Reading needs no control
+   lease and mutates nothing. Clients no longer need to persist pending IDs, so
+   Web IndexedDB **3** and the Android envelope **3** stay unchanged.
+2. **Result parity.** `hostManagement` now carries `version`, `requestId` and
+   `errorCode`, like `workRequest`. A spawn that fails **after** the reservation
+   records its reason in the same transaction as the `not_started` run. SQL
+   triggers allow this only once, only for that request's own not-started run, and
+   never rewrite it. A new `terminal_host_requests.error_code` column starts empty
+   for existing rows.
+3. **Durable isolated path only.** `executionPath: "isolated_work"` without
+   `requestId` returns `400 work_terminal_request_required`. No released client
+   sends the bare form, so keeping it would only leave a second, non-recoverable
+   path. Internal fixtures still call the adapter directly.
+4. **Bounded first reply.** The first POST waits at most **20 s**, below the
+   Gateway's **30 s** relay timeout. After that it answers `202` with the current
+   result, while the single detached worker continues. `201`/`200` keep their
+   meanings.
+
+Upgrade keeps existing work/host requests and their outcomes and adds no failure
+reasons, grants or request IDs. Old binaries reject 2029; rollback needs matching
+state/binary backups. Gateway **1029**, protocol/client/envelope **15/2/3**,
+packages, lockfiles and Nix hashes are unchanged.
+
+New cases: listing filters (preparing, review and old-incarnation unknown kept;
+not-started, expired, stale and other-session rows excluded), paging with `limit=1`
+equals the full list, owner refusal, read-only effect; the 2028→2029 upgrade keeps
+rows without reasons; a post-reservation spawn failure keeps `runner_unavailable`
+once without replay; a slow preparation answers `202` before its one worker
+finishes; host spawn failure exposes and protects its `errorCode`; route-level
+read-kind exclusivity and paging validation. The new Gateway process case reviews
+a host terminal, discovers it with `limit=1` paging through the relay, confirms
+it and sees the list empty, with a not-started isolated request never listed.
+
+Validation: **655 Node library tests** (five existing ignores), **421 Gateway tests**,
+**30 required real Gateway/Node process cases** across 12 suites (terminals 6,
+Node-link side channels 6, execution fences 4, checkpoints 3, conversation
+admission/creation/host-command fences 2 each, environment transitions, inference
+fences, memory, project deletion and streams 1 each), `cargo fmt --check` and
+strict all-target Node/Gateway/conformance Clippy passed. The focused terminal
+module passed **65 cases**. No Flutter, browser, emulator, device or native Linux
+validation is claimed; the user deferred Linux tests on 2026-11-06 because this
+host cannot simulate them. Local commit only, no push, deployment or Release.

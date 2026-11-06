@@ -197,12 +197,19 @@ strict all-target Clippy passed. The owned **2.9 GiB** outputs are cleaned; this
 delivery stays local.
 
 Latest local terminal delivery:
+[terminal request discovery and result parity](unified-conversations.md#u4-implementation-checkpoint-terminal-request-discovery-and-result-parity-2026-11-06)
+closes the client-contract Node gaps (Node **2029**): unresolved-request paging,
+matching host/work results with retained start-failure reasons, required request
+IDs for isolated work and a bounded `202` first reply. The
+[client terminal contract](execution-isolation.md#client-terminal-execution-path-contract-v1-frozen-for-webandroid) is frozen; interface-only Web/Android slices
+are next. **655 Node tests**, **421 Gateway tests**, **30 required process cases**
+and strict all-target Clippy passed. Local only.
+
+Previous local terminal delivery:
 [durable isolated work-terminal requests](unified-conversations.md#u4-implementation-checkpoint-durable-isolated-work-terminal-requests-2026-11-06)
 retains an explicit isolated terminal's request identity before preparation, runs
 one worker per request and recovers results read-only (Node **2028**). Unavailable
-isolation never falls back to the host. Next: the four Node gaps in the
-[client terminal contract](execution-isolation.md#client-terminal-execution-path-contract-v1-proposed-gate-for-webandroid),
-then interface-only Web/Android slices (their UI will be replaced).
+isolation never falls back to the host. Its client-contract Node gaps followed in Node 2029.
 **651 Node tests**, **421 Gateway tests**, **29 required process cases**,
 **61 focused terminal cases** and strict all-target Clippy passed. Local only.
 
@@ -233,7 +240,7 @@ or `full-access` escalation is authorized by the design.
 | U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                        | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle        |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
-not enable it. Current formats are Gateway schema **1029**, Node schema **2028**,
+not enable it. Current formats are Gateway schema **1029**, Node schema **2029**,
 protocol **15**, client recovery contract **2**, and Web IndexedDB/native private
 envelope **3**. Existing ordinary session APIs remain available. Unaccepted
 Gateway attachment staging expires after **seven days**; accepted attachments and

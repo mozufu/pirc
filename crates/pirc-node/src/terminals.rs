@@ -438,10 +438,14 @@ impl Terminals {
             Ok(pair) => pair,
             Err(error) => {
                 if let (Some(record), Some((_, db))) = (&record, journal) {
-                    if let Some(launch) = &launch {
-                        crate::process_journal::not_started(db, launch)?;
-                    }
-                    record.finish(db, "not_started")?;
+                    // The run outcome and the linked request's reason commit together.
+                    crate::store::atomic(db, |db| {
+                        if let Some(launch) = &launch {
+                            crate::process_journal::not_started(db, launch)?;
+                        }
+                        record.finish(db, "not_started")?;
+                        requests::start_failed(db, &record.0, error.code.as_ref())
+                    })?;
                 }
                 return Err(error);
             }

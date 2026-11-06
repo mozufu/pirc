@@ -589,12 +589,23 @@ async fn known_spawn_failure_is_not_retried_with_the_consumed_review() {
     let failed = failed.unwrap().body.unwrap();
     assert_eq!(failed["hostManagement"]["state"], "not_started");
     assert!(failed["terminal"].is_null());
+    assert_eq!(failed["hostManagement"]["version"], 1);
+    assert_eq!(failed["hostManagement"]["requestId"], "spawn-failure");
+    assert_eq!(failed["hostManagement"]["errorCode"], "runner_unavailable");
+    assert!(
+        f.node
+            .db
+            .lock()
+            .execute("UPDATE terminal_host_requests SET error_code='other'", [])
+            .is_err()
+    );
     let retry = call(&f, &i).unwrap().body.unwrap();
     assert_eq!(
         retry["hostManagement"]["terminalId"],
         failed["hostManagement"]["terminalId"]
     );
     assert_eq!(retry["hostManagement"]["state"], "not_started");
+    assert_eq!(retry["hostManagement"]["errorCode"], "runner_unavailable");
     assert_eq!(count(&f.node, "terminal_runs"), 1);
     assert!(f.node.terminals.list(&f.current).is_empty());
     f.node.close().await;

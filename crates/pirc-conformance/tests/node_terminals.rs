@@ -602,12 +602,13 @@ async fn isolated_terminal_never_falls_back_to_host_on_an_unsupported_backend() 
     let api = cluster.api();
     let (mut session, _) = Session::create(&api).await;
     session.acquire().await;
+    // Isolated work needs a durable request identity before any backend check.
     let request = json!({"clientId":session.client,"generation":session.generation,"executionPath":"isolated_work"});
     let response = session.post("/terminals", request).await;
-    assert_eq!(response.status, 503, "{response:?}");
+    assert_eq!(response.status, 400, "{response:?}");
     assert_eq!(
         response.body["error"]["code"],
-        "isolated_terminal_unavailable"
+        "work_terminal_request_required"
     );
     let listed = session.get("/terminals").await;
     assert_eq!(listed.body["terminals"], json!([]));
@@ -745,4 +746,57 @@ async fn isolated_terminal_requests_report_no_start_without_host_fallback() {
             .len(),
         0
     );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn terminal_requests_are_discoverable_through_the_gateway_without_control() {
+    let Some(cluster) = Cluster::start_with(terminal_env()).await else {
+        return;
+    };
+    let (mut s, _) = Session::create(&cluster.api()).await;
+    s.acquire().await;
+    let work = json!({"clientId":s.client,"generation":s.generation,"executionPath":"isolated_work","requestId":"listed-work"});
+    assert_eq!(s.post("/terminals", work).await.status, 201);
+    let mut host = json!({"clientId":s.client,"generation":s.generation,"executionPath":"host_management","requestId":"listed-host","action":"review"});
+    let reviewed = s.post("/terminals", host.clone()).await;
+    assert_eq!(reviewed.status, 200, "{reviewed:?}");
+    assert_eq!(reviewed.body["hostManagement"]["requestId"], "listed-host");
+    assert!(reviewed.body["hostManagement"]["errorCode"].is_null());
+    // A known no-start needs no decision; the pending review does.
+    let listed = s.get("/terminals?unresolvedRequests=1&limit=1").await;
+    assert_eq!(listed.status, 200, "{listed:?}");
+    let items = listed.body["terminalRequests"]["items"].as_array().unwrap();
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0]["hostManagement"]["state"], "review");
+    let next = listed.body["terminalRequests"]["next"].as_str().unwrap();
+    let rest = s
+        .get(&format!(
+            "/terminals?unresolvedRequests=1&limit=1&after={next}"
+        ))
+        .await;
+    assert_eq!(rest.status, 200, "{rest:?}");
+    assert_eq!(rest.body["terminalRequests"]["items"], json!([]));
+    assert!(rest.body["terminalRequests"]["next"].is_null());
+    assert_eq!(
+        s.get("/terminals?unresolvedRequests=1&capabilities=1")
+            .await
+            .status,
+        400
+    );
+    host["action"] = json!("confirm");
+    host["confirmed"] = json!(true);
+    host["reviewId"] = reviewed.body["hostManagement"]["id"].clone();
+    host["reviewHash"] = reviewed.body["hostManagement"]["reviewHash"].clone();
+    let opened = s.post("/terminals", host).await;
+    assert_eq!(opened.status, 201, "{opened:?}");
+    let after = s.get("/terminals?unresolvedRequests=1").await;
+    assert_eq!(after.body["terminalRequests"]["items"], json!([]));
+    let terminal = opened.body["terminal"]["id"].as_str().unwrap();
+    let closed = s
+        .post(
+            &format!("/terminals/{terminal}/close"),
+            json!({"clientId":s.client,"generation":s.generation}),
+        )
+        .await;
+    assert_eq!(closed.status, 204, "{closed:?}");
 }

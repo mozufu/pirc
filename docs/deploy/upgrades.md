@@ -1,5 +1,19 @@
 # Upgrades
 
+## Local checkpoint: terminal request discovery and result parity
+
+Node schema **2029** adds paging indexes for terminal requests, a
+`terminal_host_requests.error_code` column and once-only start-failure reasons.
+`GET .../terminals?unresolvedRequests=1` lists open work/host requests;
+`workTerminalRequestVersion` becomes **2**. Isolated work now requires a
+`requestId` (`400 work_terminal_request_required` otherwise). The first isolated
+reply waits at most 20 s and may answer `202` while preparing. Existing requests
+and outcomes are kept without new reasons or grants. Gateway **1029**,
+protocol/client/private-envelope **15/2/3**, lockfiles and Nix hashes remain
+unchanged. Back up Node state with its binary; older readers reject 2029 and
+rollback requires matching state/binary backups. Local code only, no deployment
+or Release. See the [validation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-terminal-request-discovery-and-result-parity-2026-11-06).
+
 ## Local checkpoint: durable isolated work-terminal requests
 
 Node schema **2028** adds retained `terminal_work_requests`. An explicit isolated

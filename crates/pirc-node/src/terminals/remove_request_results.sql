@@ -1,0 +1,10 @@
+-- Test fixtures only: restore the 2028 request result layer.
+DROP INDEX terminal_host_requests_page;
+DROP INDEX terminal_work_requests_page;
+DROP TRIGGER terminal_host_error_once;
+ALTER TABLE terminal_host_requests DROP COLUMN error_code;
+DROP TRIGGER terminal_work_monotonic;
+CREATE TRIGGER terminal_work_monotonic BEFORE UPDATE OF state,error_code ON terminal_work_requests
+WHEN OLD.state!='accepted' OR NEW.state='accepted' OR (NEW.state='not_started' AND OLD.run_id IS NOT NULL) BEGIN
+ SELECT RAISE(ABORT,'Work terminal outcome cannot be retried or reset');
+END;
