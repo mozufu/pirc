@@ -55,7 +55,13 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local delivery: [T4 environment switching clients](transition-installation.md#integration-checkpoint-t4-environment-switching-clients-2026-11-07)
+Latest local delivery: [T5 failure-matrix acceptance](transition-installation.md#local-implementation-checkpoint-t5-failure-matrix-acceptance-2026-11-07)
+proves restart, offline, concurrency, takeover and cancel journeys with real
+processes and the confirmed path with synthetic containment; the recovery sweep
+now also runs on Node reconnect. T1–T5 are delivered; switching stays off by
+default.
+
+The previous [T4 environment switching clients](transition-installation.md#integration-checkpoint-t4-environment-switching-clients-2026-11-07)
 adds the Web and Android interface layers (preview, confirm, progress,
 acknowledgement, cancel, result) with throwaway controls; formats unchanged.
 Five small Gateway gaps found by the clients are recorded as the next slice.

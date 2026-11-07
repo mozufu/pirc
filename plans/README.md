@@ -197,6 +197,11 @@ strict all-target Clippy passed. The owned **2.9 GiB** outputs are cleaned; this
 delivery stays local.
 
 Latest local transition delivery:
+[T5 failure-matrix acceptance](transition-installation.md#local-implementation-checkpoint-t5-failure-matrix-acceptance-2026-11-07): **675 Node**,
+**428 Gateway** tests and **42 process cases** passed. T1–T5 are done; next are
+the five Gateway status/discovery gaps. Local only.
+
+Previous local transition delivery:
 [T4 environment switching clients](transition-installation.md#integration-checkpoint-t4-environment-switching-clients-2026-11-07): Web **699
 tests**, Android **147 focused tests**, clean svelte-check and `flutter analyze`.
 Next: five small Gateway status/discovery gaps found by the clients. Local only.

@@ -113,6 +113,10 @@ impl Sandbox for Backend {
     fn prepare_readonly(&self, _: ReadonlyInput) -> BoxFuture<'_, ApiResult<Prepared>> {
         Box::pin(async { Err(ApiError::internal()) })
     }
+    // The synthetic kernel adapter stands in for native Linux scopes.
+    fn contains_descendants(&self) -> bool {
+        true
+    }
     fn prepare_terminal(&self, _: PrepareInput, _: PathBuf) -> BoxFuture<'_, ApiResult<Prepared>> {
         assert!(
             !self.scope.panic_prepare.load(Ordering::SeqCst),
@@ -735,5 +739,28 @@ async fn start_failure_after_reservation_keeps_its_reason_once_without_replay() 
     }
     assert_eq!(f.scope.spawned.load(Ordering::SeqCst), 0);
     assert!(f.node.terminals.list(&f.session).is_empty());
+    f.node.close().await;
+}
+#[tokio::test]
+async fn kernel_containment_confirms_revocation_after_an_agent_run() {
+    let f = Fixture::new(true).await;
+    let evaluate = |state: &str| {
+        crate::execution_fences::revocation::evaluate(&f.node, &f.node.db.lock(), &f.session, state)
+            .unwrap()
+    };
+    f.node.db.lock().increment_epoch(&f.session).unwrap();
+    let insert = |id: &str, state: &str, identity: Option<&str>| {
+        f.node.db.lock().execute("INSERT INTO sandbox_launches(launch_id,session_id,workspace_id,runner_epoch,incarnation,state,identity_json,created_at,updated_at,guard_state,resource_kind) VALUES(?1,?2,'repo',?3,'n',?4,?5,5,5,'released','agent')",rusqlite::params![id,f.session,id.len() as i64,state,identity]).unwrap();
+    };
+    // A terminated kernel scope proves its descendants are gone.
+    insert("a", "terminated", Some("{}"));
+    let confirmed = evaluate("supervisor_drained");
+    assert!(confirmed.confirms_containment);
+    assert_eq!(confirmed.status, "confirmed", "{:?}", confirmed.items);
+    // With containment, an unsettled launch blocks whether or not its identity was captured.
+    insert("bb", "running", None);
+    let blocked = evaluate("supervisor_drained");
+    assert_eq!(blocked.status, "blocked");
+    assert!(blocked.items.iter().all(|item| !item.acknowledgeable));
     f.node.close().await;
 }

@@ -384,4 +384,223 @@ mod switching {
             TARGET_WORKSPACE_ID
         );
     }
+
+    async fn acquire(api: &Api, headers: &Headers, id: &str, client: &str) -> Value {
+        ok(
+            api,
+            headers,
+            "POST",
+            &format!("/api/sessions/{id}/control/acquire"),
+            json!({"clientId":client,"force":true}),
+        )
+        .await["lease"]["generation"]
+            .clone()
+    }
+    fn switching() -> GatewayOptions {
+        GatewayOptions {
+            env: vec![("PIRC_ENVIRONMENT_SWITCHING", "1".to_owned())],
+            second_workspace: true,
+            ..GatewayOptions::default()
+        }
+    }
+    async fn receipt(api: &Api, headers: &Headers, id: &str, op: &str) -> Value {
+        get(
+            api,
+            headers,
+            &format!("/api/sessions/{id}/environment-transitions/receipts/{op}"),
+        )
+        .await
+    }
+    async fn advance(
+        api: &Api,
+        headers: &Headers,
+        id: &str,
+        op: &str,
+        generation: &Value,
+    ) -> Value {
+        ok(
+            api,
+            headers,
+            "POST",
+            &format!("/api/sessions/{id}/environment-transitions/{op}/advance"),
+            json!({"clientId":"web","generation":generation}),
+        )
+        .await
+    }
+    async fn workspace(api: &Api, headers: &Headers, id: &str) -> Value {
+        get(api, headers, &format!("/api/sessions/{id}/environment")).await["binding"]["execution"]
+            .clone()
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn a_gateway_crash_after_confirmation_is_finished_by_the_recovery_sweep() {
+        let Some(mut cluster) = Cluster::start_with(switching()).await else {
+            return;
+        };
+        let headers = browser_headers();
+        let (id, generation) = conversation(&cluster.api(), &headers).await;
+        confirm(&cluster.api(), &headers, &id, &generation, "move-crash").await;
+        // No client calls advance: the restarted Gateway resumes on its own.
+        cluster.restart_gateway(true).await;
+        let api = cluster.api();
+        let mut state = Value::Null;
+        for _ in 0..200 {
+            state = receipt(&api, &headers, &id, "move-crash").await["transition"]["state"].clone();
+            if state == "installed" {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        }
+        assert_eq!(state, "installed");
+        let execution = workspace(&api, &headers, &id).await;
+        assert_eq!(execution["workspaceId"], TARGET_WORKSPACE_ID);
+        assert_eq!(execution["generation"], 2);
+        let _ = generation;
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn an_offline_node_keeps_the_switch_pending_and_a_restarted_node_finishes_it() {
+        let Some(mut cluster) = Cluster::start_with(switching()).await else {
+            return;
+        };
+        let headers = browser_headers();
+        let api = cluster.api();
+        let (id, generation) = conversation(&api, &headers).await;
+        confirm(&api, &headers, &id, &generation, "move-offline").await;
+        cluster.stop_node(false).await;
+        // Control is mirrored from the Node, so it lapses while the Node is
+        // away; the read-only status keeps the fenced stage and the binding.
+        let refused = api
+            .send(
+                "POST",
+                &format!("/api/sessions/{id}/environment-transitions/move-offline/advance"),
+                &headers,
+                Some(json!({"clientId":"web","generation":generation})),
+            )
+            .await;
+        assert_eq!(refused.status, 409, "{}", refused.body);
+        assert_eq!(
+            receipt(&api, &headers, &id, "move-offline").await["transition"]["state"],
+            "node_fenced"
+        );
+        assert_eq!(
+            workspace(&api, &headers, &id).await["workspaceId"],
+            WORKSPACE_ID
+        );
+        // The restarted Node keeps its retained fence; nothing is lost or replayed.
+        // Its controller reconnects and takes control again before continuing.
+        cluster.resume_node().await;
+        let generation = acquire(&api, &headers, &id, "web").await;
+        let mut installed = Value::Null;
+        for _ in 0..100 {
+            let response = api
+                .send(
+                    "POST",
+                    &format!("/api/sessions/{id}/environment-transitions/move-offline/advance"),
+                    &headers,
+                    Some(json!({"clientId":"web","generation":generation})),
+                )
+                .await;
+            if response.status == 200 && response.body["transition"]["state"] == "installed" {
+                installed = response.body;
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        }
+        assert_eq!(installed["transition"]["state"], "installed", "{installed}");
+        assert_eq!(
+            workspace(&api, &headers, &id).await["workspaceId"],
+            TARGET_WORKSPACE_ID
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn concurrent_steps_install_once_and_a_takeover_moves_control() {
+        let Some(cluster) = Cluster::start_with(switching()).await else {
+            return;
+        };
+        let headers = browser_headers();
+        let api = cluster.api();
+        let (id, generation) = conversation(&api, &headers).await;
+        confirm(&api, &headers, &id, &generation, "move-twice").await;
+        let (a, b) = tokio::join!(
+            advance(&api, &headers, &id, "move-twice", &generation),
+            advance(&api, &headers, &id, "move-twice", &generation)
+        );
+        for result in [&a, &b] {
+            assert_eq!(result["transition"]["state"], "installed", "{result}");
+        }
+        // One installation: the binding advanced by exactly one generation.
+        assert_eq!(workspace(&api, &headers, &id).await["generation"], 2);
+
+        // Another device takes control: the first device's steps are refused
+        // and only the new controller can continue the switch.
+        let (other, generation) = conversation(&api, &headers).await;
+        confirm(&api, &headers, &other, &generation, "move-takeover").await;
+        let tablet = acquire(&api, &headers, &other, "tablet").await;
+        let stale = api
+            .send(
+                "POST",
+                &format!("/api/sessions/{other}/environment-transitions/move-takeover/advance"),
+                &headers,
+                Some(json!({"clientId":"web","generation":generation})),
+            )
+            .await;
+        assert_eq!(stale.status, 409, "{}", stale.body);
+        assert_eq!(
+            workspace(&api, &headers, &other).await["workspaceId"],
+            WORKSPACE_ID
+        );
+        let continued = ok(
+            &api,
+            &headers,
+            "POST",
+            &format!("/api/sessions/{other}/environment-transitions/move-takeover/advance"),
+            json!({"clientId":"tablet","generation":tablet}),
+        )
+        .await;
+        assert_eq!(continued["transition"]["state"], "installed", "{continued}");
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn cancel_after_the_drain_keeps_the_original_workspace_and_reopens_work() {
+        let Some(cluster) = Cluster::start_with(switching()).await else {
+            return;
+        };
+        let headers = browser_headers();
+        let api = cluster.api();
+        let (id, generation) = conversation(&api, &headers).await;
+        cluster.llm.push([Reply::Text("Replied.".into())]);
+        settle_prompt(&api, &headers, &id, &generation, "before-cancel").await;
+        confirm(&api, &headers, &id, &generation, "move-cancel").await;
+        let waiting = advance(&api, &headers, &id, "move-cancel", &generation).await;
+        assert_eq!(
+            waiting["progress"]["revocation"]["status"], "unproven",
+            "{waiting}"
+        );
+        let released = ok(
+            &api,
+            &headers,
+            "POST",
+            &format!("/api/sessions/{id}/environment-transitions/move-cancel/cancel"),
+            json!({"clientId":"web","generation":generation}),
+        )
+        .await;
+        assert_eq!(released["transition"]["state"], "released", "{released}");
+        let execution = workspace(&api, &headers, &id).await;
+        assert_eq!(execution["workspaceId"], WORKSPACE_ID);
+        assert_eq!(execution["generation"], 1);
+        // Work resumes on the original binding; stopped work is not restarted.
+        cluster.llm.push([Reply::Text("Replied.".into())]);
+        settle_prompt(&api, &headers, &id, &generation, "after-cancel").await;
+        let late = api
+            .send(
+                "POST",
+                &format!("/api/sessions/{id}/environment-transitions/move-cancel/acknowledge"),
+                &headers,
+                Some(json!({"digest":waiting["progress"]["revocation"]["digest"],"clientId":"web","generation":generation})),
+            )
+            .await;
+        assert_eq!(late.status, 409, "{}", late.body);
+    }
 }

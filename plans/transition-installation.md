@@ -682,3 +682,58 @@ Gaps found by the client agents (Gateway unchanged; small follow-up slice):
 Remaining after these: native Linux acceptance of a fully confirmed switch after
 an Agent run, the new UI, and the later extensions (cross-Node handoff, project
 mounts).
+
+## Local implementation checkpoint: T5 failure-matrix acceptance (2026-11-07)
+
+Slice T5 closes the planned slices with failure-matrix acceptance. The macOS
+"unproven, then acknowledged" journey was already proven in T3b; T5 adds restart,
+offline, concurrency, takeover and cancel journeys with real Gateway, Node and
+Agent processes, and the "fully confirmed after an Agent run" path with the
+synthetic kernel adapter. No schema change (Gateway **1030**, Node **2032**).
+
+Real-process cases (`environment_transitions::switching`, switching enabled,
+second workspace on the same Node):
+
+| Failure point                                          | Observed result                                                                                                                  |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Gateway crash right after confirmation, no client call | The restarted Gateway's recovery pass installs the switch on its own; generation 2                                               |
+| Node offline after the fence                           | Control lapses with the Node (`lost_control`), the read-only status stays `node_fenced`, the binding stays on the source         |
+| Node restarted                                         | Its retained fence survives; the re-acquired controller's `advance` installs                                                     |
+| Two concurrent `advance` calls                         | Both report `installed`; the binding advances by exactly one generation                                                          |
+| Another device takes control                           | The old device's `advance` is refused and nothing installs; the new controller installs                                          |
+| Cancel after the drain (Agent had run)                 | `released`; workspace and generation unchanged; the next prompt runs on the original binding; a later acknowledgement is refused |
+
+Two behaviors found and handled:
+
+- **Recovery timing.** Control leases expire 30 s after their last renewal, and
+  the confirming lease is what the recovery sweep uses to install. A sweep that
+  ran only every 30 s therefore usually missed it after a Gateway restart. The
+  sweep now also runs a pass on every `node_reconnected` event, which is when a
+  restarted Gateway can first read the Node, normally inside the lease. Later
+  installs come from a current controller's `advance`, as before.
+- **Offline control.** The Gateway drops a session's control lease when its Node
+  disconnects (existing behavior), so clients see `lost_control` rather than
+  `node_unavailable` while the Node is away and must re-acquire control after it
+  returns. The Web and Android clients already read the status without control.
+
+Synthetic containment (Node unit, isolated-terminal fixture with a backend that
+reports `contains_descendants`): after an Agent run, a terminated kernel scope
+yields `confirmed` with `confirmsContainment: true`; an unsettled launch blocks
+whether or not its identity was captured, and nothing is acknowledgeable.
+
+Not covered here: session deletion during a transition through the public API
+(workspace conversations cannot be deleted; Gateway unit tests cover canonical
+deletion), a crash between the Node install commit and the Gateway commit
+(repaired by the receipt read and unit-tested with the Node stand-in), an
+in-flight model reply after the fence (refused by the existing fence and epoch
+checks), and native Linux execution.
+
+Validation: **675 Node library tests** (five existing ignores; one new containment case),
+**428 Gateway tests**, and **42 real Gateway/Node/Agent process cases** across 15
+suites (four new failure-matrix cases), with `cargo fmt --check` and strict
+all-target Node/Gateway/conformance/config/agent Clippy. Local commit only.
+
+Status after T5: the planned slices T1–T5 are delivered locally. Switching stays
+off by default (`PIRC_ENVIRONMENT_SWITCHING`). Open: the five Gateway
+status/discovery gaps from the T4 integration, native Linux acceptance, the new
+UI, and the later extensions (cross-Node handoff, project mounts).

@@ -359,15 +359,33 @@ async fn cancel(
     describe(app, identity, id, op)
 }
 
-/// Every 30 s, continue accepted transitions with already-authorized steps only:
+/// Every 30 s and whenever a Node reconnects, continue accepted transitions with already-authorized steps only:
 /// reconcile, drain and install after confirmed or acknowledged revocation,
 /// using the confirming controller's lease. It never acknowledges or cancels.
 pub(in crate::conversation_bindings::transitions) fn start(app: &AppState) {
     let weak = std::sync::Arc::downgrade(app);
+    // A Node that (re)connects is the moment its fences can be read again, and
+    // usually still within the confirming controller's lease.
+    let wake = std::sync::Arc::new(tokio::sync::Notify::new());
+    let notify = std::sync::Arc::downgrade(&wake);
+    let subscription = app.events.subscribe_all(std::sync::Arc::new(move |event| {
+        if event.kind == "node_reconnected"
+            && let Some(wake) = notify.upgrade()
+        {
+            wake.notify_one();
+        }
+    }));
     tokio::spawn(async move {
+        let _subscription = subscription;
         let mut interval = tokio::time::interval(std::time::Duration::from_secs(30));
         loop {
-            interval.tick().await;
+            tokio::select! {
+                _ = interval.tick() => {}
+                _ = wake.notified() => {
+                    // Let the reconnect finish publishing before reading.
+                    tokio::time::sleep(std::time::Duration::from_millis(150)).await;
+                }
+            }
             let Some(app) = weak.upgrade() else {
                 break;
             };
