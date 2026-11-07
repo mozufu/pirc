@@ -537,6 +537,15 @@ async fn validates_send_now_and_deliver() {
     )
     .await;
     assert_eq!(agent.take(), ["deliver true true", "deliver true true"]);
+    // `wake: false` adds context (an environment change) without starting a turn.
+    run(
+        &agent,
+        json!({ "type": "deliver", "wake": false, "message": { "customType": "environment-change",
+        "content": "Moved." } }),
+    )
+    .await;
+    assert_eq!(agent.take(), ["deliver false true"]);
+    agent.delivered.borrow_mut().pop();
     assert_eq!(
         *agent.delivered.borrow(),
         [

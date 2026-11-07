@@ -500,6 +500,8 @@ impl RunnerManager {
         if !matches!(payload, CommandPayload::Stop) {
             crate::command_environment::require_current(&node, session_id, command_id, lease)
                 .await?;
+            // A newly installed environment is announced before any new input.
+            crate::execution_fences::install::deliver_notice(&node, &runner, session_id).await?;
         }
         let runner = match payload {
             CommandPayload::EditMessage { entry_id, message } => self
@@ -899,6 +901,7 @@ impl RunnerManager {
                 )));
             }
         }
+        crate::execution_fences::install::deliver_notice(&node, &runner, session_id).await?;
         if !check()? {
             return Ok(false);
         }

@@ -37,7 +37,17 @@ async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() 
     assert_eq!(capabilities["data"]["status"], 200, "{capabilities}");
     assert_eq!(capabilities["data"]["body"]["durableAdmissionFence"], true);
     assert_eq!(capabilities["data"]["body"]["confirmsRevocation"], false);
-    assert_eq!(capabilities["data"]["body"]["installsEnvironment"], false);
+    // Node 2032 installs and releases; this host cannot prove containment.
+    assert_eq!(capabilities["data"]["body"]["installsEnvironment"], true);
+    assert_eq!(
+        capabilities["data"]["body"]["revocationEvaluationVersion"],
+        1
+    );
+    assert_eq!(
+        capabilities["data"]["body"]["transitionAcknowledgementVersion"],
+        1
+    );
+    assert_eq!(capabilities["data"]["body"]["transitionReleaseVersion"], 1);
     let create = link
         .request(
             "session",

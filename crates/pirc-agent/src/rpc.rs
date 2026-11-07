@@ -717,6 +717,8 @@ pub(crate) async fn dispatch<A: Commands>(
             let details = field("details")
                 .filter(|details| details.is_object() || details.is_array())
                 .cloned();
+            // `wake: false` adds trusted context (an environment change) without a turn.
+            let wake = command.get("wake").and_then(Value::as_bool).unwrap_or(true);
             agent.deliver(
                 Delivery {
                     custom_type: custom_type.to_owned(),
@@ -724,7 +726,7 @@ pub(crate) async fn dispatch<A: Commands>(
                     display: true,
                     details,
                 },
-                true,
+                wake,
                 true,
             )?;
             Ok(None)

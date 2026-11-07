@@ -260,6 +260,12 @@ impl Scopes {
             }
         }
     }
+    /// After a committed installation or release, a new generation may start
+    /// proxies. Every earlier authority stays revoked and keeps its own outcome.
+    pub(crate) fn reopen(&self, session: &str) {
+        let mut inner = self.inner.lock().unwrap_or_else(|p| p.into_inner());
+        inner.revoked.remove(session);
+    }
     pub fn close_all(&self) {
         let mut inner = self.inner.lock().unwrap_or_else(|p| p.into_inner());
         inner.closing = true;

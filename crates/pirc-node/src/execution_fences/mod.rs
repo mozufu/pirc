@@ -1,6 +1,8 @@
-//! Node half of a future environment transition: durable admission fencing and
-//! tracked supervisor shutdown. No release/install route exists yet. Drained
-//! supervisors are NOT evidence that all descendants or OS grants are revoked.
+//! Node half of an environment transition: durable admission fencing, tracked
+//! supervisor shutdown, revocation evaluation, and explicit installation or
+//! release. Drained supervisors alone are NOT evidence that descendants or OS
+//! grants are revoked; see `revocation`.
+pub(crate) mod install;
 mod preflight;
 pub(crate) mod revocation;
 pub(crate) mod stop_command;
@@ -85,6 +87,9 @@ pub(crate) struct Receipt {
     /// session is deleted. It does not change `revocation_confirmed`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub revocation: Option<revocation::Evaluation>,
+    /// The committed installation of this fence, if any.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub installation: Option<install::Outcome>,
 }
 fn valid_id(s: &str) -> bool {
     !s.is_empty()
@@ -107,6 +112,9 @@ fn validate(intent: &Intent) -> ApiResult<()> {
     }
     Ok(())
 }
+/// A fence that still blocks admission. Installed and released fences are
+/// retained evidence but inactive.
+pub(crate) const ACTIVE: &str = "state NOT IN ('deleted','installed','released')";
 fn pending() -> ApiError {
     ApiError::new(
         409,
@@ -118,7 +126,7 @@ fn pending() -> ApiError {
 /// not cancellation of already-admitted effects or kernel access revocation.
 pub fn require_open(db: &Connection, session: &str) -> ApiResult<()> {
     let active: bool = db.query_row(
-        "SELECT EXISTS(SELECT 1 FROM execution_fences WHERE session_id=? AND state!='deleted')",
+        &format!("SELECT EXISTS(SELECT 1 FROM execution_fences WHERE session_id=? AND {ACTIVE})"),
         [session],
         |r| r.get(0),
     )?;
@@ -133,14 +141,18 @@ fn receipt(db: &Connection, owner: &str, session: &str, op: &str) -> ApiResult<O
         params![owner,session,op],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?,r.get(3)?,r.get(4)?)),
     ).optional()?;
     row.map(|(intent, state, error_code, created_at, updated_at)| {
+        let installation = install::outcome(db, owner, op, &state)?;
         Ok(Receipt {
             intent: serde_json::from_str(&intent).map_err(|_| ApiError::internal())?,
+            revocation_confirmed: installation
+                .as_ref()
+                .is_some_and(|i| i.revocation == "confirmed"),
+            target_installed: installation.is_some(),
+            installation,
             state,
             error_code,
             created_at,
             updated_at,
-            revocation_confirmed: false,
-            target_installed: false,
             sandbox_processes: crate::process_journal::summary(db, session)?,
             host_commands: crate::host_commands::summary(db, session)?,
             terminals: crate::terminals::journal::summary(db, session)?,
@@ -239,7 +251,7 @@ fn stage(
     state: &str,
     error: Option<&str>,
 ) -> ApiResult<Receipt> {
-    db.execute("UPDATE execution_fences SET state=?4,error_code=?5,updated_at=?6 WHERE owner_user=?1 AND session_id=?2 AND operation_id=?3 AND state NOT IN ('deleted','supervisor_drained')",params![owner,session,op,state,error,now_ms()])?;
+    db.execute("UPDATE execution_fences SET state=?4,error_code=?5,updated_at=?6 WHERE owner_user=?1 AND session_id=?2 AND operation_id=?3 AND state NOT IN ('deleted','supervisor_drained','installed','released')",params![owner,session,op,state,error,now_ms()])?;
     receipt(db, owner, session, op)?.ok_or_else(|| ApiError::not_found("Transition not found"))
 }
 /// Every participant must be polled even when another fails, panics or remains
@@ -318,7 +330,10 @@ pub(crate) async fn drain(node: &Node, owner: &str, session: &str, op: &str) -> 
         } else {
             let saved = receipt(&node.db.lock(), owner, session, op)?
                 .ok_or_else(|| ApiError::not_found("Transition not found"))?;
-            if matches!(saved.state.as_str(), "deleted" | "supervisor_drained") {
+            if matches!(
+                saved.state.as_str(),
+                "deleted" | "supervisor_drained" | "installed" | "released"
+            ) {
                 return Ok(saved);
             }
             let node = node.clone();
@@ -375,7 +390,7 @@ pub(crate) async fn drain(node: &Node, owner: &str, session: &str, op: &str) -> 
 }
 pub async fn capabilities(node: Node, _request: Request) -> ApiResult<Response> {
     Ok(Response::json(
-        json!({"version":1,"resourcePreflightVersion":1,"resourceFenceVersion":1,"stopCommandVersion":1,"terminalIoClosureVersion":1,"terminalIoOwnerRecoveryVersion":1,"workTerminalRequestVersion":crate::terminals::requests::VERSION,"hostTerminalReviewVersion":1,"hostManagementApprovalVersion":1,"isolatedTerminalVersion":if node.sandbox.isolated_terminals(){1}else{0},"nativeProxyRevocationVersion":if node.sandbox.network_scopes().is_some(){1}else{0},"durableAdmissionFence":true,"trackedSupervisorDrain":true,"installsEnvironment":false,"confirmsRevocation":false}),
+        json!({"version":1,"resourcePreflightVersion":1,"resourceFenceVersion":1,"stopCommandVersion":1,"terminalIoClosureVersion":1,"terminalIoOwnerRecoveryVersion":1,"workTerminalRequestVersion":crate::terminals::requests::VERSION,"hostTerminalReviewVersion":1,"hostManagementApprovalVersion":1,"isolatedTerminalVersion":if node.sandbox.isolated_terminals(){1}else{0},"nativeProxyRevocationVersion":if node.sandbox.network_scopes().is_some(){1}else{0},"revocationEvaluationVersion":1,"transitionAcknowledgementVersion":1,"transitionReleaseVersion":1,"durableAdmissionFence":true,"trackedSupervisorDrain":true,"installsEnvironment":true,"confirmsRevocation":node.sandbox.contains_descendants()}),
     ))
 }
 pub async fn create(node: Node, request: Request) -> ApiResult<Response> {
@@ -402,7 +417,7 @@ pub async fn create(node: Node, request: Request) -> ApiResult<Response> {
             if result.is_err() {
                 // A known rollback leaves the prior proxy usable. Failed rollback
                 // or unreadable commit outcome cannot release network authority.
-                let rollback_known=db.is_autocommit() && db.query_row("SELECT NOT EXISTS(SELECT 1 FROM execution_fences WHERE session_id=?1 AND state!='deleted')",[session],|r|r.get::<_,bool>(0)).unwrap_or(false);
+                let rollback_known=db.is_autocommit() && db.query_row(&format!("SELECT NOT EXISTS(SELECT 1 FROM execution_fences WHERE session_id=?1 AND {ACTIVE})"),[session],|r|r.get::<_,bool>(0)).unwrap_or(false);
                 if !rollback_known && let Some(scopes) = node.sandbox.network_scopes() {
                     scopes.revoke(session);
                 }
@@ -448,7 +463,9 @@ fn network_observation(node: &Node, session: &str, mut receipt: Receipt) -> Rece
         .sandbox
         .network_scopes()
         .map_or_else(Default::default, |scopes| scopes.summary(session));
-    if receipt.state != "deleted" {
+    // An ended fence is described by its installation, not by evaluating the
+    // generation that replaced or kept its source.
+    if !matches!(receipt.state.as_str(), "deleted" | "installed" | "released") {
         // An unreadable evaluation is omitted, never reported as confirmed.
         receipt.revocation =
             revocation::evaluate(node, &node.db.lock(), session, &receipt.state).ok();

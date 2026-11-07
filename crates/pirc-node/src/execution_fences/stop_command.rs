@@ -29,16 +29,19 @@ pub(crate) fn check(
     Ok(saved)
 }
 fn result(saved: &Receipt) -> Value {
-    json!({"success":matches!(saved.state.as_str(),"supervisor_drained"|"deleted"),"data":{"transition":{
+    json!({"success":matches!(saved.state.as_str(),"supervisor_drained"|"deleted"|"installed"),"data":{"transition":{
         "operationId":saved.intent.operation_id,"state":saved.state,
-        "errorCode":saved.error_code,"revocationConfirmed":false,"targetInstalled":false}}})
+        "errorCode":saved.error_code,"revocationConfirmed":saved.revocation_confirmed,"targetInstalled":saved.target_installed}}})
 }
 fn observe(db: &Connection, command: &str, saved: &Receipt) -> ApiResult<()> {
     atomic(db, |tx| {
         if tx.get_command(command)?.status == CommandStatus::Accepted {
             return Ok(());
         }
-        let complete = matches!(saved.state.as_str(), "supervisor_drained" | "deleted");
+        let complete = matches!(
+            saved.state.as_str(),
+            "supervisor_drained" | "deleted" | "installed"
+        );
         tx.update_command(
             command,
             if complete {

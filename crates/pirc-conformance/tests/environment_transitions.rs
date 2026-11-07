@@ -50,9 +50,10 @@ async fn preview_survives_gateway_restart_and_node_offline_without_changing_bind
         prepared.body["nodeObservations"][0]["confirmsRevocation"],
         false
     );
+    // Node can install (2032), but confirmation stays gated at the Gateway.
     assert_eq!(
         prepared.body["nodeObservations"][0]["installsEnvironment"],
-        false
+        true
     );
     assert!(
         prepared.body["blockedBy"]

@@ -23,7 +23,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1029**, Node **2031**, protocol **15**, client contract **2**,
+formats: Gateway **1029**, Node **2032**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -55,7 +55,12 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local delivery: [T1 binding generations and revocation evaluation](transition-installation.md#local-implementation-checkpoint-t1-binding-generations-and-revocation-evaluation-2026-11-07)
+Latest local delivery: [T2 acknowledge, install and release](transition-installation.md#local-implementation-checkpoint-t2-acknowledge-install-and-release-2026-11-07)
+(Node **2032**) lets the Node install the reviewed target after a confirmed or
+acknowledged drain, or release back to the original binding, and delivers a
+trusted environment-change notice. The Gateway coordinator (T3) is next.
+
+The previous [T1 binding generations and revocation evaluation](transition-installation.md#local-implementation-checkpoint-t1-binding-generations-and-revocation-evaluation-2026-11-07)
 (Node **2031**) records binding generations and adds a read-only revocation
 evaluation (`pending`/`blocked`/`unproven`/`confirmed`, items, digest) to
 transition receipts. Reported revocation/installation flags stay false. Next: T2.

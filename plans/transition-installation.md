@@ -113,33 +113,39 @@ and idempotent per operation:
   digest matches the current evaluation. It retains the digest, the items, the
   acting client and time. If the item set later changes, the digest no longer
   matches and a new acknowledgement is needed. It does not close any record.
-- **Install** `{targetWorkspaceId, evidenceHash}`: in one SQLite transaction it
+- **Install** `{targetWorkspaceId}`: in one SQLite transaction it
   requires `supervisor_drained`, an evaluation of `confirmed`, or `unproven` with
-  a matching acknowledgement. It re-runs the target preflight and requires the
-  same `evidenceHash`, so a changed target is refused. Then it updates the
+  a matching acknowledgement. It re-observes the target and requires it to match
+  the target subset frozen at acceptance, so a changed target is refused.
+  (Implemented this way in T2: the full evidence hash also covers source
+  activity, which the drain itself changes, so it can never match.) Then it updates the
   session's workspace, appends the binding generation (`coverage: complete`),
   advances the runner epoch and marks the fence `installed`. That state is
   terminal and inactive, so admission reopens under the new binding only.
   The receipt reports `target_installed: true` and `revocation_confirmed` as
   `status == confirmed`.
 - **Release** (explicit cancel, decision 3): allowed from `fenced`, `stopping`,
-  `blocked` or `supervisor_drained`, never after `installed`. It advances the
-  runner epoch and marks the fence `released` (terminal, inactive). The session
-  keeps its original workspace; nothing is restarted.
+  `blocked` or `supervisor_drained`, never after `installed` and never while this
+  Node is still draining. A source that was drained gets a new runner epoch; an
+  undrained `fenced` source keeps its epoch and live runner, since nothing was
+  stopped. It marks the fence `released` (terminal, inactive). The session keeps
+  its original workspace; nothing is restarted.
 
 Fence states become
 `fenced → stopping → supervisor_drained → installed | released`, with `blocked`
 and `deleted` as today. SQL triggers keep `installed`/`released` terminal and allow
 `installed` only together with a new binding generation row.
 
-After install, Node appends a host-created **environment changed** entry to the
-conversation, keyed by operation so it is written once. The first new-generation
-runner start checks that the entry exists before running. Requests carrying the
+Install records one **environment changed** notice per operation. Node delivers
+it to the agent as trusted context (`wake: false`, no model turn) before the next
+command or delivery in that session, at most once: a send that is not confirmed
+becomes `uncertain` and is never resent, and that command is refused once. Requests carrying the
 old epoch, queued old tool calls and old approvals are refused by the existing
 epoch and fence checks.
 
-Capabilities: `installsEnvironment: 1` and `transitionAcknowledgementVersion: 1`
-on Nodes with these operations; `confirmsRevocation: 1` only where
+Capabilities (booleans, as the Gateway requires): `installsEnvironment: true` and
+`transitionAcknowledgementVersion: 1` on Nodes with these operations;
+`confirmsRevocation: true` only where
 `confirmsContainment` is true.
 
 ## Gateway: coordinator
@@ -261,5 +267,85 @@ existing sessions as legacy and new sessions as complete; receipts carry the
 evaluation, keep both flags false and omit it after deletion. Native Linux
 (`confirmsContainment: true`) is not executed here. Local commit only.
 
-Next: T2 (Node acknowledge, install and release operations, the environment-change
-entry and capabilities).
+T2 followed.
+
+## Local implementation checkpoint: T2 acknowledge, install and release (2026-11-07)
+
+Node schema **2032** delivers slice T2: the Node can end a transition fence by
+installing the reviewed target or by explicit release, and records the user's
+acknowledgement of unproven evidence. The Gateway does not call these yet (T3).
+
+- **Fence states.** The fence table is rebuilt with `installed` and `released`.
+  Both are terminal and inactive: admission reopens, the active-fence index and
+  the startup proxy revocation sweep ignore them, and a later transition can
+  start. SQL allows `installed` only from `supervisor_drained` together with the
+  operation's new binding generation, and `released` only from `fenced`,
+  `stopping`, `blocked` or `supervisor_drained`. Reconciliation helpers that
+  require "some transition fence" still accept ended fences.
+- **Frozen target review.** A resource-bound acceptance now freezes the target
+  subset of its evidence (target workspace, mode definition hash, resource
+  identity, overlap) in `execution_fence_targets`. Installation compares this
+  subset with a fresh observation. This replaces the design's "same evidence hash"
+  rule, which can never match because the drain changes source activity. Fences
+  accepted before 2032 have no frozen target and refuse installation
+  (`transition_target_unreviewed`); release still works.
+- **Acknowledge** `POST .../execution-fences/:op/acknowledge
+{planHash, digest, clientId, generation}`: only after the drain, only while the
+  evaluation is `unproven`, only for the current digest
+  (`revocation_digest_changed` otherwise). It retains the evaluation, client and
+  time, closes no record and is idempotent per digest.
+- **Install** `POST .../:op/install {planHash, targetWorkspaceId, clientId,
+generation}`: requires the current lease, the drained fence, the reviewed
+  target, a `confirmed` evaluation or an acknowledgement of the current digest
+  (`revocation_unconfirmed` with status and digest otherwise), and an unchanged
+  target (`stale_transition_target`). One transaction moves the session to the
+  target, advances the runner epoch, appends a `complete` binding generation,
+  marks the fence `installed` and queues the notice. Repeats return the same
+  installation. The native proxy scope is reopened for the new generation only.
+- **Release** `POST .../:op/release {planHash, clientId, generation}`: refused
+  after installation (`transition_installed`) and while this Node is still
+  draining (`transition_draining`). A drained source gets a new epoch; an
+  undrained one keeps its epoch and live runner. The workspace never changes.
+- **Receipts.** Ended fences omit the evaluation and carry
+  `installation {generation, fromWorkspaceId, toWorkspaceId, revocation,
+environmentEvent}`. `targetInstalled` is true once installed;
+  `revocationConfirmed` is true only for a `confirmed` installation. The
+  `stop_transition` command result reports both, and counts `installed` as done.
+- **Environment notice.** Installation queues one `environment-change` notice.
+  Node delivers it as trusted agent context with the agent RPC's new
+  `wake: false` (no model turn) before the session's next command or delivery,
+  at most once. An unconfirmed send becomes `uncertain`, is never resent, and
+  that one command is refused.
+- **Capabilities** (still booleans): `installsEnvironment: true`,
+  `confirmsRevocation` = native Linux containment, plus
+  `revocationEvaluationVersion`, `transitionAcknowledgementVersion` and
+  `transitionReleaseVersion` at 1.
+
+Known interim state until T3: the Gateway still requires `false` flags and the
+old state set in Node receipts, so a fence installed or released directly on a
+Node would show as an invalid receipt there. Public confirmation stays disabled,
+so no client path reaches this. Old binaries reject 2032. Gateway **1029**,
+protocol/client/envelope **15/2/3**, packages, lockfiles and Nix hashes are
+unchanged.
+
+Validation: **673 Node library tests** (five existing ignores; seven new installation
+cases), **423 agent tests** (new `wake: false` case), **421 Gateway tests**, and
+**37 real Gateway/Node/Agent process cases** across 15 suites (the 12 required
+suites, `agent_rpc`, `agent_node` and the route snapshot) passed with
+`cargo fmt --check` and strict all-target Node/Gateway/conformance/config/agent
+Clippy. New Node cases: a confirmed drain installs once (workspace, epoch,
+generation, reopened admission, terminal fence, later evaluation of generation 2);
+unproven evidence installs only after acknowledging the exact digest, and new
+evidence after an acknowledgement requires another; installation refuses an
+undrained fence, a different target or plan, a stale lease and a changed target;
+release keeps the original binding (drained: new epoch; undrained: same epoch)
+and blocks later installation; a pre-2032 fence without a frozen target cannot
+install; the notice is claimed once and never resent; upgrade keeps fences and
+states. Two process assertions changed by design: the Node now reports
+`installsEnvironment: true` through the link and in Gateway previews.
+Native Linux containment and the Gateway coordinator are not exercised.
+Local commit only.
+
+Next: T3, split into T3a (Gateway acceptance stages, Node receipt states, advance/
+acknowledge/cancel routes and the binding commit) and T3b (gated public
+confirmation, recovery sweep and real-process acceptance).

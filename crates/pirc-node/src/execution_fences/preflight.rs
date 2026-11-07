@@ -61,6 +61,14 @@ fn observe(node: &Node, request: &Request, input: &Input) -> ApiResult<Value> {
         input,
     )
 }
+/// The target part of reviewed evidence. The drain itself changes source activity,
+/// so installation compares only this frozen subset, never the full hash.
+fn target_subset(evidence: &Value) -> Value {
+    json!({"version":1,"targetWorkspaceId":evidence["targetWorkspaceId"],
+        "targetMode":evidence["targetMode"],"targetResource":evidence["targetResource"],
+        "overlap":evidence["overlap"]})
+}
+/// Freeze the reviewed target with the acceptance, in its transaction.
 pub(super) fn check_proof(
     node: &Node,
     db: &Connection,
@@ -89,7 +97,37 @@ pub(super) fn check_proof(
             "The reviewed resources or activity changed; refresh before accepting",
         ));
     }
+    db.execute(
+        "INSERT INTO execution_fence_targets VALUES(?1,?2,?3)",
+        params![
+            owner,
+            intent.operation_id,
+            target_subset(&current["evidence"]).to_string()
+        ],
+    )?;
     Ok(())
+}
+/// The target subset as observed now, for comparison at installation.
+pub(super) fn current_target(
+    node: &Node,
+    db: &Connection,
+    owner: &str,
+    id: &str,
+    intent: &Intent,
+    target: &str,
+) -> ApiResult<Value> {
+    let current = observe_at(
+        node,
+        db,
+        owner,
+        id,
+        &Input {
+            expected_workspace_id: intent.expected_workspace_id.clone(),
+            expected_runner_epoch: Some(intent.expected_runner_epoch),
+            target_workspace_id: target.to_owned(),
+        },
+    )?;
+    Ok(target_subset(&current["evidence"]))
 }
 fn observe_at(
     node: &Node,

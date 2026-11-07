@@ -90,6 +90,18 @@ pub fn routes(config: &NodeConfig) -> Vec<Route> {
             "/api/sessions/:id/execution-fences/:operation/drain",
             crate::execution_fences::resume,
         ),
+        post(
+            "/api/sessions/:id/execution-fences/:operation/acknowledge",
+            crate::execution_fences::install::acknowledge,
+        ),
+        post(
+            "/api/sessions/:id/execution-fences/:operation/install",
+            crate::execution_fences::install::install,
+        ),
+        post(
+            "/api/sessions/:id/execution-fences/:operation/release",
+            crate::execution_fences::install::release,
+        ),
         post("/api/session-creations", crate::session_creation::prepare),
         get(
             "/api/session-creations/capabilities",

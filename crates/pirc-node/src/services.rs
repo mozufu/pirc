@@ -280,7 +280,10 @@ impl Services {
         if let Some(scopes) = sandbox.network_scopes() {
             let connection = db.lock();
             let mut statement = connection
-                .prepare("SELECT DISTINCT session_id FROM execution_fences WHERE state!='deleted'")
+                .prepare(&format!(
+                    "SELECT DISTINCT session_id FROM execution_fences WHERE {}",
+                    crate::execution_fences::ACTIVE
+                ))
                 .map_err(|e| e.to_string())?;
             let sessions = statement
                 .query_map([], |r| r.get::<_, String>(0))

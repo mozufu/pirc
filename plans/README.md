@@ -197,6 +197,12 @@ strict all-target Clippy passed. The owned **2.9 GiB** outputs are cleaned; this
 delivery stays local.
 
 Latest local transition delivery:
+[T2 acknowledge, install and release](transition-installation.md#local-implementation-checkpoint-t2-acknowledge-install-and-release-2026-11-07) (Node
+**2032**): Node-side installation, explicit release, digest-bound acknowledgement
+and the environment notice. **673 Node**, **423 agent**, **421 Gateway** tests and
+**37 process cases** passed. Next: T3a/T3b. Local only.
+
+Previous local transition delivery:
 [T1 binding generations and revocation evaluation](transition-installation.md#local-implementation-checkpoint-t1-binding-generations-and-revocation-evaluation-2026-11-07)
 (Node **2031**): read-only evaluation of what retained evidence proves after a
 drain; flags stay false. **666 Node tests**, **421 Gateway tests**, **32 required
@@ -268,7 +274,7 @@ or `full-access` escalation is authorized by the design.
 | U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                        | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle        |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
-not enable it. Current formats are Gateway schema **1029**, Node schema **2031**,
+not enable it. Current formats are Gateway schema **1029**, Node schema **2032**,
 protocol **15**, client recovery contract **2**, and Web IndexedDB/native private
 envelope **3**. Existing ordinary session APIs remain available. Unaccepted
 Gateway attachment staging expires after **seven days**; accepted attachments and

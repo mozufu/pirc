@@ -1,5 +1,17 @@
 # Upgrades
 
+## Local checkpoint: transition installation and release
+
+Node schema **2032** rebuilds `execution_fences` with terminal `installed` and
+`released` states and adds frozen target reviews, acknowledgements and
+environment notices. Existing fences keep their states; fences accepted earlier
+cannot be installed (they lack a frozen target review) but can be released. Node
+capabilities now report `installsEnvironment: true`. The Gateway does not drive
+installation yet. Gateway **1029**, protocol/client/private-envelope **15/2/3**,
+lockfiles and Nix hashes remain unchanged. Back up Node state with its binary;
+older readers reject 2032 and rollback requires matching state/binary backups.
+Local code only.
+
 ## Local checkpoint: binding generations and revocation evaluation
 
 Node schema **2031** adds `session_binding_generations`. Existing sessions are
