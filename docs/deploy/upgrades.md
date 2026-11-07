@@ -1,5 +1,15 @@
 # Upgrades
 
+## Local checkpoint: binding generations and revocation evaluation
+
+Node schema **2031** adds `session_binding_generations`. Existing sessions are
+seeded as generation 1 with legacy coverage, and new sessions start with complete
+coverage. Transition receipts gain an optional read-only `revocation` evaluation;
+`revocationConfirmed` and `targetInstalled` remain false. Gateway **1029**,
+protocol/client/private-envelope **15/2/3**, lockfiles and Nix hashes remain
+unchanged. Back up Node state with its binary; older readers reject 2031 and
+rollback requires matching state/binary backups. Local code only.
+
 ## Local checkpoint: compatibility host terminals off by default
 
 Terminal requests without `executionPath` (old clients' unreviewed host shell)

@@ -667,6 +667,9 @@ impl Sandbox for NativeSandbox {
     fn isolated_terminals(&self) -> bool {
         cfg!(target_os = "linux")
     }
+    fn contains_descendants(&self) -> bool {
+        cfg!(target_os = "linux")
+    }
     fn prepare_terminal(
         &self,
         input: PrepareInput,

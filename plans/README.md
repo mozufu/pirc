@@ -196,7 +196,13 @@ client mode/default rollout and complete revocation/install remain open.
 strict all-target Clippy passed. The owned **2.9 GiB** outputs are cleaned; this
 delivery stays local.
 
-Latest local terminal delivery:
+Latest local transition delivery:
+[T1 binding generations and revocation evaluation](transition-installation.md#local-implementation-checkpoint-t1-binding-generations-and-revocation-evaluation-2026-11-07)
+(Node **2031**): read-only evaluation of what retained evidence proves after a
+drain; flags stay false. **666 Node tests**, **421 Gateway tests**, **32 required
+process cases** and strict Clippy passed. Next: T2. Local only.
+
+Previous local terminal delivery:
 [compatibility host terminals off by default](execution-isolation.md#local-implementation-checkpoint-compatibility-host-terminals-off-by-default-2026-11-06): the
 omitted-path request returns `426` unless `PIRC_LEGACY_HOST_TERMINALS` is set.
 658 Node, 421 Gateway and 32 required process cases passed. Next: U4 step 3,
@@ -262,7 +268,7 @@ or `full-access` escalation is authorized by the design.
 | U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                        | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle        |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
-not enable it. Current formats are Gateway schema **1029**, Node schema **2030**,
+not enable it. Current formats are Gateway schema **1029**, Node schema **2031**,
 protocol **15**, client recovery contract **2**, and Web IndexedDB/native private
 envelope **3**. Existing ordinary session APIs remain available. Unaccepted
 Gateway attachment staging expires after **seven days**; accepted attachments and

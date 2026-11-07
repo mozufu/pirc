@@ -211,3 +211,55 @@ the UI is throwaway and only the interface layer must be correct.
 Each slice is a local commit with its plan checkpoint. Native Linux acceptance,
 cross-Node handoff and project mounts remain later work. This design authorizes
 no push, deployment or release.
+
+## Local implementation checkpoint: T1 binding generations and revocation evaluation (2026-11-07)
+
+Node schema **2031** delivers slice T1 with no behavior change to admission,
+drain, Stop or transition receipts' existing flags.
+
+- `session_binding_generations` records each session's binding history:
+  generation, workspace, coverage, start runner epoch, start time and installing
+  operation. Migration seeds generation 1 for every existing session as
+  **legacy** coverage with start epoch 0, so earlier runs count. A trigger seeds
+  new sessions as **complete** at their current epoch. Rows are immutable,
+  retained while the session exists, and removed with it.
+- `execution_fences::revocation::evaluate` reads the current generation's
+  retained evidence and returns `status` (`pending`, `blocked`, `unproven`,
+  `confirmed`), bounded `items` (at most 100 shown, `itemsTotal` for the rest),
+  `coverage`, `confirmsContainment` and a SHA-256 `digest` over every sorted item.
+  Item kinds follow the design: unresolved sandbox launches, terminals, host
+  commands, browser groups and native proxy scopes block and cannot be
+  acknowledged; settled host commands and host-shell terminals, legacy coverage
+  and untracked launches, rows from another workspace, an unrecorded workspace
+  change and an Agent run without kernel containment are acknowledgeable. A
+  settled kernel-scoped terminal adds nothing. An unfinished drain is always
+  `pending`; a `blocked` fence is always `blocked`.
+- New sandbox capability `contains_descendants()`, true only for the native Linux
+  backend. Every other backend (macOS, wrappers, fixtures) reports false, so any
+  Agent run there makes the generation `unproven`.
+- Transition receipts (create, status, resume) gain an optional `revocation`
+  object, omitted once the fence is `deleted`, or if evaluation cannot be read.
+  `revocationConfirmed` and `targetInstalled` stay **false**. The Gateway still
+  requires that and ignores the new field until T3.
+
+Old binaries reject 2031; rollback needs matching state/binary backups. Gateway
+**1029**, protocol/client/envelope **15/2/3**, capabilities, packages, lockfiles
+and Nix hashes are unchanged.
+
+Validation: **666 Node library tests** (five existing ignores; eight new revocation cases),
+**421 Gateway tests**, **32 required real Gateway/Node process cases** across 12
+suites plus the route snapshot case, `cargo fmt --check` and strict all-target
+Node/Gateway/conformance/config Clippy passed. The new cases cover: an idle new
+generation is confirmed, an unfinished drain is pending, a blocked fence is
+blocked; an Agent run without containment is unproven; host commands and host
+shells are acknowledgeable while a settled scoped terminal is not listed and an
+open browser group blocks; untracked and foreign-workspace launches are unproven
+and an unconfirmed scoped launch blocks; digests are stable, cover items beyond
+the 100 shown, and change when any item changes; generations are immutable,
+follow session deletion and detect an unrecorded workspace move; upgrade seeds
+existing sessions as legacy and new sessions as complete; receipts carry the
+evaluation, keep both flags false and omit it after deletion. Native Linux
+(`confirmsContainment: true`) is not executed here. Local commit only.
+
+Next: T2 (Node acknowledge, install and release operations, the environment-change
+entry and capabilities).

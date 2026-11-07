@@ -2,6 +2,7 @@
 //! tracked supervisor shutdown. No release/install route exists yet. Drained
 //! supervisors are NOT evidence that all descendants or OS grants are revoked.
 mod preflight;
+pub(crate) mod revocation;
 pub(crate) mod stop_command;
 pub(crate) use preflight::handle as preflight;
 
@@ -80,6 +81,10 @@ pub(crate) struct Receipt {
     pub terminals: crate::terminals::journal::Summary,
     pub browser: crate::browser::journal::Summary,
     pub native_proxy: crate::sandbox::proxy::Summary,
+    /// Read-only evaluation of the current binding generation; absent once the
+    /// session is deleted. It does not change `revocation_confirmed`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub revocation: Option<revocation::Evaluation>,
 }
 fn valid_id(s: &str) -> bool {
     !s.is_empty()
@@ -141,6 +146,7 @@ fn receipt(db: &Connection, owner: &str, session: &str, op: &str) -> ApiResult<O
             terminals: crate::terminals::journal::summary(db, session)?,
             browser: crate::browser::journal::summary(db, session)?,
             native_proxy: Default::default(),
+            revocation: None,
         })
     })
     .transpose()
@@ -442,6 +448,11 @@ fn network_observation(node: &Node, session: &str, mut receipt: Receipt) -> Rece
         .sandbox
         .network_scopes()
         .map_or_else(Default::default, |scopes| scopes.summary(session));
+    if receipt.state != "deleted" {
+        // An unreadable evaluation is omitted, never reported as confirmed.
+        receipt.revocation =
+            revocation::evaluate(node, &node.db.lock(), session, &receipt.state).ok();
+    }
     receipt
 }
 

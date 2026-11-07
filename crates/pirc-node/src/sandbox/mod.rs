@@ -143,6 +143,11 @@ pub trait Sandbox: Send + Sync {
     fn isolated_terminals(&self) -> bool {
         false
     }
+    /// Whether every Agent and isolated launch runs in a kernel-owned scope whose
+    /// termination proves its descendants are gone. Wrappers and macOS cannot.
+    fn contains_descendants(&self) -> bool {
+        false
+    }
     fn prepare_terminal(
         &self,
         _input: PrepareInput,
