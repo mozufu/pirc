@@ -69,11 +69,21 @@ pub(super) fn record(
         || intent["preflight"]["targetWorkspaceId"] != target
         || !digest(&intent["preflight"]["evidenceHash"])
         || !local_epoch.is_some_and(|n| (0..=9_007_199_254_740_991).contains(&n))
-        || r["revocationConfirmed"] != false
-        || r["targetInstalled"] != false
+        // Only an installed Node fence may report installation (2032+).
+        || !r["revocationConfirmed"].is_boolean()
+        || r["targetInstalled"] != (r["state"] == "installed")
+        || (r["state"] != "installed" && r["revocationConfirmed"] != false)
         || !matches!(
             r["state"].as_str(),
-            Some("fenced" | "stopping" | "blocked" | "supervisor_drained" | "deleted")
+            Some(
+                "fenced"
+                    | "stopping"
+                    | "blocked"
+                    | "supervisor_drained"
+                    | "installed"
+                    | "released"
+                    | "deleted"
+            )
         )
     {
         return Err(ApiError::new(

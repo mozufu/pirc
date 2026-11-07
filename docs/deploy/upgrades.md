@@ -1,5 +1,15 @@
 # Upgrades
 
+## Local checkpoint: Gateway transition coordinator
+
+Gateway schema **1030** adds terminal `installed`/`released` stages to accepted
+transitions and Node fence receipts, and a sanitized progress record. New
+coordinator routes can advance, acknowledge or cancel an accepted transition;
+public confirmation remains disabled. Node **2032**, protocol/client/private
+envelope **15/2/3**, lockfiles and Nix hashes remain unchanged. Back up Gateway
+state with its binary; older readers reject 1030 and rollback requires matching
+state/binary backups. Local code only.
+
 ## Local checkpoint: transition installation and release
 
 Node schema **2032** rebuilds `execution_fences` with terminal `installed` and

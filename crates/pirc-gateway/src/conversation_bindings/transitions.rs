@@ -162,7 +162,7 @@ fn reserve(db: &Connection, user: &str, session: &str, input: &Input) -> ApiResu
 /// Another device can discover the operation without knowing its original ID.
 pub(crate) fn active(db: &Connection, user: &str, session: &str) -> ApiResult<Option<Value>> {
     let row:Option<(String,String)>=db.query_row(
-        "SELECT operation_id,state FROM (SELECT operation_id,state,0 AS priority FROM conversation_transition_acceptances WHERE owner_user=?1 AND session_id=?2 AND state!='deleted' UNION ALL SELECT operation_id,state,1 AS priority FROM conversation_node_fences WHERE owner_user=?1 AND session_id=?2 AND state='fenced') ORDER BY priority LIMIT 1",
+        "SELECT operation_id,state FROM (SELECT operation_id,state,0 AS priority FROM conversation_transition_acceptances WHERE owner_user=?1 AND session_id=?2 AND state NOT IN ('deleted','installed','released') UNION ALL SELECT operation_id,state,1 AS priority FROM conversation_node_fences WHERE owner_user=?1 AND session_id=?2 AND state='fenced') ORDER BY priority LIMIT 1",
         params![user,session],|r|Ok((r.get(0)?,r.get(1)?))).optional()?;
     Ok(row.map(|(op,state)|json!({"operationId":op,"state":state,"revocationConfirmed":false,"targetInstalled":false})))
 }
@@ -188,6 +188,18 @@ pub fn router() -> Router<AppState> {
         .route(
             "/api/sessions/{id}/environment-transitions/receipts/{operation}",
             get(receipts::status_route),
+        )
+        .route(
+            "/api/sessions/{id}/environment-transitions/{operation}/advance",
+            post(acceptance::coordinator::advance_route),
+        )
+        .route(
+            "/api/sessions/{id}/environment-transitions/{operation}/acknowledge",
+            post(acceptance::coordinator::acknowledge_route),
+        )
+        .route(
+            "/api/sessions/{id}/environment-transitions/{operation}/cancel",
+            post(acceptance::coordinator::cancel_route),
         )
 }
 async fn prepare(

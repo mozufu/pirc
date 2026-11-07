@@ -346,6 +346,68 @@ states. Two process assertions changed by design: the Node now reports
 Native Linux containment and the Gateway coordinator are not exercised.
 Local commit only.
 
-Next: T3, split into T3a (Gateway acceptance stages, Node receipt states, advance/
-acknowledge/cancel routes and the binding commit) and T3b (gated public
-confirmation, recovery sweep and real-process acceptance).
+T3 is split into T3a (below) and T3b.
+
+## Local implementation checkpoint: T3a Gateway coordinator stages (2026-11-07)
+
+Gateway schema **1030** delivers slice T3a: the Gateway can drive an accepted
+transition after its Node fence to installation or explicit release. Public
+confirmation is still disabled, so no client can create an acceptance yet (T3b).
+
+- **Terminal stages.** `conversation_transition_acceptances` and
+  `conversation_node_fences` are rebuilt with `installed` and `released`. Both
+  are terminal and inactive: ordinary commands reopen, `activeTransition`
+  disappears, and a later transition may start. The acceptance trigger allows
+  `node_fenced → installed | released` and `accepted → released` (cancel before
+  any Node request). A Node fence ends only by installation, release or
+  canonical session deletion.
+- **Node receipts.** Receipt validation accepts the Node 2032 states;
+  `targetInstalled` must equal `state == installed`, and only an installed
+  receipt may report `revocationConfirmed: true`. Every receipt must still match
+  the frozen intent; an installed one must name the reviewed target.
+- **Coordinator routes** under `/api/sessions/{id}/environment-transitions/{op}/`,
+  each with the current `clientId`/`generation`, checked by the Gateway and again
+  by the Node:
+  - `advance`: reconciles an unknown outcome, asks the Node to drain (joining the
+    tracked drain), stores the evaluation, and installs when the revocation is
+    `confirmed` or already acknowledged. An unacknowledged `unproven` result or a
+    lost lease leaves the stage waiting; an offline Node reports
+    `node_unavailable`.
+  - `acknowledge {digest}`: relays the acknowledgement of exactly that digest,
+    then advances.
+  - `cancel`: before dispatch it only closes the Gateway intent, which also
+    stops a delayed dispatch; after the fence it asks the Node to release.
+    Refused after installation (`transition_installed`).
+- **Binding commit.** When a Node reports `installed` for the exact intent and
+  target, one Gateway transaction updates the session's workspace (the existing
+  binding trigger advances the execution generation and membership revision),
+  ends both rows and stores the sanitized receipt. `released` ends both rows and
+  keeps the original workspace.
+- **Status.** Acceptance status adds `progress`: the latest sanitized Node
+  receipt (`state`, `errorCode`, both flags, revocation `status`, `digest`,
+  `itemsTotal`, `confirmsContainment` and items as `{kind, reason,
+acknowledgeable}`, plus installation `revocation` and `environmentEvent`). No
+  private Node session ids, run ids or paths leave the Gateway. Actionable Node
+  refusals keep their codes; any other Node failure becomes
+  `transition_step_failed`.
+
+Old binaries reject 1030; rollback needs matching state/binary backups. Node
+**2032**, protocol/client/envelope **15/2/3**, packages, lockfiles and Nix hashes
+are unchanged. Test fixtures that downgrade the transition layers now also drop
+the new progress table and its session trigger.
+
+Validation: **426 Gateway tests** (five new coordinator cases), **37 real Gateway/Node/Agent
+process cases** across 15 suites, `cargo fmt --check` and strict all-target
+Node/Gateway/conformance/config/agent Clippy passed. The new cases, against a Node
+stand-in that keeps its own fence state: a confirmed drain installs once, moves
+the binding and generation, reopens commands and later calls only read; unproven
+evidence waits, exposes sanitized items, refuses a wrong digest and installs after
+the right acknowledgement with `revocationConfirmed: false`; cancel after the
+fence releases and keeps the original workspace; a stale lease sends nothing and
+a receipt naming another target is rejected without moving the binding; cancel
+before dispatch closes the intent and a delayed dispatch then sends nothing.
+Real-process coverage of the coordinator waits for T3b, because acceptance
+needs public confirmation. Local commit only.
+
+Next: T3b (gated public confirmation, recovery sweep and real-process
+acceptance of the composed flow).

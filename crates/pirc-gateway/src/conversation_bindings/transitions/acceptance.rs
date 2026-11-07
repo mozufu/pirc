@@ -35,10 +35,11 @@ struct Accepted {
     target_installed: bool,
 }
 fn saved(db: &Connection, user: &str, session: &str, op: &str) -> ApiResult<Option<Accepted>> {
-    Ok(db.query_row("SELECT operation_id,session_id,state,created_at FROM conversation_transition_acceptances WHERE owner_user=?1 AND session_id=?2 AND operation_id=?3",params![user,session,op],|r|Ok(Accepted{operation_id:r.get(0)?,session_id:r.get(1)?,state:r.get(2)?,created_at:r.get(3)?,revocation_confirmed:false,target_installed:false})).optional()?)
+    // Flags come only from a retained installed Node receipt.
+    Ok(db.query_row("SELECT a.operation_id,a.session_id,a.state,a.created_at,coalesce(json_extract(p.receipt_json,'$.revocationConfirmed'),0) FROM conversation_transition_acceptances a LEFT JOIN conversation_transition_progress p ON p.owner_user=a.owner_user AND p.operation_id=a.operation_id WHERE a.owner_user=?1 AND a.session_id=?2 AND a.operation_id=?3",params![user,session,op],|r|{let state:String=r.get(2)?;Ok(Accepted{operation_id:r.get(0)?,session_id:r.get(1)?,revocation_confirmed:state=="installed"&&r.get::<_,bool>(4)?,target_installed:state=="installed",state,created_at:r.get(3)?})}).optional()?)
 }
 pub(super) fn require_open(db: &Connection, session: &str) -> ApiResult<()> {
-    if let Some((op,state))=db.query_row("SELECT operation_id,state FROM conversation_transition_acceptances WHERE session_id=? AND state!='deleted'",[session],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?))).optional()? {
+    if let Some((op,state))=db.query_row("SELECT operation_id,state FROM conversation_transition_acceptances WHERE session_id=? AND state NOT IN ('deleted','installed','released')",[session],|r|Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?))).optional()? {
         return Err(ApiError::new(409,"environment_transition_pending","An accepted environment transition blocks new work until reconciliation finishes")
             .with_details(json!({"operationId":op,"state":state,"revocationConfirmed":false,"targetInstalled":false})));
     }
@@ -310,7 +311,9 @@ pub(super) fn status(app: &AppState, identity: &Identity, id: &str, op: &str) ->
     access(app, &db, identity, id)?;
     let s = saved(&db, &identity.user, id, op)?
         .ok_or_else(|| ApiError::not_found("Accepted transition not found"))?;
-    Ok(json!({"transition":s,"canConfirm":false}))
+    Ok(
+        json!({"transition":s,"canConfirm":false,"progress":coordinator::progress(&db,&identity.user,op)?}),
+    )
 }
 pub(super) fn status_if_present(
     app: &AppState,
@@ -464,5 +467,6 @@ fn confirmation_available() -> bool {
     false
 }
 
+pub(super) mod coordinator;
 #[cfg(test)]
 mod tests;

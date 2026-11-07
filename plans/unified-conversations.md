@@ -23,7 +23,7 @@ their implementation stage begins; earlier library/pots work is reused.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
-formats: Gateway **1029**, Node **2032**, protocol **15**, client contract **2**,
+formats: Gateway **1030**, Node **2032**, protocol **15**, client contract **2**,
 Web IndexedDB **3**, Android private envelope **3**. Package/dependency versions
 and Nix hashes are unchanged. Existing session, memory-deletion and checkpoint
 ownership guarantees remain in effect.
@@ -55,7 +55,12 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local delivery: [T2 acknowledge, install and release](transition-installation.md#local-implementation-checkpoint-t2-acknowledge-install-and-release-2026-11-07)
+Latest local delivery: [T3a Gateway coordinator stages](transition-installation.md#local-implementation-checkpoint-t3a-gateway-coordinator-stages-2026-11-07)
+(Gateway **1030**) drives an accepted transition through drain, acknowledgement,
+installation or explicit release and commits the binding only on an installed
+Node receipt. Public confirmation stays disabled until T3b.
+
+The previous [T2 acknowledge, install and release](transition-installation.md#local-implementation-checkpoint-t2-acknowledge-install-and-release-2026-11-07)
 (Node **2032**) lets the Node install the reviewed target after a confirmed or
 acknowledged drain, or release back to the original binding, and delivers a
 trusted environment-change notice. The Gateway coordinator (T3) is next.

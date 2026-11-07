@@ -171,7 +171,7 @@ fn migration_preserves_old_binding_without_inventing_previews() {
         let db = Db::open(&path).unwrap();
         let db = db.lock();
         let id = seed(&db);
-        db.execute_batch("DROP TRIGGER conversation_transition_acceptance_session_deleted; DROP TABLE conversation_transition_acceptances; DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences; DROP TABLE conversation_transition_previews; PRAGMA user_version=1025;")
+        db.execute_batch("DROP TRIGGER conversation_transition_progress_session_deleted; DROP TABLE conversation_transition_progress; DROP TRIGGER conversation_transition_acceptance_session_deleted; DROP TABLE conversation_transition_acceptances; DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences; DROP TABLE conversation_transition_previews; PRAGMA user_version=1025;")
             .unwrap();
         id
     };
