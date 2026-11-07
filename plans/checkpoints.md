@@ -2,6 +2,13 @@
 
 [Plans](README.md) · [Session UI](../docs/guides/session-ui.md) · [Tools](../docs/guides/tools.md)
 
+**Unified-architecture integration (2026-11-07):** [C6](unified-completion-contracts.md#c6-projects-folders-and-collaboration)
+preserves independent-copy versus Git-worktree/shared-storage limits;
+[C7](unified-completion-contracts.md#c7-context-deletion-memory-and-content)
+requires the restricted recovery factory, private memory scope and non-overwrite
+behavior even after project/binding changes. These are planning integration gates,
+not new acceptance or changes to implemented recovery behavior.
+
 Status: phases 1–4 implemented locally, 2026-10-22: safety experiments, opt-in
 Node capture/journaling, independent recovery/isolation, authenticated Gateway
 operations, Web/native Flutter Android review and durable continuation. Phase 5

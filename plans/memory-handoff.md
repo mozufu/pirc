@@ -2,6 +2,12 @@
 
 This is the Rust continuation of the approved A–D plan. Upstream `main` replaced the TypeScript runtime before integration; the maintainer explicitly chose to port the redesign to Rust. The old runtime is not restored. This document describes the resulting contracts, dependencies and acceptance criteria. Deployment and activation of existing ledgers remain separate operations; neither is authorized by this document.
 
+**Unified-architecture integration (2026-11-07):** [C7](unified-completion-contracts.md#c7-context-deletion-memory-and-content)
+separates personal memory, repository journals, project notes and restricted
+recovery. Chat/Work unification must not broaden grants or rewrite write-time
+provenance. Its D1–D5 and compatibility cases are future integration acceptance,
+not a claim that this document changed memory implementation.
+
 ## Data flow and ownership
 
 ```text

@@ -2,17 +2,17 @@
 
 [Plans](README.md) · [Unified conversations](unified-conversations.md) · [Execution contracts](conversation-execution-contracts.md) · [Execution isolation](execution-isolation.md)
 
-Status: **design adopted on 2026-11-06**, not implemented. The user chose this
-stream after the terminal execution-path work and decided the three product
-questions below. This document turns the adopted transition model
-([state table](unified-conversations.md#1-live-transition-failure-and-recovery--foundational))
-into bounded slices on top of what exists: Gateway previews, observations and the
-accepted-intent journal (schema 1028), Node admission fences, preflight evidence,
-tracked drain and the `stop_transition` command (Node 2020), and the per-resource
-journals (sandbox launches, host commands, terminals, browser groups, native
-proxy). Today every receipt reports `revocation_confirmed: false` and
-`target_installed: false`. Public confirmation returns
-`transition_coordinator_unavailable`.
+Status: T1–T5 delivered locally through `bf6ccd77`, **2026-11-07**, for same-Node
+registered-workspace switching only. `PIRC_ENVIRONMENT_SWITCHING` stays off by
+default. Native Linux acceptance, the five Gateway gaps and the completion
+corrections below remain open. See the single [C0 snapshot](unified-completion-contracts.md#c0-authority-current-snapshot-and-scope).
+
+The sections before the dated checkpoints specify the **target** contract as
+clarified on 2026-11-07, not a claim that the code already implements the
+corrections. [C1–C4](unified-completion-contracts.md#c1-durable-operation-authority)
+supersede conflicting historical claims about control leases, generation-only
+revocation, broad release and at-most-once notices. Dated T1–T5 records below remain
+unchanged evidence of the actual, more limited implementation.
 
 ## User decisions (2026-11-06)
 
@@ -52,25 +52,29 @@ force-clear, no PID guessing and no replay.
 
 ## Node: binding generations and coverage
 
-The journals record rows per session, but the conversation's history may span
-several bindings. Revocation is evaluated only for the **current binding
-generation**. Rows from earlier generations were judged at their own transition.
+The conversation's journals span several bindings. Evaluate the current binding
+**and inherited unresolved risks**, under [C2](unified-completion-contracts.md#c2-revocation-evidence-and-inherited-risk).
+A prior acknowledgement applies only to its operation and never closes a record.
+A clean latest generation cannot hide surviving earlier host authority.
 
 - A new retained Node table records `(session, generation, workspace, started_at,
 operation)`. Generation 1 is seeded for every existing session at migration;
   each install appends the next generation.
-- **Coverage:** sessions that exist at migration get `coverage: legacy`, because
-  launches before the journals (and some early journal gaps) cannot be ruled out.
-  Sessions created later, and every generation started by an install, get
-  `coverage: complete`. Migration invents no outcome and no acknowledgement.
-- Journal rows are attributed to a generation by session plus `created_at >=
-started_at` and the generation's workspace. A row that cannot be attributed is
-  unprovable, never ignored.
+- **Coverage:** legacy histories remain explicit. `coverage: complete` describes
+  recording of the new generation, not closure of inherited risks. Migration
+  invents no outcome or acknowledgement.
+- New effect rows record immutable binding generation/attempt/resource origin
+  **before** launch. Time and workspace strings do not determine authority.
+  Legacy rows without sufficient identity remain unprovable, never filtered away
+  by `created_at >= started_at`. This requires a future migration; T1 uses the
+  older time-based attribution and does not satisfy this corrected gate.
 
 ## Node: revocation evaluation
 
-After the tracked drain, Node evaluates the current generation and adds a
-`revocation` object to the existing transition receipt:
+After the tracked drain, Node evaluates current and relevant inherited evidence.
+The target receipt separates current-generation settlement from cumulative
+revocation and provides the C2 immutable full-set review. Existing receipt fields
+below describe the baseline and need compatible extension:
 
 | Field                 | Meaning                                                                                        |
 | --------------------- | ---------------------------------------------------------------------------------------------- |
@@ -109,9 +113,12 @@ It closes nothing and changes no record.
 
 ## Acknowledgement, install and release (Node)
 
-Three new operations on the existing transition route family, each bound to the
-retained fence (owner, session, operation, plan hash), the current control lease,
-and idempotent per operation:
+Operations retain fence identity (owner, session, operation, plan hash) and stable
+step IDs. Human acknowledgement/cancel/reauthorization requires current control.
+Automatic drain/install uses the distinct finite **operation authority** in
+[C1](unified-completion-contracts.md#c1-durable-operation-authority), never a stale
+interactive lease. This stronger behavior needs negotiated support and is not
+implemented by the existing T1–T5 lease-bound calls.
 
 - **Acknowledge** `{digest}`: allowed only while `status` is `unproven` and the
   digest matches the current evaluation. It retains the digest, the items, the
@@ -123,29 +130,35 @@ and idempotent per operation:
   the target subset frozen at acceptance, so a changed target is refused.
   (Implemented this way in T2: the full evidence hash also covers source
   activity, which the drain itself changes, so it can never match.) Then it updates the
-  session's workspace, appends the binding generation (`coverage: complete`),
-  advances the runner epoch and marks the fence `installed`. That state is
-  terminal and inactive, so admission reopens under the new binding only.
-  The receipt reports `target_installed: true` and `revocation_confirmed` as
-  `status == confirmed`.
-- **Release** (explicit cancel, decision 3): allowed from `fenced`, `stopping`,
-  `blocked` or `supervisor_drained`, never after `installed` and never while this
-  Node is still draining. A source that was drained gets a new runner epoch; an
-  undrained `fenced` source keeps its epoch and live runner, since nothing was
-  stopped. It marks the fence `released` (terminal, inactive). The session keeps
-  its original workspace; nothing is restarted.
+  session's workspace, appends a recording-complete generation **without clearing
+  inherited risks**, advances the epoch and marks the fence `installed`. Only the
+  new binding can admit work after required context readiness. `target_installed`
+  means binding commit; policy/runtime readiness is separate under C3. Unqualified
+  `revocation_confirmed` requires closure of all relevant retained risks.
+- **Release** (explicit cancel, decision 3): follows the
+  [C3 state table](unified-completion-contracts.md#c3-cancellation-installation-and-trusted-context).
+  An untouched fenced source can release with unchanged validated binding/epoch;
+  a settled drained source returns explicitly under a new epoch. Active drains
+  and unknown resource outcomes keep cancellation pending; no blanket release
+  from blocked/stopping merely because the live registry is empty. Only adopted
+  unproven residuals require disclosed return/concurrency risk in the explicit
+  cancel action, not fabricated closure. Source rights
+  must still be valid. Installation already committed forbids cancel. Nothing
+  restarts, no risk record is cleared, and all races serialize with install.
 
 Fence states become
 `fenced → stopping → supervisor_drained → installed | released`, with `blocked`
 and `deleted` as today. SQL triggers keep `installed`/`released` terminal and allow
 `installed` only together with a new binding generation row.
 
-Install records one **environment changed** notice per operation. Node delivers
-it to the agent as trusted context (`wake: false`, no model turn) before the next
-command or delivery in that session, at most once: a send that is not confirmed
-becomes `uncertain` and is never resent, and that command is refused once. Requests carrying the
-old epoch, queued old tool calls and old approvals are refused by the existing
-epoch and fence checks.
+Install records one logical **environment changed** notice per operation. Under
+[C3](unified-completion-contracts.md#c3-cancellation-installation-and-trusted-context),
+Node reconciles the same notice ID until an idempotent agent-applied watermark is
+confirmed (`wake: false`, no model turn). Sending/uncertain notices survive restart
+and are not skipped. Subsequent effect/model admission requires current binding
+and rules context readiness. Duplicate delivery is not duplicate application.
+Old epochs, queued old calls and approvals remain invalid. The T2 at-most-once
+implementation below is historical and must be corrected before activation.
 
 Capabilities (booleans, as the Gateway requires): `installsEnvironment: true` and
 `transitionAcknowledgementVersion: 1` on Nodes with these operations;
@@ -177,12 +190,17 @@ or read the same step:
 
 A recovery sweep (startup and periodic, bounded pages like the pots sweep)
 resumes non-terminal journals with read-only Node GETs first. It continues only
-steps the user already authorized (stop, install after `confirmed` or an existing
-matching acknowledgement). An offline Node leaves the stage pending.
+steps covered by valid C1 operation authority (stop, install after `confirmed`
+or a matching acknowledgement). Closing clients, interactive lease expiry and
+ordinary device-control takeover do not cancel that authority. Node offline waits;
+operation expiry/revocation pauses new effects for reauthorization. Receipt
+reconciliation and owned safety cleanup remain available.
 
 Public confirmation stays gated: a Gateway setting (default **off**) enables
-`confirm`, and only toward Nodes advertising `installsEnvironment: 1`. Whether to
-turn it on by default is decided after composed acceptance.
+`confirm`, and only toward Nodes advertising `installsEnvironment: true`.
+Activation additionally requires applicable C1–C4 negotiated contracts and
+[C10 gates](unified-completion-contracts.md#c10-delivery-gates-and-integration-boundaries),
+not just the historical T5 composed result. It remains off by default.
 
 ## Client contract (interface only)
 
@@ -195,18 +213,18 @@ the UI is throwaway and only the interface layer must be correct.
 
 ## Failure matrix (to be covered by tests)
 
-| Point of failure                                     | Required result                                                                            |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| Gateway crash after acceptance, before Node fence    | Sweep reads Node; a missing fence keeps `outcome_unknown`; no second acceptance            |
-| Node restart during drain                            | Fence stays active; journals reconcile; evaluation is `blocked`/`pending`, never confirmed |
-| Reply lost after stop, acknowledge or install        | Same identity read back; no second stop, acknowledgement or install                        |
-| Target workspace removed or changed before install   | Preflight evidence mismatch refuses install; journal shows blocked; release still possible |
-| New unprovable item appears after acknowledgement    | Digest mismatch; install refused until re-acknowledged                                     |
-| Two devices confirm, acknowledge or cancel together  | One outcome per operation; the loser reads it                                              |
-| Old model reply proposes a tool call after the fence | Refused by fence/epoch; never runs under either binding                                    |
-| Cancel after install                                 | Refused; a new transition is required to go back                                           |
-| Node offline throughout                              | Stage stays pending; nothing is reported as revoked or installed                           |
-| Session deleted mid-transition                       | Fence `deleted`; journal closes with retained tombstone; nothing installs                  |
+| Point of failure                                     | Required result                                                                                                                        |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Gateway crash after acceptance, before Node fence    | Reconcile same phase; unknown stays unknown; proven not-started may continue with valid operation authority, never a second acceptance |
+| Node restart during drain                            | Fence stays active; journals reconcile; evaluation is `blocked`/`pending`, never confirmed                                             |
+| Reply lost after stop, acknowledge or install        | Same identity read back; no second stop, acknowledgement or install                                                                    |
+| Target workspace removed or changed before install   | Refuse install; safe cancel follows C3 and may remain pending; no restoration of invalid source rights                                 |
+| New unprovable item appears after acknowledgement    | Digest mismatch; install refused until re-acknowledged                                                                                 |
+| Two devices confirm, acknowledge or cancel together  | One outcome per operation; the loser reads it                                                                                          |
+| Old model reply proposes a tool call after the fence | Refused by fence/epoch; never runs under either binding                                                                                |
+| Cancel after install                                 | Refused; a new transition is required to go back                                                                                       |
+| Node offline throughout                              | Stage stays pending; nothing is reported as revoked or installed                                                                       |
+| Session deleted mid-transition                       | Fence `deleted`; journal closes with retained tombstone; nothing installs                                                              |
 
 ## Delivery slices
 
@@ -218,8 +236,10 @@ the UI is throwaway and only the interface layer must be correct.
 | T4    | Web/Android interface for confirm, acknowledge, progress, cancel and result                                        | Client unit tests against the contract                                      |
 | T5    | Composed acceptance: real Gateway/Node on macOS (unproven + acknowledgement), synthetic kernel fixture (confirmed) | Linux-native confirmation stays pending, as the user deferred Linux tests   |
 
-Each slice is a local commit with its plan checkpoint. Native Linux acceptance,
-cross-Node handoff and project mounts remain later work. This design authorizes
+T1–T5 are historical delivered slices, not proof of the newer C1–C4 completion
+contracts. Next work follows K1–K4 in [C10](unified-completion-contracts.md#c10-delivery-gates-and-integration-boundaries).
+Each implementation slice is a local commit with its actual evidence. Native Linux
+acceptance, cross-Node handoff and project mounts remain later work. This design authorizes
 no push, deployment or release.
 
 ## Local implementation checkpoint: T1 binding generations and revocation evaluation (2026-11-07)
@@ -660,7 +680,10 @@ accessibility, side panel, completion and terminal suites) with `flutter analyze
 clean; Prettier clean. Rust is unchanged since T3b. No browser, emulator, device,
 APK or native Linux validation is claimed. Local commits only.
 
-Gaps found by the client agents (Gateway unchanged; small follow-up slice):
+Gaps found by the client agents (Gateway unchanged; implementation remains open).
+[C4](unified-completion-contracts.md#c4-gateway-read-model-and-recovery-contract)
+now specifies their DTO, recovery and error contracts. The stuck accepted row is
+a usage-blocking recovery issue, not just a small UI follow-up:
 
 1. **Read-only status lacks `progress`.** `GET .../receipts/{op}` returns only the
    transition state, so a device without control cannot see the revocation
@@ -679,9 +702,10 @@ Gaps found by the client agents (Gateway unchanged; small follow-up slice):
    `not_found`. Clients' "404 after a lost reply means not stored" rule is safe
    because the requests are idempotent, but specific codes would be clearer.
 
-Remaining after these: native Linux acceptance of a fully confirmed switch after
-an Agent run, the new UI, and the later extensions (cross-Node handoff, project
-mounts).
+Remaining beyond these Gateway fixes: the C1–C3 safety/authority/context
+corrections and native Linux acceptance of confirmation after an Agent run.
+Cross-Node handoff and project mounts are later extensions; UI redesign is
+explicitly deferred, not a prerequisite for the bounded interface contract.
 
 ## Local implementation checkpoint: T5 failure-matrix acceptance (2026-11-07)
 

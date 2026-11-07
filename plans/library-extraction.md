@@ -2,6 +2,13 @@
 
 [Plans](README.md) · [pots](pots/README.md) · [Unified conversations](unified-conversations.md) · [Architecture reference](../docs/architecture/reusable-llm.md)
 
+**2026-11-07 integration:** use [C0](unified-completion-contracts.md#c0-authority-current-snapshot-and-scope)
+for current product progress, and [C10](unified-completion-contracts.md#c10-delivery-gates-and-integration-boundaries)
+for library proof/dependency gates. Old B2/C “no implementation” notes describe
+`d4f1efbd`, not the now-delivered U1/U2/U4 foundations. Full loop cleanup is not a
+blanket prerequisite for tasks, mounts or App independence. Shipped Rust API facts
+remain owned by the linked architecture reference.
+
 Adopted design, 2026-10-24. The user then authorized phased implementation of the
 reusable foundations. That does **not** authorize deployment, paid evaluation,
 crates.io publication or completing the unified-conversation design wholesale.
@@ -258,7 +265,7 @@ separates those choices from numerical settings and engineering decisions still 
 | E. Loop extraction             | Fake-adapter core, pirc integration and event-order/conformance checks (adapter in place since 2026-10-25)    | Stable provider boundary plus understood tool-wait/approval/cancel semantics                    |
 | F. Optional frontend migration | Flutter Web comparison against current Web on difficult interactions                                          | Separate decision after measurement; not a dependency of App independence                       |
 
-Status at `d4f1efbd`:
+Historical status at `d4f1efbd` (superseded for current progress by C0):
 
 - **B1:** checkpoint delivered (see [Delivered](#delivered)). API stabilization and the feature-matrix rerun remain open.
 - **D:** tracking and explicit dispatch are delivered; proactive observation and digests are not. See [pots](pots/README.md#delivered).

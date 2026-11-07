@@ -2,6 +2,13 @@
 
 [Plans](README.md) · [Unified conversations](unified-conversations.md) · [pots](pots/README.md) · [Rust foundations](library-extraction.md)
 
+**2026-11-07 completion amendment:** [C0–C11](unified-completion-contracts.md)
+define the current status, durable operation authority, inherited-risk evaluation,
+trusted notice receipts, canonical task/resource lifecycle, pots configuration
+and acceptance gates. They supersede conflicting dated summaries below. All
+implementation-checkpoint paragraphs describe only their named revision; target
+contracts are not proof of enforcement or current device acceptance.
+
 Status: planning specification, 2026-10-24. The user accepted the seven follow-up
 recommendations, first detailed items 1–3, then requested the same depth for
 items 4–7. All seven now have flows, exceptions and future acceptance cases:
@@ -536,8 +543,12 @@ replacement conversation or treating a stale cache as the complete history.
    reassignment. An answered approval for the old target does not authorize it.
 
 While applying, clients can show authorized saved history and retain drafts, but
-must not advertise the new environment as usable or send new effects to the old
-one. Navigating away or closing Web does not cancel the durable transition.
+must distinguish binding commit, validated policy and runtime readiness. Do not
+send new effects under the old binding. Navigating away, closing App/Web or losing
+an interactive lease does not cancel a frozen accepted transition: backend
+continuation uses finite, revocable [C1 operation authority](unified-completion-contracts.md#c1-durable-operation-authority).
+New target/risk consent requires current control; expiry/revocation pauses new
+effects. No completed switch silently restarts a stopped task.
 
 ### Exceptions and recovery
 
@@ -870,7 +881,17 @@ planned independently. The contract and case text are unchanged:
   [pots acceptance](pots/acceptance.md).
 - Delivered checkpoints and remaining work: [pots](pots/README.md).
 
-## Remaining specification work
+<a id="remaining-specification-work"></a>
+
+## Completion specification and implementation gates
+
+The [2026-11-07 completion contract](unified-completion-contracts.md) now details
+the previously open engineering behaviors below. Its C11 table maps all 38 audit
+findings to contracts and future cases. Data/wire fixtures, migrations, code and
+runtime/platform acceptance remain work; numerical/editor/retention settings
+must be configured before their new authority or automatic expiry is enabled.
+
+### Earlier specification inventory (historical)
 
 The user-visible behavior above is adopted. Remaining engineering work includes
 persistent schemas, API/error shapes, atomic ordering and crash recovery, trusted

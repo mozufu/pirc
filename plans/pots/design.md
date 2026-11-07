@@ -2,6 +2,13 @@
 
 [pots](README.md) · [Acceptance cases](acceptance.md) · [Unified conversations](../unified-conversations.md) · [Conversation execution contracts](../conversation-execution-contracts.md)
 
+**Completion amendment (2026-11-07):** [C5](../unified-completion-contracts.md#c5-canonical-tasks-and-foreground-routing)
+fixes canonical task/attempt mappings and scope/control boundaries;
+[C8](../unified-completion-contracts.md#c8-bounded-pots-configuration-and-lifecycle)
+adds required configuration, atomic budgets, runtime, causal dedup and notification
+lifecycle. These are adopted target contracts, not live grants or new implementation.
+Existing P7 cases remain open.
+
 Adopted design, 2026-10-24: the user accepted the
 [specification-review recommendations](../unified-conversations.md#accepted-specification-review-recommendations-2026-10-24)
 and the [follow-up behavior contracts](../unified-conversations.md#accepted-follow-up-behavior-and-detailed-contracts-2026-10-24).

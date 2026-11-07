@@ -2,6 +2,11 @@
 
 [pots](README.md) · [Product design](design.md) · [User guide](../../docs/guides/pots.md)
 
+The [C8 B1–B5 cases](../unified-completion-contracts.md#c8-bounded-pots-configuration-and-lifecycle)
+and [C10 gate matrix](../unified-completion-contracts.md#c10-delivery-gates-and-integration-boundaries)
+add prerequisite detail for P7. A completed planning contract or unit count closes
+none of these real-process/cross-client/platform cases.
+
 These cases were adopted with the conversation execution contracts (former item 7).
 They are runtime and cross-client acceptance cases. **None is closed.**
 

@@ -16,13 +16,18 @@ the host/library boundary lives in [Reusable LLM foundations](../../docs/archite
 
 ## Authorization
 
-This is a work queue, not authorization. The user authorized bounded checkpoints:
-progress-only tracking (2026-10-24), explicit controlled dispatch (2026-10-25), and
-Stop ownership, archive and fence paging (2026-10-26). Those checkpoints do not
-authorize transcript/file observation, model-driven suggestions, periodic or
-autonomous work, standing execution grants, digests or push, deployment, paid
-evaluation or publication. Each item in the queue below
-needs its own go-ahead.
+The bounded tracking/dispatch/Stop checkpoints are implemented. Later staged
+architecture authorization includes bounded pots design/work but is not a runtime
+grant to observe actual content, dispatch, spend or notify. The latest user
+instruction and goal state govern execution; this round is planning-only and
+leaves the implementation goal paused. Do not ask again for adopted architecture
+choices or infer deployment/publication permission from this queue.
+
+[C8](../unified-completion-contracts.md#c8-bounded-pots-configuration-and-lifecycle)
+now specifies scopes, runtime/provider, accounting, causal dedup and inbox
+lifecycle; [C0](../unified-completion-contracts.md#c0-authority-current-snapshot-and-scope)
+tracks implemented versus accepted. Concrete values/grants remain configuration
+gates. Missing configuration keeps the affected proactive work disabled.
 
 ## Delivered
 
@@ -116,7 +121,9 @@ never comes back, its terminal tasks keep being retried by the sweep.
 
 ## Remaining work queue
 
-Roughly in dependency order. Every step needs the user's go-ahead.
+Roughly in dependency order. Use the current authorized stage and goal state;
+the queue itself grants nothing. C8/C10 provide the completion requirements;
+implementation and real P7 acceptance remain open.
 
 1. ~~**Close the known risks** above, with regression tests.~~ Done in checkpoint 3.
 2. **Verification debt:** a full conformance run, real browser and Android device

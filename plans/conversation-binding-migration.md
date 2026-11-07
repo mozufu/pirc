@@ -2,6 +2,14 @@
 
 [Unified conversations](unified-conversations.md) · [Execution contracts](conversation-execution-contracts.md)
 
+**Current scope (2026-11-07):** the formats and delivered/remaining split are in
+[C0](unified-completion-contracts.md#c0-authority-current-snapshot-and-scope).
+The schema 1021–1025/2010–2012 descriptions below are dated migration checkpoints,
+not current format numbers or proof that T1–T5 are absent. New authority, immutable
+effect generations and inherited risks require the [C2](unified-completion-contracts.md#c2-revocation-evidence-and-inherited-risk)
+and [C9 compatibility](unified-completion-contracts.md#c9-synchronization-compatibility-and-rollback)
+gates; no migration numbers are reserved here.
+
 Status: U2 in progress locally, 2026-10-28. Schema 1021 delivered the durable
 legacy adapter; schema 1022 adds explicit project membership, configured mode
 and workspace-capability histories, and an owner-scoped environment read model.

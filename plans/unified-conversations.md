@@ -2,24 +2,33 @@
 
 [Plans](README.md) · [Workspace modes](modes.md) · [Mobile](mobile.md) · [Assistant contracts](../docs/architecture/assistant-memory.md) · [Checkpoints](checkpoints.md) · [pots](pots/README.md) · [Rust foundations](library-extraction.md) · [Conversation execution contracts](conversation-execution-contracts.md)
 
-Status: adopted architecture baseline with an authorized staged implementation
-covering first Send, environment bindings, resource transitions, canonical tasks/
-collaboration and bounded pots. The latest published baseline with completed green
-Check and Android workflows is `9eccd9e1` (2026-11-04). The newer receipt-recovery
-source commit `0c8fb22c` has the local evidence below; its remote CI is not yet
-claimed. The eight accumulated commits through `b1cc9d28` were included in the
-prior publication checkpoint.
-UI redesign/navigation reorganization remains deferred;
-Web/Android changes are limited to necessary functional integration. Use only
-focused simple Flutter checks when Flutter changes.
+Status: adopted architecture baseline, clarified **2026-11-07**. Current source
+snapshot and completion gates live in [Completion contracts C0](unified-completion-contracts.md#c0-authority-current-snapshot-and-scope),
+not the dated delivery notes below. T1–T5 same-Node switching and Web/Android
+controls are delivered locally, remain off by default, and still need the safety,
+read-model, recovery and platform gates listed there. U1 remains `canSubmit: false`.
 
-The user again authorized pull/rebase, plan updates and publication of the
-accumulated work on 2026-10-28. Subsequent architecture work retains the
-local-commit default. This does not enable the new flow, deploy it, change versions
-or create a Release. Undecided numerical settings still need confirmation when
-their implementation stage begins; earlier library/pots work is reused.
+The user accepted [the completion contracts](unified-completion-contracts.md),
+including backend continuation of an accepted frozen operation independently of
+App/Web lifetime and interactive control leases. The operation has its own finite,
+revocable authority; it never grants new resource access or resumes stopped work.
+See [C1](unified-completion-contracts.md#c1-durable-operation-authority).
 
-## Current progress and next delivery (2026-10-28)
+This round is planning/documentation only and local-commit only. It does not
+resume the paused implementation goal or authorize activation, deployment, paid
+runs, push or a Release. UI redesign, Flutter Web and new App sign-in/topology stay
+deferred; remaining numerical settings are explicit activation gates, not defaults.
+
+<a id="current-progress-and-next-delivery-2026-10-28"></a>
+
+## Historical progress and delivery records (2026-10-28 to 2026-11-07)
+
+The old anchor is preserved for links. This section records historical evidence;
+its “next”, “no public switch” and stage summaries are not the current contract.
+Use [C0](unified-completion-contracts.md#c0-authority-current-snapshot-and-scope)
+for status and [C10](unified-completion-contracts.md#c10-delivery-gates-and-integration-boundaries)
+for the next bounded slices. No historical authorization overrides the latest user
+instruction. Test counts below were not rerun for the 2026-11-07 document update.
 
 **U1 is implemented across Gateway, Node, Web and native Android, but is not
 accepted for activation. `canSubmit: false` remains in production.** Current
@@ -243,14 +252,10 @@ Live-client tests are explicitly run and ignored by the default suite;
 the later published green CI is `798aa817`; the explicit live-client fault
 scenarios above remain separately recorded evidence, not implied by default CI.
 
-| Stage                             | Current status                                                                                                                     | Next deliverable                                                                                                    |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| U1 — first Send                   | Implementation present; activation blocked on remaining acceptance                                                                 | Ambiguous journal recovery, actual client/backend failure matrix, Android process/device and rollout/rollback proof |
-| U2 — bindings                     | Bindings, policy/memory/saved-upload provenance and Gateway/Node command admission implemented                                     | Live-resource provenance and effect-boundary version fencing                                                        |
-| U3 — navigation/UI                | Explicitly deferred                                                                                                                | Necessary functional controls only until the core model is stable                                                   |
-| U4 — resource transitions         | Durable Gateway previews/host observations and receipt recovery; evidence-bound Node admission and tracked drain; no public switch | Gateway coordination, OS revocation/replacement acknowledgement and offline recovery                                |
-| U5 — canonical work/collaboration | Existing primitives available; unified mapping pending                                                                             | Common task/attempt identities, shared notes and resource waits without overwrites                                  |
-| U6 — proactive pots               | Existing progress observation/explicit dispatch; content analysis pending                                                          | Separate observation/execution grants, finite budgets and quiet synchronized suggestions                            |
+Current stage status is maintained only in [C0](unified-completion-contracts.md#c0-authority-current-snapshot-and-scope).
+The old compact table has been retired because its U4 “no public switch” and
+coordinator/client TODOs were superseded by T1–T5. Their newer completion does not
+close the C1–C4 corrections, project mounts or native-platform acceptance.
 
 Immediate U1 queue:
 
@@ -273,9 +278,9 @@ Immediate U1 queue:
 
 The dated checkpoints later in this file preserve what was delivered and tested
 at that time. Historical “local only”, “next slice” and incomplete-adoption notes
-are superseded by this snapshot where they conflict; unchecked acceptance gates
-remain open. The [work queue](README.md#current-implementation-status-2026-10-28)
-provides the compact cross-plan view.
+are superseded by [C0](unified-completion-contracts.md#c0-authority-current-snapshot-and-scope)
+where they conflict; unchecked acceptance gates remain open. The
+[work queue](README.md) links the compact cross-plan view.
 
 ## Agreed direction and priority
 

@@ -2,6 +2,14 @@
 
 [Project](../README.md) · [Documentation](../docs/README.md) · [Historical records](../docs/development/historical-records.md)
 
+**Current architecture specification (2026-11-07):** [Completion contracts](unified-completion-contracts.md)
+contains the authoritative [status snapshot](unified-completion-contracts.md#c0-authority-current-snapshot-and-scope),
+accepted [operation continuation policy](unified-completion-contracts.md#c1-durable-operation-authority),
+38-finding [traceability](unified-completion-contracts.md#c11-audit-traceability-and-remaining-configuration)
+and staged gates. This is a document-only/local-commit update; the implementation
+goal remains paused. Historical publication/resume notes below are not permission
+to push or resume work now.
+
 This is a work queue, not authorization. Each implementation needs the user's
 go-ahead; nothing here authorizes deployment, paid evaluation, deleting state or
 rerunning the `#[ignore]`d real-host-root tests. Preserve unresolved items when
@@ -69,7 +77,14 @@ presets remain configuration work; App sign-in and Flutter Web stay deferred.
 The architecture documents can be published as a planning baseline; this is not
 approval to implement every unchecked stage.
 
-## Current implementation status (2026-10-28)
+<a id="current-implementation-status-2026-10-28"></a>
+
+## Historical implementation records (2026-10-28 to 2026-11-07)
+
+The old anchor is retained. These records describe their own revisions only;
+“latest”, “next” and authorization statements are historical. Consult
+[C0](unified-completion-contracts.md#c0-authority-current-snapshot-and-scope)
+for current implemented/accepted/active status; this section grants no authority.
 
 The earlier publication `9eccd9e1` refreshed progress on **2026-11-04** for the
 user's explicit pull/rebase and push request. `git pull --rebase origin main` found the remote baseline `798aa817`

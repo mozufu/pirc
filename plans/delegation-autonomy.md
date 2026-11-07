@@ -2,6 +2,12 @@
 
 [Plans](README.md) · [Chat projects guide](../docs/guides/chat-projects.md) · [Tools (auto mode)](../docs/guides/tools.md) · [Security decisions](../docs/architecture/security-decisions.md)
 
+**Unified-architecture integration (2026-11-07):** [C5](unified-completion-contracts.md#c5-canonical-tasks-and-foreground-routing)
+requires an explicit legacy-to-canonical control mapping. The relay-answer lease
+exception below applies only to that addressed question, not general approval or
+dispatch. Cross-device legacy Stop limitations stay visible until migrated;
+planning does not silently change current permissions.
+
 Goal: a chat's delegation runs without a separate approval card, auto mode in the delegated session knows what the user actually asked for, and the approvals that remain reach the user in the chat instead of only inside the delegated session.
 
 This file is the work queue for the change, not authorization: each phase needs the user's go-ahead.

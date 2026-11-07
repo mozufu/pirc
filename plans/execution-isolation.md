@@ -2,6 +2,13 @@
 
 [Plans](README.md) · [Unified conversations](unified-conversations.md) · [Execution contracts](conversation-execution-contracts.md)
 
+**Current completion requirements (2026-11-07):** [C0](unified-completion-contracts.md#c0-authority-current-snapshot-and-scope)
+is the status source. [C2–C3](unified-completion-contracts.md#c2-revocation-evidence-and-inherited-risk)
+distinguish pending/blocked from adopted acknowledgeable unproven evidence,
+carry prior risks across generations, and constrain cancellation. Dated terminal
+slices below are evidence only; the Web and Android v3 interface clients exist,
+while actual Linux/browser/device acceptance and rollout remain open.
+
 Status: adopted product direction, **2026-11-04**. The user selected
 「採用建議：隔離工作＋明確主機管理模式」 after reviewing the effect of process
 isolation on host administration. This is part of U4, not a replacement for its
@@ -9,11 +16,11 @@ resource-revocation/install proof or the original five-stage goal.
 
 ## Accepted behavior
 
-| Execution path        | Intended use                                                        | Authority                                                                                       | Transition behavior                                                                   |
-| --------------------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Isolated work         | Ordinary Agent work and work terminals                              | Current workspace/project mounts, rules and scoped grants enforced by the backend               | Retire old processes/resources and install the new binding only with acknowledgements |
-| Host management       | Explicitly selected host administration requiring host capabilities | A separate user-authorized host execution path; never inferred from model text or `full-access` | Unknown surviving work keeps the workspace transition blocked                         |
-| Legacy host execution | Existing terminals and approved host-command evidence               | Preserve recorded origin and existing outcomes; classify insufficient evidence honestly         | Never relabel old work as isolated or invent descendant-closure proof                 |
+| Execution path        | Intended use                                                        | Authority                                                                               | Transition behavior                                                                                          |
+| --------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Isolated work         | Ordinary Agent work and work terminals                              | Current workspace/project mounts, rules and scoped grants enforced by the backend       | Retire old processes/resources and install the new binding only with acknowledgements                        |
+| Host management       | Explicitly selected host administration requiring host capabilities | Separate explicit user grant; never model text or `full-access`                         | Pending/blocked waits; adopted unproven residuals require per-operation consent and remain recorded under C2 |
+| Legacy host execution | Existing terminals and approved host-command evidence               | Preserve recorded origin and existing outcomes; classify insufficient evidence honestly | Never relabel old work as isolated or invent descendant-closure proof                                        |
 
 General new work should default to isolated execution when this feature is
 implemented. A host-management choice is explicit and visible for the affected
@@ -29,10 +36,11 @@ not proof that all old descendants, descriptors or delegated effects can be
 retired when the environment changes.
 
 Host management must identify its conversation/environment origin and affected
-external work. Where its descendants or retained access cannot be verified stopped,
-show pending/blocked and do not start the replacement environment. Closing a
-terminal panel, an exited direct shell, a completed command observer or an empty
-live registry is insufficient. No force-clear, guessed PID/process-name kill,
+external work. Pending/blocked descendants prevent replacement; the adopted
+unproven classes may proceed for an ordinary switch only with retained explicit
+per-operation consent and a “not fully confirmed” result under C2. Explicit deny
+cannot be waived. Closing a terminal panel, an exited direct shell, a completed
+observer or an empty registry never proves revocation. No force-clear, guessed PID/process-name kill,
 replay or fabricated revocation acknowledgement is authorized by this decision.
 Already-issued external effects retain their known/unknown outcome.
 
@@ -80,7 +88,8 @@ macOS process groups alone are not kernel descendant containment.
 2. Add isolated work shell/terminal adapters and scope-aware host dispatch, reusing
    native launch guards, process evidence, write claims and existing journals.
 3. Bind complete source revocation and target installation acknowledgements to
-   the frozen transition. Unsupported/unproven resources stay blocked.
+   the frozen transition. Unsupported and pending/blocked resources stay blocked;
+   only the adopted C2 unproven classes allow explicit per-operation consent.
 4. Add necessary Web/Android choice/status/warning controls in the existing style;
    paired Android calls Gateway directly. No navigation or visual redesign.
 5. Verify concurrent controllers/Agents, identical/conflicting requests, crash
@@ -378,9 +387,10 @@ Status: proposed on 2026-11-06; **frozen for client implementation on
 2026-11-06** after the [Node 2029 checkpoint](#local-implementation-checkpoint-terminal-request-discovery-and-result-parity-2026-11-06)
 closed its four Node gaps. The Node side builds on the
 [2028 checkpoint](#local-implementation-checkpoint-durable-isolated-work-terminal-requests-2026-11-06).
-No Web or Android code sends `executionPath`, `requestId`, `workRequestId`,
-`hostRequestId` or `unresolvedRequests` yet. Both clients must implement this
-one contract, so they cannot diverge. Clients require
+At the original v1 checkpoint the clients did not send these fields. Web and
+Android now implement the v3 interface, as recorded in the later integration
+checkpoints; device/Linux acceptance remains open. Both clients follow this
+shared contract. Clients require
 `workTerminalRequestVersion >= 2`; acknowledgement and the specific error codes
 below need **3** ([Node 2030](#local-implementation-checkpoint-terminal-request-acknowledgement-and-specific-errors-2026-11-06)). This covers
 step 4 of the [implementation order](#implementation-order-and-acceptance):
@@ -490,7 +500,9 @@ All four were delivered in the [Node 2029 checkpoint](#local-implementation-chec
 4. ~~Relay timeout~~: Node's bounded 20 s wait and `202`, with a fixture where the
    waiter answers before the one worker finishes.
 
-### Client work split (next)
+<a id="client-work-split-next"></a>
+
+### Historical client work split (now implemented at the interface layer)
 
 Can run in parallel in separate worktrees, with the frozen contract as their only
 shared input.
@@ -514,7 +526,9 @@ quality, placement and polish are out of scope.
   Client slices add their own unit cases against this contract; real browser and
   device journeys stay with the new UI.
 
-### Decisions to confirm with the user at client entry
+<a id="decisions-to-confirm-with-the-user-at-client-entry"></a>
+
+### Adopted client-entry decisions (do not ask again)
 
 1. ~~Where macOS offers the explicit host-management terminal.~~ Deferred to the
    new design (2026-11-06). The interface layer only exposes both actions, keeps

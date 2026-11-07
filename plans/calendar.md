@@ -2,6 +2,13 @@
 
 [Plans](README.md) · [Schedules](../docs/guides/schedules.md) · [Mobile follow-up](mobile.md)
 
+**Unified-architecture integration (2026-11-07):** [C5](unified-completion-contracts.md#c5-canonical-tasks-and-foreground-routing)
+and [C10](unified-completion-contracts.md#c10-delivery-gates-and-integration-boundaries)
+map schedule template/occurrence/task/attempt and target revalidation. Existing
+calendar proposal confirmation and cron/timezone/DST policies remain binding;
+pots standing grants cannot bypass them. This is target integration, not a new
+scheduler implementation or runtime authorization.
+
 Status: implemented locally; device acceptance pending, 2026-10-21. The user approved
 the month/week/day prototype for Web and Flutter Android in the existing pirc style.
 The user explicitly chose to include ordinary personal events as well as agent

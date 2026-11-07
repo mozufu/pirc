@@ -2,6 +2,13 @@
 
 [Plans](README.md) · [Assistant memory](../docs/architecture/assistant-memory.md) · [Chat projects guide](../docs/guides/chat-projects.md)
 
+**Unified integration (2026-11-07):** migration numbers below are historical
+examples, not reserved/current schema versions. Use [C0](unified-completion-contracts.md#c0-authority-current-snapshot-and-scope)
+and [C9](unified-completion-contracts.md#c9-synchronization-compatibility-and-rollback)
+when this backlog enters implementation. Search/embedding deployment is separate
+from the current document-only work; remote embedding/content egress requires its
+own configured scope/provider permission, not an inferred existing model grant.
+
 Goal: `memory_search` finds the notes and delegation reports a chat is looking for, including Chinese queries without spaces and paraphrases, without changing who can see what. The gateway stays on SQLite.
 
 This file is the work queue for the change, not authorization: each phase needs the user's go-ahead. Phase 2 also needs a decision on where embeddings come from, because it sends note text to an embeddings endpoint.
