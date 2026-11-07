@@ -562,3 +562,84 @@ versions are unchanged.
 Still open: real browser journeys against a switching-enabled Gateway, the new UI
 (placement, item presentation, progress), Android parity (parallel slice) and the
 contract notes above. Local commit only, no push, deployment or Release.
+
+## Local implementation checkpoint: T4 Android environment switching client (2026-11-07)
+
+Android adopts the [client contract](#client-contract-interface-only) on top of
+T3a/T3b through its direct Gateway connection. As decided, only the interface
+layer is correct; the controls are throwaway and sit at the end of the existing
+Context side pane, with no navigation or visual redesign.
+
+- New `apps/android/lib/live/environment_transitions.dart`, UI-independent:
+  `EnvironmentTransitionApi` (environment, preview POST/GET, confirm, receipt
+  GET, `advance`, `acknowledge`, `cancel`), parsed `ConversationEnvironment`
+  (`binding`, `activeTransition`), `TransitionPreview` (`canConfirm`,
+  `blockedBy`, `planHash`, `observationHash`), `TransitionStatus` (`transition`,
+  sanitized `progress`, `TransitionRevocation` with `items`/`itemsTotal`/`digest`,
+  `reconciliationState`) and `EnvironmentTransitionFlow`, which maps every state
+  to an `EnvironmentSwitchStatus` with its `EnvironmentSwitchAction`s.
+- **Preview.** Each review gets a fresh operation ID and sends the shown binding
+  as `expectedBinding`. `blockedBy` is shown in plain language and Confirm is
+  offered only for `canConfirm: true`. `coordinator_not_available` and
+  `transition_coordinator_unavailable` are the `disabled` state. A stale preview,
+  `transition_review_changed` or `stale_environment` (which also re-reads the
+  binding) asks for a new review. A lost preview POST is read back; a `404`
+  allows sending the same ID and body again.
+- **Progress.** Confirm sends `planHash`, `observationHash` and the lease, then
+  calls `advance`. While the state is `node_fenced` without progress or with a
+  `pending` revocation, the flow polls with backoff (1, 2, 4, 8, 15, then 30 s).
+  `advance` is used with control; without control the receipt GET is read and
+  nothing mutates. A lost confirm reads the receipt GET: `404` keeps the same
+  review for an identical re-confirm, an accepted one continues by `advance`.
+  `reconciliationState: node_unavailable` is shown. After a restart, `load()`
+  adopts `activeTransition`; nothing is persisted, and the envelope stays at **3**.
+- **Revocation.** `unproven` lists items as plain kind/reason text with
+  `itemsTotal`, and offers **Acknowledge and switch**, which sends the digest of
+  the shown status. `revocation_digest_changed` (or another refusal that means
+  the list changed) re-reads and shows the new list; nothing is acknowledged
+  automatically. `blocked` lists the items and offers no acknowledgement.
+- **Cancel and result.** Cancel is offered until installation (`accepted`,
+  `outcome_unknown`, every `node_fenced` stage). `transition_installed`,
+  `transition_released` and `transition_outcome_unknown` re-read the status.
+  `installed` shows "switched; revocation confirmed" or "switched; revocation
+  not fully confirmed" from `revocationConfirmed`, and `released` shows
+  "cancelled; original workspace kept". An installed switch re-reads
+  `GET .../environment` and hands the new binding to
+  `LiveController.adoptBinding`, so later commands send it as `expectedBinding`.
+  A command refused with `environment_required` or `stale_environment` now also
+  refreshes the binding (`LiveController.refreshBinding`) and is never resent.
+- **Errors** pass through by code with plain-language text (all listed T3
+  codes plus `transition_review_changed`, `stale_environment` and
+  `transition_not_reviewable`). 5xx, including `transition_step_failed` and
+  `invalid_transition_receipt`, and connection loss are ambiguous: the flow reads
+  again and never repeats a mutation under a new identity. 71 new en/zh-TW
+  strings.
+
+Validation: `flutter test test/environment_transitions_test.dart` **43 passed**
+(the exact paths and bodies; operation IDs; 15 status-mapping and polling rows;
+the three result texts; disabled previews and gated confirm; blockers; fresh IDs
+with the shown binding; stale review; `stale_environment` binding refresh; lost
+preview → same-ID resend; confirm → advance polling with backoff to an installed
+binding refresh; capped backoff while the Node is unavailable; `node_unavailable`;
+`transition_review_changed`; lost confirm with `404` and with acceptance; eight
+passed-through refusals; two ambiguous 502 codes; restart discovery with and
+without control; unproven items and acknowledgement; digest change re-read;
+blocked without acknowledgement; ambiguous acknowledgement; cancel before and
+after the fence; cancel after installation and `lost_control`; unknown cancel
+outcome; command binding refresh without resend; one card widget case).
+Existing `i18n` **3**, `command_environment` **4**, `context_flow` **2**,
+`panel_core_accessibility` **12**, `side_panel` **6**, `completion` **12**,
+`terminal_requests` **57** and `terminal_parity` **8** passed, and `flutter
+analyze` of the whole package found no issues. Placing the card at the top of
+the Context pane broke the pinned `context_flow` layout, so it sits at the end.
+
+Contract notes for the coordinator (no Gateway change): the read-only receipt
+GET omits `progress`, so a device without control cannot see revocation items
+(only `advance`, the other coordinator replies and `POST .../reconcile` carry
+them); `activeTransition` disappears after installation or release, so another
+device that reloads afterwards cannot read the final result; and an
+`activeTransition` taken from a bare Node fence (no acceptance) has no
+acceptance status to read, so it shows as a refusal.
+
+Open: device/emulator journeys, the new UI, and Web parity (separate slice).
+Local commit only, no push, deployment or Release.

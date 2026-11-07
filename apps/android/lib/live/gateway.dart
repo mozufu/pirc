@@ -1562,6 +1562,39 @@ class LiveController extends ChangeNotifier {
     }
   }
 
+  /// Adopt the binding read from `GET .../environment` (for example after an
+  /// environment switch installed), so later commands send it as
+  /// `expectedBinding`. Nothing is resent.
+  void adoptBinding(String id, Json binding) {
+    final session = obj(state['session']);
+    if (sessionId != id || (session['id'] != null && session['id'] != id)) {
+      return;
+    }
+    if (jsonEncode(session['binding']) == jsonEncode(binding)) return;
+    state = {
+      ...state,
+      'session': {...session, 'binding': binding},
+    };
+    changed();
+  }
+
+  /// Re-read the binding after `environment_required`/`stale_environment`;
+  /// the user decides whether to send again.
+  Future<void> refreshBinding() async {
+    final id = sessionId;
+    if (id == null) return;
+    try {
+      final environment = obj(
+        await gateway.request('${sessionPath(id)}/environment'),
+      );
+      if (environment['binding'] is Map) {
+        adoptBinding(id, obj(environment['binding']));
+      }
+    } catch (_) {
+      /* The next snapshot or refusal reads it again. */
+    }
+  }
+
   final _commandsInFlight = <Object, ({int account, bool blocking})>{};
   Future<bool> sendCommand(Json payload, {List<Json> before = const []}) async {
     if (isDraftSession) return false;
@@ -1622,6 +1655,10 @@ class LiveController extends ChangeNotifier {
           !e.code.startsWith('HTTP_4') ||
           obj(e.details)['code'] == 'outcome_unknown';
       actionError = unknownCommand ? tr("送出結果不明，請檢查對話；不會自動重送。") : describe(e);
+      final code = e is PlatformException ? obj(e.details)['code'] : null;
+      if (code == 'environment_required' || code == 'stale_environment') {
+        unawaited(refreshBinding());
+      }
       return false;
     } finally {
       _commandsInFlight.remove(commandToken);

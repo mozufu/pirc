@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'common.dart';
 import 'gateway.dart';
 import 'web_controls.dart';
+import 'environment_switch_card.dart';
 
 /// Exact request snapshot, not a reconstruction from current configuration.
 class ContextPane extends StatefulWidget {
@@ -541,6 +542,9 @@ class _ContextPaneState extends State<ContextPane> {
               ],
             ),
         ],
+        // Throwaway placement of the switching interface (T4), after the
+        // pinned context content.
+        EnvironmentSwitchCard(controller: widget.controller),
       ],
     );
   }
