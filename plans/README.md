@@ -197,6 +197,11 @@ strict all-target Clippy passed. The owned **2.9 GiB** outputs are cleaned; this
 delivery stays local.
 
 Latest local transition delivery:
+[T4 environment switching clients](transition-installation.md#integration-checkpoint-t4-environment-switching-clients-2026-11-07): Web **699
+tests**, Android **147 focused tests**, clean svelte-check and `flutter analyze`.
+Next: five small Gateway status/discovery gaps found by the clients. Local only.
+
+Previous local transition delivery:
 [T3b gated confirmation, recovery and composed acceptance](transition-installation.md#local-implementation-checkpoint-t3b-gated-confirmation-recovery-and-composed-acceptance-2026-11-07):
 switching works end to end behind `PIRC_ENVIRONMENT_SWITCHING` (default off).
 **674 Node**, **428 Gateway** tests and **38 process cases** passed. Next: T4.

@@ -55,7 +55,12 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local delivery: [T3b gated confirmation, recovery and composed acceptance](transition-installation.md#local-implementation-checkpoint-t3b-gated-confirmation-recovery-and-composed-acceptance-2026-11-07)
+Latest local delivery: [T4 environment switching clients](transition-installation.md#integration-checkpoint-t4-environment-switching-clients-2026-11-07)
+adds the Web and Android interface layers (preview, confirm, progress,
+acknowledgement, cancel, result) with throwaway controls; formats unchanged.
+Five small Gateway gaps found by the clients are recorded as the next slice.
+
+The previous [T3b gated confirmation, recovery and composed acceptance](transition-installation.md#local-implementation-checkpoint-t3b-gated-confirmation-recovery-and-composed-acceptance-2026-11-07)
 puts public confirmation behind `PIRC_ENVIRONMENT_SWITCHING` (default off), adds
 a recovery sweep, and passes the composed switch with real processes on macOS
 (confirmed idle switch; unproven switch after acknowledgement). Next: T4 clients.

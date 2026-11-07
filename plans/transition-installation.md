@@ -643,3 +643,42 @@ acceptance status to read, so it shows as a refusal.
 
 Open: device/emulator journeys, the new UI, and Web parity (separate slice).
 Local commit only, no push, deployment or Release.
+
+## Integration checkpoint: T4 environment switching clients (2026-11-07)
+
+The Web and Android T4 slices were built in parallel from `c9a9d3e6` and
+integrated as `bafea1ee` (Web) and `7da3d21a` (Android). Both are interface
+layers with throwaway controls (Web: the side panel's Context tab; Android: the
+end of the Context pane). Neither changes Rust, Kotlin, dependencies, lockfiles,
+Web IndexedDB **3** or the Android envelope **3**. Both refresh the binding after
+`environment_required`/`stale_environment` without resending.
+
+Re-run after integration: Web `vitest run` **699 tests in 71 files** (62 new) with
+`svelte-check` clean; Android focused Flutter tests **147 passed** (43 new
+environment-switching tests plus i18n, command environment, context flow, panel
+accessibility, side panel, completion and terminal suites) with `flutter analyze`
+clean; Prettier clean. Rust is unchanged since T3b. No browser, emulator, device,
+APK or native Linux validation is claimed. Local commits only.
+
+Gaps found by the client agents (Gateway unchanged; small follow-up slice):
+
+1. **Read-only status lacks `progress`.** `GET .../receipts/{op}` returns only the
+   transition state, so a device without control cannot see the revocation
+   items or digest; only `advance` (which needs control and may act) returns
+   them. Both clients found this.
+2. **A finished switch is not discoverable.** `activeTransition` disappears once
+   installed or released, so a device that reloads afterwards cannot show
+   whether revocation was confirmed or not fully confirmed.
+3. **`activeTransition` lacks the target workspace**, and can come from a bare
+   Node fence with no acceptance, for which no client action exists.
+4. **An acceptance stuck in `accepted`.** If `confirm` fails after the acceptance
+   commits but before dispatch (stale plan or lease), the row stays `accepted`:
+   the sweep and `advance` skip it, and commands stay blocked until the user
+   cancels. Clients offer Cancel and Check again.
+5. **Generic 404s.** Missing preview, acceptance, receipt and session all return
+   `not_found`. Clients' "404 after a lost reply means not stored" rule is safe
+   because the requests are idempotent, but specific codes would be clearer.
+
+Remaining after these: native Linux acceptance of a fully confirmed switch after
+an Agent run, the new UI, and the later extensions (cross-Node handoff, project
+mounts).
