@@ -6,6 +6,7 @@
   import { Loader } from '../../loader.svelte';
   import { panelApi, type ContextPanel } from '../../panel-api';
   import { watch } from '../../watch.svelte';
+  import EnvironmentSwitchPanel from './EnvironmentSwitchPanel.svelte';
   let {
     sessionId,
     active = true,
@@ -93,6 +94,7 @@
 </script>
 
 <div class="context-tab">
+  {#if active}<EnvironmentSwitchPanel {sessionId} />{/if}
   <div class="actions">
     <h3>{tr('Context')}</h3>
     <button class="button ghost" type="button" disabled={loader.loading} onclick={load}

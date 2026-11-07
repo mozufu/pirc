@@ -36,6 +36,7 @@ import {
 } from './push';
 import { syncControl } from './control';
 import { conversationBinding } from './conversation-binding';
+import { isBindingRefusal } from './environment-transitions';
 import { errorMessage } from './errors';
 import { GOAL_WIDGET, parseGoalWidget } from './goal';
 import { PanelStateResource } from './panel-state.svelte';
@@ -1583,6 +1584,8 @@ class AppState {
       }
     } catch (error) {
       this.pageError = errorMessage(error, tr('The command was not accepted.'));
+      // A switched environment: refresh the binding; the draft stays for the user to resend.
+      if (isBindingRefusal(error)) void this.refreshSnapshot();
     } finally {
       this.commandBusy = false;
     }

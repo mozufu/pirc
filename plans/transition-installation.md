@@ -470,3 +470,95 @@ commit only.
 
 Next: T4, the Web/Android interface layer for preview confirmation, progress,
 acknowledgement, cancel and the final result (throwaway UI, as decided).
+
+## Local implementation checkpoint: T4 Web environment switching client (2026-11-07)
+
+The Web client gains the interface layer for slice T4 against the T3a/T3b
+Gateway routes. As decided for the terminal work, only the interface is meant to
+be correct. The UI is throwaway: `EnvironmentSwitchPanel.svelte` sits at the top of
+the side panel's Context tab, with no navigation or visual work.
+
+- **Interface** (`apps/web/src/lib/environment-transitions.ts`):
+  `environmentTransitionApi` (`environment`, `preview`, `previewStatus`,
+  `confirm`, `status` = `GET .../receipts/{op}`, `advance`, `acknowledge`,
+  `cancel`), parsers for previews, statuses (`progress` absent vs `null`, sanitized
+  revocation items, `revocationConfirmed` only for `installed`) and
+  `activeTransition`, `classifySwitchFailure`, `isBindingRefusal`,
+  `transitionPhase`, `resultOf`, `allowedSwitchActions`, plain-language labels for
+  every Gateway blocker and Node item kind/reason, and the in-memory
+  `EnvironmentSwitch` controller (`discover`, `preview`, `confirm`, `resend`,
+  `refresh`, `acknowledge`, `cancel`, `discard`, `setLease`, `dispose`).
+- **Phases**:
+  - Preview side: `review` (Confirm only when `canConfirm` and an observed
+    `observationHash`), `review_blocked` (with `blockedBy`), `review_stale` (new
+    review under a new `operationId`), `switching_disabled`
+    (`coordinator_not_available`, `transition_coordinator_unavailable`),
+    `preview_missing`/`confirm_missing`, `preview_unknown`/`confirm_unknown` and
+    `rejected`.
+  - Transition side: `accepted` → `awaiting_dispatch`,
+    `outcome_unknown`, `node_fenced` → `draining` (no progress or `pending`),
+    `blocked` (items, never acknowledgeable), `needs_acknowledgement`
+    (`unproven`), `installing` (`confirmed`), `installed` → `switched`, `released`
+    → `cancelled`, `deleted`, plus `legacy_fence` (an `activeTransition` of
+    `fenced`) and `unknown_state`.
+  - Results: "switched; revocation confirmed", "switched; revocation not fully
+    confirmed", "cancelled; original workspace kept".
+- **Identity and recovery**: a fresh `operationId` per review. A lost preview reply
+  is read by GET, a lost confirmation by the receipt GET. Only a `404` allows
+  re-sending the same identity and input, and a confirmation only under the same
+  lease. After confirm the client calls `advance` once, then reads with backoff
+  (1 s doubling to 30 s, reset on any change) while `draining`, `outcome_unknown`
+  or `installing`. With control it reads through `advance`; without control, or
+  after a cancel was asked, it reads only through the receipt GET.
+  `reconciliationState: node_unavailable` is shown. 5xx and network loss keep
+  reading. A definite refusal stops reading until _Check again_. After a reload the
+  operation comes from `activeTransition`. Nothing is persisted, and IndexedDB
+  stays at **3**.
+- **Acknowledgement**: _Acknowledge and switch_ is offered only for `unproven`
+  with control. It sends the digest of the status it showed. On
+  `revocation_digest_changed` the client re-reads, shows the new items and marks
+  them changed. It never acknowledges by itself. An ambiguous acknowledgement is
+  resolved by `advance`. `lost_control` re-reads without advancing.
+- **Cancel** is offered from `accepted` until installation, both before and after
+  the fence. `transition_installed` reads the installed result ("too late"). After
+  any cancel attempt, reads never advance, so nothing can install past it.
+- **Binding**: after `installed` the client reads `GET .../environment` and reports
+  the new binding. The panel then refreshes the snapshot, whose binding later
+  commands send as `expectedBinding`. `AppState.sendCommand` refreshes the snapshot
+  on `stale_environment`/`environment_required` and keeps the draft for the user to
+  resend; nothing is resent automatically. Every code in the task list passes
+  through by code.
+- en/zh-TW strings for the throwaway panel. The existing `ContextTab` test
+  fixture gained a `control` field, because the tab now mounts the panel.
+
+Contract notes found while implementing (Gateway unchanged):
+
+1. **No read-only status with `progress`.** `GET .../receipts/{op}` returns only
+   `{transition, canConfirm}`. Revocation items come only from `advance`, which
+   needs control and may drain or install, or from confirm/acknowledge/cancel
+   replies. A second device without control can show the state but not the
+   items.
+2. **A stuck `accepted` acceptance is never dispatched again.** If `confirm`
+   fails after the acceptance row commits (for example `dispatch_once`'s
+   `stale_environment` or lease check), the row stays `accepted`. The recovery
+   sweep pages only `outcome_unknown`/`node_fenced`, `advance` reconciles only
+   `outcome_unknown`, and a duplicate confirm only reads. New commands stay
+   refused (`environment_transition_pending`) until the user cancels. The client
+   offers _Cancel_ and _Check again_ there.
+3. **Generic 404s.** A missing preview, acceptance, receipt or session all return
+   `404 not_found`. The client treats a 404 after a lost reply as "not stored",
+   which is safe, because previews and confirmations are idempotent per identity
+   and intent.
+4. `activeTransition` carries no target workspace, and a `fenced` entry (a Node
+   fence without an acceptance) has no client action.
+
+Validation: `npx vitest run` in `apps/web`: **71 files, 699 tests** passed (637
+before; **59** new in `environment-transitions.test.ts`, **3** in
+`EnvironmentSwitchPanel.test.ts`, and one existing `app.svelte.test.ts` case
+extended for the binding refresh). `svelte-check` found 0 errors and 0 warnings,
+and Prettier check passed on all changed files. Rust, lockfiles and package
+versions are unchanged.
+
+Still open: real browser journeys against a switching-enabled Gateway, the new UI
+(placement, item presentation, progress), Android parity (parallel slice) and the
+contract notes above. Local commit only, no push, deployment or Release.

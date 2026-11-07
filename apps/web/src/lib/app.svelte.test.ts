@@ -804,9 +804,20 @@ it('passes the visible environment and keeps the draft after a known stale rejec
   const command = vi
     .spyOn(api, 'command')
     .mockRejectedValue(new ApiError('Environment changed', 409, 'stale_environment'));
+  // After a switch the binding moved: it is refreshed, and nothing is resent.
+  const moved = { ...binding, execution: { ...binding.execution, generation: 8 } };
+  const snapshot = vi.spyOn(api, 'snapshot').mockResolvedValue({
+    ...demoSnapshot,
+    session: { ...demoSnapshot.session, binding: moved },
+    control: { heldByCurrentClient: true, generation: 3 },
+  } as never);
   await app.sendCommand('prompt');
   expect(command).toHaveBeenCalledTimes(1);
   expect(command.mock.calls[0][1].expectedBinding).toEqual(binding);
   expect(app.draft).toBe('keep my message');
   expect(app.pageError).toBe('Environment changed');
+  await vi.waitFor(() => expect(app.sessionState?.session.binding).toEqual(moved));
+  expect(snapshot).toHaveBeenCalledWith(demoSnapshot.session.id);
+  expect(command).toHaveBeenCalledTimes(1);
+  expect(app.draft).toBe('keep my message');
 });

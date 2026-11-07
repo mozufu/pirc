@@ -112,7 +112,11 @@ it('shows the send-first error without fabricating an empty snapshot', async () 
 });
 
 it('refreshes when an idle runner stops while the inspector stays open', async () => {
-  app.sessionState = { session: { id: 's' }, runnerStatus: 'ready' } as never;
+  app.sessionState = {
+    session: { id: 's' },
+    control: { heldByCurrentClient: false },
+    runnerStatus: 'ready',
+  } as never;
   vi.stubGlobal(
     'fetch',
     vi.fn(
@@ -127,7 +131,11 @@ it('refreshes when an idle runner stops while the inspector stays open', async (
   vi.mocked(fetch).mockResolvedValueOnce(
     new Response(JSON.stringify({ snapshot, agentRunning: false, source: 'snapshot' })),
   );
-  app.sessionState = { session: { id: 's' }, runnerStatus: 'stopped' } as never;
+  app.sessionState = {
+    session: { id: 's' },
+    control: { heldByCurrentClient: false },
+    runnerStatus: 'stopped',
+  } as never;
   await flush();
   expect(target.textContent).toContain('agent stopped');
 });
