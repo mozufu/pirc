@@ -1,5 +1,13 @@
 # Upgrades
 
+## Local checkpoint: gated environment switching
+
+New Gateway setting `PIRC_ENVIRONMENT_SWITCHING` (default `false`) enables
+confirming conversation environment transitions. With it on, transitions drain
+the source, require confirmed or explicitly acknowledged revocation, and install
+the target on the same Node; the Gateway resumes accepted transitions every 30 s.
+No schema, protocol, lockfile or Nix hash change. Local code only.
+
 ## Local checkpoint: Gateway transition coordinator
 
 Gateway schema **1030** adds terminal `installed`/`released` stages to accepted

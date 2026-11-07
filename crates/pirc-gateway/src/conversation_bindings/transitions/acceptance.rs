@@ -435,7 +435,7 @@ pub(super) async fn confirm_route(
     };
     // Do not expose a one-way admission-only switch to users. This gate must be
     // removed only with full revocation, installation and client recovery proof.
-    if !confirmation_available() {
+    if !confirmation_available(&app) {
         return Err(ApiError::new(
             409,
             "transition_coordinator_unavailable",
@@ -463,8 +463,10 @@ pub(super) async fn confirm_route(
         .await
         .map(Json)
 }
-fn confirmation_available() -> bool {
-    false
+/// Off unless the operator enables switching. Even then, revocation is
+/// confirmed or explicitly acknowledged, and the Node installs the target.
+fn confirmation_available(app: &AppState) -> bool {
+    app.config.environment_switching
 }
 
 pub(super) mod coordinator;

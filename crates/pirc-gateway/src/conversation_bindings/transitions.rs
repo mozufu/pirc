@@ -167,6 +167,11 @@ pub(crate) fn active(db: &Connection, user: &str, session: &str) -> ApiResult<Op
     Ok(row.map(|(op,state)|json!({"operationId":op,"state":state,"revocationConfirmed":false,"targetInstalled":false})))
 }
 
+/// Resume accepted transitions after restarts or lost replies.
+pub(crate) fn start_recovery(app: &AppState) {
+    acceptance::coordinator::start(app);
+}
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .route(
@@ -295,7 +300,8 @@ async fn describe(app: &AppState, identity: &Identity, row: Preview) -> ApiResul
                 "durableAdmissionFence":value["durableAdmissionFence"]==true,
                 "trackedSupervisorDrain":value["trackedSupervisorDrain"]==true,
                 "confirmsRevocation":value["confirmsRevocation"]==true,
-                "installsEnvironment":value["installsEnvironment"]==true}));
+                "installsEnvironment":value["installsEnvironment"]==true,
+                "acknowledgesRevocation":value["transitionAcknowledgementVersion"]==1}));
         } else {
             observations.push(json!({"nodeId":node,"status":"unsupported_or_unavailable"}));
         }
@@ -333,7 +339,10 @@ async fn describe(app: &AppState, identity: &Identity, row: Preview) -> ApiResul
     if stale {
         resource_preflight = json!({"status":"preview_stale"});
     }
-    let mut blockers = vec!["coordinator_not_available"];
+    let mut blockers = Vec::new();
+    if !app.config.environment_switching {
+        blockers.push("coordinator_not_available");
+    }
     if resource_preflight["status"] != "observed" {
         blockers.push("resource_preflight_required");
     } else {
@@ -375,7 +384,12 @@ async fn describe(app: &AppState, identity: &Identity, row: Preview) -> ApiResul
     if observations.iter().any(|n| n["status"] != "observed") {
         blockers.push("node_unavailable_or_unsupported");
     }
-    if observations.is_empty() || observations.iter().any(|n| n["confirmsRevocation"] != true) {
+    // Unproven revocation is acceptable only through an explicit acknowledgement.
+    if observations.is_empty()
+        || observations
+            .iter()
+            .any(|n| n["confirmsRevocation"] != true && n["acknowledgesRevocation"] != true)
+    {
         blockers.push("revocation_unconfirmed");
     }
     if observations.is_empty()
@@ -387,7 +401,8 @@ async fn describe(app: &AppState, identity: &Identity, row: Preview) -> ApiResul
     }
     Ok(
         json!({"preview":row,"state":if stale {"stale"}else{"preview"},
-        "canConfirm":false,"blockedBy":blockers,"nodeObservations":observations,"resourcePreflight":resource_preflight}),
+        "canConfirm":app.config.environment_switching && !stale && blockers.is_empty() && resource_preflight["status"]=="observed",
+        "blockedBy":blockers,"nodeObservations":observations,"resourcePreflight":resource_preflight}),
     )
 }
 #[cfg(test)]

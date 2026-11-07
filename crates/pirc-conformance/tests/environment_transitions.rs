@@ -176,3 +176,212 @@ async fn preview_survives_gateway_restart_and_node_offline_without_changing_bind
         .await;
     assert_eq!(final_environment.body["binding"], binding);
 }
+
+mod switching {
+    use pirc_conformance::{
+        Api, Cluster, GatewayOptions, Reply, TARGET_WORKSPACE_ID, WORKSPACE_ID, browser_headers,
+    };
+    use serde_json::{Value, json};
+
+    type Headers = Vec<(&'static str, String)>;
+    async fn ok(api: &Api, headers: &Headers, method: &str, path: &str, body: Value) -> Value {
+        let response = api.send(method, path, headers, Some(body)).await;
+        assert!(
+            response.status < 300,
+            "{method} {path}: {} {}",
+            response.status,
+            response.body
+        );
+        response.body
+    }
+    async fn get(api: &Api, headers: &Headers, path: &str) -> Value {
+        let response = api.send("GET", path, headers, None).await;
+        assert_eq!(response.status, 200, "{path}: {}", response.body);
+        response.body
+    }
+    /// A conversation on `test:test` with current control.
+    async fn conversation(api: &Api, headers: &Headers) -> (String, Value) {
+        let created = ok(
+            api,
+            headers,
+            "POST",
+            "/api/sessions",
+            json!({"workspaceId":WORKSPACE_ID}),
+        )
+        .await;
+        let id = created["session"]["id"].as_str().unwrap().to_owned();
+        let generation = ok(
+            api,
+            headers,
+            "POST",
+            &format!("/api/sessions/{id}/control/acquire"),
+            json!({"clientId":"web","force":true}),
+        )
+        .await["lease"]["generation"]
+            .clone();
+        (id, generation)
+    }
+    async fn settle_prompt(
+        api: &Api,
+        headers: &Headers,
+        id: &str,
+        generation: &Value,
+        command: &str,
+    ) {
+        // Clients send the binding they show; a changed environment needs a refresh.
+        let binding =
+            get(api, headers, &format!("/api/sessions/{id}/environment")).await["binding"].clone();
+        ok(
+            api,
+            headers,
+            "POST",
+            &format!("/api/sessions/{id}/commands"),
+            json!({"commandId":command,"clientId":"web","generation":generation,"expectedBinding":binding,
+                "payload":{"type":"prompt","message":command}}),
+        )
+        .await;
+        for _ in 0..200 {
+            let snapshot = get(api, headers, &format!("/api/sessions/{id}/snapshot")).await;
+            if snapshot.to_string().contains("Replied.")
+                && snapshot["session"]["status"] != "running"
+            {
+                return;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        }
+        panic!("the prompt never settled");
+    }
+    /// Review and confirm a move to `test:target`; returns the accepted status.
+    async fn confirm(
+        api: &Api,
+        headers: &Headers,
+        id: &str,
+        generation: &Value,
+        op: &str,
+    ) -> Value {
+        let binding =
+            get(api, headers, &format!("/api/sessions/{id}/environment")).await["binding"].clone();
+        let preview = ok(
+            api,
+            headers,
+            "POST",
+            &format!("/api/sessions/{id}/environment-transitions/previews"),
+            json!({"operationId":op,"targetWorkspaceId":TARGET_WORKSPACE_ID,"expectedBinding":binding}),
+        )
+        .await;
+        assert_eq!(preview["canConfirm"], true, "{preview}");
+        ok(
+            api,
+            headers,
+            "POST",
+            &format!("/api/sessions/{id}/environment-transitions/previews/{op}/confirm"),
+            json!({"planHash":preview["preview"]["planHash"],
+                "observationHash":preview["resourcePreflight"]["observationHash"],
+                "clientId":"web","generation":generation}),
+        )
+        .await
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn an_enabled_switch_installs_after_confirmed_or_acknowledged_revocation() {
+        let Some(cluster) = Cluster::start_with(GatewayOptions {
+            env: vec![("PIRC_ENVIRONMENT_SWITCHING", "1".to_owned())],
+            second_workspace: true,
+            ..GatewayOptions::default()
+        })
+        .await
+        else {
+            return;
+        };
+        let headers = browser_headers();
+        let api = cluster.api();
+
+        // A conversation that never ran: nothing needs to be contained.
+        let (idle, generation) = conversation(&api, &headers).await;
+        let accepted = confirm(&api, &headers, &idle, &generation, "move-idle").await;
+        assert_eq!(accepted["transition"]["state"], "node_fenced", "{accepted}");
+        let installed = ok(
+            &api,
+            &headers,
+            "POST",
+            &format!("/api/sessions/{idle}/environment-transitions/move-idle/advance"),
+            json!({"clientId":"web","generation":generation}),
+        )
+        .await;
+        assert_eq!(installed["transition"]["state"], "installed", "{installed}");
+        assert_eq!(installed["transition"]["revocationConfirmed"], true);
+        let environment = get(&api, &headers, &format!("/api/sessions/{idle}/environment")).await;
+        assert_eq!(
+            environment["binding"]["execution"]["workspaceId"], TARGET_WORKSPACE_ID,
+            "{environment}"
+        );
+        assert!(environment["activeTransition"].is_null());
+        // The next prompt runs in the new environment, after its notice.
+        cluster.llm.push([Reply::Text("Replied.".into())]);
+        settle_prompt(&api, &headers, &idle, &generation, "after-move").await;
+        let snapshot = get(&api, &headers, &format!("/api/sessions/{idle}/snapshot")).await;
+        assert!(
+            snapshot.to_string().contains("environment-change"),
+            "{snapshot}"
+        );
+
+        // A conversation whose Agent ran cannot prove containment on this host.
+        let (busy, generation) = conversation(&api, &headers).await;
+        cluster.llm.push([Reply::Text("Replied.".into())]);
+        settle_prompt(&api, &headers, &busy, &generation, "before-move").await;
+        confirm(&api, &headers, &busy, &generation, "move-busy").await;
+        let waiting = ok(
+            &api,
+            &headers,
+            "POST",
+            &format!("/api/sessions/{busy}/environment-transitions/move-busy/advance"),
+            json!({"clientId":"web","generation":generation}),
+        )
+        .await;
+        assert_eq!(waiting["transition"]["state"], "node_fenced", "{waiting}");
+        let revocation = &waiting["progress"]["revocation"];
+        assert_eq!(revocation["status"], "unproven", "{waiting}");
+        assert!(
+            revocation["items"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|item| item["kind"] == "platform_containment")
+        );
+        assert!(!waiting.to_string().contains("/private"));
+        let blocked = api
+            .send(
+                "POST",
+                &format!("/api/sessions/{busy}/commands"),
+                &headers,
+                Some(
+                    json!({"commandId":"during","clientId":"web","generation":generation,
+                    "payload":{"type":"prompt","message":"during"}}),
+                ),
+            )
+            .await;
+        assert_eq!(blocked.status, 409, "{}", blocked.body);
+        let acknowledged = ok(
+            &api,
+            &headers,
+            "POST",
+            &format!("/api/sessions/{busy}/environment-transitions/move-busy/acknowledge"),
+            json!({"digest":revocation["digest"],"clientId":"web","generation":generation}),
+        )
+        .await;
+        assert_eq!(
+            acknowledged["transition"]["state"], "installed",
+            "{acknowledged}"
+        );
+        assert_eq!(acknowledged["transition"]["revocationConfirmed"], false);
+        assert_eq!(
+            acknowledged["progress"]["installation"]["revocation"],
+            "unproven"
+        );
+        let environment = get(&api, &headers, &format!("/api/sessions/{busy}/environment")).await;
+        assert_eq!(
+            environment["binding"]["execution"]["workspaceId"],
+            TARGET_WORKSPACE_ID
+        );
+    }
+}

@@ -135,14 +135,21 @@ pub(crate) fn evaluate(
         ));
     }
     let attributed = |workspace: &str| workspace == generation.workspace;
-    // Agent and isolated-terminal kernel scopes.
+    let confirms_containment = node.sandbox.contains_descendants();
+    // Agent and isolated-terminal kernel scopes. Without kernel containment a
+    // launch has no scope to observe: after the drain stopped its runner, its
+    // descendants are unprovable (acknowledgeable), not merely unresolved.
     for (id, workspace, state) in rows(
         db,
-        "SELECT launch_id,workspace_id,state FROM sandbox_launches WHERE session_id=?1 AND created_at>=?2",
+        "SELECT launch_id,workspace_id,state||CASE WHEN identity_json IS NULL THEN ':none' ELSE ':kernel' END FROM sandbox_launches WHERE session_id=?1 AND created_at>=?2",
         session,
         generation.started_at,
     )? {
-        match state.as_str() {
+        let (state, scope) = state.split_once(':').unwrap_or((state.as_str(), "none"));
+        match state {
+            "launching" | "running" | "unconfirmed" if !confirms_containment && scope == "none" => {
+                items.push(unprovable("sandbox_launch", id, "uncontained_launch"))
+            }
             "launching" | "running" | "unconfirmed" => items.push(unresolved("sandbox_launch", id)),
             "legacy_untracked" => items.push(unprovable("legacy_history", id, "untracked_launch")),
             _ if !attributed(&workspace) => {
@@ -204,7 +211,6 @@ pub(crate) fn evaluate(
             items.push(unresolved("native_proxy", session.to_owned()));
         }
     }
-    let confirms_containment = node.sandbox.contains_descendants();
     let ran = current
         .as_ref()
         .is_some_and(|(_, epoch)| *epoch > generation.start_epoch);

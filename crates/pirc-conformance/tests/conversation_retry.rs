@@ -20,6 +20,7 @@ async fn rejected_first_attempt_retries_in_the_same_session_with_the_same_file_a
             chat_node: true,
             agent_core_only: true,
             env: vec![("PIRC_BROWSER", "false".into())],
+            second_workspace: false,
         },
     ) else {
         return;

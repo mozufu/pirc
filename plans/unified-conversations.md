@@ -55,7 +55,12 @@ original environment, independently of foreground controller/Agent lifetimes. Th
 extends that authority into engine background initialization and intercepted
 network requests, including decisions delayed by DNS.
 
-Latest local delivery: [T3a Gateway coordinator stages](transition-installation.md#local-implementation-checkpoint-t3a-gateway-coordinator-stages-2026-11-07)
+Latest local delivery: [T3b gated confirmation, recovery and composed acceptance](transition-installation.md#local-implementation-checkpoint-t3b-gated-confirmation-recovery-and-composed-acceptance-2026-11-07)
+puts public confirmation behind `PIRC_ENVIRONMENT_SWITCHING` (default off), adds
+a recovery sweep, and passes the composed switch with real processes on macOS
+(confirmed idle switch; unproven switch after acknowledgement). Next: T4 clients.
+
+The previous [T3a Gateway coordinator stages](transition-installation.md#local-implementation-checkpoint-t3a-gateway-coordinator-stages-2026-11-07)
 (Gateway **1030**) drives an accepted transition through drain, acknowledgement,
 installation or explicit release and commits the binding only on an installed
 Node receipt. Public confirmation stays disabled until T3b.

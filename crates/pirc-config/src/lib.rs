@@ -243,6 +243,9 @@ pub struct GatewayConfig {
     pub vapid_subject: String,
     /// Accept plain-http push endpoints (`PIRC_PUSH_ALLOW_HTTP`).
     pub push_allow_http: bool,
+    /// Let users confirm conversation environment transitions
+    /// (`PIRC_ENVIRONMENT_SWITCHING`, default off).
+    pub environment_switching: bool,
 }
 
 impl GatewayConfig {
@@ -324,6 +327,7 @@ impl GatewayConfig {
             timezone,
             vapid_subject,
             push_allow_http: bool_var(env.get("PIRC_PUSH_ALLOW_HTTP"), false),
+            environment_switching: bool_var(env.get("PIRC_ENVIRONMENT_SWITCHING"), false),
         })
     }
 }

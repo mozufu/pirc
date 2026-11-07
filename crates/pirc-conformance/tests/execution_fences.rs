@@ -23,6 +23,7 @@ async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() 
             chat_node: true,
             agent_core_only: true,
             env: vec![("PIRC_BROWSER", "false".into())],
+            second_workspace: false,
         },
     ) else {
         return;
@@ -242,6 +243,7 @@ async fn terminal_stream_reports_the_fence_while_a_peer_remains_interactive() {
                 ("PIRC_TERMINAL_SHELL", "/bin/sh".into()),
                 ("PIRC_LEGACY_HOST_TERMINALS", "1".into()),
             ],
+            second_workspace: false,
         },
     ) else {
         return;
@@ -380,6 +382,7 @@ async fn terminal_observation_survives_restart_and_an_unknown_shell_blocks_delet
                     ("PIRC_TERMINAL_SHELL", "/bin/sh".into()),
                     ("PIRC_LEGACY_HOST_TERMINALS", "1".into()),
                 ],
+                second_workspace: false,
             },
         ) else {
             return;
@@ -513,6 +516,7 @@ async fn in_flight_git_panel_stops_on_fence_and_peer_file_reads_survive() {
             chat_node: false,
             agent_core_only: true,
             env: vec![("PIRC_BROWSER", "false".into())],
+            second_workspace: false,
         },
     ) else {
         return;

@@ -197,6 +197,12 @@ strict all-target Clippy passed. The owned **2.9 GiB** outputs are cleaned; this
 delivery stays local.
 
 Latest local transition delivery:
+[T3b gated confirmation, recovery and composed acceptance](transition-installation.md#local-implementation-checkpoint-t3b-gated-confirmation-recovery-and-composed-acceptance-2026-11-07):
+switching works end to end behind `PIRC_ENVIRONMENT_SWITCHING` (default off).
+**674 Node**, **428 Gateway** tests and **38 process cases** passed. Next: T4.
+Local only.
+
+Previous local transition delivery:
 [T3a Gateway coordinator stages](transition-installation.md#local-implementation-checkpoint-t3a-gateway-coordinator-stages-2026-11-07) (Gateway
 **1030**): advance, acknowledge and cancel routes, terminal stages and the
 binding commit. **426 Gateway tests** and **37 process cases** passed. Next: T3b.

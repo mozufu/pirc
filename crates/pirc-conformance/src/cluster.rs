@@ -35,6 +35,8 @@ const BIN_DIR_VARIABLE: &str = "PIRC_CONFORMANCE_BIN_DIR";
 const REQUIRED_VARIABLE: &str = "PIRC_CONFORMANCE_REQUIRED";
 /// The top-level chats workspace of a chat node, as the gateway names it.
 pub const CHATS_WORKSPACE_ID: &str = "test:chats";
+/// A second workspace on the same node ([`GatewayOptions::second_workspace`]).
+pub const TARGET_WORKSPACE_ID: &str = "test:target";
 
 /// Creates the executable `path` (which must not exist yet) holding
 /// `contents`.
@@ -101,6 +103,8 @@ pub struct GatewayOptions {
     /// Extra or overriding node environment variables. `{run_dir}` in a
     /// value stands for the run directory ([`Cluster::dir`], [`LoneNode::dir`]).
     pub node_env: Vec<(&'static str, String)>,
+    /// Also configure [`TARGET_WORKSPACE_ID`], a separate directory.
+    pub second_workspace: bool,
 }
 
 /// How a node is started: see the fields of [`GatewayOptions`] with the same names.
@@ -109,6 +113,7 @@ pub struct NodeOptions {
     pub agent_core_only: bool,
     pub chat_node: bool,
     pub env: Vec<(&'static str, String)>,
+    pub second_workspace: bool,
 }
 
 impl GatewayOptions {
@@ -117,6 +122,7 @@ impl GatewayOptions {
             agent_core_only: self.agent_core_only,
             chat_node: self.chat_node,
             env: self.node_env.clone(),
+            second_workspace: self.second_workspace,
         }
     }
 }
@@ -259,12 +265,15 @@ impl Cluster {
         ];
         // A chat node refuses configured workspaces.
         if !options.chat_node {
-            env.push((
-                "PIRC_WORKSPACES",
-                json!([{ "id": "test", "path": workspace, "displayName": "Test",
-                    "defaults": {} }])
-                .to_string(),
-            ));
+            let mut workspaces = vec![json!({ "id": "test", "path": workspace,
+                "displayName": "Test", "defaults": {} })];
+            if options.second_workspace {
+                workspaces.push(
+                    json!({ "id": "target", "path": dir_in(root, "workspace-target"),
+                    "displayName": "Target", "defaults": {} }),
+                );
+            }
+            env.push(("PIRC_WORKSPACES", json!(workspaces).to_string()));
         }
         if options.agent_core_only {
             env.push(("PIRC_AGENT_FEATURES", "none".to_owned()));

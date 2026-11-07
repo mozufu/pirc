@@ -104,6 +104,7 @@ starting the daemon.
 | `PIRC_VAPID_PUBLIC_KEY`, `PIRC_VAPID_PRIVATE_KEY` | generated            | Web Push signing pair. Set both or neither; without them a pair is created once in `$STATE/vapid.json`. Changing it invalidates every push subscription. |
 | `PIRC_VAPID_SUBJECT`                              | first allowed origin | `mailto:` or `https:` contact push services see.                                                                                                         |
 | `PIRC_PUSH_ALLOW_HTTP`                            | `false`              | Accept plain-http push endpoints (an ntfy/UnifiedPush distributor on the LAN).                                                                           |
+| `PIRC_ENVIRONMENT_SWITCHING`                      | `false`              | Let users confirm moving a conversation to another workspace on the same Node (revocation must be confirmed or explicitly acknowledged).                 |
 
 ## Limits
 

@@ -147,6 +147,7 @@ async fn run(config: GatewayConfig) -> Result<(), String> {
     features::start(&app)?;
     app.devices.start_sweeper();
     conversation_submissions::start_cleanup(&app);
+    conversation_bindings::transitions::start_recovery(&app);
     let listener = tokio::net::TcpListener::bind((host.as_str(), port))
         .await
         .map_err(|error| format!("cannot listen on {}:{}: {error}", host, port))?;

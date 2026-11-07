@@ -19,7 +19,8 @@ pub use agent::{
 pub use client::{Api, Connection, Response, WebSocket};
 pub use cluster::{
     CHATS_WORKSPACE_ID, Cluster, FAKE_SRT_CONTROL_LOG, GatewayOptions, HOST, LoneNode, NODE_ID,
-    NODE_TOKEN, NodeOptions, ORIGIN, USER, WORKSPACE_ID, bin_dir, write_executable,
+    NODE_TOKEN, NodeOptions, ORIGIN, TARGET_WORKSPACE_ID, USER, WORKSPACE_ID, bin_dir,
+    write_executable,
 };
 pub use fake_gateway::{FakeGateway, NodeLink, assert_gateway_frame, assert_node_frame};
 pub use fake_llm::{FakeLlm, ModelsReply, Reply};

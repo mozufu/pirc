@@ -94,6 +94,10 @@ Rules, from the strictest:
    - `legacy_history`: the generation's coverage is `legacy`.
    - `platform_containment`: the backend cannot prove containment and the
      generation had any Agent or sandbox launch.
+   - `sandbox_launch` / `uncontained_launch` (added in T3b): on a backend without
+     containment, a launch row with no kernel identity can never settle, so after
+     the drain stopped its runner it is unprovable rather than blocking. Found by
+     the first real-process run on macOS; with kernel identity it still blocks.
    - `unattributed`: a journal row that cannot be attributed to a generation.
 4. **`confirmed`:** no items. Only reachable when `confirmsContainment` is true or
    nothing ran in the generation.
@@ -409,5 +413,60 @@ before dispatch closes the intent and a delayed dispatch then sends nothing.
 Real-process coverage of the coordinator waits for T3b, because acceptance
 needs public confirmation. Local commit only.
 
-Next: T3b (gated public confirmation, recovery sweep and real-process
-acceptance of the composed flow).
+T3b followed.
+
+## Local implementation checkpoint: T3b gated confirmation, recovery and composed acceptance (2026-11-07)
+
+Slice T3b completes T3. Public confirmation exists behind an operator setting,
+the Gateway resumes accepted transitions after restarts, and the composed flow
+passes with real Gateway, Node and Agent processes on this macOS host. No schema
+change (Gateway **1030**, Node **2032**).
+
+- **Gated confirmation.** New Gateway setting `PIRC_ENVIRONMENT_SWITCHING`
+  (default **off**). While off, previews keep `coordinator_not_available` and
+  confirmation returns `transition_coordinator_unavailable`, as before. While on,
+  a preview's `canConfirm` is true when it is not stale, has an observed resource
+  preflight and has no blockers. `revocation_unconfirmed` no longer blocks a
+  Node that advertises `transitionAcknowledgementVersion: 1`, because unproven
+  revocation then needs an explicit acknowledgement. Node observations gain
+  `acknowledgesRevocation`.
+- **Recovery sweep.** On start and every 30 s, the Gateway pages accepted
+  transitions in `outcome_unknown` or `node_fenced` (100 per page) and advances
+  each with already-authorized steps only: reconcile, drain, and install with the
+  confirming controller's lease when revocation is confirmed or already
+  acknowledged. It never acknowledges, cancels or uses a newer lease; a lost lease
+  or an offline Node leaves the stage waiting.
+- **Evaluation fix found by the real run.** On a backend without kernel
+  containment (macOS, external sandbox wrapper), an Agent launch row has no
+  kernel identity and stays `running` after the drain stops its runner. It was
+  classified as non-acknowledgeable `blocked`, which would have made switching
+  impossible on macOS after any Agent run, contrary to user decision 2. It is now
+  an acknowledgeable `sandbox_launch`/`uncontained_launch` item. A launch with a
+  kernel identity still blocks until its scope is confirmed.
+- **Clients after a switch.** The existing U2 rule applies: a command must carry
+  the current `expectedBinding`, otherwise `environment_required` asks the client
+  to refresh. The composed test sends it.
+
+Composed real-process acceptance (`environment_transitions`, switching enabled,
+second workspace on the same Node): an idle conversation previews with
+`canConfirm: true`, is confirmed, then `advance` drains and installs it with
+`revocationConfirmed: true`; its binding moves to the target, `activeTransition`
+clears, and the next prompt runs after the `environment-change` notice appears in
+the conversation. A conversation whose Agent ran reports `unproven` with a
+`platform_containment` item and no private paths, refuses new prompts while
+fenced, and installs after acknowledging its digest with
+`revocationConfirmed: false`.
+
+Validation: **674 Node library tests** (five existing ignores; one new uncontained-launch
+case), **428 Gateway tests** (two new recovery-sweep cases: installs only
+already-authorized steps, never acknowledges unproven evidence), **49 config
+tests**, and **38 real Gateway/Node/Agent process cases** across 15 suites (the
+new composed switching case included), with `cargo fmt --check` and strict
+all-target Node/Gateway/conformance/config/agent Clippy. The conformance cluster
+gains a `second_workspace` option (`test:target`); existing field-by-field
+`NodeOptions` literals set it to false. Native Linux containment (a fully
+confirmed switch after an Agent run) and client interfaces remain open. Local
+commit only.
+
+Next: T4, the Web/Android interface layer for preview confirmation, progress,
+acknowledgement, cancel and the final result (throwaway UI, as decided).

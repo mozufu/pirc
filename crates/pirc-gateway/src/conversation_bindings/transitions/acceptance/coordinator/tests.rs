@@ -311,3 +311,45 @@ async fn an_undispatched_acceptance_is_cancelled_without_any_node_request() {
     assert!(node.lock().unwrap().calls.is_empty());
     receipts::require_open(&app.db.lock(), &id).unwrap();
 }
+
+async fn until_state(app: &AppState, id: &str, wanted: &str) -> bool {
+    for _ in 0..100 {
+        if status(app, &identity(), id, "move-1").unwrap()["transition"]["state"] == wanted {
+            return true;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    }
+    false
+}
+#[tokio::test]
+async fn the_recovery_sweep_installs_only_already_authorized_steps() {
+    let (app, _dir, id) = app();
+    let node = fenced(&app, &id, false).await;
+    start(&app);
+    assert!(until_state(&app, &id, "installed").await);
+    assert_eq!(workspace(&app, &id), "node:target");
+    assert_eq!(
+        node.lock().unwrap().calls,
+        ["execution-fences", "drain", "install"]
+    );
+}
+#[tokio::test]
+async fn the_recovery_sweep_never_acknowledges_unproven_evidence() {
+    let (app, _dir, id) = app();
+    let node = fenced(&app, &id, true).await;
+    start(&app);
+    for _ in 0..100 {
+        if node.lock().unwrap().calls.len() >= 3 {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    }
+    let calls = node.lock().unwrap().calls.clone();
+    assert_eq!(calls, ["execution-fences", "drain", "install"]);
+    assert!(!node.lock().unwrap().acknowledged);
+    assert_eq!(
+        status(&app, &identity(), &id, "move-1").unwrap()["transition"]["state"],
+        "node_fenced"
+    );
+    assert_eq!(workspace(&app, &id), "node:repo");
+}

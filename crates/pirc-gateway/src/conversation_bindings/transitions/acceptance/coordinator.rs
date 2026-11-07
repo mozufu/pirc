@@ -359,6 +359,47 @@ async fn cancel(
     describe(app, identity, id, op)
 }
 
+/// Every 30 s, continue accepted transitions with already-authorized steps only:
+/// reconcile, drain and install after confirmed or acknowledged revocation,
+/// using the confirming controller's lease. It never acknowledges or cancels.
+pub(in crate::conversation_bindings::transitions) fn start(app: &AppState) {
+    let weak = std::sync::Arc::downgrade(app);
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(30));
+        loop {
+            interval.tick().await;
+            let Some(app) = weak.upgrade() else {
+                break;
+            };
+            let mut after = (String::new(), String::new());
+            loop {
+                let page: ApiResult<Vec<(String, String, String)>> = (|| {
+                    let db = app.db.lock();
+                    let mut q = db.prepare("SELECT owner_user,operation_id,session_id FROM conversation_transition_acceptances WHERE state IN ('outcome_unknown','node_fenced') AND (owner_user,operation_id)>(?1,?2) ORDER BY owner_user,operation_id LIMIT 100")?;
+                    Ok(q.query_map(params![after.0, after.1], |r| {
+                        Ok((r.get(0)?, r.get(1)?, r.get(2)?))
+                    })?
+                    .collect::<Result<_, _>>()?)
+                })();
+                let Ok(page) = page else { break };
+                for (user, op, id) in &page {
+                    let identity = Identity {
+                        user: user.clone(),
+                        device_id: None,
+                        management_authorized: false,
+                    };
+                    // Errors stay visible in status; the next sweep retries reads.
+                    let _ = advance(&app, &identity, id, op, None).await;
+                }
+                match page.last() {
+                    Some((user, op, _)) if page.len() == 100 => after = (user.clone(), op.clone()),
+                    _ => break,
+                }
+            }
+        }
+    });
+}
+
 pub(in crate::conversation_bindings::transitions) async fn advance_route(
     State(app): State<AppState>,
     Extension(identity): Extension<Identity>,

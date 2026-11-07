@@ -23,6 +23,7 @@ async fn creation_attachment_survives_process_crash_and_does_not_revive_after_de
             chat_node: true,
             agent_core_only: true,
             env: vec![("PIRC_BROWSER", "false".into())],
+            ..Default::default()
         },
     ) else {
         return;
@@ -125,6 +126,7 @@ async fn pre_allocation_stop_survives_a_process_crash_and_fences_late_initial_ad
             chat_node: true,
             agent_core_only: true,
             env: vec![("PIRC_BROWSER", "false".into())],
+            ..Default::default()
         },
     ) else {
         return;

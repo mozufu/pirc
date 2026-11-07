@@ -136,6 +136,24 @@ async fn unresolved_scoped_launches_block_and_untracked_or_foreign_rows_are_unpr
 }
 
 #[tokio::test]
+async fn an_uncontained_running_launch_is_acknowledgeable_after_the_drain() {
+    let f = Fixture::new().await;
+    exec(
+        &f,
+        "INSERT INTO sandbox_launches(launch_id,session_id,workspace_id,runner_epoch,incarnation,state,identity_json,created_at,updated_at,guard_state,resource_kind) VALUES('agent','$S','repo',1,'n','running',NULL,5,5,'untracked','agent')",
+    );
+    let evaluation = eval(&f, "supervisor_drained");
+    assert!(!evaluation.confirms_containment);
+    assert_eq!(evaluation.status, "unproven");
+    assert_eq!(
+        kinds(&evaluation),
+        [("sandbox_launch", "uncontained_launch", true)]
+    );
+    assert_eq!(eval(&f, "stopping").status, "pending");
+    f.node.close().await;
+}
+
+#[tokio::test]
 async fn the_digest_is_stable_bounded_and_covers_hidden_items() {
     let f = Fixture::new().await;
     for n in 0..120 {
