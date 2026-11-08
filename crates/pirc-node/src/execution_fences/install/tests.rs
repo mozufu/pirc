@@ -766,3 +766,40 @@ async fn a_drain_after_release_never_stops_the_returned_source() {
     require_open(&f.node.db.lock(), &f.session).unwrap();
     f.node.close().await;
 }
+
+#[tokio::test]
+async fn x5_a_failed_first_launch_reports_readiness_without_reverting_the_binding() {
+    let mut f = Fixture::new("move", false, true).await;
+    let (_, installed) = f.install("move").await;
+    let outcome = &installed["transition"]["installation"];
+    assert_eq!(outcome["bindingCommitted"], true);
+    assert_eq!(outcome["policyValidated"], true);
+    assert_eq!(outcome["runtimeReady"], "not_started");
+    // The first runner in the new generation fails to start.
+    f.node.db.lock().increment_epoch(&f.session).unwrap();
+    f.node
+        .db
+        .lock()
+        .execute(
+            "UPDATE sessions SET runner_state='failed' WHERE id=?1",
+            [&f.session],
+        )
+        .unwrap();
+    let (_, failed) = f.get("move").await;
+    assert_eq!(
+        failed["transition"]["installation"]["runtimeReady"],
+        "failed"
+    );
+    assert_eq!(f.workspace(), "target");
+    f.node
+        .db
+        .lock()
+        .execute(
+            "UPDATE sessions SET runner_state='ready' WHERE id=?1",
+            [&f.session],
+        )
+        .unwrap();
+    let (_, ready) = f.get("move").await;
+    assert_eq!(ready["transition"]["installation"]["runtimeReady"], "ready");
+    f.node.close().await;
+}

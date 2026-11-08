@@ -16,6 +16,13 @@ pub(crate) struct Outcome {
     pub revocation: String,
     /// `pending`, `sending`, `delivered` or `uncertain`.
     pub environment_event: String,
+    /// C3: the binding was recorded; not proof that execution works.
+    pub binding_committed: bool,
+    /// The target was re-observed against its frozen review at installation.
+    pub policy_validated: bool,
+    /// `not_started`, `ready`, `failed` or `unknown` for the first runner
+    /// in the installed generation. A failure never reverts the binding.
+    pub runtime_ready: &'static str,
 }
 pub(super) fn outcome(
     db: &Connection,
@@ -27,15 +34,34 @@ pub(super) fn outcome(
         return Ok(None);
     }
     Ok(db.query_row(
-        "SELECT g.generation,e.from_workspace_id,e.to_workspace_id,e.revocation,e.state FROM environment_events e JOIN session_binding_generations g ON g.session_id=e.session_id AND g.operation_id=e.operation_id WHERE e.owner_user=?1 AND e.operation_id=?2",
+        "SELECT g.generation,e.from_workspace_id,e.to_workspace_id,e.revocation,e.state,g.start_epoch,s.runner_epoch,s.runner_state,(SELECT max(generation) FROM session_binding_generations WHERE session_id=e.session_id) FROM environment_events e JOIN session_binding_generations g ON g.session_id=e.session_id AND g.operation_id=e.operation_id JOIN sessions s ON s.id=e.session_id WHERE e.owner_user=?1 AND e.operation_id=?2",
         params![owner, op],
-        |r| Ok(Outcome {
-            generation: r.get(0)?,
-            from_workspace_id: r.get(1)?,
-            to_workspace_id: r.get(2)?,
-            revocation: r.get(3)?,
-            environment_event: r.get(4)?,
-        }),
+        |r| {
+            let generation: i64 = r.get(0)?;
+            let (start, epoch, runner, latest): (i64, i64, String, i64) =
+                (r.get(5)?, r.get(6)?, r.get(7)?, r.get(8)?);
+            let runtime_ready = if latest != generation {
+                "unknown"
+            } else if epoch <= start {
+                "not_started"
+            } else {
+                match runner.as_str() {
+                    "failed" => "failed",
+                    "starting" => "unknown",
+                    _ => "ready",
+                }
+            };
+            Ok(Outcome {
+                generation,
+                from_workspace_id: r.get(1)?,
+                to_workspace_id: r.get(2)?,
+                revocation: r.get(3)?,
+                environment_event: r.get(4)?,
+                binding_committed: true,
+                policy_validated: true,
+                runtime_ready,
+            })
+        },
     ).optional()?)
 }
 

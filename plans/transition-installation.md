@@ -1113,3 +1113,23 @@ an invalid original binding is not restored; a drain after release stops
 nothing), **440 Gateway tests** (new: a pending cancellation never installs and
 completes through the drain), **44 real Gateway/Node/Agent process cases** and
 strict all-target Clippy passed. Local commit only.
+
+## Local implementation checkpoint: C3 installation readiness (2026-11-08)
+
+Second C3 slice: installation outcomes distinguish binding from readiness. No
+schema change (Gateway **1032**, Node **2036**).
+
+The installation outcome in receipts adds `bindingCommitted` (the binding was
+recorded), `policyValidated` (the target was re-observed against its frozen
+review at installation) and `runtimeReady` (`not_started` until a runner starts
+in the installed generation, then `ready`, `failed` or `unknown`; `unknown` also
+once a later generation replaced this one). It is derived from the session's
+runner epoch and runner state, so a failed first launch reports `failed`
+without reverting the committed binding or running in the old workspace. The
+Gateway's sanitized progress passes the three fields through, so a client can
+show "switched; execution not started" until the runtime is ready. Project-mount
+policy receipts remain future work.
+
+Validation: Node fence tests (new X5 case: `not_started`, then `failed` with the
+binding still on the target, then `ready`), **440 Gateway tests** and strict
+Node/Gateway Clippy passed. Local commit only.

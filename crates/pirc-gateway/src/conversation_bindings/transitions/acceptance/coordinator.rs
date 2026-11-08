@@ -46,7 +46,9 @@ fn sanitize(t: &Value) -> Value {
         "revocationConfirmed":t["revocationConfirmed"]==true,"targetInstalled":t["targetInstalled"]==true,
         "revocation":revocation,
         "cancellation":t["cancellation"],
-        "installation":if installation.is_object(){json!({"revocation":installation["revocation"],"environmentEvent":installation["environmentEvent"]})}else{Value::Null}})
+        "installation":if installation.is_object(){json!({"revocation":installation["revocation"],"environmentEvent":installation["environmentEvent"],
+            "bindingCommitted":installation["bindingCommitted"]==true,"policyValidated":installation["policyValidated"]==true,
+            "runtimeReady":installation["runtimeReady"]})}else{Value::Null}})
 }
 /// The durable cancellation intent, if any.
 pub(super) fn cancellation(db: &Connection, user: &str, op: &str) -> ApiResult<Option<Value>> {
