@@ -105,6 +105,7 @@ starting the daemon.
 | `PIRC_VAPID_SUBJECT`                              | first allowed origin | `mailto:` or `https:` contact push services see.                                                                                                         |
 | `PIRC_PUSH_ALLOW_HTTP`                            | `false`              | Accept plain-http push endpoints (an ntfy/UnifiedPush distributor on the LAN).                                                                           |
 | `PIRC_ENVIRONMENT_SWITCHING`                      | `false`              | Let users confirm moving a conversation to another workspace on the same Node (revocation must be confirmed or explicitly acknowledged).                 |
+| `PIRC_TRANSITION_AUTHORITY_SECONDS`               | unset                | How long a confirmed workspace switch may continue without any device holding control. Unset or 0 keeps this operation authority off.                    |
 
 ## Limits
 

@@ -276,9 +276,17 @@ async fn dispatch_once(
                     crate::routes::urlencoding_component(&f.remote)
                 ),
                 user: identity.user.clone(),
-                payload: Some(
-                    json!({"intent":f.intent,"clientId":f.client_id,"generation":f.generation}),
-                ),
+                payload: Some({
+                    let mut body =
+                        json!({"intent":f.intent,"clientId":f.client_id,"generation":f.generation});
+                    // C1: the Node records the operation authority with its fence.
+                    if let Some(grant) =
+                        authority::latest_grant(&app.db.lock(), &identity.user, op)?
+                    {
+                        body["operationAuthority"] = grant;
+                    }
+                    body
+                }),
                 body_base64: None,
                 content_type: None,
             },
@@ -313,7 +321,8 @@ pub(super) fn status(app: &AppState, identity: &Identity, id: &str, op: &str) ->
         ApiError::new(404, "acceptance_not_found", "Accepted transition not found")
     })?;
     Ok(
-        json!({"transition":s,"canConfirm":false,"progress":coordinator::progress(&db,&identity.user,op)?}),
+        json!({"transition":s,"canConfirm":false,"progress":coordinator::progress(&db,&identity.user,op)?,
+            "authority":authority::status(&db,&identity.user,op)?}),
     )
 }
 pub(super) fn status_if_present(
@@ -329,7 +338,8 @@ pub(super) fn status_if_present(
     saved(&db, &identity.user, id, op)?
         .map(|s| {
             Ok(json!({"transition":s,"canConfirm":false,
-                "progress":coordinator::progress(&db,&identity.user,op)?}))
+                "progress":coordinator::progress(&db,&identity.user,op)?,
+                "authority":authority::status(&db,&identity.user,op)?}))
         })
         .transpose()
 }
@@ -466,6 +476,13 @@ pub(super) async fn confirm_route(
     if duplicate {
         return status(&app, &identity, &id, &op).map(Json);
     }
+    // C1: with a configured duration and a Node that validates it, the backend
+    // may finish this one plan without a device holding control.
+    if let Some(secs) = app.config.transition_authority_secs
+        && coordinator::supports_authority(&app, &mapping.0, connection).await
+    {
+        authority::issue(&app.db.lock(), &identity.user, &id, &op, secs)?;
+    }
     app.sessions_changed(Some(&identity.user));
     dispatch_once(&app, &identity, &id, &op, connection)
         .await
@@ -477,6 +494,7 @@ fn confirmation_available(app: &AppState) -> bool {
     app.config.environment_switching
 }
 
+mod authority;
 pub(super) mod coordinator;
 #[cfg(test)]
 mod tests;

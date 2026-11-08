@@ -1,5 +1,14 @@
 # Upgrades
 
+## Local checkpoint: transition operation authority
+
+Node schema **2033** and Gateway schema **1031** add operation authority for
+confirmed environment transitions. Set `PIRC_TRANSITION_AUTHORITY_SECONDS` on the
+Gateway to let a confirmed switch finish without a device holding control; unset
+keeps the earlier behavior. Upgrade Gateway and Nodes together. Back up both
+states with their binaries; older readers reject the new schemas. Protocol,
+client formats, lockfiles and Nix hashes are unchanged. Local code only.
+
 ## Local checkpoint: gated environment switching
 
 New Gateway setting `PIRC_ENVIRONMENT_SWITCHING` (default `false`) enables

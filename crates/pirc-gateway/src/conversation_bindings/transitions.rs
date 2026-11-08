@@ -295,6 +295,10 @@ pub fn router() -> Router<AppState> {
             "/api/sessions/{id}/environment-transitions/{operation}/cancel",
             post(acceptance::coordinator::cancel_route),
         )
+        .route(
+            "/api/sessions/{id}/environment-transitions/{operation}/reauthorize",
+            post(acceptance::coordinator::reauthorize_route),
+        )
 }
 async fn prepare(
     State(app): State<AppState>,
@@ -390,7 +394,8 @@ async fn describe(app: &AppState, identity: &Identity, row: Preview) -> ApiResul
                 "trackedSupervisorDrain":value["trackedSupervisorDrain"]==true,
                 "confirmsRevocation":value["confirmsRevocation"]==true,
                 "installsEnvironment":value["installsEnvironment"]==true,
-                "acknowledgesRevocation":value["transitionAcknowledgementVersion"]==1}));
+                "acknowledgesRevocation":value["transitionAcknowledgementVersion"]==1,
+                "supportsOperationAuthority":value["operationAuthorityVersion"]==1}));
         } else {
             observations.push(json!({"nodeId":node,"status":"unsupported_or_unavailable"}));
         }
@@ -491,7 +496,11 @@ async fn describe(app: &AppState, identity: &Identity, row: Preview) -> ApiResul
     Ok(
         json!({"preview":row,"state":if stale {"stale"}else{"preview"},
         "canConfirm":app.config.environment_switching && !stale && blockers.is_empty() && resource_preflight["status"]=="observed",
-        "blockedBy":blockers,"nodeObservations":observations,"resourcePreflight":resource_preflight}),
+        "blockedBy":blockers,"nodeObservations":observations,"resourcePreflight":resource_preflight,
+        // C1: shown before confirmation; absent policy keeps it unavailable.
+        "operationAuthority":{"available":app.config.transition_authority_secs.is_some()
+            && !observations.is_empty() && observations.iter().all(|n| n["supportsOperationAuthority"]==true),
+            "durationSeconds":app.config.transition_authority_secs}}),
     )
 }
 #[cfg(test)]

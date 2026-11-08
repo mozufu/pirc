@@ -322,7 +322,7 @@ fn migration_does_not_invent_an_environment_for_historical_commands() {
             &prompt(),
         )
         .unwrap();
-        conn.execute_batch("DROP TRIGGER conversation_transition_progress_session_deleted; DROP TABLE conversation_transition_progress; DROP TRIGGER conversation_transition_acceptance_session_deleted; DROP TABLE conversation_transition_acceptances; DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences; DROP TABLE conversation_transition_previews; DROP TRIGGER command_environment_immutable; DROP TABLE command_environments; PRAGMA user_version=1024;").unwrap();
+        conn.execute_batch("DROP TRIGGER conversation_operation_authority_session_deleted; DROP TABLE conversation_operation_authorities; DROP TABLE conversation_authority_clock; DROP TRIGGER conversation_transition_progress_session_deleted; DROP TABLE conversation_transition_progress; DROP TRIGGER conversation_transition_acceptance_session_deleted; DROP TABLE conversation_transition_acceptances; DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences; DROP TABLE conversation_transition_previews; DROP TRIGGER command_environment_immutable; DROP TABLE command_environments; PRAGMA user_version=1024;").unwrap();
         session
     };
     let db = Db::open(&path).unwrap();

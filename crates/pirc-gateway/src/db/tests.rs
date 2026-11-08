@@ -151,6 +151,7 @@ fn migrates_the_first_rust_schema() {
         .expect("schema.sql changed: update this test");
     let end = links + SCHEMA[links..].find("\n);\n").unwrap() + "\n);\n".len();
     let first = format!("{}{}", &SCHEMA[..links], &SCHEMA[end..])
+            .replace(include_str!("../conversation_bindings/transitions/authority.sql"), "")
             .replace(include_str!("../conversation_bindings/transitions/installation.sql"), "")
             .replace(include_str!("../conversation_bindings/transitions/acceptance.sql"), "")
             .replace(include_str!("../calendar/schema.sql"), "")
@@ -288,6 +289,10 @@ fn reconciles_upstream_memory_and_local_calendar_checkpoint_schemas() {
         let path = dir.path().join("gateway.sqlite");
         let conn = Connection::open(&path).unwrap();
         let mut schema = SCHEMA
+            .replace(
+                include_str!("../conversation_bindings/transitions/authority.sql"),
+                "",
+            )
             .replace(
                 include_str!("../conversation_bindings/transitions/installation.sql"),
                 "",

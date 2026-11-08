@@ -552,7 +552,7 @@ fn migration_and_canonical_deletion_preserve_barriers_and_erase_frozen_details()
         let db = Db::open(&path).unwrap();
         let db = db.lock();
         super::super::tests::seed(&db);
-        db.execute_batch("DROP TRIGGER conversation_transition_progress_session_deleted; DROP TABLE conversation_transition_progress; DROP TRIGGER conversation_transition_acceptance_session_deleted; DROP TABLE conversation_transition_acceptances; PRAGMA user_version=1027;").unwrap();
+        db.execute_batch("DROP TRIGGER conversation_operation_authority_session_deleted; DROP TABLE conversation_operation_authorities; DROP TABLE conversation_authority_clock; DROP TRIGGER conversation_transition_progress_session_deleted; DROP TABLE conversation_transition_progress; DROP TRIGGER conversation_transition_acceptance_session_deleted; DROP TABLE conversation_transition_acceptances; PRAGMA user_version=1027;").unwrap();
     }
     let reopened = Db::open(&path).unwrap();
     assert_eq!(count(&reopened.lock()), 0);

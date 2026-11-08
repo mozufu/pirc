@@ -171,7 +171,7 @@ fn migration_preserves_old_binding_without_inventing_previews() {
         let db = Db::open(&path).unwrap();
         let db = db.lock();
         let id = seed(&db);
-        db.execute_batch("DROP TRIGGER conversation_transition_progress_session_deleted; DROP TABLE conversation_transition_progress; DROP TRIGGER conversation_transition_acceptance_session_deleted; DROP TABLE conversation_transition_acceptances; DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences; DROP TABLE conversation_transition_previews; PRAGMA user_version=1025;")
+        db.execute_batch("DROP TRIGGER conversation_operation_authority_session_deleted; DROP TABLE conversation_operation_authorities; DROP TABLE conversation_authority_clock; DROP TRIGGER conversation_transition_progress_session_deleted; DROP TABLE conversation_transition_progress; DROP TRIGGER conversation_transition_acceptance_session_deleted; DROP TABLE conversation_transition_acceptances; DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences; DROP TABLE conversation_transition_previews; PRAGMA user_version=1025;")
             .unwrap();
         id
     };
@@ -184,25 +184,27 @@ fn migration_preserves_old_binding_without_inventing_previews() {
 }
 
 pub(super) fn app() -> (AppState, tempfile::TempDir, String) {
+    app_with(&[])
+}
+/// The same test Gateway with extra environment (for example C1 policy).
+pub(super) fn app_with(extra: &[(&str, &str)]) -> (AppState, tempfile::TempDir, String) {
     let dir = tempfile::tempdir().unwrap();
     let state = dir.path().join("state");
-    let env = pirc_config::Env::new(
-        [
-            (
-                "PIRC_NODE_TOKENS",
-                r#"{"node":"0123456789abcdef0123456789abcdef"}"#,
-            ),
-            ("PIRC_TRUSTED_PROXIES", "127.0.0.1"),
-            ("PIRC_ALLOWED_ORIGINS", "https://a.example"),
-            ("PIRC_ALLOWED_HOSTS", "a.example"),
-            ("PIRC_ALLOWED_USERS", "alice"),
-            ("PIRC_STATE_DIR", state.to_str().unwrap()),
-            ("PIRC_CONFIG_DIR", dir.path().to_str().unwrap()),
-            ("PIRC_TIMEZONE", "UTC"),
-            ("HOME", "/home/test"),
-        ],
-        "/work",
-    );
+    let base = [
+        (
+            "PIRC_NODE_TOKENS",
+            r#"{"node":"0123456789abcdef0123456789abcdef"}"#,
+        ),
+        ("PIRC_TRUSTED_PROXIES", "127.0.0.1"),
+        ("PIRC_ALLOWED_ORIGINS", "https://a.example"),
+        ("PIRC_ALLOWED_HOSTS", "a.example"),
+        ("PIRC_ALLOWED_USERS", "alice"),
+        ("PIRC_STATE_DIR", state.to_str().unwrap()),
+        ("PIRC_CONFIG_DIR", dir.path().to_str().unwrap()),
+        ("PIRC_TIMEZONE", "UTC"),
+        ("HOME", "/home/test"),
+    ];
+    let env = pirc_config::Env::new(base.iter().copied().chain(extra.iter().copied()), "/work");
     let backends =
         pirc_providers::backends::BackendService::open(&state, crate::app::empty_models()).unwrap();
     let db = Arc::new(Db::memory());

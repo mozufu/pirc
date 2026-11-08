@@ -246,6 +246,10 @@ pub struct GatewayConfig {
     /// Let users confirm conversation environment transitions
     /// (`PIRC_ENVIRONMENT_SWITCHING`, default off).
     pub environment_switching: bool,
+    /// How long one confirmed transition may continue without a device holding
+    /// control (`PIRC_TRANSITION_AUTHORITY_SECONDS`). Unset or 0 keeps operation
+    /// authority disabled; no default duration is chosen.
+    pub transition_authority_secs: Option<u64>,
 }
 
 impl GatewayConfig {
@@ -328,6 +332,10 @@ impl GatewayConfig {
             vapid_subject,
             push_allow_http: bool_var(env.get("PIRC_PUSH_ALLOW_HTTP"), false),
             environment_switching: bool_var(env.get("PIRC_ENVIRONMENT_SWITCHING"), false),
+            transition_authority_secs: env
+                .get("PIRC_TRANSITION_AUTHORITY_SECONDS")
+                .and_then(|value| value.trim().parse::<u64>().ok())
+                .filter(|secs| *secs > 0),
         })
     }
 }

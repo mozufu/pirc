@@ -899,3 +899,51 @@ ended; expired, revoked, missing and clock-rolled-back authority never install,
 reauthorization without control is refused, and a lease plus an authority
 together are rejected), **42 real Gateway/Node/Agent process cases** and strict
 all-target Node/Gateway/conformance Clippy passed. Local commit only.
+
+## Local implementation checkpoint: C1 Gateway operation authority (2026-11-08)
+
+Second C1 slice (Gateway). Gateway schema **1031** issues and uses operation
+authority, so a confirmed switch can finish without any device holding control.
+
+- **Policy.** New setting `PIRC_TRANSITION_AUTHORITY_SECONDS`, the finite
+  duration per confirmed transition. Unset or 0 keeps operation authority off and
+  the earlier lease-bound behavior unchanged; no default duration is chosen. The
+  preview reports `operationAuthority {available, durationSeconds}` before
+  confirmation. It is available only with the policy set and every involved Node
+  advertising `operationAuthorityVersion: 1`; Node observations gain
+  `supportsOperationAuthority`.
+- **Issue.** On a new confirmation with the policy set and a supporting Node, the
+  Gateway stores revision 1 (a random 32-byte token, deadline = now + duration)
+  in `conversation_operation_authorities`. The dispatch to the Node carries only
+  `{revision, tokenHash, deadlineAt}`, so the Node records it with the fence. The
+  first dispatch itself still uses the confirming lease, because the Node creates
+  fences only under current control.
+- **Use.** For automatic installation, the coordinator and recovery sweep present
+  `operationAuthority {revision, token}` instead of any device lease. If the
+  authority has expired, been revoked or the clock moved back (a persisted
+  watermark with 5 s tolerance), no install is attempted and the stage waits. A
+  transition without authority keeps the old lease-bound behavior. Node
+  authority refusals pass through by code.
+- **Reauthorize.** New `POST .../{op}/reauthorize {clientId, generation}`
+  requires the current controller, the policy, a transition that has not ended,
+  and an unchanged frozen plan (`plan_changed` otherwise). It issues the next
+  revision Gateway-first, sends the grant to the Node when the fence exists, then
+  continues. Same operation and step identities; the target never changes.
+- **Status.** Acceptance status and the read-only receipt add `authority
+{revision, deadlineAt, state: active | expired | revoked | clock_uncertain,
+reauthorizationRequired}`. The token never leaves the Gateway's store and is
+  removed with the conversation.
+
+Old binaries reject 1031; rollback needs matching state/binary backups. Node
+**2033**, protocol/client/envelope **15/2/3**, packages, lockfiles and Nix hashes
+are unchanged. Web and Android do not yet show the authority deadline or offer
+reauthorization.
+
+Validation: **437 Gateway tests** (three new: authority recorded as a hash with the
+fence, installation by authority with no device lease after control moved on and
+no token in status; an expired authority waits without installing until the
+current controller reauthorizes revision 2, which a stale device cannot do;
+reauthorization without a policy is refused), the config tests, the
+`environment_transitions` (6), `execution_fences` (4), `conversation_creation`
+(2), `checkpoints` (3) and route (1) process cases, and strict
+Gateway/config/conformance Clippy passed. Local commit only.

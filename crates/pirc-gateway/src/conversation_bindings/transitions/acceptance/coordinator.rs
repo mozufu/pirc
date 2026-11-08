@@ -122,6 +122,12 @@ fn node_error(response: &NodeHttpResponse) -> ApiError {
         "transition_target_unreviewed",
         "stale_transition_target",
         "lost_control",
+        "operation_authority_missing",
+        "operation_authority_superseded",
+        "operation_authority_revoked",
+        "operation_authority_expired",
+        "operation_authority_clock_uncertain",
+        "operation_authority_revision",
     ];
     match known.iter().find(|k| **k == code) {
         Some(code) => {
@@ -301,14 +307,30 @@ async fn advance(
             t["revocation"]["status"].as_str(),
             Some("confirmed" | "unproven")
         );
-    if ready {
-        let (client, generation) = lease.unwrap_or((f.client_id.clone(), f.generation));
-        let install = json!({"planHash":f.plan_hash,"targetWorkspaceId":f.target,"clientId":client,"generation":generation});
+    // C1: an automatic install presents the operation authority, never a stale
+    // device lease. An operation whose authority lapsed waits for reauthorization.
+    let install = {
+        let db = app.db.lock();
+        match authority::usable(&db, &identity.user, op)? {
+            Some((revision, token)) => Some(
+                json!({"planHash":f.plan_hash,"targetWorkspaceId":f.target,"operationAuthority":{"revision":revision,"token":token}}),
+            ),
+            None if authority::exists(&db, &identity.user, op)? => None,
+            None => {
+                let (client, generation) =
+                    lease.clone().unwrap_or((f.client_id.clone(), f.generation));
+                Some(
+                    json!({"planHash":f.plan_hash,"targetWorkspaceId":f.target,"clientId":client,"generation":generation}),
+                )
+            }
+        }
+    };
+    if ready && let Some(install) = install {
         match step(app, identity, id, op, &f, connection, "install", install).await {
             Ok(_) => {}
-            // Waiting for an acknowledgement or a current controller is not a failure.
-            Err(error) if matches!(error.code, "revocation_unconfirmed") => {}
-            Err(error) if matches!(error.code, "lost_control") => {}
+            // Waiting for an acknowledgement, a controller or reauthorization is not a failure.
+            Err(error) if matches!(error.code, "revocation_unconfirmed" | "lost_control") => {}
+            Err(error) if error.code.starts_with("operation_authority_") => {}
             Err(error) => return Err(error),
         }
     }
@@ -463,6 +485,105 @@ pub(in crate::conversation_bindings::transitions) fn start(app: &AppState) {
     });
 }
 
+/// Whether this Node validates operation authority (capability negotiation).
+pub(super) async fn supports_authority(
+    app: &AppState,
+    node: &str,
+    connection: crate::nodes::NodeConnection,
+) -> bool {
+    let response = app
+        .nodes
+        .request_on(
+            node,
+            connection,
+            NodeHttpRequest {
+                method: HttpMethod::Get,
+                url: "/api/execution-fences/capabilities".into(),
+                user: String::new(),
+                payload: None,
+                body_base64: None,
+                content_type: None,
+            },
+        )
+        .await;
+    matches!(response, Ok(r) if r.status == 200 && r.body.as_ref().is_some_and(|b| b["operationAuthorityVersion"] == 1))
+}
+/// Explicit reauthorization by the current controller (C1): same operation and
+/// step identities, next revision, fresh deadline. The frozen plan must still
+/// match; a changed target needs a new transition.
+async fn reauthorize(
+    app: &AppState,
+    identity: &Identity,
+    id: &str,
+    op: &str,
+    lease: (String, i64),
+) -> ApiResult<Value> {
+    let secs = app.config.transition_authority_secs.ok_or_else(|| {
+        ApiError::new(
+            409,
+            "operation_authority_unavailable",
+            "This Gateway does not issue operation authority",
+        )
+    })?;
+    control(&app.db.lock(), id, &identity.user, &lease)?;
+    let (f, s) = current(app, identity, id, op)?;
+    if !matches!(s.as_str(), "accepted" | "outcome_unknown" | "node_fenced") {
+        return Err(ApiError::new(
+            409,
+            "transition_ended",
+            "An ended transition needs no authority",
+        ));
+    }
+    let issued = {
+        let db = app.db.lock();
+        let plan = super::super::snapshot(&db, &identity.user, id, &f.target_workspace_id)?;
+        if payload_hash(&json!({"user":identity.user,"plan":plan})) != f.plan_hash {
+            return Err(ApiError::new(
+                409,
+                "plan_changed",
+                "The reviewed environment changed; start a new transition",
+            ));
+        }
+        // Gateway first: a lost Node reply is repaired by issuing again, since
+        // the Node accepts any newer revision.
+        authority::issue(&db, &identity.user, id, op, secs)?
+    };
+    if s == "node_fenced" {
+        let connection = app.nodes.connection(&f.node)?;
+        let response = call(
+            app,
+            identity,
+            &f,
+            connection,
+            op,
+            "authority",
+            json!({"planHash":f.plan_hash,"clientId":lease.0,"generation":lease.1,"grant":authority::grant(&issued)}),
+        )
+        .await?;
+        if response.status != 200 {
+            return Err(node_error(&response));
+        }
+    }
+    advance(app, identity, id, op, Some(lease)).await
+}
+
+pub(in crate::conversation_bindings::transitions) async fn reauthorize_route(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path((id, op)): Path<(String, String)>,
+    ReqBody(body): ReqBody,
+) -> ApiResult<Json<Value>> {
+    let input: Control = body.parse()?;
+    reauthorize(
+        &app,
+        &identity,
+        &id,
+        &op,
+        (input.client_id, input.generation),
+    )
+    .await
+    .map(Json)
+}
 pub(in crate::conversation_bindings::transitions) async fn advance_route(
     State(app): State<AppState>,
     Extension(identity): Extension<Identity>,

@@ -12,6 +12,7 @@ struct Fake {
     acknowledged: bool,
     wrong_target: bool,
     calls: Vec<String>,
+    payloads: Vec<(String, Value)>,
 }
 const DIGEST: &str = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
 fn receipt(f: &Fake, payload: &Value) -> Value {
@@ -47,6 +48,7 @@ fn fake(app: &AppState, unproven: bool) -> Arc<Mutex<Fake>> {
         let payload = r.payload.clone().unwrap_or(Value::Null);
         let step = r.url.rsplit('/').next().unwrap_or_default().to_owned();
         f.calls.push(step.clone());
+        f.payloads.push((step.clone(), payload.clone()));
         match step.as_str() {
             "execution-fences" => {
                 f.intent = payload["intent"].clone();
@@ -593,4 +595,112 @@ async fn missing_transition_objects_have_family_specific_codes() {
         (status, accepted["error"]["code"].clone()),
         (404, json!("acceptance_not_found"))
     );
+}
+
+fn payload(node: &Arc<Mutex<Fake>>, step: &str) -> Value {
+    node.lock()
+        .unwrap()
+        .payloads
+        .iter()
+        .rev()
+        .find(|(s, _)| s == step)
+        .map(|(_, p)| p.clone())
+        .unwrap_or(Value::Null)
+}
+fn take_control(app: &AppState, id: &str) {
+    app.db
+        .lock()
+        .mirror_lease(
+            id,
+            &Lease {
+                client_id: "tablet".into(),
+                generation: 2,
+                expires_at: now_ms() + 60000,
+            },
+            "alice",
+            false,
+        )
+        .unwrap();
+}
+#[tokio::test]
+async fn operation_authority_finishes_a_switch_after_control_moved_on() {
+    let (app, _dir, id) =
+        super::super::super::tests::app_with(&[("PIRC_TRANSITION_AUTHORITY_SECONDS", "60")]);
+    let node = accepted_only(&app, &id);
+    authority::issue(&app.db.lock(), "alice", &id, "move-1", 60).unwrap();
+    dispatch_once(
+        &app,
+        &identity(),
+        &id,
+        "move-1",
+        app.nodes.connection("node").unwrap(),
+    )
+    .await
+    .unwrap();
+    // The Node receives only the hash of the authority with its fence.
+    let grant = payload(&node, "execution-fences")["operationAuthority"].clone();
+    assert_eq!(grant["revision"], 1);
+    assert_eq!(grant["tokenHash"].as_str().unwrap().len(), 64);
+    assert!(grant.get("token").is_none());
+    // Every device closed or another took over: the backend still finishes.
+    take_control(&app, &id);
+    let result = advance(&app, &identity(), &id, "move-1", None)
+        .await
+        .unwrap();
+    assert_eq!(result["transition"]["state"], "installed", "{result}");
+    let install = payload(&node, "install");
+    assert_eq!(install["operationAuthority"]["revision"], 1);
+    assert!(install["operationAuthority"]["token"].is_string());
+    assert!(install.get("clientId").is_none());
+    assert_eq!(result["authority"]["state"], "active");
+    assert!(
+        !result
+            .to_string()
+            .contains(install["operationAuthority"]["token"].as_str().unwrap())
+    );
+}
+#[tokio::test]
+async fn expired_authority_waits_until_the_current_controller_reauthorizes() {
+    let (app, _dir, id) =
+        super::super::super::tests::app_with(&[("PIRC_TRANSITION_AUTHORITY_SECONDS", "1")]);
+    let node = accepted_only(&app, &id);
+    authority::issue(&app.db.lock(), "alice", &id, "move-1", 1).unwrap();
+    dispatch_once(
+        &app,
+        &identity(),
+        &id,
+        "move-1",
+        app.nodes.connection("node").unwrap(),
+    )
+    .await
+    .unwrap();
+    tokio::time::sleep(std::time::Duration::from_millis(1_100)).await;
+    let waiting = advance(&app, &identity(), &id, "move-1", None)
+        .await
+        .unwrap();
+    assert_eq!(waiting["transition"]["state"], "node_fenced", "{waiting}");
+    assert_eq!(waiting["authority"]["state"], "expired");
+    assert_eq!(waiting["authority"]["reauthorizationRequired"], true);
+    assert!(!node.lock().unwrap().calls.contains(&"install".to_owned()));
+    // Reauthorization needs the current controller.
+    take_control(&app, &id);
+    let stranger = reauthorize(&app, &identity(), &id, "move-1", ("phone".into(), 1)).await;
+    assert!(stranger.is_err());
+    let renewed = reauthorize(&app, &identity(), &id, "move-1", ("tablet".into(), 2))
+        .await
+        .unwrap();
+    assert_eq!(renewed["transition"]["state"], "installed", "{renewed}");
+    assert_eq!(payload(&node, "authority")["grant"]["revision"], 2);
+    assert_eq!(
+        payload(&node, "install")["operationAuthority"]["revision"],
+        2
+    );
+    assert_eq!(renewed["authority"]["revision"], 2);
+}
+#[tokio::test]
+async fn reauthorization_needs_a_configured_policy() {
+    let (app, _dir, id) = app();
+    accepted_only(&app, &id);
+    let refused = reauthorize(&app, &identity(), &id, "move-1", ("phone".into(), 1)).await;
+    assert_eq!(refused.unwrap_err().code, "operation_authority_unavailable");
 }
