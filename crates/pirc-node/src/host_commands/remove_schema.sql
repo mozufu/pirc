@@ -1,3 +1,7 @@
+-- Test fixtures only: remove the 2035 evaluation snapshot layer first.
+DROP TRIGGER revocation_evaluation_retained;
+DROP TRIGGER revocation_evaluation_immutable;
+DROP TABLE revocation_evaluations;
 -- Test fixtures only: remove the 2034 generation attribution layer first.
 DROP TRIGGER browser_group_generation_fixed;
 DROP TRIGGER terminal_run_generation_fixed;

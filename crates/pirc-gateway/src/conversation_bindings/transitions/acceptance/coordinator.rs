@@ -15,6 +15,9 @@ struct Control {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct Acknowledge {
     digest: String,
+    /// C2: the reviewed snapshot; consent covers all of its items.
+    #[serde(default)]
+    evaluation_id: Option<String>,
     client_id: String,
     generation: i64,
 }
@@ -32,6 +35,7 @@ fn sanitize(t: &Value) -> Value {
         });
         // C2: cumulative status and the current generation's own settlement.
         json!({"status":rev["status"],"digest":rev["digest"],"itemsTotal":rev["itemsTotal"],
+            "evaluationId":rev["evaluationId"],
             "confirmsContainment":rev["confirmsContainment"]==true,"items":items,
             "currentGeneration":{"status":rev["currentGeneration"]["status"],"itemsTotal":rev["currentGeneration"]["itemsTotal"]}})
     } else {
@@ -365,7 +369,13 @@ async fn acknowledge(
         &f,
         connection,
         "acknowledge",
-        json!({"planHash":f.plan_hash,"digest":input.digest,"clientId":lease.0,"generation":lease.1}),
+        {
+            let mut body = json!({"planHash":f.plan_hash,"digest":input.digest,"clientId":lease.0,"generation":lease.1});
+            if let Some(id) = &input.evaluation_id {
+                body["evaluationId"] = json!(id);
+            }
+            body
+        },
     )
     .await?;
     advance(app, identity, id, op, Some(lease)).await
@@ -607,6 +617,99 @@ pub(in crate::conversation_bindings::transitions) async fn reauthorize_route(
     )
     .await
     .map(Json)
+}
+/// One page of an immutable evaluation snapshot, read-only and without control.
+/// Items keep kind, reason, generation and inheritance; private ids stay on Node.
+async fn evaluation(
+    app: &AppState,
+    identity: &Identity,
+    id: &str,
+    op: &str,
+    evaluation: &str,
+    query: &std::collections::HashMap<String, String>,
+) -> ApiResult<Value> {
+    if query.keys().any(|k| k != "cursor" && k != "limit")
+        || !evaluation.starts_with("ev-")
+        || evaluation.len() > 64
+        || !evaluation[3..].bytes().all(|b| b.is_ascii_hexdigit())
+    {
+        return Err(ApiError::invalid_input());
+    }
+    let f = {
+        let db = app.db.lock();
+        access(app, &db, identity, id)?;
+        frozen(&db, &identity.user, id, op)?
+    };
+    let connection = app.nodes.connection(&f.node)?;
+    let mut url = format!(
+        "/api/sessions/{}/execution-fences/{}/evaluations/{evaluation}",
+        crate::routes::urlencoding_component(&f.remote),
+        crate::routes::urlencoding_component(op)
+    );
+    let params: Vec<String> = ["cursor", "limit"]
+        .iter()
+        .filter_map(|k| {
+            query
+                .get(*k)
+                .map(|v| format!("{k}={}", crate::routes::urlencoding_component(v)))
+        })
+        .collect();
+    if !params.is_empty() {
+        url = format!("{url}?{}", params.join("&"));
+    }
+    let response = app
+        .nodes
+        .request_on(
+            &f.node,
+            connection,
+            NodeHttpRequest {
+                method: HttpMethod::Get,
+                url,
+                user: identity.user.clone(),
+                payload: None,
+                body_base64: None,
+                content_type: None,
+            },
+        )
+        .await?;
+    {
+        let db = app.db.lock();
+        access(app, &db, identity, id)?;
+    }
+    match response.status {
+        200 => {}
+        404 => {
+            return Err(ApiError::new(
+                404,
+                "evaluation_not_found",
+                "Evaluation not found",
+            ));
+        }
+        400 => return Err(ApiError::invalid_input()),
+        _ => return Err(node_error(&response)),
+    }
+    let e = &response.body.unwrap_or(Value::Null)["evaluation"];
+    let items: Vec<Value> = e["items"].as_array().map_or_else(Vec::new, |items| {
+        items
+            .iter()
+            .map(|i| json!({"kind":i["kind"],"reason":i["reason"],"acknowledgeable":i["acknowledgeable"]==true,
+                "inherited":i["inherited"]==true,"generation":i["generation"]}))
+            .collect()
+    });
+    Ok(
+        json!({"evaluation":{"evaluationId":e["evaluationId"],"digest":e["digest"],"status":e["status"],
+        "itemsTotal":e["itemsTotal"],"items":items,"next":e["next"]}}),
+    )
+}
+pub(in crate::conversation_bindings::transitions) async fn evaluation_route(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path((id, op, evaluation_id)): Path<(String, String, String)>,
+    axum::extract::Query(query): axum::extract::Query<std::collections::HashMap<String, String>>,
+) -> ApiResult<Json<Value>> {
+    evaluation(&app, &identity, &id, &op, &evaluation_id, &query)
+        .await
+        .map(Json)
 }
 pub(in crate::conversation_bindings::transitions) async fn advance_route(
     State(app): State<AppState>,

@@ -299,6 +299,10 @@ pub fn router() -> Router<AppState> {
             "/api/sessions/{id}/environment-transitions/{operation}/reauthorize",
             post(acceptance::coordinator::reauthorize_route),
         )
+        .route(
+            "/api/sessions/{id}/environment-transitions/{operation}/evaluations/{evaluation}",
+            get(acceptance::coordinator::evaluation_route),
+        )
 }
 async fn prepare(
     State(app): State<AppState>,

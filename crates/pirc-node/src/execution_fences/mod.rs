@@ -478,6 +478,46 @@ pub async fn resume(node: Node, request: Request) -> ApiResult<Response> {
     let saved = network_observation(&node, request.param("id").unwrap_or_default(), saved);
     Ok(Response::json(json!({"transition":saved})))
 }
+/// Page one immutable evaluation snapshot (C2). Cursors are offsets into that
+/// exact sorted set, so they never drift to another evaluation.
+pub async fn evaluation_page(node: Node, request: Request) -> ApiResult<Response> {
+    let session = request.param("id").unwrap_or_default();
+    let op = request.param("operation").unwrap_or_default();
+    let id = request.param("evaluation").unwrap_or_default();
+    let offset = match request.single_query("cursor")? {
+        None => 0,
+        Some(text) => text
+            .parse::<usize>()
+            .map_err(|_| ApiError::invalid_input())?,
+    };
+    let limit = match request.single_query("limit")? {
+        None => 100,
+        Some(text) => text
+            .parse::<usize>()
+            .ok()
+            .filter(|n| (1..=200).contains(n))
+            .ok_or_else(ApiError::invalid_input)?,
+    };
+    let db = node.db.lock();
+    db.claim_session(session, &request.user, false)?;
+    let row: Option<(String, String, i64, String)> = db
+        .query_row(
+            "SELECT e.digest,e.status,e.items_total,e.items_json FROM revocation_evaluations e JOIN execution_fences f ON f.owner_user=e.owner_user AND f.operation_id=e.operation_id WHERE e.owner_user=?1 AND e.operation_id=?2 AND e.evaluation_id=?3 AND f.session_id=?4",
+            params![request.user, op, id, session],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+        )
+        .optional()?;
+    let (digest, status, total, items) =
+        row.ok_or_else(|| ApiError::new(404, "evaluation_not_found", "Evaluation not found"))?;
+    let items: Vec<serde_json::Value> =
+        serde_json::from_str(&items).map_err(|_| ApiError::internal())?;
+    let page: Vec<_> = items.iter().skip(offset).take(limit).cloned().collect();
+    let next = (offset + page.len() < items.len()).then(|| (offset + page.len()).to_string());
+    Ok(Response::json(
+        json!({"evaluation":{"evaluationId":id,"digest":digest,"status":status,
+        "itemsTotal":total,"items":page,"next":next}}),
+    ))
+}
 fn network_observation(node: &Node, session: &str, mut receipt: Receipt) -> Receipt {
     receipt.native_proxy = node
         .sandbox
@@ -487,8 +527,25 @@ fn network_observation(node: &Node, session: &str, mut receipt: Receipt) -> Rece
     // generation that replaced or kept its source.
     if !matches!(receipt.state.as_str(), "deleted" | "installed" | "released") {
         // An unreadable evaluation is omitted, never reported as confirmed.
-        receipt.revocation =
-            revocation::evaluate(node, &node.db.lock(), session, &receipt.state).ok();
+        let db = node.db.lock();
+        receipt.revocation = revocation::evaluate(node, &db, session, &receipt.state)
+            .ok()
+            .map(|mut evaluation| {
+                // A drained, reviewable set is stored once as an immutable snapshot.
+                if evaluation.status != "pending"
+                    && let Ok(Some(owner)) = db
+                        .query_row(
+                            "SELECT owner_user FROM execution_fences WHERE session_id=?1 AND operation_id=?2",
+                            params![session, receipt.intent.operation_id],
+                            |r| r.get::<_, String>(0),
+                        )
+                        .optional()
+                {
+                    evaluation.evaluation_id =
+                        revocation::snapshot(&db, &owner, &receipt.intent.operation_id, &evaluation).ok();
+                }
+                evaluation
+            });
     }
     receipt
 }

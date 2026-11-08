@@ -1029,3 +1029,45 @@ follows the recorded generation even with a future generation start time, and
 generations are immutable; R3 rows from before the migration stay `NULL`),
 **438 Gateway tests**, **44 real Gateway/Node/Agent process cases** and strict
 all-target Node/Gateway/conformance/config/agent Clippy passed. Local commit only.
+
+## Local implementation checkpoint: C2 evaluation snapshots and paging (2026-11-08)
+
+Second C2 slice. Node schema **2035** makes every reviewed risk set an immutable,
+pageable evaluation.
+
+- **Snapshots.** When a drained transition is evaluated (any status but
+  `pending`), the full sorted item set is stored once in
+  `revocation_evaluations`, keyed by operation and digest. Its
+  `evaluationId` (`ev-` + 32 hex characters of the digest) appears in the
+  receipt's `revocation`. The same set is always the same evaluation; any change
+  creates a new one. Snapshots are immutable and retained.
+- **Paging.** Node `GET .../execution-fences/:op/evaluations/:evaluation
+?cursor=&limit=` (default 100, at most 200) pages that exact snapshot by offset,
+  so cursors never drift to another evaluation. The Gateway relays it as
+  `GET .../environment-transitions/{op}/evaluations/{evaluation}`: read-only, no
+  control, query forwarded, items reduced to `{kind, reason, acknowledgeable,
+inherited, generation}` (private run IDs stay on the Node);
+  `evaluation_not_found` for an unknown snapshot.
+- **Consent.** Acknowledgement accepts `evaluationId` with the digest, at the
+  Node and through the Gateway. A snapshot that no longer matches the current
+  full set returns `revocation_digest_changed`; the receipt names the new
+  evaluation. The acknowledgement covers every item of the snapshot, not only the
+  first page shown.
+
+C2 cases: **R1** (A→B→C surviving host effects), **R2** (clock-independent
+attribution) and **R3** (legacy rows stay unattributed) are covered in C2a; **R4**
+(101+ risks with a change during paging) is covered here. **R5** (ordinary
+switch versus an explicit folder deny under the same host risk) remains open: it
+needs C6 project grants and deny enforcement, which do not exist yet. Clients do
+not yet page evaluations or send `evaluationId`.
+
+Old binaries reject 2035. Gateway **1031**, protocol/client/envelope **15/2/3**,
+packages, lockfiles and Nix hashes are unchanged.
+
+Validation: **681 Node library tests** (new R4 case: 121 items paged in pages of
+50 to the exact total and digest while a new risk appears; the old snapshot's
+consent is refused and the new one installs; unknown snapshot is 404),
+**439 Gateway tests** (new relay case: read-only page without private IDs,
+forwarded query, malformed IDs and unknown parameters refused), **44 real
+Gateway/Node/Agent process cases** and strict all-target Clippy passed. Local
+commit only.

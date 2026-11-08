@@ -46,6 +46,12 @@ fn fake(app: &AppState, unproven: bool) -> Arc<Mutex<Fake>> {
     app.nodes.set_test_node(node(), move |r| {
         let mut f = shared.lock().unwrap();
         let payload = r.payload.clone().unwrap_or(Value::Null);
+        if r.url.contains("/evaluations/") {
+            f.calls.push(format!("evaluation {}", r.url.rsplit('/').next().unwrap_or_default()));
+            return ok(json!({"evaluation":{"evaluationId":"ev-0123","digest":DIGEST,"status":"unproven","itemsTotal":2,
+                "items":[{"kind":"host_command","id":"private-run","reason":"host_effects_may_survive","acknowledgeable":true,"inherited":true,"generation":1}],
+                "next":"1"}}));
+        }
         let step = r.url.rsplit('/').next().unwrap_or_default().to_owned();
         f.calls.push(step.clone());
         f.payloads.push((step.clone(), payload.clone()));
@@ -189,6 +195,7 @@ async fn unproven_evidence_waits_for_an_acknowledgement_of_its_digest() {
         "move-1",
         Acknowledge {
             digest: "e".repeat(64),
+            evaluation_id: None,
             client_id: "phone".into(),
             generation: 1,
         },
@@ -202,6 +209,7 @@ async fn unproven_evidence_waits_for_an_acknowledgement_of_its_digest() {
         "move-1",
         Acknowledge {
             digest: DIGEST.into(),
+            evaluation_id: None,
             client_id: "phone".into(),
             generation: 1,
         },
@@ -721,4 +729,37 @@ async fn reauthorization_refuses_when_the_reviewed_plan_is_gone() {
         authority::status(&app.db.lock(), "alice", "move-1").unwrap()["revision"],
         1
     );
+}
+
+#[tokio::test]
+async fn evaluation_pages_are_relayed_read_only_without_private_ids() {
+    use super::super::super::tests::http;
+    let (app, _dir, id) = app();
+    let node = fenced(&app, &id, true).await;
+    let base = format!("/api/sessions/{id}/environment-transitions/move-1/evaluations");
+    let (status, page) = http(&app, &format!("{base}/ev-0123?limit=1"), None, None).await;
+    assert_eq!(status, 200, "{page}");
+    let e = &page["evaluation"];
+    assert_eq!(
+        (
+            e["evaluationId"].clone(),
+            e["itemsTotal"].clone(),
+            e["next"].clone()
+        ),
+        (json!("ev-0123"), json!(2), json!("1"))
+    );
+    assert_eq!(e["items"][0]["kind"], "host_command");
+    assert_eq!(e["items"][0]["inherited"], true);
+    assert!(!page.to_string().contains("private-run"));
+    assert!(
+        node.lock()
+            .unwrap()
+            .calls
+            .iter()
+            .any(|c| c == "evaluation ev-0123?limit=1")
+    );
+    for bad in ["not-an-id", "ev-xyz", "ev-0123?other=1"] {
+        let (status, _) = http(&app, &format!("{base}/{bad}"), None, None).await;
+        assert_eq!(status, 400, "{bad}");
+    }
 }

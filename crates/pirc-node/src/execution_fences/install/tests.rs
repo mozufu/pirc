@@ -574,3 +574,95 @@ async fn expired_revoked_missing_or_clock_rolled_back_authority_never_installs()
     );
     plain.node.close().await;
 }
+
+impl Fixture {
+    async fn get(&self, path: &str) -> (u16, Value) {
+        let response = self
+            .router
+            .handle(
+                &self.node,
+                NodeHttpRequest {
+                    method: HttpMethod::Get,
+                    url: format!("/api/sessions/{}/execution-fences/{path}", self.session),
+                    user: "test-user".into(),
+                    payload: None,
+                    body_base64: None,
+                    content_type: None,
+                },
+            )
+            .await;
+        (response.status, response.body.unwrap_or(Value::Null))
+    }
+}
+fn settled_host_commands(f: &Fixture, from: usize, to: usize) {
+    let db = f.node.db.lock();
+    for n in from..to {
+        db.execute("INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES(?1,?2,'repo',1,'n',?1,'settled',5,5)",params![format!("hc-{n:04}"),f.session]).unwrap();
+    }
+}
+#[tokio::test]
+async fn r4_large_risk_sets_page_one_immutable_snapshot_and_a_change_needs_new_review() {
+    let mut f = Fixture::new("move", true, true).await;
+    settled_host_commands(&f, 0, 120);
+    let (_, first) = f.get("move").await;
+    let revocation = &first["transition"]["revocation"];
+    let evaluation = revocation["evaluationId"].as_str().unwrap().to_owned();
+    let digest = revocation["digest"].as_str().unwrap().to_owned();
+    let total = revocation["itemsTotal"].as_u64().unwrap();
+    assert!(total > 100);
+    assert_eq!(revocation["items"].as_array().unwrap().len(), 100);
+    // A new risk appears while the user is paging: the old snapshot is unchanged.
+    settled_host_commands(&f, 120, 121);
+    let (mut pages, mut cursor) = (Vec::new(), None::<String>);
+    loop {
+        let query = cursor
+            .as_ref()
+            .map_or("?limit=50".to_owned(), |c| format!("?limit=50&cursor={c}"));
+        let (status, page) = f
+            .get(&format!("move/evaluations/{evaluation}{query}"))
+            .await;
+        assert_eq!(status, 200, "{page}");
+        assert_eq!(page["evaluation"]["digest"], digest);
+        pages.extend(page["evaluation"]["items"].as_array().unwrap().clone());
+        match page["evaluation"]["next"].as_str() {
+            Some(next) => cursor = Some(next.to_owned()),
+            None => break,
+        }
+    }
+    assert_eq!(pages.len() as u64, total);
+    let (_, changed) = f.get("move").await;
+    let newer = changed["transition"]["revocation"]["evaluationId"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert_ne!(newer, evaluation);
+    // Consent to the old snapshot no longer matches the current full set.
+    let (status, stale) = f
+        .op(
+            "move",
+            "acknowledge",
+            json!({"digest":digest,"evaluationId":evaluation}),
+        )
+        .await;
+    assert_eq!(
+        (status, stale["error"]["code"].clone()),
+        (409, json!("revocation_digest_changed"))
+    );
+    let current = changed["transition"]["revocation"]["digest"].clone();
+    let (status, _) = f
+        .op(
+            "move",
+            "acknowledge",
+            json!({"digest":current,"evaluationId":newer}),
+        )
+        .await;
+    assert_eq!(status, 200);
+    let (status, installed) = f.install("move").await;
+    assert_eq!(status, 200, "{installed}");
+    let (status, missing) = f.get("move/evaluations/ev-unknown").await;
+    assert_eq!(
+        (status, missing["error"]["code"].clone()),
+        (404, json!("evaluation_not_found"))
+    );
+    f.node.close().await;
+}

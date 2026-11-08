@@ -47,6 +47,40 @@ pub(crate) struct Evaluation {
     pub items_total: usize,
     /// SHA-256 over every sorted item; an acknowledgement binds to it.
     pub digest: String,
+    /// The immutable snapshot this evaluation is stored as (C2), once drained.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub evaluation_id: Option<String>,
+    /// Every item, for the stored snapshot; receipts show only the first page.
+    #[serde(skip)]
+    pub all_items: Vec<Item>,
+}
+/// Deterministic per (operation, digest): the same set is the same evaluation.
+pub(crate) fn evaluation_id(digest: &str) -> String {
+    format!("ev-{}", &digest[..32])
+}
+/// Store the snapshot once and return its identity. Never rewritten.
+pub(crate) fn snapshot(
+    db: &Connection,
+    owner: &str,
+    op: &str,
+    evaluation: &Evaluation,
+) -> ApiResult<String> {
+    let id = evaluation_id(&evaluation.digest);
+    db.execute(
+        "INSERT OR IGNORE INTO revocation_evaluations VALUES(?1,?2,?3,?4,?5,?6,?7,?8)",
+        rusqlite::params![
+            owner,
+            op,
+            id,
+            evaluation.digest,
+            evaluation.status,
+            evaluation.items_total as i64,
+            serde_json::to_string(&evaluation.all_items)
+                .map_err(|_| crate::error::ApiError::internal())?,
+            crate::util::now_ms()
+        ],
+    )?;
+    Ok(id)
 }
 
 struct Generation {
@@ -280,6 +314,7 @@ pub(crate) fn evaluate(
     };
     let digest = payload_hash(&json!({"version":2,"generation":current_number,"items":items}));
     let items_total = items.len();
+    let all_items = items.clone();
     items.truncate(SHOWN);
     Ok(Evaluation {
         version: 2,
@@ -293,6 +328,8 @@ pub(crate) fn evaluate(
         items,
         items_total,
         digest,
+        evaluation_id: None,
+        all_items,
     })
 }
 

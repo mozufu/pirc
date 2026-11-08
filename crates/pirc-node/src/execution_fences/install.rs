@@ -44,6 +44,9 @@ pub(super) fn outcome(
 struct Acknowledge {
     plan_hash: String,
     digest: String,
+    /// C2: the reviewed snapshot; the acknowledgement covers all of its items.
+    #[serde(default)]
+    evaluation_id: Option<String>,
     client_id: String,
     generation: i64,
 }
@@ -147,7 +150,12 @@ pub async fn acknowledge(node: Node, request: Request) -> ApiResult<Response> {
             )
             .with_details(json!({"status":evaluation.status,"digest":evaluation.digest})));
         }
-        if evaluation.digest != body.digest {
+        if evaluation.digest != body.digest
+            || body
+                .evaluation_id
+                .as_ref()
+                .is_some_and(|id| *id != revocation::evaluation_id(&evaluation.digest))
+        {
             return Err(ApiError::new(
                 409,
                 "revocation_digest_changed",

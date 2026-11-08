@@ -106,6 +106,10 @@ pub fn routes(config: &NodeConfig) -> Vec<Route> {
             "/api/sessions/:id/execution-fences/:operation/authority",
             crate::execution_fences::authority::renew,
         ),
+        get(
+            "/api/sessions/:id/execution-fences/:operation/evaluations/:evaluation",
+            crate::execution_fences::evaluation_page,
+        ),
         post("/api/session-creations", crate::session_creation::prepare),
         get(
             "/api/session-creations/capabilities",
