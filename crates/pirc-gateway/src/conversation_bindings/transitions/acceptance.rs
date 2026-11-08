@@ -322,7 +322,8 @@ pub(super) fn status(app: &AppState, identity: &Identity, id: &str, op: &str) ->
     })?;
     Ok(
         json!({"transition":s,"canConfirm":false,"progress":coordinator::progress(&db,&identity.user,op)?,
-            "authority":authority::status(&db,&identity.user,op)?}),
+            "authority":authority::status(&db,&identity.user,op)?,
+            "cancellation":coordinator::cancellation(&db,&identity.user,op)?}),
     )
 }
 pub(super) fn status_if_present(
@@ -339,7 +340,8 @@ pub(super) fn status_if_present(
         .map(|s| {
             Ok(json!({"transition":s,"canConfirm":false,
                 "progress":coordinator::progress(&db,&identity.user,op)?,
-                "authority":authority::status(&db,&identity.user,op)?}))
+                "authority":authority::status(&db,&identity.user,op)?,
+                "cancellation":coordinator::cancellation(&db,&identity.user,op)?}))
         })
         .transpose()
 }

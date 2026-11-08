@@ -216,6 +216,17 @@ pub async fn install(node: Node, request: Request) -> ApiResult<Response> {
                 ));
             }
             "supervisor_drained" => {
+                let cancelled: bool = db.query_row(
+                    "SELECT cancel_requested_at IS NOT NULL FROM execution_fences WHERE owner_user=?1 AND operation_id=?2",
+                    params![request.user, op],
+                    |r| r.get(0),
+                )?;
+                if cancelled {
+                    return Err(refused(
+                        "transition_cancel_requested",
+                        "Cancellation was requested; this transition cannot install",
+                    ));
+                }
                 let reviewed: Option<String> = db.query_row(
                     "SELECT target_json FROM execution_fence_targets WHERE owner_user=?1 AND operation_id=?2",
                     params![request.user, op],
@@ -305,19 +316,64 @@ pub async fn install(node: Node, request: Request) -> ApiResult<Response> {
     reply(&node, session, &request.user, op)
 }
 
-/// Explicit cancel: keep the original binding. Never after installation, and
-/// never while this process is still draining the source.
+/// Release a fence whose cancellation was requested, if C3 allows it now.
+/// Returns why it must wait, or None once released. Serialized by the caller's
+/// database lock with drain staging and installation.
+pub(super) fn try_release(
+    node: &Node,
+    db: &Connection,
+    owner: &str,
+    session: &str,
+    op: &str,
+) -> ApiResult<Option<&'static str>> {
+    let saved = receipt(db, owner, session, op)?.ok_or_else(ApiError::internal)?;
+    let fresh_epoch = match saved.state.as_str() {
+        "released" => return Ok(None),
+        // Nothing was stopped: the original runner and epoch stay valid.
+        "fenced" => false,
+        "stopping" => return Ok(Some("drain_active")),
+        "blocked" => return Ok(Some("resources_unresolved")),
+        "supervisor_drained" => {
+            let evaluation = revocation::evaluate(node, db, session, &saved.state)?;
+            if matches!(evaluation.status, "pending" | "blocked") {
+                return Ok(Some("resources_unresolved"));
+            }
+            true
+        }
+        _ => return Ok(Some("transition_ended")),
+    };
+    // Never restore access the original binding no longer has.
+    let original = &saved.intent.expected_workspace_id;
+    if db.get_workspace(original).is_err() || db.workspace_deletion(original)?.is_some() {
+        return Ok(Some("original_binding_invalid"));
+    }
+    atomic(db, |tx| {
+        // Stopped work is not restarted; a drained source gets a fresh epoch.
+        if fresh_epoch {
+            tx.execute(
+                "UPDATE sessions SET runner_epoch=runner_epoch+1,updated_at=?2 WHERE id=?1",
+                params![session, now_ms()],
+            )?;
+        }
+        tx.execute(
+            "UPDATE execution_fences SET state='released',cancel_reason=NULL,updated_at=?3 WHERE owner_user=?1 AND operation_id=?2",
+            params![owner, op, now_ms()],
+        )?;
+        Ok(())
+    })?;
+    if let Some(scopes) = node.sandbox.network_scopes() {
+        scopes.reopen(session);
+    }
+    Ok(None)
+}
+/// Explicit cancel (C3): record the request durably, then release only when
+/// the source state allows it. Otherwise it stays pending with a reason and
+/// installation is refused; the drain completes the release when it settles.
 pub async fn release(node: Node, request: Request) -> ApiResult<Response> {
     let body: Release = request.parse_body()?;
     let session = request.param("id").unwrap_or_default();
     let op = request.param("operation").unwrap_or_default();
-    let draining = node
-        .execution_drains
-        .0
-        .lock()
-        .unwrap_or_else(|p| p.into_inner())
-        .contains_key(&(request.user.clone(), session.to_owned(), op.to_owned()));
-    let released = {
+    {
         let db = node.db.lock();
         let saved = fence(
             &db,
@@ -328,41 +384,21 @@ pub async fn release(node: Node, request: Request) -> ApiResult<Response> {
             Some((&body.client_id, body.generation)),
         )?;
         match saved.state.as_str() {
-            "released" => false,
+            "released" => {}
             "installed" => {
                 return Err(refused(
                     "transition_installed",
                     "The target is installed; switching back is a new transition",
                 ));
             }
-            _ if draining => {
-                return Err(refused(
-                    "transition_draining",
-                    "The source is still being stopped; release after the drain settles",
-                ));
-            }
-            state => {
-                atomic(&db, |tx| {
-                    // Stopped work is not restarted. An undrained source keeps its
-                    // live runner and epoch; a drained one starts a new epoch.
-                    if state != "fenced" {
-                        tx.execute(
-                            "UPDATE sessions SET runner_epoch=runner_epoch+1,updated_at=?2 WHERE id=?1",
-                            params![session, now_ms()],
-                        )?;
-                    }
-                    tx.execute(
-                        "UPDATE execution_fences SET state='released',updated_at=?3 WHERE owner_user=?1 AND operation_id=?2",
-                        params![request.user, op, now_ms()],
-                    )?;
-                    Ok(())
-                })?;
-                true
+            _ => {
+                db.execute("UPDATE execution_fences SET cancel_requested_at=?3 WHERE owner_user=?1 AND operation_id=?2 AND cancel_requested_at IS NULL",params![request.user,op,now_ms()])?;
+                let pending = try_release(&node, &db, &request.user, session, op)?;
+                if let Some(reason) = pending {
+                    db.execute("UPDATE execution_fences SET cancel_reason=?3 WHERE owner_user=?1 AND operation_id=?2",params![request.user,op,reason])?;
+                }
             }
         }
-    };
-    if released && let Some(scopes) = node.sandbox.network_scopes() {
-        scopes.reopen(session);
     }
     reply(&node, session, &request.user, op)
 }

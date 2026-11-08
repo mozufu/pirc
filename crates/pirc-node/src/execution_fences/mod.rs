@@ -94,6 +94,9 @@ pub(crate) struct Receipt {
     /// Latest operation authority revision (never its token or hash).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub operation_authority: Option<serde_json::Value>,
+    /// A durable cancellation request and why it still waits (C3).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cancellation: Option<serde_json::Value>,
     /// The committed installation of this fence, if any.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub installation: Option<install::Outcome>,
@@ -149,6 +152,11 @@ fn receipt(db: &Connection, owner: &str, session: &str, op: &str) -> ApiResult<O
     ).optional()?;
     row.map(|(intent, state, error_code, created_at, updated_at)| {
         let installation = install::outcome(db, owner, op, &state)?;
+        let cancellation: Option<serde_json::Value> = db.query_row(
+            "SELECT cancel_requested_at,cancel_reason FROM execution_fences WHERE owner_user=?1 AND operation_id=?2 AND cancel_requested_at IS NOT NULL",
+            params![owner, op],
+            |r| Ok(json!({"requestedAt":r.get::<_,i64>(0)?,"pendingReason":r.get::<_,Option<String>>(1)?})),
+        ).optional()?;
         let operation_authority: Option<serde_json::Value> = db.query_row(
             "SELECT revision,deadline_at,revoked_at IS NOT NULL FROM operation_authorities WHERE owner_user=?1 AND operation_id=?2 ORDER BY revision DESC LIMIT 1",
             params![owner, op],
@@ -161,6 +169,7 @@ fn receipt(db: &Connection, owner: &str, session: &str, op: &str) -> ApiResult<O
                 .is_some_and(|i| i.revocation == "confirmed"),
             target_installed: installation.is_some(),
             operation_authority,
+            cancellation,
             installation,
             state,
             error_code,
@@ -244,7 +253,7 @@ fn accept_with(
         resource_check(tx)?;
         let stamp = now_ms();
         tx.execute(
-            "INSERT INTO execution_fences VALUES(?1,?2,?3,?4,'fenced',NULL,?5,?5)",
+            "INSERT INTO execution_fences(owner_user,operation_id,session_id,intent_json,state,error_code,created_at,updated_at) VALUES(?1,?2,?3,?4,'fenced',NULL,?5,?5)",
             params![
                 owner,
                 intent.operation_id,
@@ -347,6 +356,14 @@ pub(crate) async fn drain(node: &Node, owner: &str, session: &str, op: &str) -> 
                 saved.state.as_str(),
                 "deleted" | "supervisor_drained" | "installed" | "released"
             ) {
+                // A settled source with a pending cancellation completes it here.
+                if saved.state == "supervisor_drained" && saved.cancellation.is_some() {
+                    let db = node.db.lock();
+                    if let Some(reason) = install::try_release(node, &db, owner, session, op)? {
+                        db.execute("UPDATE execution_fences SET cancel_reason=?3 WHERE owner_user=?1 AND operation_id=?2",params![owner,op,reason])?;
+                    }
+                    return receipt(&db, owner, session, op)?.ok_or_else(ApiError::internal);
+                }
                 return Ok(saved);
             }
             let node = node.clone();
@@ -360,7 +377,12 @@ pub(crate) async fn drain(node: &Node, owner: &str, session: &str, op: &str) -> 
                 {
                     let db = node.db.lock();
                     db.claim_session(&session, &owner, false)?;
-                    stage(&db, &owner, &session, &op, "stopping", None)?;
+                    // A fence released or ended before this task ran must not
+                    // stop the source it handed back (C3 serialization).
+                    let staged = stage(&db, &owner, &session, &op, "stopping", None)?;
+                    if staged.state != "stopping" {
+                        return Ok(staged);
+                    }
                     node.inference.revoke_session(&session);
                 }
                 let stopped = stop_resources(&node, &session).await;
@@ -381,7 +403,20 @@ pub(crate) async fn drain(node: &Node, owner: &str, session: &str, op: &str) -> 
                         }),
                     ),
                 };
-                stage(&node.db.lock(), &owner, &session, &op, state, error)
+                let db = node.db.lock();
+                let staged = stage(&db, &owner, &session, &op, state, error)?;
+                // A cancellation requested during the drain completes now, if safe.
+                let requested: bool = db.query_row("SELECT cancel_requested_at IS NOT NULL FROM execution_fences WHERE owner_user=?1 AND operation_id=?2",params![owner,op],|r|r.get(0))?;
+                if requested {
+                    match install::try_release(&node, &db, &owner, &session, &op)? {
+                        None => {}
+                        Some(reason) => {
+                            db.execute("UPDATE execution_fences SET cancel_reason=?3 WHERE owner_user=?1 AND operation_id=?2",params![owner,op,reason])?;
+                        }
+                    }
+                    return receipt(&db, &owner, &session, &op)?.ok_or_else(ApiError::internal);
+                }
+                Ok(staged)
             });
             let work = async move { task.await.unwrap_or_else(|_| Err(ApiError::internal())) }
                 .boxed()

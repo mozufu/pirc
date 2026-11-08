@@ -45,7 +45,18 @@ fn sanitize(t: &Value) -> Value {
     json!({"state":t["state"],"errorCode":t["errorCode"],
         "revocationConfirmed":t["revocationConfirmed"]==true,"targetInstalled":t["targetInstalled"]==true,
         "revocation":revocation,
+        "cancellation":t["cancellation"],
         "installation":if installation.is_object(){json!({"revocation":installation["revocation"],"environmentEvent":installation["environmentEvent"]})}else{Value::Null}})
+}
+/// The durable cancellation intent, if any.
+pub(super) fn cancellation(db: &Connection, user: &str, op: &str) -> ApiResult<Option<Value>> {
+    Ok(db
+        .query_row(
+            "SELECT requested_at FROM conversation_transition_cancellations WHERE owner_user=?1 AND operation_id=?2",
+            params![user, op],
+            |r| Ok(json!({"requestedAt":r.get::<_,i64>(0)?})),
+        )
+        .optional()?)
 }
 /// The last sanitized Node receipt, with `observedAt` so a reader can judge
 /// freshness without asking the Node.
@@ -307,7 +318,12 @@ async fn advance(
         result["reconciliationState"] = json!("node_unavailable");
         return Ok(result);
     };
+    // A requested cancellation is completed by the Node's drain (C3); never install.
+    let cancelled = cancellation(&app.db.lock(), &identity.user, op)?.is_some();
     let drained = step(app, identity, id, op, &f, connection, "drain", json!({})).await?;
+    if cancelled {
+        return describe(app, identity, id, op);
+    }
     let t = &drained["transition"];
     let ready = t["state"] == "supervisor_drained"
         && matches!(
@@ -393,6 +409,17 @@ async fn cancel(
     {
         let db = app.db.lock();
         access(app, &db, identity, id)?;
+        // C3: the intent is durable before any Node call; from now on the
+        // coordinator starts no new install phase for this operation.
+        if !matches!(
+            state(&db, &identity.user, id, op)?.as_str(),
+            "installed" | "released" | "deleted"
+        ) {
+            db.execute(
+                "INSERT OR IGNORE INTO conversation_transition_cancellations VALUES(?1,?2,?3,?4,?5)",
+                params![identity.user, op, id, lease.0, now_ms()],
+            )?;
+        }
         // `accepted` means no Node request was sent: dispatch moves to
         // `outcome_unknown` atomically first, so this cannot race a POST.
         let closed = db.execute("UPDATE conversation_transition_acceptances SET state='released' WHERE owner_user=?1 AND session_id=?2 AND operation_id=?3 AND state='accepted'",params![identity.user,id,op])?;

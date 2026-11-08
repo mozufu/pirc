@@ -346,7 +346,7 @@ async fn a_fence_without_a_frozen_target_review_cannot_install() {
         )
         .unwrap();
         db.execute(
-            "INSERT INTO execution_fences VALUES('test-user','old',?1,?2,'supervisor_drained',NULL,1,1)",
+            "INSERT INTO execution_fences(owner_user,operation_id,session_id,intent_json,state,error_code,created_at,updated_at) VALUES('test-user','old',?1,?2,'supervisor_drained',NULL,1,1)",
             params![f.session, intent.replace("\"move\"", "\"old\"")],
         )
         .unwrap();
@@ -664,5 +664,105 @@ async fn r4_large_risk_sets_page_one_immutable_snapshot_and_a_change_needs_new_r
         (status, missing["error"]["code"].clone()),
         (404, json!("evaluation_not_found"))
     );
+    f.node.close().await;
+}
+
+fn state(f: &Fixture) -> (String, Option<String>) {
+    f.node
+        .db
+        .lock()
+        .query_row(
+            "SELECT state,cancel_reason FROM execution_fences WHERE operation_id='move'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap()
+}
+#[tokio::test]
+async fn x1_cancel_with_unresolved_evidence_waits_and_blocks_installation() {
+    let mut f = Fixture::new("move", false, true).await;
+    f.node.db.lock().execute("INSERT INTO browser_groups(id,session_id,workspace_id,root,incarnation,state,created_at,updated_at) VALUES('pages',?1,'repo','/repo','n','active',6,6)",[&f.session]).unwrap();
+    let before = f.epoch();
+    let (status, pending) = f.op("move", "release", json!({})).await;
+    assert_eq!(status, 200, "{pending}");
+    assert_eq!(pending["transition"]["state"], "supervisor_drained");
+    assert_eq!(
+        pending["transition"]["cancellation"]["pendingReason"],
+        "resources_unresolved"
+    );
+    assert_eq!(f.epoch(), before);
+    let (status, install) = f.install("move").await;
+    assert_eq!(
+        (status, install["error"]["code"].clone()),
+        (409, json!("transition_cancel_requested"))
+    );
+    // Once the resource settles, the same cancellation completes.
+    f.node
+        .db
+        .lock()
+        .execute(
+            "UPDATE browser_groups SET state='settled' WHERE id='pages'",
+            [],
+        )
+        .unwrap();
+    let (_, released) = f.op("move", "release", json!({})).await;
+    assert_eq!(released["transition"]["state"], "released", "{released}");
+    assert_eq!(f.epoch(), before + 1);
+    assert_eq!(f.workspace(), "repo");
+    f.node.close().await;
+}
+#[tokio::test]
+async fn x2_cancel_during_a_drain_completes_when_the_drain_settles() {
+    let mut f = Fixture::new("move", false, false).await;
+    // Model an interrupted drain: the fence was staged but nothing finished.
+    f.node
+        .db
+        .lock()
+        .execute(
+            "UPDATE execution_fences SET state='stopping' WHERE operation_id='move'",
+            [],
+        )
+        .unwrap();
+    let (_, pending) = f.op("move", "release", json!({})).await;
+    assert_eq!(
+        pending["transition"]["cancellation"]["pendingReason"], "drain_active",
+        "{pending}"
+    );
+    assert_eq!(state(&f).0, "stopping");
+    let (status, drained) = f.call("move/drain", json!({})).await;
+    assert_eq!(status, 200, "{drained}");
+    assert_eq!(drained["transition"]["state"], "released", "{drained}");
+    assert_eq!(f.workspace(), "repo");
+    f.node.close().await;
+}
+#[tokio::test]
+async fn x3_an_invalid_original_binding_is_not_restored() {
+    let mut f = Fixture::new("move", false, true).await;
+    f.node
+        .db
+        .lock()
+        .execute(
+            "INSERT INTO workspace_deletions VALUES('repo','test-user','deleting',1)",
+            [],
+        )
+        .unwrap();
+    let (_, pending) = f.op("move", "release", json!({})).await;
+    assert_eq!(
+        pending["transition"]["cancellation"]["pendingReason"], "original_binding_invalid",
+        "{pending}"
+    );
+    assert_eq!(state(&f).0, "supervisor_drained");
+    f.node.close().await;
+}
+#[tokio::test]
+async fn a_drain_after_release_never_stops_the_returned_source() {
+    let mut f = Fixture::new("move", false, false).await;
+    let before = f.epoch();
+    let (_, released) = f.op("move", "release", json!({})).await;
+    assert_eq!(released["transition"]["state"], "released");
+    let (_, after) = f.call("move/drain", json!({})).await;
+    assert_eq!(after["transition"]["state"], "released");
+    assert_eq!(f.epoch(), before);
+    require_open(&f.node.db.lock(), &f.session).unwrap();
     f.node.close().await;
 }

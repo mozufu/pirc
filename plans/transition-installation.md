@@ -1071,3 +1071,45 @@ consent is refused and the new one installs; unknown snapshot is 404),
 forwarded query, malformed IDs and unknown parameters refused), **44 real
 Gateway/Node/Agent process cases** and strict all-target Clippy passed. Local
 commit only.
+
+## Local implementation checkpoint: C3 cancellation serialization (2026-11-08)
+
+First C3 slice: cancellation is serialized on durable state. Node schema **2036**
+and Gateway schema **1032**.
+
+- **Node.** The fence row gains a once-only `cancel_requested_at` and a
+  `cancel_reason`. Release, drain staging and installation all decide under the
+  Node's database lock on that row; the process-local "draining" lookup is gone.
+  `release` records the request, then:
+  - `fenced` (nothing stopped): releases with the original runner and epoch;
+  - `stopping`: waits with `drain_active`. The drain completes the release when
+    it settles, if safe;
+  - `blocked`, or a drained source whose evaluation is pending or blocked: waits
+    with `resources_unresolved`;
+  - drained with only acknowledgeable residual risk: releases under a fresh epoch
+    and keeps the risk set; stopped work is not restarted;
+  - original workspace missing or being deleted: waits with
+    `original_binding_invalid`; access is never restored to it;
+  - installed: `transition_installed`.
+
+  A drain task that finds its fence already released or ended stops nothing. A
+  later drain request on a drained fence completes a pending cancellation once
+  safe. Installation refuses after a request (`transition_cancel_requested`,
+  also enforced by SQL). Receipts carry `cancellation {requestedAt, pendingReason}`.
+
+- **Gateway.** `conversation_transition_cancellations` stores the intent before
+  any Node call. With an intent recorded, `advance` and the recovery sweep call
+  only the Node drain (which completes the release) and never start an install.
+  Status adds `cancellation`; sanitized progress passes the Node's pending reason.
+
+Not in this slice: readiness states (C3b), the notice protocol (C3c) and the
+X1–X5 process acceptance (C3d). Old binaries reject the new schemas.
+Protocol, client formats, packages, lockfiles and Nix hashes are unchanged.
+
+Validation: **685 Node library tests** (four new: cancel with unresolved evidence
+waits, blocks installation and completes after the resource settles under a
+fresh epoch; cancel during an interrupted drain completes when the drain settles;
+an invalid original binding is not restored; a drain after release stops
+nothing), **440 Gateway tests** (new: a pending cancellation never installs and
+completes through the drain), **44 real Gateway/Node/Agent process cases** and
+strict all-target Clippy passed. Local commit only.

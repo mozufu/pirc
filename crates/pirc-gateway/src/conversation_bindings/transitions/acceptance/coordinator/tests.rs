@@ -13,6 +13,8 @@ struct Fake {
     wrong_target: bool,
     calls: Vec<String>,
     payloads: Vec<(String, Value)>,
+    release_pending: bool,
+    cancel_requested: bool,
 }
 const DIGEST: &str = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
 fn receipt(f: &Fake, payload: &Value) -> Value {
@@ -28,6 +30,7 @@ fn receipt(f: &Fake, payload: &Value) -> Value {
         "revocation":if f.state=="supervisor_drained"{json!({"status":status,"digest":DIGEST,"itemsTotal":1,"confirmsContainment":false,
             "items":[{"kind":"platform_containment","id":"Private","reason":"descendants_not_contained","acknowledgeable":true}]})}else{Value::Null},
         "installation":if installed{json!({"generation":2,"fromWorkspaceId":"repo","toWorkspaceId":target,"revocation":status,"environmentEvent":"pending"})}else{Value::Null},
+        "cancellation":if f.cancel_requested{json!({"requestedAt":1,"pendingReason":if f.release_pending{json!("resources_unresolved")}else{Value::Null}})}else{Value::Null},
         "private":"/private/node/path"}})
 }
 fn ok(body: Value) -> ApiResult<NodeHttpResponse> {
@@ -61,6 +64,9 @@ fn fake(app: &AppState, unproven: bool) -> Arc<Mutex<Fake>> {
                 f.state = "fenced";
             }
             "drain" if f.state == "fenced" => f.state = "supervisor_drained",
+            "drain" if f.cancel_requested && !f.release_pending && f.state == "supervisor_drained" => {
+                f.state = "released"
+            }
             "acknowledge" => {
                 if payload["digest"] != DIGEST {
                     return Ok(NodeHttpResponse {
@@ -79,7 +85,12 @@ fn fake(app: &AppState, unproven: bool) -> Arc<Mutex<Fake>> {
                 }
                 f.state = "installed";
             }
-            "release" if f.state != "installed" => f.state = "released",
+            "release" if f.state != "installed" => {
+                f.cancel_requested = true;
+                if !f.release_pending {
+                    f.state = "released";
+                }
+            }
             _ => {}
         }
         ok(receipt(&f, &payload))
@@ -762,4 +773,32 @@ async fn evaluation_pages_are_relayed_read_only_without_private_ids() {
         let (status, _) = http(&app, &format!("{base}/{bad}"), None, None).await;
         assert_eq!(status, 400, "{bad}");
     }
+}
+
+#[tokio::test]
+async fn a_pending_cancellation_never_installs_and_completes_through_the_drain() {
+    let (app, _dir, id) = app();
+    let node = fenced(&app, &id, false).await;
+    node.lock().unwrap().release_pending = true;
+    let pending = cancel(&app, &identity(), &id, "move-1", ("phone".into(), 1))
+        .await
+        .unwrap();
+    assert_eq!(pending["transition"]["state"], "node_fenced", "{pending}");
+    assert!(pending["cancellation"]["requestedAt"].is_i64());
+    assert_eq!(
+        pending["progress"]["cancellation"]["pendingReason"],
+        "resources_unresolved"
+    );
+    // The confirmed revocation would otherwise install; the intent forbids it.
+    advance(&app, &identity(), &id, "move-1", None)
+        .await
+        .unwrap();
+    assert!(!node.lock().unwrap().calls.contains(&"install".to_owned()));
+    node.lock().unwrap().release_pending = false;
+    let done = advance(&app, &identity(), &id, "move-1", None)
+        .await
+        .unwrap();
+    assert_eq!(done["transition"]["state"], "released", "{done}");
+    assert_eq!(workspace(&app, &id), "node:repo");
+    assert!(!node.lock().unwrap().calls.contains(&"install".to_owned()));
 }
