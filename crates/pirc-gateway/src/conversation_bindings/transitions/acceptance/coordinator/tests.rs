@@ -385,3 +385,52 @@ async fn the_read_only_receipt_shows_progress_without_control_or_node_calls() {
     assert!(read["progress"]["observedAt"].is_i64());
     assert_eq!(node.lock().unwrap().calls.len(), calls);
 }
+
+#[tokio::test]
+async fn a_finished_switch_stays_discoverable_after_it_leaves_active_status() {
+    use super::super::super::tests::http;
+    let (app, _dir, id) = app();
+    fenced(&app, &id, false).await;
+    advance(&app, &identity(), &id, "move-1", lease())
+        .await
+        .unwrap();
+    let (status, environment) =
+        http(&app, &format!("/api/sessions/{id}/environment"), None, None).await;
+    assert_eq!(status, 200, "{environment}");
+    assert!(environment["activeTransition"].is_null());
+    let last = &environment["lastFinishedTransition"];
+    assert_eq!(last["operationId"], "move-1");
+    assert_eq!(last["state"], "installed");
+    assert_eq!(last["targetWorkspaceId"], "node:target");
+    assert_eq!(last["revocationConfirmed"], true);
+    let (status, page) = http(
+        &app,
+        &format!("/api/sessions/{id}/environment-transitions?limit=1"),
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(status, 200, "{page}");
+    assert_eq!(page["transitions"]["items"][0]["operationId"], "move-1");
+    let next = page["transitions"]["next"].as_str().unwrap().to_owned();
+    let (_, rest) = http(
+        &app,
+        &format!("/api/sessions/{id}/environment-transitions?limit=1&cursor={next}"),
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(rest["transitions"]["items"], json!([]));
+    assert!(rest["transitions"]["next"].is_null());
+    for query in ["limit=0", "limit=101", "cursor=bad", "other=1"] {
+        let (status, _) = http(
+            &app,
+            &format!("/api/sessions/{id}/environment-transitions?{query}"),
+            None,
+            None,
+        )
+        .await;
+        assert_eq!(status, 400, "{query}");
+    }
+    assert!(!page.to_string().contains("Private"));
+}

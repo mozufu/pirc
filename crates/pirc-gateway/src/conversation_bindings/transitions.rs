@@ -7,7 +7,7 @@ pub(crate) use receipts::require_open;
 
 use axum::{
     Extension, Json, Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     routing::{get, post},
 };
 use pirc_protocol::{HttpMethod, NodeHttpRequest};
@@ -167,6 +167,84 @@ pub(crate) fn active(db: &Connection, user: &str, session: &str) -> ApiResult<Op
     Ok(row.map(|(op,state)|json!({"operationId":op,"state":state,"revocationConfirmed":false,"targetInstalled":false})))
 }
 
+/// One accepted transition as a public summary: no frozen private mapping.
+const SUMMARY: &str = "SELECT a.operation_id,a.state,a.created_at,json_extract(a.frozen_json,'$.targetWorkspaceId'),coalesce(json_extract(p.receipt_json,'$.revocationConfirmed'),0) FROM conversation_transition_acceptances a LEFT JOIN conversation_transition_progress p ON p.owner_user=a.owner_user AND p.operation_id=a.operation_id";
+fn summary(r: &rusqlite::Row<'_>) -> rusqlite::Result<Value> {
+    let state: String = r.get(1)?;
+    let confirmed: bool = r.get(4)?;
+    Ok(
+        json!({"operationId":r.get::<_,String>(0)?,"state":state,"createdAt":r.get::<_,i64>(2)?,
+        "targetWorkspaceId":r.get::<_,Option<String>>(3)?,
+        "targetInstalled":state=="installed","revocationConfirmed":state=="installed"&&confirmed}),
+    )
+}
+/// The newest finished transition, so a reload or another device finds the
+/// result after `activeTransition` disappears (C4/G2).
+pub(crate) fn last_finished(
+    db: &Connection,
+    user: &str,
+    session: &str,
+) -> ApiResult<Option<Value>> {
+    Ok(db
+        .query_row(
+            &format!("{SUMMARY} WHERE a.owner_user=?1 AND a.session_id=?2 AND a.state IN ('installed','released') ORDER BY a.created_at DESC,a.operation_id DESC LIMIT 1"),
+            params![user, session],
+            summary,
+        )
+        .optional()?)
+}
+/// Paged history of this conversation's accepted transitions, newest first.
+async fn list(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+    Query(query): Query<std::collections::HashMap<String, String>>,
+) -> ApiResult<Json<Value>> {
+    // Parsed here so every refusal is the Gateway's JSON error.
+    if query.keys().any(|k| k != "cursor" && k != "limit") {
+        return Err(ApiError::invalid_input());
+    }
+    let limit = match query.get("limit") {
+        None => 20,
+        Some(text) => text
+            .parse::<usize>()
+            .ok()
+            .filter(|n| (1..=100).contains(n))
+            .ok_or_else(ApiError::invalid_input)?,
+    };
+    let (at, op) = match query.get("cursor").map(String::as_str) {
+        None => (i64::MAX, String::new()),
+        Some(cursor) => {
+            let (at, op) = cursor.split_once('.').ok_or_else(ApiError::invalid_input)?;
+            (
+                at.parse::<i64>().map_err(|_| ApiError::invalid_input())?,
+                op.to_owned(),
+            )
+        }
+    };
+    let db = app.db.lock();
+    crate::auth::require_current_device(&app, &db, &identity)?;
+    db.claim_session(&id, &identity.user, false)?;
+    let items: Vec<Value> = db
+        .prepare(&format!("{SUMMARY} WHERE a.owner_user=?1 AND a.session_id=?2 AND (a.created_at,a.operation_id)<(?3,?4) ORDER BY a.created_at DESC,a.operation_id DESC LIMIT ?5"))?
+        .query_map(params![identity.user, id, at, op, limit as i64], summary)?
+        .collect::<Result<_, _>>()?;
+    let next = (items.len() == limit)
+        .then(|| {
+            items.last().map(|i| {
+                format!(
+                    "{}.{}",
+                    i["createdAt"],
+                    i["operationId"].as_str().unwrap_or_default()
+                )
+            })
+        })
+        .flatten();
+    Ok(Json(
+        json!({"transitions":{"version":1,"items":items,"next":next}}),
+    ))
+}
+
 /// Resume accepted transitions after restarts or lost replies.
 pub(crate) fn start_recovery(app: &AppState) {
     acceptance::coordinator::start(app);
@@ -174,6 +252,7 @@ pub(crate) fn start_recovery(app: &AppState) {
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        .route("/api/sessions/{id}/environment-transitions", get(list))
         .route(
             "/api/sessions/{id}/environment-transitions/previews/{operation}/confirm",
             post(acceptance::confirm_route),

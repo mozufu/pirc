@@ -161,6 +161,9 @@ pub async fn get_environment(
         result["activeTransition"] =
             serde_json::to_value(super::transitions::active(tx, &identity.user, &id)?)
                 .map_err(|_| ApiError::internal())?;
+        result["lastFinishedTransition"] =
+            serde_json::to_value(super::transitions::last_finished(tx, &identity.user, &id)?)
+                .map_err(|_| ApiError::internal())?;
         Ok(result)
     })?;
     Ok(Json(result))

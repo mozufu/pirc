@@ -774,3 +774,27 @@ schema change (Gateway **1030**).
 Validation: **429 Gateway tests** (new case: after another device takes control,
 the read-only receipt still shows unproven progress, digest and `observedAt` with
 no Node call) and strict Gateway Clippy passed. Local commit only.
+
+## Local implementation checkpoint: C4 G2 finished-result discovery (2026-11-08)
+
+Closes C4 gap **G2**. A finished switch stays discoverable after
+`activeTransition` disappears:
+
+- `GET /api/sessions/{id}/environment` adds `lastFinishedTransition`: the newest
+  `installed` or `released` acceptance as `{operationId, state, createdAt,
+targetWorkspaceId, targetInstalled, revocationConfirmed}`, or `null`.
+- New `GET /api/sessions/{id}/environment-transitions?cursor=&limit=` pages this
+  conversation's accepted transitions, active and finished, newest first, by
+  creation time and operation ID (default 20, at most 100). It returns
+  `{"transitions":{"version":1,"items":[…],"next":cursor|null}}` with the same
+  public summary; it never includes the frozen private Node mapping. Unknown
+  parameters, a bad limit or cursor return the Gateway's `400 invalid_input`.
+
+Both reads need no control lease and call no Node. No schema change (Gateway
+**1030**). Not in this gap: the C4 evidence-page and reauthorize routes, status
+revisions and watermarks.
+
+Validation: **430 Gateway tests** (new case: after installation the environment
+shows `lastFinishedTransition` with the confirmed result and no active transition;
+the list pages with `limit=1` to an empty end; bad parameters are refused; no
+private IDs appear) and strict Gateway Clippy passed. Local commit only.
