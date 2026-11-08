@@ -323,7 +323,14 @@ pub(super) fn status_if_present(
 ) -> ApiResult<Option<Value>> {
     let db = app.db.lock();
     access(app, &db, identity, id)?;
-    Ok(saved(&db, &identity.user, id, op)?.map(|s| json!({"transition":s,"canConfirm":false})))
+    // The read-only receipt is the complete persisted read model (C4/G1): no
+    // control lease and no Node call, so a device without control sees progress.
+    saved(&db, &identity.user, id, op)?
+        .map(|s| {
+            Ok(json!({"transition":s,"canConfirm":false,
+                "progress":coordinator::progress(&db,&identity.user,op)?}))
+        })
+        .transpose()
 }
 fn reconciliation_status(
     app: &AppState,

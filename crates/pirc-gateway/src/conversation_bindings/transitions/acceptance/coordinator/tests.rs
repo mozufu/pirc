@@ -353,3 +353,35 @@ async fn the_recovery_sweep_never_acknowledges_unproven_evidence() {
     );
     assert_eq!(workspace(&app, &id), "node:repo");
 }
+
+#[tokio::test]
+async fn the_read_only_receipt_shows_progress_without_control_or_node_calls() {
+    let (app, _dir, id) = app();
+    let node = fenced(&app, &id, true).await;
+    advance(&app, &identity(), &id, "move-1", lease())
+        .await
+        .unwrap();
+    let calls = node.lock().unwrap().calls.len();
+    // Another device takes control; the first one can still read everything.
+    app.db
+        .lock()
+        .mirror_lease(
+            &id,
+            &Lease {
+                client_id: "tablet".into(),
+                generation: 2,
+                expires_at: now_ms() + 60000,
+            },
+            "alice",
+            false,
+        )
+        .unwrap();
+    let read = status_if_present(&app, &identity(), &id, "move-1")
+        .unwrap()
+        .unwrap();
+    assert_eq!(read["transition"]["state"], "node_fenced");
+    assert_eq!(read["progress"]["revocation"]["status"], "unproven");
+    assert_eq!(read["progress"]["revocation"]["digest"], DIGEST);
+    assert!(read["progress"]["observedAt"].is_i64());
+    assert_eq!(node.lock().unwrap().calls.len(), calls);
+}

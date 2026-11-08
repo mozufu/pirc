@@ -40,16 +40,22 @@ fn sanitize(t: &Value) -> Value {
         "revocation":revocation,
         "installation":if installation.is_object(){json!({"revocation":installation["revocation"],"environmentEvent":installation["environmentEvent"]})}else{Value::Null}})
 }
+/// The last sanitized Node receipt, with `observedAt` so a reader can judge
+/// freshness without asking the Node.
 pub(super) fn progress(db: &Connection, user: &str, op: &str) -> ApiResult<Value> {
-    let raw: Option<String> = db
+    let raw: Option<(String, i64)> = db
         .query_row(
-            "SELECT receipt_json FROM conversation_transition_progress WHERE owner_user=?1 AND operation_id=?2",
+            "SELECT receipt_json,updated_at FROM conversation_transition_progress WHERE owner_user=?1 AND operation_id=?2",
             params![user, op],
-            |r| r.get(0),
+            |r| Ok((r.get(0)?, r.get(1)?)),
         )
         .optional()?;
     Ok(raw
-        .and_then(|raw| serde_json::from_str(&raw).ok())
+        .and_then(|(raw, at)| {
+            let mut value: Value = serde_json::from_str(&raw).ok()?;
+            value["observedAt"] = json!(at);
+            Some(value)
+        })
         .unwrap_or(Value::Null))
 }
 fn state(db: &Connection, user: &str, id: &str, op: &str) -> ApiResult<String> {

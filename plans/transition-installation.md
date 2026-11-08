@@ -761,3 +761,16 @@ Status after T5: the planned slices T1–T5 are delivered locally. Switching sta
 off by default (`PIRC_ENVIRONMENT_SWITCHING`). Open: the five Gateway
 status/discovery gaps from the T4 integration, native Linux acceptance, the new
 UI, and the later extensions (cross-Node handoff, project mounts).
+
+## Local implementation checkpoint: C4 G1 read-only progress (2026-11-08)
+
+Closes C4 gap **G1**. `GET .../environment-transitions/receipts/{op}` now returns
+the complete persisted read model of an accepted transition: `transition`,
+`canConfirm` and `progress` (the last sanitized Node receipt, now with
+`observedAt`). It needs no control lease and calls no Node, so a device without
+control sees the stage, revocation items, digest and installation result. No
+schema change (Gateway **1030**).
+
+Validation: **429 Gateway tests** (new case: after another device takes control,
+the read-only receipt still shows unproven progress, digest and `observedAt` with
+no Node call) and strict Gateway Clippy passed. Local commit only.
