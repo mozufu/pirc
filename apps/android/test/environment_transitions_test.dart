@@ -469,7 +469,7 @@ void main() {
           if (++posts == 1) throw http(504, 'node_timeout');
           return preview('op1');
         }
-        throw http(404, 'not_found');
+        throw http(404, 'preview_not_found');
       });
       final f = flow(fake);
       await f.load();
@@ -590,7 +590,7 @@ void main() {
             if (++confirms == 1) throw network;
             return status('node_fenced', p: progress(revocation: 'confirmed'));
           }
-          if (c.path.endsWith('/receipts/op1')) throw http(404, 'not_found');
+          if (c.path.endsWith('/receipts/op1')) throw http(404, 'receipt_not_found');
           return status('installed', confirmed: true);
         });
         final f = flow(fake);
@@ -1034,7 +1034,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Acknowledge and switch'), findsOneWidget);
+    expect(find.text('Acknowledge all 1 items and switch'), findsOneWidget);
     expect(fake.to('/acknowledge'), isEmpty);
     await t.pumpWidget(const SizedBox());
     live.dispose();

@@ -91,7 +91,8 @@ class _EnvironmentSwitchCardState extends State<EnvironmentSwitchCard> {
     final revocation = f.transition?.revocation;
     final showItems =
         f.status == EnvironmentSwitchStatus.unproven ||
-        f.status == EnvironmentSwitchStatus.revocationBlocked;
+        f.status == EnvironmentSwitchStatus.revocationBlocked ||
+        f.status == EnvironmentSwitchStatus.reauthorizationRequired;
     final actions = f.actions;
     return Container(
       key: const Key('environment-switch'),
@@ -106,6 +107,8 @@ class _EnvironmentSwitchCardState extends State<EnvironmentSwitchCard> {
         children: [
           Text(tr("Switch environment"), style: webText(context, size: 14)),
           if (f.status == EnvironmentSwitchStatus.idle) ...[
+            if (f.lastFinished != null)
+              Text(lastFinishedText(f.lastFinished!), style: small),
             if (candidates.isEmpty)
               Text(tr("No other workspace on this Node."), style: small)
             else
@@ -135,9 +138,20 @@ class _EnvironmentSwitchCardState extends State<EnvironmentSwitchCard> {
             if (f.status == EnvironmentSwitchStatus.previewBlocked)
               for (final reason in f.preview?.blockedBy ?? const <String>[])
                 Text('• ${transitionReasonText(reason)}', style: small),
+            // C1: the finite authority is shown before Confirm.
+            if (f.preview != null &&
+                (f.status == EnvironmentSwitchStatus.readyToConfirm ||
+                    f.status == EnvironmentSwitchStatus.previewBlocked))
+              Text(operationAuthorityPreviewText(f.preview!), style: small),
             if (showItems && revocation != null) ...[
-              Text(tr("{0} items", [revocation.itemsTotal]), style: small),
-              for (final item in revocation.items)
+              Text(
+                tr("Showing {0} of {1} items", [
+                  f.shownItems.length,
+                  revocation.itemsTotal,
+                ]),
+                style: small,
+              ),
+              for (final item in f.shownItems)
                 Text('• ${revocationItemText(item)}', style: small),
             ],
             Wrap(
@@ -147,7 +161,11 @@ class _EnvironmentSwitchCardState extends State<EnvironmentSwitchCard> {
                   if (actions.contains(action))
                     TextButton(
                       onPressed: () => f.perform(action),
-                      child: Text(environmentSwitchActionLabel(action)),
+                      child: Text(
+                        action == EnvironmentSwitchAction.acknowledge
+                            ? acknowledgeLabel(f)
+                            : environmentSwitchActionLabel(action),
+                      ),
                     ),
               ],
             ),

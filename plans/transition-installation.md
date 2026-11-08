@@ -1319,3 +1319,81 @@ lockfiles and package versions are unchanged.
 Still open: real browser journeys, the new UI, Android parity (parallel slice),
 reconnect-driven rediscovery, and the contract notes above. Local commit only, no
 push, deployment or Release.
+
+## Local implementation checkpoint: Android C1–C3 client interfaces (2026-11-08)
+
+Android adopts the C4 G1–G5 read model, C1 operation authority, C2 evidence
+snapshots and C3 cancellation/readiness in the existing interface layer
+(`apps/android/lib/live/environment_transitions.dart`). The throwaway card in
+the Context pane only gains the new text and actions. Nothing is persisted; the
+envelope stays at **3**.
+
+- **Read model.** A device without control reads `GET .../receipts/{op}`, which
+  now carries `progress` (with `observedAt`), `authority` and `cancellation`;
+  only a controller uses `advance`. `GET .../environment` provides
+  `lastFinishedTransition` (shown while idle) and `activeTransition.targetWorkspaceId`.
+  A `reconciliation_required` fence (`recoveryReason`, `safeActions: ["reconcile"]`)
+  becomes `reconciliationRequired`, whose only action is the read-only
+  `POST .../previews/{op}/reconcile` followed by an environment re-read; it is
+  never advanced, acknowledged or cancelled. `loadHistory` pages
+  `GET .../environment-transitions?cursor=&limit=` through `next`. An `accepted`
+  operation with `progress.stage: review_required` is `reviewRequired` and offers
+  only cancel (plus a read), with its `waitReason` in plain language. Only
+  `preview_not_found`, `acceptance_not_found`, `receipt_not_found` and
+  `conversation_not_found` mean "not stored" (`transitionNotStored`); any other
+  `404` is a definite refusal, never a resend.
+- **Authority (C1).** The preview's `operationAuthority {available,
+durationSeconds}` is shown before Confirm. `authority.reauthorizationRequired`
+  (`expired`, `revoked`, `clock_uncertain`) maps to `reauthorizationRequired`
+  and stops polling; **Reauthorize** (current control only) sends
+  `POST .../{op}/reauthorize {clientId, generation}`. `plan_changed` explains
+  that the switch must be cancelled and a new one reviewed. All
+  `operation_authority_*` codes and `operation_authority_unavailable` pass
+  through and re-read the status; an ambiguous reply is read back.
+- **Evidence (C2).** Both the current-generation and the cumulative revocation
+  status are shown; items are labeled "inherited from environment N" or "from
+  earlier history". `loadMoreItems` pages `GET .../{op}/evaluations/{evaluationId}`
+  by `next`; a status naming another evaluation discards the earlier pages, and
+  `evaluation_not_found` re-reads the status. Acknowledgement sends
+  `{digest, evaluationId, clientId, generation}` (without `evaluationId` for an
+  older Node) and is labeled "Acknowledge all N items and switch" from
+  `itemsTotal`. `revocation_digest_changed` shows the new evaluation; nothing is
+  acknowledged automatically.
+- **Cancellation and readiness (C3).** A status with `cancellation.requestedAt`
+  is `cancelPending` ("cancellation pending: <reason>" for `drain_active`,
+  `resources_unresolved`, `original_binding_invalid`, or "waiting for the Node"),
+  keeps polling with backoff and offers no acknowledge, reauthorize or other
+  install-bound action. `transition_cancel_requested` passes through and re-reads.
+  Installed results parse `bindingCommitted`, `policyValidated` and
+  `runtimeReady`: "switched; execution not started", "… failed to start" or
+  "… readiness unknown" with the revocation qualifier until `ready`, refreshed by
+  `advance`, which is read-only once installed. 53 new en/zh-TW strings.
+
+Validation: `flutter test test/environment_transitions_c13_test.dart` **25
+passed** (no-control receipt read model; last finished result; reconciliation-only
+fence; history paging; `review_required` with cancel only; specific versus
+generic `404`; authority before Confirm; every non-active authority state;
+expiry → reauthorize → installed and no action without control; `plan_changed`;
+seven passed-through authority codes; ambiguous reauthorization; both reports
+and inherited labels; snapshot paging and the all-N acknowledgement body; a digest
+change while paging; a missing snapshot; an older Node without `evaluationId`;
+three pending-cancellation reasons polling to release; a reasonless request;
+`transition_cancel_requested`; readiness `not_started` → `failed` → `unknown` →
+`ready`; the unconfirmed qualifier; one card widget case).
+`environment_transitions` **43** (two 404 cases now use the specific codes and
+the card label says "all 1 items"), `i18n` **3**, `command_environment` **4**,
+`context_flow` **2**, `panel_core_accessibility` **12**, `side_panel` **6**,
+`completion` **12** and `terminal_requests` **57** passed; `flutter analyze` of
+the whole package found no issues.
+
+Contract notes (no Gateway change): the Gateway's Node pass-through list omits
+`transition_cancel_requested` and the Node's `403 operation_authority_invalid`,
+so they would reach clients as `502 transition_step_failed` (handled as
+ambiguous and read back); a duplicate confirmation still answers only
+`{transition, canConfirm}` without progress, authority or cancellation; readiness
+after installation is refreshed only by `advance`, which needs control, so a
+device without control may see a stale `runtimeReady`; and history/last-finished
+summaries carry no readiness.
+
+Open: device/emulator journeys, the new UI and Web parity (separate slice). Local
+commit only, no push, deployment or Release.

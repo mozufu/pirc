@@ -1,6 +1,8 @@
 /// Client side of conversation environment switching
-/// (`plans/transition-installation.md`, T3a/T3b): preview, confirm, progress,
-/// acknowledgement of unproven revocation, cancel and the final result.
+/// (`plans/transition-installation.md`, T3a/T3b, C4 G1–G5, C1–C3): preview,
+/// confirm, progress, operation authority and reauthorization, paged
+/// revocation evidence with inherited risk, acknowledgement of all items,
+/// serialized cancellation and the installation/readiness result.
 ///
 /// UI-independent. Every mutation keeps one identity (the operation ID chosen
 /// for the user's review) and is never repeated with a new one. Ambiguous
@@ -37,6 +39,18 @@ bool transitionOutcomeAmbiguous(Object error) {
   return status == null || status < 400 || status >= 500;
 }
 
+/// The only `404` codes that mean "this object is not stored" (C4/G5). Any
+/// other `404` is a definite refusal, never "not sent".
+const transitionNotStoredCodes = {
+  'preview_not_found',
+  'acceptance_not_found',
+  'receipt_not_found',
+  'conversation_not_found',
+};
+bool transitionNotStored(Object error) =>
+    _status(error) == 404 &&
+    transitionNotStoredCodes.contains(transitionErrorCode(error));
+
 /// Gateway switching is off by default: both codes mean "disabled here".
 const transitionDisabledCodes = {
   'coordinator_not_available',
@@ -68,6 +82,60 @@ class ConversationEnvironment {
   Json? get activeTransition =>
       raw['activeTransition'] is Map ? obj(raw['activeTransition']) : null;
   String? get activeOperationId => _text(activeTransition?['operationId']);
+  String? get activeState => _text(activeTransition?['state']);
+  String? get activeTargetWorkspaceId =>
+      _text(activeTransition?['targetWorkspaceId']);
+
+  /// A Node fence without Gateway acceptance (C4/G3): only `reconcile`.
+  bool get reconciliationRequired => activeState == 'reconciliation_required';
+  String? get recoveryReason => _text(activeTransition?['recoveryReason']);
+  List<String> get safeActions => [
+    for (final a in (activeTransition?['safeActions'] as List? ?? const []))
+      '$a',
+  ];
+
+  /// The newest installed or released switch (C4/G2), or null.
+  TransitionSummary? get lastFinishedTransition =>
+      raw['lastFinishedTransition'] is Map
+      ? TransitionSummary(obj(raw['lastFinishedTransition']))
+      : null;
+}
+
+/// One public transition summary (history item or `lastFinishedTransition`).
+class TransitionSummary {
+  TransitionSummary(this.raw);
+  final Json raw;
+  String get operationId => '${raw['operationId'] ?? ''}';
+  String get state => '${raw['state'] ?? ''}';
+  int? get createdAt => _int(raw['createdAt']);
+  String? get targetWorkspaceId => _text(raw['targetWorkspaceId']);
+  bool get targetInstalled => raw['targetInstalled'] == true;
+  bool get revocationConfirmed => raw['revocationConfirmed'] == true;
+}
+
+class TransitionHistoryPage {
+  TransitionHistoryPage(Json data)
+    : items = [
+        for (final item in rows(obj(data['transitions'])['items']))
+          TransitionSummary(item),
+      ],
+      next = _text(obj(data['transitions'])['next']);
+  final List<TransitionSummary> items;
+  final String? next;
+}
+
+/// One page of an immutable evaluation snapshot (C2).
+class EvaluationPage {
+  EvaluationPage(Json data) : raw = obj(data['evaluation']);
+  final Json raw;
+  String? get evaluationId => _text(raw['evaluationId']);
+  String? get digest => _text(raw['digest']);
+  String get status => '${raw['status'] ?? ''}';
+  int? get itemsTotal => _int(raw['itemsTotal']);
+  String? get next => _text(raw['next']);
+  List<RevocationItem> get items => [
+    for (final item in rows(raw['items'])) RevocationItem(item),
+  ];
 }
 
 class TransitionPreview {
@@ -92,6 +160,13 @@ class TransitionPreview {
   ];
   bool get disabled => blockedBy.any(transitionDisabledCodes.contains);
   List<Json> get nodeObservations => rows(raw['nodeObservations']);
+
+  /// C1: whether the Gateway may finish this switch without a device holding
+  /// control, and for how long. Shown before Confirm.
+  bool get operationAuthorityAvailable =>
+      obj(raw['operationAuthority'])['available'] == true;
+  int? get operationAuthoritySeconds =>
+      _int(obj(raw['operationAuthority'])['durationSeconds']);
 }
 
 /// One sanitized revocation item: `{kind, reason, acknowledgeable}`.
@@ -101,6 +176,10 @@ class RevocationItem {
   String get kind => '${raw['kind'] ?? ''}';
   String get reason => '${raw['reason'] ?? ''}';
   bool get acknowledgeable => raw['acknowledgeable'] == true;
+
+  /// C2: from an earlier binding generation (or unattributed legacy).
+  bool get inherited => raw['inherited'] == true;
+  int? get generation => _int(raw['generation']);
 }
 
 class TransitionRevocation {
@@ -117,6 +196,27 @@ class TransitionRevocation {
   List<RevocationItem> get items => [
     for (final item in rows(raw['items'])) RevocationItem(item),
   ];
+
+  /// C2: the immutable snapshot an acknowledgement covers in full.
+  String? get evaluationId => _text(raw['evaluationId']);
+
+  /// The current generation's own settlement; [status] is cumulative.
+  String? get currentGenerationStatus =>
+      _text(obj(raw['currentGeneration'])['status']);
+  int? get currentGenerationItemsTotal =>
+      _int(obj(raw['currentGeneration'])['itemsTotal']);
+}
+
+/// C1 operation authority: never a token, only its public condition.
+class TransitionAuthority {
+  TransitionAuthority(this.raw);
+  final Json raw;
+  int? get revision => _int(raw['revision']);
+  int? get deadlineAt => _int(raw['deadlineAt']);
+
+  /// `active`, `expired`, `revoked` or `clock_uncertain`.
+  String get state => '${raw['state'] ?? ''}';
+  bool get reauthorizationRequired => raw['reauthorizationRequired'] == true;
 }
 
 /// An accepted transition's status: `transition`, sanitized `progress` and an
@@ -143,9 +243,35 @@ class TransitionStatus {
   /// `node_unavailable`, `connection_changed`, `receipt_unavailable`, …
   String? get reconciliationState => _text(raw['reconciliationState']);
 
-  /// `progress` comes only from coordinator replies (confirm, advance,
-  /// acknowledge, cancel, reconcile); the plain receipt GET omits it.
+  /// The receipt GET is the complete read model since C4/G1; older replies
+  /// (a duplicate confirm) omit `progress`.
   bool get hasProgress => raw.containsKey('progress');
+  int? get observedAt => _int(progress?['observedAt']);
+
+  /// `review_required` for an acceptance that can no longer be sent (G4).
+  String? get stage => _text(progress?['stage']);
+  String? get waitReason => _text(progress?['waitReason']);
+  List<String> get safeActions => [
+    for (final a in (progress?['safeActions'] as List? ?? const [])) '$a',
+  ];
+  TransitionAuthority? get authority => raw['authority'] is Map
+      ? TransitionAuthority(obj(raw['authority']))
+      : null;
+
+  /// C3: the durable cancellation intent and the Node's pending reason.
+  int? get cancellationRequestedAt =>
+      _int(obj(raw['cancellation'])['requestedAt']) ??
+      _int(obj(progress?['cancellation'])['requestedAt']);
+  bool get cancellationRequested =>
+      raw['cancellation'] is Map || progress?['cancellation'] is Map;
+  String? get cancellationPendingReason =>
+      _text(obj(progress?['cancellation'])['pendingReason']);
+  Json get installation => obj(progress?['installation']);
+  bool get bindingCommitted => installation['bindingCommitted'] == true;
+  bool get policyValidated => installation['policyValidated'] == true;
+
+  /// `not_started`, `ready`, `failed` or `unknown`; null before C3 receipts.
+  String? get runtimeReady => _text(installation['runtimeReady']);
 }
 
 /// The HTTP calls of the switching contract, through the direct Gateway link.
@@ -200,7 +326,8 @@ class EnvironmentTransitionApi {
     ),
   );
 
-  /// The accepted transition without `progress`; `404` before acceptance.
+  /// The complete read model without control and without a Node call
+  /// (C4/G1); `404 receipt_not_found` before acceptance.
   Future<TransitionStatus> status(String session, String op) async =>
       TransitionStatus(
         await gateway.request('${_base(session)}/receipts/${enc(op)}'),
@@ -220,18 +347,72 @@ class EnvironmentTransitionApi {
     ),
   );
 
+  /// Consent covers every item of [evaluationId] (C2), not only those shown.
   Future<TransitionStatus> acknowledge(
     String session,
     String op, {
     required String digest,
+    String? evaluationId,
     required TransitionLease lease,
   }) async => TransitionStatus(
     await gateway.request(
       '${_base(session)}/${enc(op)}/acknowledge',
       method: 'POST',
-      body: {'digest': digest, ...lease.body},
+      body: {'digest': digest, 'evaluationId': ?evaluationId, ...lease.body},
     ),
   );
+
+  /// C1: the current controller renews the same operation's authority.
+  Future<TransitionStatus> reauthorize(
+    String session,
+    String op,
+    TransitionLease lease,
+  ) async => TransitionStatus(
+    await gateway.request(
+      '${_base(session)}/${enc(op)}/reauthorize',
+      method: 'POST',
+      body: lease.body,
+    ),
+  );
+
+  /// Read-only receipt reconciliation, the only action for a bare fence.
+  Future<Json> reconcile(String session, String op) => gateway.request(
+    '${_base(session)}/previews/${enc(op)}/reconcile',
+    method: 'POST',
+  );
+
+  /// Paged history of accepted transitions, newest first (C4/G2).
+  Future<TransitionHistoryPage> history(
+    String session, {
+    String? cursor,
+    int? limit,
+  }) async => TransitionHistoryPage(
+    await gateway.request(
+      '${_base(session)}${_query({'cursor': cursor, 'limit': limit})}',
+    ),
+  );
+
+  /// One page of the immutable evaluation snapshot; read-only.
+  Future<EvaluationPage> evaluation(
+    String session,
+    String op,
+    String evaluationId, {
+    String? cursor,
+    int? limit,
+  }) async => EvaluationPage(
+    await gateway.request(
+      '${_base(session)}/${enc(op)}/evaluations/${enc(evaluationId)}'
+      '${_query({'cursor': cursor, 'limit': limit})}',
+    ),
+  );
+
+  static String _query(Map<String, Object?> values) {
+    final parts = [
+      for (final e in values.entries)
+        if (e.value != null) '${e.key}=${enc('${e.value}')}',
+    ];
+    return parts.isEmpty ? '' : '?${parts.join('&')}';
+  }
 
   Future<TransitionStatus> cancel(
     String session,
@@ -290,6 +471,18 @@ enum EnvironmentSwitchStatus {
 
   /// Revocation `confirmed` (or acknowledged) and installation is next.
   installing,
+
+  /// An undispatched acceptance that can no longer be sent (G4): cancel only.
+  reviewRequired,
+
+  /// C3: cancellation requested; the Node completes it once safe.
+  cancelPending,
+
+  /// C1: operation authority expired, revoked or clock-uncertain.
+  reauthorizationRequired,
+
+  /// C4/G3: a Node fence the Gateway never accepted; reconcile only.
+  reconciliationRequired,
   installedConfirmed,
   installedUnconfirmed,
   released,
@@ -317,12 +510,33 @@ enum EnvironmentSwitchAction {
   /// Explicit cancel, offered until installation.
   cancel,
 
+  /// C1: renew operation authority (current control only).
+  reauthorize,
+
+  /// C4/G3: read-only receipt reconciliation of a bare Node fence.
+  reconcile,
+
+  /// C2: load the next page of the reviewed evaluation.
+  moreItems,
+
   /// Forget the finished or abandoned operation locally.
   dismiss,
 }
 
 /// The client status for an accepted transition's status reply.
 EnvironmentSwitchStatus transitionStatusFor(TransitionStatus status) {
+  const unfinished = {'accepted', 'outcome_unknown', 'node_fenced'};
+  if (unfinished.contains(status.state)) {
+    if (status.cancellationRequested) {
+      return EnvironmentSwitchStatus.cancelPending;
+    }
+    if (status.state == 'accepted' && status.stage == 'review_required') {
+      return EnvironmentSwitchStatus.reviewRequired;
+    }
+    if (status.authority?.reauthorizationRequired == true) {
+      return EnvironmentSwitchStatus.reauthorizationRequired;
+    }
+  }
   switch (status.state) {
     case 'accepted':
       return EnvironmentSwitchStatus.accepted;
@@ -350,12 +564,18 @@ EnvironmentSwitchStatus transitionStatusFor(TransitionStatus status) {
   return EnvironmentSwitchStatus.unrecognized;
 }
 
-/// While the source is still draining, progress is read again with backoff.
-bool transitionNeedsPolling(TransitionStatus status) =>
-    status.state == 'node_fenced' &&
-    (status.progress == null ||
-        status.revocation == null ||
-        status.revocation!.status == 'pending');
+/// While the source is still draining, or a requested cancellation waits for
+/// the Node, progress is read again with backoff.
+bool transitionNeedsPolling(TransitionStatus status) {
+  final cancelling =
+      transitionStatusFor(status) == EnvironmentSwitchStatus.cancelPending;
+  return cancelling ||
+      (status.state == 'node_fenced' &&
+          status.authority?.reauthorizationRequired != true &&
+          (status.progress == null ||
+              status.revocation == null ||
+              status.revocation!.status == 'pending'));
+}
 
 /// The interface state of one conversation's switching.
 class EnvironmentTransitionFlow extends ChangeNotifier {
@@ -392,6 +612,19 @@ class EnvironmentTransitionFlow extends ChangeNotifier {
 
   ConversationEnvironment? environment;
   String? operationId, targetWorkspaceId;
+
+  /// C4: the last finished switch and the paged history (newest first).
+  TransitionSummary? lastFinished;
+  final history = <TransitionSummary>[];
+  String? historyNext;
+  bool historyLoaded = false;
+
+  /// C2: pages of the evaluation currently shown. Reset when the status
+  /// names another evaluation (a changed digest).
+  String? pagedEvaluationId;
+  final evaluationItems = <RevocationItem>[];
+  String? evaluationNext;
+  bool evaluationStarted = false;
   TransitionPreview? preview;
   TransitionStatus? transition;
   EnvironmentSwitchStatus status = EnvironmentSwitchStatus.idle;
@@ -451,9 +684,38 @@ class EnvironmentTransitionFlow extends ChangeNotifier {
         EnvironmentSwitchAction.dismiss,
       },
       EnvironmentSwitchStatus.installedConfirmed ||
-      EnvironmentSwitchStatus.installedUnconfirmed ||
+      EnvironmentSwitchStatus.installedUnconfirmed => {
+        // Readiness is refreshed read-only (advance once installed).
+        if (transition?.runtimeReady != null &&
+            transition?.runtimeReady != 'ready')
+          EnvironmentSwitchAction.refresh,
+        EnvironmentSwitchAction.dismiss,
+      },
       EnvironmentSwitchStatus.released ||
       EnvironmentSwitchStatus.deleted => {EnvironmentSwitchAction.dismiss},
+      EnvironmentSwitchStatus.reviewRequired => {
+        EnvironmentSwitchAction.refresh,
+        if (hasLease && (transition?.safeActions.contains('cancel') ?? true))
+          EnvironmentSwitchAction.cancel,
+      },
+      // Never offer install-bound actions after a cancellation request.
+      EnvironmentSwitchStatus.cancelPending => {
+        EnvironmentSwitchAction.refresh,
+      },
+      EnvironmentSwitchStatus.reconciliationRequired => {
+        if (environment?.safeActions.contains('reconcile') ?? true)
+          EnvironmentSwitchAction.reconcile,
+      },
+      EnvironmentSwitchStatus.reauthorizationRequired => {
+        EnvironmentSwitchAction.refresh,
+        if (hasLease) EnvironmentSwitchAction.reauthorize,
+        if (hasLease &&
+            transition?.revocation?.status == 'unproven' &&
+            transition?.revocation?.digest != null)
+          EnvironmentSwitchAction.acknowledge,
+        if (moreItemsAvailable) EnvironmentSwitchAction.moreItems,
+        if (hasLease) EnvironmentSwitchAction.cancel,
+      },
       EnvironmentSwitchStatus.failed =>
         accepted || transitionAccepted
             ? {
@@ -472,6 +734,7 @@ class EnvironmentTransitionFlow extends ChangeNotifier {
             hasLease &&
             transition?.revocation?.digest != null)
           EnvironmentSwitchAction.acknowledge,
+        if (moreItemsAvailable) EnvironmentSwitchAction.moreItems,
         if (hasLease) EnvironmentSwitchAction.cancel,
       },
       _ => {},
@@ -486,6 +749,26 @@ class EnvironmentTransitionFlow extends ChangeNotifier {
   bool confirmSent = false;
   bool get installedRefusal => errorCode == 'transition_installed';
 
+  /// More items of the shown evaluation exist than are loaded.
+  bool get moreItemsAvailable {
+    final revocation = transition?.revocation;
+    if (revocation?.evaluationId == null) return false;
+    if (!evaluationStarted || pagedEvaluationId != revocation!.evaluationId) {
+      return revocation!.itemsTotal > revocation.items.length;
+    }
+    return evaluationNext != null;
+  }
+
+  /// The items to show: every loaded page of the shown evaluation, else the
+  /// first items carried by the status.
+  List<RevocationItem> get shownItems {
+    final revocation = transition?.revocation;
+    if (revocation == null) return const [];
+    return evaluationStarted && pagedEvaluationId == revocation.evaluationId
+        ? List.unmodifiable(evaluationItems)
+        : revocation.items;
+  }
+
   /// Read the environment: the current binding and any active transition.
   /// Rediscovers an in-progress switch after a restart.
   Future<void> load() async {
@@ -494,14 +777,24 @@ class EnvironmentTransitionFlow extends ChangeNotifier {
       final value = await api.environment(session);
       if (disposed || serial != _serial) return;
       environment = value;
+      lastFinished = value.lastFinishedTransition;
       final b = value.binding;
       if (b != null) onBinding?.call(b);
       final active = value.activeOperationId;
-      if (active != null && active != operationId) {
-        _adopt(active);
+      if (active != null && value.reconciliationRequired) {
+        // Not consent: only read-only reconciliation is offered.
+        if (active != operationId) {
+          _adopt(active, target: value.activeTargetWorkspaceId);
+        }
+        status = EnvironmentSwitchStatus.reconciliationRequired;
+      } else if (active != null && active != operationId) {
+        _adopt(active, target: value.activeTargetWorkspaceId);
         transitionAccepted = true;
         await refresh();
         return;
+      } else if (active == null &&
+          status == EnvironmentSwitchStatus.reconciliationRequired) {
+        dismissLocal();
       }
     } catch (e) {
       if (!disposed && serial == _serial) error = e;
@@ -520,6 +813,10 @@ class EnvironmentTransitionFlow extends ChangeNotifier {
     errorCode = null;
     error = null;
     polls = 0;
+    pagedEvaluationId = null;
+    evaluationItems.clear();
+    evaluationNext = null;
+    evaluationStarted = false;
   }
 
   /// A new review with a fresh operation ID.
@@ -596,7 +893,7 @@ class EnvironmentTransitionFlow extends ChangeNotifier {
       if (_current(serial, op)) _applyPreview(value);
     } catch (e) {
       if (!_current(serial, op)) return;
-      if (_status(e) == 404 && preview == null) {
+      if (transitionNotStored(e) && preview == null) {
         _fail(e, EnvironmentSwitchStatus.previewNotSaved);
       } else if (!transitionOutcomeAmbiguous(e)) {
         _fail(e, EnvironmentSwitchStatus.failed);
@@ -667,8 +964,11 @@ class EnvironmentTransitionFlow extends ChangeNotifier {
       await refresh();
     } catch (e) {
       if (!_current(serial, op)) return;
-      if (_status(e) == 404 && preview != null) {
+      if (transitionNotStored(e) && preview != null) {
         _applyPreview(preview!);
+      } else if (!transitionOutcomeAmbiguous(e)) {
+        // A generic 404 or another refusal is definite, never "not sent".
+        _fail(e, EnvironmentSwitchStatus.failed);
       } else {
         error = e;
         _emit();
@@ -678,6 +978,14 @@ class EnvironmentTransitionFlow extends ChangeNotifier {
 
   void _applyStatus(TransitionStatus value) {
     final before = status;
+    final evaluation = value.revocation?.evaluationId;
+    if (evaluationStarted && evaluation != pagedEvaluationId) {
+      // A new evaluation (changed digest): earlier pages no longer apply.
+      pagedEvaluationId = null;
+      evaluationItems.clear();
+      evaluationNext = null;
+      evaluationStarted = false;
+    }
     transition = value;
     status = transitionStatusFor(value);
     error = null;
@@ -787,6 +1095,7 @@ class EnvironmentTransitionFlow extends ChangeNotifier {
         session,
         op,
         digest: digest,
+        evaluationId: shown.revocation?.evaluationId,
         lease: control,
       );
       if (_current(serial, op)) _applyStatus(result);
@@ -827,7 +1136,11 @@ class EnvironmentTransitionFlow extends ChangeNotifier {
     _emit();
     try {
       final result = await api.cancel(session, op, control);
-      if (_current(serial, op)) _applyStatus(result);
+      if (_current(serial, op)) {
+        _applyStatus(result);
+        // A pending cancellation keeps being read until the Node settles it.
+        if (transitionNeedsPolling(result)) unawaited(_poll(serial, op));
+      }
     } catch (e) {
       if (!_current(serial, op)) return;
       final code = transitionErrorCode(e);
@@ -841,6 +1154,7 @@ class EnvironmentTransitionFlow extends ChangeNotifier {
             'transition_installed',
             'transition_outcome_unknown',
             'transition_released',
+            'transition_cancel_requested',
           }.contains(code);
       // Too late, unknown or already ended: the status read decides.
       if (reread) await _read(serial, op);
@@ -854,10 +1168,141 @@ class EnvironmentTransitionFlow extends ChangeNotifier {
 
   void dismiss() {
     if (!actions.contains(EnvironmentSwitchAction.dismiss)) return;
+    dismissLocal();
+  }
+
+  /// Forget the shown operation locally; nothing changes on the Gateway.
+  void dismissLocal() {
     _adopt('');
     operationId = null;
     status = EnvironmentSwitchStatus.idle;
     _emit();
+  }
+
+  /// C1: renew operation authority for the same operation, then continue.
+  /// `plan_changed` means a new switch is needed after this one ends.
+  Future<void> reauthorize() async {
+    final control = lease(), op = operationId;
+    if (!actions.contains(EnvironmentSwitchAction.reauthorize) ||
+        control == null ||
+        op == null) {
+      return;
+    }
+    final serial = _serial, shown = transition;
+    status = EnvironmentSwitchStatus.working;
+    _emit();
+    try {
+      final result = await api.reauthorize(session, op, control);
+      if (!_current(serial, op)) return;
+      _applyStatus(result);
+      if (transitionNeedsPolling(result)) unawaited(_poll(serial, op));
+    } catch (e) {
+      if (!_current(serial, op)) return;
+      final code = transitionErrorCode(e);
+      transition = shown;
+      status = shown == null
+          ? EnvironmentSwitchStatus.unrecognized
+          : transitionStatusFor(shown);
+      final ambiguous = transitionOutcomeAmbiguous(e);
+      // The read shows the authority actually recorded.
+      if (ambiguous || (code?.startsWith('operation_authority_') ?? false)) {
+        await _read(serial, op);
+      }
+      if (!_current(serial, op)) return;
+      error = e;
+      errorCode = code;
+      if (!ambiguous && !(code?.startsWith('operation_authority_') ?? false)) {
+        status = EnvironmentSwitchStatus.failed;
+      }
+      _emit();
+    }
+  }
+
+  /// C4/G3: read-only reconciliation of a bare Node fence, then re-read the
+  /// environment. It never confirms, advances or cancels anything.
+  Future<void> reconcile() async {
+    final op = operationId;
+    if (!actions.contains(EnvironmentSwitchAction.reconcile) || op == null) {
+      return;
+    }
+    final serial = _serial;
+    try {
+      await api.reconcile(session, op);
+    } catch (e) {
+      if (!_current(serial, op)) return;
+      error = e;
+      errorCode = transitionErrorCode(e);
+    }
+    if (!_current(serial, op)) return;
+    final code = errorCode, failure = error;
+    await load();
+    if (_current(serial, op)) {
+      errorCode ??= code;
+      error ??= failure;
+      _emit();
+    }
+  }
+
+  /// C2: load the next page of the shown evaluation (a stable snapshot).
+  Future<void> loadMoreItems({int? limit}) async {
+    final op = operationId, revocation = transition?.revocation;
+    final evaluation = revocation?.evaluationId;
+    if (op == null || evaluation == null) return;
+    if (pagedEvaluationId != evaluation) {
+      pagedEvaluationId = evaluation;
+      evaluationItems.clear();
+      evaluationNext = null;
+      evaluationStarted = false;
+    }
+    if (evaluationStarted && evaluationNext == null) return;
+    final serial = _serial, cursor = evaluationNext;
+    try {
+      final page = await api.evaluation(
+        session,
+        op,
+        evaluation,
+        cursor: cursor,
+        limit: limit,
+      );
+      if (!_current(serial, op) || pagedEvaluationId != evaluation) return;
+      evaluationItems.addAll(page.items);
+      evaluationNext = page.next == cursor ? null : page.next;
+      evaluationStarted = true;
+      _emit();
+    } catch (e) {
+      if (!_current(serial, op)) return;
+      error = e;
+      errorCode = transitionErrorCode(e);
+      // A missing snapshot means the evaluation changed: show the current one.
+      if (errorCode == 'evaluation_not_found') await _read(serial, op);
+      if (_current(serial, op)) {
+        error = e;
+        errorCode = transitionErrorCode(e);
+        _emit();
+      }
+    }
+  }
+
+  /// C4/G2: page this conversation's switches, newest first.
+  Future<void> loadHistory({bool more = false, int? limit}) async {
+    if (more && historyNext == null) return;
+    try {
+      final page = await api.history(
+        session,
+        cursor: more ? historyNext : null,
+        limit: limit,
+      );
+      if (disposed) return;
+      if (!more) history.clear();
+      history.addAll(page.items);
+      historyNext = page.next;
+      historyLoaded = true;
+      _emit();
+    } catch (e) {
+      if (disposed) return;
+      error = e;
+      _emit();
+    }
   }
 
   Future<void> perform(EnvironmentSwitchAction action) async {
@@ -875,6 +1320,12 @@ class EnvironmentTransitionFlow extends ChangeNotifier {
         await acknowledge();
       case EnvironmentSwitchAction.cancel:
         await cancel();
+      case EnvironmentSwitchAction.reauthorize:
+        await reauthorize();
+      case EnvironmentSwitchAction.reconcile:
+        await reconcile();
+      case EnvironmentSwitchAction.moreItems:
+        await loadMoreItems();
       case EnvironmentSwitchAction.dismiss:
         dismiss();
     }
@@ -962,7 +1413,123 @@ String transitionReasonText(String code) => switch (code) {
   'transition_not_reviewable' => tr(
     "Only a stopped switch can be acknowledged.",
   ),
+  'operation_authority_missing' => tr(
+    "This switch has no operation authority.",
+  ),
+  'operation_authority_superseded' => tr(
+    "A newer authorization replaced this one.",
+  ),
+  'operation_authority_revoked' => tr("Operation authority was revoked."),
+  'operation_authority_expired' => tr("Operation authority expired."),
+  'operation_authority_clock_uncertain' => tr(
+    "The clock moved back, so the operation authority cannot be trusted.",
+  ),
+  'operation_authority_revision' => tr(
+    "The operation authority revision is out of date.",
+  ),
+  'operation_authority_invalid' => tr("The operation authority is invalid."),
+  'operation_authority_unavailable' => tr(
+    "This Gateway does not issue operation authority.",
+  ),
+  'plan_changed' => tr(
+    "The reviewed environment changed. Cancel this switch and review a new one.",
+  ),
+  'transition_cancel_requested' => tr(
+    "Cancellation was requested; this switch will not be installed.",
+  ),
+  'transition_ended' => tr("This switch has already ended."),
+  'evaluation_not_found' => tr(
+    "That list of items is no longer current; showing the current one.",
+  ),
+  'preview_not_found' => tr("The review was not found."),
+  'acceptance_not_found' => tr("The switch was not found."),
+  'receipt_not_found' => tr("No result was found for this switch."),
+  'conversation_not_found' => tr(
+    "The conversation is not available on a Node.",
+  ),
+  'no_gateway_acceptance' => tr(
+    "The Node holds a switch fence that this Gateway never accepted.",
+  ),
   _ => code,
+};
+
+/// C3: why a requested cancellation still waits.
+String cancellationReasonText(String? reason) => switch (reason) {
+  'drain_active' => tr("work is still stopping"),
+  'resources_unresolved' => tr("some resources are unresolved"),
+  'original_binding_invalid' => tr("the original workspace is no longer valid"),
+  null || '' => tr("waiting for the Node"),
+  _ => reason,
+};
+
+/// Revocation status words for the current and cumulative reports (C2).
+String revocationStatusText(String? status) => switch (status) {
+  'pending' => tr("pending"),
+  'blocked' => tr("blocked"),
+  'unproven' => tr("not fully proven"),
+  'confirmed' => tr("confirmed"),
+  null || '' => '—',
+  _ => status,
+};
+
+String transitionDurationText(int seconds) => seconds % 3600 == 0
+    ? tr("{0} hours", [seconds ~/ 3600])
+    : seconds % 60 == 0
+    ? tr("{0} minutes", [seconds ~/ 60])
+    : tr("{0} seconds", [seconds]);
+
+/// C1, shown before Confirm.
+String operationAuthorityPreviewText(TransitionPreview preview) {
+  final seconds = preview.operationAuthoritySeconds;
+  return preview.operationAuthorityAvailable && seconds != null
+      ? tr(
+          "After you confirm, the Gateway may finish this switch without this device for {0}.",
+          [transitionDurationText(seconds)],
+        )
+      : tr("This switch continues only while a device holds control.");
+}
+
+String operationAuthorityText(TransitionAuthority authority) =>
+    switch (authority.state) {
+      'active' => tr("Operation authority is valid until {0}.", [
+        authority.deadlineAt == null
+            ? '—'
+            : DateTime.fromMillisecondsSinceEpoch(
+                authority.deadlineAt!,
+              ).toLocal().toString().substring(0, 16),
+      ]),
+      'expired' => tr("Operation authority expired; reauthorize to continue."),
+      'revoked' => tr(
+        "Operation authority was revoked; reauthorize to continue.",
+      ),
+      'clock_uncertain' => tr(
+        "The Gateway clock moved back; reauthorize to continue.",
+      ),
+      _ => authority.state,
+    };
+
+/// C2: both reports, so a settled new environment is never read as global
+/// revocation.
+String revocationReportText(TransitionRevocation revocation) =>
+    tr("Current environment: {0}. Including earlier environments: {1}.", [
+      revocationStatusText(revocation.currentGenerationStatus),
+      revocationStatusText(revocation.status),
+    ]);
+
+String readinessText(String? runtimeReady) => switch (runtimeReady) {
+  'not_started' => tr("Switched; execution not started."),
+  'failed' => tr("Switched; execution failed to start."),
+  'unknown' => tr("Switched; execution readiness unknown."),
+  _ => '',
+};
+
+String lastFinishedText(TransitionSummary summary) => switch (summary.state) {
+  'installed' =>
+    summary.revocationConfirmed
+        ? tr("Last switch: switched; revocation confirmed.")
+        : tr("Last switch: switched; revocation not fully confirmed."),
+  'released' => tr("Last switch: cancelled; original workspace kept."),
+  _ => summary.state,
 };
 
 String revocationKindText(String kind) => switch (kind) {
@@ -993,8 +1560,15 @@ String revocationReasonText(String reason) => switch (reason) {
   _ => reason,
 };
 
-String revocationItemText(RevocationItem item) =>
-    '${revocationKindText(item.kind)}: ${revocationReasonText(item.reason)}';
+String revocationItemText(RevocationItem item) {
+  final text =
+      '${revocationKindText(item.kind)}: ${revocationReasonText(item.reason)}';
+  if (!item.inherited) return text;
+  final from = item.generation == null
+      ? tr("inherited from earlier history")
+      : tr("inherited from environment {0}", [item.generation!]);
+  return '$text ($from)';
+}
 
 String environmentSwitchMessage(EnvironmentTransitionFlow flow) {
   final t = flow.transition;
@@ -1034,12 +1608,29 @@ String environmentSwitchMessage(EnvironmentTransitionFlow flow) {
       [t?.revocation?.itemsTotal ?? 0],
     ),
     EnvironmentSwitchStatus.installing => tr("Installing the new environment…"),
-    EnvironmentSwitchStatus.installedConfirmed => tr(
-      "Switched; revocation confirmed.",
+    EnvironmentSwitchStatus.installedConfirmed =>
+      readinessText(t?.runtimeReady).isEmpty
+          ? tr("Switched; revocation confirmed.")
+          : '${readinessText(t?.runtimeReady)} ${tr("Revocation confirmed.")}',
+    EnvironmentSwitchStatus.installedUnconfirmed =>
+      readinessText(t?.runtimeReady).isEmpty
+          ? tr("Switched; revocation not fully confirmed.")
+          : '${readinessText(t?.runtimeReady)} ${tr("Revocation not fully confirmed.")}',
+    EnvironmentSwitchStatus.reviewRequired => tr(
+      "This switch can no longer be sent as reviewed: {0} Cancel it.",
+      [transitionReasonText(t?.waitReason ?? '')],
     ),
-    EnvironmentSwitchStatus.installedUnconfirmed => tr(
-      "Switched; revocation not fully confirmed.",
-    ),
+    EnvironmentSwitchStatus.cancelPending => tr("Cancellation pending: {0}.", [
+      cancellationReasonText(t?.cancellationPendingReason),
+    ]),
+    EnvironmentSwitchStatus.reauthorizationRequired =>
+      t?.authority == null ? '' : operationAuthorityText(t!.authority!),
+    EnvironmentSwitchStatus.reconciliationRequired => [
+      transitionReasonText(
+        flow.environment?.recoveryReason ?? 'no_gateway_acceptance',
+      ),
+      tr("Reconcile to read its state."),
+    ].join(' '),
     EnvironmentSwitchStatus.released => tr(
       "Cancelled; original workspace kept.",
     ),
@@ -1053,8 +1644,25 @@ String environmentSwitchMessage(EnvironmentTransitionFlow flow) {
       t?.state ?? '—',
     ]),
   };
+  final revocation = t?.revocation;
+  final authority = t?.authority;
   final parts = [
     message,
+    if (revocation != null &&
+        revocation.currentGenerationStatus != null &&
+        flow.status != EnvironmentSwitchStatus.installedConfirmed &&
+        flow.status != EnvironmentSwitchStatus.installedUnconfirmed)
+      revocationReportText(revocation),
+    if (authority != null &&
+        authority.state == 'active' &&
+        const {
+          EnvironmentSwitchStatus.accepted,
+          EnvironmentSwitchStatus.draining,
+          EnvironmentSwitchStatus.unproven,
+          EnvironmentSwitchStatus.revocationBlocked,
+          EnvironmentSwitchStatus.installing,
+        }.contains(flow.status))
+      operationAuthorityText(authority),
     if (t?.reconciliationState == 'node_unavailable')
       tr("The Node is unavailable; the switch stays pending."),
     if (flow.errorCode != null && flow.status != EnvironmentSwitchStatus.failed)
@@ -1070,6 +1678,17 @@ String environmentSwitchActionLabel(EnvironmentSwitchAction action) =>
       EnvironmentSwitchAction.confirm => tr("Confirm switch"),
       EnvironmentSwitchAction.refresh => tr("Check status"),
       EnvironmentSwitchAction.acknowledge => tr("Acknowledge and switch"),
+      EnvironmentSwitchAction.reauthorize => tr("Reauthorize"),
+      EnvironmentSwitchAction.reconcile => tr("Reconcile"),
+      EnvironmentSwitchAction.moreItems => tr("Show more items"),
       EnvironmentSwitchAction.cancel => tr("Cancel switch"),
       EnvironmentSwitchAction.dismiss => tr("Dismiss"),
     };
+
+/// The acknowledgement covers every item of the evaluation, not the page.
+String acknowledgeLabel(EnvironmentTransitionFlow flow) {
+  final total = flow.transition?.revocation?.itemsTotal;
+  return total == null
+      ? tr("Acknowledge and switch")
+      : tr("Acknowledge all {0} items and switch", [total]);
+}
