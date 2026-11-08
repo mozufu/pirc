@@ -479,7 +479,7 @@ pub(super) async fn confirm_route(
     // C1: with a configured duration and a Node that validates it, the backend
     // may finish this one plan without a device holding control.
     if let Some(secs) = app.config.transition_authority_secs
-        && coordinator::supports_authority(&app, &mapping.0, connection).await
+        && coordinator::supports_authority(&app, &identity, &mapping.0, connection).await
     {
         authority::issue(&app.db.lock(), &identity.user, &id, &op, secs)?;
     }

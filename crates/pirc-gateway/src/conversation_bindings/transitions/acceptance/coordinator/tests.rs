@@ -704,3 +704,21 @@ async fn reauthorization_needs_a_configured_policy() {
     let refused = reauthorize(&app, &identity(), &id, "move-1", ("phone".into(), 1)).await;
     assert_eq!(refused.unwrap_err().code, "operation_authority_unavailable");
 }
+#[tokio::test]
+async fn reauthorization_refuses_when_the_reviewed_plan_is_gone() {
+    let (app, _dir, id) =
+        super::super::super::tests::app_with(&[("PIRC_TRANSITION_AUTHORITY_SECONDS", "60")]);
+    accepted_only(&app, &id);
+    authority::issue(&app.db.lock(), "alice", &id, "move-1", 60).unwrap();
+    // A removed review (for example a deleted target) is a material change.
+    app.db
+        .lock()
+        .execute("DELETE FROM conversation_transition_previews", [])
+        .unwrap();
+    let refused = reauthorize(&app, &identity(), &id, "move-1", ("phone".into(), 1)).await;
+    assert_eq!(refused.unwrap_err().code, "plan_changed");
+    assert_eq!(
+        authority::status(&app.db.lock(), "alice", "move-1").unwrap()["revision"],
+        1
+    );
+}

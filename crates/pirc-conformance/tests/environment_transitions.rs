@@ -603,4 +603,105 @@ mod switching {
             .await;
         assert_eq!(late.status, 409, "{}", late.body);
     }
+
+    /// Switching with C1 operation authority and a short device lease.
+    fn with_authority(secs: &str, lease_ms: &str) -> GatewayOptions {
+        GatewayOptions {
+            env: vec![
+                ("PIRC_ENVIRONMENT_SWITCHING", "1".to_owned()),
+                ("PIRC_TRANSITION_AUTHORITY_SECONDS", secs.to_owned()),
+            ],
+            node_env: vec![("PIRC_LEASE_TTL_MS", lease_ms.to_owned())],
+            second_workspace: true,
+            ..GatewayOptions::default()
+        }
+    }
+    async fn until_installed(api: &Api, headers: &Headers, id: &str, op: &str) -> Value {
+        let mut last = Value::Null;
+        for _ in 0..200 {
+            last = receipt(api, headers, id, op).await;
+            if last["transition"]["state"] == "installed" {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        }
+        last
+    }
+
+    /// O1: confirm, then every client goes away and control expires. The
+    /// backend finishes exactly one binding update with operation authority.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn o1_a_confirmed_switch_finishes_after_control_expires_and_clients_close() {
+        let Some(mut cluster) = Cluster::start_with(with_authority("60", "1500")).await else {
+            return;
+        };
+        let headers = browser_headers();
+        let (id, generation) = conversation(&cluster.api(), &headers).await;
+        let accepted = confirm(&cluster.api(), &headers, &id, &generation, "move-o1").await;
+        assert_eq!(accepted["authority"]["revision"], 1, "{accepted}");
+        assert_eq!(accepted["authority"]["state"], "active");
+        // No renewal: the device lease lapses; then the Gateway restarts.
+        tokio::time::sleep(std::time::Duration::from_millis(2_000)).await;
+        cluster.restart_gateway(true).await;
+        let api = cluster.api();
+        let finished = until_installed(&api, &headers, &id, "move-o1").await;
+        assert_eq!(finished["transition"]["state"], "installed", "{finished}");
+        let environment = get(&api, &headers, &format!("/api/sessions/{id}/environment")).await;
+        assert_eq!(
+            environment["binding"]["execution"]["workspaceId"],
+            TARGET_WORKSPACE_ID
+        );
+        assert_eq!(environment["binding"]["execution"]["generation"], 2);
+        assert_eq!(
+            environment["lastFinishedTransition"]["operationId"],
+            "move-o1"
+        );
+        assert!(!finished.to_string().contains("token\""));
+    }
+
+    /// O2 and O6: the Node is away past the lease and the authority deadline.
+    /// Nothing installs; the current controller must reauthorize to continue.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn o2_o6_expired_authority_needs_reauthorization_before_installing() {
+        let Some(mut cluster) = Cluster::start_with(with_authority("3", "1500")).await else {
+            return;
+        };
+        let headers = browser_headers();
+        let api = cluster.api();
+        let (id, generation) = conversation(&api, &headers).await;
+        confirm(&api, &headers, &id, &generation, "move-o6").await;
+        cluster.stop_node(false).await;
+        tokio::time::sleep(std::time::Duration::from_millis(3_500)).await;
+        cluster.resume_node().await;
+        // Give the reconnect pass time to run; it may drain but cannot install.
+        tokio::time::sleep(std::time::Duration::from_millis(1_500)).await;
+        let waiting = receipt(&api, &headers, &id, "move-o6").await;
+        assert_eq!(waiting["transition"]["state"], "node_fenced", "{waiting}");
+        assert_eq!(waiting["authority"]["state"], "expired");
+        assert_eq!(waiting["authority"]["reauthorizationRequired"], true);
+        assert_eq!(
+            workspace(&api, &headers, &id).await["workspaceId"],
+            WORKSPACE_ID
+        );
+        let generation = acquire(&api, &headers, &id, "web").await;
+        let renewed = ok(
+            &api,
+            &headers,
+            "POST",
+            &format!("/api/sessions/{id}/environment-transitions/move-o6/reauthorize"),
+            json!({"clientId":"web","generation":generation}),
+        )
+        .await;
+        assert_eq!(renewed["authority"]["revision"], 2, "{renewed}");
+        let finished = if renewed["transition"]["state"] == "installed" {
+            renewed
+        } else {
+            until_installed(&api, &headers, &id, "move-o6").await
+        };
+        assert_eq!(finished["transition"]["state"], "installed", "{finished}");
+        assert_eq!(
+            workspace(&api, &headers, &id).await["workspaceId"],
+            TARGET_WORKSPACE_ID
+        );
+    }
 }

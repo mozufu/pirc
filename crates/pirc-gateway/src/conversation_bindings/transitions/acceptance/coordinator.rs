@@ -488,6 +488,7 @@ pub(in crate::conversation_bindings::transitions) fn start(app: &AppState) {
 /// Whether this Node validates operation authority (capability negotiation).
 pub(super) async fn supports_authority(
     app: &AppState,
+    identity: &Identity,
     node: &str,
     connection: crate::nodes::NodeConnection,
 ) -> bool {
@@ -499,7 +500,8 @@ pub(super) async fn supports_authority(
             NodeHttpRequest {
                 method: HttpMethod::Get,
                 url: "/api/execution-fences/capabilities".into(),
-                user: String::new(),
+                // The Node answers only allowed users; an empty user gets no reply.
+                user: identity.user.clone(),
                 payload: None,
                 body_base64: None,
                 content_type: None,
@@ -536,8 +538,27 @@ async fn reauthorize(
     }
     let issued = {
         let db = app.db.lock();
-        let plan = super::super::snapshot(&db, &identity.user, id, &f.target_workspace_id)?;
-        if payload_hash(&json!({"user":identity.user,"plan":plan})) != f.plan_hash {
+        // Compare the material plan only: runner epochs and cached run status
+        // change with ordinary activity and reconnects (C1), not the target.
+        let material = |mut plan: Value| {
+            if let Some(source) = plan["source"].as_object_mut() {
+                source.remove("runnerEpoch");
+                source.remove("cachedRunStatus");
+            }
+            plan
+        };
+        let reviewed: Option<String> = db
+            .query_row(
+                "SELECT plan_json FROM conversation_transition_previews WHERE owner_user=?1 AND operation_id=?2",
+                params![identity.user, op],
+                |r| r.get(0),
+            )
+            .optional()?;
+        let reviewed: Option<Value> = reviewed
+            .and_then(|raw| serde_json::from_str(&raw).ok())
+            .filter(|plan| payload_hash(&json!({"user":identity.user,"plan":plan})) == f.plan_hash);
+        let current = super::super::snapshot(&db, &identity.user, id, &f.target_workspace_id)?;
+        if reviewed.map(material) != Some(material(current)) {
             return Err(ApiError::new(
                 409,
                 "plan_changed",

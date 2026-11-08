@@ -947,3 +947,42 @@ reauthorization without a policy is refused), the config tests, the
 `environment_transitions` (6), `execution_fences` (4), `conversation_creation`
 (2), `checkpoints` (3) and route (1) process cases, and strict
 Gateway/config/conformance Clippy passed. Local commit only.
+
+## Local implementation checkpoint: C1 operation authority acceptance (2026-11-08)
+
+Third C1 slice: acceptance of operation authority with real Gateway, Node and
+Agent processes (short device lease `PIRC_LEASE_TTL_MS=1500`), plus two fixes the
+runs exposed.
+
+| Case                                      | Evidence                                                                                                                                                                                                       |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **O1** clients close, control expires     | Real process: confirm, let the lease lapse, crash and restart the Gateway; the reconnect pass installs by authority. Binding generation 2, `lastFinishedTransition` found, no token in any reply               |
+| **O2** Node offline longer than the lease | Real process: authority still valid continues (O1 path via reconnect); expired authority shows `reauthorizationRequired` (O6)                                                                                  |
+| **O3** restarts at persisted phases       | T5 Gateway-crash, Node-restart and offline cases; stable step identities; Gateway units for lost replies                                                                                                       |
+| **O4** another device takes control       | Gateway unit: installation by authority after control moved; the old device cannot reauthorize. T5 takeover case for lease-bound transitions                                                                   |
+| **O5** changed target or grant            | Install still rechecks the frozen target at the Node; reauthorization refuses a removed or changed review (`plan_changed`, unit). Grant revocation needs C6 grants: open                                       |
+| **O6** deadline before vs after install   | Real process: authority expires while the Node is away; nothing installs; the current controller reauthorizes revision 2 and it installs. After-install reconciliation is the existing receipt adoption (unit) |
+| **O7** lost acknowledgement or reply      | Existing units: ambiguous replies are read back, never retried under a new identity; Node accepts any newer revision so a lost reauthorization reply can be reissued                                           |
+| **O8** completion resumes nothing         | Installation only changes the binding and queues the context notice; no task, dispatch or pots budget is touched (by construction)                                                                             |
+
+Fixes found by the real runs:
+
+- **Capability probe user.** The Gateway asked the Node for its capabilities
+  with an empty user, which the Node never answers, so every confirmation with
+  the policy set hung until timeout. It now sends the confirming user.
+- **Material plan comparison.** Reauthorization compared the full plan hash. That
+  includes the source runner epoch, which changes on every Node reconnect, so
+  reauthorizing after a reconnect always reported `plan_changed`, contradicting
+  C1's rule that incidental source activity must not make a frozen plan
+  unsatisfiable. It now compares the reviewed plan (its preview must still match
+  the frozen hash) without runner epoch and cached run status. A missing review
+  remains `plan_changed`.
+
+Not covered: native Linux, clock rollback across real restarts (unit only), grant
+revocation between phases (needs C6), and Web/Android display of the authority
+deadline and reauthorization.
+
+Validation: **677 Node library tests**, **438 Gateway tests** (one new
+`plan_changed` case), **44 real Gateway/Node/Agent process cases** across 15
+suites (two new: O1, O2/O6), `cargo fmt --check` and strict all-target
+Node/Gateway/conformance/config/agent Clippy passed. Local commit only.
