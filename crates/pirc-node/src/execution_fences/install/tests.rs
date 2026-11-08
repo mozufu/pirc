@@ -14,6 +14,10 @@ impl Fixture {
     /// A drained, resource-bound fence from `repo` to `target`. `ran` simulates an
     /// Agent run before the transition (unproven without kernel containment).
     async fn new(op: &str, ran: bool, drain: bool) -> Self {
+        Self::with_authority(op, ran, drain, None).await
+    }
+    /// The same fence, created with a C1 operation authority grant.
+    async fn with_authority(op: &str, ran: bool, drain: bool, authority: Option<Value>) -> Self {
         let (dir, node) = crate::app::tests::workspace_test_node().await;
         let root = dir.path().canonicalize().unwrap();
         for id in ["repo", "target"] {
@@ -61,7 +65,11 @@ impl Fixture {
             )
             .await;
         assert_eq!(status, 200, "{observed}");
-        let (status, fenced) = f.call("", json!({"intent":{"operationId":op,"planHash":PLAN,"expectedWorkspaceId":"repo","expectedRunnerEpoch":epoch,"preflight":{"targetWorkspaceId":"target","evidenceHash":observed["evidenceHash"]}},"clientId":"phone","generation":f.generation})).await;
+        let mut body = json!({"intent":{"operationId":op,"planHash":PLAN,"expectedWorkspaceId":"repo","expectedRunnerEpoch":epoch,"preflight":{"targetWorkspaceId":"target","evidenceHash":observed["evidenceHash"]}},"clientId":"phone","generation":f.generation});
+        if let Some(authority) = authority {
+            body["operationAuthority"] = authority;
+        }
+        let (status, fenced) = f.call("", body).await;
         assert_eq!(status, 200, "{fenced}");
         if drain {
             let (status, drained) = f.call(&format!("{op}/drain"), json!({})).await;
@@ -427,4 +435,142 @@ fn upgrade_keeps_fences_and_states_and_adds_no_installation() {
         db.execute("UPDATE execution_fences SET state='installed'", [])
             .is_err()
     );
+}
+
+fn grant(revision: i64, token: &str, ttl_ms: i64) -> Value {
+    json!({"revision":revision,"tokenHash":crate::util::sha256_hex(token),"deadlineAt":now_ms()+ttl_ms})
+}
+async fn install_with(f: &mut Fixture, op: &str, revision: i64, token: &str) -> (u16, Value) {
+    f.call(
+        &format!("{op}/install"),
+        json!({"planHash":PLAN,"targetWorkspaceId":"target","operationAuthority":{"revision":revision,"token":token}}),
+    )
+    .await
+}
+#[tokio::test]
+async fn operation_authority_installs_after_control_moved_and_only_while_current() {
+    let mut f = Fixture::with_authority("move", false, true, Some(grant(1, "first", 60_000))).await;
+    // Another device took control: the operation keeps its own authority.
+    let tablet = f
+        .node
+        .db
+        .lock()
+        .acquire_lease(&f.session, "tablet", true, 60_000)
+        .unwrap()
+        .generation;
+    let (status, body) = f.call("move", json!({})).await;
+    let _ = (status, body);
+    let (status, wrong) = install_with(&mut f, "move", 1, "guess").await;
+    assert_eq!(
+        (status, wrong["error"]["code"].clone()),
+        (403, json!("operation_authority_invalid"))
+    );
+    // The current controller reauthorizes: revision 1 is superseded.
+    let (status, renewed) = f
+        .call(
+            "move/authority",
+            json!({"planHash":PLAN,"clientId":"tablet","generation":tablet,"grant":grant(2,"second",60_000)}),
+        )
+        .await;
+    assert_eq!(status, 200, "{renewed}");
+    assert_eq!(renewed["transition"]["operationAuthority"]["revision"], 2);
+    assert!(
+        !renewed
+            .to_string()
+            .contains(&crate::util::sha256_hex("second"))
+    );
+    let (status, old) = install_with(&mut f, "move", 1, "first").await;
+    assert_eq!(
+        (status, old["error"]["code"].clone()),
+        (409, json!("operation_authority_superseded"))
+    );
+    let (status, installed) = install_with(&mut f, "move", 2, "second").await;
+    assert_eq!(status, 200, "{installed}");
+    assert_eq!(installed["transition"]["state"], "installed");
+    // Ended fences need no further authority.
+    let (status, late) = f
+        .call(
+            "move/authority",
+            json!({"planHash":PLAN,"clientId":"tablet","generation":tablet,"grant":grant(3,"third",60_000)}),
+        )
+        .await;
+    assert_eq!(
+        (status, late["error"]["code"].clone()),
+        (409, json!("transition_ended"))
+    );
+    f.node.close().await;
+}
+#[tokio::test]
+async fn expired_revoked_missing_or_clock_rolled_back_authority_never_installs() {
+    let mut f = Fixture::with_authority("move", false, true, Some(grant(1, "short", 3_000))).await;
+    // Long enough to survive Node start-up and fence creation, then expire.
+    tokio::time::sleep(std::time::Duration::from_millis(3_100)).await;
+    let (status, expired) = install_with(&mut f, "move", 1, "short").await;
+    assert_eq!(
+        (status, expired["error"]["code"].clone()),
+        (409, json!("operation_authority_expired"))
+    );
+    assert_eq!(f.workspace(), "repo");
+    // Reauthorization needs the current controller.
+    let (status, _) = f
+        .call(
+            "move/authority",
+            json!({"planHash":PLAN,"clientId":"stranger","generation":99,"grant":grant(2,"next",60_000)}),
+        )
+        .await;
+    assert_ne!(status, 200);
+    let (status, _) = f
+        .op("move", "authority", json!({"grant":grant(2,"next",60_000)}))
+        .await;
+    assert_eq!(status, 200);
+    // A clock behind the watermark cannot extend permission.
+    f.node
+        .db
+        .lock()
+        .execute(
+            "UPDATE operation_authority_clock SET max_seen_at=?1",
+            [now_ms() + 600_000],
+        )
+        .unwrap();
+    let (status, rolled) = install_with(&mut f, "move", 2, "next").await;
+    assert_eq!(
+        (status, rolled["error"]["code"].clone()),
+        (409, json!("operation_authority_clock_uncertain"))
+    );
+    f.node
+        .db
+        .lock()
+        .execute(
+            "UPDATE operation_authority_clock SET max_seen_at=?1",
+            [now_ms()],
+        )
+        .unwrap();
+    let (status, _) = f.op("move", "authority", json!({"revoke":true})).await;
+    assert_eq!(status, 200);
+    let (status, revoked) = install_with(&mut f, "move", 2, "next").await;
+    assert_eq!(
+        (status, revoked["error"]["code"].clone()),
+        (409, json!("operation_authority_revoked"))
+    );
+    assert_eq!(f.workspace(), "repo");
+    f.node.close().await;
+
+    let mut plain = Fixture::new("move", false, true).await;
+    let (status, missing) = install_with(&mut plain, "move", 1, "any").await;
+    assert_eq!(
+        (status, missing["error"]["code"].clone()),
+        (409, json!("operation_authority_missing"))
+    );
+    let (status, _) = plain
+        .op(
+            "move",
+            "install",
+            json!({"targetWorkspaceId":"target","operationAuthority":{"revision":1,"token":"any"}}),
+        )
+        .await;
+    assert_eq!(
+        status, 400,
+        "a lease and an authority together are ambiguous"
+    );
+    plain.node.close().await;
 }

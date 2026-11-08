@@ -2,6 +2,7 @@
 //! supervisor shutdown, revocation evaluation, and explicit installation or
 //! release. Drained supervisors alone are NOT evidence that descendants or OS
 //! grants are revoked; see `revocation`.
+pub(crate) mod authority;
 pub(crate) mod install;
 mod preflight;
 pub(crate) mod revocation;
@@ -67,6 +68,9 @@ struct Acceptance {
     intent: Intent,
     client_id: String,
     generation: i64,
+    /// C1: backend authority to advance this one transition (revision 1).
+    #[serde(default)]
+    operation_authority: Option<authority::Grant>,
 }
 #[derive(Clone, Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -87,6 +91,9 @@ pub(crate) struct Receipt {
     /// session is deleted. It does not change `revocation_confirmed`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub revocation: Option<revocation::Evaluation>,
+    /// Latest operation authority revision (never its token or hash).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operation_authority: Option<serde_json::Value>,
     /// The committed installation of this fence, if any.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub installation: Option<install::Outcome>,
@@ -142,12 +149,18 @@ fn receipt(db: &Connection, owner: &str, session: &str, op: &str) -> ApiResult<O
     ).optional()?;
     row.map(|(intent, state, error_code, created_at, updated_at)| {
         let installation = install::outcome(db, owner, op, &state)?;
+        let operation_authority: Option<serde_json::Value> = db.query_row(
+            "SELECT revision,deadline_at,revoked_at IS NOT NULL FROM operation_authorities WHERE owner_user=?1 AND operation_id=?2 ORDER BY revision DESC LIMIT 1",
+            params![owner, op],
+            |r| Ok(json!({"revision":r.get::<_,i64>(0)?,"deadlineAt":r.get::<_,i64>(1)?,"revoked":r.get::<_,bool>(2)?})),
+        ).optional()?;
         Ok(Receipt {
             intent: serde_json::from_str(&intent).map_err(|_| ApiError::internal())?,
             revocation_confirmed: installation
                 .as_ref()
                 .is_some_and(|i| i.revocation == "confirmed"),
             target_installed: installation.is_some(),
+            operation_authority,
             installation,
             state,
             error_code,
@@ -390,7 +403,7 @@ pub(crate) async fn drain(node: &Node, owner: &str, session: &str, op: &str) -> 
 }
 pub async fn capabilities(node: Node, _request: Request) -> ApiResult<Response> {
     Ok(Response::json(
-        json!({"version":1,"resourcePreflightVersion":1,"resourceFenceVersion":1,"stopCommandVersion":1,"terminalIoClosureVersion":1,"terminalIoOwnerRecoveryVersion":1,"workTerminalRequestVersion":crate::terminals::requests::VERSION,"hostTerminalReviewVersion":1,"hostManagementApprovalVersion":1,"isolatedTerminalVersion":if node.sandbox.isolated_terminals(){1}else{0},"nativeProxyRevocationVersion":if node.sandbox.network_scopes().is_some(){1}else{0},"revocationEvaluationVersion":1,"transitionAcknowledgementVersion":1,"transitionReleaseVersion":1,"durableAdmissionFence":true,"trackedSupervisorDrain":true,"installsEnvironment":true,"confirmsRevocation":node.sandbox.contains_descendants()}),
+        json!({"version":1,"resourcePreflightVersion":1,"resourceFenceVersion":1,"stopCommandVersion":1,"terminalIoClosureVersion":1,"terminalIoOwnerRecoveryVersion":1,"workTerminalRequestVersion":crate::terminals::requests::VERSION,"hostTerminalReviewVersion":1,"hostManagementApprovalVersion":1,"isolatedTerminalVersion":if node.sandbox.isolated_terminals(){1}else{0},"nativeProxyRevocationVersion":if node.sandbox.network_scopes().is_some(){1}else{0},"revocationEvaluationVersion":1,"operationAuthorityVersion":1,"transitionAcknowledgementVersion":1,"transitionReleaseVersion":1,"durableAdmissionFence":true,"trackedSupervisorDrain":true,"installsEnvironment":true,"confirmsRevocation":node.sandbox.contains_descendants()}),
     ))
 }
 pub async fn create(node: Node, request: Request) -> ApiResult<Response> {
@@ -412,7 +425,14 @@ pub async fn create(node: Node, request: Request) -> ApiResult<Response> {
                 &body.intent,
                 &body.client_id,
                 body.generation,
-                |tx| preflight::check_proof(&node, tx, &request.user, session, &body.intent),
+                |tx| {
+                    preflight::check_proof(&node, tx, &request.user, session, &body.intent)?;
+                    // Recorded with the fence itself, in the same transaction.
+                    if let Some(grant) = &body.operation_authority {
+                        authority::record(tx, &request.user, &body.intent.operation_id, grant)?;
+                    }
+                    Ok(())
+                },
             );
             if result.is_err() {
                 // A known rollback leaves the prior proxy usable. Failed rollback

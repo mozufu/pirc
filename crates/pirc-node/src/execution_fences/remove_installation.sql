@@ -1,3 +1,8 @@
+-- Test fixtures only: remove the 2033 operation authority layer first.
+DROP TABLE operation_authority_clock;
+DROP TRIGGER operation_authority_retained;
+DROP TRIGGER operation_authority_immutable;
+DROP TABLE operation_authorities;
 -- Test fixtures only: restore the 2031 fence layer.
 DROP TRIGGER environment_event_session_deleted;
 DROP TRIGGER environment_event_once;

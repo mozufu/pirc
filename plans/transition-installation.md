@@ -858,3 +858,44 @@ Validation: **434 Gateway tests** (new case: missing preview, receipt and
 acceptance return their own codes), strict Gateway/conformance Clippy, and the
 `environment_transitions` (6), `execution_fences` (4) and route (1) process cases
 passed. Local commit only.
+
+## Local implementation checkpoint: C1 Node operation authority (2026-11-08)
+
+First C1 slice (Node). Node schema **2033** adds operation authority: backend
+permission to advance exactly one accepted transition, separate from device
+control leases and from execution grants. It never grants a folder or host
+permission.
+
+- **Grant at fence creation.** `POST .../execution-fences` accepts an optional
+  `operationAuthority {revision, tokenHash, deadlineAt}`, recorded in the same
+  transaction as the fence. The Node stores only the hash.
+- **Install by authority.** `POST .../:op/install` takes either the current
+  `clientId`/`generation` or `operationAuthority {revision, token}`, never both.
+  The authority must be the latest revision, match its hash, be unrevoked and
+  before its deadline, otherwise `operation_authority_superseded`, `_invalid`
+  (403), `_revoked`, `_expired` or `_missing`. Every other installation check
+  (drain, reviewed target, revocation evaluation or acknowledgement) is unchanged.
+- **Clock rollback.** Checks keep a persisted watermark of the latest time seen.
+  A clock more than 5 s behind it returns `operation_authority_clock_uncertain`,
+  so stepping the clock back cannot extend permission.
+- **Reauthorize or revoke.** `POST .../:op/authority {planHash, clientId,
+generation, grant | revoke: true}` requires the current controller and a fence
+  that has not ended (`transition_ended`). A new grant must be newer than the
+  latest revision, so a reauthorization whose reply was lost can be reissued.
+  The frozen target never changes.
+- **Visibility.** Receipts carry `operationAuthority {revision, deadlineAt,
+revoked}` (no token or hash). The capability is `operationAuthorityVersion: 1`.
+
+Fence creation, acknowledgement and release still require the current lease. The
+Gateway does not issue authority yet (next slice). Old binaries reject 2033;
+rollback needs matching state/binary backups. Gateway **1030**,
+protocol/client/envelope **15/2/3**, packages, lockfiles and Nix hashes are
+unchanged.
+
+Validation: **677 Node library tests** (five existing ignores; two new: install by
+authority after control moved, refusal of a wrong token and a superseded
+revision, reauthorization by the current controller, refusal after the fence
+ended; expired, revoked, missing and clock-rolled-back authority never install,
+reauthorization without control is refused, and a lease plus an authority
+together are rejected), **42 real Gateway/Node/Agent process cases** and strict
+all-target Node/Gateway/conformance Clippy passed. Local commit only.

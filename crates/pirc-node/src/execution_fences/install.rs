@@ -52,8 +52,13 @@ struct Acknowledge {
 struct Install {
     plan_hash: String,
     target_workspace_id: String,
-    client_id: String,
-    generation: i64,
+    /// The current controller, or else the operation authority (C1).
+    #[serde(default)]
+    client_id: Option<String>,
+    #[serde(default)]
+    generation: Option<i64>,
+    #[serde(default)]
+    operation_authority: Option<authority::Presented>,
 }
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -73,7 +78,7 @@ fn fence(
     session: &str,
     op: &str,
     plan: &str,
-    lease: (&str, i64),
+    lease: Option<(&str, i64)>,
 ) -> ApiResult<Receipt> {
     db.claim_session(session, owner, false)?;
     let saved = receipt(db, owner, session, op)?
@@ -89,7 +94,10 @@ fn fence(
             "The conversation was deleted",
         ));
     }
-    db.validate_lease(session, lease.0, lease.1)?;
+    // Without a lease the caller must verify operation authority instead.
+    if let Some(lease) = lease {
+        db.validate_lease(session, lease.0, lease.1)?;
+    }
     Ok(saved)
 }
 fn reply(node: &Node, session: &str, owner: &str, op: &str) -> ApiResult<Response> {
@@ -118,7 +126,7 @@ pub async fn acknowledge(node: Node, request: Request) -> ApiResult<Response> {
             session,
             op,
             &body.plan_hash,
-            (&body.client_id, body.generation),
+            Some((&body.client_id, body.generation)),
         )?;
         if acknowledged(&db, &request.user, op, &body.digest)? {
             drop(db);
@@ -171,14 +179,15 @@ pub async fn install(node: Node, request: Request) -> ApiResult<Response> {
     let op = request.param("operation").unwrap_or_default();
     let installed = {
         let db = node.db.lock();
-        let saved = fence(
-            &db,
-            &request.user,
-            session,
-            op,
-            &body.plan_hash,
-            (&body.client_id, body.generation),
-        )?;
+        let lease = match (&body.client_id, body.generation, &body.operation_authority) {
+            (Some(client), Some(generation), None) => Some((client.as_str(), generation)),
+            (None, None, Some(_)) => None,
+            _ => return Err(ApiError::invalid_input()),
+        };
+        let saved = fence(&db, &request.user, session, op, &body.plan_hash, lease)?;
+        if let Some(presented) = &body.operation_authority {
+            authority::verify(&db, &request.user, op, presented)?;
+        }
         let target = saved
             .intent
             .preflight
@@ -308,7 +317,7 @@ pub async fn release(node: Node, request: Request) -> ApiResult<Response> {
             session,
             op,
             &body.plan_hash,
-            (&body.client_id, body.generation),
+            Some((&body.client_id, body.generation)),
         )?;
         match saved.state.as_str() {
             "released" => false,
