@@ -1397,3 +1397,20 @@ summaries carry no readiness.
 
 Open: device/emulator journeys, the new UI and Web parity (separate slice). Local
 commit only, no push, deployment or Release.
+
+## Integration checkpoint: C1–C3 client interfaces (2026-11-08)
+
+The Web and Android C1–C3 slices were built in parallel from `66aba5a9` and
+integrated after the Gateway fixes (`3558324d`) as `d3e2cf1e` (Web) and
+`613dd163` (Android). Both are interface layers with throwaway controls, no local
+persistence, and unchanged Web IndexedDB **3** and Android envelope **3**. They
+cover the read model without control, the last finished result and history, the
+reconciliation-only bare fence, `review_required`, specific 404s, the authority
+offer and reauthorization, cumulative and current-generation revocation with
+inherited labels, snapshot paging and all-N acknowledgement, pending cancellation
+reasons, and readiness after installation.
+
+Re-run after integration: Web `vitest run` **733 tests in 71 files** with
+`svelte-check` clean; Android focused Flutter tests **164 passed** with
+`flutter analyze` clean; Prettier clean. No browser, emulator, device or APK
+validation is claimed. Local commits only.
