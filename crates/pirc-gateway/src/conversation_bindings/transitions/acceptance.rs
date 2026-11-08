@@ -443,9 +443,13 @@ pub(super) async fn confirm_route(
                     "Transition confirmation already has different intent",
                 ));
             }
-            // A retry is a receipt, even if target/preview/control has vanished.
+            // A retry is a receipt, even if target/preview/control has vanished:
+            // the same complete read model as the receipt GET.
             let s = saved(&db, &identity.user, &id, &op)?.ok_or_else(ApiError::internal)?;
-            return Ok(Json(json!({"transition":s,"canConfirm":false})));
+            return Ok(Json(json!({"transition":s,"canConfirm":false,
+                "progress":coordinator::progress(&db,&identity.user,&op)?,
+                "authority":authority::status(&db,&identity.user,&op)?,
+                "cancellation":coordinator::cancellation(&db,&identity.user,&op)?})));
         }
     }
     let row = {

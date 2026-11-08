@@ -1202,3 +1202,25 @@ Validation: **687 Node library tests**, **440 Gateway tests**, **46 real
 Gateway/Node/Agent process cases** across 15 suites (two new: X2, X5),
 `cargo fmt --check` and strict all-target Node/Gateway/conformance/config/agent
 Clippy passed. Local commit only.
+
+## Local implementation checkpoint: Gateway fixes from C1–C3 client review (2026-11-08)
+
+Gateway fixes for contract gaps the C1–C3 client agents reported. No schema
+change (Gateway **1032**).
+
+- `transition_cancel_requested` and `operation_authority_invalid` now pass
+  through with their codes, instead of reaching clients as
+  `502 transition_step_failed`; the invalid-token refusal keeps the Node's 403.
+- Paging an evaluation of an operation the Gateway never accepted returns
+  `404 acceptance_not_found` instead of a 500.
+- The read-only receipt and status no longer advance the authority clock
+  watermark; only coordinator steps record it.
+- A repeated confirmation returns the same complete read model as the receipt
+  GET (progress, authority, cancellation), not only the transition state.
+
+Still open from the client reports: readiness refresh for a device without
+control (only `advance` re-reads it), readiness details in history summaries, and
+reconciling a bare Node fence that has no stored preview (C4 adoption work).
+
+Validation: **441 Gateway tests** (new case for the first three fixes) and strict
+Gateway Clippy passed. Local commit only.

@@ -810,3 +810,51 @@ async fn a_pending_cancellation_never_installs_and_completes_through_the_drain()
     assert_eq!(workspace(&app, &id), "node:repo");
     assert!(!node.lock().unwrap().calls.contains(&"install".to_owned()));
 }
+
+#[tokio::test]
+async fn client_reported_contract_gaps_are_closed() {
+    use super::super::super::tests::http;
+    let (app, _dir, id) =
+        super::super::super::tests::app_with(&[("PIRC_TRANSITION_AUTHORITY_SECONDS", "60")]);
+    fake(&app, false);
+    // Paging an evaluation of an operation that was never accepted is a 404.
+    let (status, missing) = http(
+        &app,
+        &format!("/api/sessions/{id}/environment-transitions/nothing/evaluations/ev-0123"),
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(
+        (status, missing["error"]["code"].clone()),
+        (404, json!("acceptance_not_found"))
+    );
+    // Node refusals the clients act on keep their codes (and 403 for a bad token).
+    for (status, code) in [
+        (403, "operation_authority_invalid"),
+        (409, "transition_cancel_requested"),
+    ] {
+        let error = node_error(&NodeHttpResponse {
+            status,
+            body: Some(json!({"error":{"code":code,"message":"refused"}})),
+        });
+        assert_eq!((error.status, error.code), (status, code));
+    }
+    // A read-only status never moves the authority clock watermark.
+    accepted_only(&app, &id);
+    authority::issue(&app.db.lock(), "alice", &id, "move-1", 60).unwrap();
+    let clock = |app: &AppState| -> Option<i64> {
+        app.db
+            .lock()
+            .query_row(
+                "SELECT max_seen_at FROM conversation_authority_clock",
+                [],
+                |r| r.get(0),
+            )
+            .optional()
+            .unwrap()
+    };
+    let before = clock(&app);
+    status_if_present(&app, &identity(), &id, "move-1").unwrap();
+    assert_eq!(clock(&app), before);
+}

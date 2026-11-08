@@ -65,6 +65,10 @@ pub(super) fn latest_grant(db: &Connection, user: &str, op: &str) -> ApiResult<O
 }
 /// `active`, `expired`, `revoked` or `clock_uncertain`; None without authority.
 fn condition(db: &Connection, a: &Authority) -> ApiResult<&'static str> {
+    condition_at(db, a, true)
+}
+/// `record` advances the clock watermark; read-only status never writes.
+fn condition_at(db: &Connection, a: &Authority, record: bool) -> ApiResult<&'static str> {
     let now = now_ms();
     let seen: Option<i64> = db
         .query_row(
@@ -76,10 +80,12 @@ fn condition(db: &Connection, a: &Authority) -> ApiResult<&'static str> {
     if seen.is_some_and(|seen| now + CLOCK_TOLERANCE_MS < seen) {
         return Ok("clock_uncertain");
     }
-    db.execute(
-        "INSERT INTO conversation_authority_clock VALUES(1,?1) ON CONFLICT(id) DO UPDATE SET max_seen_at=max(max_seen_at,excluded.max_seen_at)",
-        [now],
-    )?;
+    if record {
+        db.execute(
+            "INSERT INTO conversation_authority_clock VALUES(1,?1) ON CONFLICT(id) DO UPDATE SET max_seen_at=max(max_seen_at,excluded.max_seen_at)",
+            [now],
+        )?;
+    }
     Ok(if a.revoked {
         "revoked"
     } else if a.deadline_at <= now {
@@ -104,7 +110,7 @@ pub(super) fn status(db: &Connection, user: &str, op: &str) -> ApiResult<Value> 
     let Some(a) = latest(db, user, op)? else {
         return Ok(Value::Null);
     };
-    let condition = condition(db, &a)?;
+    let condition = condition_at(db, &a, false)?;
     Ok(
         json!({"revision":a.revision,"deadlineAt":a.deadline_at,"state":condition,
         "reauthorizationRequired":condition!="active"}),

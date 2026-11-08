@@ -148,11 +148,15 @@ fn node_error(response: &NodeHttpResponse) -> ApiError {
         "operation_authority_expired",
         "operation_authority_clock_uncertain",
         "operation_authority_revision",
+        "operation_authority_invalid",
+        "transition_cancel_requested",
     ];
     match known.iter().find(|k| **k == code) {
         Some(code) => {
+            // Keep the Node's status (403 for an invalid authority, else 409).
+            let status = if response.status == 403 { 403 } else { 409 };
             let mut error = ApiError::new(
-                409,
+                status,
                 code,
                 body["error"]["message"]
                     .as_str()
@@ -706,6 +710,13 @@ async fn evaluation(
     let f = {
         let db = app.db.lock();
         access(app, &db, identity, id)?;
+        if saved(&db, &identity.user, id, op)?.is_none_or(|s| s.state == "deleted") {
+            return Err(ApiError::new(
+                404,
+                "acceptance_not_found",
+                "Accepted transition not found",
+            ));
+        }
         frozen(&db, &identity.user, id, op)?
     };
     let connection = app.nodes.connection(&f.node)?;
