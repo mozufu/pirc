@@ -5,9 +5,15 @@
   import {
     allowedSwitchActions,
     BLOCKER_LABELS,
+    CANCEL_PENDING_LABELS,
+    needsReauthorization,
+    READINESS_LABELS,
+    readinessOf,
+    WAIT_REASON_LABELS,
     EnvironmentSwitch,
     ITEM_KIND_LABELS,
     ITEM_REASON_LABELS,
+    type RevocationItem,
     type SwitchAction,
     type SwitchState,
     type TransitionLease,
@@ -70,6 +76,9 @@
       else if (current && action === 'confirm') await flow?.confirm(current);
       else if (current && action === 'acknowledge') await flow?.acknowledge(current);
       else if (current && action === 'cancel') await flow?.cancel(current);
+      else if (current && action === 'reauthorize') await flow?.reauthorize(current);
+      else if (action === 'reconcile') await flow?.reconcile();
+      else if (action === 'more_items') await flow?.loadMoreItems();
     } finally {
       busy = false;
     }
@@ -91,6 +100,20 @@
         return tr('The switch was not accepted. You can send the same confirmation again.');
       case 'review':
         return tr("Ready to switch. Confirming stops the conversation's current work first.");
+      case 'review_required':
+        return tr('This switch can no longer be sent as reviewed ({0}). Cancel it.', [
+          reasonLabel(s.status?.progress?.waitReason),
+        ]);
+      case 'authority_required':
+        return tr('The permission to finish this switch lapsed. Reauthorize or cancel.');
+      case 'cancel_pending': {
+        const reason = s.status?.progress?.cancellation?.pendingReason;
+        return reason
+          ? tr('Cancellation pending: {0}.', [
+              CANCEL_PENDING_LABELS[reason] ? tr(CANCEL_PENDING_LABELS[reason]) : reason,
+            ])
+          : tr('Cancellation requested; waiting for the Node.');
+      }
       case 'review_blocked':
         return tr('This switch is blocked:');
       case 'review_stale':
@@ -109,16 +132,25 @@
         return tr('These records cannot prove that access is gone:');
       case 'installing':
         return tr('Installing the new environment…');
-      case 'switched':
-        return s.result === 'revocation_confirmed'
-          ? tr('Switched; revocation confirmed.')
-          : tr('Switched; revocation not fully confirmed.');
+      case 'switched': {
+        const revocationText =
+          s.result === 'revocation_confirmed'
+            ? tr('Switched; revocation confirmed.')
+            : tr('Switched; revocation not fully confirmed.');
+        const ready = readinessOf(s.status);
+        // Until the runtime is ready, say so; a failed start keeps the new binding.
+        return ready && ready !== 'ready' && READINESS_LABELS[ready]
+          ? `${revocationText} ${tr(READINESS_LABELS[ready])}`
+          : revocationText;
+      }
       case 'cancelled':
         return tr('Cancelled; original workspace kept.');
       case 'deleted':
         return tr('The conversation was deleted.');
-      case 'legacy_fence':
-        return tr('An earlier environment change still fences this conversation.');
+      case 'reconciliation_required':
+        return tr('An environment change needs reconciliation ({0}).', [
+          reasonLabel(s.recoveryReason),
+        ]);
       case 'unknown_state':
         return tr('Unknown transition state ({0}).', [s.status?.transition.state ?? '—']);
       case 'rejected':
@@ -135,8 +167,31 @@
       review_again: tr('Review again'),
       acknowledge: tr('Acknowledge and switch'),
       cancel: tr('Cancel switch'),
+      reauthorize: tr('Reauthorize'),
+      reconcile: tr('Reconcile'),
+      more_items: tr('Show all items'),
       discard: tr('Dismiss'),
     })[action];
+  const reasonLabel = (code: string | null | undefined) =>
+    code ? (WAIT_REASON_LABELS[code] ? tr(WAIT_REASON_LABELS[code]) : code) : '—';
+  const itemText = (item: RevocationItem) => {
+    const base = tr('{0}: {1}', [
+      ITEM_KIND_LABELS[item.kind] ? tr(ITEM_KIND_LABELS[item.kind]) : item.kind,
+      ITEM_REASON_LABELS[item.reason] ? tr(ITEM_REASON_LABELS[item.reason]) : item.reason,
+    ]);
+    if (!item.inherited) return base;
+    return item.generation === null
+      ? tr('{0} (inherited from earlier, unattributed history)', [base])
+      : tr('{0} (inherited from generation {1})', [base, item.generation]);
+  };
+  const shown = $derived(
+    view.evaluation && view.evaluation.evaluationId === revocationOf(view)?.evaluationId
+      ? view.evaluation.items
+      : (revocationOf(view)?.items ?? []),
+  );
+  function revocationOf(s: SwitchState) {
+    return s.status?.progress?.revocation;
+  }
   const revocation = $derived(view.status?.progress?.revocation);
 </script>
 
@@ -154,6 +209,32 @@
     </label>
   {/if}
   {#if describe(view)}<p data-phase={view.phase}>{describe(view)}</p>{/if}
+  {#if view.phase === 'review' && view.preview}
+    <p>
+      {view.preview.operationAuthority.available
+        ? tr('If no device holds control, the Gateway may finish this switch for {0} seconds.', [
+            view.preview.operationAuthority.durationSeconds ?? 0,
+          ])
+        : tr('The switch continues only while a device holds control.')}
+    </p>
+  {/if}
+  {#if view.status?.authority && needsReauthorization(view)}<p>
+      {tr('Operation authority {0} (revision {1}).', [
+        view.status.authority.state,
+        view.status.authority.revision,
+      ])}
+    </p>{/if}
+  {#if view.error?.reason === 'plan_changed'}<p>
+      {tr('The reviewed environment changed; a new transition is needed.')}
+    </p>{/if}
+  {#if view.reconciliation}<p class="muted">
+      {tr('Last reconciliation: {0}', [view.reconciliation])}
+    </p>{/if}
+  {#if view.lastFinished && view.phase === 'idle'}<p class="muted">
+      {view.lastFinished.state === 'installed'
+        ? tr('Last switch: installed.')
+        : tr('Last switch: cancelled.')}
+    </p>{/if}
   {#if view.phase === 'review_blocked'}
     <ul>
       {#each view.preview?.blockedBy ?? [] as reason (reason)}
@@ -166,16 +247,20 @@
         {tr('The items changed since you looked. Review them again.')}
       </p>{/if}
     <p>{tr('{0} records in total', [revocation.itemsTotal])}</p>
+    <p>
+      {tr('All retained risks: {0}. This generation: {1}.', [
+        revocation.status,
+        revocation.currentGeneration?.status ?? '—',
+      ])}
+    </p>
     <ul class="items">
-      {#each revocation.items as item, index (index)}
-        <li>
-          {tr('{0}: {1}', [
-            ITEM_KIND_LABELS[item.kind] ? tr(ITEM_KIND_LABELS[item.kind]) : item.kind,
-            ITEM_REASON_LABELS[item.reason] ? tr(ITEM_REASON_LABELS[item.reason]) : item.reason,
-          ])}
-        </li>
+      {#each shown as item, index (index)}
+        <li>{itemText(item)}</li>
       {/each}
     </ul>
+    {#if view.phase === 'needs_acknowledgement'}<p>
+        {tr('Acknowledging covers all {0} items, not only those shown.', [revocation.itemsTotal])}
+      </p>{/if}
   {/if}
   {#if view.nodeUnavailable}<p>{tr('The Node is unavailable; the switch stays pending.')}</p>{/if}
   {#if view.error && view.phase !== 'rejected'}<p class="muted">{view.error.message}</p>{/if}

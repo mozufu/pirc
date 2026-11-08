@@ -227,3 +227,173 @@ it('offers no acknowledgement for blocked evidence', async () => {
   expect(button('Acknowledge and switch')).toBeUndefined();
   expect(button('Cancel switch')).toBeDefined();
 });
+
+const withActive = (
+  reply: unknown,
+  active: unknown = { operationId: 'op', state: 'node_fenced' },
+) =>
+  serve((call) => {
+    if (call.path === '/api/sessions/s1/environment')
+      return { body: environment(binding(1, 'node:source'), active) };
+    if (call.path.endsWith('/op/advance')) return { body: reply };
+    return undefined;
+  });
+
+it('labels inherited items, both statuses and an all-N acknowledgement', async () => {
+  withActive({
+    ...fenced({
+      ...unproven,
+      revocation: {
+        ...unproven.revocation,
+        evaluationId: 'ev-a',
+        itemsTotal: 140,
+        currentGeneration: { status: 'confirmed', itemsTotal: 0 },
+        items: [
+          {
+            kind: 'host_command',
+            reason: 'host_effects_may_survive',
+            acknowledgeable: true,
+            inherited: true,
+            generation: 1,
+          },
+          {
+            kind: 'legacy_history',
+            reason: 'launches_before_journals',
+            acknowledgeable: true,
+            inherited: true,
+            generation: null,
+          },
+        ],
+      },
+    }),
+    authority: null,
+    cancellation: null,
+  });
+  component = mount(EnvironmentSwitchPanel, { target, props: { sessionId: 's1' } });
+  await settle();
+  expect(target.textContent).toContain(
+    'Host-management command: detached host work may survive (inherited from generation 1)',
+  );
+  expect(target.textContent).toContain('(inherited from earlier, unattributed history)');
+  expect(target.textContent).toContain('All retained risks: unproven. This generation: confirmed.');
+  expect(target.textContent).toContain('Acknowledging covers all 140 items, not only those shown.');
+  expect(button('Show all items')).toBeDefined();
+});
+
+it('offers Reauthorize after expiry and shows a pending cancellation reason', async () => {
+  const confirmed = {
+    ...unproven,
+    revocation: { ...unproven.revocation, status: 'confirmed', items: [], itemsTotal: 0 },
+  };
+  const expired = { revision: 1, deadlineAt: 1, state: 'expired', reauthorizationRequired: true };
+  let cancelled = false;
+  serve((call) => {
+    if (call.path === '/api/sessions/s1/environment')
+      return {
+        body: environment(binding(1, 'node:source'), { operationId: 'op', state: 'node_fenced' }),
+      };
+    if (call.path.endsWith('/op/advance'))
+      return {
+        body: cancelled
+          ? {
+              ...fenced({
+                ...confirmed,
+                cancellation: { requestedAt: 5, pendingReason: 'resources_unresolved' },
+              }),
+              authority: expired,
+              cancellation: { requestedAt: 5 },
+            }
+          : { ...fenced(confirmed), authority: expired, cancellation: null },
+      };
+    if (call.path.endsWith('/op/cancel')) {
+      cancelled = true;
+      return {
+        body: {
+          ...fenced({
+            ...confirmed,
+            cancellation: { requestedAt: 5, pendingReason: 'drain_active' },
+          }),
+          authority: expired,
+          cancellation: { requestedAt: 5 },
+        },
+      };
+    }
+    return undefined;
+  });
+  component = mount(EnvironmentSwitchPanel, { target, props: { sessionId: 's1' } });
+  await settle();
+  expect(target.textContent).toContain('The permission to finish this switch lapsed.');
+  expect(button('Reauthorize')).toBeDefined();
+  button('Cancel switch')!.click();
+  await settle();
+  expect(target.textContent).toContain('Cancellation pending: work is still stopping.');
+  expect(button('Reauthorize')).toBeUndefined();
+  expect(button('Acknowledge and switch')).toBeUndefined();
+  expect(button('Cancel switch')).toBeUndefined();
+});
+
+it('shows readiness after a switch and offers only reconcile for a bare fence', async () => {
+  vi.spyOn(app, 'refreshSnapshot').mockResolvedValue();
+  serve((call) => {
+    if (call.path === '/api/sessions/s1/environment')
+      return calls.filter((c) => c.path === call.path).length === 1
+        ? {
+            body: environment(binding(1, 'node:source'), {
+              operationId: 'op',
+              state: 'node_fenced',
+            }),
+          }
+        : { body: environment(binding(2, 'node:target')) };
+    if (call.path.endsWith('/op/advance'))
+      return {
+        body: {
+          ...fenced(
+            {
+              ...unproven,
+              revocation: null,
+              installation: {
+                revocation: 'unproven',
+                environmentEvent: 'delivered',
+                bindingCommitted: true,
+                policyValidated: true,
+                runtimeReady: 'failed',
+              },
+            },
+            'installed',
+          ),
+          authority: null,
+          cancellation: null,
+        },
+      };
+    return undefined;
+  });
+  component = mount(EnvironmentSwitchPanel, { target, props: { sessionId: 's1' } });
+  await settle();
+  expect(target.textContent).toContain(
+    'Switched; revocation not fully confirmed. Switched; execution failed to start.',
+  );
+  expect(button('Check again')).toBeDefined();
+  await unmount(component);
+  calls = [];
+  serve((call) =>
+    call.path === '/api/sessions/s1/environment'
+      ? {
+          body: environment(binding(1, 'node:source'), {
+            operationId: 'bare',
+            state: 'reconciliation_required',
+            targetWorkspaceId: 'node:target',
+            recoveryReason: 'no_gateway_acceptance',
+            safeActions: ['reconcile'],
+          }),
+        }
+      : undefined,
+  );
+  component = mount(EnvironmentSwitchPanel, { target, props: { sessionId: 's1' } });
+  await settle();
+  expect(target.textContent).toContain(
+    'An environment change needs reconciliation (the Node holds a fence this Gateway never accepted).',
+  );
+  expect([...target.querySelectorAll('button')].map((b) => b.textContent?.trim())).toEqual([
+    'Reconcile',
+  ]);
+});

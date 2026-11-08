@@ -12,6 +12,10 @@
  *   switch); it is the polling read while the Node drains.
  * - No local persistence: after a reload the operation is rediscovered through
  *   `GET /api/sessions/{id}/environment`, so IndexedDB stays at format 3.
+ * - C1–C4 (Gateway 1032): the receipt GET is the complete read model for devices
+ *   without control; operation authority with explicit reauthorization; paged,
+ *   immutable revocation evaluations with inherited risk; serialized
+ *   cancellation and separate runtime readiness after installation.
  */
 import { conversationEnvironment, type ConversationEnvironment } from './conversation-environment';
 import { ApiError, isAbort, requestWithStatus } from './http';
@@ -20,10 +24,41 @@ import type { ConversationBinding } from './types';
 
 // ---- wire shapes ----------------------------------------------------------------
 
-/** `activeTransition` from the environment read; `fenced` is a fence with no acceptance. */
+/**
+ * `activeTransition` from the environment read. `reconciliation_required` (older
+ * Gateways: `fenced`) is a Node fence with no Gateway acceptance.
+ */
 export interface ActiveTransition {
   operationId: string;
   state: string;
+  targetWorkspaceId: string | null;
+  recoveryReason: string | null;
+  safeActions: string[];
+}
+/** A public transition summary: `lastFinishedTransition` and history items. */
+export interface TransitionSummary {
+  operationId: string;
+  state: string;
+  createdAt: number;
+  targetWorkspaceId: string | null;
+  targetInstalled: boolean;
+  revocationConfirmed: boolean;
+}
+export interface TransitionHistoryPage {
+  items: TransitionSummary[];
+  next: string | null;
+}
+/** C1: finite backend permission to finish one accepted plan, shown before Confirm. */
+export interface OperationAuthorityOffer {
+  available: boolean;
+  durationSeconds: number | null;
+}
+export interface AuthorityStatus {
+  revision: number;
+  deadlineAt: number;
+  /** `active`, `expired`, `revoked` or `clock_uncertain`. */
+  state: string;
+  reauthorizationRequired: boolean;
 }
 export interface PreviewView {
   operationId: string;
@@ -37,20 +72,38 @@ export interface PreviewView {
   /** Present only for an observed resource preflight. */
   observationHash?: string;
   nodeObservations: Array<Record<string, unknown>>;
+  operationAuthority: OperationAuthorityOffer;
 }
 export interface RevocationItem {
   kind: string;
   reason: string;
   acknowledgeable: boolean;
+  /** C2: from an earlier binding generation (or unattributed legacy evidence). */
+  inherited: boolean;
+  /** The recorded binding generation, or `null` for legacy rows. */
+  generation: number | null;
 }
 export interface Revocation {
-  /** `pending`, `blocked`, `unproven` or `confirmed`. */
+  /** Cumulative over every retained risk: `pending`, `blocked`, `unproven` or `confirmed`. */
   status: string;
   /** Kept internally; an acknowledgement binds to exactly this value. */
   digest: string | null;
+  /** C2: the immutable snapshot these items belong to. */
+  evaluationId: string | null;
   itemsTotal: number;
   confirmsContainment: boolean;
+  /** The first page of items only; the full set is paged by `evaluationId`. */
   items: RevocationItem[];
+  /** The current generation's own settlement, separate from the cumulative status. */
+  currentGeneration: { status: string | null; itemsTotal: number } | null;
+}
+export interface Installation {
+  revocation: unknown;
+  environmentEvent: unknown;
+  bindingCommitted: boolean;
+  policyValidated: boolean;
+  /** `not_started`, `ready`, `failed` or `unknown`; `null` from older Gateways. */
+  runtimeReady: string | null;
 }
 export interface Progress {
   state: string | null;
@@ -58,7 +111,24 @@ export interface Progress {
   revocationConfirmed: boolean;
   targetInstalled: boolean;
   revocation: Revocation | null;
-  installation: { revocation: unknown; environmentEvent: unknown } | null;
+  installation: Installation | null;
+  /** When the Gateway stored this receipt (ms). */
+  observedAt: number | null;
+  /** G4: `review_required` for an acceptance that can no longer be sent as reviewed. */
+  stage: string | null;
+  waitReason: string | null;
+  safeActions: string[];
+  /** C3: the Node's view of a requested cancellation. */
+  cancellation: { requestedAt: number | null; pendingReason: string | null } | null;
+}
+/** One page of an immutable evaluation snapshot. */
+export interface EvaluationPage {
+  evaluationId: string;
+  digest: string;
+  status: string;
+  itemsTotal: number;
+  items: RevocationItem[];
+  next: string | null;
 }
 export interface TransitionStatus {
   transition: {
@@ -73,16 +143,66 @@ export interface TransitionStatus {
   progress: Progress | null | undefined;
   /** e.g. `node_unavailable` when the Node could not be reached. */
   reconciliationState?: string;
+  /** C1: `null` without operation authority; `undefined` from older Gateways. */
+  authority?: AuthorityStatus | null;
+  /** C3: the Gateway's durable cancellation intent. */
+  cancellation?: { requestedAt: number } | null;
 }
 
 const text = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
 const strings = (v: unknown) => (Array.isArray(v) ? v.filter(text) : []);
+const integer = (v: unknown): v is number => typeof v === 'number' && Number.isSafeInteger(v);
+const textOrNull = (v: unknown) => (text(v) ? v : null);
+const object = (v: unknown): v is Record<string, any> =>
+  !!v && typeof v === 'object' && !Array.isArray(v);
 
 export function parseActiveTransition(raw: unknown): ActiveTransition | null {
   const value = raw as Record<string, unknown> | null | undefined;
   if (!value || typeof value !== 'object' || !text(value.operationId) || !text(value.state))
     return null;
-  return { operationId: value.operationId, state: value.state };
+  // An older Gateway's `fenced` is the same bare-fence condition.
+  const bare = value.state === 'fenced' || value.state === 'reconciliation_required';
+  return {
+    operationId: value.operationId,
+    state: bare ? 'reconciliation_required' : value.state,
+    targetWorkspaceId: textOrNull(value.targetWorkspaceId),
+    recoveryReason: textOrNull(value.recoveryReason),
+    safeActions: bare ? ['reconcile'] : strings(value.safeActions),
+  };
+}
+
+export function parseSummary(raw: any): TransitionSummary | null {
+  if (!object(raw) || !text(raw.operationId) || !text(raw.state)) return null;
+  return {
+    operationId: raw.operationId,
+    state: raw.state,
+    createdAt: integer(raw.createdAt) ? raw.createdAt : 0,
+    targetWorkspaceId: textOrNull(raw.targetWorkspaceId),
+    targetInstalled: raw.state === 'installed' && raw.targetInstalled === true,
+    revocationConfirmed: raw.state === 'installed' && raw.revocationConfirmed === true,
+  };
+}
+
+function parseAuthority(raw: any): AuthorityStatus | null | undefined {
+  if (raw === undefined) return undefined;
+  if (!object(raw) || !integer(raw.revision) || !text(raw.state)) return null;
+  return {
+    revision: raw.revision,
+    deadlineAt: integer(raw.deadlineAt) ? raw.deadlineAt : 0,
+    state: raw.state,
+    // Anything but `active` needs reauthorization, even if the flag were missing.
+    reauthorizationRequired: raw.reauthorizationRequired === true || raw.state !== 'active',
+  };
+}
+
+function parseItem(item: any): RevocationItem {
+  return {
+    kind: String(item?.kind ?? 'unknown'),
+    reason: String(item?.reason ?? 'unknown'),
+    acknowledgeable: item?.acknowledgeable === true,
+    inherited: item?.inherited === true,
+    generation: integer(item?.generation) ? item.generation : null,
+  };
 }
 
 export function parsePreview(raw: any): PreviewView {
@@ -102,27 +222,48 @@ export function parsePreview(raw: any): PreviewView {
       ? { observationHash: preflight.observationHash }
       : {}),
     nodeObservations: Array.isArray(raw.nodeObservations) ? raw.nodeObservations : [],
+    operationAuthority: {
+      available: raw.operationAuthority?.available === true,
+      durationSeconds: integer(raw.operationAuthority?.durationSeconds)
+        ? raw.operationAuthority.durationSeconds
+        : null,
+    },
   };
 }
 
 function parseRevocation(raw: any): Revocation | null {
   if (!raw || typeof raw !== 'object' || !text(raw.status)) return null;
-  const items: RevocationItem[] = Array.isArray(raw.items)
-    ? raw.items.map((item: any) => ({
-        kind: String(item?.kind ?? 'unknown'),
-        reason: String(item?.reason ?? 'unknown'),
-        acknowledgeable: item?.acknowledgeable === true,
-      }))
-    : [];
+  const items: RevocationItem[] = Array.isArray(raw.items) ? raw.items.map(parseItem) : [];
+  const current = raw.currentGeneration;
   return {
     status: raw.status,
     digest: text(raw.digest) ? raw.digest : null,
-    itemsTotal:
-      typeof raw.itemsTotal === 'number' && Number.isSafeInteger(raw.itemsTotal)
-        ? raw.itemsTotal
-        : items.length,
+    evaluationId: textOrNull(raw.evaluationId),
+    itemsTotal: integer(raw.itemsTotal) ? raw.itemsTotal : items.length,
     confirmsContainment: raw.confirmsContainment === true,
     items,
+    currentGeneration:
+      object(current) && (text(current.status) || integer(current.itemsTotal))
+        ? {
+            status: textOrNull(current.status),
+            itemsTotal: integer(current.itemsTotal) ? current.itemsTotal : 0,
+          }
+        : null,
+  };
+}
+
+export function parseEvaluationPage(raw: any): EvaluationPage {
+  const e = raw?.evaluation;
+  if (!text(e?.evaluationId) || !text(e?.digest))
+    throw new Error('Unsupported revocation evaluation page');
+  const items = Array.isArray(e.items) ? e.items.map(parseItem) : [];
+  return {
+    evaluationId: e.evaluationId,
+    digest: e.digest,
+    status: String(e.status ?? ''),
+    itemsTotal: integer(e.itemsTotal) ? e.itemsTotal : items.length,
+    items,
+    next: text(e.next) ? e.next : null,
   };
 }
 
@@ -141,14 +282,35 @@ export function parseStatus(raw: any): TransitionStatus {
             revocationConfirmed: p.revocationConfirmed === true,
             targetInstalled: p.targetInstalled === true,
             revocation: parseRevocation(p.revocation),
-            installation:
-              p.installation && typeof p.installation === 'object'
-                ? {
-                    revocation: p.installation.revocation,
-                    environmentEvent: p.installation.environmentEvent,
-                  }
-                : null,
+            installation: object(p.installation)
+              ? {
+                  revocation: p.installation.revocation,
+                  environmentEvent: p.installation.environmentEvent,
+                  bindingCommitted: p.installation.bindingCommitted === true,
+                  policyValidated: p.installation.policyValidated === true,
+                  runtimeReady: textOrNull(p.installation.runtimeReady),
+                }
+              : null,
+            observedAt: integer(p.observedAt) ? p.observedAt : null,
+            stage: textOrNull(p.stage),
+            waitReason: textOrNull(p.waitReason),
+            safeActions: strings(p.safeActions),
+            cancellation: object(p.cancellation)
+              ? {
+                  requestedAt: integer(p.cancellation.requestedAt)
+                    ? p.cancellation.requestedAt
+                    : null,
+                  pendingReason: textOrNull(p.cancellation.pendingReason),
+                }
+              : null,
           }
+        : null;
+  const authority = parseAuthority(raw.authority);
+  const cancellation =
+    raw.cancellation === undefined
+      ? undefined
+      : object(raw.cancellation) && integer(raw.cancellation.requestedAt)
+        ? { requestedAt: raw.cancellation.requestedAt }
         : null;
   return {
     transition: {
@@ -161,6 +323,8 @@ export function parseStatus(raw: any): TransitionStatus {
     },
     progress,
     ...(text(raw.reconciliationState) ? { reconciliationState: raw.reconciliationState } : {}),
+    ...(authority !== undefined ? { authority } : {}),
+    ...(cancellation !== undefined ? { cancellation } : {}),
   };
 }
 
@@ -186,8 +350,20 @@ export interface ConfirmInput {
 const session = (id: string) => `/api/sessions/${encodeURIComponent(id)}`;
 const transitions = (id: string) => `${session(id)}/environment-transitions`;
 const op = (value: string) => encodeURIComponent(value);
-const post = async (path: string, body: unknown) =>
-  (await requestWithStatus<unknown>(path, { method: 'POST', body: JSON.stringify(body) })).body;
+const post = async (path: string, body?: unknown) =>
+  (
+    await requestWithStatus<unknown>(path, {
+      method: 'POST',
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    })
+  ).body;
+const page = (params: { cursor?: string; limit?: number }) => {
+  const search = new URLSearchParams();
+  if (params.cursor !== undefined) search.set('cursor', params.cursor);
+  if (params.limit !== undefined) search.set('limit', String(params.limit));
+  const text = search.toString();
+  return text ? `?${text}` : '';
+};
 const get = async (path: string, signal?: AbortSignal) =>
   (await requestWithStatus<unknown>(path, { signal })).body;
 const lease = (l: TransitionLease) => ({ clientId: l.clientId, generation: l.generation });
@@ -199,6 +375,23 @@ export const environmentTransitionApi = {
     return {
       environment: conversationEnvironment(raw, sessionId) as ConversationEnvironment,
       activeTransition: parseActiveTransition(raw?.activeTransition),
+      /** G2: the newest installed or released transition, after `activeTransition` is gone. */
+      lastFinishedTransition: parseSummary(raw?.lastFinishedTransition),
+    };
+  },
+  /** G2: one page of this conversation's accepted transitions, newest first. */
+  history: async (
+    sessionId: string,
+    params: { cursor?: string; limit?: number } = {},
+    signal?: AbortSignal,
+  ): Promise<TransitionHistoryPage> => {
+    const raw = (await get(`${transitions(sessionId)}${page(params)}`, signal)) as any;
+    const list = raw?.transitions;
+    return {
+      items: Array.isArray(list?.items)
+        ? list.items.map(parseSummary).filter((i: TransitionSummary | null) => !!i)
+        : [],
+      next: text(list?.next) ? list.next : null,
     };
   },
   preview: async (sessionId: string, input: PreviewInput) =>
@@ -207,18 +400,52 @@ export const environmentTransitionApi = {
     parsePreview(await get(`${transitions(sessionId)}/previews/${op(operationId)}`, signal)),
   confirm: async (sessionId: string, operationId: string, input: ConfirmInput) =>
     parseStatus(await post(`${transitions(sessionId)}/previews/${op(operationId)}/confirm`, input)),
-  /** Read-only state of an accepted transition (no `progress`, no lease needed). */
+  /**
+   * The complete persisted read model of an accepted transition (G1): progress
+   * with `observedAt`, authority and cancellation. No lease, no Node call.
+   */
   status: async (sessionId: string, operationId: string, signal?: AbortSignal) =>
     parseStatus(await get(`${transitions(sessionId)}/receipts/${op(operationId)}`, signal)),
   /** Continues already-authorized steps and returns the status with `progress`. */
   advance: async (l: TransitionLease, operationId: string) =>
     parseStatus(await post(`${transitions(l.sessionId)}/${op(operationId)}/advance`, lease(l))),
-  acknowledge: async (l: TransitionLease, operationId: string, digest: string) =>
+  /** Consent covers every item of the evaluation snapshot `evaluationId` (C2). */
+  acknowledge: async (
+    l: TransitionLease,
+    operationId: string,
+    digest: string,
+    evaluationId?: string | null,
+  ) =>
     parseStatus(
       await post(`${transitions(l.sessionId)}/${op(operationId)}/acknowledge`, {
         digest,
+        ...(evaluationId ? { evaluationId } : {}),
         ...lease(l),
       }),
+    ),
+  /** C1: the next authority revision for the same operation (current control only). */
+  reauthorize: async (l: TransitionLease, operationId: string) =>
+    parseStatus(await post(`${transitions(l.sessionId)}/${op(operationId)}/reauthorize`, lease(l))),
+  /** G3: read-only receipt reconciliation, the only action for a bare Node fence. */
+  reconcile: async (sessionId: string, operationId: string) => {
+    const raw = (await post(
+      `${transitions(sessionId)}/previews/${op(operationId)}/reconcile`,
+    )) as any;
+    return { state: text(raw?.state) ? raw.state : 'unknown' };
+  },
+  /** C2: one page of an immutable evaluation snapshot; read-only, no control. */
+  evaluation: async (
+    sessionId: string,
+    operationId: string,
+    evaluationId: string,
+    params: { cursor?: string; limit?: number } = {},
+    signal?: AbortSignal,
+  ) =>
+    parseEvaluationPage(
+      await get(
+        `${transitions(sessionId)}/${op(operationId)}/evaluations/${op(evaluationId)}${page(params)}`,
+        signal,
+      ),
     ),
   cancel: async (l: TransitionLease, operationId: string) =>
     parseStatus(await post(`${transitions(l.sessionId)}/${op(operationId)}/cancel`, lease(l))),
@@ -241,14 +468,34 @@ export const PASSED_THROUGH = [
   'transition_outcome_unknown',
   'transition_step_failed',
   'invalid_transition_receipt',
+  // C1–C3
+  'operation_authority_missing',
+  'operation_authority_superseded',
+  'operation_authority_revoked',
+  'operation_authority_expired',
+  'operation_authority_clock_uncertain',
+  'operation_authority_revision',
+  'operation_authority_unavailable',
+  'plan_changed',
+  'transition_ended',
+  'transition_cancel_requested',
+] as const;
+
+/** G5: only these 404s mean "not stored"; any other 404 is a definite refusal. */
+export const NOT_STORED = [
+  'preview_not_found',
+  'acceptance_not_found',
+  'receipt_not_found',
+  'conversation_not_found',
 ] as const;
 
 /**
  * `ambiguous`: network loss or any 5xx (including `transition_step_failed` and
  * `invalid_transition_receipt`); resolved by GET or `advance`, never by a
- * mutation with a new identity. `not_found`: the record does not exist (the
- * Gateway's 404s are generic). `disabled`: switching is off on this Gateway.
- * `stale`: review again. Every other code is a definite refusal.
+ * mutation with a new identity. `not_found`: one of {@link NOT_STORED}.
+ * `disabled`: switching is off on this Gateway. `stale`: review again.
+ * `authority`: operation authority cannot be used (reauthorize).
+ * `plan_changed`: a new transition is needed. Every other code is definite.
  */
 export type SwitchFailure =
   | 'ambiguous'
@@ -259,12 +506,23 @@ export type SwitchFailure =
   | 'installed'
   | 'released'
   | 'lost_control'
+  | 'authority'
+  | 'authority_unavailable'
+  | 'plan_changed'
+  | 'cancel_requested'
   | 'rejected';
 export function classifySwitchFailure(error: unknown): SwitchFailure {
   if (!(error instanceof ApiError)) return 'ambiguous';
   if (error.status >= 500) return 'ambiguous';
-  if (error.status === 404) return 'not_found';
+  if (error.status === 404)
+    return (NOT_STORED as readonly string[]).includes(error.code) ? 'not_found' : 'rejected';
+  if (error.code === 'operation_authority_unavailable') return 'authority_unavailable';
+  if (error.code.startsWith('operation_authority_')) return 'authority';
   switch (error.code) {
+    case 'plan_changed':
+      return 'plan_changed';
+    case 'transition_cancel_requested':
+      return 'cancel_requested';
     case 'transition_coordinator_unavailable':
       return 'disabled';
     case 'transition_review_changed':
@@ -304,15 +562,18 @@ export type SwitchPhase =
   | 'confirm_unknown' // ambiguous confirm; status did not answer
   | 'confirm_missing' // status 404: not accepted; the same input may be re-sent
   | 'awaiting_dispatch' // `accepted`
+  | 'review_required' // `accepted` that can no longer be sent as reviewed (G4): cancel only
   | 'outcome_unknown' // `outcome_unknown`: the Node fence is being reconciled
   | 'draining' // `node_fenced` without progress, or revocation `pending`
   | 'blocked' // revocation `blocked`: shown, never acknowledgeable
   | 'needs_acknowledgement' // revocation `unproven`
   | 'installing' // revocation `confirmed`, not installed yet
-  | 'switched' // `installed`
+  | 'authority_required' // ready to install, but operation authority lapsed (C1)
+  | 'cancel_pending' // cancellation requested, not yet settled (C3)
+  | 'switched' // `installed`; readiness is reported separately
   | 'cancelled' // `released`
   | 'deleted' // `deleted`
-  | 'legacy_fence' // an active Node fence without an acceptance
+  | 'reconciliation_required' // a Node fence without a Gateway acceptance: reconcile only
   | 'unknown_state'
   | 'rejected'; // definite refusal of a preview or confirm
 
@@ -324,6 +585,9 @@ export type SwitchAction =
   | 'review_again'
   | 'acknowledge'
   | 'cancel'
+  | 'reauthorize'
+  | 'reconcile'
+  | 'more_items'
   | 'discard';
 
 export type SwitchResult =
@@ -331,9 +595,19 @@ export type SwitchResult =
   | 'revocation_not_fully_confirmed' // "switched; revocation not fully confirmed"
   | 'original_kept'; // "cancelled; original workspace kept"
 
-/** Maps an accepted transition's state and progress to a client phase. */
+const TERMINAL = ['installed', 'released', 'deleted'];
+
+/** Maps an accepted transition's state, progress, authority and cancellation to a phase. */
 export function transitionPhase(status: TransitionStatus): SwitchPhase {
-  switch (status.transition.state) {
+  const state = status.transition.state;
+  const p = status.progress;
+  if (state === 'reconciliation_required' || state === 'fenced') return 'reconciliation_required';
+  if (!TERMINAL.includes(state)) {
+    // A requested cancellation wins: no install, acknowledgement or reauthorization follows.
+    if (status.cancellation || p?.cancellation?.requestedAt != null) return 'cancel_pending';
+    if (state === 'accepted' && p?.stage === 'review_required') return 'review_required';
+  }
+  switch (state) {
     case 'accepted':
       return 'awaiting_dispatch';
     case 'outcome_unknown':
@@ -348,7 +622,7 @@ export function transitionPhase(status: TransitionStatus): SwitchPhase {
         case 'unproven':
           return 'needs_acknowledgement';
         case 'confirmed':
-          return 'installing';
+          return status.authority?.reauthorizationRequired ? 'authority_required' : 'installing';
         default:
           return 'unknown_state';
       }
@@ -358,11 +632,15 @@ export function transitionPhase(status: TransitionStatus): SwitchPhase {
       return 'cancelled';
     case 'deleted':
       return 'deleted';
-    case 'fenced':
-      return 'legacy_fence';
     default:
       return 'unknown_state';
   }
+}
+
+/** C3: runtime readiness of an installed transition (`undefined` before installation). */
+export function readinessOf(status: TransitionStatus | undefined): string | null | undefined {
+  if (status?.transition.state !== 'installed') return undefined;
+  return status.progress?.installation?.runtimeReady ?? null;
 }
 
 export function resultOf(status: TransitionStatus | undefined): SwitchResult | undefined {
@@ -376,7 +654,11 @@ export function resultOf(status: TransitionStatus | undefined): SwitchResult | u
 
 /** Phases read again automatically (with backoff) while the Node works. */
 export const pollable = (phase: SwitchPhase) =>
-  phase === 'draining' || phase === 'outcome_unknown' || phase === 'installing';
+  phase === 'draining' ||
+  phase === 'outcome_unknown' ||
+  phase === 'installing' ||
+  phase === 'awaiting_dispatch' ||
+  phase === 'cancel_pending';
 
 const PREVIEW_PHASES: SwitchPhase[] = [
   'previewing',
@@ -414,6 +696,32 @@ export interface SwitchState {
   cancelRequested?: boolean;
   /** Automatic reads stopped after a definite failure; `refresh` resumes. */
   stalled?: boolean;
+  /** C2: the full item set paged so far from one immutable evaluation snapshot. */
+  evaluation?: {
+    evaluationId: string;
+    digest: string;
+    itemsTotal: number;
+    items: RevocationItem[];
+    next: string | null;
+    complete: boolean;
+  };
+  /** G2: the newest finished transition, from the environment read. */
+  lastFinished?: TransitionSummary | null;
+  /** G3: why a bare Node fence needs reconciliation, and the reviewed target. */
+  recoveryReason?: string | null;
+  /** The last read-only reconciliation's observation (`fenced`, `node_unavailable`, …). */
+  reconciliation?: string;
+}
+
+/** C1: authority lapsed on a transition that can still install. */
+export function needsReauthorization(state: SwitchState): boolean {
+  const status = state.status;
+  return (
+    !!status?.authority?.reauthorizationRequired &&
+    !TERMINAL.includes(status.transition.state) &&
+    state.phase !== 'cancel_pending' &&
+    state.phase !== 'reconciliation_required'
+  );
 }
 
 /** What the user may do now. No automatic acknowledgement, cancel or resend. */
@@ -422,6 +730,14 @@ export function allowedSwitchActions(
   current: TransitionLease | undefined,
 ): SwitchAction[] {
   const control = !!current;
+  const reauthorize: SwitchAction[] = control && needsReauthorization(state) ? ['reauthorize'] : [];
+  const revocation = state.status?.progress?.revocation;
+  const more: SwitchAction[] =
+    revocation?.evaluationId &&
+    revocation.itemsTotal > revocation.items.length &&
+    !(state.evaluation?.evaluationId === revocation.evaluationId && state.evaluation.complete)
+      ? ['more_items']
+      : [];
   switch (state.phase) {
     case 'idle':
       return ['preview'];
@@ -454,18 +770,30 @@ export function allowedSwitchActions(
     case 'awaiting_dispatch':
     case 'outcome_unknown':
     case 'draining':
-    case 'blocked':
     case 'installing':
-      return control ? ['refresh', 'cancel'] : ['refresh'];
+      return control ? [...reauthorize, 'refresh', 'cancel'] : ['refresh'];
+    case 'blocked':
+      return control ? [...more, ...reauthorize, 'refresh', 'cancel'] : [...more, 'refresh'];
+    case 'authority_required':
+      return control ? ['reauthorize', 'refresh', 'cancel'] : ['refresh'];
+    case 'review_required':
+      // G4 `safeActions: ["cancel"]`: nothing reaches the Node.
+      return control ? ['cancel', 'refresh'] : ['refresh'];
+    case 'cancel_pending':
+      return ['refresh'];
     case 'needs_acknowledgement':
-      return control && state.status?.progress?.revocation?.digest
-        ? ['acknowledge', 'refresh', 'cancel']
-        : ['refresh'];
-    case 'switched':
+      return control && revocation?.digest
+        ? [...more, 'acknowledge', ...reauthorize, 'refresh', 'cancel']
+        : [...more, 'refresh'];
+    case 'switched': {
+      const ready = readinessOf(state.status);
+      return ready && ready !== 'ready' ? ['refresh', 'discard'] : ['discard'];
+    }
     case 'cancelled':
     case 'deleted':
       return ['discard'];
-    case 'legacy_fence':
+    case 'reconciliation_required':
+      return ['reconcile'];
     case 'unknown_state':
       return ['refresh'];
   }
@@ -514,6 +842,26 @@ export const BLOCKER_LABELS: Record<string, string> = {
   node_unavailable_or_unsupported: 'The Node is offline or does not support switching',
   revocation_unconfirmed: 'The Node cannot confirm or acknowledge revocation',
   target_installation_unavailable: 'The Node cannot install a new environment',
+};
+
+/** C3: why a requested cancellation has not settled yet. */
+export const CANCEL_PENDING_LABELS: Record<string, string> = {
+  drain_active: 'work is still stopping',
+  resources_unresolved: 'some resources are not settled yet',
+  original_binding_invalid: 'the original workspace is no longer valid; access is not restored',
+};
+/** C3: runtime readiness after installation. */
+export const READINESS_LABELS: Record<string, string> = {
+  not_started: 'Switched; execution not started.',
+  ready: 'Switched; execution ready.',
+  failed: 'Switched; execution failed to start.',
+  unknown: 'Switched; execution state unknown.',
+};
+/** G4 wait reasons and G3 recovery reasons. */
+export const WAIT_REASON_LABELS: Record<string, string> = {
+  lost_control: 'control moved to another device',
+  stale_environment: 'the reviewed environment changed',
+  no_gateway_acceptance: 'the Node holds a fence this Gateway never accepted',
 };
 
 // ---- controller -------------------------------------------------------------------
@@ -644,10 +992,16 @@ export class EnvironmentSwitch {
     };
     if (!extra.error) delete next.error;
     if (!extra.digestChanged) delete next.digestChanged;
+    // Pages belong to one immutable snapshot; a new evaluation needs a new review.
+    const evaluationId = merged.progress?.revocation?.evaluationId;
+    if (next.evaluation && next.evaluation.evaluationId !== evaluationId) {
+      delete next.evaluation;
+      if (evaluationId) next.digestChanged = true;
+    }
     const result = resultOf(merged);
     if (result) next.result = result;
     this.set(next);
-    if (phase === 'switched') await this.adoptBinding();
+    if (phase === 'switched' && !this.current.binding) await this.adoptBinding();
     if (startPoll && pollable(phase)) void this.poll();
   }
 
@@ -662,10 +1016,16 @@ export class EnvironmentSwitch {
     }
   }
 
-  /** A read of the accepted transition: `advance` with control, else the receipt GET. */
+  /**
+   * A read of the accepted transition: `advance` with control, else the receipt
+   * GET (the complete read model, G1). After a cancel the Gateway has not
+   * recorded yet, only the GET is used, so nothing can install past it; once the
+   * cancellation is recorded, `advance` only drives the Node drain (C3).
+   */
   private read(useAdvance: boolean) {
     const id = this.current.operationId!;
-    return useAdvance && this.lease && !this.current.cancelRequested
+    const unrecordedCancel = this.current.cancelRequested && !this.current.status?.cancellation;
+    return useAdvance && this.lease && !unrecordedCancel
       ? this.api.advance(this.lease, id)
       : this.api.status(this.sessionId, id, this.controller.signal);
   }
@@ -681,23 +1041,9 @@ export class EnvironmentSwitch {
         await this.sleep(backoff(attempt), this.controller.signal);
         if (this.disposed || !pollable(this.current.phase) || this.current.stalled) return;
         try {
-          const status = await this.read(true);
-          const merged = merge(this.current.status, status);
-          const phase = transitionPhase(merged);
-          const nodeUnavailable = merged.reconciliationState === 'node_unavailable';
-          const next: SwitchState = {
-            ...this.current,
-            phase,
-            status: merged,
-            nodeUnavailable,
-          };
-          delete next.error;
-          const result = resultOf(merged);
-          if (result) next.result = result;
-          this.set(next);
-          if (phase === 'switched') await this.adoptBinding();
-          if (!pollable(phase)) return;
-          const seen = JSON.stringify(merged);
+          await this.applyStatus(await this.read(true), {}, false);
+          if (!pollable(this.current.phase)) return;
+          const seen = JSON.stringify(this.current.status);
           attempt = seen === last ? attempt + 1 : 0;
           last = seen;
         } catch (error) {
@@ -733,17 +1079,53 @@ export class EnvironmentSwitch {
       return;
     }
     const active = found.activeTransition;
+    const lastFinished = found.lastFinishedTransition;
     if (!active) {
-      if (!this.current.operationId || PREVIEW_PHASES.includes(this.current.phase)) return;
+      if (!this.current.operationId || PREVIEW_PHASES.includes(this.current.phase)) {
+        this.set({ ...this.current, lastFinished });
+        return;
+      }
+      this.current = { ...this.current, lastFinished };
       return this.refresh();
     }
-    if (active.state === 'fenced') {
-      this.set({ phase: 'legacy_fence', operationId: active.operationId });
+    if (active.state === 'reconciliation_required') {
+      // Not consent: only the read-only reconciliation is offered (G3).
+      this.set({
+        phase: 'reconciliation_required',
+        operationId: active.operationId,
+        targetWorkspaceId: active.targetWorkspaceId ?? undefined,
+        recoveryReason: active.recoveryReason,
+        lastFinished,
+        ...(this.current.operationId === active.operationId && this.current.reconciliation
+          ? { reconciliation: this.current.reconciliation }
+          : {}),
+      });
       return;
     }
     if (this.current.operationId !== active.operationId)
-      this.current = { phase: 'unknown_state', operationId: active.operationId };
+      this.current = {
+        phase: 'unknown_state',
+        operationId: active.operationId,
+        targetWorkspaceId: active.targetWorkspaceId ?? undefined,
+      };
+    this.current = { ...this.current, lastFinished };
     await this.refresh();
+  }
+
+  /** G3: the read-only receipt reconciliation of a bare Node fence, then a fresh read. */
+  async reconcile() {
+    const s = this.current;
+    if (s.phase !== 'reconciliation_required' || !s.operationId) return false;
+    try {
+      const { state } = await this.api.reconcile(this.sessionId, s.operationId);
+      this.set({ ...this.current, reconciliation: state });
+    } catch (error) {
+      if (isAbort(error)) return true;
+      this.set({ ...this.current, error: errorOf(error) });
+      return true;
+    }
+    await this.discover();
+    return true;
   }
 
   /** A new review: a fresh operation identity per user action. */
@@ -939,7 +1321,8 @@ export class EnvironmentSwitch {
    */
   async acknowledge(current: TransitionLease) {
     const s = this.current;
-    const digest = s.status?.progress?.revocation?.digest;
+    const revocation = s.status?.progress?.revocation;
+    const digest = revocation?.digest;
     if (
       s.phase !== 'needs_acknowledgement' ||
       !digest ||
@@ -949,8 +1332,71 @@ export class EnvironmentSwitch {
       return false;
     this.lease = current;
     const id = s.operationId;
-    await this.step(() => this.api.acknowledge(current, id, digest));
+    // The consent covers all `itemsTotal` items of this snapshot, not the page shown.
+    const evaluationId = revocation.evaluationId;
+    await this.step(() => this.api.acknowledge(current, id, digest, evaluationId));
     return true;
+  }
+
+  /** C1: renews operation authority (next revision, same operation) with current control. */
+  async reauthorize(current: TransitionLease) {
+    const s = this.current;
+    if (!s.operationId || current.sessionId !== this.sessionId) return false;
+    if (!allowedSwitchActions(s, current).includes('reauthorize')) return false;
+    this.lease = current;
+    const id = s.operationId;
+    await this.step(() => this.api.reauthorize(current, id));
+    return true;
+  }
+
+  /**
+   * C2: pages the full item set of the evaluation shown, from its immutable
+   * snapshot. Pages of a snapshot that is no longer current are dropped.
+   */
+  async loadMoreItems(limit?: number) {
+    const s = this.current;
+    const revocation = s.status?.progress?.revocation;
+    const evaluationId = revocation?.evaluationId;
+    if (!s.operationId || !evaluationId) return false;
+    const known = s.evaluation?.evaluationId === evaluationId ? s.evaluation : undefined;
+    if (known?.complete) return false;
+    try {
+      const page = await this.api.evaluation(
+        this.sessionId,
+        s.operationId,
+        evaluationId,
+        { cursor: known?.next ?? undefined, limit },
+        this.controller.signal,
+      );
+      const now = this.current.status?.progress?.revocation;
+      if (page.evaluationId !== evaluationId || now?.evaluationId !== evaluationId) return true;
+      if (known && (page.digest !== known.digest || page.next === known.next))
+        throw new Error('The evaluation pages did not form one snapshot');
+      this.set({
+        ...this.current,
+        evaluation: {
+          evaluationId,
+          digest: page.digest,
+          itemsTotal: page.itemsTotal,
+          items: [...(known?.items ?? []), ...page.items],
+          next: page.next,
+          complete: page.next === null,
+        },
+      });
+    } catch (error) {
+      if (!isAbort(error)) this.set({ ...this.current, error: errorOf(error) });
+    }
+    return true;
+  }
+
+  /** Pages the whole snapshot (bounded by its total). */
+  async loadAllItems(limit?: number) {
+    for (let guard = 0; guard < 10_000; guard++) {
+      const before = this.current.evaluation;
+      if (!(await this.loadMoreItems(limit))) return;
+      const after = this.current.evaluation;
+      if (!after || after.complete || after === before || this.current.error) return;
+    }
   }
 
   /** Explicit cancel, until installation. Later reads stay read-only. */

@@ -2,7 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   allowedSwitchActions,
   backoff,
+  CANCEL_PENDING_LABELS,
   classifySwitchFailure,
+  needsReauthorization,
+  parseActiveTransition,
+  parsePreview,
+  parseSummary,
+  READINESS_LABELS,
+  readinessOf,
   EnvironmentSwitch,
   environmentTransitionApi,
   isBindingRefusal,
@@ -253,12 +260,15 @@ describe('state mapping', () => {
     const parsed = parseStatus(
       status('o', 'node_fenced', { progress: revocation('unproven', 'd', items, 140) }),
     );
+    // An older Gateway's shape parses with C2 defaults.
     expect(parsed.progress?.revocation).toEqual({
       status: 'unproven',
       digest: 'd',
+      evaluationId: null,
       itemsTotal: 140,
       confirmsContainment: false,
-      items,
+      items: items.map((item) => ({ ...item, inherited: false, generation: null })),
+      currentGeneration: null,
     });
   });
 
@@ -306,6 +316,7 @@ describe('state mapping', () => {
             resourcePreflightStatus: 'observed',
             observationHash: 'h',
             nodeObservations: [],
+            operationAuthority: { available: false, durationSeconds: null },
           },
         }),
         ['confirm', 'refresh', 'discard'],
@@ -331,7 +342,7 @@ describe('state mapping', () => {
       [at('switched'), ['discard'], ['discard']],
       [at('cancelled'), ['discard'], ['discard']],
       [at('deleted'), ['discard'], ['discard']],
-      [at('legacy_fence'), ['refresh'], ['refresh']],
+      [at('reconciliation_required'), ['reconcile'], ['reconcile']],
       [at('unknown_state'), ['refresh'], ['refresh']],
       [at('rejected'), ['discard'], ['discard']],
       [at('previewing'), [], []],
@@ -351,7 +362,16 @@ describe('state mapping', () => {
     expect(c(502, 'invalid_transition_receipt')).toBe('ambiguous');
     expect(c(504, 'node_timeout')).toBe('ambiguous');
     expect(c(503, 'node_offline')).toBe('ambiguous');
-    expect(c(404, 'not_found')).toBe('not_found');
+    for (const code of [
+      'preview_not_found',
+      'acceptance_not_found',
+      'receipt_not_found',
+      'conversation_not_found',
+    ])
+      expect(c(404, code), code).toBe('not_found');
+    // Any other 404 (generic, evaluation, older Gateways) is a definite refusal.
+    expect(c(404, 'not_found')).toBe('rejected');
+    expect(c(404, 'evaluation_not_found')).toBe('rejected');
     expect(c(409, 'transition_coordinator_unavailable')).toBe('disabled');
     expect(c(409, 'transition_review_changed')).toBe('stale');
     expect(c(409, 'stale_environment')).toBe('stale');
@@ -468,7 +488,7 @@ describe('preview', () => {
 
   it('resolves a lost preview reply by GET, and re-sends the same identity only if absent', async () => {
     const flow = controller();
-    node('network', fail(404, 'not_found'));
+    node('network', fail(404, 'preview_not_found'));
     await flow.preview(TARGET, binding(1));
     expect(flow.state.phase).toBe('preview_missing');
     const sent = posts()[0]!.body;
@@ -534,7 +554,7 @@ describe('confirm and progress', () => {
   it('resolves a lost confirmation by status, re-sending only the same input', async () => {
     const flow = controller();
     const op = await reviewed(flow);
-    node('network', fail(404, 'not_found'));
+    node('network', fail(404, 'receipt_not_found'));
     await flow.confirm(lease);
     expect(flow.state.phase).toBe('confirm_missing');
     expect(calls[2]!.method).toBe('GET');
@@ -685,7 +705,10 @@ describe('reload discovery', () => {
     expect(calls).toHaveLength(1);
     node(ok(environment(binding(1), { operationId: 'legacy', state: 'fenced' })));
     await flow.discover();
-    expect(flow.state).toMatchObject({ phase: 'legacy_fence', operationId: 'legacy' });
+    expect(flow.state).toMatchObject({
+      phase: 'reconciliation_required',
+      operationId: 'legacy',
+    });
     expect(calls).toHaveLength(2);
   });
 });
@@ -870,5 +893,627 @@ it('reads the environment through the existing parser', async () => {
   node(ok(environment(binding(3), { operationId: 'o', state: 'node_fenced' })));
   const read = await environmentTransitionApi.environment('s1');
   expect(read.environment.binding).toEqual(binding(3));
-  expect(read.activeTransition).toEqual({ operationId: 'o', state: 'node_fenced' });
+  expect(read.activeTransition).toEqual({
+    operationId: 'o',
+    state: 'node_fenced',
+    targetWorkspaceId: null,
+    recoveryReason: null,
+    safeActions: [],
+  });
+  expect(read.lastFinishedTransition).toBeNull();
+});
+
+// ---- C1–C4 contracts (Gateway 1032) -----------------------------------------------
+
+const authority = (state: string, revision = 1, extra: Record<string, unknown> = {}) => ({
+  revision,
+  deadlineAt: 5000,
+  state,
+  reauthorizationRequired: state !== 'active',
+  ...extra,
+});
+const inheritedItems = [
+  {
+    kind: 'host_command',
+    reason: 'host_effects_may_survive',
+    acknowledgeable: true,
+    inherited: true,
+    generation: 1,
+  },
+  {
+    kind: 'legacy_history',
+    reason: 'launches_before_journals',
+    acknowledgeable: true,
+    inherited: true,
+    generation: null,
+  },
+  {
+    kind: 'platform_containment',
+    reason: 'descendants_not_contained',
+    acknowledgeable: true,
+    inherited: false,
+    generation: 2,
+  },
+];
+const evaluated = (
+  status: string,
+  evaluationId = 'ev-aaaa',
+  extra: { digest?: string; itemsTotal?: number; list?: unknown[]; current?: unknown } = {},
+) => ({
+  ...revocation(status),
+  observedAt: 1234,
+  revocation: {
+    status,
+    digest: extra.digest ?? `digest-${evaluationId}`,
+    evaluationId,
+    itemsTotal: extra.itemsTotal ?? 140,
+    confirmsContainment: false,
+    items: extra.list ?? inheritedItems,
+    currentGeneration: extra.current ?? { status: 'confirmed', itemsTotal: 0 },
+  },
+});
+/** A Gateway 1032 status: progress, authority and cancellation are always present. */
+const full = (
+  operationId: string,
+  state: string,
+  extra: {
+    progress?: unknown;
+    authority?: unknown;
+    cancellation?: unknown;
+    revocationConfirmed?: boolean;
+  } = {},
+) => ({
+  ...status(operationId, state, {
+    progress: extra.progress ?? null,
+    revocationConfirmed: extra.revocationConfirmed,
+  }),
+  authority: extra.authority ?? null,
+  cancellation: extra.cancellation ?? null,
+});
+const installed = (runtimeReady: string, confirmed = false) => ({
+  state: 'installed',
+  errorCode: null,
+  revocationConfirmed: confirmed,
+  targetInstalled: true,
+  revocation: null,
+  observedAt: 99,
+  cancellation: null,
+  installation: {
+    revocation: confirmed ? 'confirmed' : 'unproven',
+    environmentEvent: 'delivered',
+    bindingCommitted: true,
+    policyValidated: true,
+    runtimeReady,
+  },
+});
+const page = (
+  evaluationId: string,
+  list: unknown[],
+  next: string | null,
+  digest = `digest-${evaluationId}`,
+) =>
+  ok({
+    evaluation: { evaluationId, digest, status: 'unproven', itemsTotal: 5, items: list, next },
+  });
+async function found(
+  flow: EnvironmentSwitch,
+  reply: unknown,
+  active: Record<string, unknown> = { operationId: 'op', state: 'node_fenced' },
+  ...then: Reply[]
+) {
+  node(ok(environment(binding(1), active)));
+  node(ok(reply));
+  node(...then);
+  await flow.discover();
+}
+
+describe('G1–G5 read model', () => {
+  it('reads the complete read model without control, never advancing', async () => {
+    const flow = controller();
+    await found(
+      flow,
+      full('op', 'node_fenced', {
+        progress: evaluated('unproven'),
+        authority: authority('active'),
+      }),
+    );
+    expect(paths()).toEqual([
+      'GET /api/sessions/s1/environment',
+      'GET /api/sessions/s1/environment-transitions/receipts/op',
+    ]);
+    expect(flow.state.phase).toBe('needs_acknowledgement');
+    expect(flow.state.status?.progress?.observedAt).toBe(1234);
+    expect(flow.state.status?.authority).toEqual(authority('active'));
+    expect(flow.state.status?.cancellation).toBeNull();
+    expect(allowedSwitchActions(flow.state, undefined)).toEqual(['more_items', 'refresh']);
+  });
+
+  it('finds the last finished transition and the target of an active one', async () => {
+    const flow = controller();
+    const last = {
+      operationId: 'done',
+      state: 'installed',
+      createdAt: 7,
+      targetWorkspaceId: TARGET,
+      targetInstalled: true,
+      revocationConfirmed: true,
+    };
+    node(ok({ ...environment(binding(2, TARGET)), lastFinishedTransition: last }));
+    await flow.discover();
+    expect(flow.state).toMatchObject({ phase: 'idle', lastFinished: last });
+    const read = parseActiveTransition({
+      operationId: 'op',
+      state: 'node_fenced',
+      targetWorkspaceId: TARGET,
+    });
+    expect(read?.targetWorkspaceId).toBe(TARGET);
+    // A summary never claims confirmed revocation for a released switch.
+    expect(
+      parseSummary({ ...last, state: 'released', revocationConfirmed: true })?.revocationConfirmed,
+    ).toBe(false);
+  });
+
+  it('offers only reconcile for a bare Node fence, and never advances it', async () => {
+    const flow = controller();
+    flow.setLease(lease);
+    const bare = {
+      operationId: 'bare',
+      state: 'reconciliation_required',
+      targetWorkspaceId: TARGET,
+      recoveryReason: 'no_gateway_acceptance',
+      safeActions: ['reconcile'],
+    };
+    node(ok(environment(binding(1), bare)));
+    await flow.discover();
+    expect(flow.state).toMatchObject({
+      phase: 'reconciliation_required',
+      operationId: 'bare',
+      targetWorkspaceId: TARGET,
+      recoveryReason: 'no_gateway_acceptance',
+    });
+    expect(allowedSwitchActions(flow.state, lease)).toEqual(['reconcile']);
+    expect(await flow.cancel(lease)).toBe(false);
+    node(ok({ state: 'fenced', transition: null, duplicate: false }));
+    node(ok(environment(binding(1), bare)));
+    expect(await flow.reconcile()).toBe(true);
+    const reconcile = calls[1]!;
+    expect(`${reconcile.method} ${reconcile.url.pathname}`).toBe(
+      'POST /api/sessions/s1/environment-transitions/previews/bare/reconcile',
+    );
+    expect(reconcile.body).toBeUndefined();
+    expect(flow.state).toMatchObject({
+      phase: 'reconciliation_required',
+      reconciliation: 'fenced',
+    });
+    expect(paths().some((p) => p.endsWith('/advance'))).toBe(false);
+    // An older Gateway's `fenced` is the same condition.
+    expect(parseActiveTransition({ operationId: 'x', state: 'fenced' })).toMatchObject({
+      state: 'reconciliation_required',
+      safeActions: ['reconcile'],
+    });
+  });
+
+  it('pages the transition history to its end', async () => {
+    const summary = (id: string) => ({
+      operationId: id,
+      state: 'released',
+      createdAt: 1,
+      targetWorkspaceId: TARGET,
+      targetInstalled: false,
+      revocationConfirmed: false,
+    });
+    node(ok({ transitions: { version: 1, items: [summary('b')], next: '2.b' } }));
+    node(ok({ transitions: { version: 1, items: [], next: null } }));
+    const first = await environmentTransitionApi.history('s1', { limit: 1 });
+    const second = await environmentTransitionApi.history('s1', { cursor: first.next!, limit: 1 });
+    expect(first.items.map((i) => i.operationId)).toEqual(['b']);
+    expect(second).toEqual({ items: [], next: null });
+    expect(calls.map((c) => `${c.url.pathname}${c.url.search}`)).toEqual([
+      '/api/sessions/s1/environment-transitions?limit=1',
+      '/api/sessions/s1/environment-transitions?cursor=2.b&limit=1',
+    ]);
+  });
+
+  it('offers only cancel for an acceptance that needs review again', async () => {
+    const flow = controller();
+    flow.setLease(lease);
+    const progress = {
+      stage: 'review_required',
+      waitReason: 'lost_control',
+      safeActions: ['cancel'],
+      revocationConfirmed: false,
+      targetInstalled: false,
+      observedAt: 5,
+    };
+    await found(flow, full('op', 'accepted', { progress }), {
+      operationId: 'op',
+      state: 'accepted',
+    });
+    expect(flow.state.phase).toBe('review_required');
+    expect(flow.state.status?.progress).toMatchObject({
+      stage: 'review_required',
+      waitReason: 'lost_control',
+      safeActions: ['cancel'],
+    });
+    expect(allowedSwitchActions(flow.state, lease)).toEqual(['cancel', 'refresh']);
+    expect(allowedSwitchActions(flow.state, undefined)).toEqual(['refresh']);
+    node(ok(full('op', 'released', { cancellation: { requestedAt: 9 } })));
+    await flow.cancel(lease);
+    expect(flow.state).toMatchObject({ phase: 'cancelled', result: 'original_kept' });
+  });
+
+  it('treats only the specific missing-object codes as not stored', async () => {
+    const flow = controller();
+    node('network', fail(404, 'not_found'));
+    await flow.preview(TARGET, binding(1));
+    // A generic 404 is not proof of absence: no same-identity resend.
+    expect(flow.state.phase).toBe('preview_unknown');
+    expect(allowedSwitchActions(flow.state, lease)).toEqual(['refresh']);
+  });
+});
+
+describe('C1 operation authority', () => {
+  it('shows the operation authority offer before confirmation', async () => {
+    const flow = controller();
+    node((call) =>
+      ok({
+        ...preview(call.body!.operationId),
+        operationAuthority: { available: true, durationSeconds: 600 },
+      }),
+    );
+    await flow.preview(TARGET, binding(1));
+    expect(flow.state.preview?.operationAuthority).toEqual({
+      available: true,
+      durationSeconds: 600,
+    });
+    expect(parsePreview(preview('o')).operationAuthority).toEqual({
+      available: false,
+      durationSeconds: null,
+    });
+  });
+
+  it('asks for reauthorization after expiry, only with control, then installs', async () => {
+    const flow = controller();
+    flow.setLease(lease);
+    await found(
+      flow,
+      full('op', 'node_fenced', {
+        progress: evaluated('confirmed', 'ev-c', { list: [], itemsTotal: 0 }),
+        authority: authority('expired'),
+      }),
+    );
+    expect(flow.state.phase).toBe('authority_required');
+    expect(needsReauthorization(flow.state)).toBe(true);
+    expect(allowedSwitchActions(flow.state, lease)).toEqual(['reauthorize', 'refresh', 'cancel']);
+    expect(allowedSwitchActions(flow.state, undefined)).toEqual(['refresh']);
+    expect(await flow.reauthorize({ ...lease, sessionId: 'other' })).toBe(false);
+    node(
+      ok(
+        full('op', 'installed', {
+          progress: installed('not_started', true),
+          authority: authority('active', 2),
+          revocationConfirmed: true,
+        }),
+      ),
+    );
+    node(ok(environment(binding(2, TARGET))));
+    expect(await flow.reauthorize(lease)).toBe(true);
+    const sent = posts()[1]!;
+    expect(sent.url.pathname).toBe('/api/sessions/s1/environment-transitions/op/reauthorize');
+    expect(sent.body).toEqual({ clientId: 'client-a', generation: 7 });
+    expect(flow.state).toMatchObject({ phase: 'switched', result: 'revocation_confirmed' });
+    expect(flow.state.status?.authority?.revision).toBe(2);
+  });
+
+  it('offers reauthorization beside acknowledgement while consent is still needed', async () => {
+    const flow = controller();
+    flow.setLease(lease);
+    await found(
+      flow,
+      full('op', 'node_fenced', {
+        progress: evaluated('unproven'),
+        authority: authority('clock_uncertain', 1, { reauthorizationRequired: undefined }),
+      }),
+    );
+    expect(flow.state.status?.authority?.reauthorizationRequired).toBe(true);
+    expect(allowedSwitchActions(flow.state, lease)).toEqual([
+      'more_items',
+      'acknowledge',
+      'reauthorize',
+      'refresh',
+      'cancel',
+    ]);
+  });
+
+  it('explains a changed plan and passes authority codes through', async () => {
+    const flow = controller();
+    flow.setLease(lease);
+    const expired = full('op', 'node_fenced', {
+      progress: evaluated('confirmed', 'ev-c', { list: [], itemsTotal: 0 }),
+      authority: authority('expired'),
+    });
+    await found(flow, expired);
+    node(fail(409, 'plan_changed'), ok(expired));
+    await flow.reauthorize(lease);
+    expect(flow.state).toMatchObject({
+      phase: 'authority_required',
+      stalled: true,
+      error: { code: 'plan_changed', reason: 'plan_changed' },
+    });
+    node(fail(409, 'operation_authority_unavailable'), ok(expired));
+    await flow.reauthorize(lease);
+    expect(flow.state.error).toMatchObject({
+      code: 'operation_authority_unavailable',
+      reason: 'authority_unavailable',
+    });
+    for (const code of [
+      'operation_authority_missing',
+      'operation_authority_superseded',
+      'operation_authority_revoked',
+      'operation_authority_expired',
+      'operation_authority_clock_uncertain',
+      'operation_authority_revision',
+      'operation_authority_invalid',
+    ])
+      expect(classifySwitchFailure(new ApiError(code, 409, code)), code).toBe('authority');
+    expect(classifySwitchFailure(new ApiError('x', 409, 'transition_ended'))).toBe('rejected');
+  });
+
+  it('needs no reauthorization once the transition ended', () => {
+    const state: SwitchState = {
+      phase: 'switched',
+      status: parseStatus(full('op', 'installed', { authority: authority('expired') })),
+    };
+    expect(needsReauthorization(state)).toBe(false);
+  });
+});
+
+describe('C2 inherited risk and evaluation pages', () => {
+  it('parses both statuses and inherited items', () => {
+    const parsed = parseStatus(full('op', 'node_fenced', { progress: evaluated('unproven') }));
+    const rev = parsed.progress?.revocation;
+    expect(rev).toMatchObject({
+      status: 'unproven',
+      evaluationId: 'ev-aaaa',
+      itemsTotal: 140,
+      currentGeneration: { status: 'confirmed', itemsTotal: 0 },
+    });
+    expect(rev?.items.map((i) => [i.inherited, i.generation])).toEqual([
+      [true, 1],
+      [true, null],
+      [false, 2],
+    ]);
+  });
+
+  it('pages one immutable snapshot to its end', async () => {
+    const flow = controller();
+    await found(
+      flow,
+      full('op', 'node_fenced', { progress: evaluated('unproven', 'ev-a', { itemsTotal: 5 }) }),
+    );
+    node(page('ev-a', inheritedItems.slice(0, 2), 'c1'));
+    node(page('ev-a', inheritedItems.slice(2), 'c2'));
+    node(page('ev-a', [inheritedItems[0], inheritedItems[1]], null));
+    await flow.loadAllItems(2);
+    expect(calls.slice(2).map((c) => `${c.url.pathname}${c.url.search}`)).toEqual([
+      '/api/sessions/s1/environment-transitions/op/evaluations/ev-a?limit=2',
+      '/api/sessions/s1/environment-transitions/op/evaluations/ev-a?cursor=c1&limit=2',
+      '/api/sessions/s1/environment-transitions/op/evaluations/ev-a?cursor=c2&limit=2',
+    ]);
+    expect(flow.state.evaluation).toMatchObject({
+      evaluationId: 'ev-a',
+      complete: true,
+      next: null,
+    });
+    expect(flow.state.evaluation?.items).toHaveLength(5);
+    expect(allowedSwitchActions(flow.state, undefined)).toEqual(['refresh']);
+    expect(await flow.loadMoreItems()).toBe(false);
+  });
+
+  it('drops pages when the evaluation changes while paging', async () => {
+    const flow = controller();
+    await found(
+      flow,
+      full('op', 'node_fenced', { progress: evaluated('unproven', 'ev-a', { itemsTotal: 5 }) }),
+    );
+    node(page('ev-a', inheritedItems.slice(0, 2), 'c1'));
+    await flow.loadMoreItems(2);
+    expect(flow.state.evaluation?.items).toHaveLength(2);
+    // A new risk appeared: the receipt now names another snapshot.
+    node(
+      ok(full('op', 'node_fenced', { progress: evaluated('unproven', 'ev-b', { itemsTotal: 6 }) })),
+    );
+    await flow.refresh();
+    expect(flow.state.evaluation).toBeUndefined();
+    expect(flow.state.digestChanged).toBe(true);
+    node(page('ev-b', inheritedItems, null));
+    await flow.loadMoreItems();
+    expect(calls[calls.length - 1]!.url.pathname).toBe(
+      '/api/sessions/s1/environment-transitions/op/evaluations/ev-b',
+    );
+    expect(calls[calls.length - 1]!.url.search).toBe('');
+    expect(flow.state.evaluation).toMatchObject({ evaluationId: 'ev-b', complete: true });
+  });
+
+  it('refuses pages that do not form one snapshot, and reports a missing evaluation', async () => {
+    const flow = controller();
+    await found(
+      flow,
+      full('op', 'node_fenced', { progress: evaluated('unproven', 'ev-a', { itemsTotal: 5 }) }),
+    );
+    node(page('ev-a', inheritedItems.slice(0, 1), 'c1'));
+    node(page('ev-a', inheritedItems.slice(1, 2), 'c2', 'other-digest'));
+    await flow.loadMoreItems(1);
+    await flow.loadMoreItems(1);
+    expect(flow.state.error?.message).toMatch(/one snapshot/);
+    expect(flow.state.evaluation?.items).toHaveLength(1);
+    const other = controller();
+    await found(other, full('op', 'node_fenced', { progress: evaluated('unproven', 'ev-a') }));
+    node(fail(404, 'evaluation_not_found'));
+    await other.loadMoreItems();
+    expect(other.state.error).toMatchObject({ code: 'evaluation_not_found', reason: 'rejected' });
+  });
+
+  it('acknowledges all N items of the snapshot with its evaluation identity', async () => {
+    const flow = controller();
+    flow.setLease(lease);
+    await found(flow, full('op', 'node_fenced', { progress: evaluated('unproven', 'ev-a') }));
+    // Only 3 of 140 items are shown; the consent still names the whole snapshot.
+    expect(flow.state.status?.progress?.revocation?.items).toHaveLength(3);
+    node(ok(full('op', 'installed', { progress: installed('not_started') })));
+    node(ok(environment(binding(2, TARGET))));
+    await flow.acknowledge(lease);
+    const sent = posts().find((c) => c.url.pathname.endsWith('/acknowledge'))!;
+    expect(sent.body).toEqual({
+      digest: 'digest-ev-a',
+      evaluationId: 'ev-a',
+      clientId: 'client-a',
+      generation: 7,
+    });
+  });
+
+  it('shows the new evaluation after a digest change and never re-acknowledges', async () => {
+    const flow = controller();
+    flow.setLease(lease);
+    await found(flow, full('op', 'node_fenced', { progress: evaluated('unproven', 'ev-a') }));
+    node(page('ev-a', inheritedItems, 'c1'));
+    await flow.loadMoreItems();
+    node(fail(409, 'revocation_digest_changed'));
+    node(
+      ok(
+        full('op', 'node_fenced', { progress: evaluated('unproven', 'ev-b', { itemsTotal: 141 }) }),
+      ),
+    );
+    await flow.acknowledge(lease);
+    expect(flow.state).toMatchObject({ phase: 'needs_acknowledgement', digestChanged: true });
+    expect(flow.state.status?.progress?.revocation).toMatchObject({
+      evaluationId: 'ev-b',
+      itemsTotal: 141,
+    });
+    expect(flow.state.evaluation).toBeUndefined();
+    expect(posts().filter((c) => c.url.pathname.endsWith('/acknowledge'))).toHaveLength(1);
+  });
+});
+
+describe('C3 cancellation and readiness', () => {
+  it('keeps polling a pending cancellation through its reasons and never offers install-side actions', async () => {
+    const flow = controller({ poll: true });
+    flow.setLease(lease);
+    await found(
+      flow,
+      full('op', 'node_fenced', {
+        progress: evaluated('unproven'),
+        authority: authority('expired'),
+      }),
+    );
+    const pending = (reason: string) =>
+      ok(
+        full('op', 'node_fenced', {
+          progress: {
+            ...evaluated('unproven'),
+            cancellation: { requestedAt: 50, pendingReason: reason },
+          },
+          authority: authority('expired'),
+          cancellation: { requestedAt: 50 },
+        }),
+      );
+    node(pending('drain_active'));
+    node(
+      pending('drain_active'),
+      pending('resources_unresolved'),
+      pending('original_binding_invalid'),
+    );
+    node(ok(full('op', 'released', { cancellation: { requestedAt: 50 } })));
+    await flow.cancel(lease);
+    await settle();
+    // The first reply is the pending cancellation itself.
+    expect(changes.some((s) => s.phase === 'cancel_pending')).toBe(true);
+    const seen = changes
+      .filter((s) => s.phase === 'cancel_pending')
+      .map((s) => s.status?.progress?.cancellation?.pendingReason);
+    expect(seen).toContain('drain_active');
+    expect(seen).toContain('resources_unresolved');
+    expect(seen).toContain('original_binding_invalid');
+    const pendingState = changes.find((s) => s.phase === 'cancel_pending')!;
+    expect(allowedSwitchActions(pendingState, lease)).toEqual(['refresh']);
+    expect(needsReauthorization(pendingState)).toBe(false);
+    expect(flow.state).toMatchObject({ phase: 'cancelled', result: 'original_kept' });
+    // A recorded cancellation polls through `advance` (the Gateway then only drains).
+    expect(posts().map((c) => c.url.pathname.split('/').pop())).toEqual([
+      'advance', // discovery
+      'cancel',
+      'advance',
+      'advance',
+      'advance',
+      'advance',
+    ]);
+    for (const reason of ['drain_active', 'resources_unresolved', 'original_binding_invalid'])
+      expect(CANCEL_PENDING_LABELS[reason]).toBeTruthy();
+  });
+
+  it('shows a pending cancellation to a device without control', async () => {
+    const flow = controller();
+    await found(
+      flow,
+      full('op', 'node_fenced', {
+        progress: {
+          ...evaluated('blocked'),
+          cancellation: { requestedAt: 1, pendingReason: 'resources_unresolved' },
+        },
+        cancellation: { requestedAt: 1 },
+      }),
+    );
+    expect(flow.state.phase).toBe('cancel_pending');
+    expect(flow.state.status?.cancellation).toEqual({ requestedAt: 1 });
+    expect(classifySwitchFailure(new ApiError('x', 409, 'transition_cancel_requested'))).toBe(
+      'cancel_requested',
+    );
+  });
+
+  it('reports readiness separately and refreshes it after installation', async () => {
+    const flow = controller();
+    flow.setLease(lease);
+    await found(
+      flow,
+      full('op', 'installed', { progress: installed('not_started') }),
+      { operationId: 'op', state: 'node_fenced' },
+      ok(environment(binding(2, TARGET))),
+    );
+    expect(flow.state).toMatchObject({
+      phase: 'switched',
+      result: 'revocation_not_fully_confirmed',
+    });
+    expect(readinessOf(flow.state.status)).toBe('not_started');
+    expect(flow.state.status?.progress?.installation).toMatchObject({
+      bindingCommitted: true,
+      policyValidated: true,
+    });
+    expect(allowedSwitchActions(flow.state, lease)).toEqual(['refresh', 'discard']);
+    node(ok(full('op', 'installed', { progress: installed('failed') })));
+    await flow.refresh(lease);
+    expect(readinessOf(flow.state.status)).toBe('failed');
+    expect(posts()[posts().length - 1]!.url.pathname).toMatch(/\/advance$/);
+    node(ok(full('op', 'installed', { progress: installed('ready') })));
+    await flow.refresh(lease);
+    expect(readinessOf(flow.state.status)).toBe('ready');
+    expect(allowedSwitchActions(flow.state, lease)).toEqual(['discard']);
+    // The binding was adopted once, not on every refresh.
+    expect(bindings).toEqual([binding(2, TARGET)]);
+    for (const value of ['not_started', 'ready', 'failed', 'unknown'])
+      expect(READINESS_LABELS[value]).toBeTruthy();
+  });
+
+  it('reads readiness without control through the receipt', async () => {
+    const flow = controller();
+    await found(
+      flow,
+      full('op', 'installed', { progress: installed('unknown') }),
+      { operationId: 'op', state: 'node_fenced' },
+      ok(environment(binding(2, TARGET))),
+    );
+    node(ok(full('op', 'installed', { progress: installed('ready') })));
+    await flow.refresh();
+    expect(readinessOf(flow.state.status)).toBe('ready');
+    expect(posts()).toHaveLength(0);
+  });
 });

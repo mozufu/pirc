@@ -1224,3 +1224,98 @@ reconciling a bare Node fence that has no stored preview (C4 adoption work).
 
 Validation: **441 Gateway tests** (new case for the first three fixes) and strict
 Gateway Clippy passed. Local commit only.
+
+## Local implementation checkpoint: Web C1–C3 client interfaces (2026-11-08)
+
+The Web interface layer (`apps/web/src/lib/environment-transitions.ts`) adopts
+the C4 G1–G5 read model, C1 operation authority, C2 inherited risk and evaluation
+pages, and C3 cancellation and readiness of Gateway **1032** / Node **2037**. As
+before, only the interface is meant to be correct. `EnvironmentSwitchPanel.svelte`
+stays throwaway UI. There is no local persistence, and IndexedDB stays at **3**.
+
+- **Read model.**
+  - Without control, every read is `GET .../receipts/{op}`, the complete read
+    model: `progress` with `observedAt`, `authority`, `cancellation`. With control
+    the client still reads through `advance`.
+  - `GET .../environment` gives `lastFinishedTransition` (shown when idle).
+    `activeTransition` adds `targetWorkspaceId`.
+  - `reconciliation_required` (older `fenced`) becomes its own phase with
+    `recoveryReason`. Its only action is the read-only
+    `POST .../previews/{op}/reconcile`, followed by a fresh environment read; it is
+    never advanced or cancelled.
+  - The history is paged through `environmentTransitionApi.history`.
+  - `accepted` with `progress.stage: review_required` maps to `review_required`,
+    with its `waitReason` shown and only cancel offered.
+  - Only `preview_not_found`, `acceptance_not_found`, `receipt_not_found` and
+    `conversation_not_found` mean "not stored". Any other 404 is a definite
+    refusal, so it never allows a same-identity resend.
+- **C1.**
+  - The preview's `operationAuthority {available, durationSeconds}` is shown
+    before Confirm.
+  - Status `authority` is parsed. Any state other than `active` needs
+    reauthorization, even without the flag.
+  - Expiry on a transition ready to install maps to `authority_required`.
+    Elsewhere before the end, **Reauthorize** is offered beside the other actions,
+    with current control only. It sends `POST .../{op}/reauthorize {clientId,
+generation}`.
+  - `plan_changed` explains that a new transition is needed.
+  - The `operation_authority_*` codes classify as `authority`, and
+    `operation_authority_unavailable` gets its own reason.
+- **C2.**
+  - Revocation parses `evaluationId`, the cumulative `status`,
+    `currentGeneration {status, itemsTotal}`, and items with `inherited` and
+    `generation`. The panel shows both statuses and labels inherited items, by
+    generation or as unattributed history.
+  - `loadMoreItems`/`loadAllItems` page `GET .../{op}/evaluations/{id}` through
+    `next`, and check that every page belongs to one snapshot. Pages of a snapshot
+    that is no longer current are dropped, and a changed evaluation marks the
+    items as changed.
+  - The acknowledgement sends `{digest, evaluationId, clientId, generation}` and is
+    labeled as covering all `itemsTotal` items. `revocation_digest_changed` re-reads
+    and shows the new evaluation; nothing re-acknowledges automatically.
+- **C3.**
+  - A recorded cancellation (`cancellation.requestedAt` or the Node's
+    `progress.cancellation`) maps to `cancel_pending`, which shows its
+    `pendingReason` (`drain_active`, `resources_unresolved`,
+    `original_binding_invalid`).
+  - While pending, the client keeps polling and offers only refresh: no install,
+    acknowledgement or reauthorization. A recorded cancellation polls through
+    `advance`, because the Gateway then only drains. An unrecorded (ambiguous) one
+    stays GET-only.
+  - `transition_cancel_requested` passes through as its own reason.
+  - Installation parses `bindingCommitted`, `policyValidated` and `runtimeReady`.
+    The panel says "switched; execution not started", "failed to start" or
+    "state unknown" until the runtime is `ready`. Refresh re-reads it (with control
+    through `advance`, which is read-only once installed). The new binding is
+    adopted once.
+- en/zh-TW strings for the throwaway panel.
+
+Contract notes (Gateway unchanged):
+
+1. `transition_cancel_requested` and `operation_authority_invalid` are missing from
+   the Gateway's passed-through Node codes, so they would reach clients as
+   `502 transition_step_failed`. The client classifies them anyway.
+2. `GET .../{op}/evaluations/{id}` for an operation with no acceptance returns
+   `500 internal`, not `acceptance_not_found`: `frozen()` raises a raw "no rows"
+   database error. The client treats it as ambiguous and keeps the request
+   readable.
+3. Readiness refreshes only through `advance`, which needs control. The receipt GET
+   and the recovery sweep (which skips `installed`) never re-read it. A device
+   without control can see `not_started` indefinitely.
+4. Reconciling a bare fence needs a stored preview. A bare fence without one gets
+   `preview_not_found` for its only safe action, and reconciliation never changes
+   its `reconciliation_required` state (adoption and cleanup remain C4 work).
+5. The "read-only" receipt GET writes the Gateway's authority clock watermark
+   whenever an authority exists. This is harmless, but it is a write on a read
+   path.
+
+Validation: `npx vitest run` in `apps/web`: **71 files, 733 tests** passed (699
+before; `environment-transitions.test.ts` **59 → 90**, `EnvironmentSwitchPanel.test.ts`
+**3 → 6**; existing T4 cases were updated for the specific 404 codes, the renamed
+`reconciliation_required` phase and the new default fields). `svelte-check` found 0
+errors and 0 warnings, and Prettier check passed on all changed files. Rust,
+lockfiles and package versions are unchanged.
+
+Still open: real browser journeys, the new UI, Android parity (parallel slice),
+reconnect-driven rediscovery, and the contract notes above. Local commit only, no
+push, deployment or Release.
