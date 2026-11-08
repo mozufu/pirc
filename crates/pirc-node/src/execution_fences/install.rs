@@ -40,14 +40,15 @@ pub(super) fn outcome(
             let generation: i64 = r.get(0)?;
             let (start, epoch, runner, latest): (i64, i64, String, i64) =
                 (r.get(5)?, r.get(6)?, r.get(7)?, r.get(8)?);
+            // Installation resets the runner state, so a failure seen here belongs
+            // to this generation even if it failed before taking an epoch.
             let runtime_ready = if latest != generation {
                 "unknown"
-            } else if epoch <= start {
-                "not_started"
             } else {
                 match runner.as_str() {
                     "failed" => "failed",
                     "starting" => "unknown",
+                    _ if epoch <= start => "not_started",
                     _ => "ready",
                 }
             };
@@ -300,7 +301,7 @@ pub async fn install(node: Node, request: Request) -> ApiResult<Response> {
                 atomic(&db, |tx| {
                     let stamp = now_ms();
                     tx.execute(
-                        "UPDATE sessions SET workspace_id=?2,runner_epoch=runner_epoch+1,updated_at=?3 WHERE id=?1",
+                        "UPDATE sessions SET workspace_id=?2,runner_epoch=runner_epoch+1,runner_state='stopped',updated_at=?3 WHERE id=?1",
                         params![session, body.target_workspace_id, stamp],
                     )?;
                     let epoch = tx.get_session(session)?.runner_epoch;

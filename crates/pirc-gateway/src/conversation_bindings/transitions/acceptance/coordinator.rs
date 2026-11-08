@@ -312,6 +312,45 @@ async fn advance(
         reconcile(app, identity, id, op).await?;
     }
     let (f, s) = current(app, identity, id, op)?;
+    if s == "installed"
+        && let Ok(connection) = app.nodes.connection(&f.node)
+    {
+        // Read-only refresh of readiness after installation (C3); never an effect.
+        let response = app
+            .nodes
+            .request_on(
+                &f.node,
+                connection,
+                NodeHttpRequest {
+                    method: HttpMethod::Get,
+                    url: format!(
+                        "/api/sessions/{}/execution-fences/{}",
+                        crate::routes::urlencoding_component(&f.remote),
+                        crate::routes::urlencoding_component(op)
+                    ),
+                    user: identity.user.clone(),
+                    payload: None,
+                    body_base64: None,
+                    content_type: None,
+                },
+            )
+            .await;
+        if let Ok(r) = response
+            && r.status == 200
+            && app.nodes.require_connection(&f.node, connection).is_ok()
+        {
+            // Best effort: a refresh that cannot be adopted leaves the last result.
+            let _ = observe(
+                app,
+                identity,
+                id,
+                op,
+                &f,
+                &r.body.unwrap_or(Value::Null),
+                connection,
+            );
+        }
+    }
     if s != "node_fenced" {
         return describe(app, identity, id, op);
     }

@@ -704,4 +704,87 @@ mod switching {
             TARGET_WORKSPACE_ID
         );
     }
+
+    /// X2: advance and cancel race on two requests; exactly one result commits
+    /// and the binding matches it.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn x2_racing_install_and_cancel_commit_exactly_one_result() {
+        let Some(cluster) = Cluster::start_with(switching()).await else {
+            return;
+        };
+        let headers = browser_headers();
+        let api = cluster.api();
+        let (id, generation) = conversation(&api, &headers).await;
+        confirm(&api, &headers, &id, &generation, "move-x2").await;
+        let body = json!({"clientId":"web","generation":generation});
+        let base = format!("/api/sessions/{id}/environment-transitions/move-x2");
+        let (advance_path, cancel_path) = (format!("{base}/advance"), format!("{base}/cancel"));
+        let (a, b) = tokio::join!(
+            api.send("POST", &advance_path, &headers, Some(body.clone())),
+            api.send("POST", &cancel_path, &headers, Some(body.clone()))
+        );
+        assert!(a.status < 500 && b.status < 500, "{} {}", a.body, b.body);
+        // Let either side finish, then read the single committed outcome.
+        let _ = api
+            .send("POST", &format!("{base}/advance"), &headers, Some(body))
+            .await;
+        let finished = receipt(&api, &headers, &id, "move-x2").await;
+        let state = finished["transition"]["state"].as_str().unwrap().to_owned();
+        let execution = workspace(&api, &headers, &id).await;
+        match state.as_str() {
+            "installed" => assert_eq!(execution["workspaceId"], TARGET_WORKSPACE_ID),
+            "released" => {
+                assert_eq!(execution["workspaceId"], WORKSPACE_ID);
+                assert_eq!(execution["generation"], 1);
+            }
+            other => panic!("no single committed result: {other} {finished}"),
+        }
+    }
+
+    /// X5: the binding commits, then the first runtime launch fails because the
+    /// target vanished. Readiness reports it; the binding is not reverted.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn x5_a_failed_first_launch_keeps_the_committed_binding() {
+        let Some(cluster) = Cluster::start_with(switching()).await else {
+            return;
+        };
+        let headers = browser_headers();
+        let api = cluster.api();
+        let (id, generation) = conversation(&api, &headers).await;
+        confirm(&api, &headers, &id, &generation, "move-x5").await;
+        let installed = advance(&api, &headers, &id, "move-x5", &generation).await;
+        assert_eq!(installed["transition"]["state"], "installed", "{installed}");
+        assert_eq!(
+            installed["progress"]["installation"]["runtimeReady"],
+            "not_started"
+        );
+        assert_eq!(
+            installed["progress"]["installation"]["bindingCommitted"],
+            true
+        );
+        let root = cluster.dir.path().canonicalize().unwrap();
+        std::fs::rename(root.join("workspace-target"), root.join("target-gone")).unwrap();
+        let binding =
+            get(&api, &headers, &format!("/api/sessions/{id}/environment")).await["binding"]
+                .clone();
+        let prompt = api
+            .send(
+                "POST",
+                &format!("/api/sessions/{id}/commands"),
+                &headers,
+                Some(json!({"commandId":"after-x5","clientId":"web","generation":generation,"expectedBinding":binding,
+                    "payload":{"type":"prompt","message":"after"}})),
+            )
+            .await;
+        assert!(prompt.status >= 400, "{} {}", prompt.status, prompt.body);
+        let refreshed = advance(&api, &headers, &id, "move-x5", &generation).await;
+        assert_eq!(
+            refreshed["progress"]["installation"]["runtimeReady"], "failed",
+            "{refreshed}"
+        );
+        assert_eq!(
+            workspace(&api, &headers, &id).await["workspaceId"],
+            TARGET_WORKSPACE_ID
+        );
+    }
 }

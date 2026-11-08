@@ -1169,3 +1169,36 @@ again to an agent reopened from the saved session, appears once; a different ID
 is a new entry), **440 Gateway tests**, **44 real Gateway/Node/Agent process
 cases** (the switching case still sees the notice once) and strict all-target
 Clippy passed. Local commit only.
+
+## Local implementation checkpoint: C3 acceptance X1–X5 (2026-11-08)
+
+Fourth C3 slice: X1–X5 acceptance, plus two readiness fixes the real runs needed.
+No schema change (Gateway **1032**, Node **2037**).
+
+| Case                                                   | Evidence                                                                                                                                                                                                                                    |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **X1** cancel with blocked evidence                    | Node unit (C3a): waits `resources_unresolved`, refuses installation, completes under a fresh epoch once the resource settles                                                                                                                |
+| **X2** concurrent drain/cancel/install                 | Real process: `advance` and `cancel` sent together; exactly one of `installed` / `released` commits and the binding matches it (target, or source at generation 1). Node unit: cancel during an interrupted drain completes when it settles |
+| **X3** source grant revoked before release             | Node unit: original workspace being deleted keeps `original_binding_invalid`; access is never restored. Project-grant revocation needs C6                                                                                                   |
+| **X4** notice delivered, receipt lost, agent restarted | Node unit: an interrupted send becomes `uncertain` after restart and is resent under the same ID. Agent unit: a reopened agent skips the already-applied notice                                                                             |
+| **X5** committed binding, failed first launch          | Real process: after installation the target directory disappears; the next prompt fails, `runtimeReady` becomes `failed`, and the binding stays on the target. Node unit for the `not_started`/`failed`/`ready` sequence                    |
+
+Fixes:
+
+- **Readiness before an epoch.** A sandbox failure while preparing happens before
+  the runner takes an epoch, so readiness had stayed `not_started`. Readiness
+  now reads the runner state first, and installation resets the runner state to
+  `stopped`, so an old binding's failure is not attributed to the new one.
+- **Refresh after installation.** The Gateway's progress was the receipt captured
+  at installation, so later readiness was never visible. `advance` on an
+  installed transition now re-reads the Node receipt, read-only and best effort,
+  to refresh readiness. It never performs an effect.
+
+Not covered: X1 and X3 with a real unprovable resource or grant revocation
+(the harness has none; X3's grant part needs C6), X4 with a deliberately dropped
+agent reply in a real process, and native Linux.
+
+Validation: **687 Node library tests**, **440 Gateway tests**, **46 real
+Gateway/Node/Agent process cases** across 15 suites (two new: X2, X5),
+`cargo fmt --check` and strict all-target Node/Gateway/conformance/config/agent
+Clippy passed. Local commit only.

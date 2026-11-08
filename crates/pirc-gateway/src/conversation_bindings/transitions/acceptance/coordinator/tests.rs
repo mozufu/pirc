@@ -15,6 +15,7 @@ struct Fake {
     payloads: Vec<(String, Value)>,
     release_pending: bool,
     cancel_requested: bool,
+    installed_target: Value,
 }
 const DIGEST: &str = "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd";
 fn receipt(f: &Fake, payload: &Value) -> Value {
@@ -22,6 +23,8 @@ fn receipt(f: &Fake, payload: &Value) -> Value {
     let installed = f.state == "installed";
     let target = if f.wrong_target {
         json!("elsewhere")
+    } else if payload["targetWorkspaceId"].is_null() {
+        f.installed_target.clone()
     } else {
         payload["targetWorkspaceId"].clone()
     };
@@ -55,6 +58,10 @@ fn fake(app: &AppState, unproven: bool) -> Arc<Mutex<Fake>> {
                 "items":[{"kind":"host_command","id":"private-run","reason":"host_effects_may_survive","acknowledgeable":true,"inherited":true,"generation":1}],
                 "next":"1"}}));
         }
+        if r.method == HttpMethod::Get {
+            // Read-only refresh: not a recorded step.
+            return ok(receipt(&f, &Value::Null));
+        }
         let step = r.url.rsplit('/').next().unwrap_or_default().to_owned();
         f.calls.push(step.clone());
         f.payloads.push((step.clone(), payload.clone()));
@@ -84,6 +91,7 @@ fn fake(app: &AppState, unproven: bool) -> Arc<Mutex<Fake>> {
                     });
                 }
                 f.state = "installed";
+                f.installed_target = payload["targetWorkspaceId"].clone();
             }
             "release" if f.state != "installed" => {
                 f.cancel_requested = true;
