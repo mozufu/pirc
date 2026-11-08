@@ -434,3 +434,36 @@ async fn a_finished_switch_stays_discoverable_after_it_leaves_active_status() {
     }
     assert!(!page.to_string().contains("Private"));
 }
+
+#[tokio::test]
+async fn active_transitions_name_their_target_and_a_bare_fence_needs_reconciliation() {
+    let (app, _dir, id) = app();
+    fenced(&app, &id, true).await;
+    let active = super::super::super::active(&app.db.lock(), "alice", &id)
+        .unwrap()
+        .unwrap();
+    assert_eq!(active["state"], "node_fenced");
+    assert_eq!(active["targetWorkspaceId"], "node:target");
+    assert!(active.get("safeActions").is_none());
+
+    // A Node fence recorded without any Gateway acceptance is not consent.
+    let (app, _dir, id) = super::super::super::tests::app();
+    {
+        let db = app.db.lock();
+        super::super::super::reserve(&db, "alice", &id, &input(&db, &id)).unwrap();
+        db.execute(
+            "INSERT INTO conversation_node_fences VALUES('alice','move-1',?1,?2,'fenced',1)",
+            params![id, "f".repeat(64)],
+        )
+        .unwrap();
+    }
+    let bare = super::super::super::active(&app.db.lock(), "alice", &id)
+        .unwrap()
+        .unwrap();
+    assert_eq!(bare["state"], "reconciliation_required");
+    assert_eq!(bare["recoveryReason"], "no_gateway_acceptance");
+    assert_eq!(bare["safeActions"], json!(["reconcile"]));
+    assert_eq!(bare["targetWorkspaceId"], "node:target");
+    let advance = advance(&app, &identity(), &id, "move-1", None).await;
+    assert!(advance.is_err());
+}

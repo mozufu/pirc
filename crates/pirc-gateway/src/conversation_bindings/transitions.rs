@@ -161,10 +161,20 @@ fn reserve(db: &Connection, user: &str, session: &str, input: &Input) -> ApiResu
 /// Runtime status is separate from the frozen policy snapshot used for review.
 /// Another device can discover the operation without knowing its original ID.
 pub(crate) fn active(db: &Connection, user: &str, session: &str) -> ApiResult<Option<Value>> {
-    let row:Option<(String,String)>=db.query_row(
-        "SELECT operation_id,state FROM (SELECT operation_id,state,0 AS priority FROM conversation_transition_acceptances WHERE owner_user=?1 AND session_id=?2 AND state NOT IN ('deleted','installed','released') UNION ALL SELECT operation_id,state,1 AS priority FROM conversation_node_fences WHERE owner_user=?1 AND session_id=?2 AND state='fenced') ORDER BY priority LIMIT 1",
-        params![user,session],|r|Ok((r.get(0)?,r.get(1)?))).optional()?;
-    Ok(row.map(|(op,state)|json!({"operationId":op,"state":state,"revocationConfirmed":false,"targetInstalled":false})))
+    // An accepted transition names its reviewed target. A Node fence with no
+    // Gateway acceptance is not consent to continue: it only offers the existing
+    // read-only receipt reconciliation (C4/G3).
+    let row:Option<(String,String,Option<String>)>=db.query_row(
+        "SELECT operation_id,state,target FROM (SELECT operation_id,state,json_extract(frozen_json,'$.targetWorkspaceId') AS target,0 AS priority FROM conversation_transition_acceptances WHERE owner_user=?1 AND session_id=?2 AND state NOT IN ('deleted','installed','released') UNION ALL SELECT f.operation_id,'reconciliation_required',(SELECT v.target_workspace_id FROM conversation_transition_previews v WHERE v.owner_user=f.owner_user AND v.operation_id=f.operation_id),1 AS priority FROM conversation_node_fences f WHERE f.owner_user=?1 AND f.session_id=?2 AND f.state='fenced' AND NOT EXISTS(SELECT 1 FROM conversation_transition_acceptances a WHERE a.owner_user=f.owner_user AND a.operation_id=f.operation_id)) ORDER BY priority LIMIT 1",
+        params![user,session],|r|Ok((r.get(0)?,r.get(1)?,r.get(2)?))).optional()?;
+    Ok(row.map(|(op, state, target)| {
+        let mut value = json!({"operationId":op,"state":state,"targetWorkspaceId":target,"revocationConfirmed":false,"targetInstalled":false});
+        if value["state"] == "reconciliation_required" {
+            value["recoveryReason"] = json!("no_gateway_acceptance");
+            value["safeActions"] = json!(["reconcile"]);
+        }
+        value
+    }))
 }
 
 /// One accepted transition as a public summary: no frozen private mapping.

@@ -29,7 +29,7 @@ of writing competing “latest” summaries across the plans.
 | Formats                | Gateway 1030; Node 2032; protocol 15; client contract 2; Web IndexedDB 3; Android private envelope 3        | No version or dependency change in this document                                                                                 |
 | U1 first Send          | Gateway/Node/Web/Android persistence, recovery and draft integration                                        | `canSubmit: false`; mixed-version, device and rollout gates remain                                                               |
 | U2 bindings            | Legacy adapter, configured policy, membership, memory/upload provenance and ordinary-command checks         | Full live-resource provenance and project grant enforcement remain                                                               |
-| U4 same-Node switch    | T1–T5: existing registered workspace targets, coordinator, Web/Android controls and failure-matrix evidence | `PIRC_ENVIRONMENT_SWITCHING` defaults off; C4 G1–G2 delivered; C1–C3, the remaining C4 gaps and native Linux acceptance remain   |
+| U4 same-Node switch    | T1–T5: existing registered workspace targets, coordinator, Web/Android controls and failure-matrix evidence | `PIRC_ENVIRONMENT_SWITCHING` defaults off; C4 G1–G3 delivered; C1–C3, the remaining C4 gaps and native Linux acceptance remain   |
 | Work/host terminals    | Explicit paths, retained requests, v3 clients; compatibility host path defaults off                         | Native Linux and real browser/Android journeys remain; no automatic host fallback                                                |
 | U5 tasks/collaboration | Existing goal/todo/team/pots primitives                                                                     | Canonical mapping, project fan-out, notes/board and waits not accepted as complete                                               |
 | U6 pots                | Progress tracking, explicit dispatch, Stop ownership/archive                                                | Content observation, proactive analysis, standing grants, budgets and digests not accepted as complete; P7 remains open          |
@@ -40,7 +40,7 @@ of writing competing “latest” summaries across the plans.
 Existing T5 evidence includes real-process restart/offline/concurrency/takeover/
 cancel journeys, and **synthetic**, not native Linux, confirmed containment. Its
 675 Node, 428 Gateway and 42 process cases are historical results, not tests run
-for this document. C4 gaps G1–G2 are delivered ([checkpoints](transition-installation.md)); the others remain.md)); the others remain.
+for this document. C4 gaps G1–G3 are delivered ([checkpoints](transition-installation.md)); the others remain.md)); the others remain.md)); the others remain.
 
 The original context decision A remains: leaving a project preserves saved history
 but removes new project-derived access. Independent disclosed grants survive;

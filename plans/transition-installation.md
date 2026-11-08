@@ -798,3 +798,18 @@ Validation: **430 Gateway tests** (new case: after installation the environment
 shows `lastFinishedTransition` with the confirmed result and no active transition;
 the list pages with `limit=1` to an empty end; bad parameters are refused; no
 private IDs appear) and strict Gateway Clippy passed. Local commit only.
+
+## Local implementation checkpoint: C4 G3 target and bare-fence discovery (2026-11-08)
+
+Closes C4 gap **G3**. `activeTransition` (in `GET .../environment`) now names
+the reviewed target as public `targetWorkspaceId` for an accepted transition. A
+Node fence recorded with no Gateway acceptance no longer appears as `fenced`: it
+is `reconciliation_required` with `recoveryReason: "no_gateway_acceptance"` and
+`safeActions: ["reconcile"]` (the existing read-only receipt reconciliation), and
+carries the preview's target when one exists. It never becomes consent: the
+coordinator refuses to advance it. No schema change (Gateway **1030**). Adopting
+matching retained intent or scoped cleanup for such fences remains C4 target work.
+
+Validation: **431 Gateway tests** (new case: an accepted transition names its
+target; a bare fence reports reconciliation with its target and cannot be
+advanced) and strict Gateway Clippy passed. Local commit only.
