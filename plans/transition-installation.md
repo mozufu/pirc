@@ -1133,3 +1133,39 @@ policy receipts remain future work.
 Validation: Node fence tests (new X5 case: `not_started`, then `failed` with the
 binding still on the target, then `ready`), **440 Gateway tests** and strict
 Node/Gateway Clippy passed. Local commit only.
+
+## Local implementation checkpoint: C3 trusted notice protocol (2026-11-08)
+
+Third C3 slice: the environment notice is idempotent state reconciliation. Node
+schema **2037**.
+
+- **One logical notice.** Each installation keeps one notice per operation. It
+  now carries `noticeId` (the operation), `sourceGeneration` and
+  `targetGeneration` with the workspaces and revocation result.
+- **Retransmission.** A send whose reply was lost or refused becomes `uncertain`
+  and is sent again **with the same ID** before the session's next command or
+  delivery. Only one send is in flight at a time. `delivered` is final. This
+  replaces T2's at-most-once rule, which could leave an agent without its
+  environment context after a lost reply.
+- **Restart.** On Node start, notices left `sending` by the previous process
+  become `uncertain` and are retransmitted.
+- **Agent.** `Agent::deliver` skips a notice whose `noticeId` and custom type are
+  already in the saved transcript. A retransmission, or a replacement agent that
+  reopens the session, adds no duplicate entry and wakes no turn. The command is
+  still refused when the agent does not confirm the notice, so no new work starts
+  before the trusted context is applied.
+
+Not in this slice: an explicit rules-revision watermark in admission (the notice
+carries generations; admission requires the delivered notice), and the X1–X5
+real-process acceptance (next). Old binaries reject 2037. Gateway **1032**,
+protocol/client/envelope **15/2/3**, packages, lockfiles and Nix hashes are
+unchanged.
+
+Validation: **687 Node library tests** (the notice test now checks one in-flight
+claim, retransmission under the same ID after a lost reply and finality after
+delivery; new X4 case: a send cut off by a Node restart is `uncertain` and
+claimed again), **424 agent tests** (new: the same notice delivered twice, and
+again to an agent reopened from the saved session, appears once; a different ID
+is a new entry), **440 Gateway tests**, **44 real Gateway/Node/Agent process
+cases** (the switching case still sees the notice once) and strict all-target
+Clippy passed. Local commit only.

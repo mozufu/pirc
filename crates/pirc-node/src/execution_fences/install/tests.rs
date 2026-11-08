@@ -361,7 +361,7 @@ async fn a_fence_without_a_frozen_target_review_cannot_install() {
 }
 
 #[tokio::test]
-async fn the_environment_notice_is_claimed_once_and_never_resent() {
+async fn the_environment_notice_is_retransmitted_with_one_id_until_confirmed() {
     let mut f = Fixture::new("move", false, true).await;
     f.install("move").await;
     {
@@ -370,25 +370,34 @@ async fn the_environment_notice_is_claimed_once_and_never_resent() {
         assert_eq!(deliver["type"], "deliver");
         assert_eq!(deliver["wake"], false);
         assert_eq!(deliver["message"]["customType"], "environment-change");
-        assert_eq!(deliver["message"]["details"]["toWorkspaceId"], "target");
+        let details = &deliver["message"]["details"];
+        assert_eq!(details["noticeId"], "move");
+        assert_eq!(details["toWorkspaceId"], "target");
+        assert_eq!(
+            (
+                details["sourceGeneration"].clone(),
+                details["targetGeneration"].clone()
+            ),
+            (json!(1), json!(2))
+        );
         assert!(
             deliver["message"]["content"]
                 .as_str()
                 .unwrap()
                 .contains("\"target\" replaced \"repo\"")
         );
-        // A second claim, or a lost reply, never sends it again.
+        // Only one send is in flight at a time.
         assert!(claim_notice(&db, &f.session).unwrap().is_none());
+        // A lost reply: the same notice is sent again; the agent applies it once.
         finish_notice(&db, &owner, &op, false).unwrap();
+        let (_, _, again) = claim_notice(&db, &f.session).unwrap().unwrap();
+        assert_eq!(again["message"]["details"]["noticeId"], "move");
+        finish_notice(&db, &owner, &op, true).unwrap();
         assert!(claim_notice(&db, &f.session).unwrap().is_none());
         assert!(
             db.execute("UPDATE environment_events SET state='pending'", [])
                 .is_err()
         );
-        let state: String = db
-            .query_row("SELECT state FROM environment_events", [], |r| r.get(0))
-            .unwrap();
-        assert_eq!(state, "uncertain");
     }
     f.node.close().await;
 }
@@ -802,4 +811,28 @@ async fn x5_a_failed_first_launch_reports_readiness_without_reverting_the_bindin
     let (_, ready) = f.get("move").await;
     assert_eq!(ready["transition"]["installation"]["runtimeReady"], "ready");
     f.node.close().await;
+}
+
+#[tokio::test]
+async fn x4_a_notice_send_cut_off_by_a_restart_is_sent_again() {
+    let mut f = Fixture::new("move", false, true).await;
+    f.install("move").await;
+    claim_notice(&f.node.db.lock(), &f.session)
+        .unwrap()
+        .unwrap();
+    f.node.close().await;
+    let restarted = crate::services::Services::start(f.node.config.clone(), f.node.env.clone())
+        .await
+        .unwrap();
+    let state: String = restarted
+        .db
+        .lock()
+        .query_row("SELECT state FROM environment_events", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(state, "uncertain");
+    let again = claim_notice(&restarted.db.lock(), &f.session)
+        .unwrap()
+        .unwrap();
+    assert_eq!(again.2["message"]["details"]["noticeId"], "move");
+    restarted.close().await;
 }

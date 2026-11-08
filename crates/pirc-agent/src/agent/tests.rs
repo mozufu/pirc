@@ -1120,3 +1120,45 @@ fn parses_slash_commands() {
 }
 
 mod admission;
+
+#[test]
+fn a_trusted_notice_with_an_id_is_applied_once_even_after_a_restart() {
+    let dir = tempfile::tempdir().unwrap();
+    let notice = || Delivery {
+        custom_type: "environment-change".into(),
+        content: "Moved.".into(),
+        display: true,
+        details: Some(json!({"noticeId":"move-1"})),
+    };
+    let count = |agent: &Rc<Agent>| {
+        agent
+            .branch()
+            .iter()
+            .filter(|entry| matches!(&entry.data, EntryData::Message(Message::Custom { custom_type, .. }) if custom_type == "environment-change"))
+            .count()
+    };
+    let agent = mode_agent(
+        dir.path(),
+        pirc_protocol::mode::default_work(),
+        json!({}),
+        None,
+    );
+    agent.deliver(notice(), false, true).unwrap();
+    agent.deliver(notice(), false, true).unwrap();
+    assert_eq!(count(&agent), 1);
+    drop(agent);
+    // A replacement agent opens the same saved session and still skips it.
+    let restarted = mode_agent(
+        dir.path(),
+        pirc_protocol::mode::default_work(),
+        json!({}),
+        None,
+    );
+    restarted.deliver(notice(), false, true).unwrap();
+    assert_eq!(count(&restarted), 1);
+    // A different notice is a new entry.
+    let mut other = notice();
+    other.details = Some(json!({"noticeId":"move-2"}));
+    restarted.deliver(other, false, true).unwrap();
+    assert_eq!(count(&restarted), 2);
+}

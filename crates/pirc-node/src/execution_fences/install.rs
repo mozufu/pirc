@@ -434,7 +434,7 @@ type Notice = (String, String, Map<String, Value>);
 /// Claim the oldest pending environment-change notice for delivery, once.
 pub(super) fn claim_notice(db: &Connection, session: &str) -> ApiResult<Option<Notice>> {
     let pending: Option<(String, String, String, String, String)> = db.query_row(
-        "SELECT owner_user,operation_id,from_workspace_id,to_workspace_id,revocation FROM environment_events WHERE session_id=?1 AND state='pending' ORDER BY created_at LIMIT 1",
+        "SELECT owner_user,operation_id,from_workspace_id,to_workspace_id,revocation FROM environment_events WHERE session_id=?1 AND state IN ('pending','uncertain') ORDER BY created_at LIMIT 1",
         [session],
         |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
     ).optional()?;
@@ -442,7 +442,7 @@ pub(super) fn claim_notice(db: &Connection, session: &str) -> ApiResult<Option<N
         return Ok(None);
     };
     let claimed = db.execute(
-        "UPDATE environment_events SET state='sending',updated_at=?3 WHERE owner_user=?1 AND operation_id=?2 AND state='pending'",
+        "UPDATE environment_events SET state='sending',updated_at=?3 WHERE owner_user=?1 AND operation_id=?2 AND state IN ('pending','uncertain')",
         params![owner, op, now_ms()],
     )?;
     if claimed != 1 {
@@ -467,7 +467,18 @@ pub(super) fn claim_notice(db: &Connection, session: &str) -> ApiResult<Option<N
     message.insert("content".into(), json!(content));
     message.insert(
         "details".into(),
-        json!({"operationId":op,"fromWorkspaceId":from,"toWorkspaceId":to,"revocation":revocation}),
+        {
+            // One logical notice per operation (C3); the agent applies it once.
+            let target: Option<i64> = db
+                .query_row(
+                    "SELECT generation FROM session_binding_generations WHERE operation_id=?1",
+                    [&op],
+                    |r| r.get(0),
+                )
+                .optional()?;
+            json!({"noticeId":op,"operationId":op,"fromWorkspaceId":from,"toWorkspaceId":to,"revocation":revocation,
+                "sourceGeneration":target.map(|g| g - 1),"targetGeneration":target})
+        },
     );
     let mut deliver = Map::new();
     deliver.insert("type".into(), json!("deliver"));
@@ -476,7 +487,7 @@ pub(super) fn claim_notice(db: &Connection, session: &str) -> ApiResult<Option<N
     Ok(Some((owner, op, deliver)))
 }
 /// Record the delivery outcome. A failed or unanswered send is `uncertain` and
-/// never resent: a lost reply may already have reached the agent.
+/// is retransmitted with the same notice ID; the agent applies it only once.
 pub(super) fn finish_notice(db: &Connection, owner: &str, op: &str, sent: bool) -> ApiResult<()> {
     db.execute(
         "UPDATE environment_events SET state=?3,updated_at=?4 WHERE owner_user=?1 AND operation_id=?2 AND state='sending'",
@@ -484,8 +495,9 @@ pub(super) fn finish_notice(db: &Connection, owner: &str, op: &str, sent: bool) 
     )?;
     Ok(())
 }
-/// Deliver a pending environment-change notice to the session's agent before
-/// its next command, at most once. It adds context without starting a turn.
+/// Deliver a pending or unconfirmed environment-change notice before the
+/// session's next command. It adds context without starting a turn; the same
+/// notice is retransmitted until the agent confirms it.
 pub(crate) async fn deliver_notice(node: &Node, runner: &Runner, session: &str) -> ApiResult<()> {
     let Some((owner, op, deliver)) = claim_notice(&node.db.lock(), session)? else {
         return Ok(());

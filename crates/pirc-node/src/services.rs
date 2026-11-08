@@ -276,6 +276,14 @@ impl Services {
                 serde_json::json!({ "recovery": recovery })
             ));
         }
+        // A notice send interrupted by the previous process is unconfirmed:
+        // it is retransmitted with the same ID before the next command (C3).
+        db.lock()
+            .execute(
+                "UPDATE environment_events SET state='uncertain',updated_at=?1 WHERE state='sending'",
+                [crate::util::now_ms()],
+            )
+            .map_err(|e| e.to_string())?;
         let sandbox = sandbox.unwrap_or_else(|| crate::sandbox::create(&config, &env));
         if let Some(scopes) = sandbox.network_scopes() {
             let connection = db.lock();

@@ -1806,6 +1806,23 @@ impl Agent {
         trigger_turn: bool,
         follow_up: bool,
     ) -> Result<(), String> {
+        // A trusted notice with an ID is applied once: a retransmission after a
+        // lost reply, or to a restarted agent, finds it in the saved transcript.
+        if let Some(notice) = delivery
+            .details
+            .as_ref()
+            .and_then(|details| details.get("noticeId"))
+            .and_then(Value::as_str)
+        {
+            let applied = self.branch().iter().any(|entry| {
+                matches!(&entry.data, EntryData::Message(Message::Custom { custom_type, details: Some(details), .. })
+                    if *custom_type == delivery.custom_type
+                        && details.get("noticeId").and_then(Value::as_str) == Some(notice))
+            });
+            if applied {
+                return Ok(());
+            }
+        }
         let message = Message::Custom {
             custom_type: delivery.custom_type,
             content: delivery.content,
