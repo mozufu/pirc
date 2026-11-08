@@ -986,3 +986,46 @@ Validation: **677 Node library tests**, **438 Gateway tests** (one new
 `plan_changed` case), **44 real Gateway/Node/Agent process cases** across 15
 suites (two new: O1, O2/O6), `cargo fmt --check` and strict all-target
 Node/Gateway/conformance/config/agent Clippy passed. Local commit only.
+
+## Local implementation checkpoint: C2 generation attribution and inherited risk (2026-11-08)
+
+First C2 slice. Node schema **2034** attributes evidence by recorded binding
+generation and keeps inherited risks.
+
+- **Recorded generation.** `sandbox_launches`, `host_command_runs`,
+  `terminal_runs` and `browser_groups` gain an immutable `binding_generation`.
+  It is set by an `AFTER INSERT` trigger from the session's current generation,
+  in the same statement as the row's reservation, so it is recorded before spawn
+  or admission. Rows from before the migration stay `NULL`: explicitly
+  unattributed legacy evidence, never assigned by time or workspace.
+- **Evaluation v2.** The time filter (`created_at >= started_at`) is gone. Every
+  retained row of the session is evaluated, and closed rows (not started,
+  terminated kernel scopes, settled scoped terminals) drop out. An item carries
+  its `generation` (or `null`) and `inherited` (from an earlier generation, or
+  legacy). Unresolved items still block, and host effects stay unprovable in
+  every later transition. Legacy coverage is listed per legacy generation, and an
+  Agent run without containment is listed per generation in which it ran.
+- **Separate reports.** `currentGeneration {status, itemsTotal}` is the current
+  generation's own settlement; the top-level `status` is cumulative over all
+  retained risks. A clean new generation can therefore be settled while
+  cumulative revocation stays `unproven`. `revocationConfirmed` still means
+  cumulative confirmation. The digest (version 2) covers every item with its
+  generation and inheritance.
+- **Gateway.** Sanitized progress passes `inherited`, `generation` and
+  `currentGeneration` through. No Gateway schema change (Gateway **1031**).
+
+Not in this slice: the owning operation/attempt on each row, immutable evaluation
+snapshots with paging (C2b), and explicit folder denies (they depend on C6
+grants, so they are reported as unsupported).
+
+Positional `INSERT … VALUES` statements into these tables (including two in
+production code) now name their columns, so added columns cannot shift values.
+Old binaries reject 2034. Protocol, client formats, packages, lockfiles and Nix
+hashes are unchanged.
+
+Validation: **680 Node library tests** (three new: R1 surviving host effects
+stay inherited through A→B→C while the new generation is settled; R2 attribution
+follows the recorded generation even with a future generation start time, and
+generations are immutable; R3 rows from before the migration stay `NULL`),
+**438 Gateway tests**, **44 real Gateway/Node/Agent process cases** and strict
+all-target Node/Gateway/conformance/config/agent Clippy passed. Local commit only.

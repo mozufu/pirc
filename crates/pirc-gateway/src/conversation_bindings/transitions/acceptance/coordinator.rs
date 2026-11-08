@@ -26,11 +26,14 @@ fn sanitize(t: &Value) -> Value {
         let items: Vec<Value> = rev["items"].as_array().map_or_else(Vec::new, |items| {
             items
                 .iter()
-                .map(|i| json!({"kind":i["kind"],"reason":i["reason"],"acknowledgeable":i["acknowledgeable"]==true}))
+                .map(|i| json!({"kind":i["kind"],"reason":i["reason"],"acknowledgeable":i["acknowledgeable"]==true,
+                    "inherited":i["inherited"]==true,"generation":i["generation"]}))
                 .collect()
         });
+        // C2: cumulative status and the current generation's own settlement.
         json!({"status":rev["status"],"digest":rev["digest"],"itemsTotal":rev["itemsTotal"],
-            "confirmsContainment":rev["confirmsContainment"]==true,"items":items})
+            "confirmsContainment":rev["confirmsContainment"]==true,"items":items,
+            "currentGeneration":{"status":rev["currentGeneration"]["status"],"itemsTotal":rev["currentGeneration"]["itemsTotal"]}})
     } else {
         Value::Null
     };

@@ -323,3 +323,102 @@ async fn receipts_carry_the_evaluation_without_claiming_revocation_or_installati
     assert!(deleted.get("revocation").is_none());
     f.node.close().await;
 }
+
+fn next_generation(f: &Fixture, number: i64, started_at: i64) {
+    exec(
+        f,
+        &format!(
+            "INSERT INTO session_binding_generations VALUES('$S',{number},'repo','complete',0,{started_at},'op-{number}')"
+        ),
+    );
+}
+#[tokio::test]
+async fn r1_surviving_host_effects_stay_inherited_across_later_generations() {
+    let f = Fixture::new().await;
+    exec(
+        &f,
+        "INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES('in-a','$S','repo',0,'n','r','settled',5,5)",
+    );
+    next_generation(&f, 2, 10);
+    next_generation(&f, 3, 20);
+    let evaluation = eval(&f, "supervisor_drained");
+    assert_eq!(evaluation.generation, 3);
+    let inherited = evaluation
+        .items
+        .iter()
+        .find(|item| item.id == "in-a")
+        .unwrap();
+    assert!(inherited.inherited);
+    assert_eq!(inherited.generation, Some(1));
+    // The clean new generation is settled; cumulative revocation is not.
+    assert_eq!(evaluation.current_generation.status, "confirmed");
+    assert_eq!(evaluation.status, "unproven");
+    f.node.close().await;
+}
+#[tokio::test]
+async fn r2_attribution_follows_the_recorded_generation_not_clocks() {
+    let f = Fixture::new().await;
+    // The new generation "started" in the future (a backwards clock): a row
+    // inserted now still belongs to it, and an old row stays with generation 1.
+    exec(
+        &f,
+        "INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES('before','$S','repo',0,'n','r1','settled',5,5)",
+    );
+    next_generation(&f, 2, 9_999_999_999_999);
+    exec(
+        &f,
+        "INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES('after','$S','repo',0,'n','r2','settled',5,5)",
+    );
+    let evaluation = eval(&f, "supervisor_drained");
+    let by = |id: &str| {
+        evaluation
+            .items
+            .iter()
+            .find(|i| i.id == id)
+            .cloned()
+            .unwrap()
+    };
+    assert_eq!(
+        (by("before").generation, by("before").inherited),
+        (Some(1), true)
+    );
+    assert_eq!(
+        (by("after").generation, by("after").inherited),
+        (Some(2), false)
+    );
+    assert!(
+        f.node
+            .db
+            .lock()
+            .execute(
+                "UPDATE host_command_runs SET binding_generation=2 WHERE id='before'",
+                []
+            )
+            .is_err()
+    );
+    f.node.close().await;
+}
+#[test]
+fn r3_rows_from_before_attribution_stay_explicit_legacy_risks() {
+    let dir = tempfile::tempdir().unwrap();
+    let file = dir.path().join("node.sqlite");
+    {
+        let db = Db::open(&file).unwrap();
+        let db = db.lock();
+        db.execute_batch(include_str!("../remove_generation_attribution.sql"))
+            .unwrap();
+        db.execute("INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES('old','s','repo',0,'n','r','settled',5,5)", []).unwrap();
+        db.pragma_update(None, "user_version", 2033).unwrap();
+    }
+    let db = Db::open(&file).unwrap();
+    let db = db.lock();
+    let generation: Option<i64> = db
+        .query_row(
+            "SELECT binding_generation FROM host_command_runs WHERE id='old'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    // Migration assigns nothing: the row remains unattributed legacy evidence.
+    assert_eq!(generation, None);
+}

@@ -155,7 +155,7 @@ async fn competing_host_and_peer_lease_have_exactly_one_admission() {
 }
 
 fn record(db: &Connection, id: &str, state: &str, path: Option<&str>) {
-    db.execute("INSERT INTO host_command_runs VALUES(?1,'old-session','old-workspace',2,'old-node',?1,?2,1,1)", params![id,state]).unwrap();
+    db.execute("INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES(?1,'old-session','old-workspace',2,'old-node',?1,?2,1,1)", params![id,state]).unwrap();
     if let Some(path) = path {
         resources::record(db, id, &[path.into()]).unwrap();
     }
@@ -253,7 +253,7 @@ fn malformed_snapshots_and_lost_inventory_fail_closed() {
 fn large_settled_history_uses_pending_inventory_without_false_conflicts() {
     let db = Db::memory();
     let db = db.lock();
-    db.execute_batch("WITH RECURSIVE n(v) AS (SELECT 1 UNION ALL SELECT v+1 FROM n WHERE v<10000) INSERT INTO host_command_runs SELECT 'done-'||v,'old','repo',0,'previous','request-'||v,'settled',1,1 FROM n;").unwrap();
+    db.execute_batch("WITH RECURSIVE n(v) AS (SELECT 1 UNION ALL SELECT v+1 FROM n WHERE v<10000) INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) SELECT 'done-'||v,'old','repo',0,'previous','request-'||v,'settled',1,1 FROM n;").unwrap();
     // Old settled rows do not need fabricated path metadata.
     resources::require_available(&db, Path::new("/repo"), None).unwrap();
     record(&db, "pending", "running", Some("/repo"));

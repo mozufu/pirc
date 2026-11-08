@@ -555,9 +555,9 @@ fn resource_kind_migration_uses_retained_matching_origins_and_preserves_observat
         let kernel = serde_json::to_string(&identity(22)).unwrap();
         db.execute("INSERT INTO sandbox_launches VALUES('old-agent',?1,'repo',1,'old-node','running',?2,1,2,'released')",params![session,kernel]).unwrap();
         db.execute("INSERT INTO sandbox_launches VALUES('old-terminal',?1,'repo',0,'old-node','unconfirmed',?2,3,4,'denied')",params![session,kernel]).unwrap();
-        db.execute("INSERT INTO terminal_runs VALUES('old-terminal',?1,'repo','/repo','old-node','unconfirmed',3,4)",[&session]).unwrap();
+        db.execute("INSERT INTO terminal_runs(id,session_id,workspace_id,cwd,incarnation,state,created_at,updated_at) VALUES('old-terminal',?1,'repo','/repo','old-node','unconfirmed',3,4)",[&session]).unwrap();
         db.execute("INSERT INTO sandbox_launches VALUES('mismatch',?1,'repo',2,'old-node','launching',NULL,5,6,'waiting')",[&session]).unwrap();
-        db.execute("INSERT INTO terminal_runs VALUES('mismatch',?1,'another-workspace','/repo','old-node','running',5,6)",[&session]).unwrap();
+        db.execute("INSERT INTO terminal_runs(id,session_id,workspace_id,cwd,incarnation,state,created_at,updated_at) VALUES('mismatch',?1,'another-workspace','/repo','old-node','running',5,6)",[&session]).unwrap();
         session
     };
     let db = Db::open(&path).unwrap();

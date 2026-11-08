@@ -422,7 +422,7 @@ fn migration_does_not_convert_legacy_terminals_to_approved_host_management() {
     {
         let db = Db::open(&file).unwrap();
         let db = db.lock();
-        db.execute("INSERT INTO terminal_runs VALUES('old','session','repo','/repo','old-node','unconfirmed',1,1)",[]).unwrap();
+        db.execute("INSERT INTO terminal_runs(id,session_id,workspace_id,cwd,incarnation,state,created_at,updated_at) VALUES('old','session','repo','/repo','old-node','unconfirmed',1,1)",[]).unwrap();
         db.execute_batch(include_str!("../remove_host.sql"))
             .unwrap();
         db.pragma_update(None, "user_version", 2026).unwrap();

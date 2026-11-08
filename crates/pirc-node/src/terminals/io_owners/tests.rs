@@ -46,7 +46,7 @@ fn seed(
         };
         db.execute("INSERT INTO sandbox_launches(launch_id,session_id,workspace_id,runner_epoch,incarnation,state,identity_json,created_at,updated_at,guard_state,resource_kind) VALUES(?1,?2,'repo',0,?3,?4,?5,1,1,'released','terminal')",params![id,session,incarnation,state,kernel])?;
         db.execute(
-            "INSERT INTO terminal_runs VALUES(?1,?2,'repo','/repo',?3,'unconfirmed',1,1)",
+            "INSERT INTO terminal_runs(id,session_id,workspace_id,cwd,incarnation,state,created_at,updated_at) VALUES(?1,?2,'repo','/repo',?3,'unconfirmed',1,1)",
             params![id, session, incarnation],
         )?;
         Ok(())
@@ -177,7 +177,7 @@ async fn alive_missing_unknown_and_unretired_resources_remain_unconfirmed() {
             Some(&owner(102)),
             State::Running,
         );
-        db.execute("INSERT INTO terminal_runs VALUES('legacy',?1,'repo','/repo','legacy-node','unconfirmed',1,1)",[&f.current]).unwrap();
+        db.execute("INSERT INTO terminal_runs(id,session_id,workspace_id,cwd,incarnation,state,created_at,updated_at) VALUES('legacy',?1,'repo','/repo','legacy-node','unconfirmed',1,1)",[&f.current]).unwrap();
     }
     fence(&f, &f.current);
     recover_with(

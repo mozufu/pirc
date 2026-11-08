@@ -126,7 +126,7 @@ fn upgrade_keeps_legacy_scopes_without_inventing_request_ids() {
     {
         let db = Db::open(&file).unwrap();
         let db = db.lock();
-        db.execute("INSERT INTO terminal_runs VALUES('legacy','session','repo','/repo','old','unconfirmed',1,1)",[]).unwrap();
+        db.execute("INSERT INTO terminal_runs(id,session_id,workspace_id,cwd,incarnation,state,created_at,updated_at) VALUES('legacy','session','repo','/repo','old','unconfirmed',1,1)",[]).unwrap();
         db.execute_batch(include_str!("../remove_requests.sql"))
             .unwrap();
         db.pragma_update(None, "user_version", 2027).unwrap();
@@ -156,8 +156,8 @@ fn a_work_request_cannot_claim_an_agent_launch_as_its_terminal_scope() {
     let db = db.lock();
     db.execute("INSERT INTO terminal_work_requests(owner_user,session_id,request_id,incarnation,workspace_id,runner_epoch,cwd,intent_hash,state,error_code,run_id,terminal_id,created_at) VALUES('alice','session','work','node','repo',0,'/repo',?1,'accepted',NULL,NULL,NULL,1)",["a".repeat(64)]).unwrap();
     let wrong = crate::store::atomic(&db, |db| {
-        db.execute("INSERT INTO sandbox_launches VALUES('agent','session','repo',0,'node','launching',NULL,1,1,'waiting','agent')",[])?;
-        db.execute("INSERT INTO terminal_runs VALUES('agent','session','repo','/repo','node','launching',1,1)",[])?;
+        db.execute("INSERT INTO sandbox_launches(launch_id,session_id,workspace_id,runner_epoch,incarnation,state,identity_json,created_at,updated_at,guard_state,resource_kind) VALUES('agent','session','repo',0,'node','launching',NULL,1,1,'waiting','agent')",[])?;
+        db.execute("INSERT INTO terminal_runs(id,session_id,workspace_id,cwd,incarnation,state,created_at,updated_at) VALUES('agent','session','repo','/repo','node','launching',1,1)",[])?;
         db.execute(
             "UPDATE terminal_work_requests SET run_id='agent',terminal_id='1234abcd'",
             [],
@@ -445,7 +445,7 @@ async fn acknowledged_unknowns_leave_discovery_but_keep_their_outcome() {
         work("w-unknown", "old-node", "accepted", 20);
         work("w-failed", &f.node.incarnation, "not_started", 30);
         db.execute(
-            "INSERT INTO terminal_runs VALUES('run-h',?1,'repo',?2,'old-node','launching',1,1)",
+            "INSERT INTO terminal_runs(id,session_id,workspace_id,cwd,incarnation,state,created_at,updated_at) VALUES('run-h',?1,'repo',?2,'old-node','launching',1,1)",
             params![f.current, root.to_string_lossy()],
         )
         .unwrap();

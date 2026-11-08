@@ -1632,7 +1632,7 @@ async fn control_identity_checks_reject_replaced_headers_and_source_symlinks() {
 
 fn pending_host(f: &Fixture, state: &str, owner: &str, path: Option<&Path>) {
     let db = f.node.db.lock();
-    db.execute("INSERT INTO host_command_runs VALUES('host-cutover',?1,'original-workspace',0,'previous-node','request',?2,1,1)", rusqlite::params![owner,state]).unwrap();
+    db.execute("INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES('host-cutover',?1,'original-workspace',0,'previous-node','request',?2,1,1)", rusqlite::params![owner,state]).unwrap();
     if let Some(path) = path {
         crate::host_commands::resources::record(
             &db,
@@ -1699,7 +1699,7 @@ async fn cold_cutover_waits_for_settlement_and_keeps_idempotent_receipts() {
     let before = std::fs::read(ledger(&f.node, &f.scope)).unwrap();
     // Another pending legacy effect after commit does not turn retry into a new
     // initialization or negate a previously committed immutable job.
-    f.node.db.lock().execute("INSERT INTO host_command_runs VALUES('later','deleted-session','removed-workspace',0,'previous-node','later','running',1,1)",[]).unwrap();
+    f.node.db.lock().execute("INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES('later','deleted-session','removed-workspace',0,'previous-node','later','running',1,1)",[]).unwrap();
     assert_eq!(
         execute(&f.view(), "workspace.cold", &args).unwrap()["committed"],
         true

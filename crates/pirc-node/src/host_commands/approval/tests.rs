@@ -267,7 +267,7 @@ fn migration_preserves_legacy_runs_without_inventing_user_approvals() {
     {
         let db = Db::open(&file).unwrap();
         let db = db.lock();
-        db.execute("INSERT INTO host_command_runs VALUES('old','old-session','old-workspace',0,'old-node','old-request','settled',1,1)",[]).unwrap();
+        db.execute("INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES('old','old-session','old-workspace',0,'old-node','old-request','settled',1,1)",[]).unwrap();
         db.execute_batch(include_str!("../remove_approval.sql"))
             .unwrap();
         db.pragma_update(None, "user_version", 2022).unwrap();

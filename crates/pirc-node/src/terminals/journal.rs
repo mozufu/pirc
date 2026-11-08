@@ -31,7 +31,7 @@ impl Record {
         }
         let at = now_ms();
         db.execute(
-            "INSERT INTO terminal_runs VALUES(?1,?2,?3,?4,?5,'launching',?6,?6)",
+            "INSERT INTO terminal_runs(id,session_id,workspace_id,cwd,incarnation,state,created_at,updated_at) VALUES(?1,?2,?3,?4,?5,'launching',?6,?6)",
             params![
                 launch.id(),
                 session,
@@ -78,7 +78,7 @@ impl Record {
         let id = uuid();
         let at = now_ms();
         db.execute(
-            "INSERT INTO terminal_runs VALUES(?1,?2,?3,?4,?5,'launching',?6,?6)",
+            "INSERT INTO terminal_runs(id,session_id,workspace_id,cwd,incarnation,state,created_at,updated_at) VALUES(?1,?2,?3,?4,?5,'launching',?6,?6)",
             params![
                 id,
                 session,

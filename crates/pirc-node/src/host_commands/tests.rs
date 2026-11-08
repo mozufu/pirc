@@ -279,7 +279,7 @@ fn migration_restart_and_deletion_preserve_uncertainty_and_minimal_evidence() {
             ("d", "settled"),
         ] {
             db.execute(
-                "INSERT INTO host_command_runs VALUES(?1,?3,'repo',1,'previous-node',?1,?2,1,1)",
+                "INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES(?1,?3,'repo',1,'previous-node',?1,?2,1,1)",
                 params![id, state, session],
             )
             .unwrap();
@@ -347,7 +347,7 @@ async fn initial_stop_without_a_runner_still_joins_host_supervision() {
 async fn previous_node_host_uncertainty_blocks_initial_stop_and_drain() {
     let f = Fixture::new().await;
     let generation = creation(&f);
-    f.node.db.lock().execute("INSERT INTO host_command_runs VALUES('old',?1,'repo',0,'previous-incarnation','request','running',1,1)",[&f.current]).unwrap();
+    f.node.db.lock().execute("INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES('old',?1,'repo',0,'previous-incarnation','request','running',1,1)",[&f.current]).unwrap();
     let result = stop_request(&f, generation).await;
     assert_eq!(result.status, 503, "{result:?}");
     assert_eq!(

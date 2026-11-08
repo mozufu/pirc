@@ -174,7 +174,7 @@ impl Commands {
         let stamp = now_ms();
         crate::store::atomic(db, |db| {
             db.execute(
-                "INSERT INTO host_command_runs VALUES(?1,?2,?3,?4,?5,?6,'launching',?7,?7)",
+                "INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES(?1,?2,?3,?4,?5,?6,'launching',?7,?7)",
                 params![
                     id,
                     origin.session,

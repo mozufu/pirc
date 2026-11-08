@@ -183,7 +183,7 @@ async fn workspace_removal_check_is_read_only_and_uses_authoritative_node_state(
     assert!(check().await.is_ok());
 
     // A removed owner row must not make its still-running host command idle.
-    node.db.lock().execute("INSERT INTO host_command_runs VALUES('orphan','deleted-session','repo',0,'old-node','request','running',1,1)",[]).unwrap();
+    node.db.lock().execute("INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES('orphan','deleted-session','repo',0,'old-node','request','running',1,1)",[]).unwrap();
     crate::host_commands::resources::record(
         &node.db.lock(),
         "orphan",

@@ -356,7 +356,7 @@ async fn unknown_host_history_does_not_leave_live_terminals_running() {
         )
         .unwrap();
     f.node.db.lock().execute(
-        "INSERT INTO host_command_runs VALUES('lost',?1,'repo',0,'previous-incarnation','request','running',1,1)", [&f.current],
+        "INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES('lost',?1,'repo',0,'previous-incarnation','request','running',1,1)", [&f.current],
     ).unwrap();
     accept(
         &f.node.db.lock(),

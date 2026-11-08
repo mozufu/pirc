@@ -840,7 +840,7 @@ mod tests {
     #[tokio::test]
     async fn activity_keeps_orphan_host_owners_and_propagates_inventory_failure() {
         let f = crate::workspace_memory::tests::Fixture::new().await;
-        f.node.db.lock().execute("INSERT INTO host_command_runs VALUES('orphan','deleted-session','removed-workspace',0,'old-node','request','unconfirmed',1,1)",[]).unwrap();
+        f.node.db.lock().execute("INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES('orphan','deleted-session','removed-workspace',0,'old-node','request','unconfirmed',1,1)",[]).unwrap();
         let rows = activity(&f.node).unwrap();
         assert!(
             rows.iter()

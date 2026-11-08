@@ -25,7 +25,7 @@ impl Record {
         let id = uuid();
         let at = now_ms();
         db.execute(
-            "INSERT INTO browser_groups VALUES(?1,?2,?3,?4,?5,'active',?6,?6)",
+            "INSERT INTO browser_groups(id,session_id,workspace_id,root,incarnation,state,created_at,updated_at) VALUES(?1,?2,?3,?4,?5,'active',?6,?6)",
             params![
                 id,
                 target.session_id,

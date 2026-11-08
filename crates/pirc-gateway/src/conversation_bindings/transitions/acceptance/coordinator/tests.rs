@@ -178,7 +178,7 @@ async fn unproven_evidence_waits_for_an_acknowledgement_of_its_digest() {
     assert_eq!(revocation["digest"], DIGEST);
     assert_eq!(
         revocation["items"],
-        json!([{"kind":"platform_containment","reason":"descendants_not_contained","acknowledgeable":true}])
+        json!([{"kind":"platform_containment","reason":"descendants_not_contained","acknowledgeable":true,"inherited":false,"generation":null}])
     );
     assert_eq!(workspace(&app, &id), "node:repo");
     receipts::require_open(&app.db.lock(), &id).unwrap_err();

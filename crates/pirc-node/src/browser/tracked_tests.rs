@@ -282,7 +282,7 @@ fn migration_preserves_unknown_history_and_origin_is_immutable() {
         json!({"groups":0,"observersSettled":0,"unresolved":0,"historyComplete":false})
     );
     db.execute_batch(
-        "INSERT INTO browser_groups VALUES('old','s','w','/origin','previous','active',1,1);",
+        "INSERT INTO browser_groups(id,session_id,workspace_id,root,incarnation,state,created_at,updated_at) VALUES('old','s','w','/origin','previous','active',1,1);",
     )
     .unwrap();
     assert_eq!(
