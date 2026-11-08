@@ -309,8 +309,9 @@ async fn dispatch_once(
 pub(super) fn status(app: &AppState, identity: &Identity, id: &str, op: &str) -> ApiResult<Value> {
     let db = app.db.lock();
     access(app, &db, identity, id)?;
-    let s = saved(&db, &identity.user, id, op)?
-        .ok_or_else(|| ApiError::not_found("Accepted transition not found"))?;
+    let s = saved(&db, &identity.user, id, op)?.ok_or_else(|| {
+        ApiError::new(404, "acceptance_not_found", "Accepted transition not found")
+    })?;
     Ok(
         json!({"transition":s,"canConfirm":false,"progress":coordinator::progress(&db,&identity.user,op)?}),
     )

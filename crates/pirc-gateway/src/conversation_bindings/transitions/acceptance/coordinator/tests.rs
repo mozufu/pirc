@@ -552,3 +552,45 @@ async fn an_undispatched_acceptance_that_cannot_be_sent_asks_for_review() {
     assert!(node.lock().unwrap().calls.is_empty());
     receipts::require_open(&app.db.lock(), &id).unwrap();
 }
+
+#[tokio::test]
+async fn missing_transition_objects_have_family_specific_codes() {
+    use super::super::super::tests::http;
+    let (app, _dir, id) = app();
+    fake(&app, false);
+    let base = format!("/api/sessions/{id}/environment-transitions");
+    let (status, preview) = http(&app, &format!("{base}/previews/nothing"), None, None).await;
+    assert_eq!(
+        (status, preview["error"]["code"].clone()),
+        (404, json!("preview_not_found"))
+    );
+    let (status, receipt) = http(&app, &format!("{base}/receipts/nothing"), None, None).await;
+    assert_eq!(
+        (status, receipt["error"]["code"].clone()),
+        (404, json!("receipt_not_found"))
+    );
+    app.db
+        .lock()
+        .mirror_lease(
+            &id,
+            &Lease {
+                client_id: "phone".into(),
+                generation: 1,
+                expires_at: now_ms() + 60000,
+            },
+            "alice",
+            false,
+        )
+        .unwrap();
+    let (status, accepted) = http(
+        &app,
+        &format!("{base}/nothing/advance"),
+        Some(json!({"clientId":"phone","generation":1})),
+        None,
+    )
+    .await;
+    assert_eq!(
+        (status, accepted["error"]["code"].clone()),
+        (404, json!("acceptance_not_found"))
+    );
+}

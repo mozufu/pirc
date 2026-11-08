@@ -837,3 +837,24 @@ Validation: **433 Gateway tests** (new cases: an undispatched acceptance is sent
 once and installs; one whose control moved on becomes `review_required` with no
 Node request and is then cancelled by the new controller) and strict Gateway
 Clippy passed. Local commit only.
+
+## Local implementation checkpoint: C4 G5 specific missing-object codes (2026-11-08)
+
+Closes C4 gap **G5**. Missing transition objects now have family-specific
+codes: `preview_not_found`, `acceptance_not_found` (coordinator and acceptance
+status), `receipt_not_found` and `conversation_not_found` (an authorized
+conversation with no Node mapping). Concealment is unchanged: ownership checks run
+first, so another user's conversation still gets the generic refusal. Clients'
+rule that a 404 after a lost reply means "not stored" remains valid. Not in this
+gap: `control_required` and the `plan_changed`/`evidence_changed` conflict codes
+of the C4 table; `lost_control` and the existing conflict codes remain.
+
+With G1–G5 delivered, the five Gateway gaps from the T4 integration are closed.
+Remaining C4 target work: evidence pages, `reauthorize`, status revisions and
+watermarks, and adoption or cleanup of bare Node fences. C1 operation authority,
+C2 inherited risk, C3 cancellation corrections and native Linux acceptance remain.
+
+Validation: **434 Gateway tests** (new case: missing preview, receipt and
+acceptance return their own codes), strict Gateway/conformance Clippy, and the
+`environment_transitions` (6), `execution_fences` (4) and route (1) process cases
+passed. Local commit only.

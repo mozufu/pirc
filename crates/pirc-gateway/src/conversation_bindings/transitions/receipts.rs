@@ -162,9 +162,13 @@ pub(super) fn access_at(
             "The original source mapping is unavailable for reconciliation",
         ));
     }
-    let remote = session
-        .pi_session_id
-        .ok_or_else(|| ApiError::not_found("Session not found"))?;
+    let remote = session.pi_session_id.ok_or_else(|| {
+        ApiError::new(
+            404,
+            "conversation_not_found",
+            "The conversation has no Node mapping",
+        )
+    })?;
     Ok((
         source.host_id.clone(),
         remote,
@@ -270,7 +274,7 @@ pub(super) async fn status_route(
     crate::auth::require_current_device(&app, &db, &identity)?;
     db.claim_session(&id, &identity.user, false)?;
     let saved = read_saved(&db, &identity.user, &id, &op)?
-        .ok_or_else(|| ApiError::not_found("Transition receipt not found"))?;
+        .ok_or_else(|| ApiError::new(404, "receipt_not_found", "Transition receipt not found"))?;
     Ok(Json(json!({"transition":saved})))
 }
 

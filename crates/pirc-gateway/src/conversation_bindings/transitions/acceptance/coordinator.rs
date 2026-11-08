@@ -61,7 +61,7 @@ pub(super) fn progress(db: &Connection, user: &str, op: &str) -> ApiResult<Value
 fn state(db: &Connection, user: &str, id: &str, op: &str) -> ApiResult<String> {
     saved(db, user, id, op)?
         .map(|s| s.state)
-        .ok_or_else(|| ApiError::not_found("Accepted transition not found"))
+        .ok_or_else(|| ApiError::new(404, "acceptance_not_found", "Accepted transition not found"))
 }
 /// Current control for a user-initiated step, checked by the Gateway too.
 fn control(db: &Connection, id: &str, user: &str, lease: &(String, i64)) -> ApiResult<()> {

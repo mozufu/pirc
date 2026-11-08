@@ -58,7 +58,7 @@ fn read(db: &Connection, user: &str, session: &str, op: &str) -> ApiResult<Previ
     let row = db.query_row(
         "SELECT operation_id,session_id,target_workspace_id,intent_hash,plan_hash,plan_json,created_at FROM conversation_transition_previews WHERE owner_user=?1 AND operation_id=?2 AND session_id=?3",
         params![user,op,session], |r| Ok((r.get::<_,String>(0)?,r.get::<_,String>(1)?,r.get::<_,String>(2)?,r.get::<_,String>(3)?,r.get::<_,String>(4)?,r.get::<_,String>(5)?,r.get::<_,i64>(6)?)),
-    ).optional()?.ok_or_else(||ApiError::not_found("Transition preview not found"))?;
+    ).optional()?.ok_or_else(||ApiError::new(404,"preview_not_found","Transition preview not found"))?;
     Ok(Preview {
         operation_id: row.0,
         session_id: row.1,
