@@ -467,3 +467,88 @@ async fn active_transitions_name_their_target_and_a_bare_fence_needs_reconciliat
     let advance = advance(&app, &identity(), &id, "move-1", None).await;
     assert!(advance.is_err());
 }
+
+/// An acceptance whose single dispatch never ran, as after a failed confirm.
+fn accepted_only(app: &AppState, id: &str) -> Arc<Mutex<Fake>> {
+    let node = fake(app, false);
+    let row = {
+        let db = app.db.lock();
+        db.mirror_lease(
+            id,
+            &Lease {
+                client_id: "phone".into(),
+                generation: 1,
+                expires_at: now_ms() + 60000,
+            },
+            "alice",
+            false,
+        )
+        .unwrap();
+        super::super::super::reserve(&db, "alice", id, &input(&db, id)).unwrap()
+    };
+    let confirmation = Confirmation {
+        plan_hash: row.plan_hash.clone(),
+        observation_hash: "reviewed".into(),
+        client_id: "phone".into(),
+        generation: 1,
+    };
+    let observation = json!({"status":"observed","observationHash":"reviewed","observation":{"policiesMatch":true,"overlap":false,"sourceResource":{"state":"observed"},"targetResource":{"state":"observed"},"activity":{"fenced":false,"pendingRecords":false},"nodeRunnerEpoch":777,"nodeEvidenceHash":"a".repeat(64)}});
+    let mapping = receipts::access_at(app, &app.db.lock(), &identity(), &row).unwrap();
+    reserve(
+        app,
+        &identity(),
+        &row,
+        &confirmation,
+        &observation,
+        &mapping,
+        app.nodes.connection("node").unwrap(),
+    )
+    .unwrap();
+    node
+}
+#[tokio::test]
+async fn an_undispatched_acceptance_is_sent_once_and_continues() {
+    let (app, _dir, id) = app();
+    let node = accepted_only(&app, &id);
+    let result = advance(&app, &identity(), &id, "move-1", lease())
+        .await
+        .unwrap();
+    assert_eq!(result["transition"]["state"], "installed", "{result}");
+    assert_eq!(
+        node.lock().unwrap().calls,
+        ["execution-fences", "drain", "install"]
+    );
+}
+#[tokio::test]
+async fn an_undispatched_acceptance_that_cannot_be_sent_asks_for_review() {
+    let (app, _dir, id) = app();
+    let node = accepted_only(&app, &id);
+    // Control moved on before the dispatch could run.
+    app.db
+        .lock()
+        .mirror_lease(
+            &id,
+            &Lease {
+                client_id: "tablet".into(),
+                generation: 2,
+                expires_at: now_ms() + 60000,
+            },
+            "alice",
+            false,
+        )
+        .unwrap();
+    let result = advance(&app, &identity(), &id, "move-1", None)
+        .await
+        .unwrap();
+    assert_eq!(result["transition"]["state"], "accepted", "{result}");
+    assert_eq!(result["progress"]["stage"], "review_required");
+    assert_eq!(result["progress"]["safeActions"], json!(["cancel"]));
+    assert!(result["progress"]["waitReason"].is_string());
+    assert!(node.lock().unwrap().calls.is_empty());
+    let cancelled = cancel(&app, &identity(), &id, "move-1", ("tablet".into(), 2))
+        .await
+        .unwrap();
+    assert_eq!(cancelled["transition"]["state"], "released");
+    assert!(node.lock().unwrap().calls.is_empty());
+    receipts::require_open(&app.db.lock(), &id).unwrap();
+}

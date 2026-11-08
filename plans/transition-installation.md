@@ -813,3 +813,27 @@ matching retained intent or scoped cleanup for such fences remains C4 target wor
 Validation: **431 Gateway tests** (new case: an accepted transition names its
 target; a bare fence reports reconciliation with its target and cannot be
 advanced) and strict Gateway Clippy passed. Local commit only.
+
+## Local implementation checkpoint: C4 G4 recovery of undispatched acceptances (2026-11-08)
+
+Closes C4 gap **G4**. An acceptance left in `accepted` (its confirmation failed
+after the row committed but before dispatch) is no longer an unadvanceable
+barrier. `accepted` means the single Node request was never sent, because
+dispatch moves to `outcome_unknown` atomically before sending. So:
+
+- `advance` and the recovery sweep (which now also pages `accepted`) retry that
+  same dispatch. It rechecks the frozen plan and the confirming lease as before,
+  then continues through drain and installation.
+- If it can no longer be sent as reviewed (changed plan, lost or replaced
+  control), the progress record becomes an explicit
+  `{stage: "review_required", waitReason: <code>, safeActions: ["cancel"]}` and
+  nothing reaches the Node. Cancelling releases the barrier.
+
+No schema change (Gateway **1030**). This uses the interactive confirming lease as
+the dispatch authority; the C1 finite operation authority and `reauthorize`
+remain target work.
+
+Validation: **433 Gateway tests** (new cases: an undispatched acceptance is sent
+once and installs; one whose control moved on becomes `review_required` with no
+Node request and is then cancelled by the new controller) and strict Gateway
+Clippy passed. Local commit only.

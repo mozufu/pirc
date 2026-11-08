@@ -202,6 +202,30 @@ fn observe(
     }
     Ok(())
 }
+/// An undispatched acceptance that can no longer be sent as reviewed (changed
+/// plan, lost control) becomes an explicit review state instead of a silent,
+/// unadvanceable barrier. Nothing reached the Node; the user may cancel.
+fn review_required(
+    app: &AppState,
+    identity: &Identity,
+    op: &str,
+    id: &str,
+    error: &ApiError,
+) -> ApiResult<()> {
+    let db = app.db.lock();
+    if state(&db, &identity.user, id, op)? != "accepted" {
+        return Ok(());
+    }
+    let progress = json!({"stage":"review_required","waitReason":error.code,"safeActions":["cancel"],
+        "revocationConfirmed":false,"targetInstalled":false});
+    db.execute(
+        "INSERT INTO conversation_transition_progress VALUES(?1,?2,?3,?4,?5) ON CONFLICT(owner_user,operation_id) DO UPDATE SET receipt_json=excluded.receipt_json,updated_at=excluded.updated_at",
+        params![identity.user, op, id, progress.to_string(), now_ms()],
+    )?;
+    drop(db);
+    app.sessions_changed(Some(&identity.user));
+    Ok(())
+}
 fn describe(app: &AppState, identity: &Identity, id: &str, op: &str) -> ApiResult<Value> {
     status(app, identity, id, op)
 }
@@ -242,6 +266,21 @@ async fn advance(
 ) -> ApiResult<Value> {
     if let Some(lease) = &lease {
         control(&app.db.lock(), id, &identity.user, lease)?;
+    }
+    let (f, s) = current(app, identity, id, op)?;
+    if s == "accepted" {
+        // `accepted` means the sole Node request was never sent: dispatch moves
+        // to `outcome_unknown` atomically first. Retrying that same dispatch is
+        // safe; it rechecks the frozen plan and lease (C4/G4).
+        let Ok(connection) = app.nodes.connection(&f.node) else {
+            let mut result = describe(app, identity, id, op)?;
+            result["reconciliationState"] = json!("node_unavailable");
+            return Ok(result);
+        };
+        if let Err(error) = dispatch_once(app, identity, id, op, connection).await {
+            review_required(app, identity, op, id, &error)?;
+            return describe(app, identity, id, op);
+        }
     }
     if current(app, identity, id, op)?.1 == "outcome_unknown" {
         reconcile(app, identity, id, op).await?;
@@ -399,7 +438,7 @@ pub(in crate::conversation_bindings::transitions) fn start(app: &AppState) {
             loop {
                 let page: ApiResult<Vec<(String, String, String)>> = (|| {
                     let db = app.db.lock();
-                    let mut q = db.prepare("SELECT owner_user,operation_id,session_id FROM conversation_transition_acceptances WHERE state IN ('outcome_unknown','node_fenced') AND (owner_user,operation_id)>(?1,?2) ORDER BY owner_user,operation_id LIMIT 100")?;
+                    let mut q = db.prepare("SELECT owner_user,operation_id,session_id FROM conversation_transition_acceptances WHERE state IN ('accepted','outcome_unknown','node_fenced') AND (owner_user,operation_id)>(?1,?2) ORDER BY owner_user,operation_id LIMIT 100")?;
                     Ok(q.query_map(params![after.0, after.1], |r| {
                         Ok((r.get(0)?, r.get(1)?, r.get(2)?))
                     })?
