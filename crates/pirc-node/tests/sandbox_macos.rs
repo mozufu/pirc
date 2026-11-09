@@ -272,6 +272,7 @@ impl Fixture {
         fs::create_dir_all(&session_dir).unwrap();
         self.sandbox
             .prepare(PrepareInput {
+                grants: Vec::new(),
                 session_id: session.to_owned(),
                 workspace_root: self.workspace.clone(),
                 session_dir,
@@ -460,6 +461,7 @@ async fn opens_only_its_own_workspace_memory_ledger() {
     let prepared = f
         .sandbox
         .prepare(PrepareInput {
+            grants: Vec::new(),
             session_id: "pi_ledger".to_owned(),
             workspace_root: f.workspace.clone(),
             session_dir,
@@ -520,6 +522,7 @@ async fn reads_project_files_but_never_writes_them() {
     let prepared = f
         .sandbox
         .prepare(PrepareInput {
+            grants: Vec::new(),
             session_id: "pi_files".to_owned(),
             workspace_root: f.workspace.clone(),
             session_dir,

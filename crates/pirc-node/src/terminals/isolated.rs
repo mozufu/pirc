@@ -63,10 +63,13 @@ impl Terminals {
             )
         })?;
         let shell = default_shell(node.config.terminal_shell.as_deref(), node.env.get("SHELL"));
+        // C6a: read before the await; no database guard is held across it.
+        let grants = crate::grants::active(&node.db.lock(), session)?;
         let prepared = node
             .sandbox
             .prepare_terminal(
                 PrepareInput {
+                    grants,
                     recovery: None,
                     session_id: session.into(),
                     workspace_root: cwd.into(),

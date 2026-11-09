@@ -830,6 +830,7 @@ async fn native_sandbox_keeps_source_private_store_and_other_recoveries_closed_a
     );
     let source_prepared = sandbox
         .prepare(PrepareInput {
+            grants: Vec::new(),
             session_id: "source".into(),
             workspace_root: f.scope.root.clone(),
             session_dir: config.sessions_dir.join("source"),

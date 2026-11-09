@@ -123,6 +123,9 @@ pub struct NodeConfig {
     pub legacy_host_terminals: bool,
     /// `PIRC_TERMINAL_SHELL`, default `$SHELL`.
     pub terminal_shell: Option<String>,
+    /// Folders under which conversations may be granted access
+    /// (`PIRC_GRANT_ROOTS`, a JSON array of absolute paths). Empty: none.
+    pub grant_roots: Vec<std::path::PathBuf>,
     pub browser: BrowserSettings,
     pub sandbox: SandboxSettings,
     pub lease_ttl_ms: u64,
@@ -242,6 +245,14 @@ impl NodeConfig {
             terminals_enabled: bool_var(env.get("PIRC_TERMINALS"), true),
             legacy_host_terminals: bool_var(env.get("PIRC_LEGACY_HOST_TERMINALS"), false),
             terminal_shell: truthy("PIRC_TERMINAL_SHELL").map(str::to_owned),
+            grant_roots: env
+                .get("PIRC_GRANT_ROOTS")
+                .and_then(|text| serde_json::from_str::<Vec<String>>(text).ok())
+                .unwrap_or_default()
+                .into_iter()
+                .map(std::path::PathBuf::from)
+                .filter(|path| path.is_absolute())
+                .collect(),
             browser,
             sandbox: SandboxSettings {
                 srt: truthy("PIRC_SANDBOX_SRT").map(str::to_owned),

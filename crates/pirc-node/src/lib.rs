@@ -54,6 +54,7 @@ pub mod command_environment;
 pub mod error;
 pub mod events;
 pub mod execution_fences;
+pub mod grants;
 mod host_commands;
 pub mod inference;
 pub mod link;

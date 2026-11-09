@@ -1,5 +1,12 @@
 # Upgrades
 
+## Local checkpoint: folder grants and deny
+
+Node schema **2038** adds per-conversation folder grants. Set `PIRC_GRANT_ROOTS`
+to enable them; unset keeps the earlier behavior. Older Node readers reject the
+new schema, so back up the state with its binary. Gateway, protocol, client
+formats, lockfiles and Nix hashes are unchanged. Local code only.
+
 ## Local checkpoint: transition operation authority
 
 Node schema **2033** and Gateway schema **1031** add operation authority for

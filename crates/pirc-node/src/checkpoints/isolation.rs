@@ -63,6 +63,7 @@ impl RecoveryIsolation {
         inference_socket: Option<PathBuf>,
     ) -> PrepareInput {
         PrepareInput {
+            grants: Vec::new(),
             session_id,
             workspace_root: self.root.clone(),
             session_dir,

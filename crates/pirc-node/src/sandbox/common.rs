@@ -516,6 +516,19 @@ pub fn session(
         uid: nix::unistd::getuid().as_raw(),
         ssh_auth_sock: env.get("SSH_AUTH_SOCK").map(str::to_owned),
     };
+    // C6a: explicit grants join the same policy every backend enforces. A deny
+    // closes reads and writes and overrides any overlapping grant.
+    for grant in &input.grants {
+        let path = text(&grant.path);
+        match grant.access {
+            crate::grants::Access::Write => policy_input.allowed_paths.push(path),
+            crate::grants::Access::Read => policy_input.read_only_dirs.push(path),
+            crate::grants::Access::Deny => {
+                policy_input.config.filesystem.deny_read.push(path.clone());
+                policy_input.config.filesystem.deny_write.push(path);
+            }
+        }
+    }
     // Explicitly keep recovery stores closed even for a broadly writable
     // workspace containing the state directory. Reopen only a ticket's root.
     for store in recovery_stores {
@@ -775,6 +788,59 @@ mod tests {
     }
 
     #[test]
+    fn folder_grants_join_the_session_policy_and_deny_wins() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().canonicalize().unwrap();
+        let (config, env) = test_support::node(&root, &[]);
+        let node_tmp = NodeTmp::new(&config, &env);
+        let workspace = root.join("workspace");
+        let shared = root.join("shared");
+        let secret = workspace.join("secrets");
+        for path in [&workspace, &shared, &secret] {
+            std::fs::create_dir_all(path).unwrap();
+        }
+        let grant = |path: &Path, access| crate::grants::FolderGrant {
+            grant_id: "g".into(),
+            path: path.to_path_buf(),
+            access,
+            created_at: 1,
+        };
+        let input = super::super::PrepareInput {
+            grants: vec![
+                grant(&shared, crate::grants::Access::Write),
+                grant(&secret, crate::grants::Access::Deny),
+            ],
+            recovery: None,
+            session_id: "s".into(),
+            workspace_root: workspace.clone(),
+            session_dir: root.join("state/sessions/s"),
+            inference_socket: None,
+            protected_paths: Vec::new(),
+            workspace_memory_file: None,
+            project_files_dir: None,
+        };
+        let Session { tmp, policy, .. } = session(&config, &env, &node_tmp, &input).unwrap();
+        let text = |path: &Path| path.display().to_string();
+        assert!(
+            policy.paths.allow_write.contains(&text(&shared)),
+            "{:?}",
+            policy.paths.allow_write
+        );
+        // A deny inside the writable workspace closes reads and writes there.
+        assert!(
+            policy.paths.deny_read.contains(&text(&secret)),
+            "{:?}",
+            policy.paths.deny_read
+        );
+        assert!(
+            policy.paths.deny_write.contains(&text(&secret)),
+            "{:?}",
+            policy.paths.deny_write
+        );
+        Session::remove_tmp(&tmp);
+    }
+
+    #[test]
     fn session_temp_dirs_share_the_nodes_private_parent() {
         use std::os::unix::fs::PermissionsExt;
         // The node's temp parent in `/tmp`, a write root of every session;
@@ -787,6 +853,7 @@ mod tests {
         let (config, env) = test_support::node(&root, &[("TMPDIR", "/tmp")]);
         let node_tmp = NodeTmp::new(&config, &env);
         let input = |name: &str| PrepareInput {
+            grants: Vec::new(),
             session_id: name.to_owned(),
             workspace_root: root.join("workspace"),
             session_dir: config.sessions_dir.join(name),
@@ -850,6 +917,7 @@ mod tests {
         std::fs::write(root.join("config/config.json"), settings.to_string()).unwrap();
         let (config, env) = test_support::node(&root, &[]);
         let input = PrepareInput {
+            grants: Vec::new(),
             session_id: "pi_a".to_owned(),
             workspace_root: root.join("workspace"),
             session_dir: config.sessions_dir.join("pi_a"),
@@ -890,6 +958,7 @@ mod tests {
         assert_eq!(config.workspace_memory_dir, memory);
         let node_tmp = NodeTmp::new(&config, &env);
         let input = |file: &str| PrepareInput {
+            grants: Vec::new(),
             session_id: "pi_a".to_owned(),
             workspace_root: root.join("workspace"),
             session_dir: config.sessions_dir.join("pi_a"),

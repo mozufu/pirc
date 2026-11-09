@@ -146,6 +146,7 @@ impl Fixture {
         fs::create_dir_all(&session_dir).unwrap();
         self.sandbox
             .prepare(PrepareInput {
+                grants: Vec::new(),
                 session_id: session.to_owned(),
                 workspace_root: self.root.join("workspace"),
                 session_dir,

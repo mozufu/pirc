@@ -65,6 +65,10 @@ fn request(id: Option<&str>, body: Value) -> Request {
 }
 
 pub(crate) async fn workspace_test_node() -> (tempfile::TempDir, Node) {
+    workspace_test_node_grants(false).await
+}
+/// The same Node, with `<dir>/grant-root` as its only folder grant root (C6a).
+pub(crate) async fn workspace_test_node_grants(grants: bool) -> (tempfile::TempDir, Node) {
     use pirc_config::Env;
     use pirc_protocol::NodeRole;
     use pirc_protocol::mode::default_work;
@@ -74,20 +78,23 @@ pub(crate) async fn workspace_test_node() -> (tempfile::TempDir, Node) {
     let state = root.join("state").display().to_string();
     let config_dir = root.join("config").display().to_string();
     let home = root.display().to_string();
-    let env = Env::new(
-        [
-            ("PIRC_NODE_ID", "test-node"),
-            ("PIRC_NODE_TOKEN", "0123456789abcdef0123456789abcdef"),
-            ("PIRC_DAEMON_URL", "ws://127.0.0.1:8787"),
-            ("PIRC_ALLOWED_USERS", "test-user"),
-            ("PIRC_STATE_DIR", state.as_str()),
-            ("PIRC_CONFIG_DIR", config_dir.as_str()),
-            ("PIRC_MODES", "directory,review"),
-            ("PIRC_BROWSER", "false"),
-            ("HOME", home.as_str()),
-        ],
-        &root,
-    );
+    std::fs::create_dir_all(root.join("grant-root")).unwrap();
+    let grant_roots = serde_json::json!([root.join("grant-root")]).to_string();
+    let mut vars = vec![
+        ("PIRC_NODE_ID", "test-node"),
+        ("PIRC_NODE_TOKEN", "0123456789abcdef0123456789abcdef"),
+        ("PIRC_DAEMON_URL", "ws://127.0.0.1:8787"),
+        ("PIRC_ALLOWED_USERS", "test-user"),
+        ("PIRC_STATE_DIR", state.as_str()),
+        ("PIRC_CONFIG_DIR", config_dir.as_str()),
+        ("PIRC_MODES", "directory,review"),
+        ("PIRC_BROWSER", "false"),
+        ("HOME", home.as_str()),
+    ];
+    if grants {
+        vars.push(("PIRC_GRANT_ROOTS", grant_roots.as_str()));
+    }
+    let env = Env::new(vars, &root);
     let config = NodeConfig::load(&env, NodeRole::Node).unwrap();
     let node = crate::services::Services::start(config, env).await.unwrap();
     let mut review = default_work();

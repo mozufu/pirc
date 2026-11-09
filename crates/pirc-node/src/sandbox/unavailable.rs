@@ -59,6 +59,7 @@ mod tests {
         ));
         let error = sandbox
             .prepare(PrepareInput {
+                grants: Vec::new(),
                 session_id: "s".into(),
                 workspace_root: "/w".into(),
                 session_dir: "/s".into(),

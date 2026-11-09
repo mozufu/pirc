@@ -230,6 +230,7 @@ fn migrates_the_first_node_schema() {
         .replace(include_str!("../execution_fences/evaluations.sql"), "")
         .replace(include_str!("../execution_fences/cancellation.sql"), "")
         .replace(include_str!("../execution_fences/notice_protocol.sql"), "")
+        .replace(include_str!("../grants.sql"), "")
             .replace(
                 "  kind TEXT NOT NULL DEFAULT 'image',\n  -- Where it was uploaded; it is usable in that workspace only and is\n  -- deleted with it. NULL for uploads older than schema 2001.\n  workspace_id TEXT,\n  session_id TEXT\n);\nCREATE INDEX uploads_workspace ON uploads(workspace_id);",
                 "  kind TEXT NOT NULL DEFAULT 'image'\n);",

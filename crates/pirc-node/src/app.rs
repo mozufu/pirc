@@ -110,6 +110,12 @@ pub fn routes(config: &NodeConfig) -> Vec<Route> {
             "/api/sessions/:id/execution-fences/:operation/evaluations/:evaluation",
             crate::execution_fences::evaluation_page,
         ),
+        get("/api/sessions/:id/grants", crate::grants::list),
+        post("/api/sessions/:id/grants", crate::grants::create),
+        post(
+            "/api/sessions/:id/grants/:grant/revoke",
+            crate::grants::revoke,
+        ),
         post("/api/session-creations", crate::session_creation::prepare),
         get(
             "/api/session-creations/capabilities",

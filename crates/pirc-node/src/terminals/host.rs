@@ -163,6 +163,8 @@ pub(crate) fn handle(
 ) -> ApiResult<Response> {
     let request = text(body, "requestId")?;
     let action = text(body, "action")?;
+    // C6a: a host shell cannot enforce this conversation's folder deny.
+    crate::grants::require_no_deny(&node.db.lock(), session)?;
     let mut grant = Grant {
         id: String::new(),
         owner: owner.into(),

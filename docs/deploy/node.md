@@ -136,6 +136,8 @@ On Linux, also keep the `pirc-node` executable out of any directory hidden from 
 
 An empty list is fine: the web's **Add workspace** (`POST /api/workspaces` with `{ nodeId, path, displayName }`) adds one to an online node. The node persists it in its database and advertises it again after every reconnect. Web-added paths must already exist and resolve (symlinks followed) **inside the node account's home**; `PIRC_WORKSPACES` has no such restriction, so use it for `/srv`-style paths.
 
+`PIRC_GRANT_ROOTS` (default `[]`) is a JSON array of absolute folders under which a conversation may be granted extra `read` or `write` access (`/api/sessions/:id/grants`). Unset means nothing is grantable. A `deny` may also target a folder inside the workspace; it overrides grants and the workspace, and refuses host commands and host terminals for that conversation while active. Reads outside the Node's private state are not restricted by the sandbox, so a `read` grant widens nothing; deny is what restricts reads. Each change stops the conversation's runner and isolated terminals.
+
 Workspaces are an execution allowlist: sessions only ever run in a listed directory. Several sessions may share a workspace; concurrent writes are serialized by the node's write broker (a second session gets `workspace_busy` until the first run ends).
 
 ## The chat node

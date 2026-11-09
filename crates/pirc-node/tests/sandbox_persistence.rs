@@ -130,6 +130,7 @@ async fn native_state_custody() {
     );
     let mut prepared = sandbox
         .prepare(PrepareInput {
+            grants: Vec::new(),
             session_id: "pi_custody".into(),
             workspace_root: cwd.clone(),
             session_dir: dir.clone(),

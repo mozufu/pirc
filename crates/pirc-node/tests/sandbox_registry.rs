@@ -67,6 +67,7 @@ async fn prepare(sandbox: &dyn Sandbox, config: &NodeConfig, cwd: &Path, id: &st
     fs::create_dir_all(&session).unwrap();
     sandbox
         .prepare(PrepareInput {
+            grants: Vec::new(),
             session_id: id.into(),
             workspace_root: cwd.to_path_buf(),
             session_dir: session,

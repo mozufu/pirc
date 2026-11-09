@@ -119,6 +119,8 @@ pub struct PrepareInput {
     /// A chat project's files, which the session may read but never write
     /// (the node changes them while the session runs).
     pub project_files_dir: Option<PathBuf>,
+    /// C6a explicit folder grants and denies of the conversation.
+    pub grants: Vec<crate::grants::FolderGrant>,
 }
 
 /// A host command to run read-only ([`Sandbox::prepare_readonly`]).

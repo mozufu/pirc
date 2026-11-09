@@ -279,6 +279,7 @@ impl Fixture {
         fs::create_dir_all(&session_dir).unwrap();
         self.sandbox
             .prepare(PrepareInput {
+                grants: Vec::new(),
                 session_id: session.to_owned(),
                 workspace_root: self.root.join("workspace"),
                 session_dir,
@@ -926,6 +927,7 @@ async fn opens_only_its_own_workspace_memory_ledger() {
     let prepared = f
         .sandbox
         .prepare(PrepareInput {
+            grants: Vec::new(),
             session_id: "pi_ledger".to_owned(),
             workspace_root: f.root.join("workspace"),
             session_dir,
@@ -1433,6 +1435,7 @@ async fn isolated_work_terminal_guards_start_and_retires_detached_writers() {
         .sandbox
         .prepare_terminal(
             PrepareInput {
+                grants: Vec::new(),
                 recovery: None,
                 session_id: "work-terminal".into(),
                 workspace_root: workspace.clone(),

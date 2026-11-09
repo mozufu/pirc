@@ -180,6 +180,7 @@ impl Fixture {
         let session_dir = self.config.sessions_dir.join(session);
         fs::create_dir_all(&session_dir).unwrap();
         PrepareInput {
+            grants: Vec::new(),
             session_id: session.to_owned(),
             workspace_root: self.root.join("workspace"),
             session_dir,

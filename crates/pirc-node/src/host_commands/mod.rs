@@ -141,6 +141,8 @@ impl Commands {
         }
         db.require_session_available(&origin.session)?;
         crate::execution_fences::require_open(db, &origin.session)?;
+        // C6a: the host cannot enforce a sandbox folder deny.
+        crate::grants::require_no_deny(db, &origin.session)?;
         let row = db.get_session(&origin.session)?;
         if row.runner_epoch != origin.epoch || row.workspace_id != origin.workspace {
             return Err(ApiError::conflict(

@@ -1066,6 +1066,8 @@ async fn start(node: &Node, session_id: &str) -> ApiResult<Arc<Runner>> {
             )
         } else {
             crate::sandbox::PrepareInput {
+                // C6a: the conversation's explicit folder grants and denies.
+                grants: crate::grants::active(&node.db.lock(), session_id)?,
                 session_id: session_id.to_owned(),
                 workspace_root: root,
                 session_dir: session.private_session_path.clone().into(),
