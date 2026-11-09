@@ -60,6 +60,19 @@ pub(crate) fn active(db: &Connection, session: &str) -> ApiResult<Vec<FolderGran
         })?
         .collect::<Result<_, _>>()?)
 }
+/// The grant set a transition freezes with its reviewed target; None without
+/// grants, so reviews frozen before grants existed still match.
+pub(crate) fn frozen(db: &Connection, session: &str) -> ApiResult<Option<Value>> {
+    let grants = active(db, session)?;
+    Ok((!grants.is_empty()).then(|| {
+        json!(
+            grants
+                .iter()
+                .map(|g| json!({"grantId":g.grant_id,"path":g.path,"access":g.access.text()}))
+                .collect::<Vec<_>>()
+        )
+    }))
+}
 /// Whether host execution must be refused: the host ignores sandbox denies.
 pub(crate) fn has_deny(db: &Connection, session: &str) -> ApiResult<bool> {
     Ok(db.query_row(
@@ -131,11 +144,14 @@ fn canonical(path: &str) -> ApiResult<PathBuf> {
     }
     Ok(real)
 }
+/// `narrowing` changes (deny, revoke) stay possible while a transition is
+/// pending: removing access must never wait. They make its frozen target stale,
+/// so it cannot install without a new review (C1 O5). Widening waits.
 fn session_and_lease(
-    node: &Node,
     db: &Connection,
     request: &Request,
     body: &Value,
+    narrowing: bool,
 ) -> ApiResult<crate::store::SessionRow> {
     let session = db.claim_session(
         request.param("id").unwrap_or_default(),
@@ -149,8 +165,12 @@ fn session_and_lease(
         .as_i64()
         .ok_or_else(ApiError::invalid_input)?;
     db.validate_lease(&session.id, client, generation)?;
-    crate::execution_fences::require_open(db, &session.id)?;
-    let _ = node;
+    match crate::execution_fences::require_open(db, &session.id) {
+        Err(error) if !(narrowing && error.code == "environment_transition_pending") => {
+            return Err(error);
+        }
+        _ => {}
+    }
     Ok(session)
 }
 /// New epoch: approvals and requests of the old policy stop being valid.
@@ -185,15 +205,30 @@ async fn fence(node: &Node, session: &str) -> Value {
         "terminalsWereLive":terminals,"terminalsStopped":terminals_stopped,
         "confirmsContainment":node.sandbox.contains_descendants()})
 }
+/// Effective access plus whether active denies are provably enforced (C2 R5).
+/// Retained unprovable risks (host effects, uncontained descendants) may still
+/// reach a denied folder; an acknowledged switch does not change that.
+fn access_view(node: &Node, db: &Connection, session: &str) -> ApiResult<Value> {
+    let grants = active(db, session)?;
+    let mut view = effective(&grants);
+    if grants.iter().any(|g| g.access == Access::Deny) {
+        let evaluation =
+            crate::execution_fences::revocation::evaluate(node, db, session, "released")?;
+        view["denyEnforcement"] = json!({
+            "status":if evaluation.items_total == 0 {"confirmed"} else {"unproven"},
+            "risksTotal":evaluation.items_total,"digest":evaluation.digest});
+    }
+    Ok(view)
+}
 fn reply(
     node: &Node,
     session: &str,
     grant: Option<Value>,
     fence: Option<Value>,
 ) -> ApiResult<Response> {
-    let grants = active(&node.db.lock(), session)?;
+    let view = access_view(node, &node.db.lock(), session)?;
     Ok(Response::json(
-        json!({"grant":grant,"effectiveAccess":effective(&grants),"fence":fence}),
+        json!({"grant":grant,"effectiveAccess":view,"fence":fence}),
     ))
 }
 
@@ -207,10 +242,10 @@ pub async fn list(node: Node, request: Request) -> ApiResult<Response> {
             false,
         )?
         .id;
-    let grants = active(&node.db.lock(), &session)?;
+    let view = access_view(&node, &node.db.lock(), &session)?;
     Ok(Response::json(
         json!({"grantsEnabled":!node.config.grant_roots.is_empty(),
-        "effectiveAccess":effective(&grants)}),
+        "effectiveAccess":view}),
     ))
 }
 
@@ -249,7 +284,7 @@ pub async fn create(node: Node, request: Request) -> ApiResult<Response> {
     }
     let (session, grant) = {
         let db = node.db.lock();
-        let session = session_and_lease(&node, &db, &request, &body)?;
+        let session = session_and_lease(&db, &request, &body, access == Access::Deny)?;
         let grants = active(&db, &session.id)?;
         let under_root = roots.iter().any(|root| path.starts_with(root));
         let workspace = db.get_workspace(&session.workspace_id)?;
@@ -282,7 +317,7 @@ pub async fn create(node: Node, request: Request) -> ApiResult<Response> {
         };
         crate::store::atomic(&db, |tx| {
             tx.execute(
-                "INSERT INTO folder_grants VALUES(?1,?2,?3,?4,?5,?6,NULL)",
+                "INSERT INTO folder_grants(grant_id,session_id,path,access,client_id,created_at) VALUES(?1,?2,?3,?4,?5,?6)",
                 params![
                     grant.grant_id,
                     session.id,
@@ -305,7 +340,7 @@ pub async fn revoke(node: Node, request: Request) -> ApiResult<Response> {
     let id = request.param("grant").unwrap_or_default().to_owned();
     let session = {
         let db = node.db.lock();
-        let session = session_and_lease(&node, &db, &request, &body)?;
+        let session = session_and_lease(&db, &request, &body, true)?;
         let changed = crate::store::atomic(&db, |tx| {
             let n = tx.execute(
                 "UPDATE folder_grants SET revoked_at=?3 WHERE grant_id=?1 AND session_id=?2 AND revoked_at IS NULL",

@@ -2,7 +2,7 @@
 
 [Plans](README.md) · [Completion contracts](unified-completion-contracts.md#c6-projects-folders-and-collaboration) · [Transition installation](transition-installation.md)
 
-Status: **design adopted on 2026-11-09**; C6a-1 implemented locally. First slice
+Status: **design adopted on 2026-11-09**; C6a-1 and C6a-2 implemented locally. First slice
 of [C6](unified-completion-contracts.md#c6-projects-folders-and-collaboration).
 It also unblocks C1's "grant revoked between phases", C2's R5 and C3's X3 grant
 case.
@@ -48,15 +48,27 @@ createdAt, revokedAt}`. `access` is `read`, `write` or `deny`. Paths are
 
 ## Changes and fencing
 
-- Create and revoke require the current control lease and an open admission
-  fence (no transition pending). Each change advances the runner epoch, which
+- Create and revoke require the current control lease. Widening (a new read or
+  write grant) also needs an open admission fence. Narrowing (a deny or a
+  revoke) never waits for a pending transition; it makes that transition's
+  frozen target stale instead (below). Each change advances the runner epoch, which
   invalidates old approvals, and stops the live runner and isolated terminals;
   the next start uses the new policy. Stopped work is not restarted.
 - The reply reports the grant, whether a runner or terminals were stopped, and
   `confirmsContainment` (native Linux only). Elsewhere, descendants of the
   stopped runner are unprovable, as in C2.
 - Transitions keep a conversation's grants; the target binding gets the same
-  explicit grants, and deny still applies.
+  explicit grants, and deny still applies. The grant set is part of the
+  reviewed target frozen at acceptance (only when grants exist, so older
+  reviews still match). A change after review refuses installation with
+  `stale_transition_target`, checked before revocation evidence; the user
+  cancels and reviews again (C1 O5). Cancelling never restores a revoked
+  grant (C3 X3).
+- **Deny enforcement (C2 R5).** While a deny is active, the access view adds
+  `denyEnforcement` `{status, risksTotal, digest}` from the revocation
+  evaluator: `confirmed` only without retained risks, otherwise `unproven`.
+  Acknowledging an unproven switch keeps the switch's adopted result but never
+  makes the deny enforced, and host execution stays refused on the target.
 
 ## Slices
 
@@ -95,6 +107,33 @@ commands and host terminals while a deny is active.
 `terminalsStopped` and `confirmsContainment`. Each change advances the runner
 epoch, which stales pending approvals.
 
-Not yet: Gateway relay, transition carry-over of grants to the target binding,
-C1/C2/C3 grant cases (C6a-2) and client interfaces (C6a-3). Native Linux is not
-tested here.
+Native Linux is not tested here. Gateway relay, transition cases and clients
+were not part of this slice.
+
+## Local checkpoint: C6a-2 Gateway relay and transition cases (2026-11-09)
+
+No schema change (Gateway **1032**, Node **2038**).
+
+- **Relay.** The Gateway relays `GET`/`POST /api/sessions/:id/grants` and
+  `POST /api/sessions/:id/grants/:grant/revoke` verbatim to the conversation's
+  Node, like terminals; the Node owns validation, leases and fencing. Other
+  paths under `grants/` are refused.
+- **Frozen grants.** Node preflight evidence and the frozen target subset carry
+  `folderGrants` when any exist. Installation compares the target before the
+  revocation evidence and maps a narrowing change's epoch advance to
+  `stale_transition_target`, which the Gateway already passes through.
+- **Narrowing during a transition.** Deny and revoke are accepted while a
+  transition is pending; new read/write grants return
+  `environment_transition_pending`.
+
+| Case                                         | Evidence                                                                                                                                                                                               |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **C1 O5** grant revoked mid-switch           | Real process: grant, confirm, revoke through the Gateway; `advance` returns `stale_transition_target`, the binding stays on the source. Node units for revoke and for a new deny                       |
+| **C3 X3** grant revoked before release       | Real process and Node unit: cancel releases to the source with no active grant; widening during the transition was refused                                                                             |
+| **C2 R5** switch versus deny, same host risk | Node unit: the same settled host command is acknowledged and installed in both cases; with a deny, `denyEnforcement` stays `unproven` after installation and host terminals stay refused on the target |
+| Carry-over                                   | Node unit: an unchanged grant survives installation                                                                                                                                                    |
+
+Known limits: on a backend without kernel containment, the epoch advance of a
+grant change counts as an unprovable runner generation in later revocation
+evaluations, even when no runner was live (over-reports, never hides). Native
+Linux, project-level grants and the client interfaces (C6a-3) remain.

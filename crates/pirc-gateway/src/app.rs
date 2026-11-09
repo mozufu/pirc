@@ -451,6 +451,14 @@ pub fn router(app: AppState) -> Router {
             post(routes::relay_post),
         )
         .route(
+            "/api/sessions/{id}/grants",
+            get(routes::relay_get).post(routes::relay_post),
+        )
+        .route(
+            "/api/sessions/{id}/grants/{grant_id}/revoke",
+            post(routes::relay_post),
+        )
+        .route(
             "/api/sessions/{id}/browser/recording",
             get(routes::recording),
         )
@@ -550,6 +558,9 @@ const PARAM_ROUTES: &[(&str, &str)] = &[
     ("POST", "/api/sessions/{id}/terminals"),
     ("POST", "/api/sessions/{id}/terminals/{terminal_id}/close"),
     ("POST", "/api/sessions/{id}/panel/background/{task_id}/stop"),
+    ("GET", "/api/sessions/{id}/grants"),
+    ("POST", "/api/sessions/{id}/grants"),
+    ("POST", "/api/sessions/{id}/grants/{grant_id}/revoke"),
     ("GET", "/api/sessions/{id}/browser/recording"),
     ("GET", "/api/native-management/requests/{id}"),
     ("DELETE", "/api/native-management/requests/{id}"),

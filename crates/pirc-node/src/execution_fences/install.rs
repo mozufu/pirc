@@ -267,6 +267,32 @@ pub async fn install(node: Node, request: Request) -> ApiResult<Response> {
                             "This transition has no frozen target review; start a new transition",
                         )
                     })?;
+                // A changed target needs a new review whatever the evidence says.
+                let current = preflight::current_target(
+                    &node,
+                    &db,
+                    &request.user,
+                    session,
+                    &saved.intent,
+                    &body.target_workspace_id,
+                )
+                .map_err(|error| {
+                    // A narrowing grant change advanced the epoch after review.
+                    if error.code == "stale_environment" {
+                        refused(
+                            "stale_transition_target",
+                            "The reviewed target changed; cancel and review a new transition",
+                        )
+                    } else {
+                        error
+                    }
+                })?;
+                if current != reviewed {
+                    return Err(refused(
+                        "stale_transition_target",
+                        "The reviewed target changed; cancel and review a new transition",
+                    ));
+                }
                 let evaluation = revocation::evaluate(&node, &db, session, &saved.state)?;
                 let revocation = match evaluation.status {
                     "confirmed" => "confirmed",
@@ -284,20 +310,6 @@ pub async fn install(node: Node, request: Request) -> ApiResult<Response> {
                         ));
                     }
                 };
-                let current = preflight::current_target(
-                    &node,
-                    &db,
-                    &request.user,
-                    session,
-                    &saved.intent,
-                    &body.target_workspace_id,
-                )?;
-                if current != reviewed {
-                    return Err(refused(
-                        "stale_transition_target",
-                        "The reviewed target changed; cancel and review a new transition",
-                    ));
-                }
                 atomic(&db, |tx| {
                     let stamp = now_ms();
                     tx.execute(

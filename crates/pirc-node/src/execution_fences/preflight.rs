@@ -64,9 +64,15 @@ fn observe(node: &Node, request: &Request, input: &Input) -> ApiResult<Value> {
 /// The target part of reviewed evidence. The drain itself changes source activity,
 /// so installation compares only this frozen subset, never the full hash.
 fn target_subset(evidence: &Value) -> Value {
-    json!({"version":1,"targetWorkspaceId":evidence["targetWorkspaceId"],
+    let mut subset = json!({"version":1,"targetWorkspaceId":evidence["targetWorkspaceId"],
         "targetMode":evidence["targetMode"],"targetResource":evidence["targetResource"],
-        "overlap":evidence["overlap"]})
+        "overlap":evidence["overlap"]});
+    // Folder grants carry over to the target: a change after review is a
+    // changed target (C1 O5).
+    if !evidence["folderGrants"].is_null() {
+        subset["folderGrants"] = evidence["folderGrants"].clone();
+    }
+    subset
 }
 /// Freeze the reviewed target with the acceptance, in its transaction.
 pub(super) fn check_proof(
@@ -180,7 +186,7 @@ fn observe_at(
         Err(error) => return Err(error),
     };
     let pending:bool=db.query_row("SELECT EXISTS(SELECT 1 FROM runs WHERE session_id=?1 AND status IN ('queued','running','waiting_input','stopping')) OR EXISTS(SELECT 1 FROM commands WHERE session_id=?1 AND status IN ('received','dispatched'))",[id],|r|r.get(0))?;
-    let evidence = json!({"version":1,"sessionId":id,"sourceWorkspaceId":source.id,
+    let mut evidence = json!({"version":1,"sessionId":id,"sourceWorkspaceId":source.id,
         "targetWorkspaceId":target.id,"runnerEpoch":session.runner_epoch,
         "sourceMode":{"id":source.mode,"definitionHash":crate::util::payload_hash(&serde_json::to_value(&source_mode).map_err(|_|ApiError::internal())?)},"targetMode":{"id":target.mode,"definitionHash":crate::util::payload_hash(&serde_json::to_value(&target_mode).map_err(|_|ApiError::internal())?)},
         "sourceResource":source_resource,"targetResource":target_resource,"overlap":overlap,
@@ -191,6 +197,9 @@ fn observe_at(
         "hostCommands":crate::host_commands::summary(db,id)?,
         "terminals":crate::terminals::journal::summary(db,id)?,
         "browser":crate::browser::journal::summary(db,id)?});
+    if let Some(grants) = crate::grants::frozen(db, id)? {
+        evidence["folderGrants"] = grants;
+    }
     let mut blockers = vec!["revocation_unconfirmed", "target_installation_unavailable"];
     if source.id == target.id {
         blockers.push("environment_unchanged");

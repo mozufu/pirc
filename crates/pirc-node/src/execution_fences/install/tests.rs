@@ -18,7 +18,17 @@ impl Fixture {
     }
     /// The same fence, created with a C1 operation authority grant.
     async fn with_authority(op: &str, ran: bool, drain: bool, authority: Option<Value>) -> Self {
-        let (dir, node) = crate::app::tests::workspace_test_node().await;
+        Self::with_grant(op, ran, drain, authority, None).await
+    }
+    /// The same fence with one folder grant (`access`) active before review.
+    async fn with_grant(
+        op: &str,
+        ran: bool,
+        drain: bool,
+        authority: Option<Value>,
+        grant: Option<&str>,
+    ) -> Self {
+        let (dir, node) = crate::app::tests::workspace_test_node_grants(grant.is_some()).await;
         let root = dir.path().canonicalize().unwrap();
         for id in ["repo", "target"] {
             let path = root.join(id);
@@ -42,6 +52,14 @@ impl Fixture {
             .id;
         if ran {
             node.db.lock().increment_epoch(&session).unwrap();
+        }
+        if let Some(access) = grant {
+            let path = root.join("grant-root/shared");
+            std::fs::create_dir_all(&path).unwrap();
+            node.db.lock().execute(
+                "INSERT INTO folder_grants(grant_id,session_id,path,access,client_id,created_at) VALUES('grant-1',?1,?2,?3,'phone',1)",
+                params![session, path.to_str().unwrap(), access],
+            ).unwrap();
         }
         let generation = node
             .db
@@ -835,4 +853,151 @@ async fn x4_a_notice_send_cut_off_by_a_restart_is_sent_again() {
         .unwrap();
     assert_eq!(again.2["message"]["details"]["noticeId"], "move");
     restarted.close().await;
+}
+
+impl Fixture {
+    async fn grants(&self, path: &str, body: Option<Value>) -> (u16, Value) {
+        let response = self
+            .router
+            .handle(
+                &self.node,
+                NodeHttpRequest {
+                    method: if body.is_some() {
+                        HttpMethod::Post
+                    } else {
+                        HttpMethod::Get
+                    },
+                    url: format!("/api/sessions/{}/grants{path}", self.session),
+                    user: "test-user".into(),
+                    payload: body,
+                    body_base64: None,
+                    content_type: None,
+                },
+            )
+            .await;
+        (response.status, response.body.unwrap_or(Value::Null))
+    }
+    fn lease(&self) -> Value {
+        json!({"clientId":"phone","generation":self.generation})
+    }
+    fn folder(&self, path: &str) -> String {
+        self.dir
+            .path()
+            .canonicalize()
+            .unwrap()
+            .join(path)
+            .to_str()
+            .unwrap()
+            .to_owned()
+    }
+}
+
+#[tokio::test]
+async fn o5_x3_revoking_a_grant_between_phases_needs_a_new_review_and_is_never_restored() {
+    let mut f = Fixture::with_grant("move", false, true, None, Some("write")).await;
+    // Widening waits for the transition; narrowing never does.
+    std::fs::create_dir_all(f.folder("grant-root/other")).unwrap();
+    let mut widen = f.lease();
+    widen["path"] = json!(f.folder("grant-root/other"));
+    widen["access"] = json!("write");
+    let (status, refused) = f.grants("", Some(widen)).await;
+    assert_eq!(
+        (status, refused["error"]["code"].clone()),
+        (409, json!("environment_transition_pending"))
+    );
+    let before = f.epoch();
+    let (status, revoked) = f.grants("/grant-1/revoke", Some(f.lease())).await;
+    assert_eq!(status, 200, "{revoked}");
+    assert_eq!(f.epoch(), before + 1);
+    // No background step can install the reviewed plan any more (O5).
+    let (status, stale) = f.install("move").await;
+    assert_eq!(
+        (status, stale["error"]["code"].clone()),
+        (409, json!("stale_transition_target"))
+    );
+    assert_eq!(f.workspace(), "repo");
+    // Release returns to the source without the revoked grant (X3).
+    let (_, released) = f.op("move", "release", json!({})).await;
+    assert_eq!(released["transition"]["state"], "released", "{released}");
+    require_open(&f.node.db.lock(), &f.session).unwrap();
+    assert!(
+        crate::grants::active(&f.node.db.lock(), &f.session)
+            .unwrap()
+            .is_empty()
+    );
+    f.node.close().await;
+}
+
+#[tokio::test]
+async fn an_unchanged_grant_carries_over_and_a_new_deny_also_stales_the_target() {
+    let mut f = Fixture::with_grant("move", false, true, None, Some("write")).await;
+    let (status, installed) = f.install("move").await;
+    assert_eq!(status, 200, "{installed}");
+    assert_eq!(f.workspace(), "target");
+    let active = crate::grants::active(&f.node.db.lock(), &f.session).unwrap();
+    assert_eq!(active.len(), 1);
+    f.node.close().await;
+
+    let mut f = Fixture::with_grant("move", false, true, None, Some("write")).await;
+    let mut deny = f.lease();
+    deny["path"] = json!(f.folder("grant-root/shared"));
+    deny["access"] = json!("deny");
+    let (status, denied) = f.grants("", Some(deny)).await;
+    assert_eq!(status, 200, "{denied}");
+    let (status, stale) = f.install("move").await;
+    assert_eq!(
+        (status, stale["error"]["code"].clone()),
+        (409, json!("stale_transition_target"))
+    );
+    f.node.close().await;
+}
+
+#[tokio::test]
+async fn r5_an_acknowledged_switch_never_makes_a_deny_enforced_under_the_same_host_risk() {
+    // Ordinary switch: a surviving host effect is unproven and acknowledgeable.
+    let mut plain = Fixture::new("move", false, true).await;
+    settled_host_commands(&plain, 0, 1);
+    let (_, refused) = plain.install("move").await;
+    let digest = refused["error"]["details"]["digest"].clone();
+    assert_eq!(refused["error"]["details"]["status"], "unproven");
+    plain
+        .op("move", "acknowledge", json!({"digest":digest}))
+        .await;
+    let (status, _) = plain.install("move").await;
+    assert_eq!(status, 200);
+    plain.node.close().await;
+
+    // The same risk under an explicit deny: the switch keeps its result, but
+    // the deny stays unproven and host execution stays refused.
+    let mut f = Fixture::with_grant("move", false, true, None, Some("deny")).await;
+    settled_host_commands(&f, 0, 1);
+    let (_, listed) = f.grants("", None).await;
+    let enforcement = listed["effectiveAccess"]["denyEnforcement"].clone();
+    assert_eq!(enforcement["status"], "unproven", "{listed}");
+    let (_, refused) = f.install("move").await;
+    let digest = refused["error"]["details"]["digest"].clone();
+    f.op("move", "acknowledge", json!({"digest":digest})).await;
+    let (status, installed) = f.install("move").await;
+    assert_eq!(status, 200, "{installed}");
+    assert_eq!(
+        installed["transition"]["installation"]["revocation"],
+        "unproven"
+    );
+    let (_, after) = f.grants("", None).await;
+    assert_eq!(
+        after["effectiveAccess"]["denyEnforcement"]["status"],
+        "unproven"
+    );
+    assert_eq!(after["effectiveAccess"]["hostExecutionRefused"], true);
+    let host = crate::terminals::host::handle(
+        &f.node,
+        "test-user",
+        &f.session,
+        std::path::Path::new(&f.folder("target")),
+        &json!({"requestId":"h1","action":"review","executionPath":"host_management"}),
+        ("phone", f.generation),
+        (None, None),
+    );
+    assert_eq!(host.unwrap_err().code, "folder_deny_unenforceable_on_host");
+    f.node.close().await;
 }

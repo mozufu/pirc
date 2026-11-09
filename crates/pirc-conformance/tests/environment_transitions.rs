@@ -787,4 +787,101 @@ mod switching {
             TARGET_WORKSPACE_ID
         );
     }
+
+    /// C6a-2 (C1 O5, C3 X3): a grant revoked while a confirmed switch waits makes
+    /// the reviewed plan stale. No step installs it, cancelling returns to the
+    /// source without the grant, and widening waits for the transition.
+    #[tokio::test(flavor = "multi_thread")]
+    async fn o5_x3_a_grant_revoked_between_phases_is_never_installed_or_restored() {
+        let mut options = switching();
+        options.node_env = vec![("PIRC_GRANT_ROOTS", r#"["{run_dir}/grants"]"#.to_owned())];
+        let Some(cluster) = Cluster::start_with(options).await else {
+            return;
+        };
+        let headers = browser_headers();
+        let api = cluster.api();
+        let shared = cluster.dir.path().join("grants/shared");
+        let other = cluster.dir.path().join("grants/other");
+        for path in [&shared, &other] {
+            std::fs::create_dir_all(path).unwrap();
+        }
+        let (id, generation) = conversation(&api, &headers).await;
+        let listed = get(&api, &headers, &format!("/api/sessions/{id}/grants")).await;
+        assert_eq!(listed["grantsEnabled"], true, "{listed}");
+        let granted = ok(
+            &api,
+            &headers,
+            "POST",
+            &format!("/api/sessions/{id}/grants"),
+            json!({"clientId":"web","generation":generation,"path":shared,"access":"write"}),
+        )
+        .await;
+        let grant = granted["grant"]["grantId"].as_str().unwrap().to_owned();
+        assert_eq!(
+            granted["effectiveAccess"]["grants"][0]["effective"],
+            "write"
+        );
+
+        let accepted = confirm(&api, &headers, &id, &generation, "move-grant").await;
+        assert_eq!(accepted["transition"]["state"], "node_fenced", "{accepted}");
+        // Widening waits for the transition; narrowing never does.
+        let widen = api
+            .send(
+                "POST",
+                &format!("/api/sessions/{id}/grants"),
+                &headers,
+                Some(
+                    json!({"clientId":"web","generation":generation,"path":other,"access":"write"}),
+                ),
+            )
+            .await;
+        assert_eq!(
+            (widen.status, widen.body["error"]["code"].clone()),
+            (409, json!("environment_transition_pending")),
+            "{}",
+            widen.body
+        );
+        let revoked = ok(
+            &api,
+            &headers,
+            "POST",
+            &format!("/api/sessions/{id}/grants/{grant}/revoke"),
+            json!({"clientId":"web","generation":generation}),
+        )
+        .await;
+        assert_eq!(revoked["grant"]["revoked"], true, "{revoked}");
+        let stale = api
+            .send(
+                "POST",
+                &format!("/api/sessions/{id}/environment-transitions/move-grant/advance"),
+                &headers,
+                Some(json!({"clientId":"web","generation":generation})),
+            )
+            .await;
+        assert_eq!(
+            (stale.status, stale.body["error"]["code"].clone()),
+            (409, json!("stale_transition_target")),
+            "{}",
+            stale.body
+        );
+        assert_eq!(
+            workspace(&api, &headers, &id).await["workspaceId"],
+            WORKSPACE_ID
+        );
+        let released = ok(
+            &api,
+            &headers,
+            "POST",
+            &format!("/api/sessions/{id}/environment-transitions/move-grant/cancel"),
+            json!({"clientId":"web","generation":generation}),
+        )
+        .await;
+        assert_eq!(released["transition"]["state"], "released", "{released}");
+        let after = get(&api, &headers, &format!("/api/sessions/{id}/grants")).await;
+        assert_eq!(after["effectiveAccess"]["grants"], json!([]), "{after}");
+        assert_eq!(
+            workspace(&api, &headers, &id).await["workspaceId"],
+            WORKSPACE_ID
+        );
+    }
 }

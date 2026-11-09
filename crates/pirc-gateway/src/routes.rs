@@ -1847,6 +1847,7 @@ fn relayed_get(rest: &str) -> bool {
             | "panel/state"
             | "panel/context"
             | "terminals"
+            | "grants"
     ) || rest.strip_prefix("git/commits/").is_some_and(hex)
         || rest.strip_prefix("panel/background/").is_some_and(segment)
 }
@@ -1854,6 +1855,11 @@ fn relayed_get(rest: &str) -> bool {
 fn relayed_post(rest: &str) -> bool {
     let segment = |text: &str| !text.is_empty() && !text.contains(['/', '?']);
     rest == "terminals"
+        || rest == "grants"
+        || rest
+            .strip_prefix("grants/")
+            .and_then(|rest| rest.strip_suffix("/revoke"))
+            .is_some_and(segment)
         || rest
             .strip_prefix("terminals/")
             .and_then(|rest| rest.strip_suffix("/close"))
@@ -2101,6 +2107,22 @@ mod tests {
             unreachable!()
         };
         command_payload(map).map(Value::Object)
+    }
+
+    #[test]
+    fn folder_grant_routes_are_relayed_and_nothing_else_under_them() {
+        assert!(relayed_get("grants"));
+        assert!(relayed_post("grants"));
+        assert!(relayed_post("grants/grant-1/revoke"));
+        for rest in [
+            "grants/grant-1",
+            "grants//revoke",
+            "grants/a/b/revoke",
+            "grants/x/delete",
+        ] {
+            assert!(!relayed_post(rest), "{rest}");
+        }
+        assert!(!relayed_get("grants/grant-1/revoke"));
     }
 
     #[test]

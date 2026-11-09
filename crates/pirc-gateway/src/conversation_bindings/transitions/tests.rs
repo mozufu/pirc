@@ -574,3 +574,54 @@ async fn capability_wait_cannot_extend_device_or_policy_authority_to_host_inspec
         );
     }
 }
+
+/// C6a-2: folder grants are relayed verbatim to the conversation's Node, which
+/// owns validation, leases and the fence.
+#[tokio::test]
+async fn folder_grant_routes_reach_the_node_with_the_remote_session() {
+    let (app, _dir, id) = app();
+    let seen = Arc::new(Mutex::new(Vec::new()));
+    let log = seen.clone();
+    app.nodes.set_test_node(node(), move |r| {
+        log.lock()
+            .unwrap()
+            .push((r.method, r.url.clone(), r.payload.clone(), r.user.clone()));
+        Ok(NodeHttpResponse {
+            status: if r.url.ends_with("/revoke") { 404 } else { 200 },
+            body: Some(if r.url.ends_with("/revoke") {
+                json!({"error":{"code":"grant_not_found","message":"Grant not found"}})
+            } else {
+                json!({"grantsEnabled":true,"effectiveAccess":{"version":1,"grants":[]}})
+            }),
+        })
+    });
+    let (status, listed) = http(&app, &format!("/api/sessions/{id}/grants"), None, None).await;
+    assert_eq!(status, 200, "{listed}");
+    assert_eq!(listed["grantsEnabled"], true);
+    let body = json!({"clientId":"phone","generation":1,"path":"/srv/shared","access":"deny"});
+    let (status, _) = http(
+        &app,
+        &format!("/api/sessions/{id}/grants"),
+        Some(body.clone()),
+        None,
+    )
+    .await;
+    assert_eq!(status, 200);
+    let (status, missing) = http(
+        &app,
+        &format!("/api/sessions/{id}/grants/grant-9/revoke"),
+        Some(json!({"clientId":"phone","generation":1})),
+        None,
+    )
+    .await;
+    assert_eq!(
+        (status, missing["error"]["code"].clone()),
+        (404, json!("grant_not_found"))
+    );
+    let seen = seen.lock().unwrap();
+    assert_eq!(seen.len(), 3);
+    assert_eq!(seen[0].1, "/api/sessions/Private/grants");
+    assert_eq!(seen[1].2.as_ref(), Some(&body));
+    assert_eq!(seen[2].1, "/api/sessions/Private/grants/grant-9/revoke");
+    assert!(seen.iter().all(|r| r.3 == "alice"));
+}

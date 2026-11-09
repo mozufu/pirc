@@ -212,8 +212,8 @@ strict all-target Clippy passed. The owned **2.9 GiB** outputs are cleaned; this
 delivery stays local.
 
 [Folder grants and deny (C6a)](folder-grants.md): C6a-1 Node grants, effective
-access, immediate fence and host refusal under deny; Gateway relay and clients
-next. Local only.
+access, immediate fence and host refusal under deny; C6a-2 Gateway relay and the
+C1 O5, C2 R5 and C3 X3 grant cases. Client interfaces (C6a-3) next. Local only.
 
 Latest local transition delivery:
 [T5 failure-matrix acceptance](transition-installation.md#local-implementation-checkpoint-t5-failure-matrix-acceptance-2026-11-07): **675 Node**,
