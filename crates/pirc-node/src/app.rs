@@ -82,6 +82,10 @@ pub fn routes(config: &NodeConfig) -> Vec<Route> {
             "/api/sessions/:id/execution-fences",
             crate::execution_fences::create,
         ),
+        post(
+            "/api/sessions/:id/execution-fences/:operation/void",
+            crate::execution_fences::void,
+        ),
         get(
             "/api/sessions/:id/execution-fences/:operation",
             crate::execution_fences::status,

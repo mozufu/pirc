@@ -232,6 +232,7 @@ fn migrates_the_first_node_schema() {
         .replace(include_str!("../execution_fences/notice_protocol.sql"), "")
         .replace(include_str!("../grants.sql"), "")
         .replace(include_str!("creation_admission_voids.sql"), "")
+        .replace(include_str!("../execution_fences/voids.sql"), "")
             .replace(
                 "  kind TEXT NOT NULL DEFAULT 'image',\n  -- Where it was uploaded; it is usable in that workspace only and is\n  -- deleted with it. NULL for uploads older than schema 2001.\n  workspace_id TEXT,\n  session_id TEXT\n);\nCREATE INDEX uploads_workspace ON uploads(workspace_id);",
                 "  kind TEXT NOT NULL DEFAULT 'image'\n);",
@@ -740,7 +741,7 @@ fn schema_2038_upgrades_to_the_first_message_void_layer_in_one_step() {
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();
     assert_eq!(version, SCHEMA_VERSION);
-    assert_eq!(SCHEMA_VERSION, 2039);
+    assert_eq!(SCHEMA_VERSION, 2040);
     let kept: i64 = connection
         .query_row("SELECT count(*) FROM session_creations", [], |r| r.get(0))
         .unwrap();
@@ -752,4 +753,68 @@ fn schema_2038_upgrades_to_the_first_message_void_layer_in_one_step() {
         )
         .unwrap();
     assert_eq!(columns(&connection), columns(&Db::memory().lock()));
+}
+
+#[test]
+fn schema_2039_upgrades_to_the_transition_void_layer_keeping_its_data() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("node.sqlite");
+    drop(Db::open(&path).unwrap());
+    // Put the file back to 2039: no transition void table or triggers, but a
+    // fence, a creation and a first-message void that must survive the upgrade.
+    let old = Connection::open(&path).unwrap();
+    old.execute(
+        "INSERT INTO session_creations(owner_user,operation_id,workspace_id,submission_hash,session_id,state,created_at) VALUES('u','op','w','h','s','reserved',1)",
+        [],
+    )
+    .unwrap();
+    old.execute(
+        "INSERT INTO creation_admission_voids(owner_user,operation_id,command_id,session_id,input_hash,created_at) VALUES('u','op','c','s','h',1)",
+        [],
+    )
+    .unwrap();
+    old.execute_batch(&format!(
+        "{}\nPRAGMA user_version = 2039;",
+        include_str!("../remove_transition_voids.sql")
+    ))
+    .unwrap();
+    old.execute(
+        "INSERT INTO execution_fences(owner_user,operation_id,session_id,intent_json,state,created_at,updated_at) VALUES('u','fence-op','s2','{}','fenced',1,1)",
+        [],
+    )
+    .unwrap();
+    drop(old);
+    assert_eq!(SCHEMA_VERSION, 2040);
+    let db = Db::open(&path).unwrap();
+    let connection = db.lock();
+    let version: i64 = connection
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap();
+    assert_eq!(version, SCHEMA_VERSION);
+    let kept = |sql: &str| -> i64 { connection.query_row(sql, [], |r| r.get(0)).unwrap() };
+    assert_eq!(kept("SELECT count(*) FROM session_creations"), 1);
+    assert_eq!(kept("SELECT count(*) FROM creation_admission_voids"), 1);
+    assert_eq!(kept("SELECT count(*) FROM execution_fences"), 1);
+    // The new layer is live: a void of the existing fence is refused, another is not.
+    assert!(connection
+        .execute(
+            "INSERT INTO execution_fence_voids(owner_user,operation_id,session_id,plan_hash,created_at) VALUES('u','fence-op','s2','p',1)",
+            [],
+        )
+        .is_err());
+    connection
+        .execute(
+            "INSERT INTO execution_fence_voids(owner_user,operation_id,session_id,plan_hash,created_at) VALUES('u','void-op','s2','p',1)",
+            [],
+        )
+        .unwrap();
+    assert_eq!(columns(&connection), columns(&Db::memory().lock()));
+    let objects: i64 = connection
+        .query_row(
+            "SELECT count(*) FROM sqlite_master WHERE name LIKE 'execution_fence_void%' OR name='execution_fence_blocked_by_void'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(objects, 5);
 }

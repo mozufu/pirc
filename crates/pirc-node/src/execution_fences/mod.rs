@@ -7,7 +7,9 @@ pub(crate) mod install;
 mod preflight;
 pub(crate) mod revocation;
 pub(crate) mod stop_command;
+mod void;
 pub(crate) use preflight::handle as preflight;
+pub use void::void;
 
 use crate::{
     error::{ApiError, ApiResult},
@@ -228,6 +230,10 @@ fn accept_with(
         return Err(ApiError::invalid_input());
     }
     atomic(db, |tx| {
+        // A voided operation is refused before anything else, so a late request
+        // can never create the fence the user cancelled. A fence and a void are
+        // mutually exclusive; see `void`.
+        void::require_not_voided(tx, owner, &intent.operation_id)?;
         if let Some(saved) = receipt(tx, owner, session, &intent.operation_id)? {
             if saved.intent != *intent {
                 return Err(ApiError::conflict(
@@ -438,8 +444,26 @@ pub(crate) async fn drain(node: &Node, owner: &str, session: &str, op: &str) -> 
 }
 pub async fn capabilities(node: Node, _request: Request) -> ApiResult<Response> {
     Ok(Response::json(
-        json!({"version":1,"resourcePreflightVersion":1,"resourceFenceVersion":1,"stopCommandVersion":1,"terminalIoClosureVersion":1,"terminalIoOwnerRecoveryVersion":1,"workTerminalRequestVersion":crate::terminals::requests::VERSION,"hostTerminalReviewVersion":1,"hostManagementApprovalVersion":1,"isolatedTerminalVersion":if node.sandbox.isolated_terminals(){1}else{0},"nativeProxyRevocationVersion":if node.sandbox.network_scopes().is_some(){1}else{0},"revocationEvaluationVersion":1,"operationAuthorityVersion":1,"transitionAcknowledgementVersion":1,"transitionReleaseVersion":1,"durableAdmissionFence":true,"trackedSupervisorDrain":true,"installsEnvironment":true,"confirmsRevocation":node.sandbox.contains_descendants()}),
+        json!({"version":1,"resourcePreflightVersion":1,"resourceFenceVersion":1,"stopCommandVersion":1,"terminalIoClosureVersion":1,"terminalIoOwnerRecoveryVersion":1,"workTerminalRequestVersion":crate::terminals::requests::VERSION,"hostTerminalReviewVersion":1,"hostManagementApprovalVersion":1,"isolatedTerminalVersion":if node.sandbox.isolated_terminals(){1}else{0},"nativeProxyRevocationVersion":if node.sandbox.network_scopes().is_some(){1}else{0},"revocationEvaluationVersion":1,"operationAuthorityVersion":1,"transitionAcknowledgementVersion":1,"transitionReleaseVersion":1,"transitionVoidVersion":1,"durableAdmissionFence":true,"trackedSupervisorDrain":true,"installsEnvironment":true,"confirmsRevocation":node.sandbox.contains_descendants()}),
     ))
+}
+/// Run `body` inside `BEGIN IMMEDIATE`: committed if it succeeds, rolled back
+/// if it fails. `atomic` inside it nests as a savepoint.
+fn immediate<T>(db: &Connection, body: impl FnOnce() -> ApiResult<T>) -> ApiResult<T> {
+    db.execute_batch("BEGIN IMMEDIATE")?;
+    match body() {
+        Ok(value) => match db.execute_batch("COMMIT") {
+            Ok(()) => Ok(value),
+            Err(error) => {
+                let _ = db.execute_batch("ROLLBACK");
+                Err(error.into())
+            }
+        },
+        Err(error) => {
+            let _ = db.execute_batch("ROLLBACK");
+            Err(error)
+        }
+    }
 }
 pub async fn create(node: Node, request: Request) -> ApiResult<Response> {
     let body: Acceptance = request.parse_body()?;
@@ -448,27 +472,34 @@ pub async fn create(node: Node, request: Request) -> ApiResult<Response> {
         let session = request.param("id").unwrap_or_default();
         let cached:bool=db.query_row("SELECT EXISTS(SELECT 1 FROM execution_fences WHERE owner_user=?1 AND session_id=?2 AND operation_id=?3)",params![request.user,session,body.intent.operation_id],|r|r.get(0))?;
         if !cached {
+            // A voided operation is refused before this source's I/O is paused.
+            void::require_not_voided(&db, &request.user, &body.intent.operation_id)?;
             // Store ownership checks are read-only; reject other users before
             // pausing this source's I/O for the acceptance transaction.
             db.claim_session(session, &request.user, false)?;
         }
         let accept = || {
-            let result = accept_with(
-                &db,
-                &request.user,
-                session,
-                &body.intent,
-                &body.client_id,
-                body.generation,
-                |tx| {
-                    preflight::check_proof(&node, tx, &request.user, session, &body.intent)?;
-                    // Recorded with the fence itself, in the same transaction.
-                    if let Some(grant) = &body.operation_authority {
-                        authority::record(tx, &request.user, &body.intent.operation_id, grant)?;
-                    }
-                    Ok(())
-                },
-            );
+            // Take the write lock first (`atomic` alone is a savepoint). A void
+            // is decided under the same connection lock and the same lock mode,
+            // so a fence and a void of one operation can never both commit.
+            let result = immediate(&db, || {
+                accept_with(
+                    &db,
+                    &request.user,
+                    session,
+                    &body.intent,
+                    &body.client_id,
+                    body.generation,
+                    |tx| {
+                        preflight::check_proof(&node, tx, &request.user, session, &body.intent)?;
+                        // Recorded with the fence itself, in the same transaction.
+                        if let Some(grant) = &body.operation_authority {
+                            authority::record(tx, &request.user, &body.intent.operation_id, grant)?;
+                        }
+                        Ok(())
+                    },
+                )
+            });
             if result.is_err() {
                 // A known rollback leaves the prior proxy usable. Failed rollback
                 // or unreadable commit outcome cannot release network authority.
