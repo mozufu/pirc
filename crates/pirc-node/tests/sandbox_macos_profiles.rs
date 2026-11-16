@@ -32,6 +32,8 @@ use pirc_policy::PathPolicy;
 use pirc_policy::session::{NetworkPolicy, SessionPolicy, linked_path};
 use serde_json::Value;
 
+mod scratch_support;
+
 const FIXTURES: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/sbpl");
 const TAG: &str = "CMD64_dHJ1ZQ==_END__abcdefghi_SBX";
 const PORT: u16 = 40000;
@@ -50,18 +52,17 @@ fn strings(value: &Value, root: &str) -> Vec<String> {
 }
 
 /// A directory whose path is free of characters a regex or JSON string
-/// would escape, so `{ROOT}` can be replaced as plain text.
+/// would escape, so `{ROOT}` can be replaced as plain text. It lives in the
+/// scratch root ([`scratch_support`]), not in the cargo target directory, whose
+/// path this test does not control.
 fn root_dir() -> (tempfile::TempDir, String) {
-    let dir = tempfile::Builder::new()
-        .prefix("sbpl")
-        .rand_bytes(8)
-        .tempdir_in(env!("CARGO_TARGET_TMPDIR"))
-        .unwrap();
+    let dir = scratch_support::scratch_dir("sbpl");
     let root = fs::canonicalize(dir.path()).unwrap().display().to_string();
     assert!(
         root.chars()
             .all(|c| c.is_ascii_alphanumeric() || "/_-".contains(c)),
-        "the test directory {root} needs escaping: use a plainer target directory"
+        "the test directory {root} needs escaping: point {} at a plainer directory",
+        scratch_support::SCRATCH_VARIABLE
     );
     (dir, root)
 }
@@ -416,8 +417,117 @@ fn production_profiles_hold_pircs_deviations() {
             "{glob}"
         );
     }
-    // The read-only profile.
+    // The read-only profile. The check below looks for the text `tmp/claude`, so
+    // the scratch directory must not itself spell it (a `TMPDIR` under
+    // `/tmp/claude`): the profile would then name it for another reason.
+    assert!(
+        !case("readonly").root.contains("tmp/claude"),
+        "{} lies under tmp/claude: set {} to another directory",
+        case("readonly").root,
+        scratch_support::SCRATCH_VARIABLE
+    );
     let readonly = production_profile(case("readonly"));
     assert!(!readonly.contains("tmp/claude"));
     assert!(!readonly.contains("(allow ipc-posix-shm)"));
+}
+
+/// Paths are spelled into the profile as SBPL string literals: `"` and `\`
+/// get a backslash, spaces and other printable characters stay as they are.
+/// The paths are fed to the generator as text; none of them has to exist.
+/// (`policy_profile` resolves its paths and refuses ones that do not exist, so
+/// this goes through [`profile::generate`], which spells what it is given.)
+#[test]
+fn profiles_escape_spaces_quotes_and_backslashes_in_paths() {
+    // (a workspace path, the literal it must be spelled as)
+    let cases = [
+        (
+            "/nonexistent-pirc/Crucial X9/ws",
+            r#""/nonexistent-pirc/Crucial X9/ws""#,
+        ),
+        (
+            r#"/nonexistent-pirc/say "hi""#,
+            r#""/nonexistent-pirc/say \"hi\"""#,
+        ),
+        (
+            r"/nonexistent-pirc/back\slash",
+            r#""/nonexistent-pirc/back\\slash""#,
+        ),
+        (
+            r#"/nonexistent-pirc/a "b" \q"#,
+            r#""/nonexistent-pirc/a \"b\" \\q""#,
+        ),
+    ];
+    for (workspace, literal) in cases {
+        let home = format!("{workspace}/home");
+        let secret = format!("{workspace}/secret");
+        let secret_literal = format!("{}/secret\"", literal.strip_suffix('"').unwrap());
+        let allow_write = [workspace.to_owned()];
+        let deny_write = [secret.clone()];
+        let profile = profile::generate(&ProfileInput {
+            deny_read: &[],
+            allow_read: &[],
+            allow_write: &allow_write,
+            deny_write: &deny_write,
+            allow_git_config: false,
+            allow_unix_sockets: &[],
+            allow_local_binding: false,
+            proxy_port: None,
+            allow_pty: false,
+            cwd: workspace,
+            home: &home,
+            log_tag: TAG,
+            extra_read_denies: &[],
+            extra_write_denies: &[],
+            extra_move_blocks: &[],
+            literal_roots: &[],
+            readonly: false,
+            temp_parent: None,
+        })
+        .unwrap_or_else(|error| panic!("{workspace}: {error}"));
+        for expected in [literal, secret_literal.as_str()] {
+            assert!(
+                profile.contains(&format!("(subpath {expected})")),
+                "{workspace}: no (subpath {expected}) in\n{profile}"
+            );
+        }
+        // Nothing spells the path raw where a quote or backslash needs escaping,
+        // which would end the string early or name another path.
+        if workspace.contains(['"', '\\']) {
+            assert!(
+                !profile.contains(&format!("\"{workspace}\"")),
+                "{workspace}: spelled without escapes"
+            );
+        }
+    }
+}
+
+#[test]
+fn scratch_directories_are_short_unique_canonical_and_removed() {
+    use std::ffi::OsString;
+    let first = scratch_support::scratch_dir("t-");
+    let second = scratch_support::scratch_dir("t-");
+    assert_ne!(first.path(), second.path());
+    let root = scratch_support::scratch_root();
+    assert_eq!(first.path().parent(), Some(root.as_path()));
+    assert_eq!(first.path(), fs::canonicalize(first.path()).unwrap());
+    let name = first.path().file_name().unwrap().to_str().unwrap();
+    assert!(name.starts_with("t-") && name.len() < 20, "{name}");
+    let path = first.path().to_owned();
+    fs::write(path.join("fixture"), "x").unwrap();
+    drop(first);
+    assert!(!path.exists(), "the directory is removed on drop");
+
+    // `PIRC_TEST_SCRATCH` chooses the root; an empty value is as good as unset;
+    // a link is resolved so the path tests compare is the kernel's.
+    let chosen = scratch_support::scratch_dir("t-");
+    let link = chosen.path().join("via-link");
+    std::os::unix::fs::symlink(chosen.path(), &link).unwrap();
+    assert_eq!(
+        scratch_support::root_from(Some(link.into_os_string())),
+        fs::canonicalize(chosen.path()).unwrap()
+    );
+    assert_eq!(
+        scratch_support::root_from(Some(OsString::new())),
+        scratch_support::root_from(None)
+    );
 }

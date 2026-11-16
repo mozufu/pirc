@@ -76,6 +76,65 @@ mod tests {
         assert_eq!(SocketPath::new(path).unwrap().path, path);
     }
 
+    /// A directory removed on drop, and a `<directory>/socket` path of exactly
+    /// `length` bytes under it (the directory name is padded to fit).
+    struct Scratch(PathBuf);
+    impl Drop for Scratch {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+    fn socket_of_length(label: &str, length: usize) -> (Scratch, PathBuf) {
+        let base = std::env::temp_dir().canonicalize().unwrap();
+        let root = base.join(format!("psp-{}-{label}", std::process::id()));
+        let guard = Scratch(root.clone());
+        let fixed = root.as_os_str().len() + "/x/socket".len();
+        assert!(
+            fixed <= length,
+            "{} is too long for a {length}-byte socket path",
+            root.display()
+        );
+        let directory = root.join("d".repeat(length - fixed + 1));
+        std::fs::create_dir_all(&directory).unwrap();
+        let socket = directory.join("socket");
+        assert_eq!(socket.as_os_str().len(), length);
+        (guard, socket)
+    }
+
+    #[test]
+    fn a_path_one_byte_under_the_limit_is_kept_and_binds() {
+        let (_guard, socket) = socket_of_length("fits", SUN_PATH_BYTES - 1);
+        let bound = SocketPath::new(&socket).unwrap();
+        assert_eq!(bound.path, socket);
+        let _listener = std::os::unix::net::UnixListener::bind(&bound.path).unwrap();
+        assert!(socket.exists());
+    }
+
+    /// One byte longer than `sockaddr_un` holds (it needs its terminating NUL).
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn a_path_one_byte_over_the_limit_goes_through_the_directory_on_linux() {
+        let (_guard, socket) = socket_of_length("over", SUN_PATH_BYTES);
+        let bound = SocketPath::new(&socket).unwrap();
+        assert!(bound.path.starts_with("/proc/self/fd"), "{:?}", bound.path);
+        assert!(bound.path.as_os_str().len() < SUN_PATH_BYTES);
+        let _listener = std::os::unix::net::UnixListener::bind(&bound.path).unwrap();
+        assert!(socket.exists());
+    }
+
+    /// Elsewhere the long path is returned as it is and the bind refuses it:
+    /// documented ("fails as before"), and a plain error rather than a panic.
+    #[cfg(not(target_os = "linux"))]
+    #[test]
+    fn a_path_one_byte_over_the_limit_is_returned_unchanged_and_refused_by_bind() {
+        let (_guard, socket) = socket_of_length("over", SUN_PATH_BYTES);
+        let bound = SocketPath::new(&socket).unwrap();
+        assert_eq!(bound.path, socket);
+        let error = std::os::unix::net::UnixListener::bind(&bound.path).unwrap_err();
+        assert_eq!(error.kind(), io::ErrorKind::InvalidInput, "{error}");
+        assert!(!socket.exists());
+    }
+
     #[cfg(target_os = "linux")]
     #[test]
     fn long_paths_bind_and_connect_through_the_directory() {

@@ -7,6 +7,7 @@ use serde_json::{Value, json};
 use std::{fs, path::PathBuf, process::Stdio, sync::Arc, time::Duration};
 use tokio::io::AsyncWriteExt;
 mod persistence_support;
+mod scratch_support;
 
 #[test]
 #[ignore = "private subprocess worker, invoked by native_state_custody"]
@@ -80,10 +81,9 @@ async fn native_state_custody() {
         eprintln!("skipped: bubblewrap unavailable; native state custody not tested");
         return;
     }
-    let temp = tempfile::Builder::new()
-        .prefix("custody-")
-        .tempdir_in(env!("CARGO_TARGET_TMPDIR"))
-        .unwrap();
+    // Not the cargo target directory: its path may hold a space or be too long for
+    // the Unix socket bound below (`scratch_support`).
+    let temp = scratch_support::scratch_dir("cu-");
     let root = temp.path().canonicalize().unwrap();
     let home = root.join("home");
     let cwd = root.join("workspace");
