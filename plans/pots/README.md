@@ -2,6 +2,8 @@
 
 [Plans](../README.md) · [Product design](design.md) · [Acceptance cases](acceptance.md) · [User guide](../../docs/guides/pots.md) · [Library extraction](../library-extraction.md)
 
+> **Superseded 2026-11-16 (N6):** pots are several named pot identities under one owner, each with its own responsibilities, observation scope and permissions, not one owner-scoped identity. See [2026-11-16 direction update](../README.md#direction-update-2026-11-16).
+
 **pirc pots** is the user's persistent personal assistant: one owner-scoped identity
 that observes allowed progress, records sourced suggestions, tracks tasks and, only
 when the user authorizes it, dispatches attributed instructions. This folder holds

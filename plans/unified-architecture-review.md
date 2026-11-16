@@ -66,6 +66,8 @@ planning baseline without asking for the same choices again. Adoption specifies
 future behavior; it does not change current grants, enable pots, implement crates
 or authorize automatic data migration.
 
+> **Updated 2026-11-16 (N3):** the App sign-in and server exposure row below is kept; "App independent" means no Web front end needs to be open, and the reverse proxy, HTTPS and Gateway boundary stay. See [2026-11-16 direction update](README.md#direction-update-2026-11-16).
+
 | Area                                        | Adopted direction                                                                                                                                                                                                                  | Remaining work                                                                                                                        |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | Initial cwd and mount permissions           | Explicitly select/show the main folder and its read/write scope, including the managed-empty-workspace choice. New additional folders default to read-only unless explicitly granted writes; preserve existing grants on migration | Binding UI and enforcement; explain effective access when another grant already permits writes                                        |

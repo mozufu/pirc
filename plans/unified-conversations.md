@@ -826,6 +826,8 @@ Compare keeping the existing Web client against sharing Flutter data/state/UI,
 using the same workflows and fixtures. Set acceptance budgets before the spike;
 do not invent a migration estimate without measuring these difficult surfaces.
 
+> **Updated 2026-11-16 (N1):** this native-content paragraph is kept, with the scope clarified: common content, interaction, keyboard handling and smoothness are mainline, rare Chromium-compatibility details leave the mainline, and no WebView replacement is authorized. See [2026-11-16 direction update](README.md#direction-update-2026-11-16).
+
 Application UI reuse is separate from rendering agent-generated HTML/JavaScript.
 Keep the current native-content requirement and explicit unsupported cases.
 Structured result cards/forms may be evaluated later; this plan does not silently
@@ -3327,6 +3329,8 @@ content rights, no autonomous dispatch without an explicit request or standing
 grant, and finite configured budgets/bounded concurrency. Nonurgent suggestions
 use quiet digests/inbox. Actual scope selections, grants, numeric limits, quiet hours
 and cadence are configuration work; no specific amounts or times were approved.
+
+> **Superseded 2026-11-16 (N6):** bounded mutual dispatch between pots is allowed within granted authority, only unbounded loops stay forbidden, and the invariant is shared causal-root budget, depth and concurrency limits. See [2026-11-16 direction update](README.md#direction-update-2026-11-16).
 
 **Gate:** repeated events produce one actionable suggestion; dismissed suggestions
 stay quiet until materially changed; denied/revoked grants survive retries;

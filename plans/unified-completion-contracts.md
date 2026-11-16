@@ -14,6 +14,9 @@ runtime access, enable a feature, change formats, push or deploy anything.
 For this architecture family, read in this order:
 
 1. The latest user instruction controls authorization, pause, publication and scope.
+   The [2026-11-16 direction update](README.md#direction-update-2026-11-16) records the owner's
+   current decisions and is read together with that instruction; it takes precedence over
+   older "adopted" wording in this file.
 2. This file supplies the current completion contracts and cross-plan corrections.
 3. Product/execution/isolation/pots plans supply compatible behavior and detailed
    flows; reusable-library architecture remains authoritative for shipped Rust APIs.
@@ -24,23 +27,55 @@ The snapshot below is based on source `bf6ccd77`, not a new runtime verification
 Update this one snapshot when implementation advances; link to evidence instead
 of writing competing “latest” summaries across the plans.
 
-| Area                   | Implemented baseline                                                                                        | Acceptance/activation and remaining work                                                                                                                                                                                                                                                                              |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Formats                | Gateway 1032; Node 2038; protocol 15; client contract 2; Web IndexedDB 3; Android private envelope 3        | No version or dependency change in this document                                                                                                                                                                                                                                                                      |
-| U1 first Send          | Gateway/Node/Web/Android persistence, recovery and draft integration                                        | `canSubmit: false`; mixed-version, device and rollout gates remain                                                                                                                                                                                                                                                    |
-| U2 bindings            | Legacy adapter, configured policy, membership, memory/upload provenance and ordinary-command checks         | Full live-resource provenance and project grant enforcement remain                                                                                                                                                                                                                                                    |
-| U4 same-Node switch    | T1–T5: existing registered workspace targets, coordinator, Web/Android controls and failure-matrix evidence | `PIRC_ENVIRONMENT_SWITCHING` defaults off; C4 G1–G5, C1 (O1–O8 evidence), C2 (R1–R4), C3 (X1–X5 evidence) delivered; Web/Android C1–C3 interfaces delivered (readiness refresh without control open); C1 O5/C2 R5/C3 X3 grant cases delivered with C6a-2; further C4 target routes and native Linux acceptance remain |
-| Work/host terminals    | Explicit paths, retained requests, v3 clients; compatibility host path defaults off                         | Native Linux and real browser/Android journeys remain; no automatic host fallback                                                                                                                                                                                                                                     |
-| U5 tasks/collaboration | Existing goal/todo/team/pots primitives                                                                     | Canonical mapping, project fan-out, notes/board and waits not accepted as complete                                                                                                                                                                                                                                    |
-| U6 pots                | Progress tracking, explicit dispatch, Stop ownership/archive                                                | Content observation, proactive analysis, standing grants, budgets and digests not accepted as complete; P7 remains open                                                                                                                                                                                               |
-| Libraries              | Extracted types/transports/OAuth and production loop adapter                                                | API/feature/local-Send/event-order proof debt remains; no crates.io publication                                                                                                                                                                                                                                       |
-| App                    | Paired Android is an independent client for supported routine operations                                    | New sign-in/topology and broader management authorization remain separate; current Web-confirmed management grants are preserved                                                                                                                                                                                      |
-| Deferred               | UI/navigation reset, Flutter Web migration, iOS native connection                                           | Not prerequisites for the bounded backend/client contracts here                                                                                                                                                                                                                                                       |
+> **Updated 2026-11-16 (N2):** the Deferred row below is partly un-deferred: UI/navigation work is open with the scope of interface, state management and data layer, while Flutter Web migration and iOS stay deferred. See [2026-11-16 direction update](README.md#direction-update-2026-11-16).
+
+| Area                                    | Implemented baseline                                                                                        | Acceptance/activation and remaining work                                                                                                                                                                                                                                                                              |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Formats                                 | Gateway 1032; Node 2038; protocol 15; client contract 2; Web IndexedDB 3; Android private envelope 3        | No version or dependency change in this document                                                                                                                                                                                                                                                                      |
+| U1 first Send                           | Gateway/Node/Web/Android persistence, recovery and draft integration                                        | `canSubmit: false`; mixed-version, device and rollout gates remain                                                                                                                                                                                                                                                    |
+| U2 bindings                             | Legacy adapter, configured policy, membership, memory/upload provenance and ordinary-command checks         | Full live-resource provenance and project grant enforcement remain                                                                                                                                                                                                                                                    |
+| U4 same-Node switch                     | T1–T5: existing registered workspace targets, coordinator, Web/Android controls and failure-matrix evidence | `PIRC_ENVIRONMENT_SWITCHING` defaults off; C4 G1–G5, C1 (O1–O8 evidence), C2 (R1–R4), C3 (X1–X5 evidence) delivered; Web/Android C1–C3 interfaces delivered (readiness refresh without control open); C1 O5/C2 R5/C3 X3 grant cases delivered with C6a-2; further C4 target routes and native Linux acceptance remain |
+| Work/host terminals                     | Explicit paths, retained requests, v3 clients; compatibility host path defaults off                         | Native Linux and real browser/Android journeys remain; no automatic host fallback                                                                                                                                                                                                                                     |
+| U5 tasks/collaboration                  | Existing goal/todo/team/pots primitives                                                                     | Canonical mapping, project fan-out, notes/board and waits not accepted as complete                                                                                                                                                                                                                                    |
+| U6 pots                                 | Progress tracking, explicit dispatch, Stop ownership/archive                                                | Content observation, proactive analysis, standing grants, budgets and digests not accepted as complete; P7 remains open                                                                                                                                                                                               |
+| Libraries                               | Extracted types/transports/OAuth and production loop adapter                                                | API/feature/local-Send/event-order proof debt remains; no crates.io publication                                                                                                                                                                                                                                       |
+| App                                     | Paired Android is an independent client for supported routine operations                                    | New sign-in/topology and broader management authorization remain separate; current Web-confirmed management grants are preserved                                                                                                                                                                                      |
+| Reliability and gate fixes (2026-11-16) | See the four-state table below: design, code, acceptance and activation are reported separately             | First-send server gate stays off; see the table and open items below                                                                                                                                                                                                                                                  |
+| Deferred                                | UI/navigation reset, Flutter Web migration, iOS native connection                                           | Not prerequisites for the bounded backend/client contracts here                                                                                                                                                                                                                                                       |
 
 Existing T5 evidence includes real-process restart/offline/concurrency/takeover/
 cancel journeys, and **synthetic**, not native Linux, confirmed containment. Its
 675 Node, 428 Gateway and 42 process cases are historical results, not tests run
 for this document. C4 gaps G1–G5 are delivered ([checkpoints](transition-installation.md)); the others remain. C6a-1 Node folder grants and deny and C6a-2 Gateway relay with the O5/R5/X3 grant cases are implemented locally ([checkpoints](folder-grants.md)); client interfaces (C6a-3), project grants and native Linux remain.
+
+### Reliability and gate fixes (2026-11-16)
+
+Status is reported as four separate states that are not merged (see the
+[2026-11-16 direction update](README.md#direction-update-2026-11-16)): design
+complete, code complete, acceptance passed, activation allowed. Local verification
+is not the Linux CI gate.
+
+| Item                                             | Design   | Code                    | Acceptance                                                                                                                                                                          | Activation                 |
+| ------------------------------------------------ | -------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| First-send server rollout gate `PIRC_FIRST_SEND` | Complete | Local commit `30ee4141` | Verified locally: `pirc-config` 50 and `pirc-gateway` 451 unit tests passed; clippy and fmt clean. Not run: Linux conformance, bun script tests, the Kotlin acceptance fixture edit | Not allowed; default off   |
+| Startup settlement of commands left `received`   | Complete | Local commit `395afcbc` | Gateway unit test                                                                                                                                                                   | Not applicable (no switch) |
+| Test scratch directories                         | Complete | Local commit `2c12d1ba` | The two macOS sandbox test files pass with the target on a path containing a space. Linux paths not run                                                                             | Not applicable (test-only) |
+| Conformance skip accounting                      | Complete | Local commit `612467f6` | Local counts with the environment unset went from 279 passed / 5 ignored to 15 passed / 270 ignored. CI count comparison not yet done because publication is paused                 | Not applicable (test-only) |
+| First-message dispatch failure classification    | Complete | Not started             | Not run                                                                                                                                                                             | Not allowed                |
+| Environment-transition unknown-outcome exit      | Complete | Not started             | Not run                                                                                                                                                                             | Not allowed                |
+
+The environment-transition item is a safe exit only: an explicit user cancellation
+is the only trigger for voiding an accepted transition whose Node outcome is
+unknown, and automatic behaviour is reconciliation only. It is not automatic
+continuation in every situation.
+
+Known limitation kept by decision: the legacy session-create path has no
+idempotency key, so a lost reply can leave a Node session that nothing references.
+It is superseded by the first-send flow rather than fixed separately.
+
+Open item (not fixed): on macOS, a Node state directory deeper than roughly 76
+bytes makes the inference socket path exceed the platform limit, and the Node
+exits at startup with a clean error. Linux is unaffected.
 
 The original context decision A remains: leaving a project preserves saved history
 but removes new project-derived access. Independent disclosed grants survive;
@@ -557,6 +592,8 @@ Content observation and proactive work stay disabled until a complete, finite
 configuration exists. Missing values are not unlimited grants. This planning
 approval does not grant access to any actual conversation or provider.
 
+> **Updated 2026-11-16 (N6):** the Spending row below is extended with per-pot caps, while the owner aggregate and causal-root accounting are kept. See [2026-11-16 direction update](README.md#direction-update-2026-11-16).
+
 | Configuration     | Required contract; values still to choose                                                                                                |
 | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
 | Observation       | Explicit scopes and progress/content/source/calendar/file actions; membership growth does not silently widen consent                     |
@@ -669,6 +706,8 @@ capability: macOS acknowledged-unproven acceptance cannot certify native Linux;
 a deferred Linux gate need not prevent a separately accepted macOS-only scope. K5 can design in parallel; actual
 project/pots execution depends on the corresponding grant and lifecycle gates.
 No full loop rewrite or Flutter Web replacement is a prerequisite.
+
+> **Superseded 2026-11-16 (N2):** the sentence "Necessary controls may be throwaway in the old style; UI redesign stays deferred" no longer applies because new controls belong in the new interface. See [2026-11-16 direction update](README.md#direction-update-2026-11-16).
 
 Every slice records separately: contract specified, code delivered, integration
 accepted, platform accepted and activation allowed. Passing a synthetic adapter

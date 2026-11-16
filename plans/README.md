@@ -10,6 +10,134 @@ and staged gates. This is a document-only/local-commit update; the implementatio
 goal remains paused. Historical publication/resume notes below are not permission
 to push or resume work now.
 
+<a id="direction-update-2026-11-16"></a>
+
+## 2026-11-16 direction update
+
+This is the single authoritative entry point for the current direction. The
+project owner made the decisions below on 2026-11-16. Where they conflict with
+text written around 2026-10-24 or 2026-11-07 (including wording such as "adopted"
+or "do not ask again"), these decisions win. Superseded text is kept for history
+and carries a dated marker pointing here. The list of superseded and updated
+clauses was prepared from local audit notes (not in this repository). Safety and
+data-protection contracts that still apply are kept.
+
+### Decisions
+
+- **N1 - Native content rendering.** The native-content requirement stays, for the
+  sake of user experience. The near-term mainline is common content, interaction,
+  keyboard handling and smoothness; rare syntax and Chromium-compatibility details
+  leave the mainline. Replacing the whole rendering layer with a WebView is not
+  authorized; alternatives are compared before any decision.
+- **N2 - Flutter rewrite scope.** The scope is the interface, state management and
+  data layer, plus necessary rendering performance and integration fixes. This
+  un-defers the U3 interface work. The `pirc-mobile-handoff` material is a
+  reference, not a frozen specification. Flows, data models and component
+  boundaries are mapped first.
+- **N3 - Independent App.** "App independent" means no Web front end needs to be
+  open. HTTPS/WSS, the Gateway, the reverse proxy and the existing security
+  boundaries stay. Startup and switching waits are measured first; caching,
+  paging, incremental sync, on-demand loading and reconnect/resume are evaluated
+  afterwards. First sign-in, pairing and management authorization that do not
+  depend on the Web are designed separately; the existing management approval
+  mechanism is kept.
+- **N4 - Positioning.** The App's operating experience is the design starting
+  point; Web keeps functional parity. Both share backend contracts, permissions
+  and operation semantics. Whether the front-end technology is unified is
+  evaluated separately.
+- **N5 - iOS.** iOS is not part of the near or medium term. Kotlin transport is
+  not moved to Dart for a hypothetical iOS; the split follows Android needs,
+  testability and maintenance cost.
+- **N6 - Multiple named pots.** Several named pots replace the single-assistant
+  design. Each has its own responsibilities, observation scope and permissions;
+  pots can message each other, join groups and dispatch within limits. Dispatch
+  inside granted authority needs a dispatch right on the sender and an execution
+  right on the receiver, with resources and budgets checked at execution time.
+  Another pot's message never stands in for user authorization. Source marking,
+  task linkage, de-duplication, shared budgets, depth limits and stop controls are
+  kept; a group message must not wake every pot. The user can see pot messages in
+  sessions, between pots and in groups. There is still one user.
+- **N7 - Governance.** The project is led by the owner. New decisions name the
+  clauses they supersede, the date and the scope. Safety and data-protection
+  contracts that still apply are kept. There is no default requirement to rewrite
+  crate layering, the Gateway/Node topology or the conformance method.
+- **N8 - Process.** New interfaces join the new flows through clear data
+  interfaces and capability negotiation, not by turning every switch on. An
+  accepted new request is never re-sent through the old flow after a timeout.
+  Before any publication the remote and target branch are checked, updates are
+  integrated and test evidence is confirmed; historical and current results are
+  recorded separately; a skipped test is not a pass; no release is created. See
+  follow-up (h) for the current pause.
+- **N9 - Method.** The baseline is unified first, then a small number of parallel
+  reviews follow and the main agent integrates them.
+
+### Superseded and updated clauses
+
+| File                                                                   | Original gist                                                                            | Disposition                                                                       |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| [pots/README.md](pots/README.md)                                       | pots is one owner-scoped identity                                                        | Superseded (N6): several named pots under one owner                               |
+| [pots/design.md](pots/design.md)                                       | One stable assistant entry point                                                         | Superseded (N6): each pot has its own entry point, plus an overview               |
+| [pots/design.md](pots/design.md)                                       | First scope is one assistant identity; multiple named assistants are a later decision    | Superseded (N6): multiple named pots are formal scope                             |
+| [pots/design.md](pots/design.md)                                       | pots has one assistant identity with an overview/inbox                                   | Superseded (N6)                                                                   |
+| [pots/design.md](pots/design.md)                                       | Agents may not produce a mutual-dispatch loop                                            | Superseded (N6): bounded mutual dispatch is allowed; unbounded loops stay barred  |
+| [unified-conversations.md](unified-conversations.md)                   | Same mutual-dispatch gate sentence                                                       | Superseded (N6): same rewrite                                                     |
+| [pots/design.md](pots/design.md)                                       | No cascading authority                                                                   | Updated (N6): kept and strengthened                                               |
+| [unified-completion-contracts.md](unified-completion-contracts.md) C8  | Spending caps: owner aggregate, responsibility and single-run                            | Updated (N6): per-pot caps added; owner total and causal-root accounting are kept |
+| [README.md](README.md) U3 row and item 3 of the U1 queue               | Unified navigation/UI deferred by the user                                               | Updated (N2): un-deferred                                                         |
+| [unified-completion-contracts.md](unified-completion-contracts.md)     | Deferred: UI/navigation reset, Flutter Web migration, iOS                                | Updated (N2): UI/navigation un-deferred; Flutter Web and iOS stay deferred        |
+| [unified-completion-contracts.md](unified-completion-contracts.md) C10 | Necessary controls may be throwaway in the old style; UI redesign deferred               | Superseded (N2): new controls belong in the new interface                         |
+| [unified-conversations.md](unified-conversations.md)                   | Keep the native-content requirement; no WebView fallback                                 | Updated (N1): kept; mainline scope clarified                                      |
+| [mobile.md](mobile.md)                                                 | Remaining work lists dialog, dynamic-content, script-lifecycle and fragment-scroll items | Updated (N1): the first four items leave the mainline; the tier list is proposed  |
+| [unified-architecture-review.md](unified-architecture-review.md)       | App sign-in and server exposure deferred                                                 | Updated (N3): kept; meaning of "App independent" clarified                        |
+
+### Confirmed 2026-11-16 follow-ups
+
+- **(a) HTML form interaction.** Common HTML form interaction (buttons, inputs,
+  checkboxes, radios, selects and submit, with the basic events, focus and
+  keyboard behaviour they need) is mainline rendering scope. Structured cards may
+  be proposed separately but have not been chosen to replace HTML, so existing
+  capability commitments are not lowered on that basis.
+- **(b) Frozen rendering items.** "Frozen" means no further specification growth.
+  Safety, crash, resource-release and credential/cookie/storage isolation defects
+  are still fixed, and required safety regressions stay in the default test set
+  even if the fast test set is tiered.
+- **(c) Agent content identity.** Content from agents does not obtain the app's
+  own first-party identity. Activating a submit control inside agent content is
+  not approval to use the app's execution or management rights. This is a design
+  principle only.
+- **(d) Multiple named pots.** Multiple named pots replace the single-assistant
+  design. De-duplication is layered: each pot keeps its own observations and
+  evidence; shared events, user notifications and same-purpose dispatches are
+  de-duplicated per layer and summarised by a configured lead/coordinating pot. A
+  global de-duplication record must not swallow another pot's responsibility or
+  evidence, nor share unauthorised content. The detailed data model is still a
+  proposal.
+- **(e) Device credential rotation.** Rotation may extend beyond the 30-day total
+  lifetime while keeping the 7-day idle expiry and manual revocation. Rotation
+  must not extend management grants, add permissions or become a different
+  device. Detailed rules are still a proposal.
+- **(f) F1 scope this round.** An explicit user cancellation is the only trigger
+  for voiding an accepted environment transition whose Node outcome is unknown.
+  Automatic behaviour is reconciliation only. This delivers a safe exit, not
+  automatic continuation in every situation.
+- **(g) F2 first-message attempts.** After a first-message attempt is proven not
+  admitted it is shown as "not executed, can retry", never as completed. A new
+  attempt is always started by the user. Drafts and attachments are retained.
+- **(h) Publication paused.** Pushing, merging to main and releases are paused as
+  of 2026-11-16 until the owner says otherwise. Implementation continues as local
+  commits.
+- **(i) Status reporting.** Status uses four separate states that must not be
+  merged: design complete, code complete, acceptance passed, activation allowed.
+
+### Still proposals (not decided)
+
+- Pairing-flow redesign
+- Rotation detail rules
+- Multi-pots data model, group wake-up rules and report-chain depth accounting
+- Rendering tier list
+- Test-set tiering
+- Any Flutter Web decision
+
 This is a work queue, not authorization. Each implementation needs the user's
 go-ahead; nothing here authorizes deployment, paid evaluation, deleting state or
 rerunning the `#[ignore]`d real-host-root tests. Preserve unresolved items when
@@ -305,6 +433,8 @@ This is no longer an approval question. New adapters/grant origins and necessary
 Web/Android mode controls remain implementation work; no implicit host fallback
 or `full-access` escalation is authorized by the design.
 
+> **Updated 2026-11-16 (N2):** The U3 row below ("Deferred by the user") is un-deferred; the scope is the interface, state management and data layer plus necessary rendering performance and integration fixes, and `pirc-mobile-handoff` is a reference rather than a frozen specification. See [2026-11-16 direction update](#direction-update-2026-11-16).
+
 | Area                                           | Current state                                                                                                                                                                                                | Remaining delivery                                                                                                    |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
 | U1 — reliable first Send                       | Gateway/Node durable intents, original files, admission/Stop/delete fences, explicit rejected-message retries and Gateway nonce retirement; Web/private Android drafts and recovery controls are implemented | Live-client failure/local-write matrix, Android process/device and rollout/rollback gates                             |
@@ -315,7 +445,9 @@ or `full-access` escalation is authorized by the design.
 | U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                        | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle        |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
-not enable it. Current formats are Gateway schema **1030**, Node schema **2032**,
+not enable it. Current formats are Gateway schema **1032**, Node schema **2038** (the
+`SCHEMA_VERSION` constants in `crates/pirc-gateway/src/db.rs` and
+`crates/pirc-node/src/store/mod.rs` are the source of truth),
 protocol **15**, client recovery contract **2**, and Web IndexedDB/native private
 envelope **3**. Existing ordinary session APIs remain available. Unaccepted
 Gateway attachment staging expires after **seven days**; accepted attachments and
@@ -452,6 +584,8 @@ Latest completed U1 slices and their recorded evidence:
   “next slice” statements describe that point in history, not today's queue.
 
 Next, close U1's remaining gates in this order:
+
+> **Updated 2026-11-16 (N2):** Item 3 below ("U3 remains deferred") is un-deferred; the scope is the interface, state management and data layer plus necessary rendering performance and integration fixes. See [2026-11-16 direction update](#direction-update-2026-11-16).
 
 1. Finish historical-binary/rolling-upgrade and broader permission-change gates.
    Node capability/reconnection and mid-probe authority faults now have unit proof;

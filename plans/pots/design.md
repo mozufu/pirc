@@ -25,6 +25,8 @@ originating from pots, with permissions configurable in settings.
 
 ## Authorities, attribution and notifications
 
+> **Superseded 2026-11-16 (N6):** each named pot has its own entry point, with an overview across pots, instead of one stable assistant entry point. See [2026-11-16 direction update](../README.md#direction-update-2026-11-16).
+
 Product name supplied by the user: **pirc pots** (personal assistant).
 Planned presentation: one stable assistant entry point with an overview,
 pending decisions and task-specific discussion threads. It is not a second
@@ -92,6 +94,8 @@ product behavior; the pirc choices below are our proposals, not their internals.
   Its documented shared computer/browser model is not a requirement for pirc;
   project mounts, private state and browser access retain explicit boundaries.
 
+> **Superseded 2026-11-16 (N6):** multiple named pots are now formal scope instead of a later scope decision. See [2026-11-16 direction update](../README.md#direction-update-2026-11-16).
+
 Proposed pots first scope: one personal assistant identity, task-specific threads,
 scoped observation, event/scheduled wake-ups, durable suggestions, quiet digests,
 explicitly attributed dispatch and user takeover. Voice, external messaging
@@ -108,6 +112,8 @@ to be online; closing Web/App must not own their lifetime.
 ## Coordination contract
 
 ### Entry points and durable records
+
+> **Superseded 2026-11-16 (N6):** pots has several named pot identities, each with its own inbox and responsibilities, plus an overview. See [2026-11-16 direction update](../README.md#direction-update-2026-11-16).
 
 pots has one assistant identity with an overview/inbox and ongoing responsibilities.
 Its main input can answer a question, refine a responsibility or initiate a task.
@@ -171,6 +177,8 @@ Record the displayed action/target and accepted revision as the user's scoped
 instruction. Extra model-written details are not automatically part of that
 instruction, and an attributed approval must not be forged as a direct user quote.
 
+> **Superseded 2026-11-16 (N6):** bounded mutual dispatch between pots is allowed within granted authority, only unbounded loops stay forbidden, and the invariant is shared causal-root budget, depth and concurrency limits. See [2026-11-16 direction update](../README.md#direction-update-2026-11-16).
+
 A user-authorized standing responsibility may dispatch without a new suggestion
 acceptance only within its recorded execution scope. Observation/suggestion
 permission alone never enables this. Existing operation approval policy still
@@ -197,6 +205,8 @@ not described as prevented. Taking over one task does not grant pots access to
 other conversations, and resuming pots elsewhere does not release that takeover.
 
 ### Quiet operation, failure and recovery
+
+> **Updated 2026-11-16 (N6):** this rule is kept and strengthened because another pot's message can never stand in for user authorization, while pot-to-pot dispatch is a separate granted right. See [2026-11-16 direction update](../README.md#direction-update-2026-11-16).
 
 - **Deduplication:** repeated source events update the same material condition;
   timestamps/retries alone do not create a new suggestion. A dismissed item remains

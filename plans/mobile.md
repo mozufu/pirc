@@ -17,6 +17,8 @@ contracts. Flutter Web remains an evaluation option; iOS transport and a content
 renderer replacement are not newly authorized. The existing compatibility and
 physical-device gaps below stay open. Planning does not establish runtime fixes.
 
+> **Updated 2026-11-16 (N1):** the first four items below (dialog presentation, dynamic-content compatibility, scripted resource lifecycle, fragment scrolling) leave the mainline, which becomes common content, interaction, keyboard handling and smoothness; the tier list is still a proposal. See [2026-11-16 direction update](README.md#direction-update-2026-11-16).
+
 ## Remaining work, in priority order
 
 - [ ] **Native dialog presentation:** dialog form closing, explicit `open`,
