@@ -456,9 +456,60 @@ async fn send_attempt(
             },
         )
         .await;
-    complete(app, identity, op, &send.command, result)?;
+    let mut not_sent = false;
+    match result {
+        // Provably never queued on the link: not a dispatch that happened. The
+        // same commandId and content can be dispatched again later.
+        Err(error) if error.is_not_sent() => {
+            not_sent = unsent(app, identity, op, &send.command)?;
+        }
+        result => complete(app, identity, op, &send.command, result)?,
+    }
     app.sessions_changed(Some(&identity.user));
-    lookup(&app.db.lock(), &identity.user, op)
+    let mut row = lookup(&app.db.lock(), &identity.user, op)?;
+    if not_sent {
+        // A hint for this response only; nothing about it is stored.
+        row.delivery_error = Some(NOT_SENT.into());
+    }
+    Ok(row)
+}
+/// Shown by clients as "not sent; you can send it again".
+const NOT_SENT: &str = "first_message_not_sent";
+/// The attempt's request failed before it was queued on the Node link, so it
+/// cannot reach the Node. Return the operation to the state it had before this
+/// reservation: no dispatch record, no receipt mirror, no consumed attempt.
+/// Returns whether anything was undone.
+fn unsent(app: &AppState, identity: &Identity, op: &str, command: &str) -> ApiResult<bool> {
+    let db = app.db.lock();
+    crate::db::atomic(&db, |tx| {
+        let Some(record) = read(tx, &identity.user, op)? else {
+            return Ok(false);
+        };
+        // Only a reservation that is still waiting for its own send result.
+        if record.command != command
+            || record.state != "dispatched"
+            || record.outcome != "pending"
+            || record.admitted.is_some()
+            || record.stop
+            || record.confirmed
+        {
+            return Ok(false);
+        }
+        let previous = retry::previous_of(tx, &identity.user, op, command)?;
+        tx.execute(
+            "DELETE FROM commands WHERE id=?1 AND status='dispatched'",
+            [command],
+        )?;
+        if let Some(previous) = previous {
+            // The explicit retry was never sent: the predecessor stays the
+            // rejected current attempt and the attempt number is not consumed.
+            tx.execute("DELETE FROM conversation_submission_retry_attempts WHERE owner_user=?1 AND operation_id=?2 AND command_id=?3",params![identity.user,op,command])?;
+            tx.execute("UPDATE conversation_submission_dispatches SET command_id=?3,state='rejected',outcome='not_admitted',last_error_code=NULL,updated_at=?4 WHERE owner_user=?1 AND operation_id=?2 AND command_id=?5",params![identity.user,op,previous,now_ms(),command])?;
+        } else {
+            tx.execute("DELETE FROM conversation_submission_dispatches WHERE owner_user=?1 AND operation_id=?2 AND command_id=?3",params![identity.user,op,command])?;
+        }
+        Ok(true)
+    })
 }
 async fn reconcile(app: &AppState, identity: &Identity, op: &str) -> ApiResult<Preparation> {
     let (row, target, record, retried) = {

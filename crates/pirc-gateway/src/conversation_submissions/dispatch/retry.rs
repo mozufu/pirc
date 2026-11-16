@@ -18,6 +18,15 @@ pub(super) fn current_id(
 ) -> ApiResult<Option<String>> {
     Ok(db.query_row("SELECT retry_id FROM conversation_submission_retry_attempts WHERE owner_user=?1 AND operation_id=?2 AND command_id=?3",params![user,op,command],|r|r.get(0)).optional()?)
 }
+/// The predecessor of `command` when it is an explicit retry attempt.
+pub(super) fn previous_of(
+    db: &Connection,
+    user: &str,
+    op: &str,
+    command: &str,
+) -> ApiResult<Option<String>> {
+    Ok(db.query_row("SELECT previous_command_id FROM conversation_submission_retry_attempts WHERE owner_user=?1 AND operation_id=?2 AND command_id=?3",params![user,op,command],|r|r.get(0)).optional()?)
+}
 pub(super) fn current_number(
     db: &Connection,
     user: &str,

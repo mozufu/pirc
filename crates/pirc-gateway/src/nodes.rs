@@ -113,12 +113,14 @@ impl Link {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct NodeConnection(u64);
 
+/// Raised only before a request is queued on the link (see `correlated_request`).
 fn connection_changed() -> ApiError {
     ApiError::new(
         409,
         "node_connection_changed",
         "The Node reconnected; check the saved operation before continuing",
     )
+    .unsent()
 }
 
 /// A registered node as `/api/nodes` lists it.
@@ -536,14 +538,16 @@ impl NodeRegistry {
         let (reply, answer) = oneshot::channel();
         {
             let mut state = self.lock();
+            // Every early return below happens before the frame is queued on the
+            // link and before the request is registered as pending: no copy of
+            // it can reach the Node, so each is marked `unsent`. Everything
+            // after the registration (timeout, link loss) leaves it unmarked.
             if state.requests_on(node_id) >= MAX_PENDING_REQUESTS {
-                return Err(ApiError::new(
-                    503,
-                    "node_error",
-                    "Too many pending node requests",
-                ));
+                return Err(
+                    ApiError::new(503, "node_error", "Too many pending node requests").unsent(),
+                );
             }
-            let link = Self::link_of(&state, node_id)?;
+            let link = Self::link_of(&state, node_id).map_err(ApiError::unsent)?;
             if connection.is_some_and(|expected| expected.0 != link.id) {
                 return Err(connection_changed());
             }
@@ -561,7 +565,8 @@ impl NodeRegistry {
                     SendFailure::Failed => {
                         ApiError::new(503, "node_offline", "Node connection failed")
                     }
-                });
+                }
+                .unsent());
             }
             state.requests.insert(
                 request_id.clone(),
@@ -1476,6 +1481,119 @@ mod tests {
         assert_eq!(state.requests_on("c"), 0);
         assert_eq!(state.streams_on("a"), 0);
     }
+    fn link_registry(
+        id: u64,
+    ) -> (
+        NodeRegistry,
+        Arc<Link>,
+        tokio::sync::mpsc::UnboundedReceiver<crate::ws::Outgoing>,
+    ) {
+        let registry = NodeRegistry::default();
+        let (outbox, receiver) = Outbox::detached();
+        let link = Arc::new(Link { id, outbox });
+        registry.lock().connections.insert(
+            "node".into(),
+            Connection {
+                link: link.clone(),
+                node: ConnectedNode {
+                    id: "node".into(),
+                    role: NodeRole::Node,
+                    modes: vec![],
+                    workspaces: vec![],
+                    connected_at: 0,
+                    last_seen_at: 0,
+                    added: HashMap::new(),
+                },
+            },
+        );
+        (registry, link, receiver)
+    }
+    fn request(payload: Option<Value>) -> NodeHttpRequest {
+        NodeHttpRequest {
+            method: pirc_protocol::HttpMethod::Post,
+            url: "/x".into(),
+            user: "alice".into(),
+            payload,
+            body_base64: None,
+            content_type: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn a_request_that_fails_before_it_is_queued_is_typed_as_not_sent() {
+        // No connection at all.
+        let none = NodeRegistry::default();
+        let error = none.request("node", request(None)).await.unwrap_err();
+        assert_eq!(error.code, "node_offline");
+        assert!(error.is_not_sent());
+
+        // The connection the caller checked was replaced.
+        let (registry, link, mut receiver) = link_registry(7);
+        let error = registry
+            .request_on("node", NodeConnection(6), request(None))
+            .await
+            .unwrap_err();
+        assert_eq!(error.code, "node_connection_changed");
+        assert!(error.is_not_sent());
+
+        // Too large for one frame.
+        let big = request(Some(json!("x".repeat(NODE_FRAME_MAX_BYTES))));
+        let error = registry.request("node", big).await.unwrap_err();
+        assert_eq!(error.code, "payload_too_large");
+        assert!(error.is_not_sent());
+
+        // A congested link shares its error code with other failures: the
+        // classification is carried by type, not by this string.
+        link.outbox.pretend_buffered(NODE_SEND_BUFFER_MAX_BYTES);
+        let error = registry.request("node", request(None)).await.unwrap_err();
+        assert_eq!(error.code, "node_error");
+        assert!(error.is_not_sent());
+        assert!(
+            !too_many_streams().is_not_sent(),
+            "same code, different cause"
+        );
+
+        // A link that is already closing.
+        let (registry, link, mut closed_receiver) = link_registry(8);
+        link.outbox.close(1000, "bye");
+        let error = registry.request("node", request(None)).await.unwrap_err();
+        assert!(error.is_not_sent());
+
+        // Nothing was queued, and no request was left registered.
+        assert!(receiver.try_recv().is_err());
+        assert!(matches!(
+            closed_receiver.try_recv(),
+            Ok(crate::ws::Outgoing::Close(..))
+        ));
+        assert!(closed_receiver.try_recv().is_err());
+        assert!(registry.lock().requests.is_empty());
+    }
+
+    #[tokio::test]
+    async fn a_request_that_was_queued_and_then_lost_is_not_typed_as_not_sent() {
+        let (registry, _link, mut receiver) = link_registry(3);
+        let registry = Arc::new(registry);
+        let waiting = {
+            let registry = registry.clone();
+            tokio::spawn(async move { registry.request("node", request(None)).await })
+        };
+        // The frame is in the queue and the request registered.
+        let frame = loop {
+            if let Ok(frame) = receiver.try_recv() {
+                break frame;
+            }
+            tokio::task::yield_now().await;
+        };
+        assert!(matches!(frame, crate::ws::Outgoing::Text(_)));
+        assert_eq!(registry.lock().requests.len(), 1);
+        // The link drops while the request is pending: the outcome is unknown.
+        registry.fail_node("node");
+        let error = waiting.await.unwrap().unwrap_err();
+        assert_eq!(error.code, "node_offline");
+        assert!(!error.is_not_sent());
+        assert!(registry.lock().requests.is_empty());
+    }
+
     #[test]
     fn mirror_quota_hint_is_optional_and_only_identifies_the_rejected_endpoint() {
         let legacy = json!({"type":"memory_mirror_ack","ledgerKey":"key","watermark":10});

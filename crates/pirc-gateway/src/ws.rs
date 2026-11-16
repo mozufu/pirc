@@ -11,7 +11,7 @@ use futures_util::stream::{SplitSink, SplitStream};
 use futures_util::{SinkExt, StreamExt};
 use tokio::sync::{Notify, mpsc};
 
-enum Outgoing {
+pub(crate) enum Outgoing {
     Text(String),
     Close(u16, String),
 }
@@ -37,6 +37,26 @@ impl Outbox {
         });
         tokio::spawn(write(outbox.clone(), sink, receiver));
         (outbox, stream)
+    }
+
+    /// An outbox with no socket behind it: what it is asked to send queues
+    /// in the returned receiver, where a test can count it.
+    #[cfg(test)]
+    pub(crate) fn detached() -> (Arc<Self>, mpsc::UnboundedReceiver<Outgoing>) {
+        let (queue, receiver) = mpsc::unbounded_channel();
+        let outbox = Arc::new(Self {
+            queue,
+            buffered: AtomicUsize::new(0),
+            open: AtomicBool::new(true),
+            closed: Notify::new(),
+        });
+        (outbox, receiver)
+    }
+
+    /// Count `bytes` as queued and unwritten (a stalled link).
+    #[cfg(test)]
+    pub(crate) fn pretend_buffered(&self, bytes: usize) {
+        self.buffered.fetch_add(bytes, Ordering::AcqRel);
     }
 
     pub fn is_open(&self) -> bool {

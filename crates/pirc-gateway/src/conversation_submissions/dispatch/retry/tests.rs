@@ -658,3 +658,45 @@ async fn closing_the_rollout_keeps_retry_of_an_accepted_operation_available() {
     );
     assert_eq!(count(&app.db.lock(), "commands"), 2);
 }
+
+#[tokio::test]
+async fn a_retry_that_never_left_the_link_consumes_no_attempt_and_keeps_the_rejection() {
+    let (app, _dir, first) = rejected(false).await;
+    let seen = Arc::new(Mutex::new(0usize));
+    let count_posts = seen.clone();
+    app.nodes.set_test_node(connected(), move |request| {
+        if request.url.ends_with("/capabilities") {
+            let mut caps = crate::conversation_submissions::acceptance::tests::caps();
+            caps["canRetryInitialAdmission"] = json!(true);
+            return Ok(pirc_protocol::NodeHttpResponse {
+                status: 200,
+                body: Some(caps),
+            });
+        }
+        assert!(request.url.ends_with("/admission/retry"));
+        *count_posts.lock().unwrap() += 1;
+        Err(ApiError::new(409, "node_connection_changed", "replaced").unsent())
+    });
+    let retry = input(&first, "retry-a");
+    let (code, value) = call(
+        &app,
+        "POST",
+        "/api/conversation-submissions/draft-1/retry",
+        Some("alice"),
+        None,
+        Some(body(&retry)),
+    )
+    .await;
+    assert_eq!(code, 200, "{value}");
+    let prep = &value["preparation"];
+    assert_eq!(prep["state"], "admission_failed", "{value}");
+    assert_eq!(prep["deliveryError"], "first_message_not_sent");
+    assert_eq!(prep["messageAdmission"]["commandId"], first.command);
+    assert_eq!(prep["messageAdmission"]["attemptNumber"], 0);
+    assert_eq!(prep["messageAdmission"]["retryEligible"], true);
+    let db = app.db.lock();
+    assert_eq!(count(&db, "conversation_submission_retry_attempts"), 0);
+    assert_eq!(count(&db, "commands"), 1);
+    assert_eq!(db.get_command(&first.command).unwrap().status, "rejected");
+    assert_eq!(*seen.lock().unwrap(), 1);
+}

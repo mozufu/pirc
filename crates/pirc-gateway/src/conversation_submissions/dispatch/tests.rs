@@ -736,3 +736,109 @@ async fn closing_the_rollout_after_accept_still_materializes_dispatches_and_reco
         1
     );
 }
+
+/// Fails the first admission POST before it reaches the Node, as the link
+/// layer does when the connection was replaced or the link is congested.
+/// Returns the admissions the (fake) Node actually received.
+fn node_unreachable_once(
+    app: &AppState,
+    failure: ApiError,
+    proof: Value,
+) -> Arc<Mutex<Vec<String>>> {
+    let received = Arc::new(Mutex::new(Vec::new()));
+    let record = received.clone();
+    let once = AtomicBool::new(true);
+    app.nodes.set_test_node(connected(), move |r| {
+        if r.url.ends_with("/capabilities") {
+            return Ok(super::super::acceptance::tests::fake(&r));
+        }
+        assert_eq!(r.method, HttpMethod::Post);
+        if once.swap(false, Ordering::SeqCst) {
+            return Err(failure.clone());
+        }
+        let id = r.payload.as_ref().unwrap()["commandId"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        record.lock().unwrap().push(id);
+        Ok(pirc_protocol::NodeHttpResponse {
+            status: 200,
+            body: Some(json!({"admission":proof})),
+        })
+    });
+    received
+}
+async fn dispatch_once(app: &AppState) -> (u16, Value) {
+    call(
+        app,
+        "POST",
+        "/api/conversation-submissions/draft-1/dispatch",
+        Some("alice"),
+        None,
+        Some(json!({"clientId":"phone","generation":1})),
+    )
+    .await
+}
+
+#[tokio::test]
+async fn a_dispatch_that_never_left_the_link_returns_to_ready_with_the_same_command() {
+    // D1 (connection replaced) and D2 (link congested): both are marked as
+    // never sent by the link layer, not recognised from their error codes.
+    for failure in [
+        ApiError::new(409, "node_connection_changed", "replaced").unsent(),
+        ApiError::new(503, "node_error", "Node link is congested; try again").unsent(),
+    ] {
+        let (app, _dir, _session) = ready(false).await;
+        let expected = specification(&app.db.lock(), "alice", "draft-1").unwrap();
+        let mut proof = evidence(&expected.request, "accepted");
+        proof["operationId"] = json!(operation(&app));
+        let received = node_unreachable_once(&app, failure, proof);
+        let (code, body) = dispatch_once(&app).await;
+        assert_eq!(code, 200, "{body}");
+        let prep = &body["preparation"];
+        assert_eq!(prep["state"], "ready", "{body}");
+        assert_eq!(prep["deliveryError"], "first_message_not_sent");
+        assert!(prep["messageAdmission"].is_null(), "no attempt exists");
+        // Nothing of the failed dispatch is left behind or consumed.
+        assert_eq!(count(&app.db.lock(), "commands"), 0);
+        assert_eq!(
+            count(&app.db.lock(), "conversation_submission_dispatches"),
+            0
+        );
+        assert_eq!(
+            count(&app.db.lock(), "conversation_submission_retry_attempts"),
+            0
+        );
+        // The frozen text is still there.
+        assert_eq!(prep["submission"]["message"], "Keep this first message");
+        // The same commandId and content can be dispatched again, once.
+        let (code, body) = dispatch_once(&app).await;
+        assert_eq!(code, 200, "{body}");
+        assert_eq!(body["preparation"]["state"], "admitted", "{body}");
+        assert_eq!(
+            *received.lock().unwrap(),
+            vec![expected.command.clone()],
+            "the Node saw exactly one admission, with the original command id"
+        );
+        assert_eq!(count(&app.db.lock(), "commands"), 1);
+    }
+}
+
+#[tokio::test]
+async fn a_dispatch_lost_after_it_was_queued_stays_unknown_even_with_the_same_status() {
+    // The contrast to D1/D2: a 503 that is not marked never-sent (the request
+    // was already registered) must never be treated as not sent.
+    let (app, _dir, _session) = ready(false).await;
+    let expected = specification(&app.db.lock(), "alice", "draft-1").unwrap();
+    let mut proof = evidence(&expected.request, "accepted");
+    proof["operationId"] = json!(operation(&app));
+    let received = node_unreachable_once(
+        &app,
+        ApiError::new(503, "node_error", "Node link is congested; try again"),
+        proof,
+    );
+    let (_, body) = dispatch_once(&app).await;
+    assert_eq!(body["preparation"]["state"], "outcome_unknown", "{body}");
+    assert_eq!(count(&app.db.lock(), "commands"), 1);
+    assert!(received.lock().unwrap().is_empty());
+}

@@ -16,6 +16,11 @@ pub struct ApiError {
     pub code: &'static str,
     pub message: String,
     pub details: Option<Value>,
+    /// Set only by the Node link layer, and only when the relayed request
+    /// provably never entered the link's send queue (see [`ApiError::unsent`]).
+    /// Never serialized; never inferred from `code`, which several unrelated
+    /// failures share.
+    not_sent: bool,
 }
 
 impl ApiError {
@@ -25,7 +30,20 @@ impl ApiError {
             code,
             message: message.into(),
             details: None,
+            not_sent: false,
         }
+    }
+
+    /// Mark a Node-link failure that happened before the request was queued
+    /// on the link, so no copy of it can ever reach the Node.
+    pub(crate) fn unsent(mut self) -> Self {
+        self.not_sent = true;
+        self
+    }
+
+    /// True only for a failure marked with [`ApiError::unsent`].
+    pub(crate) fn is_not_sent(&self) -> bool {
+        self.not_sent
     }
 
     pub fn with_details(mut self, details: Value) -> Self {

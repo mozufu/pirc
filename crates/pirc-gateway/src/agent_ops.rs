@@ -232,6 +232,7 @@ pub async fn run(
             code,
             message,
             details,
+            ..
         }) => {
             let mut error = json!({ "code": code, "message": message });
             if let Some(details) = details {
