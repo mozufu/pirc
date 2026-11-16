@@ -224,6 +224,18 @@ fn own<V>(map: &IndexMap<String, V>, key: &str) -> bool {
     map.contains_key(key)
 }
 
+/// Whether two base URLs name the same endpoint: the trailing-slash rule
+/// the probes and requests already apply, then the parsed form, so only
+/// scheme/host case and default ports are ignored. Path, port and scheme
+/// differences are different endpoints.
+fn same_base_url(saved: &str, probe: &str) -> bool {
+    let (saved, probe) = (saved.trim_end_matches('/'), probe.trim_end_matches('/'));
+    match (reqwest::Url::parse(saved), reqwest::Url::parse(probe)) {
+        (Ok(saved), Ok(probe)) => saved == probe,
+        _ => saved == probe,
+    }
+}
+
 fn has_model(providers: &IndexMap<String, Provider>, reference: &ModelRef) -> bool {
     providers
         .get(&reference.provider)
@@ -548,7 +560,9 @@ impl BackendService {
     }
 
     /// The key a probe uses: the typed one, else the saved key of the
-    /// web-managed backend being edited.
+    /// web-managed backend being edited, but only when the probe targets
+    /// the endpoint (base URL and wire API) the key was saved for. Any
+    /// other probe behaves as if no key were saved.
     fn probe_key(&self, probe: &schema::Probe) -> Option<String> {
         if let Some(key) = &probe.connection.api_key {
             return Some(key.clone()).filter(|key| !key.is_empty());
@@ -558,7 +572,14 @@ impl BackendService {
         if own(&inner.baseline.providers, id) {
             return None;
         }
-        inner.state.providers.get(id)?.api_key.clone()
+        let saved = inner.state.providers.get(id)?;
+        let same_endpoint = saved.api == probe.connection.api
+            && same_base_url(&saved.base_url, &probe.connection.base_url);
+        if same_endpoint {
+            saved.api_key.clone()
+        } else {
+            None
+        }
     }
 
     /// Probes reach user-chosen endpoints; a few at a time is plenty for

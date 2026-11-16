@@ -435,6 +435,136 @@ async fn probes_reuse_only_the_edited_web_backend_key() {
     );
 }
 
+/// A models endpoint that records the credential headers each request
+/// carries, as `(path, authorization, x-api-key)`.
+async fn credential_log_server() -> (String, Arc<std::sync::Mutex<Vec<SeenCredentials>>>) {
+    use axum::http::{HeaderMap, Uri};
+    let seen = Arc::new(std::sync::Mutex::new(Vec::<SeenCredentials>::new()));
+    let log = seen.clone();
+    let app = axum::Router::new().fallback(move |uri: Uri, headers: HeaderMap| {
+        let log = log.clone();
+        async move {
+            let header = |name: &str| headers.get(name).map(|v| v.to_str().unwrap().to_owned());
+            log.lock().unwrap().push((
+                uri.path().to_owned(),
+                header("authorization"),
+                header("x-api-key"),
+            ));
+            json!({ "data": [{ "id": "a" }] }).to_string()
+        }
+    });
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let base = format!("http://{}", listener.local_addr().unwrap());
+    tokio::spawn(async move { axum::serve(listener, app).await });
+    (base, seen)
+}
+
+type SeenCredentials = (String, Option<String>, Option<String>);
+
+fn saved_for(backends: &BackendService, api: &str, base: &str) {
+    let body = json!({ "api": api, "baseUrl": base, "apiKey": SECRET,
+        "models": [{ "id": "m" }] });
+    if backends.save_provider("saved", &body, true).is_err() {
+        backends.save_provider("saved", &body, false).unwrap();
+    }
+}
+
+fn reused(backends: &BackendService, api: &str, base: &str) -> Option<String> {
+    let probe = parse(
+        &json!({ "api": api, "baseUrl": base, "backendId": "saved" }),
+        schema::probe,
+    )
+    .unwrap();
+    backends.probe_key(&probe)
+}
+
+#[tokio::test]
+async fn a_saved_key_is_not_sent_to_a_different_endpoint() {
+    let (saved_base, saved_seen) = credential_log_server().await;
+    let (other_base, other_seen) = credential_log_server().await;
+    let dir = tempfile::tempdir().unwrap();
+    let (backends, _) = service(dir.path());
+    saved_for(&backends, "openai-completions", &saved_base);
+
+    // A different base URL, no typed key: nothing credential-like is sent.
+    backends
+        .discover(&json!({ "api": "openai-completions", "baseUrl": other_base,
+            "backendId": "saved" }))
+        .await
+        .unwrap();
+    // The same URL but another wire API: the Anthropic header is not used either.
+    backends
+        .discover(&json!({ "api": "anthropic-messages", "baseUrl": saved_base,
+            "backendId": "saved" }))
+        .await
+        .unwrap();
+    assert_eq!(
+        *other_seen.lock().unwrap(),
+        [("/models".to_owned(), None, None)]
+    );
+    assert_eq!(
+        *saved_seen.lock().unwrap(),
+        [("/v1/models".to_owned(), None, None)]
+    );
+
+    // The same endpoint still reuses it, over the wire.
+    backends
+        .discover(&json!({ "api": "openai-completions", "baseUrl": saved_base,
+            "backendId": "saved" }))
+        .await
+        .unwrap();
+    assert_eq!(
+        saved_seen.lock().unwrap().last().unwrap(),
+        &("/models".to_owned(), Some(format!("Bearer {SECRET}")), None)
+    );
+}
+
+#[test]
+fn a_saved_key_is_reused_only_for_the_same_endpoint() {
+    let dir = tempfile::tempdir().unwrap();
+    let (backends, _) = service(dir.path());
+    saved_for(
+        &backends,
+        "openai-completions",
+        "http://Example.com:8080/v1",
+    );
+    let key = Some(SECRET.to_owned());
+    // Equal, or equal after the crate's trailing-slash and URL-case rules.
+    for base in [
+        "http://example.com:8080/v1",
+        "http://example.com:8080/v1/",
+        "HTTP://EXAMPLE.COM:8080/v1",
+    ] {
+        assert_eq!(reused(&backends, "openai-completions", base), key, "{base}");
+    }
+    // Same host, different path, port, scheme or host; or a different wire API.
+    for base in [
+        "http://example.com:8080/v2",
+        "http://example.com:8080",
+        "http://example.com:8081/v1",
+        "http://example.com/v1",
+        "https://example.com:8080/v1",
+        "http://example.org:8080/v1",
+        "http://example.com:8080/V1",
+    ] {
+        assert_eq!(
+            reused(&backends, "openai-completions", base),
+            None,
+            "{base}"
+        );
+    }
+    assert_eq!(
+        reused(&backends, "openai-chat", "http://example.com:8080/v1"),
+        None
+    );
+    // Default ports are the same endpoint.
+    saved_for(&backends, "openai-chat", "https://api.example.com");
+    assert_eq!(
+        reused(&backends, "openai-chat", "https://api.example.com:443/"),
+        key
+    );
+}
+
 #[tokio::test]
 async fn discovery_refuses_redirects_and_never_echoes_bodies() {
     use axum::http::StatusCode;
