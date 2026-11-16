@@ -460,6 +460,72 @@ fn creates_and_reopens() {
 }
 
 #[test]
+fn startup_rejects_commands_that_were_received_but_never_dispatched() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("gateway.sqlite");
+    let payload = json!({ "type": "prompt" });
+    let session = {
+        let db = Db::open(&path).unwrap();
+        with_workspace(&db);
+        let conn = db.lock();
+        let session = conn
+            .create_session("n1:w", "node://n1/r1", "n1", "r1", "u")
+            .unwrap();
+        for id in ["unsent", "sent", "answered", "refused"] {
+            conn.receive_command(id, &session.id, "h", &payload)
+                .unwrap();
+        }
+        conn.update_command("sent", "dispatched", None, None)
+            .unwrap();
+        conn.update_command("answered", "accepted", Some(&json!({ "ok": true })), None)
+            .unwrap();
+        conn.update_command("refused", "rejected", None, Some("Node is offline"))
+            .unwrap();
+        assert_eq!(conn.get_command("unsent").unwrap().status, "received");
+        session
+    };
+
+    // The process "restarts": a new Db on the same file, then startup recovery.
+    let db = Db::open(&path).unwrap();
+    let recovered = db.lock().recover_startup().unwrap();
+    assert_eq!(recovered.rejected_commands, 1);
+    assert_eq!(recovered.unknown_commands, 1);
+    let conn = db.lock();
+    let unsent = conn.get_command("unsent").unwrap();
+    assert_eq!(unsent.status, "rejected");
+    assert_eq!(
+        unsent.error.as_deref(),
+        Some("gateway restarted before dispatch")
+    );
+    // Only the unsent command changed; everything that may have reached a Node
+    // keeps its own recovery rule.
+    assert_eq!(conn.get_command("sent").unwrap().status, "outcome_unknown");
+    assert_eq!(conn.get_command("answered").unwrap().status, "accepted");
+    let refused = conn.get_command("refused").unwrap();
+    assert_eq!(refused.status, "rejected");
+    assert_eq!(refused.error.as_deref(), Some("Node is offline"));
+
+    // Sending the same commandId again is a duplicate that reports the rejection;
+    // it neither re-executes nor changes the command, and a different payload
+    // under that id is still a conflict.
+    let (again, duplicate) = conn
+        .receive_command("unsent", &session.id, "h", &payload)
+        .unwrap();
+    assert!(duplicate);
+    assert_eq!(again.status, "rejected");
+    assert_eq!(
+        conn.receive_command("unsent", &session.id, "other", &payload)
+            .unwrap_err()
+            .code,
+        "conflict"
+    );
+
+    // A second recovery changes nothing.
+    let again = conn.recover_startup().unwrap();
+    assert_eq!(again.rejected_commands, 0);
+}
+
+#[test]
 fn sessions() {
     let db = Db::memory();
     with_workspace(&db);

@@ -935,6 +935,7 @@ fn finish_deletion(conn: &Connection, session_id: &str) -> ApiResult<()> {
 #[serde(rename_all = "camelCase")]
 pub struct RecoveredStartup {
     pub unknown_commands: usize,
+    pub rejected_commands: usize,
 }
 
 const SESSION_SELECT: &str = "SELECT sessions.*, b.membership_revision, b.legacy_workspace_id,
@@ -969,10 +970,17 @@ impl Store for Connection {
     }
 
     /// Commands in flight when the gateway stopped have an unknown outcome;
-    /// runners and leases belong to nodes that reconnect.
+    /// runners and leases belong to nodes that reconnect. A command still
+    /// `received` was never forwarded: every forwarding path first commits the
+    /// `dispatched` update (the first-send paths record both in one transaction),
+    /// so it is rejected rather than left pending forever.
     fn recover_startup(&self) -> ApiResult<RecoveredStartup> {
         let stamp = now_ms();
         atomic(self, |tx| {
+            let rejected_commands = tx.execute(
+                "UPDATE commands SET status='rejected', error_text='gateway restarted before dispatch', updated_at=? WHERE status='received'",
+                [stamp],
+            )?;
             let unknown_commands = tx.execute(
             "UPDATE commands SET status='outcome_unknown', error_text='gateway restarted before RPC acceptance was recorded', updated_at=? WHERE status='dispatched'",
             [stamp],
@@ -985,7 +993,10 @@ impl Store for Connection {
             // Removal probes have no node-side effects. An interrupted probe
             // must be retried, not leave a permanent checking fence.
             tx.execute("DELETE FROM workspace_removals WHERE status='checking'", [])?;
-            Ok(RecoveredStartup { unknown_commands })
+            Ok(RecoveredStartup {
+                unknown_commands,
+                rejected_commands,
+            })
         })
     }
 
