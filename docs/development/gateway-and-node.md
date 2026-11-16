@@ -149,6 +149,17 @@ Every session route is answered by the node that owns the session; the gateway c
 
 Mutations that affect the agent require `{clientId,generation}` from a live control lease. Commands additionally require a client-generated `commandId`. Reusing the ID with the same canonical payload returns the known command; using it with a different payload returns `409`.
 
+### Request shape
+
+Every state-changing request (any method other than `GET`, `HEAD` and `OPTIONS`), from a browser identity or a device token alike, must have one of two shapes:
+
+- the header `X-Pirc-Request: 1`, sent exactly once with exactly that value (empty bodies and raw uploads need this form), or
+- a single `Content-Type` whose media type is `application/json` (parameters such as `charset` are allowed, the case does not matter) and a non-empty body that parses as JSON.
+
+A request with neither is answered `415` with the code `request_shape_required` and nothing is done. A JSON declaration with an empty or invalid body is refused the same way; it is never treated as a raw body. The check runs in the authentication middleware after the identity checks and before routing, so every route, including ones added later, is covered. It adds to the proxy, Host, Origin, identity, device-scope, ownership and control-lease checks and replaces none of them. Clients should send the header on all writes and JSON where a body exists. Reads need neither.
+
+Replies are `application/json`, `text/plain; charset=utf-8` (a relayed string) or `video/webm` (recordings); a reply declaring another type is replaced by an internal error, and every reply carries `X-Content-Type-Options: nosniff`.
+
 ### Streaming semantics
 
 Session command payloads also accept `edit_message` with `{entryId, message}` and `switch_branch` with `{entryId}`. Both require the current control lease and an idle session. Editing creates a new user-message version, retaining image blocks, then regenerates the response; switching selects that user version's latest continuation without inference. Snapshot history includes stable `entryId` values and user-message `branches: [{entryId, text, selected}]`. Clients refresh the snapshot after a branch command or completed turn to obtain persisted entry identities. The node stops the idle runner before selecting the durable branch and initializes a fresh runner so cached feature state cannot leak from the previous conversation. Tool side effects are not rolled back.

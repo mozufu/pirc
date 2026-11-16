@@ -1,5 +1,16 @@
 # Upgrades
 
+## Unreleased: API request shape for state-changing calls
+
+The Gateway now answers `415` with `request_shape_required` to any state-changing
+request (`POST`, `PUT`, `PATCH`, `DELETE`) that neither carries the header
+`X-Pirc-Request: 1` nor is a JSON request with a valid JSON body. The Web bundle
+and the Android app send the header; clients built before this change do not, and
+their writes are refused until they are updated. Upgrade the clients together
+with the Gateway (ship the new Web bundle with it and update the Android app
+before or at the same time; reload open Web tabs). Reads and the node link are
+unaffected. No schema, protocol, lockfile or Nix hash change. Local code only.
+
 ## Local checkpoint: folder grants and deny
 
 Node schema **2038** adds per-conversation folder grants. Set `PIRC_GRANT_ROOTS`
