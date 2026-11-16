@@ -656,7 +656,7 @@ fn is_websocket_upgrade(headers: &HeaderMap) -> bool {
 async fn authenticate(
     State(app): State<AppState>,
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
-    mut request: Request,
+    request: Request,
     next: Next,
 ) -> Response {
     if request.uri().path() == "/node/connect" && is_websocket_upgrade(request.headers()) {
@@ -671,6 +671,13 @@ async fn authenticate(
         require_origin,
     ) {
         Ok(identity) => {
+            // Every state-changing request has a shape a plain HTML form
+            // cannot produce (JSON, or the request header); see `request_shape`.
+            let mut request =
+                match crate::request_shape::enforce(request, app.config.upload_max_bytes).await {
+                    Ok(request) => request,
+                    Err(error) => return error.into_response(),
+                };
             // Optional for legacy clients. Durable operations always send this
             // fence so changed browser cookies cannot retarget old local content.
             let expected = request.headers().get_all("x-pirc-account");

@@ -641,3 +641,46 @@ async fn pushes_when_a_session_starts_waiting_for_its_user() {
     let (_, no_data) = waiting_message(&conn, &session.id, None).unwrap();
     assert_eq!(no_data.body, "It needs your answer to go on.");
 }
+
+#[tokio::test]
+async fn the_test_notification_needs_the_request_shape() {
+    use crate::request_shape::tests::{
+        USER, accepted_empty, fixture, forged, identities, is_shape_rejection, send,
+    };
+    let (app, _dir) = fixture();
+    app.slots.set(Arc::new(Push::new(
+        app.db.clone(),
+        generate_vapid_keys(),
+        "mailto:ops@example.com".into(),
+        true,
+    )));
+    let (url, service) = push_service().await;
+    let browser = Subscriber::new();
+    let push = app.slots.get::<Push>().unwrap();
+    push.subscribe(
+        USER,
+        &input(&format!("{url}/me"), browser.keys(), "web", None),
+        None,
+    )
+    .unwrap();
+    let received = || service.lock().unwrap().received.len();
+    for who in identities(&app, USER) {
+        let untouched = received();
+        for form in forged() {
+            let (status, body) = send(&app, &who, "POST", "/api/push/test", &form).await;
+            assert!(
+                is_shape_rejection(status, &body),
+                "{}: {status} {body}",
+                form.name
+            );
+            assert_eq!(received(), untouched, "{} sent a notification", form.name);
+        }
+        for shape in accepted_empty() {
+            let before = received();
+            let (status, body) = send(&app, &who, "POST", "/api/push/test", &shape).await;
+            assert_eq!(status, 200, "{}: {body}", shape.name);
+            assert_eq!(body["delivered"], 1);
+            assert_eq!(received(), before + 1);
+        }
+    }
+}

@@ -2052,6 +2052,7 @@ dependencies = [
  "indexmap",
  "p256",
  "pirc-config",
+ "pirc-node",
  "pirc-protocol",
  "pirc-providers",
  "regex-lite",

@@ -362,6 +362,10 @@ async fn raw_json_attachment_round_trips_through_paired_device_http() {
             .method("PUT")
             .uri("/api/conversation-submissions/draft-1/attachments/file-1")
             .header("host", "a.example")
+            .header(
+                crate::request_shape::REQUEST_HEADER,
+                crate::request_shape::REQUEST_VALUE,
+            )
             .header("content-type", content_type)
             .extension(axum::extract::ConnectInfo(
                 "127.0.0.1:40000".parse::<std::net::SocketAddr>().unwrap(),

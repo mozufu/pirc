@@ -936,3 +936,47 @@ async fn pending_workspace_removal_does_not_advance_pause_or_fail_due_schedules(
     assert_eq!(after.status, ScheduleStatus::Active);
     assert!(after.next_run_at.unwrap() > now_ms());
 }
+
+#[tokio::test]
+async fn dismissing_a_missed_run_needs_the_request_shape() {
+    use crate::request_shape::tests::{accepted_empty, identities, ok, prove_operation};
+    let f = fixture();
+    let who = identities(&f.app, USER);
+    let seed = || {
+        let schedule = create(
+            &f.app,
+            json!({ "workspace": "work:test", "prompt": "Summarize.", "cron": hourly() }),
+        )
+        .unwrap();
+        sql(
+            &f.app,
+            "UPDATE schedules SET next_run_at=? WHERE id=?",
+            rusqlite::params![now_ms() - 3_600_000, schedule.id],
+        );
+        tick(&f.app);
+        let missed = runs(&f.app, &schedule.id).remove(0);
+        assert_eq!(missed.status, RunStatus::Missed);
+        format!("/api/schedules/{}/runs/{}/dismiss", schedule.id, missed.id)
+    };
+    let statuses = || {
+        let conn = f.app.db.lock();
+        let rows: Vec<(String, String)> = conn
+            .prepare("SELECT id,status FROM schedule_runs ORDER BY id")
+            .unwrap()
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+            .unwrap()
+            .map(Result::unwrap)
+            .collect();
+        json!(rows)
+    };
+    prove_operation(
+        &f.app,
+        &who,
+        "POST",
+        &seed,
+        &statuses,
+        &accepted_empty(),
+        &ok,
+    )
+    .await;
+}

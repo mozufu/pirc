@@ -1089,3 +1089,135 @@ fn a_rollback_to_text_forgotten_since_forgets_instead() {
     );
     assert_eq!(store.entry(ME, &twin.id).unwrap().content, "Other");
 }
+
+// ---------------------------------------------------------------------------
+// The request shape of the routes that change memory
+
+mod request_shape {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    use super::*;
+    use crate::request_shape::tests::{Probe, Who, identities, ok, probe, prove_operation};
+
+    fn view(app: &App) -> Value {
+        let conn = app.db.lock();
+        let store = super::store(&conn);
+        json!({
+            "entries": store.entries(ME, None, None).unwrap(),
+            "proposals": store.proposals(ME, None).unwrap(),
+        })
+    }
+
+    fn accepted() -> Vec<Probe> {
+        vec![
+            probe("request header, no body", &[("x-pirc-request", "1")], ""),
+            probe("strict JSON", &[("content-type", "application/json")], "{}"),
+        ]
+    }
+
+    struct Fixture {
+        app: Arc<App>,
+        who: Vec<Who>,
+        counter: AtomicUsize,
+        _dir: tempfile::TempDir,
+    }
+
+    impl Fixture {
+        fn new() -> Self {
+            let (app, dir) = app();
+            let who = identities(&app, ME);
+            Self {
+                app,
+                who,
+                counter: AtomicUsize::new(0),
+                _dir: dir,
+            }
+        }
+
+        fn fresh(&self) -> String {
+            format!("fact {}", self.counter.fetch_add(1, Ordering::Relaxed))
+        }
+
+        fn proposal(&self) -> String {
+            let conn = self.app.db.lock();
+            let (proposal, _) = propose(&super::store(&conn), &self.fresh(), "I said so").unwrap();
+            format!("/api/memory/proposals/{}", proposal.id)
+        }
+
+        fn entry(&self) -> String {
+            let conn = self.app.db.lock();
+            let entry = note(&super::store(&conn), &self.fresh(), ME).unwrap();
+            format!("/api/memory/entries/{}", entry.id)
+        }
+
+        fn removed_entry(&self) -> String {
+            let conn = self.app.db.lock();
+            let store = super::store(&conn);
+            let entry = note(&store, &self.fresh(), ME).unwrap();
+            store
+                .write_note(
+                    ME,
+                    &edit(Action::Remove, &entry.id, None, Some(entry.revision)),
+                    &from_chat(),
+                )
+                .unwrap();
+            format!("/api/memory/entries/{}", entry.id)
+        }
+
+        async fn prove(&self, seed: &dyn Fn() -> String) {
+            prove_operation(
+                &self.app,
+                &self.who,
+                "POST",
+                seed,
+                &|| view(&self.app),
+                &accepted(),
+                &ok,
+            )
+            .await;
+        }
+    }
+
+    #[tokio::test]
+    async fn approving_a_proposal_needs_the_request_shape() {
+        let f = Fixture::new();
+        f.prove(&|| format!("{}/approve", f.proposal())).await;
+    }
+
+    #[tokio::test]
+    async fn rejecting_a_proposal_needs_the_request_shape() {
+        let f = Fixture::new();
+        f.prove(&|| format!("{}/reject", f.proposal())).await;
+    }
+
+    #[tokio::test]
+    async fn forgetting_an_entry_needs_the_request_shape() {
+        let f = Fixture::new();
+        f.prove(&|| format!("{}/forget", f.entry())).await;
+    }
+
+    #[tokio::test]
+    async fn restoring_an_entry_needs_the_request_shape() {
+        let f = Fixture::new();
+        f.prove(&|| format!("{}/restore", f.removed_entry())).await;
+    }
+
+    #[tokio::test]
+    async fn a_form_cannot_turn_a_proposal_into_a_memory() {
+        let f = Fixture::new();
+        let path = format!("{}/approve", f.proposal());
+        let id = path.split('/').nth(4).unwrap().to_owned();
+        for who in &f.who {
+            for form in crate::request_shape::tests::forged() {
+                crate::request_shape::tests::send(&f.app, who, "POST", &path, &form).await;
+            }
+        }
+        let conn = f.app.db.lock();
+        let store = super::store(&conn);
+        assert_eq!(
+            store.proposal(ME, &id).unwrap().status,
+            ProposalStatus::Pending
+        );
+        assert!(store.entries(ME, None, None).unwrap().is_empty());
+    }
+}

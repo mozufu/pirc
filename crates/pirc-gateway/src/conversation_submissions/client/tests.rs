@@ -21,6 +21,10 @@ async fn request(
         .method(method)
         .uri(path)
         .header("host", "a.example")
+        .header(
+            crate::request_shape::REQUEST_HEADER,
+            crate::request_shape::REQUEST_VALUE,
+        )
         .header("origin", "https://a.example")
         .header("x-pirc-user", "alice")
         .header("content-type", "application/json")

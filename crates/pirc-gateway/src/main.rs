@@ -31,6 +31,7 @@ mod pots;
 mod project_deletion;
 mod project_links;
 mod push;
+mod request_shape;
 mod routes;
 mod schedules;
 mod slots;

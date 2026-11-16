@@ -303,6 +303,10 @@ async fn call(
         .method(method)
         .uri(path)
         .header("host", "a.example")
+        .header(
+            crate::request_shape::REQUEST_HEADER,
+            crate::request_shape::REQUEST_VALUE,
+        )
         .header("origin", "https://a.example")
         .header("x-pirc-user", "u")
         .extension(axum::extract::ConnectInfo(

@@ -95,7 +95,7 @@ fn polluting(value: &Value) -> bool {
 
 /// Parse a JSON body like Fastify: a leading BOM is dropped; nothing, bad
 /// JSON or prototype keys are an internal error, as they were.
-fn parse_json(bytes: &[u8]) -> ApiResult<Value> {
+pub(crate) fn parse_json(bytes: &[u8]) -> ApiResult<Value> {
     let bytes = bytes.strip_prefix(b"\xEF\xBB\xBF").unwrap_or(bytes);
     if bytes.is_empty() {
         return Err(ApiError::internal());

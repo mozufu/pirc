@@ -12,6 +12,9 @@ use tokio_tungstenite::tungstenite::protocol::CloseFrame;
 use tokio_tungstenite::tungstenite::{self, Message};
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
+/// The header the Gateway requires on every state-changing request.
+pub const REQUEST_HEADER: &str = "x-pirc-request";
+
 /// How long a test waits for any single response, frame or close.
 pub const TIMEOUT: Duration = Duration::from_secs(20);
 
@@ -114,9 +117,22 @@ impl Api {
         body: Option<(Option<&str>, Vec<u8>)>,
     ) -> Result<Response, reqwest::Error> {
         let method = reqwest::Method::from_bytes(method.as_bytes()).expect("HTTP method");
-        let mut request = self.http.request(method, format!("{}{path}", self.base));
+        let mut request = self
+            .http
+            .request(method.clone(), format!("{}{path}", self.base));
         for (name, value) in headers {
             request = request.header(*name, value);
+        }
+        // State-changing requests carry the request header the Gateway requires
+        // of API clients, unless the test sets it itself.
+        if !matches!(
+            method,
+            reqwest::Method::GET | reqwest::Method::HEAD | reqwest::Method::OPTIONS
+        ) && !headers
+            .iter()
+            .any(|(name, _)| name.eq_ignore_ascii_case(REQUEST_HEADER))
+        {
+            request = request.header(REQUEST_HEADER, "1");
         }
         if let Some((content_type, body)) = body {
             if let Some(content_type) = content_type {

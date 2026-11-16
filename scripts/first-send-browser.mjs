@@ -66,7 +66,12 @@ async function proxy(req, res) {
     'x-pirc-user': config.owner,
     accept: 'application/json',
   };
-  for (const key of ['content-type', 'x-pirc-account', 'x-pirc-first-send-contract'])
+  for (const key of [
+    'content-type',
+    'x-pirc-account',
+    'x-pirc-first-send-contract',
+    'x-pirc-request',
+  ])
     if (req.headers[key]) headers[key] = req.headers[key];
   const chunks = [];
   for await (const chunk of req) chunks.push(chunk);

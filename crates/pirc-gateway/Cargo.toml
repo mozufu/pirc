@@ -46,6 +46,8 @@ pirc-protocol = { path = "../pirc-protocol" }
 pirc-providers = { path = "../pirc-providers" }
 
 [dev-dependencies]
+# The project-file test lets the Node's own code do the write.
+pirc-node = { path = "../pirc-node" }
 tempfile = "3"
 tower = { version = "0.5", features = ["util"] }
 
