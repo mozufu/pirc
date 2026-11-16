@@ -933,6 +933,137 @@ void main() {
     });
   });
 
+  group('cancelling a switch whose Node outcome is unknown', () {
+    Json voidStatus(String state, {Json? p}) => {
+      ...status(state == 'voided' ? 'released' : 'outcome_unknown', p: p),
+      'cancellation': {
+        'requestedAt': 5,
+        'void': {
+          'state': state,
+          'requestedAt': 5,
+          'answeredAt': state == 'voided' ? 9 : null,
+          'nodeId': 'node',
+        },
+      },
+    };
+
+    test('offers Cancel and shows the hint the Gateway recorded', () async {
+      final fake = Fake((c) {
+        if (c.path.endsWith('/environment')) {
+          return env(active: 'op1', state: 'outcome_unknown');
+        }
+        return status(
+          'outcome_unknown',
+          p: {
+            'stage': 'outcome_unknown',
+            'waitReason': 'receipt_unavailable',
+            'safeActions': ['cancel'],
+          },
+        );
+      });
+      final f = flow(fake);
+      await f.load();
+      expect(f.status, EnvironmentSwitchStatus.outcomeUnknown);
+      expect(f.actions, contains(EnvironmentSwitchAction.cancel));
+      expect(
+        environmentSwitchMessage(f),
+        'The Node has not confirmed this switch (the Node has no record of this switch yet). You can cancel it.',
+      );
+    });
+
+    test(
+      'waits for the Node while the void is pending, then reports nothing changed',
+      () async {
+        var cancelled = false, reads = 0;
+        final fake = Fake((c) {
+          if (c.path.endsWith('/environment')) {
+            return env(active: 'op1', state: 'outcome_unknown');
+          }
+          if (c.path.endsWith('/cancel')) {
+            cancelled = true;
+            return {
+              ...voidStatus('pending'),
+              'reconciliationState': 'node_unavailable',
+            };
+          }
+          if (!cancelled) return status('outcome_unknown');
+          return ++reads < 2 ? voidStatus('pending') : voidStatus('voided');
+        });
+        final f = flow(fake);
+        await f.load();
+        await f.cancel();
+        expect(fake.to('/cancel').single.body, {
+          'clientId': 'phone',
+          'generation': 4,
+        });
+        expect(f.status, EnvironmentSwitchStatus.cancelPending);
+        expect(
+          environmentSwitchMessage(f),
+          startsWith(
+            'Cancelling: waiting for the Node to confirm this switch never started.',
+          ),
+        );
+        // Nothing but a status check while it waits: the conversation stays locked.
+        expect(f.actions, {EnvironmentSwitchAction.refresh});
+        await settle();
+        expect(f.status, EnvironmentSwitchStatus.released);
+        expect(
+          environmentSwitchMessage(f),
+          'Switch cancelled — nothing was changed on the Node.',
+        );
+        // The binding was only read, never changed.
+      expect(
+        bindings.map((b) => obj(b['execution'])['workspaceId']).toSet(),
+        {'node:repo'},
+      );
+      },
+    );
+
+    test('a release that is not from a void keeps the ordinary text', () async {
+      final fake = Fake((c) {
+        if (c.path.endsWith('/environment')) {
+          return env(active: 'op1', state: 'released');
+        }
+        return status('released');
+      });
+      final f = flow(fake);
+      await f.load();
+      expect(f.status, EnvironmentSwitchStatus.released);
+      expect(
+        environmentSwitchMessage(f),
+        'Cancelled; original workspace kept.',
+      );
+    });
+
+    test(
+      'a Node that cannot void changes nothing and says it must be upgraded',
+      () async {
+        final fake = Fake((c) {
+          if (c.path.endsWith('/environment')) {
+            return env(active: 'op1', state: 'outcome_unknown');
+          }
+          if (c.path.endsWith('/cancel')) {
+            throw http(409, 'transition_void_unsupported');
+          }
+          return status('outcome_unknown');
+        });
+        final f = flow(fake);
+        await f.load();
+        await f.cancel();
+        expect(f.status, EnvironmentSwitchStatus.outcomeUnknown);
+        expect(f.errorCode, 'transition_void_unsupported');
+        expect(
+          environmentSwitchMessage(f),
+          contains(
+            'The Node must be upgraded before a switch whose outcome is unknown can be cancelled.',
+          ),
+        );
+        // The user may ask again once the Node is upgraded.
+        expect(f.actions, contains(EnvironmentSwitchAction.cancel));
+      },
+    );
+  });
+
   group('binding after a switch', () {
     test('a stale command refreshes the binding and is not resent', () async {
       final g = FakeGateway();

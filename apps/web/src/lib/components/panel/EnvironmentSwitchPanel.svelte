@@ -107,6 +107,13 @@
       case 'authority_required':
         return tr('The permission to finish this switch lapsed. Reauthorize or cancel.');
       case 'cancel_pending': {
+        // The Node outcome was unknown when the user cancelled: nothing is proven
+        // until the Node answers, so the conversation stays locked meanwhile.
+        if (s.status?.cancellation?.void?.state === 'pending')
+          return tr(
+            'Cancelling: waiting for the Node to confirm this switch never started. The conversation stays locked until then ({0}).',
+            [reasonLabel(s.status.progress?.waitReason ?? 'node_unavailable')],
+          );
         const reason = s.status?.progress?.cancellation?.pendingReason;
         return reason
           ? tr('Cancellation pending: {0}.', [
@@ -123,7 +130,13 @@
       case 'awaiting_dispatch':
         return tr('Accepted; the Node has not been asked yet.');
       case 'outcome_unknown':
-        return tr('Checking whether the Node fenced the conversation…');
+        // A hint, never a verdict: the Node may still receive the request. Cancel
+        // is offered, and only the user's cancel ends it.
+        return s.status?.progress?.waitReason
+          ? tr('The Node has not confirmed this switch ({0}). You can cancel it.', [
+              reasonLabel(s.status.progress.waitReason),
+            ])
+          : tr('Checking whether the Node fenced the conversation…');
       case 'draining':
         return tr("Stopping the conversation's current work…");
       case 'blocked':
@@ -144,7 +157,9 @@
           : revocationText;
       }
       case 'cancelled':
-        return tr('Cancelled; original workspace kept.');
+        return s.result === 'cancelled_unchanged'
+          ? tr('Switch cancelled — nothing was changed on the Node.')
+          : tr('Cancelled; original workspace kept.');
       case 'deleted':
         return tr('The conversation was deleted.');
       case 'reconciliation_required':
@@ -223,6 +238,9 @@
         view.status.authority.state,
         view.status.authority.revision,
       ])}
+    </p>{/if}
+  {#if view.error?.reason === 'void_unsupported'}<p>
+      {tr('The Node must be upgraded before a switch whose outcome is unknown can be cancelled.')}
     </p>{/if}
   {#if view.error?.reason === 'plan_changed'}<p>
       {tr('The reviewed environment changed; a new transition is needed.')}

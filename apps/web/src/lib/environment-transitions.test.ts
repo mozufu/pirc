@@ -1517,3 +1517,107 @@ describe('C3 cancellation and readiness', () => {
     expect(posts()).toHaveLength(0);
   });
 });
+
+describe('F1 cancelling a switch whose Node outcome is unknown', () => {
+  const cancelling = (state: 'pending' | 'voided', extra: Record<string, unknown> = {}) => ({
+    ...status('op', state === 'voided' ? 'released' : 'outcome_unknown', extra),
+    cancellation: {
+      requestedAt: 5,
+      void: { state, requestedAt: 5, answeredAt: state === 'voided' ? 9 : null, nodeId: 'node' },
+    },
+  });
+  const unknown = (progress?: unknown) =>
+    status('op', 'outcome_unknown', progress ? { progress } : {});
+
+  it('offers Cancel for an unknown outcome, with control only', () => {
+    const state: SwitchState = {
+      phase: 'outcome_unknown',
+      operationId: 'op',
+      status: parseStatus(unknown())!,
+    };
+    expect(allowedSwitchActions(state, lease)).toContain('cancel');
+    expect(allowedSwitchActions(state, undefined)).toEqual(['refresh']);
+  });
+
+  it('parses the void request and its receipt, and ignores a malformed one', () => {
+    const pending = parseStatus(cancelling('pending'))!;
+    expect(pending.cancellation).toEqual({
+      requestedAt: 5,
+      void: { state: 'pending', requestedAt: 5, answeredAt: null },
+    });
+    expect(transitionPhase(pending)).toBe('cancel_pending');
+    const voided = parseStatus(cancelling('voided'))!;
+    expect(voided.cancellation?.void).toEqual({ state: 'voided', requestedAt: 5, answeredAt: 9 });
+    expect(transitionPhase(voided)).toBe('cancelled');
+    expect(resultOf(voided)).toBe('cancelled_unchanged');
+    const bad = parseStatus({
+      ...cancelling('pending'),
+      cancellation: { requestedAt: 5, void: { state: 'maybe', requestedAt: 5 } },
+    })!;
+    expect(bad.cancellation).toEqual({ requestedAt: 5 });
+    // A release that did not come from a void is the ordinary result.
+    expect(resultOf(parseStatus(status('op', 'released'))!)).toBe('original_kept');
+    expect(
+      resultOf(parseStatus({ ...status('op', 'released'), cancellation: { requestedAt: 5 } })!),
+    ).toBe('original_kept');
+  });
+
+  it('shows the wait hints the Gateway records, as hints only', () => {
+    const hinted = parseStatus(
+      unknown({
+        stage: 'outcome_unknown',
+        waitReason: 'receipt_unavailable',
+        safeActions: ['cancel'],
+      }),
+    )!;
+    expect(hinted.progress?.waitReason).toBe('receipt_unavailable');
+    expect(transitionPhase(hinted)).toBe('outcome_unknown');
+  });
+
+  it('cancels, waits for the Node while the void is pending, then reports nothing changed', async () => {
+    const flow = controller();
+    flow.setLease(lease);
+    node(ok(environment(binding(1), { operationId: 'op', state: 'outcome_unknown' })));
+    node(ok(unknown()));
+    await flow.discover();
+    expect(flow.state.phase).toBe('outcome_unknown');
+    node(ok({ ...cancelling('pending'), reconciliationState: 'node_unavailable' }));
+    node(ok(cancelling('voided')));
+    expect(await flow.cancel(lease)).toBe(true);
+    expect(posts()[posts().length - 1]!.url.pathname).toBe(
+      '/api/sessions/s1/environment-transitions/op/cancel',
+    );
+    expect(flow.state.phase).toBe('cancel_pending');
+    expect(flow.state.nodeUnavailable).toBe(true);
+    // Nothing but a refresh while it waits; the conversation stays locked.
+    expect(allowedSwitchActions(flow.state, lease)).toEqual(['refresh']);
+    await flow.refresh(lease);
+    expect(flow.state).toMatchObject({ phase: 'cancelled', result: 'cancelled_unchanged' });
+    expect(bindings).toEqual([]);
+  });
+
+  it('tells the user a Node that cannot void must be upgraded, and lets them ask again', async () => {
+    expect(PASSED_THROUGH).toContain('transition_void_unsupported');
+    expect(classifySwitchFailure(new ApiError('x', 409, 'transition_void_unsupported'))).toBe(
+      'void_unsupported',
+    );
+    const flow = controller();
+    flow.setLease(lease);
+    node(ok(environment(binding(1), { operationId: 'op', state: 'outcome_unknown' })));
+    node(ok(unknown()));
+    await flow.discover();
+    node(fail(409, 'transition_void_unsupported'));
+    node(ok(unknown())); // state unchanged
+    expect(await flow.cancel(lease)).toBe(true);
+    expect(flow.state).toMatchObject({
+      phase: 'outcome_unknown',
+      error: { code: 'transition_void_unsupported', reason: 'void_unsupported' },
+      cancelRequested: false,
+    });
+    expect(allowedSwitchActions(flow.state, lease)).toContain('cancel');
+    // After the Node is upgraded the same Cancel works.
+    node(ok(cancelling('voided')));
+    await flow.cancel(lease);
+    expect(flow.state).toMatchObject({ phase: 'cancelled', result: 'cancelled_unchanged' });
+  });
+});

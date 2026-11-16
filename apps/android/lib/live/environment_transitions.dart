@@ -266,6 +266,12 @@ class TransitionStatus {
       raw['cancellation'] is Map || progress?['cancellation'] is Map;
   String? get cancellationPendingReason =>
       _text(obj(progress?['cancellation'])['pendingReason']);
+
+  /// F1: a cancel asked while the Node outcome was unknown carries a void
+  /// request: `pending` until the Node answers that it never created the fence
+  /// (the conversation stays locked), then `voided` (nothing changed on the Node).
+  String? get voidState =>
+      _text(obj(obj(raw['cancellation'])['void'])['state']);
   Json get installation => obj(progress?['installation']);
   bool get bindingCommitted => installation['bindingCommitted'] == true;
   bool get policyValidated => installation['policyValidated'] == true;
@@ -1155,6 +1161,8 @@ class EnvironmentTransitionFlow extends ChangeNotifier {
             'transition_outcome_unknown',
             'transition_released',
             'transition_cancel_requested',
+            // A Node that cannot void changed nothing: read the true state.
+            'transition_void_unsupported',
           }.contains(code);
       // Too late, unknown or already ended: the status read decides.
       if (reread) await _read(serial, op);
@@ -1437,6 +1445,9 @@ String transitionReasonText(String code) => switch (code) {
   'transition_cancel_requested' => tr(
     "Cancellation was requested; this switch will not be installed.",
   ),
+  'transition_void_unsupported' => tr(
+    "The Node must be upgraded before a switch whose outcome is unknown can be cancelled.",
+  ),
   'transition_ended' => tr("This switch has already ended."),
   'evaluation_not_found' => tr(
     "That list of items is no longer current; showing the current one.",
@@ -1459,6 +1470,19 @@ String cancellationReasonText(String? reason) => switch (reason) {
   'resources_unresolved' => tr("some resources are unresolved"),
   'original_binding_invalid' => tr("the original workspace is no longer valid"),
   null || '' => tr("waiting for the Node"),
+  _ => reason,
+};
+
+/// F1: why a switch whose Node outcome is unknown has not been settled. Hints:
+/// nothing is cancelled or released by them; only the user's cancel ends it.
+String outcomeWaitText(String? reason) => switch (reason) {
+  'receipt_unavailable' => tr("the Node has no record of this switch yet"),
+  'node_refused' => tr("the Node refused the request"),
+  'request_not_sent' => tr("the request never left the Gateway"),
+  'reply_unavailable' => tr("the Node did not answer"),
+  'node_unavailable' => tr("the Node is offline"),
+  'node_upgrade_required' => tr("the Node must be upgraded to cancel this"),
+  null || '' => tr("the Node is offline"),
   _ => reason,
 };
 
@@ -1594,9 +1618,13 @@ String environmentSwitchMessage(EnvironmentTransitionFlow flow) {
     EnvironmentSwitchStatus.accepted => tr(
       "Switch accepted; stopping the current environment…",
     ),
-    EnvironmentSwitchStatus.outcomeUnknown => tr(
-      "The Node has not confirmed the switch yet.",
-    ),
+    EnvironmentSwitchStatus.outcomeUnknown =>
+      t?.waitReason == null
+          ? tr("The Node has not confirmed the switch yet.")
+          : tr(
+              "The Node has not confirmed this switch ({0}). You can cancel it.",
+              [outcomeWaitText(t?.waitReason)],
+            ),
     EnvironmentSwitchStatus.draining => tr(
       "Stopping work in the current environment…",
     ),
@@ -1620,6 +1648,10 @@ String environmentSwitchMessage(EnvironmentTransitionFlow flow) {
       "This switch can no longer be sent as reviewed: {0} Cancel it.",
       [transitionReasonText(t?.waitReason ?? '')],
     ),
+    EnvironmentSwitchStatus.cancelPending when t?.voidState == 'pending' => tr(
+      "Cancelling: waiting for the Node to confirm this switch never started. The conversation stays locked until then ({0}).",
+      [outcomeWaitText(t?.waitReason)],
+    ),
     EnvironmentSwitchStatus.cancelPending => tr("Cancellation pending: {0}.", [
       cancellationReasonText(t?.cancellationPendingReason),
     ]),
@@ -1631,6 +1663,9 @@ String environmentSwitchMessage(EnvironmentTransitionFlow flow) {
       ),
       tr("Reconcile to read its state."),
     ].join(' '),
+    EnvironmentSwitchStatus.released when t?.voidState == 'voided' => tr(
+      "Switch cancelled — nothing was changed on the Node.",
+    ),
     EnvironmentSwitchStatus.released => tr(
       "Cancelled; original workspace kept.",
     ),

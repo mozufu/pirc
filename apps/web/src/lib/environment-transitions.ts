@@ -145,8 +145,18 @@ export interface TransitionStatus {
   reconciliationState?: string;
   /** C1: `null` without operation authority; `undefined` from older Gateways. */
   authority?: AuthorityStatus | null;
-  /** C3: the Gateway's durable cancellation intent. */
-  cancellation?: { requestedAt: number } | null;
+  /**
+   * C3: the Gateway's durable cancellation intent. `void` appears only when the
+   * cancel was asked while the Node outcome was unknown: `pending` until the Node
+   * answers that it never created the fence (the conversation stays locked), then
+   * `voided` (nothing was changed on the Node).
+   */
+  cancellation?: { requestedAt: number; void?: TransitionVoid } | null;
+}
+export interface TransitionVoid {
+  state: 'pending' | 'voided';
+  requestedAt: number;
+  answeredAt: number | null;
 }
 
 const text = (v: unknown): v is string => typeof v === 'string' && v.length > 0;
@@ -155,6 +165,16 @@ const integer = (v: unknown): v is number => typeof v === 'number' && Number.isS
 const textOrNull = (v: unknown) => (text(v) ? v : null);
 const object = (v: unknown): v is Record<string, any> =>
   !!v && typeof v === 'object' && !Array.isArray(v);
+
+function parseVoid(raw: unknown): TransitionVoid | null {
+  if (!object(raw) || !integer(raw.requestedAt)) return null;
+  if (raw.state !== 'pending' && raw.state !== 'voided') return null;
+  return {
+    state: raw.state,
+    requestedAt: raw.requestedAt,
+    answeredAt: integer(raw.answeredAt) ? raw.answeredAt : null,
+  };
+}
 
 export function parseActiveTransition(raw: unknown): ActiveTransition | null {
   const value = raw as Record<string, unknown> | null | undefined;
@@ -310,7 +330,12 @@ export function parseStatus(raw: any): TransitionStatus {
     raw.cancellation === undefined
       ? undefined
       : object(raw.cancellation) && integer(raw.cancellation.requestedAt)
-        ? { requestedAt: raw.cancellation.requestedAt }
+        ? {
+            requestedAt: raw.cancellation.requestedAt,
+            ...(parseVoid(raw.cancellation.void)
+              ? { void: parseVoid(raw.cancellation.void)! }
+              : {}),
+          }
         : null;
   return {
     transition: {
@@ -479,6 +504,8 @@ export const PASSED_THROUGH = [
   'plan_changed',
   'transition_ended',
   'transition_cancel_requested',
+  // F1: cancelling a switch whose Node outcome is unknown needs a Node that can void.
+  'transition_void_unsupported',
 ] as const;
 
 /** G5: only these 404s mean "not stored"; any other 404 is a definite refusal. */
@@ -510,6 +537,7 @@ export type SwitchFailure =
   | 'authority_unavailable'
   | 'plan_changed'
   | 'cancel_requested'
+  | 'void_unsupported'
   | 'rejected';
 export function classifySwitchFailure(error: unknown): SwitchFailure {
   if (!(error instanceof ApiError)) return 'ambiguous';
@@ -523,6 +551,8 @@ export function classifySwitchFailure(error: unknown): SwitchFailure {
       return 'plan_changed';
     case 'transition_cancel_requested':
       return 'cancel_requested';
+    case 'transition_void_unsupported':
+      return 'void_unsupported';
     case 'transition_coordinator_unavailable':
       return 'disabled';
     case 'transition_review_changed':
@@ -593,7 +623,8 @@ export type SwitchAction =
 export type SwitchResult =
   | 'revocation_confirmed' // "switched; revocation confirmed"
   | 'revocation_not_fully_confirmed' // "switched; revocation not fully confirmed"
-  | 'original_kept'; // "cancelled; original workspace kept"
+  | 'original_kept' // "cancelled; original workspace kept"
+  | 'cancelled_unchanged'; // "switch cancelled; nothing was changed on the Node"
 
 const TERMINAL = ['installed', 'released', 'deleted'];
 
@@ -648,7 +679,9 @@ export function resultOf(status: TransitionStatus | undefined): SwitchResult | u
     return status.transition.revocationConfirmed
       ? 'revocation_confirmed'
       : 'revocation_not_fully_confirmed';
-  if (status?.transition.state === 'released') return 'original_kept';
+  if (status?.transition.state === 'released')
+    // Released by the Node's void receipt: it never created a fence.
+    return status.cancellation?.void?.state === 'voided' ? 'cancelled_unchanged' : 'original_kept';
   return undefined;
 }
 
@@ -862,6 +895,14 @@ export const WAIT_REASON_LABELS: Record<string, string> = {
   lost_control: 'control moved to another device',
   stale_environment: 'the reviewed environment changed',
   no_gateway_acceptance: 'the Node holds a fence this Gateway never accepted',
+  // F1: why an unknown Node outcome has not been settled. Hints only: nothing is
+  // cancelled or released by them; the user decides.
+  receipt_unavailable: 'the Node has no record of this switch yet',
+  node_refused: 'the Node refused the request',
+  request_not_sent: 'the request never left the Gateway',
+  reply_unavailable: 'the Node did not answer',
+  node_unavailable: 'the Node is offline',
+  node_upgrade_required: 'the Node must be upgraded to cancel this',
 };
 
 // ---- controller -------------------------------------------------------------------
@@ -1407,6 +1448,10 @@ export class EnvironmentSwitch {
     const id = s.operationId;
     this.set({ ...s, cancelRequested: true });
     await this.step(() => this.api.cancel(current, id), { cancelRequested: true });
+    // A Node that cannot void changed nothing: the cancel was not recorded, so
+    // reads may go on and the user may ask again after upgrading the Node.
+    if (this.current.error?.reason === 'void_unsupported')
+      this.set({ ...this.current, cancelRequested: false });
     return true;
   }
 
