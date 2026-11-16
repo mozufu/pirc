@@ -1,5 +1,5 @@
 use super::super::acceptance::tests::{identity, model, prepared, register};
-use super::super::tests::{app, call, count, disk_app};
+use super::super::tests::{app, call, closed_app, count, disk_app};
 use super::*;
 use axum::http::{HeaderMap, HeaderValue};
 use tower::ServiceExt;
@@ -63,7 +63,7 @@ fn rollout_alone_cannot_enable_old_unknown_or_duplicate_client_versions() {
 }
 #[tokio::test]
 async fn http_negotiation_keeps_rollout_closed_for_every_client_and_creates_no_state() {
-    let (app, _dir) = app();
+    let (app, _dir) = closed_app();
     for (values, version) in [
         (vec![], 0),
         (vec!["1"], 0),

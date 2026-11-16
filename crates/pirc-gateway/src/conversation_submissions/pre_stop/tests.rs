@@ -698,3 +698,26 @@ async fn blank_release_checks_connection_without_applying_old_attachment_limits(
     );
     assert_eq!(count(&app.db.lock(), "commands"), 0);
 }
+#[tokio::test]
+async fn closing_the_rollout_still_lets_the_owner_take_control_and_stop_an_accepted_operation() {
+    let (app, _dir, _session) = accepted(true).await;
+    let app = super::super::tests::close_rollout(app);
+    assert!(!app.config.first_send);
+    let generation = lease(&app).await;
+    register(&app);
+    let (code, body) = call(
+        &app,
+        "POST",
+        "/api/conversation-submissions/draft-1/stop",
+        Some("alice"),
+        None,
+        Some(json!({"clientId":"phone","generation":generation})),
+    )
+    .await;
+    assert_eq!(code, 202, "{body}");
+    assert_eq!(body["preparation"]["state"], "stopping");
+    assert_eq!(
+        count(&app.db.lock(), "conversation_submission_pending_stops"),
+        1
+    );
+}

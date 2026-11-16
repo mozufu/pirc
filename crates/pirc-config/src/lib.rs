@@ -246,6 +246,10 @@ pub struct GatewayConfig {
     /// Let users confirm conversation environment transitions
     /// (`PIRC_ENVIRONMENT_SWITCHING`, default off).
     pub environment_switching: bool,
+    /// Admit new first-send submissions (`PIRC_FIRST_SEND`, default off). While
+    /// off, preparing, staging attachments for, and accepting a new submission
+    /// is refused; already-accepted submissions continue.
+    pub first_send: bool,
     /// How long one confirmed transition may continue without a device holding
     /// control (`PIRC_TRANSITION_AUTHORITY_SECONDS`). Unset or 0 keeps operation
     /// authority disabled; no default duration is chosen.
@@ -332,6 +336,7 @@ impl GatewayConfig {
             vapid_subject,
             push_allow_http: bool_var(env.get("PIRC_PUSH_ALLOW_HTTP"), false),
             environment_switching: bool_var(env.get("PIRC_ENVIRONMENT_SWITCHING"), false),
+            first_send: bool_var(env.get("PIRC_FIRST_SEND"), false),
             transition_authority_secs: env
                 .get("PIRC_TRANSITION_AUTHORITY_SECONDS")
                 .and_then(|value| value.trim().parse::<u64>().ok())
@@ -533,6 +538,22 @@ mod tests {
             PathBuf::from("/home/test/.config/.pirc/models.json")
         );
         assert!(config.auth.trusted_proxies.contains("::1"));
+    }
+
+    #[test]
+    fn first_send_is_off_unless_explicitly_enabled() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("state");
+        let state = path.to_str().unwrap();
+        let load = |extra: &[(&str, &str)]| GatewayConfig::load(&base(state, extra)).unwrap();
+        assert!(!load(&[]).first_send);
+        for on in ["1", "true", "TRUE", "yes"] {
+            assert!(load(&[("PIRC_FIRST_SEND", on)]).first_send, "{on}");
+        }
+        for off in ["", "0", "false", "off", "enabled"] {
+            assert!(!load(&[("PIRC_FIRST_SEND", off)]).first_send, "{off}");
+        }
+        assert!(!load(&[("PIRC_ENVIRONMENT_SWITCHING", "1")]).first_send);
     }
 
     #[test]

@@ -22,6 +22,7 @@ fn files(path: &std::path::Path) -> Vec<std::path::PathBuf> {
 }
 async fn exercise(materialized: bool) {
     let Some(mut cluster) = Cluster::start_with(GatewayOptions {
+        env: vec![("PIRC_FIRST_SEND", "1".into())],
         chat_node: true,
         agent_core_only: true,
         ..Default::default()

@@ -347,6 +347,8 @@ pub(super) async fn accept_intent(
         if row.accepted {
             return Ok(row);
         }
+        // Acceptance is the admission point; an accepted row never needs this.
+        client::require_enabled(app)?;
         require_caller(app, &db, identity)?;
         let target = target(&db, &identity.user, op)?;
         require_current(app, &db, &identity.user, &row, &target)?;

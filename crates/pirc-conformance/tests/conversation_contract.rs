@@ -4,6 +4,9 @@ use serde_json::json;
 #[tokio::test(flavor = "multi_thread")]
 async fn old_clients_can_inspect_but_cannot_allocate_or_dispatch_new_first_send() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
+        // The compatibility boundary is exercised with admission open, so a
+        // current client really can prepare while an old one cannot.
+        env: vec![("PIRC_FIRST_SEND", "1".into())],
         chat_node: true,
         agent_core_only: true,
         ..Default::default()
@@ -37,7 +40,7 @@ async fn old_clients_can_inspect_but_cannot_allocate_or_dispatch_new_first_send(
         .await;
     assert_eq!(cap.body["clientContract"], 2);
     assert_eq!(cap.body["requiredClientContract"], 2);
-    assert_eq!(cap.body["canSubmit"], false);
+    assert_eq!(cap.body["canSubmit"], true);
     let body = json!({"operationId":"mixed-version","submission":{"workspaceId":CHATS_WORKSPACE_ID,"message":"Do not dispatch through old code","attachments":[]}});
     let rejected = api
         .send(
@@ -115,4 +118,52 @@ async fn old_clients_can_inspect_but_cannot_allocate_or_dispatch_new_first_send(
         409
     );
     assert_eq!(api.send("GET", path, &device, None).await.status, 200);
+}
+
+/// The shipped default is closed: a client with the current contract is still
+/// refused new admission by the Gateway itself, not only by its own capability check.
+#[tokio::test(flavor = "multi_thread")]
+async fn a_current_client_cannot_start_first_send_while_the_rollout_is_closed() {
+    let Some(cluster) = Cluster::start_with(GatewayOptions {
+        chat_node: true,
+        agent_core_only: true,
+        ..Default::default()
+    })
+    .await
+    else {
+        return;
+    };
+    let api = cluster.api();
+    let mut current = browser_headers();
+    current.push(("x-pirc-first-send-contract", "2".into()));
+    let cap = api
+        .send(
+            "GET",
+            "/api/conversation-submissions/capabilities",
+            &current,
+            None,
+        )
+        .await;
+    assert_eq!(cap.body["clientContract"], 2);
+    assert_eq!(cap.body["canSubmit"], false);
+    let refused = api
+        .send(
+            "POST",
+            "/api/conversation-submissions/prepare",
+            &current,
+            Some(json!({"operationId":"closed-rollout","submission":{"workspaceId":CHATS_WORKSPACE_ID,"message":"Not admitted","attachments":[]}})),
+        )
+        .await;
+    assert_eq!(refused.status, 409, "{}", refused.body);
+    assert_eq!(refused.body["error"]["code"], "first_send_disabled");
+    let missing = api
+        .send(
+            "GET",
+            "/api/conversation-submissions/closed-rollout",
+            &current,
+            None,
+        )
+        .await;
+    assert_eq!(missing.status, 404, "{}", missing.body);
+    assert!(cluster.llm.requests().is_empty());
 }

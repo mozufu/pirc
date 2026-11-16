@@ -19,6 +19,23 @@ pub(super) fn require(headers: &HeaderMap) -> ApiResult<()> {
         ))
     }
 }
+/// The server-side rollout gate (`PIRC_FIRST_SEND`). It closes only the
+/// admission of new submissions; an operation with a durable acceptance row keeps
+/// running under the authority it was accepted with.
+pub(super) fn disabled() -> ApiError {
+    ApiError::new(
+        409,
+        "first_send_disabled",
+        "Sending a new first message is not enabled on this Gateway",
+    )
+}
+pub(super) fn require_enabled(app: &AppState) -> ApiResult<()> {
+    if app.config.first_send {
+        Ok(())
+    } else {
+        Err(disabled())
+    }
+}
 pub(super) fn capabilities(identity: &Identity, headers: &HeaderMap, rollout: bool) -> Value {
     let compatible = negotiated(headers);
     json!({"version":1,"clientContract":if compatible {CONTRACT}else{0},"requiredClientContract":CONTRACT,

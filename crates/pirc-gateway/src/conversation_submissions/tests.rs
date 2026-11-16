@@ -365,17 +365,34 @@ fn migration_from_1011_preserves_sessions_and_installs_cleanup_triggers() {
     );
 }
 
+/// A Gateway with first-send admission enabled (`PIRC_FIRST_SEND=1`).
 pub(super) fn app() -> (AppState, tempfile::TempDir) {
-    app_with_database(false)
+    app_with_database(false, true)
 }
 pub(super) fn disk_app() -> (AppState, tempfile::TempDir) {
-    app_with_database(true)
+    app_with_database(true, true)
 }
-fn app_with_database(on_disk: bool) -> (AppState, tempfile::TempDir) {
-    let dir = tempfile::tempdir().unwrap();
-    let state = dir.path().join("state");
-    let env = pirc_config::Env::new(
+/// A Gateway with the shipped default: first-send admission closed.
+pub(super) fn closed_app() -> (AppState, tempfile::TempDir) {
+    app_with_database(false, false)
+}
+/// Turns the rollout off for an already running Gateway, as an operator restart
+/// with `PIRC_FIRST_SEND` unset would, while keeping its database and Node links.
+pub(super) fn close_rollout(app: AppState) -> AppState {
+    let mut inner = Arc::try_unwrap(app)
+        .ok()
+        .expect("no other holder of the app while the setting changes");
+    inner.config.first_send = false;
+    Arc::new(inner)
+}
+fn env_for(
+    state: &std::path::Path,
+    config_dir: &std::path::Path,
+    first_send: bool,
+) -> pirc_config::Env {
+    pirc_config::Env::new(
         [
+            ("PIRC_FIRST_SEND", if first_send { "1" } else { "0" }),
             (
                 "PIRC_NODE_TOKENS",
                 r#"{"node":"0123456789abcdef0123456789abcdef"}"#,
@@ -385,12 +402,17 @@ fn app_with_database(on_disk: bool) -> (AppState, tempfile::TempDir) {
             ("PIRC_ALLOWED_HOSTS", "a.example"),
             ("PIRC_ALLOWED_USERS", "alice,bob"),
             ("PIRC_STATE_DIR", state.to_str().unwrap()),
-            ("PIRC_CONFIG_DIR", dir.path().to_str().unwrap()),
+            ("PIRC_CONFIG_DIR", config_dir.to_str().unwrap()),
             ("PIRC_TIMEZONE", "UTC"),
             ("HOME", "/home/test"),
         ],
         "/work",
-    );
+    )
+}
+fn app_with_database(on_disk: bool, first_send: bool) -> (AppState, tempfile::TempDir) {
+    let dir = tempfile::tempdir().unwrap();
+    let state = dir.path().join("state");
+    let env = env_for(&state, dir.path(), first_send);
     let backends =
         pirc_providers::backends::BackendService::open(&state, crate::app::empty_models()).unwrap();
     let db = if on_disk {
@@ -456,7 +478,7 @@ pub(super) async fn call(
         },
     )
 }
-fn body() -> Value {
+pub(super) fn body() -> Value {
     json!({"operationId":"draft-1","submission":serde_json::to_value(input().submission).unwrap()})
 }
 
@@ -502,6 +524,7 @@ async fn http_preparation_and_lookup_are_owner_scoped_and_not_acceptance() {
     assert_eq!(call(&app, "GET", path, None, None, None).await.0, 401);
     assert_eq!(count(&app.db.lock(), "sessions"), 0);
     assert_eq!(count(&app.db.lock(), "commands"), 0);
+    let app = close_rollout(app);
     assert_eq!(
         call(
             &app,
@@ -744,6 +767,7 @@ async fn account_fence_rejects_a_changed_cookie_before_preparing_any_content() {
     let(code,_)=call(&app,"POST","/api/conversation-submissions/prepare",Some("bob"),None,Some(json!({"expectedOwner":"alice","operationId":"old-account","submission":{"workspaceId":"node:repo","message":"Alice text","attachments":[]}}))).await;
     assert_eq!(code, 409);
     assert_eq!(count(&app.db.lock(), "conversation_submissions"), 0);
+    let app = close_rollout(app);
     let (code, body) = call(
         &app,
         "GET",
@@ -798,4 +822,167 @@ async fn pending_session_lookup_is_owner_scoped_and_neither_materializes_nor_tak
         call(&app, "GET", &path, Some("alice"), None, None).await.0,
         404
     );
+}
+
+// Server-enforced rollout gate (`PIRC_FIRST_SEND`).
+mod rollout_gate {
+    use super::super::acceptance::tests::{model, prepared, register};
+    use super::*;
+
+    const PREPARE: &str = "/api/conversation-submissions/prepare";
+    const CAPABILITIES: &str = "/api/conversation-submissions/capabilities";
+
+    fn no_files() -> Value {
+        json!({"operationId":"draft-1","submission":{"workspaceId":"node:repo","message":"hello","attachments":[]}})
+    }
+    fn code(body: &Value) -> &str {
+        body["error"]["code"].as_str().unwrap_or_default()
+    }
+    async fn can_submit(app: &AppState) -> Value {
+        call(app, "GET", CAPABILITIES, Some("alice"), None, None)
+            .await
+            .1["canSubmit"]
+            .clone()
+    }
+
+    #[tokio::test]
+    async fn default_configuration_refuses_prepare_staging_and_accept_with_a_current_client() {
+        let (app, _dir) = closed_app();
+        model(&app);
+        let calls = register(&app);
+        assert!(!app.config.first_send);
+        assert_eq!(can_submit(&app).await, false);
+
+        let (status, body) = call(&app, "POST", PREPARE, Some("alice"), None, Some(body())).await;
+        assert_eq!((status, code(&body)), (409, "first_send_disabled"));
+        assert_eq!(count(&app.db.lock(), "conversation_submissions"), 0);
+
+        // A row that exists (for instance from before the gate was closed) is not
+        // enough: staging and acceptance are admission, so they stay refused.
+        prepared(&app, true);
+        let staged = super::super::attachments::stage(&app, "alice", "draft-1", "file-1", b"test")
+            .unwrap_err();
+        assert_eq!((staged.status, staged.code), (409, "first_send_disabled"));
+        let (status, body) = call(
+            &app,
+            "POST",
+            "/api/conversation-submissions/draft-1/accept",
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        assert_eq!((status, code(&body)), (409, "first_send_disabled"));
+        let db = app.db.lock();
+        assert_eq!(count(&db, "conversation_submission_acceptances"), 0);
+        assert_eq!(count(&db, "conversation_submission_attachments"), 0);
+        assert_eq!(count(&db, "sessions"), 0);
+        assert!(calls.lock().unwrap().is_empty(), "no Node request was made");
+    }
+
+    #[tokio::test]
+    async fn enabled_configuration_with_a_current_client_prepares_then_accepts() {
+        let (app, _dir) = app();
+        model(&app);
+        register(&app);
+        assert_eq!(can_submit(&app).await, true);
+        let (status, body) =
+            call(&app, "POST", PREPARE, Some("alice"), None, Some(no_files())).await;
+        assert_eq!(status, 200, "{body}");
+        assert_eq!(body["preparation"]["accepted"], false);
+        let (status, body) = call(
+            &app,
+            "POST",
+            "/api/conversation-submissions/draft-1/accept",
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        assert_eq!(status, 202, "{body}");
+        assert_eq!(body["preparation"]["accepted"], true);
+        assert_eq!(
+            count(&app.db.lock(), "conversation_submission_acceptances"),
+            1
+        );
+    }
+
+    #[tokio::test]
+    async fn closing_the_rollout_after_prepare_blocks_accept_but_allows_inspect_and_discard() {
+        let (app, _dir) = app();
+        model(&app);
+        register(&app);
+        let (status, _) = call(&app, "POST", PREPARE, Some("alice"), None, Some(no_files())).await;
+        assert_eq!(status, 200);
+        let app = close_rollout(app);
+
+        let (status, refused) = call(
+            &app,
+            "POST",
+            "/api/conversation-submissions/draft-1/accept",
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        assert_eq!((status, code(&refused)), (409, "first_send_disabled"));
+        assert_eq!(
+            count(&app.db.lock(), "conversation_submission_acceptances"),
+            0
+        );
+        // Repeating the prepare of a never-accepted operation is not a way in.
+        let (status, again) =
+            call(&app, "POST", PREPARE, Some("alice"), None, Some(no_files())).await;
+        assert_eq!((status, code(&again)), (409, "first_send_disabled"));
+
+        let (status, body) = call(
+            &app,
+            "GET",
+            "/api/conversation-submissions/draft-1",
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        assert_eq!(status, 200);
+        assert_eq!(body["preparation"]["state"], "preparing");
+        let (status, body) = call(
+            &app,
+            "DELETE",
+            "/api/conversation-submissions/draft-1",
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        assert_eq!(status, 200, "{body}");
+        assert_eq!(body["preparation"]["state"], "cancelled");
+        assert_eq!(count(&app.db.lock(), "sessions"), 0);
+    }
+
+    #[tokio::test]
+    async fn a_correct_contract_header_never_overrides_a_closed_rollout() {
+        let (app, _dir) = closed_app();
+        prepared(&app, false);
+        // `call` always sends the current contract header: the client is accepted
+        // as compatible and still cannot submit.
+        let (_, caps) = call(&app, "GET", CAPABILITIES, Some("alice"), None, None).await;
+        assert_eq!(caps["clientContract"], 2);
+        assert_eq!(caps["canSubmit"], false);
+        for (method, path, payload) in [
+            ("POST", PREPARE, Some(body())),
+            ("POST", "/api/conversation-submissions/draft-1/accept", None),
+        ] {
+            let (status, answer) = call(&app, method, path, Some("alice"), None, payload).await;
+            assert_eq!(
+                (status, code(&answer)),
+                (409, "first_send_disabled"),
+                "{path}"
+            );
+        }
+        assert_eq!(
+            count(&app.db.lock(), "conversation_submission_acceptances"),
+            0
+        );
+    }
 }

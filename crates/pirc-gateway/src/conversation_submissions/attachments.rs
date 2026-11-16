@@ -187,6 +187,9 @@ pub(super) fn stage(
     attachment: &str,
     bytes: &[u8],
 ) -> ApiResult<Preparation> {
+    // Staging exists only before acceptance (`pending` demands `Preparing`), so
+    // it is always new admission.
+    client::require_enabled(app)?;
     let digest = sha256_hex(bytes);
     let (session, item) = {
         let mut db = app.db.lock();

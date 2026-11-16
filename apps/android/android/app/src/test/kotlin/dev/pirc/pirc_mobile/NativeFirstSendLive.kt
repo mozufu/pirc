@@ -67,11 +67,13 @@ object NativeFirstSendLive {
             val response = chain.proceed(request.newBuilder().header("Host", config.getValue("host").jsonPrimitive.content).build())
             calls += mapOf("method" to request.method, "path" to request.url.encodedPath, "status" to response.code)
             if (request.url.encodedPath.endsWith("/capabilities") && response.isSuccessful) {
-                val original = PircJson.parseToJsonElement(response.body.string()).jsonObject
-                check(original["canSubmit"] == JsonPrimitive(false))
+                val text = response.body.string()
+                val original = PircJson.parseToJsonElement(text).jsonObject
+                // The fixture Gateway runs with PIRC_FIRST_SEND=1; the real capability says so.
+                check(original["canSubmit"] == JsonPrimitive(true))
                 check(original["clientContract"] == JsonPrimitive(2))
                 return@Interceptor response.newBuilder().body(
-                    JsonObject(original + ("canSubmit" to JsonPrimitive(true))).toString().toResponseBody("application/json".toMediaType())
+                    text.toResponseBody("application/json".toMediaType())
                 ).build()
             }
             if (faulting && request.url.encodedPath.endsWith("/dispatch") && response.isSuccessful) {

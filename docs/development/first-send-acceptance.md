@@ -1,6 +1,7 @@
 # First-send live client acceptance
 
-The first-send flow remains disabled in production (`canSubmit: false`). These
+The first-send flow remains disabled by default (`PIRC_FIRST_SEND` unset, so
+`canSubmit: false` and the Gateway refuses new admission). These
 acceptance fixtures run the production Web `FirstSend`, HTTP transport and
 IndexedDB, or the actual native Kotlin engine in separate JVM processes, against
 isolated real Gateway, Node and Agent executables. The model
@@ -33,9 +34,10 @@ does not mean it ran. It fails if binaries, browser or dependencies are missing.
 Use a fresh run-owned `CARGO_TARGET_DIR`; preserve shared caches, SDKs and APKs.
 
 The fixture binds only loopback and uses its own synthetic owner and provider.
-Its trusted-proxy adapter adds the fixture identity and changes only the returned
-`canSubmit` capability to exercise the pending client flow. It asserts that the
-actual Gateway still returns false; production configuration is never changed.
+Its trusted-proxy adapter adds the fixture identity only. The fixture Gateway is
+started with `PIRC_FIRST_SEND=1`, because the Gateway enforces the rollout itself;
+the adapter asserts that it reports `canSubmit: true`. Production configuration is
+never changed.
 All prepare, upload, accept, materialize, control, dispatch and receipt operations
 are real HTTP calls to the built Gateway.
 
@@ -84,8 +86,8 @@ suite and must be run explicitly; it fails on missing prerequisites.
 
 The harness creates two paired device tokens through the real Gateway API. Both
 native clients send their own bearer tokens without a browser identity or Origin.
-The test-only interceptor supplies the fixture Host routing and enables the
-returned capability while asserting production still reports `canSubmit: false`.
+The test-only interceptor supplies the fixture Host routing and asserts the
+fixture Gateway (started with `PIRC_FIRST_SEND=1`) reports `canSubmit: true`.
 Gateway/Node APIs, pairing authorization and revocation remain real. Synthetic
 credentials live only in the fixture's private config file and are removed on exit.
 
@@ -232,7 +234,7 @@ retains the same session/command and files without another admission.
 This two-case proof covers a real backend storage/reply boundary, not Android OS
 process death, all permission transitions, old Node protocol versions or the full
 application UI. The native JVM/compiler and dedicated browser restrictions above
-still apply. Production `canSubmit` remains false.
+still apply. The default `canSubmit` remains false.
 
 ## Capability changes, connection replacement and authority races
 

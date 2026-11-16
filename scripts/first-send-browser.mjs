@@ -1,5 +1,6 @@
 /** Real Web first-send/IndexedDB acceptance, driven by conversation_web_client.rs.
- * Only the fixture proxy changes canSubmit; production rollout stays disabled.
+ * The fixture Gateway runs with PIRC_FIRST_SEND=1 (the server refuses new
+ * first-send admission otherwise); the shipped default stays disabled.
  * A dedicated test executable and a new profile are mandatory. Never use Chrome.app.
  */
 import assert from 'node:assert/strict';
@@ -28,7 +29,7 @@ const { svelte } = await import(
 const traffic = [];
 let lostReply = false,
   replayResponse = false,
-  capabilityOverrides = 0,
+  capabilityChecks = 0,
   context,
   server;
 const publish = async (name, value) => {
@@ -98,11 +99,10 @@ async function proxy(req, res) {
   traffic.push({ method: req.method, path: req.url, status: reply.status });
   if (req.url === '/api/conversation-submissions/capabilities' && reply.status === 200) {
     const value = JSON.parse(reply.body);
-    assert.equal(value.canSubmit, false, 'Production rollout must remain disabled');
+    assert.equal(value.canSubmit, true, 'The fixture Gateway must run with PIRC_FIRST_SEND=1');
     assert.equal(value.clientContract, 2);
     assert.equal(value.requiredClientContract, 2);
-    reply.body = Buffer.from(JSON.stringify({ ...value, canSubmit: true }));
-    capabilityOverrides++;
+    capabilityChecks++;
   }
   if (
     !replayResponse &&
@@ -264,7 +264,7 @@ try {
     assert.equal(lostReply, true);
     assert.equal(replayResponse, true);
     assert.equal(pending[2].failedCommit, true);
-    assert.equal(capabilityOverrides, 3);
+    assert.equal(capabilityChecks, 3);
     for (const op of pending) assert.equal(op.bytes, 'Original bytes for ' + op.id);
     await context.close();
     context = undefined;

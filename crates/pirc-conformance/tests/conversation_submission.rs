@@ -22,6 +22,7 @@ fn files(path: &std::path::Path) -> Vec<std::path::PathBuf> {
 #[tokio::test(flavor = "multi_thread")]
 async fn accepted_intent_and_attachment_survive_both_hosts_restarting_without_execution() {
     let Some(mut cluster) = Cluster::start_with(GatewayOptions {
+        env: vec![("PIRC_FIRST_SEND", "1".into())],
         chat_node: true,
         agent_core_only: true,
         ..Default::default()

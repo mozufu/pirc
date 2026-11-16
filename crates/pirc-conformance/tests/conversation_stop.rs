@@ -38,6 +38,7 @@ async fn device(cluster: &Cluster, name: &str) -> (Vec<(&'static str, String)>, 
 #[tokio::test(flavor = "multi_thread")]
 async fn unmapped_stop_survives_offline_takeover_restart_and_allows_only_explicit_new_work() {
     let Some(mut cluster) = Cluster::start_with(GatewayOptions {
+        env: vec![("PIRC_FIRST_SEND", "1".into())],
         chat_node: true,
         agent_core_only: true,
         ..Default::default()

@@ -12,6 +12,7 @@ use std::process::{Command, Stdio};
 #[ignore = "requires installed Web dependencies and a dedicated Headless Shell; run the documented live Web acceptance command"]
 async fn web_reconciles_lost_reply_and_local_commit_after_browser_and_hosts_restart() {
     let mut cluster = Cluster::start_with(GatewayOptions {
+        env: vec![("PIRC_FIRST_SEND", "1".into())],
         chat_node: true,
         agent_core_only: true,
         ..Default::default()
