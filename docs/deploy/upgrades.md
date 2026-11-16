@@ -1,5 +1,26 @@
 # Upgrades
 
+## Unreleased: cancelling a switch whose Node outcome is unknown
+
+Gateway schema **1034** and Node schema **2040**. When environment switching is
+enabled (`PIRC_ENVIRONMENT_SWITCHING`) and the Node's answer to the request that
+fences a conversation is lost, the outcome is unknown and the conversation stays
+locked. It can now be cancelled. Cancelling asks the Node to confirm that it never
+created the fence and never will (a durable refusal of that switch). Only that
+confirmation releases the conversation, which then accepts new messages, and the
+switch is shown as cancelled with nothing changed on the Node. If the Node did
+create the fence, the switch is cancelled the ordinary way instead. If the Node is
+offline, the cancellation is remembered and the conversation stays locked until
+the Node answers; the Gateway keeps asking in the background.
+
+This is an exit chosen by the user, not automatic continuation: nothing is cancelled
+or retried by itself, and a "no record yet" answer or a refusal is only shown as a
+hint beside the Cancel button. A cancelled switch is never reused; switching again
+is a new review. Upgrade the Gateway and its Nodes together: against a Node older
+than schema 2040, Cancel answers that the Node must be upgraded and changes nothing.
+Back up both states with their binaries; older executables reject the new schemas.
+Protocol, client formats, lockfiles and Nix hashes are unchanged. Local code only.
+
 ## Unreleased: reconciling an unknown first message
 
 Gateway schema **1033** and Node schema **2039**. When a first message's delivery
