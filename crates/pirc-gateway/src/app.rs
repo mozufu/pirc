@@ -475,6 +475,8 @@ pub fn router(app: AppState) -> Router {
         // Outside `no_store`: Fastify's router refused before any scope's hooks.
         .layer(middleware::from_fn(param_length))
         .layer(middleware::from_fn(detach))
+        // Outermost: every reply, including those of the layers above.
+        .layer(middleware::from_fn(crate::response_types::guard))
         .with_state(app)
 }
 
