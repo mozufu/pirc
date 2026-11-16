@@ -25,10 +25,8 @@ const englishMessages = <String, String>{
   "Active": "Active",
   "All": "All",
   "Loading…": "Loading…",
-  "Memory state is unavailable for this session.":
-      "Memory state is unavailable for this session.",
-  "Observational memory is disabled in this workspace’s config.":
-      "Observational memory is disabled in this workspace’s config.",
+  "Memory state is unavailable for this session.": "Memory state is unavailable for this session.",
+  "Observational memory is disabled in this workspace’s config.": "Observational memory is disabled in this workspace’s config.",
   "{0} rate-limited until {1}": "{0} rate-limited until {1}",
   "No reflections yet.": "No reflections yet.",
   "Observations": "Observations",
@@ -50,8 +48,7 @@ const englishMessages = <String, String>{
   "Schedules": "Schedules",
   "Loading schedules…": "Loading schedules…",
   "New schedule": "New schedule",
-  "No schedules yet. Make one here, or ask your assistant: it asks you before it adds one.":
-      "No schedules yet. Make one here, or ask your assistant: it asks you before it adds one.",
+  "No schedules yet. Make one here, or ask your assistant: it asks you before it adds one.": "No schedules yet. Make one here, or ask your assistant: it asks you before it adds one.",
   "Paused": "Paused",
   "Done": "Done",
   "{0} waiting for you": "{0} waiting for you",
@@ -70,27 +67,21 @@ const englishMessages = <String, String>{
   "Allow and run now": "Allow and run now",
   "Dismiss": "Dismiss",
   "Open session": "Open session",
-  "Unable to initialize the date and time picker.":
-      "Unable to initialize the date and time picker.",
-  "Fill in the workspace, prompt, time and time zone.":
-      "Fill in the workspace, prompt, time and time zone.",
-  "Enter a valid date and time (YYYY-MM-DDTHH:mm).":
-      "Enter a valid date and time (YYYY-MM-DDTHH:mm).",
+  "Unable to initialize the date and time picker.": "Unable to initialize the date and time picker.",
+  "Fill in the workspace, prompt, time and time zone.": "Fill in the workspace, prompt, time and time zone.",
+  "Enter a valid date and time (YYYY-MM-DDTHH:mm).": "Enter a valid date and time (YYYY-MM-DDTHH:mm).",
   "Choose date and time": "Choose date and time",
   "Edit schedule": "Edit schedule",
   "Workspace": "Workspace",
   "Title": "Title",
-  "Named after the first line of the prompt":
-      "Named after the first line of the prompt",
-  "What the agent should do. Each run starts fresh with only this.":
-      "What the agent should do. Each run starts fresh with only this.",
+  "Named after the first line of the prompt": "Named after the first line of the prompt",
+  "What the agent should do. Each run starts fresh with only this.": "What the agent should do. Each run starts fresh with only this.",
   "When": "When",
   "Repeat": "Repeat",
   "Once": "Once",
   "Time": "Time",
   "YYYY-MM-DDTHH:mm": "YYYY-MM-DDTHH:mm",
-  "Cron (minute hour day month weekday)":
-      "Cron (minute hour day month weekday)",
+  "Cron (minute hour day month weekday)": "Cron (minute hour day month weekday)",
   "Time zone": "Time zone",
   "Model": "Model",
   "Workspace default": "Workspace default",
@@ -103,31 +94,24 @@ const englishMessages = <String, String>{
   "Diff": "Diff",
   "Show {0} more lines ({1} hidden)": "Show {0} more lines ({1} hidden)",
   "Diff truncated at 1 MB.": "Diff truncated at 1 MB.",
-  "Expected an absolute HTTP(S) canonical URL.":
-      "Expected an absolute HTTP(S) canonical URL.",
-  "URI component contains an unpaired surrogate.":
-      "URI component contains an unpaired surrogate.",
-  "A calm command surface for persistent coding-agent sessions.":
-      "A calm command surface for persistent coding-agent sessions.",
+  "Expected an absolute HTTP(S) canonical URL.": "Expected an absolute HTTP(S) canonical URL.",
+  "URI component contains an unpaired surrogate.": "URI component contains an unpaired surrogate.",
+  "A calm command surface for persistent coding-agent sessions.": "A calm command surface for persistent coding-agent sessions.",
   "head meta[name][content]": "head meta[name][content]",
   "Use file default / automatic": "Use file default / automatic",
   "Model backends": "Model backends",
-  "Global settings for this single-user gateway. All model requests run on the gateway; endpoints must be reachable from there.":
-      "Global settings for this single-user gateway. All model requests run on the gateway; endpoints must be reachable from there.",
-  "Backend settings are unavailable in demo mode. No real accounts or settings will be changed.":
-      "Backend settings are unavailable in demo mode. No real accounts or settings will be changed.",
+  "Global settings for this single-user gateway. All model requests run on the gateway; endpoints must be reachable from there.": "Global settings for this single-user gateway. All model requests run on the gateway; endpoints must be reachable from there.",
+  "Backend settings are unavailable in demo mode. No real accounts or settings will be changed.": "Backend settings are unavailable in demo mode. No real accounts or settings will be changed.",
   "Loading backends…": "Loading backends…",
   "API keys and custom endpoints": "API keys and custom endpoints",
   "Add backend": "Add backend",
   "Default model": "Default model",
   "Gateway default": "Gateway default",
   "Save default": "Save default",
-  "Applies to new runs that have no explicit model selection.":
-      "Applies to new runs that have no explicit model selection.",
+  "Applies to new runs that have no explicit model selection.": "Applies to new runs that have no explicit model selection.",
   "Retry settings": "Retry settings",
   "生成中…": "Generating…",
-  "生成未完成 · 可查看最後可用版本":
-      "Generation incomplete · View the latest available version",
+  "生成未完成 · 可查看最後可用版本": "Generation incomplete · View the latest available version",
   "閱讀已產生內容": "Read generated content",
   "開啟成果": "Open result",
   "此成果類型以摘要顯示": "This result type is shown as a summary",
@@ -136,49 +120,32 @@ const englishMessages = <String, String>{
   "分享成果": "Share result",
   "已有 v{0} · 切換新版": "Version v{0} is available · Switch to the new version",
   "內容已更新 · 切換": "Content updated · Switch",
-  "仍在生成 · 新內容不會取代目前閱讀位置":
-      "Still generating · New content won't replace your current reading position",
-  "請重試產生成果「{0}」（id: {1}），以新版本保留既有內容。":
-      "Ask the agent to regenerate result “{0}” (id: {1}) as a new version to preserve the existing content.",
+  "仍在生成 · 新內容不會取代目前閱讀位置": "Still generating · New content won't replace your current reading position",
+  "請重試產生成果「{0}」（id: {1}），以新版本保留既有內容。": "Ask the agent to regenerate result “{0}” (id: {1}) as a new version to preserve the existing content.",
   "已請 agent 重試": "Asked the agent to retry",
   "暫時無法送出": "Unable to submit right now",
   "請 agent 重試…": "Ask the agent to retry…",
   "在網頁開啟": "Open in browser",
   "來源": "Sources",
-  "Unable to update backend settings. Check the connection and try again.":
-      "Unable to update backend settings. Check the connection and try again.",
-  "Backend request failed ({0}). Check your settings and try again.":
-      "Backend request failed ({0}). Check your settings and try again.",
+  "Unable to update backend settings. Check the connection and try again.": "Unable to update backend settings. Check the connection and try again.",
+  "Backend request failed ({0}). Check your settings and try again.": "Backend request failed ({0}). Check your settings and try again.",
   "Instructions": "Instructions",
-  "For example: answer in French, and keep trip plans on a budget.":
-      "For example: answer in French, and keep trip plans on a budget.",
+  "For example: answer in French, and keep trip plans on a budget.": "For example: answer in French, and keep trip plans on a budget.",
   "Show earlier messages ({0} more)": "Show earlier messages ({0} more)",
   "Invalid {0} stylesheet snapshot.": "Invalid {0} stylesheet snapshot.",
-  "Invalid stylesheet owner descriptor.":
-      "Invalid stylesheet owner descriptor.",
-  "Duplicate stylesheet owner ignored: {0}.":
-      "Duplicate stylesheet owner ignored: {0}.",
-  "Stylesheet owner is missing ownerId.":
-      "Stylesheet owner is missing ownerId.",
-  "Invalid stylesheet order for owner {0}.":
-      "Invalid stylesheet order for owner {0}.",
-  "Inline stylesheet owner {0} has no cssText.":
-      "Inline stylesheet owner {0} has no cssText.",
-  "Stylesheet owner {0} has no baseURL.":
-      "Stylesheet owner {0} has no baseURL.",
-  "Stylesheet link owner {0} has no fetchHref (href: {1}).":
-      "Stylesheet link owner {0} has no fetchHref (href: {1}).",
-  "Stylesheet link owner {0} has no transportId.":
-      "Stylesheet link owner {0} has no transportId.",
-  "Document stylesheet source limit exceeded ({0}) at {1}.":
-      "Document stylesheet source limit exceeded ({0}) at {1}.",
-  "Document stylesheet decoded-text limit exceeded ({0} UTF-16 bytes) at {1}.":
-      "Document stylesheet decoded-text limit exceeded ({0} UTF-16 bytes) at {1}.",
-  "Invalid document resource bytes (maximum 2 MiB).":
-      "Invalid document resource bytes (maximum 2 MiB).",
+  "Invalid stylesheet owner descriptor.": "Invalid stylesheet owner descriptor.",
+  "Duplicate stylesheet owner ignored: {0}.": "Duplicate stylesheet owner ignored: {0}.",
+  "Stylesheet owner is missing ownerId.": "Stylesheet owner is missing ownerId.",
+  "Invalid stylesheet order for owner {0}.": "Invalid stylesheet order for owner {0}.",
+  "Inline stylesheet owner {0} has no cssText.": "Inline stylesheet owner {0} has no cssText.",
+  "Stylesheet owner {0} has no baseURL.": "Stylesheet owner {0} has no baseURL.",
+  "Stylesheet link owner {0} has no fetchHref (href: {1}).": "Stylesheet link owner {0} has no fetchHref (href: {1}).",
+  "Stylesheet link owner {0} has no transportId.": "Stylesheet link owner {0} has no transportId.",
+  "Document stylesheet source limit exceeded ({0}) at {1}.": "Document stylesheet source limit exceeded ({0}) at {1}.",
+  "Document stylesheet decoded-text limit exceeded ({0} UTF-16 bytes) at {1}.": "Document stylesheet decoded-text limit exceeded ({0} UTF-16 bytes) at {1}.",
+  "Invalid document resource bytes (maximum 2 MiB).": "Invalid document resource bytes (maximum 2 MiB).",
   "Script resource returned HTTP {0}.": "Script resource returned HTTP {0}.",
-  "Document resource exceeds the 4 MiB script message limit.":
-      "Document resource exceeds the 4 MiB script message limit.",
+  "Document resource exceeds the 4 MiB script message limit.": "Document resource exceeds the 4 MiB script message limit.",
   "Files": "Files",
   "Git": "Git",
   "Memory": "Memory",
@@ -188,34 +155,25 @@ const englishMessages = <String, String>{
   "Browser": "Browser",
   "Session side panel": "Session side panel",
   "Resize side panel": "Resize side panel",
-  "Drag to resize · double-click to reset":
-      "Drag to resize · double-click to reset",
+  "Drag to resize · double-click to reset": "Drag to resize · double-click to reset",
   "Chat": "Chat",
   "Work": "Work",
   "Settings": "Settings",
-  "Preferred titled stylesheet sets are not implemented.":
-      "Preferred titled stylesheet sets are not implemented.",
-  "Stylesheet URL could not resolve: {0}":
-      "Stylesheet URL could not resolve: {0}",
+  "Preferred titled stylesheet sets are not implemented.": "Preferred titled stylesheet sets are not implemented.",
+  "Stylesheet URL could not resolve: {0}": "Stylesheet URL could not resolve: {0}",
   "Document stylesheet load is stale.": "Document stylesheet load is stale.",
-  "Stylesheet import/source limit exceeded.":
-      "Stylesheet import/source limit exceeded.",
-  "Cyclic stylesheet import ignored: {0}":
-      "Cyclic stylesheet import ignored: {0}",
+  "Stylesheet import/source limit exceeded.": "Stylesheet import/source limit exceeded.",
+  "Cyclic stylesheet import ignored: {0}": "Cyclic stylesheet import ignored: {0}",
   "Stylesheet HTTP {0}: {1}": "Stylesheet HTTP {0}: {1}",
   "Stylesheet MIME {0} rejected: {1}": "Stylesheet MIME {0} rejected: {1}",
   "Stylesheet byte limit exceeded: {0}": "Stylesheet byte limit exceeded: {0}",
-  "Cyclic stylesheet redirect ignored: {0}":
-      "Cyclic stylesheet redirect ignored: {0}",
+  "Cyclic stylesheet redirect ignored: {0}": "Cyclic stylesheet redirect ignored: {0}",
   "Stylesheet could not load: {0}": "Stylesheet could not load: {0}",
   "Stylesheet source limit exceeded.": "Stylesheet source limit exceeded.",
-  "Stylesheet decoded-text limit exceeded.":
-      "Stylesheet decoded-text limit exceeded.",
+  "Stylesheet decoded-text limit exceeded.": "Stylesheet decoded-text limit exceeded.",
   "Unsupported stylesheet import: {0}": "Unsupported stylesheet import: {0}",
-  "Invalid stylesheet bytes (maximum 8 MiB).":
-      "Invalid stylesheet bytes (maximum 8 MiB).",
-  "Invalid stylesheet response metadata.":
-      "Invalid stylesheet response metadata.",
+  "Invalid stylesheet bytes (maximum 8 MiB).": "Invalid stylesheet bytes (maximum 8 MiB).",
+  "Invalid stylesheet response metadata.": "Invalid stylesheet response metadata.",
   "Request failed ({0})": "Request failed ({0})",
   "in under a minute": "in under a minute",
   "bash fetching from the network": "bash fetching from the network",
@@ -234,29 +192,23 @@ const englishMessages = <String, String>{
   "Stylesheet document changed.": "Stylesheet document changed.",
   "Stylesheet options required.": "Stylesheet options required.",
   "Stylesheet response is stale.": "Stylesheet response is stale.",
-  "Invalid document cancellation batch.":
-      "Invalid document cancellation batch.",
-  "Invalid document resource cancellation.":
-      "Invalid document resource cancellation.",
+  "Invalid document cancellation batch.": "Invalid document cancellation batch.",
+  "Invalid document resource cancellation.": "Invalid document resource cancellation.",
   "Invalid document resource batch.": "Invalid document resource batch.",
   "Invalid document resource.": "Invalid document resource.",
   "Invalid document resource identity.": "Invalid document resource identity.",
   "Invalid document resource serial.": "Invalid document resource serial.",
-  "Too many pending document resources (maximum 256).":
-      "Too many pending document resources (maximum 256).",
+  "Too many pending document resources (maximum 256).": "Too many pending document resources (maximum 256).",
   "Invalid image URL.": "Invalid image URL.",
   "Invalid image data URL.": "Invalid image data URL.",
   "Image request failed (HTTP {0}).": "Image request failed (HTTP {0}).",
   "Invalid image resource bytes.": "Invalid image resource bytes.",
   "Image document changed.": "Image document changed.",
-  "Invalid document focus action batch.":
-      "Invalid document focus action batch.",
+  "Invalid document focus action batch.": "Invalid document focus action batch.",
   "Invalid document focus action.": "Invalid document focus action.",
-  "Invalid document focus owner or options.":
-      "Invalid document focus owner or options.",
+  "Invalid document focus owner or options.": "Invalid document focus owner or options.",
   "Too many document focus actions.": "Too many document focus actions.",
-  "Invalid document scroll action batch.":
-      "Invalid document scroll action batch.",
+  "Invalid document scroll action batch.": "Invalid document scroll action batch.",
   "Invalid scroll action.": "Invalid scroll action.",
   "Invalid document scroll options.": "Invalid document scroll options.",
   "Too many document scroll actions.": "Too many document scroll actions.",
@@ -267,20 +219,16 @@ const englishMessages = <String, String>{
   "Invalid navigation URL or target.": "Invalid navigation URL or target.",
   "Invalid history action.": "Invalid history action.",
   "Invalid history delta.": "Invalid history delta.",
-  "Invalid history revision or scrolling.":
-      "Invalid history revision or scrolling.",
-  "Invalid initial History scroll snapshot.":
-      "Invalid initial History scroll snapshot.",
+  "Invalid history revision or scrolling.": "Invalid history revision or scrolling.",
+  "Invalid initial History scroll snapshot.": "Invalid initial History scroll snapshot.",
   "Invalid history URL, key, or state.": "Invalid history URL, key, or state.",
   "Invalid navigation action kind.": "Invalid navigation action kind.",
   "Too many navigation actions.": "Too many navigation actions.",
   "Invalid file picker action batch.": "Invalid file picker action batch.",
   "Invalid file picker action.": "Invalid file picker action.",
   "Invalid file picker action fields.": "Invalid file picker action fields.",
-  "Conflicting duplicate file picker action.":
-      "Conflicting duplicate file picker action.",
-  "Too many pending file picker actions.":
-      "Too many pending file picker actions.",
+  "Conflicting duplicate file picker action.": "Conflicting duplicate file picker action.",
+  "Too many pending file picker actions.": "Too many pending file picker actions.",
   "Invalid file picker result.": "Invalid file picker result.",
   "Invalid form action batch.": "Invalid form action batch.",
   "Invalid form action.": "Invalid form action.",
@@ -290,31 +238,24 @@ const englishMessages = <String, String>{
   "Invalid native Storage entries.": "Invalid native Storage entries.",
   "Invalid native Storage entry.": "Invalid native Storage entry.",
   "Invalid native Storage events.": "Invalid native Storage events.",
-  "Too many pending Storage events; reload this document.":
-      "Too many pending Storage events; reload this document.",
-  "Pending Storage event data exceeds 32 MiB; reload this document.":
-      "Pending Storage event data exceeds 32 MiB; reload this document.",
+  "Too many pending Storage events; reload this document.": "Too many pending Storage events; reload this document.",
+  "Pending Storage event data exceeds 32 MiB; reload this document.": "Pending Storage event data exceeds 32 MiB; reload this document.",
   "Invalid Storage write batch.": "Invalid Storage write batch.",
   "Invalid Storage write length.": "Invalid Storage write length.",
   "Incomplete Storage write chunk.": "Incomplete Storage write chunk.",
   "Invalid Storage event value.": "Invalid Storage event value.",
-  "Native cookie state exceeds its supported limit.":
-      "Native cookie state exceeds its supported limit.",
+  "Native cookie state exceeds its supported limit.": "Native cookie state exceeds its supported limit.",
   "Invalid document cookie writes.": "Invalid document cookie writes.",
   "Invalid classic script descriptor.": "Invalid classic script descriptor.",
   "Invalid classic script identity.": "Invalid classic script identity.",
-  "Invalid native animation frame descriptor.":
-      "Invalid native animation frame descriptor.",
-  "Invalid native animation frame identity.":
-      "Invalid native animation frame identity.",
-  "Invalid classic script control result.":
-      "Invalid classic script control result.",
+  "Invalid native animation frame descriptor.": "Invalid native animation frame descriptor.",
+  "Invalid native animation frame identity.": "Invalid native animation frame identity.",
+  "Invalid classic script control result.": "Invalid classic script control result.",
   "Missing native layout revision.": "Missing native layout revision.",
   "Invalid native layout identity.": "Invalid native layout identity.",
   "Repeated classic script identity.": "Repeated classic script identity.",
   "Invalid classic script source.": "Invalid classic script source.",
-  "Classic script source exceeds 4 MiB.":
-      "Classic script source exceeds 4 MiB.",
+  "Classic script source exceeds 4 MiB.": "Classic script source exceeds 4 MiB.",
   "Document was closed.": "Document was closed.",
   "Invalid document script identity.": "Invalid document script identity.",
   "Arial": "Arial",
@@ -329,12 +270,10 @@ const englishMessages = <String, String>{
   "Object URL document is unavailable.": "Object URL document is unavailable.",
   "Object URL document changed.": "Object URL document changed.",
   "Invalid script result.": "Invalid script result.",
-  "Invalid native fragment target identity.":
-      "Invalid native fragment target identity.",
+  "Invalid native fragment target identity.": "Invalid native fragment target identity.",
   "Invalid fragment target readiness.": "Invalid fragment target readiness.",
   "Invalid fragment ancestor state.": "Invalid fragment ancestor state.",
-  "Invalid initial root scroll override.":
-      "Invalid initial root scroll override.",
+  "Invalid initial root scroll override.": "Invalid initial root scroll override.",
   "Missing document HTML.": "Missing document HTML.",
   "Invalid document canvases.": "Invalid document canvases.",
   "Invalid canvas.": "Invalid canvas.",
@@ -342,26 +281,17 @@ const englishMessages = <String, String>{
   "Invalid document image references.": "Invalid document image references.",
   "Image document is closed.": "Image document is closed.",
   "Invalid image request identity.": "Invalid image request identity.",
-  "Script images require 1 byte to 2 MiB.":
-      "Script images require 1 byte to 2 MiB.",
-  "Document image limit is 64 decoded versions.":
-      "Document image limit is 64 decoded versions.",
-  "Image dimensions exceed the native limit.":
-      "Image dimensions exceed the native limit.",
-  "Decoded document images exceed 16 MP.":
-      "Decoded document images exceed 16 MP.",
-  "Decoded image dimensions changed unexpectedly.":
-      "Decoded image dimensions changed unexpectedly.",
-  "Image document changed during decode.":
-      "Image document changed during decode.",
-  "Canvas references an unknown document image.":
-      "Canvas references an unknown document image.",
-  "Unable to reach the gateway. Try again.":
-      "Unable to reach the gateway. Try again.",
+  "Script images require 1 byte to 2 MiB.": "Script images require 1 byte to 2 MiB.",
+  "Document image limit is 64 decoded versions.": "Document image limit is 64 decoded versions.",
+  "Image dimensions exceed the native limit.": "Image dimensions exceed the native limit.",
+  "Decoded document images exceed 16 MP.": "Decoded document images exceed 16 MP.",
+  "Decoded image dimensions changed unexpectedly.": "Decoded image dimensions changed unexpectedly.",
+  "Image document changed during decode.": "Image document changed during decode.",
+  "Canvas references an unknown document image.": "Canvas references an unknown document image.",
+  "Unable to reach the gateway. Try again.": "Unable to reach the gateway. Try again.",
   "Invalid device list": "Invalid device list",
   "Invalid pairing response": "Invalid pairing response",
-  "Unable to open the pirc app. Try again.":
-      "Unable to open the pirc app. Try again.",
+  "Unable to open the pirc app. Try again.": "Unable to open the pirc app. Try again.",
   "Invalid Date": "Invalid Date",
   "just now": "just now",
   "{0}m ago": "{0}m ago",
@@ -381,8 +311,7 @@ const englishMessages = <String, String>{
   "Dec": "Dec",
   "Pair {0}": "Pair {0}",
   "Scan with the pirc app": "Scan with the pirc app",
-  "Shown only once. Anyone with this code can use your nodes until you revoke it.":
-      "Shown only once. Anyone with this code can use your nodes until you revoke it.",
+  "Shown only once. Anyone with this code can use your nodes until you revoke it.": "Shown only once. Anyone with this code can use your nodes until you revoke it.",
   "Open in app": "Open in app",
   "Copied": "Copied",
   "Copy link": "Copy link",
@@ -392,39 +321,26 @@ const englishMessages = <String, String>{
   "Revoke {0}": "Revoke {0}",
   "Revoke": "Revoke",
   "Phones": "Phones",
-  "Pair the pirc Android app. A phone gets the same access as this browser, including files and shells on your nodes, but cannot manage devices or model backends. Its token stops working after a stretch without use, at a fixed age after pairing, or when revoked here.":
-      "Pair the pirc Android app. A phone gets the same access as this browser, including files and shells on your nodes, but cannot manage devices or model backends. Its token stops working after a stretch without use, at a fixed age after pairing, or when revoked here.",
-  "Pairing is unavailable in demo mode.":
-      "Pairing is unavailable in demo mode.",
+  "Pair the pirc Android app. A phone gets the same access as this browser, including files and shells on your nodes, but cannot manage devices or model backends. Its token stops working after a stretch without use, at a fixed age after pairing, or when revoked here.": "Pair the pirc Android app. A phone gets the same access as this browser, including files and shells on your nodes, but cannot manage devices or model backends. Its token stops working after a stretch without use, at a fixed age after pairing, or when revoked here.",
+  "Pairing is unavailable in demo mode.": "Pairing is unavailable in demo mode.",
   "Loading devices…": "Loading devices…",
   "No phones paired.": "No phones paired.",
-  "The active surface identity must be retained.":
-      "The active surface identity must be retained.",
+  "The active surface identity must be retained.": "The active surface identity must be retained.",
   "此問題已處理": "This question has been handled.",
   "此問題已處理或已失效": "This question has been handled or is no longer active.",
-  "This notification belongs to a different connection. Open the current conversation to review its questions.":
-      "This notification belongs to a different connection. Open the current conversation to review its questions.",
-  "The connection changed. Reopen this question to continue.":
-      "The connection changed. Reopen this question to continue.",
-  "The question state could not be verified.":
-      "The question state could not be verified.",
-  "This notification has no question version. Close it and review the current question in the conversation before answering.":
-      "This notification has no question version. Close it and review the current question in the conversation before answering.",
-  "Control changed. Check the latest state before answering.":
-      "Control changed. Check the latest state before answering.",
-  "The answer was rejected, but the latest state could not be verified. Check the latest state before answering.":
-      "The answer was rejected, but the latest state could not be verified. Check the latest state before answering.",
-  "The answer status could not be verified.":
-      "The answer status could not be verified.",
-  "The pending question could not be verified.":
-      "The pending question could not be verified.",
-  "The answer may have been received. Check the latest state; it will not be sent again automatically.":
-      "The answer may have been received. Check the latest state; it will not be sent again automatically.",
+  "This notification belongs to a different connection. Open the current conversation to review its questions.": "This notification belongs to a different connection. Open the current conversation to review its questions.",
+  "The connection changed. Reopen this question to continue.": "The connection changed. Reopen this question to continue.",
+  "The question state could not be verified.": "The question state could not be verified.",
+  "This notification has no question version. Close it and review the current question in the conversation before answering.": "This notification has no question version. Close it and review the current question in the conversation before answering.",
+  "Control changed. Check the latest state before answering.": "Control changed. Check the latest state before answering.",
+  "The answer was rejected, but the latest state could not be verified. Check the latest state before answering.": "The answer was rejected, but the latest state could not be verified. Check the latest state before answering.",
+  "The answer status could not be verified.": "The answer status could not be verified.",
+  "The pending question could not be verified.": "The pending question could not be verified.",
+  "The answer may have been received. Check the latest state; it will not be sent again automatically.": "The answer may have been received. Check the latest state; it will not be sent again automatically.",
   "Checking the latest state…": "Checking the latest state…",
   "Controlled by {0}": "Controlled by {0}",
   "Take control": "Take control",
-  "Take control to answer this question.":
-      "Take control to answer this question.",
+  "Take control to answer this question.": "Take control to answer this question.",
   "Check latest state": "Check latest state",
   "Close and review in conversation": "Close and review in conversation",
   "a chat that is gone": "a chat that is gone",
@@ -437,25 +353,19 @@ const englishMessages = <String, String>{
   "Forget": "Forget",
   "Loading history…": "Loading history…",
   "Restore this": "Restore this",
-  "What your assistant remembers across chats. ":
-      "What your assistant remembers across chats. ",
-  " is what you told it about yourself and changes only when you approve. ":
-      " is what you told it about yourself and changes only when you approve. ",
-  " holds the assistant's own notes. New chats start with both; open chats keep what they started with.":
-      " holds the assistant's own notes. New chats start with both; open chats keep what they started with.",
+  "What your assistant remembers across chats. ": "What your assistant remembers across chats. ",
+  " is what you told it about yourself and changes only when you approve. ": " is what you told it about yourself and changes only when you approve. ",
+  " holds the assistant's own notes. New chats start with both; open chats keep what they started with.": " holds the assistant's own notes. New chats start with both; open chats keep what they started with.",
   "Loading memory…": "Loading memory…",
   "Retry": "Retry",
   "Waiting for you": "Waiting for you",
   "About you · USER": "About you · USER",
-  "Nothing yet. When you tell the assistant about yourself, it asks you here first.":
-      "Nothing yet. When you tell the assistant about yourself, it asks you here first.",
+  "Nothing yet. When you tell the assistant about yourself, it asks you here first.": "Nothing yet. When you tell the assistant about yourself, it asks you here first.",
   "The assistant's notes · MEMORY": "The assistant's notes · MEMORY",
   "No notes yet.": "No notes yet.",
-  "Forget erases an entry with all its versions and keeps the same text from being saved again; rewordings are not caught. The chats it came from stay on the chat node, and repositories keep their own workspace memory.":
-      "Forget erases an entry with all its versions and keeps the same text from being saved again; rewordings are not caught. The chats it came from stay on the chat node, and repositories keep their own workspace memory.",
+  "Forget erases an entry with all its versions and keeps the same text from being saved again; rewordings are not caught. The chats it came from stay on the chat node, and repositories keep their own workspace memory.": "Forget erases an entry with all its versions and keeps the same text from being saved again; rewordings are not caught. The chats it came from stay on the chat node, and repositories keep their own workspace memory.",
   "Back to the list": "Back to the list",
-  "This workspace is no longer available.":
-      "This workspace is no longer available.",
+  "This workspace is no longer available.": "This workspace is no longer available.",
   "Expand sidebar": "Expand sidebar",
   "Finish deleting…": "Finish deleting…",
   "{0} sections": "{0} sections",
@@ -465,95 +375,66 @@ const englishMessages = <String, String>{
   "Show done · {0}": "Show done · {0}",
   "Nothing matches.": "Nothing matches.",
   "Every {0} here is done.": "Every {0} here is done.",
-  "No {0}s yet. Start one with “New {1}”.":
-      "No {0}s yet. Start one with “New {1}”.",
+  "No {0}s yet. Start one with “New {1}”.": "No {0}s yet. Start one with “New {1}”.",
   "Unsupported image URL": "Unsupported image URL",
   "Image exceeds 32 MiB": "Image exceeds 32 MiB",
   "Empty image": "Empty image",
   "Close": "Close",
-  "Attachment picker response must be a list.":
-      "Attachment picker response must be a list.",
-  "Attachment picker item {0} must be an object.":
-      "Attachment picker item {0} must be an object.",
+  "Attachment picker response must be a list.": "Attachment picker response must be a list.",
+  "Attachment picker item {0} must be an object.": "Attachment picker item {0} must be an object.",
   "Could not read {0}: {1}": "Could not read {0}: {1}",
-  "Attachment {0} has an invalid byte at offset {1}.":
-      "Attachment {0} has an invalid byte at offset {1}.",
-  "Attachment {0} has invalid base64 bytes.":
-      "Attachment {0} has invalid base64 bytes.",
-  "Attachment {0} did not include byte data.":
-      "Attachment {0} did not include byte data.",
+  "Attachment {0} has an invalid byte at offset {1}.": "Attachment {0} has an invalid byte at offset {1}.",
+  "Attachment {0} has invalid base64 bytes.": "Attachment {0} has invalid base64 bytes.",
+  "Attachment {0} did not include byte data.": "Attachment {0} did not include byte data.",
   "Background connection changed.": "Background connection changed.",
   "Background exceeds 32 MiB.": "Background exceeds 32 MiB.",
   "Unsupported background URL.": "Unsupported background URL.",
-  "This background image format is unsupported.":
-      "This background image format is unsupported.",
-  "SVG background requires the native vector painter.":
-      "SVG background requires the native vector painter.",
+  "This background image format is unsupported.": "This background image format is unsupported.",
+  "SVG background requires the native vector painter.": "SVG background requires the native vector painter.",
   "Default thinking": "Default thinking",
   "Submit": "Submit",
   "Your input is needed": "Your input is needed",
   "Open": "Open",
   "Response": "Response",
   "Your answer": "Your answer",
-  "Choose whether the agent should continue with this action.":
-      "Choose whether the agent should continue with this action.",
-  "Auto mode then reads the task as if you had typed it in that session, so an operation the task names exactly is not stopped as dangerous. Only for the run the task starts.":
-      "Auto mode then reads the task as if you had typed it in that session, so an operation the task names exactly is not stopped as dangerous. Only for the run the task starts.",
-  "Unable to read the selected file. Choose it again.":
-      "Unable to read the selected file. Choose it again.",
+  "Choose whether the agent should continue with this action.": "Choose whether the agent should continue with this action.",
+  "Auto mode then reads the task as if you had typed it in that session, so an operation the task names exactly is not stopped as dangerous. Only for the run the task starts.": "Auto mode then reads the task as if you had typed it in that session, so an operation the task names exactly is not stopped as dangerous. Only for the run the task starts.",
+  "Unable to read the selected file. Choose it again.": "Unable to read the selected file. Choose it again.",
   "{0} is larger than the {1} limit.": "{0} is larger than the {1} limit.",
   "{0} is empty.": "{0} is empty.",
   "Unable to read the selected file.": "Unable to read the selected file.",
-  "{0}: Unable to read the selected file.":
-      "{0}: Unable to read the selected file.",
-  "{0} uploaded. Every chat in this project can read {1} now.":
-      "{0} uploaded. Every chat in this project can read {1} now.",
+  "{0}: Unable to read the selected file.": "{0}: Unable to read the selected file.",
+  "{0} uploaded. Every chat in this project can read {1} now.": "{0} uploaded. Every chat in this project can read {1} now.",
   "Remove": "Remove",
   "Remove…": "Remove…",
   "Working…": "Working…",
   "Upload files": "Upload files",
   "PROJECT FILES": "PROJECT FILES",
-  "Files every chat in this project can read, for example notes, documents or data the assistant should know about. The assistant cannot change them. They are kept on the project's node and shared with running chats at once: an upload, a replacement or a removal reaches chats already open. Uploading a file with the same name as an existing one replaces it.":
-      "Files every chat in this project can read, for example notes, documents or data the assistant should know about. The assistant cannot change them. They are kept on the project's node and shared with running chats at once: an upload, a replacement or a removal reaches chats already open. Uploading a file with the same name as an existing one replaces it.",
+  "Files every chat in this project can read, for example notes, documents or data the assistant should know about. The assistant cannot change them. They are kept on the project's node and shared with running chats at once: an upload, a replacement or a removal reaches chats already open. Uploading a file with the same name as an existing one replaces it.": "Files every chat in this project can read, for example notes, documents or data the assistant should know about. The assistant cannot change them. They are kept on the project's node and shared with running chats at once: an upload, a replacement or a removal reaches chats already open. Uploading a file with the same name as an existing one replaces it.",
   "Loading project files…": "Loading project files…",
   "No files yet.": "No files yet.",
   "Project files": "Project files",
-  "This workspace's mode is unavailable on the gateway: its history is read-only and it takes no new sessions.":
-      "This workspace's mode is unavailable on the gateway: its history is read-only and it takes no new sessions.",
-  "This project's deletion did not finish: its chats accept no more work. Finish deleting it once the chat node is connected.":
-      "This project's deletion did not finish: its chats accept no more work. Finish deleting it once the chat node is connected.",
-  "Take control of this session to change its approval mode.":
-      "Take control of this session to change its approval mode.",
-  "先前送出結果不明，請先檢查最新狀態。":
-      "The result of the earlier send is unknown. Check the latest state first.",
-  "This project is no longer available.":
-      "This project is no longer available.",
+  "This workspace's mode is unavailable on the gateway: its history is read-only and it takes no new sessions.": "This workspace's mode is unavailable on the gateway: its history is read-only and it takes no new sessions.",
+  "This project's deletion did not finish: its chats accept no more work. Finish deleting it once the chat node is connected.": "This project's deletion did not finish: its chats accept no more work. Finish deleting it once the chat node is connected.",
+  "Take control of this session to change its approval mode.": "Take control of this session to change its approval mode.",
+  "先前送出結果不明，請先檢查最新狀態。": "The result of the earlier send is unknown. Check the latest state first.",
+  "This project is no longer available.": "This project is no longer available.",
   "New session": "New session",
-  "The server did not return the new conversation.":
-      "The server did not return the new conversation.",
-  "Could not obtain control. Please retry sending.":
-      "Could not obtain control. Please retry sending.",
+  "The server did not return the new conversation.": "The server did not return the new conversation.",
+  "Could not obtain control. Please retry sending.": "Could not obtain control. Please retry sending.",
   "Connection changed.": "Connection changed.",
-  "The gateway did not return a workspace.":
-      "The gateway did not return a workspace.",
+  "The gateway did not return a workspace.": "The gateway did not return a workspace.",
   "Only chat projects can be deleted.": "Only chat projects can be deleted.",
-  "Connect the chat node to delete this project.":
-      "Connect the chat node to delete this project.",
-  "Pair this device before deleting a project.":
-      "Pair this device before deleting a project.",
+  "Connect the chat node to delete this project.": "Connect the chat node to delete this project.",
+  "Pair this device before deleting a project.": "Pair this device before deleting a project.",
   "Deletion is already in progress.": "Deletion is already in progress.",
-  "This workspace's sessions cannot be deleted.":
-      "This workspace's sessions cannot be deleted.",
-  "送出結果不明，請檢查對話；不會自動重送。":
-      "The send result is unknown. Check the conversation; it won't be sent again automatically.",
-  "Message updated, but refreshing failed: {0}":
-      "Message updated, but refreshing failed: {0}",
-  "The keyboard did not provide image data.":
-      "The keyboard did not provide image data.",
+  "This workspace's sessions cannot be deleted.": "This workspace's sessions cannot be deleted.",
+  "送出結果不明，請檢查對話；不會自動重送。": "The send result is unknown. Check the conversation; it won't be sent again automatically.",
+  "Message updated, but refreshing failed: {0}": "Message updated, but refreshing failed: {0}",
+  "The keyboard did not provide image data.": "The keyboard did not provide image data.",
   "Could not read {0}.": "Could not read {0}.",
   "操作未完成，請重試。": "The operation did not finish. Please try again.",
-  "操作未完成，請重新載入後再試。":
-      "The operation did not finish. Reload the page and try again.",
+  "操作未完成，請重新載入後再試。": "The operation did not finish. Reload the page and try again.",
   "Unable to read Git status.": "Unable to read Git status.",
   "Unable to load history.": "Unable to load history.",
   "Unable to load diff.": "Unable to load diff.",
@@ -573,14 +454,11 @@ const englishMessages = <String, String>{
   "Needs you": "Needs you",
   "Add workspace on {0}": "Add workspace on {0}",
   "No workspaces yet.": "No workspaces yet.",
-  "Connect a device to add a workspace.":
-      "Connect a device to add a workspace.",
+  "Connect a device to add a workspace.": "Connect a device to add a workspace.",
   "Ask me every time": "Ask me every time",
-  "Only when the chat read outside content":
-      "Only when the chat read outside content",
+  "Only when the chat read outside content": "Only when the chat read outside content",
   "Never ask": "Never ask",
-  "A prompt injection in content the assistant reads can then start work in your workspaces without asking.":
-      "A prompt injection in content the assistant reads can then start work in your workspaces without asking.",
+  "A prompt injection in content the assistant reads can then start work in your workspaces without asking.": "A prompt injection in content the assistant reads can then start work in your workspaces without asking.",
   "Saving project capabilities…": "Saving project capabilities…",
   "Saving…": "Saving…",
   "Allowed assistant features": "Allowed assistant features",
@@ -590,47 +468,33 @@ const englishMessages = <String, String>{
   "Web search": "Web search",
   "Delegation approval": "Delegation approval",
   "Project capabilities saved.": "Project capabilities saved.",
-  "Applies only while delegation is allowed.":
-      "Applies only while delegation is allowed.",
-  "Outside content: web pages, search, browser, memory search, and delegation reports since your last message.":
-      "Outside content: web pages, search, browser, memory search, and delegation reports since your last message.",
+  "Applies only while delegation is allowed.": "Applies only while delegation is allowed.",
+  "Outside content: web pages, search, browser, memory search, and delegation reports since your last message.": "Outside content: web pages, search, browser, memory search, and delegation reports since your last message.",
   "Device": "Device",
   "Write lease": "Write lease",
   "Free": "Free",
   "Held by “{0}”": "Held by “{0}”",
-  "The project's node is offline: its {0} can be changed once it is back.":
-      "The project's node is offline: its {0} can be changed once it is back.",
+  "The project's node is offline: its {0} can be changed once it is back.": "The project's node is offline: its {0} can be changed once it is back.",
   "Project instructions": "Project instructions",
-  "Instructions for every {0} in this project. Only you can change them: the assistant cannot edit them. They are kept on the project's node, and each {1} keeps the instructions it started with, so a change reaches new {2}s only.":
-      "Instructions for every {0} in this project. Only you can change them: the assistant cannot edit them. They are kept on the project's node, and each {1} keeps the instructions it started with, so a change reaches new {2}s only.",
+  "Instructions for every {0} in this project. Only you can change them: the assistant cannot edit them. They are kept on the project's node, and each {1} keeps the instructions it started with, so a change reaches new {2}s only.": "Instructions for every {0} in this project. Only you can change them: the assistant cannot edit them. They are kept on the project's node, and each {1} keeps the instructions it started with, so a change reaches new {2}s only.",
   "Loading project instructions…": "Loading project instructions…",
-  "Project instructions saved. New {0}s in this project will use them.":
-      "Project instructions saved. New {0}s in this project will use them.",
+  "Project instructions saved. New {0}s in this project will use them.": "Project instructions saved. New {0}s in this project will use them.",
   "Delete project": "Delete project",
-  "Deletes the project, its {0}s and what they wrote to memory. You see what goes and what stays before anything is deleted.":
-      "Deletes the project, its {0}s and what they wrote to memory. You see what goes and what stays before anything is deleted.",
+  "Deletes the project, its {0}s and what they wrote to memory. You see what goes and what stays before anything is deleted.": "Deletes the project, its {0}s and what they wrote to memory. You see what goes and what stays before anything is deleted.",
   "Delete project…": "Delete project…",
-  "Settings are gone with the project's deletion.":
-      "Settings are gone with the project's deletion.",
+  "Settings are gone with the project's deletion.": "Settings are gone with the project's deletion.",
   "Project capabilities": "Project capabilities",
-  "Choose which assistant features this {0} workspace may use. All capabilities are allowed by default. Changes are saved to and enforced by the gateway, not just hidden in this browser.":
-      "Choose which assistant features this {0} workspace may use. All capabilities are allowed by default. Changes are saved to and enforced by the gateway, not just hidden in this browser.",
-  "This is not a sandbox: these settings do not isolate files, shell commands, or network access. They do not revoke data already in a conversation or stop work already running.":
-      "This is not a sandbox: these settings do not isolate files, shell commands, or network access. They do not revoke data already in a conversation or stop work already running.",
+  "Choose which assistant features this {0} workspace may use. All capabilities are allowed by default. Changes are saved to and enforced by the gateway, not just hidden in this browser.": "Choose which assistant features this {0} workspace may use. All capabilities are allowed by default. Changes are saved to and enforced by the gateway, not just hidden in this browser.",
+  "This is not a sandbox: these settings do not isolate files, shell commands, or network access. They do not revoke data already in a conversation or stop work already running.": "This is not a sandbox: these settings do not isolate files, shell commands, or network access. They do not revoke data already in a conversation or stop work already running.",
   "Loading project capabilities…": "Loading project capabilities…",
-  "The workspace's node is offline: its project config can be reviewed once it is back.":
-      "The workspace's node is offline: its project config can be reviewed once it is back.",
+  "The workspace's node is offline: its project config can be reviewed once it is back.": "The workspace's node is offline: its project config can be reviewed once it is back.",
   "Project config": "Project config",
-  "A repository's .pirc/config.json can run hook commands, set environment variables for every command the agent runs, add writable paths, and choose the model new sessions use. The workspace ignores these values until you trust them. If the repository changes them later, they are ignored again until you trust the new values.":
-      "A repository's .pirc/config.json can run hook commands, set environment variables for every command the agent runs, add writable paths, and choose the model new sessions use. The workspace ignores these values until you trust them. If the repository changes them later, they are ignored again until you trust the new values.",
+  "A repository's .pirc/config.json can run hook commands, set environment variables for every command the agent runs, add writable paths, and choose the model new sessions use. The workspace ignores these values until you trust them. If the repository changes them later, they are ignored again until you trust the new values.": "A repository's .pirc/config.json can run hook commands, set environment variables for every command the agent runs, add writable paths, and choose the model new sessions use. The workspace ignores these values until you trust them. If the repository changes them later, they are ignored again until you trust the new values.",
   "Loading project config…": "Loading project config…",
-  "The project config is invalid and is not used: {0}":
-      "The project config is invalid and is not used: {0}",
-  "This workspace's project config sets no hooks, environment, allowed paths or default model.":
-      "This workspace's project config sets no hooks, environment, allowed paths or default model.",
+  "The project config is invalid and is not used: {0}": "The project config is invalid and is not used: {0}",
+  "This workspace's project config sets no hooks, environment, allowed paths or default model.": "This workspace's project config sets no hooks, environment, allowed paths or default model.",
   "Trusted": "Trusted",
-  "Changed since trusted: ignored until you trust it again":
-      "Changed since trusted: ignored until you trust it again",
+  "Changed since trusted: ignored until you trust it again": "Changed since trusted: ignored until you trust it again",
   "Not trusted: ignored": "Not trusted: ignored",
   "Hooks": "Hooks",
   "When a session starts": "When a session starts",
@@ -642,11 +506,9 @@ const englishMessages = <String, String>{
   "Environment": "Environment",
   "Allowed paths": "Allowed paths",
   "Trust": "Trust",
-  "Trusted. New sessions in this workspace use these hooks, environment, paths and default model.":
-      "Trusted. New sessions in this workspace use these hooks, environment, paths and default model.",
+  "Trusted. New sessions in this workspace use these hooks, environment, paths and default model.": "Trusted. New sessions in this workspace use these hooks, environment, paths and default model.",
   "Revoke trust": "Revoke trust",
-  "Trust revoked. New sessions ignore them.":
-      "Trust revoked. New sessions ignore them.",
+  "Trust revoked. New sessions ignore them.": "Trust revoked. New sessions ignore them.",
   "Escape": "Escape",
   "Slash": "Slash",
   "Hyphen": "Hyphen",
@@ -662,55 +524,33 @@ const englishMessages = <String, String>{
   "Arrow right": "Arrow right",
   "Page down": "Page down",
   "History API entry key is invalid.": "History API entry key is invalid.",
-  "History state graph exceeds its limits.":
-      "History state graph exceeds its limits.",
-  "History state integer is out of range.":
-      "History state integer is out of range.",
-  "History state number must be finite.":
-      "History state number must be finite.",
-  "History state graph contains a cycle.":
-      "History state graph contains a cycle.",
-  "History state graph keys must be strings.":
-      "History state graph keys must be strings.",
-  "History state graph is not JSON data.":
-      "History state graph is not JSON data.",
-  "History state graph must be a JSON object.":
-      "History state graph must be a JSON object.",
-  "History state graph exceeds its size limit.":
-      "History state graph exceeds its size limit.",
+  "History state graph exceeds its limits.": "History state graph exceeds its limits.",
+  "History state integer is out of range.": "History state integer is out of range.",
+  "History state number must be finite.": "History state number must be finite.",
+  "History state graph contains a cycle.": "History state graph contains a cycle.",
+  "History state graph keys must be strings.": "History state graph keys must be strings.",
+  "History state graph is not JSON data.": "History state graph is not JSON data.",
+  "History state graph must be a JSON object.": "History state graph must be a JSON object.",
+  "History state graph exceeds its size limit.": "History state graph exceeds its size limit.",
   "The document window is closed.": "The document window is closed.",
   "Invalid source scroll snapshot.": "Invalid source scroll snapshot.",
-  "History API document is no longer active.":
-      "History API document is no longer active.",
-  "History API revision is out of sequence.":
-      "History API revision is out of sequence.",
+  "History API document is no longer active.": "History API document is no longer active.",
+  "History API revision is out of sequence.": "History API revision is out of sequence.",
   "Unsupported History API mutation.": "Unsupported History API mutation.",
-  "Invalid history scroll restoration mode.":
-      "Invalid history scroll restoration mode.",
-  "History API entry key is already in use.":
-      "History API entry key is already in use.",
-  "replaceState cannot change its entry key.":
-      "replaceState cannot change its entry key.",
-  "History API URL exceeds its size limit.":
-      "History API URL exceeds its size limit.",
+  "Invalid history scroll restoration mode.": "Invalid history scroll restoration mode.",
+  "History API entry key is already in use.": "History API entry key is already in use.",
+  "replaceState cannot change its entry key.": "replaceState cannot change its entry key.",
+  "History API URL exceeds its size limit.": "History API URL exceeds its size limit.",
   "History API URL is invalid.": "History API URL is invalid.",
-  "Blob history API URLs may only change the fragment.":
-      "Blob history API URLs may only change the fragment.",
-  "History API URL scheme is unsupported.":
-      "History API URL scheme is unsupported.",
-  "History API URL must remain same-origin.":
-      "History API URL must remain same-origin.",
-  "Blob navigation source is unavailable.":
-      "Blob navigation source is unavailable.",
-  "Unsupported final document method: {0}":
-      "Unsupported final document method: {0}",
-  "連線已變更，請回到 App 重新開啟內容。":
-      "The connection changed. Return to the app and reopen the content.",
-  "Editing is unavailable. Wait for the session to be idle and take control.":
-      "Editing is unavailable. Wait for the session to be idle and take control.",
+  "Blob history API URLs may only change the fragment.": "Blob history API URLs may only change the fragment.",
+  "History API URL scheme is unsupported.": "History API URL scheme is unsupported.",
+  "History API URL must remain same-origin.": "History API URL must remain same-origin.",
+  "Blob navigation source is unavailable.": "Blob navigation source is unavailable.",
+  "Unsupported final document method: {0}": "Unsupported final document method: {0}",
+  "連線已變更，請回到 App 重新開啟內容。": "The connection changed. Return to the app and reopen the content.",
+  "Editing is unavailable. Wait for the session to be idle and take control.": "Editing is unavailable. Wait for the session to be idle and take control.",
   "Edit message": "Edit message",
-  "Saving creates a new branch and regenerates the response. Files and tool actions are not rolled back. Attachments are kept.":
-      "Saving creates a new branch and regenerates the response. Files and tool actions are not rolled back. Attachments are kept.",
+  "Saving creates a new branch and regenerates the response. Files and tool actions are not rolled back. Attachments are kept.": "Saving creates a new branch and regenerates the response. Files and tool actions are not rolled back. Attachments are kept.",
   "Save and regenerate": "Save and regenerate",
   "Thinking…": "Thinking…",
   "Reasoning redacted": "Reasoning redacted",
@@ -733,121 +573,86 @@ const englishMessages = <String, String>{
   "My project": "My project",
   "Existing directory on that device": "Existing directory on that device",
   "~/projects/my-project": "~/projects/my-project",
-  "A project groups related chats. The assistant keeps its files for you; no folder to pick.":
-      "A project groups related chats. The assistant keeps its files for you; no folder to pick.",
-  "Choose an existing folder inside that device’s home directory. No files or folders will be created.":
-      "Choose an existing folder inside that device’s home directory. No files or folders will be created.",
-  "Each {0} gets its own folder on that device; no folder to pick.":
-      "Each {0} gets its own folder on that device; no folder to pick.",
-  "No device can host workspaces: the chat node holds chats and projects only.":
-      "No device can host workspaces: the chat node holds chats and projects only.",
+  "A project groups related chats. The assistant keeps its files for you; no folder to pick.": "A project groups related chats. The assistant keeps its files for you; no folder to pick.",
+  "Choose an existing folder inside that device’s home directory. No files or folders will be created.": "Choose an existing folder inside that device’s home directory. No files or folders will be created.",
+  "Each {0} gets its own folder on that device; no folder to pick.": "Each {0} gets its own folder on that device; no folder to pick.",
+  "No device can host workspaces: the chat node holds chats and projects only.": "No device can host workspaces: the chat node holds chats and projects only.",
   "Create a session": "Create a session",
   "New work": "New work",
   "Create session": "Create session",
   "No workspace available": "No workspace available",
   "Choose a workspace": "Choose a workspace",
-  "The session is named from your first message and stays active on the host when this browser disconnects.":
-      "The session is named from your first message and stays active on the host when this browser disconnects.",
-  "The gateway sent an invalid project deletion preview. Reload it before deleting.":
-      "The gateway sent an invalid project deletion preview. Reload it before deleting.",
-  "Memory changed since this was shown. Review it again.":
-      "Memory changed since this was shown. Review it again.",
+  "The session is named from your first message and stays active on the host when this browser disconnects.": "The session is named from your first message and stays active on the host when this browser disconnects.",
+  "The gateway sent an invalid project deletion preview. Reload it before deleting.": "The gateway sent an invalid project deletion preview. Reload it before deleting.",
+  "Memory changed since this was shown. Review it again.": "Memory changed since this was shown. Review it again.",
   "Keep as is": "Keep as is",
   "New text": "New text",
   "Use at most 1000 characters.": "Use at most 1000 characters.",
   "Loading what the project holds…": "Loading what the project holds…",
-  "An earlier deletion of this project did not finish. Deleting again completes it; entries you kept come up for a decision again.":
-      "An earlier deletion of this project did not finish. Deleting again completes it; entries you kept come up for a decision again.",
+  "An earlier deletion of this project did not finish. Deleting again completes it; entries you kept come up for a decision again.": "An earlier deletion of this project did not finish. Deleting again completes it; entries you kept come up for a decision again.",
   "Deleted": "Deleted",
-  "{0}, with their messages, working files, uploads and private transcripts":
-      "{0}, with their messages, working files, uploads and private transcripts",
-  "The project's instructions, files, capability settings{0}":
-      "The project's instructions, files, capability settings{0}",
+  "{0}, with their messages, working files, uploads and private transcripts": "{0}, with their messages, working files, uploads and private transcripts",
+  "The project's instructions, files, capability settings{0}": "The project's instructions, files, capability settings{0}",
   "{0} that run here: {1}": "{0} that run here: {1}",
-  "The records of {0} its chats started":
-      "The records of {0} its chats started",
+  "The records of {0} its chats started": "The records of {0} its chats started",
   "{0} written only here:": "{0} written only here:",
-  "The project's changes to {0}, which go back to their earlier text:":
-      "The project's changes to {0}, which go back to their earlier text:",
+  "The project's changes to {0}, which go back to their earlier text:": "The project's changes to {0}, which go back to their earlier text:",
   "Needs your decision": "Needs your decision",
-  "These entries mix text from this project with text from other chats, which cannot be separated automatically.":
-      "These entries mix text from this project with text from other chats, which cannot be separated automatically.",
+  "These entries mix text from this project with text from other chats, which cannot be separated automatically.": "These entries mix text from this project with text from other chats, which cannot be separated automatically.",
   "Not deleted": "Not deleted",
-  "Schedules its chats created in other workspaces: {0}":
-      "Schedules its chats created in other workspaces: {0}",
-  "Work done by delegated tasks in other workspaces: their sessions, files, commits and the workspace memory they wrote":
-      "Work done by delegated tasks in other workspaces: their sessions, files, commits and the workspace memory they wrote",
-  "Copies in other chats (what they already read, and anything they wrote in their own words)":
-      "Copies in other chats (what they already read, and anything they wrote in their own words)",
-  "Files uploaded before this version of pirc, which do not record their project":
-      "Files uploaded before this version of pirc, which do not record their project",
-  "Backups, logs and what model providers keep":
-      "Backups, logs and what model providers keep",
-  "Forgotten text is not blocked: other chats may write it again. To keep a fact from coming back, forget it in Settings → Memory.":
-      "Forgotten text is not blocked: other chats may write it again. To keep a fact from coming back, forget it in Settings → Memory.",
+  "Schedules its chats created in other workspaces: {0}": "Schedules its chats created in other workspaces: {0}",
+  "Work done by delegated tasks in other workspaces: their sessions, files, commits and the workspace memory they wrote": "Work done by delegated tasks in other workspaces: their sessions, files, commits and the workspace memory they wrote",
+  "Copies in other chats (what they already read, and anything they wrote in their own words)": "Copies in other chats (what they already read, and anything they wrote in their own words)",
+  "Files uploaded before this version of pirc, which do not record their project": "Files uploaded before this version of pirc, which do not record their project",
+  "Backups, logs and what model providers keep": "Backups, logs and what model providers keep",
+  "Forgotten text is not blocked: other chats may write it again. To keep a fact from coming back, forget it in Settings → Memory.": "Forgotten text is not blocked: other chats may write it again. To keep a fact from coming back, forget it in Settings → Memory.",
   "Delete project “{0}”?": "Delete project “{0}”?",
   "Deleting…": "Deleting…",
   "Enter a number.": "Enter a number.",
-  "Enter a value greater than or equal to 1.":
-      "Enter a value greater than or equal to 1.",
+  "Enter a value greater than or equal to 1.": "Enter a value greater than or equal to 1.",
   "Enter a whole number.": "Enter a whole number.",
   "Enter a URL.": "Enter a URL.",
   "Enter a valid URL.": "Enter a valid URL.",
   "分享": "Share",
   "閱讀版本": "Read version",
   "複製": "Copy",
-  "仍在生成 · 保留目前閱讀內容，完成後可切換新版":
-      "Still generating · Keep the current content in view and switch to the new version when it is ready",
-  "生成遇到問題 · 目前顯示最後可讀內容":
-      "Generation encountered a problem · Showing the latest readable content",
+  "仍在生成 · 保留目前閱讀內容，完成後可切換新版": "Still generating · Keep the current content in view and switch to the new version when it is ready",
+  "生成遇到問題 · 目前顯示最後可讀內容": "Generation encountered a problem · Showing the latest readable content",
   "This browser": "This browser",
   "Client ID": "Client ID",
   "App options": "App options",
   "Frozen": "Frozen",
   "Refresh": "Refresh",
   "Loading context…": "Loading context…",
-  "Saved snapshot{0}. This is the last request, not current configuration.":
-      "Saved snapshot{0}. This is the last request, not current configuration.",
+  "Saved snapshot{0}. This is the last request, not current configuration.": "Saved snapshot{0}. This is the last request, not current configuration.",
   "Context usage: {0}": "Context usage: {0}",
-  "Estimated input: {0} · Reported input: {1}\nContext window: {2}":
-      "Estimated input: {0} · Reported input: {1}\nContext window: {2}",
-  "Bucket sizes are estimates{0}. Memory is observations/reflections within messages, not an extra copy. System memory stays in system.":
-      "Bucket sizes are estimates{0}. Memory is observations/reflections within messages, not an extra copy. System memory stays in system.",
+  "Estimated input: {0} · Reported input: {1}\nContext window: {2}": "Estimated input: {0} · Reported input: {1}\nContext window: {2}",
+  "Bucket sizes are estimates{0}. Memory is observations/reflections within messages, not an extra copy. System memory stays in system.": "Bucket sizes are estimates{0}. Memory is observations/reflections within messages, not an extra copy. System memory stays in system.",
   "System sections": "System sections",
   "Copy all": "Copy all",
   "Copied system prompt.": "Copied system prompt.",
-  "Unable to copy. Select the expanded section text instead.":
-      "Unable to copy. Select the expanded section text instead.",
+  "Unable to copy. Select the expanded section text instead.": "Unable to copy. Select the expanded section text instead.",
   "Unavailable": "Unavailable",
-  "Soul defines the assistant's persona; Chat rules apply to all chats. Files stay on the chat node. Changes apply at the next agent start (new chats or restarted agents), not to an already running agent. Empty Soul restores the built-in identity.":
-      "Soul defines the assistant's persona; Chat rules apply to all chats. Files stay on the chat node. Changes apply at the next agent start (new chats or restarted agents), not to an already running agent. Empty Soul restores the built-in identity.",
+  "Soul defines the assistant's persona; Chat rules apply to all chats. Files stay on the chat node. Changes apply at the next agent start (new chats or restarted agents), not to an already running agent. Empty Soul restores the built-in identity.": "Soul defines the assistant's persona; Chat rules apply to all chats. Files stay on the chat node. Changes apply at the next agent start (new chats or restarted agents), not to an already running agent. Empty Soul restores the built-in identity.",
   "Assistant": "Assistant",
-  "Chats no longer read AGENTS.md: move chat-relevant rules into CHAT.md.":
-      "Chats no longer read AGENTS.md: move chat-relevant rules into CHAT.md.",
+  "Chats no longer read AGENTS.md: move chat-relevant rules into CHAT.md.": "Chats no longer read AGENTS.md: move chat-relevant rules into CHAT.md.",
   "Chat node: {0} — {1}": "Chat node: {0} — {1}",
   "Chat node: ": "Chat node: ",
-  "No chat node is bound. Start a chat node to register it.":
-      "No chat node is bound. Start a chat node to register it.",
-  "Stop the old chat node before releasing it, or it may reconnect and claim the binding again. Releasing disconnects it; the next chat node to register will be bound.":
-      "Stop the old chat node before releasing it, or it may reconnect and claim the binding again. Releasing disconnects it; the next chat node to register will be bound.",
+  "No chat node is bound. Start a chat node to register it.": "No chat node is bound. Start a chat node to register it.",
+  "Stop the old chat node before releasing it, or it may reconnect and claim the binding again. Releasing disconnects it; the next chat node to register will be bound.": "Stop the old chat node before releasing it, or it may reconnect and claim the binding again. Releasing disconnects it; the next chat node to register will be bound.",
   "Confirm release": "Confirm release",
   "Release chat node binding": "Release chat node binding",
   "Soul": "Soul",
   "Chat rules": "Chat rules",
-  "Saved. Applies at the next chat agent start.":
-      "Saved. Applies at the next chat agent start.",
-  "Managed by Nix: edit services.pirc.{0}.":
-      "Managed by Nix: edit services.pirc.{0}.",
-  "Managed symlink: edit its source file.":
-      "Managed symlink: edit its source file.",
-  "Read-only: the node does not have permission to edit this file.":
-      "Read-only: the node does not have permission to edit this file.",
+  "Saved. Applies at the next chat agent start.": "Saved. Applies at the next chat agent start.",
+  "Managed by Nix: edit services.pirc.{0}.": "Managed by Nix: edit services.pirc.{0}.",
+  "Managed symlink: edit its source file.": "Managed symlink: edit its source file.",
+  "Read-only: the node does not have permission to edit this file.": "Read-only: the node does not have permission to edit this file.",
   "{0} / {1} characters": "{0} / {1} characters",
   "Revert": "Revert",
   "Running": "Running",
   "Failed": "Failed",
-  "A write was blocked by another session":
-      "A write was blocked by another session",
+  "A write was blocked by another session": "A write was blocked by another session",
   "Command": "Command",
   "Content": "Content",
   "Edits": "Edits",
@@ -859,32 +664,24 @@ const englishMessages = <String, String>{
   "Waiting for output…": "Waiting for output…",
   "No output returned.": "No output returned.",
   "Write blocked. ": "Write blocked. ",
-  "“{0}” is writing to {1} right now. The agent was told to wait until that run finishes.":
-      "“{0}” is writing to {1} right now. The agent was told to wait until that run finishes.",
-  "Scheduled runs, sessions waiting for your answer, finished delegations and memory changes to approve. Each schedule chooses which of its runs notify.":
-      "Scheduled runs, sessions waiting for your answer, finished delegations and memory changes to approve. Each schedule chooses which of its runs notify.",
+  "“{0}” is writing to {1} right now. The agent was told to wait until that run finishes.": "“{0}” is writing to {1} right now. The agent was told to wait until that run finishes.",
+  "Scheduled runs, sessions waiting for your answer, finished delegations and memory changes to approve. Each schedule chooses which of its runs notify.": "Scheduled runs, sessions waiting for your answer, finished delegations and memory changes to approve. Each schedule chooses which of its runs notify.",
   "Checking notifications…": "Checking notifications…",
-  "No UnifiedPush distributor is installed. Install one (ntfy, for example), then come back.":
-      "No UnifiedPush distributor is installed. Install one (ntfy, for example), then come back.",
-  "Notifications are blocked for this app. Allow them in Android settings.":
-      "Notifications are blocked for this app. Allow them in Android settings.",
+  "No UnifiedPush distributor is installed. Install one (ntfy, for example), then come back.": "No UnifiedPush distributor is installed. Install one (ntfy, for example), then come back.",
+  "Notifications are blocked for this app. Allow them in Android settings.": "Notifications are blocked for this app. Allow them in Android settings.",
   "Allow notifications": "Allow notifications",
   "This phone gets notifications.": "This phone gets notifications.",
-  "Registering this phone for notifications…":
-      "Registering this phone for notifications…",
+  "Registering this phone for notifications…": "Registering this phone for notifications…",
   "Turn off": "Turn off",
-  "This phone does not get notifications.":
-      "This phone does not get notifications.",
+  "This phone does not get notifications.": "This phone does not get notifications.",
   "Turn on": "Turn on",
-  "Send a notification to every place above.":
-      "Send a notification to every place above.",
+  "Send a notification to every place above.": "Send a notification to every place above.",
   "Send a test": "Send a test",
   "Sent to {0} of {1}.": "Sent to {0} of {1}.",
   "Back": "Back",
   "Refresh output": "Refresh output",
   "No output yet.": "No output yet.",
-  "The agent is not running. Background tasks, subagents and teammates appear here while it is.":
-      "The agent is not running. Background tasks, subagents and teammates appear here while it is.",
+  "The agent is not running. Background tasks, subagents and teammates appear here while it is.": "The agent is not running. Background tasks, subagents and teammates appear here while it is.",
   "Background tasks": "Background tasks",
   "No background tasks.": "No background tasks.",
   "Subagents": "Subagents",
@@ -917,11 +714,9 @@ const englishMessages = <String, String>{
   "Close terminal {0}": "Close terminal {0}",
   "New terminal": "New terminal",
   "Take control to open a terminal": "Take control to open a terminal",
-  "Run commands in this workspace. The shell runs as the gateway’s account, just like the agent’s own tools.":
-      "Run commands in this workspace. The shell runs as the gateway’s account, just like the agent’s own tools.",
+  "Run commands in this workspace. The shell runs as the gateway’s account, just like the agent’s own tools.": "Run commands in this workspace. The shell runs as the gateway’s account, just like the agent’s own tools.",
   "Open terminal": "Open terminal",
-  "Take control of the session to open one.":
-      "Take control of the session to open one.",
+  "Take control of the session to open one.": "Take control of the session to open one.",
   "Terminal input": "Terminal input",
   "Background jobs": "Background jobs",
   "{0}. Show background jobs": "{0}. Show background jobs",
@@ -939,68 +734,50 @@ const englishMessages = <String, String>{
   "Unread": "Unread",
   "Delete chat?": "Delete chat?",
   "Delete chat and memories": "Delete chat and memories",
-  "“{0}” will be permanently deleted, including its messages and chat files.":
-      "“{0}” will be permanently deleted, including its messages and chat files.",
-  "This also deletes USER memories and MEMORY notes created by this chat, and its pending memory proposals.":
-      "This also deletes USER memories and MEMORY notes created by this chat, and its pending memory proposals.",
-  "Memories created by other chats are kept.":
-      "Memories created by other chats are kept.",
-  "Copies already present in other chats are not erased. Any running reply will stop. This cannot be undone.":
-      "Copies already present in other chats are not erased. Any running reply will stop. This cannot be undone.",
+  "“{0}” will be permanently deleted, including its messages and chat files.": "“{0}” will be permanently deleted, including its messages and chat files.",
+  "This also deletes USER memories and MEMORY notes created by this chat, and its pending memory proposals.": "This also deletes USER memories and MEMORY notes created by this chat, and its pending memory proposals.",
+  "Memories created by other chats are kept.": "Memories created by other chats are kept.",
+  "Copies already present in other chats are not erased. Any running reply will stop. This cannot be undone.": "Copies already present in other chats are not erased. Any running reply will stop. This cannot be undone.",
   "Linked workspaces saved.": "Linked workspaces saved.",
   "removed from its device": "removed from its device",
   "Linked workspaces": "Linked workspaces",
-  "The repositories this project is about. Its assistant lists them first, hands a task to the linked workspace when only one is linked and the task names none, and searches their notes (and those of other clones of the same repository) first.":
-      "The repositories this project is about. Its assistant lists them first, hands a task to the linked workspace when only one is linked and the task names none, and searches their notes (and those of other clones of the same repository) first.",
-  "A link is not a permission: delegations to linked and unlinked workspaces alike follow the project's Delegation approval setting, and the assistant can still reach workspaces that are not linked. Chats already open keep the workspace list they started with.":
-      "A link is not a permission: delegations to linked and unlinked workspaces alike follow the project's Delegation approval setting, and the assistant can still reach workspaces that are not linked. Chats already open keep the workspace list they started with.",
+  "The repositories this project is about. Its assistant lists them first, hands a task to the linked workspace when only one is linked and the task names none, and searches their notes (and those of other clones of the same repository) first.": "The repositories this project is about. Its assistant lists them first, hands a task to the linked workspace when only one is linked and the task names none, and searches their notes (and those of other clones of the same repository) first.",
+  "A link is not a permission: delegations to linked and unlinked workspaces alike follow the project's Delegation approval setting, and the assistant can still reach workspaces that are not linked. Chats already open keep the workspace list they started with.": "A link is not a permission: delegations to linked and unlinked workspaces alike follow the project's Delegation approval setting, and the assistant can still reach workspaces that are not linked. Chats already open keep the workspace list they started with.",
   "Loading linked workspaces…": "Loading linked workspaces…",
   "Workspaces": "Workspaces",
   "No directory workspaces yet.": "No directory workspaces yet.",
   "Output unavailable. {0}": "Output unavailable. {0}",
   "Could not stop the task. {0}": "Could not stop the task. {0}",
-  "Login status is unavailable. Start a new login to retry.":
-      "Login status is unavailable. Start a new login to retry.",
-  "Could not confirm cancellation. This login will expire on the gateway.":
-      "Could not confirm cancellation. This login will expire on the gateway.",
-  "Could not open the authorization page. Copy the link and open it in a browser.":
-      "Could not open the authorization page. Copy the link and open it in a browser.",
+  "Login status is unavailable. Start a new login to retry.": "Login status is unavailable. Start a new login to retry.",
+  "Could not confirm cancellation. This login will expire on the gateway.": "Could not confirm cancellation. This login will expire on the gateway.",
+  "Could not open the authorization page. Copy the link and open it in a browser.": "Could not open the authorization page. Copy the link and open it in a browser.",
   "{0} · {1} known models": "{0} · {1} known models",
   "Reconnect": "Reconnect",
   "Log in": "Log in",
   "Log out {0}": "Log out {0}",
-  "Logging in enables the policies for all known GitHub Copilot models in your account.":
-      "Logging in enables the policies for all known GitHub Copilot models in your account.",
+  "Logging in enables the policies for all known GitHub Copilot models in your account.": "Logging in enables the policies for all known GitHub Copilot models in your account.",
   "I agree, log in": "I agree, log in",
   "Not now": "Not now",
-  "Connected. {0} models are now available.":
-      "Connected. {0} models are now available.",
-  "The login timed out before it was completed.":
-      "The login timed out before it was completed.",
+  "Connected. {0} models are now available.": "Connected. {0} models are now available.",
+  "The login timed out before it was completed.": "The login timed out before it was completed.",
   "The login failed.": "The login failed.",
   "Try again": "Try again",
   "Preparing the login…": "Preparing the login…",
   "1. Copy your one-time code": "1. Copy your one-time code",
   "Copy code": "Copy code",
-  "2. Enter it on the authorization page":
-      "2. Enter it on the authorization page",
-  "The provider returned an unsupported authorization URL.":
-      "The provider returned an unsupported authorization URL.",
+  "2. Enter it on the authorization page": "2. Enter it on the authorization page",
+  "The provider returned an unsupported authorization URL.": "The provider returned an unsupported authorization URL.",
   "Open authorization page": "Open authorization page",
-  "Sign in on the authorization page. If this browser runs on the gateway's machine, the login finishes by itself. Otherwise the browser ends on a localhost page that may not load. Copy that page's full address and paste it below.":
-      "Sign in on the authorization page. If this browser runs on the gateway's machine, the login finishes by itself. Otherwise the browser ends on a localhost page that may not load. Copy that page's full address and paste it below.",
-  "Waiting for authorization · expires in {0} minute{1} · closing settings cancels it":
-      "Waiting for authorization · expires in {0} minute{1} · closing settings cancels it",
+  "Sign in on the authorization page. If this browser runs on the gateway's machine, the login finishes by itself. Otherwise the browser ends on a localhost page that may not load. Copy that page's full address and paste it below.": "Sign in on the authorization page. If this browser runs on the gateway's machine, the login finishes by itself. Otherwise the browser ends on a localhost page that may not load. Copy that page's full address and paste it below.",
+  "Waiting for authorization · expires in {0} minute{1} · closing settings cancels it": "Waiting for authorization · expires in {0} minute{1} · closing settings cancels it",
   "Cancel login": "Cancel login",
   "Choose an option": "Choose an option",
   "Finish login": "Finish login",
   "Continue": "Continue",
   "Skip selection": "Skip selection",
   "Subscription accounts": "Subscription accounts",
-  "Sign in with an existing subscription. pi-ai's built-in model list is not a verification of your account's model access or service policy.":
-      "Sign in with an existing subscription. pi-ai's built-in model list is not a verification of your account's model access or service policy.",
-  "Log out removes this gateway's saved credentials and prevents new requests. It does not revoke your account upstream or recall content already sent.":
-      "Log out removes this gateway's saved credentials and prevents new requests. It does not revoke your account upstream or recall content already sent.",
+  "Sign in with an existing subscription. pi-ai's built-in model list is not a verification of your account's model access or service policy.": "Sign in with an existing subscription. pi-ai's built-in model list is not a verification of your account's model access or service policy.",
+  "Log out removes this gateway's saved credentials and prevents new requests. It does not revoke your account upstream or recall content already sent.": "Log out removes this gateway's saved credentials and prevents new requests. It does not revoke your account upstream or recall content already sent.",
   "started automatically": "started automatically",
   "Delegated to {0} — {1}": "Delegated to {0} — {1}",
   "Active delegations": "Active delegations",
@@ -1013,8 +790,7 @@ const englishMessages = <String, String>{
   "Not sandboxed{0}": "Not sandboxed{0}",
   "Hide side panel": "Hide side panel",
   "Show side panel": "Show side panel",
-  "You’re viewing this session. {0} currently has control.":
-      "You’re viewing this session. {0} currently has control.",
+  "You’re viewing this session. {0} currently has control.": "You’re viewing this session. {0} currently has control.",
   "Dismiss error": "Dismiss error",
   "Backspace": "Backspace",
   "Enter": "Enter",
@@ -1031,8 +807,7 @@ const englishMessages = <String, String>{
   "Previous step": "Previous step",
   "Next step": "Next step",
   "Browser at this step": "Browser at this step",
-  "Install Chromium on the node or set PIRC_BROWSER_EXECUTABLE.":
-      "Install Chromium on the node or set PIRC_BROWSER_EXECUTABLE.",
+  "Install Chromium on the node or set PIRC_BROWSER_EXECUTABLE.": "Install Chromium on the node or set PIRC_BROWSER_EXECUTABLE.",
   "The agent needs you: ": "The agent needs you: ",
   "Forward": "Forward",
   "Reload": "Reload",
@@ -1042,32 +817,25 @@ const englishMessages = <String, String>{
   "Drag objects · tap to type": "Drag objects · tap to type",
   "Swipe to scroll · tap to type": "Swipe to scroll · tap to type",
   "Waiting for the first frame…": "Waiting for the first frame…",
-  "The agent opens a browser when it uses web tools. You can watch it here, take over to log in or fill forms, and record videos.":
-      "The agent opens a browser when it uses web tools. You can watch it here, take over to log in or fill forms, and record videos.",
+  "The agent opens a browser when it uses web tools. You can watch it here, take over to log in or fill forms, and record videos.": "The agent opens a browser when it uses web tools. You can watch it here, take over to log in or fill forms, and record videos.",
   "Type into the browser": "Type into the browser",
   "Browser activity": "Browser activity",
   "Recordings": "Recordings",
   "Activity": "Activity",
   "Nothing yet.": "Nothing yet.",
-  "無法開啟相機，請重試或返回貼上配對連結。":
-      "Unable to open the camera. Try again or go back and paste the pairing link.",
-  "這不是 pirc 配對 QR code，請掃描網頁「設定 → 裝置」顯示的配對碼。":
-      "This is not a pirc pairing QR code. Scan the pairing code shown under “Settings → Devices” on the web.",
+  "無法開啟相機，請重試或返回貼上配對連結。": "Unable to open the camera. Try again or go back and paste the pairing link.",
+  "這不是 pirc 配對 QR code，請掃描網頁「設定 → 裝置」顯示的配對碼。": "This is not a pirc pairing QR code. Scan the pairing code shown under “Settings → Devices” on the web.",
   "需要相機權限才能掃描": "Camera permission is required to scan.",
   "無法開啟相機": "Unable to open the camera.",
-  "只在掃描配對碼時使用相機。你也可以返回並貼上配對連結。":
-      "The camera is used only to scan pairing codes. You can also go back and paste the pairing link.",
-  "請確認相機可用，或返回並貼上配對連結。":
-      "Make sure the camera is available, or go back and paste the pairing link.",
+  "只在掃描配對碼時使用相機。你也可以返回並貼上配對連結。": "The camera is used only to scan pairing codes. You can also go back and paste the pairing link.",
+  "請確認相機可用，或返回並貼上配對連結。": "Make sure the camera is available, or go back and paste the pairing link.",
   "重試": "Retry",
   "前往系統設定": "Open system settings",
   "掃描配對碼": "Scan pairing code",
   "取消掃描": "Cancel scan",
-  "無法辨識配對碼，請重新對準。":
-      "Could not recognize the pairing code. Reposition it and try again.",
+  "無法辨識配對碼，請重新對準。": "Could not recognize the pairing code. Reposition it and try again.",
   "正在開啟相機…": "Opening camera…",
-  "將網頁「設定 → 裝置」的 QR code 放入畫面。":
-      "Point the web QR code under “Settings → Devices” at the frame.",
+  "將網頁「設定 → 裝置」的 QR code 放入畫面。": "Point the web QR code under “Settings → Devices” at the frame.",
   "返回貼上配對連結": "Go back to paste the pairing link.",
   "Mg": "Mg",
   "目前的 App 頁面": "Current app page",
@@ -1103,65 +871,51 @@ const englishMessages = <String, String>{
   "Showing the first 1 MB.": "Showing the first 1 MB.",
   "Unable to preview {0}.": "Unable to preview {0}.",
   "Terminals are unavailable.": "Terminals are unavailable.",
-  "Take control of the session to open a terminal.":
-      "Take control of the session to open a terminal.",
+  "Take control of the session to open a terminal.": "Take control of the session to open a terminal.",
   "Unable to open a terminal.": "Unable to open a terminal.",
-  "Take control of the session to close a terminal.":
-      "Take control of the session to close a terminal.",
+  "Take control of the session to close a terminal.": "Take control of the session to close a terminal.",
   "Unable to close the terminal.": "Unable to close the terminal.",
   "not found": "not found",
   "Reconnecting…": "Reconnecting…",
   "This terminal no longer exists.": "This terminal no longer exists.",
-  "Take control of the session to type here.":
-      "Take control of the session to type here.",
-  "Unable to check management access. Try again.":
-      "Unable to check management access. Try again.",
-  "Unable to request browser approval. Try again.":
-      "Unable to request browser approval. Try again.",
-  "Unable to open your browser. Try again.":
-      "Unable to open your browser. Try again.",
-  "Unable to check approval status. Try again.":
-      "Unable to check approval status. Try again.",
-  "Access was cleared here, but the gateway could not confirm revocation.":
-      "Access was cleared here, but the gateway could not confirm revocation.",
+  "Take control of the session to type here.": "Take control of the session to type here.",
+  "Unable to check management access. Try again.": "Unable to check management access. Try again.",
+  "Unable to request browser approval. Try again.": "Unable to request browser approval. Try again.",
+  "Unable to open your browser. Try again.": "Unable to open your browser. Try again.",
+  "Unable to check approval status. Try again.": "Unable to check approval status. Try again.",
+  "Access was cleared here, but the gateway could not confirm revocation.": "Access was cleared here, but the gateway could not confirm revocation.",
   "model backends": "model backends",
   "paired devices": "paired devices",
   "management settings": "management settings",
   "Paired devices": "Paired devices",
   "Management settings": "Management settings",
   "Browser management access": "Browser management access",
-  "Approve this app in your browser to manage {0}. Access lasts 15 minutes.":
-      "Approve this app in your browser to manage {0}. Access lasts 15 minutes.",
+  "Approve this app in your browser to manage {0}. Access lasts 15 minutes.": "Approve this app in your browser to manage {0}. Access lasts 15 minutes.",
   "Checking management access…": "Checking management access…",
   "Waiting for approval for {0}.": "Waiting for approval for {0}.",
-  "Waiting for approval in your browser.":
-      "Waiting for approval in your browser.",
+  "Waiting for approval in your browser.": "Waiting for approval in your browser.",
   "Request expires in {0}.": "Request expires in {0}.",
   "Opening browser…": "Opening browser…",
   "Open browser": "Open browser",
   "Checking…": "Checking…",
   "Check status": "Check status",
   "Cancel request": "Cancel request",
-  "Current access covers {0}. This page requires {1}.":
-      "Current access covers {0}. This page requires {1}.",
+  "Current access covers {0}. This page requires {1}.": "Current access covers {0}. This page requires {1}.",
   "Management access is active.": "Management access is active.",
   "Management access expires in {0}.": "Management access expires in {0}.",
   "Revoking…": "Revoking…",
   "Revoke access": "Revoke access",
   "Requesting…": "Requesting…",
   "Request additional access": "Request additional access",
-  "The approval request expired or management access ended.":
-      "The approval request expired or management access ended.",
+  "The approval request expired or management access ended.": "The approval request expired or management access ended.",
   "Request again": "Request again",
   "Request browser approval": "Request browser approval",
-  "Prompts that run by themselves at set times, each in a new session of their workspace. Nobody watches a run live: read its final message here or open its session. Runs the gateway could not start on time wait for you to allow them.":
-      "Prompts that run by themselves at set times, each in a new session of their workspace. Nobody watches a run live: read its final message here or open its session. Runs the gateway could not start on time wait for you to allow them.",
+  "Prompts that run by themselves at set times, each in a new session of their workspace. Nobody watches a run live: read its final message here or open its session. Runs the gateway could not start on time wait for you to allow them.": "Prompts that run by themselves at set times, each in a new session of their workspace. Nobody watches a run live: read its final message here or open its session. Runs the gateway could not start on time wait for you to allow them.",
   "Missed": "Missed",
   "Skipped": "Skipped",
   "Dismissed": "Dismissed",
   "Every run": "Every run",
-  "Only when it fails, is missed or needs me":
-      "Only when it fails, is missed or needs me",
+  "Only when it fails, is missed or needs me": "Only when it fails, is missed or needs me",
   "Never": "Never",
   "Every hour": "Every hour",
   "Every day at 09:00": "Every day at 09:00",
@@ -1192,24 +946,16 @@ const englishMessages = <String, String>{
   "權限與快速回應": "Permissions and quick replies",
   "讓重要的回應找得到你": "Stay on top of important replies",
   "依照你的使用方式設定": "Set it up for how you use it",
-  "通知和快速回應浮窗只在使用相關功能時需要。你可以現在開啟，也可以先開始使用，稍後再到設定調整。":
-      "Notifications and quick reply bubbles are needed only when you use those features. You can enable them now, or get started and adjust them later in settings.",
-  "只開啟你會使用的功能。系統權限可隨時從 Android 設定修改。":
-      "Enable only the features you plan to use. You can change system permissions anytime in Android settings.",
+  "通知和快速回應浮窗只在使用相關功能時需要。你可以現在開啟，也可以先開始使用，稍後再到設定調整。": "Notifications and quick reply bubbles are needed only when you use those features. You can enable them now, or get started and adjust them later in settings.",
+  "只開啟你會使用的功能。系統權限可隨時從 Android 設定修改。": "Enable only the features you plan to use. You can change system permissions anytime in Android settings.",
   "通知": "Notifications",
-  "此 App 可用通知提醒你工作完成、執行失敗，或 agent 等待你回覆。":
-      "This app can notify you when work is done, a run fails, or the agent is waiting for your reply.",
-  "未開啟時，仍可在 App 內查看工作和待處理問題。":
-      "When disabled, you can still view work and pending questions in the app.",
+  "此 App 可用通知提醒你工作完成、執行失敗，或 agent 等待你回覆。": "This app can notify you when work is done, a run fails, or the agent is waiting for your reply.",
+  "未開啟時，仍可在 App 內查看工作和待處理問題。": "When disabled, you can still view work and pending questions in the app.",
   "快速回應浮窗": "Quick reply bubble",
-  "允許在其他 App 上層開啟小視窗，讓你查看問題並回覆。":
-      "Allow small windows to appear over other apps so you can view and reply to questions.",
-  "此權限只用於你主動使用快速回應；未開啟時，通知仍會打開完整對話。Android 權限名稱為「顯示在其他應用程式上層」。":
-      "This permission is used only when you actively use quick replies. When it is disabled, notifications will still open the full conversation. The Android permission is called “Display over other apps.”",
-  "若使用內建相機掃描配對碼，會在開啟掃描頁時請求相機權限；拒絕後仍可貼上配對連結。":
-      "If you use the built-in camera to scan a pairing code, camera permission is requested when you open the scanner. If you deny it, you can still paste the pairing link.",
-  "背景推播需在配對後，到「設定 → 推播與通知目標」完成服務註冊。開啟系統通知權限不代表推播服務已連線。":
-      "After pairing, background push notifications require service registration under “Settings → Push and notification targets.” Enabling system notification permission does not mean the push service is connected.",
+  "允許在其他 App 上層開啟小視窗，讓你查看問題並回覆。": "Allow small windows to appear over other apps so you can view and reply to questions.",
+  "此權限只用於你主動使用快速回應；未開啟時，通知仍會打開完整對話。Android 權限名稱為「顯示在其他應用程式上層」。": "This permission is used only when you actively use quick replies. When it is disabled, notifications will still open the full conversation. The Android permission is called “Display over other apps.”",
+  "若使用內建相機掃描配對碼，會在開啟掃描頁時請求相機權限；拒絕後仍可貼上配對連結。": "If you use the built-in camera to scan a pairing code, camera permission is requested when you open the scanner. If you deny it, you can still paste the pairing link.",
+  "背景推播需在配對後，到「設定 → 推播與通知目標」完成服務註冊。開啟系統通知權限不代表推播服務已連線。": "After pairing, background push notifications require service registration under “Settings → Push and notification targets.” Enabling system notification permission does not mean the push service is connected.",
   "重新確認權限": "Recheck permissions",
   "處理中…": "Processing…",
   "開始使用": "Get started",
@@ -1221,8 +967,7 @@ const englishMessages = <String, String>{
   "asks before risky commands": "asks before risky commands",
   "never asks": "never asks",
   "Give this session full access?": "Give this session full access?",
-  "The agent will run every command, script and file change without asking you, including ones auto mode would stop as dangerous (deleting files, force-pushing, changing the system).\n\nYour deny-list still asks, writes still take the workspace's write lease, and the node's OS sandbox stays as it is. Teammates and subagents of this session follow it; delegated sessions do not.":
-      "The agent will run every command, script and file change without asking you, including ones auto mode would stop as dangerous (deleting files, force-pushing, changing the system).\n\nYour deny-list still asks, writes still take the workspace's write lease, and the node's OS sandbox stays as it is. Teammates and subagents of this session follow it; delegated sessions do not.",
+  "The agent will run every command, script and file change without asking you, including ones auto mode would stop as dangerous (deleting files, force-pushing, changing the system).\n\nYour deny-list still asks, writes still take the workspace's write lease, and the node's OS sandbox stays as it is. Teammates and subagents of this session follow it; delegated sessions do not.": "The agent will run every command, script and file change without asking you, including ones auto mode would stop as dangerous (deleting files, force-pushing, changing the system).\n\nYour deny-list still asks, writes still take the workspace's write lease, and the node's OS sandbox stays as it is. Teammates and subagents of this session follow it; delegated sessions do not.",
   "Allow full access": "Allow full access",
   "Approval mode": "Approval mode",
   "General": "General",
@@ -1230,19 +975,15 @@ const englishMessages = <String, String>{
   "Devices": "Devices",
   "About": "About",
   "Show done sessions": "Show done sessions",
-  "Settled (done) sessions are hidden from project and workspace pages unless this is on. Project and workspace settings are on their own pages.":
-      "Settled (done) sessions are hidden from project and workspace pages unless this is on. Project and workspace settings are on their own pages.",
+  "Settled (done) sessions are hidden from project and workspace pages unless this is on. Project and workspace settings are on their own pages.": "Settled (done) sessions are hidden from project and workspace pages unless this is on. Project and workspace settings are on their own pages.",
   "Layout": "Layout",
-  "Restore the sidebar and side panel to their default size and visibility.":
-      "Restore the sidebar and side panel to their default size and visibility.",
+  "Restore the sidebar and side panel to their default size and visibility.": "Restore the sidebar and side panel to their default size and visibility.",
   "Reset": "Reset",
   "{0} waiting": "{0} waiting",
   "Nodes": "Nodes",
   "No nodes online.": "No nodes online.",
-  "(\\S+) is being written by session \"(.+?)\" \\([^)]*\\); wait until its run finishes":
-      "(\\S+) is being written by session \"(.+?)\" \\([^)]*\\); wait until its run finishes",
-  "{0}\n… {1} more characters not shown":
-      "{0}\n… {1} more characters not shown",
+  "(\\S+) is being written by session \"(.+?)\" \\([^)]*\\); wait until its run finishes": "(\\S+) is being written by session \"(.+?)\" \\([^)]*\\); wait until its run finishes",
+  "{0}\n… {1} more characters not shown": "{0}\n… {1} more characters not shown",
   "Modified": "Modified",
   "Renamed": "Renamed",
   "Conflict": "Conflict",
@@ -1253,22 +994,17 @@ const englishMessages = <String, String>{
   "Open file": "Open file",
   "Staged": "Staged",
   "Loading diff…": "Loading diff…",
-  "This workspace is not a Git repository.":
-      "This workspace is not a Git repository.",
+  "This workspace is not a Git repository.": "This workspace is not a Git repository.",
   "Working tree clean.": "Working tree clean.",
   "Showing the first 5,000 files.": "Showing the first 5,000 files.",
   "No commits yet.": "No commits yet.",
   "Load more": "Load more",
   "Gateway context is closed.": "Gateway context is closed.",
-  "Cannot register a context without a pairing stamp.":
-      "Cannot register a context without a pairing stamp.",
-  "Use ensureContext() to register this gateway context.":
-      "Use ensureContext() to register this gateway context.",
+  "Cannot register a context without a pairing stamp.": "Cannot register a context without a pairing stamp.",
+  "Use ensureContext() to register this gateway context.": "Use ensureContext() to register this gateway context.",
   "Must be a nonnegative integer.": "Must be a nonnegative integer.",
-  "^Saved recording (\\.pirc/recordings/\\S+\\.webm)\$":
-      "^Saved recording (\\.pirc/recordings/\\S+\\.webm)\$",
-  "Take control of the session to use the browser.":
-      "Take control of the session to use the browser.",
+  "^Saved recording (\\.pirc/recordings/\\S+\\.webm)\$": "^Saved recording (\\.pirc/recordings/\\S+\\.webm)\$",
+  "Take control of the session to use the browser.": "Take control of the session to use the browser.",
   "Enter a valid date and time.": "Enter a valid date and time.",
   "Set date and time": "Set date and time",
   "Month": "Month",
@@ -1285,8 +1021,7 @@ const englishMessages = <String, String>{
   "Back to side panel": "Back to side panel",
   "連接 pirc": "Connect pirc",
   "讓工作跟著你": "Keep your work with you",
-  "在網頁版「設定 → 裝置」建立配對，掃描 QR code 或貼上配對連結。":
-      "Create a pairing in “Settings → Devices” on the web, then scan the QR code or paste the pairing link.",
+  "在網頁版「設定 → 裝置」建立配對，掃描 QR code 或貼上配對連結。": "Create a pairing in “Settings → Devices” on the web, then scan the QR code or paste the pairing link.",
   "配對連結": "Pairing link",
   "pirc://pair?…": "pirc://pair?…",
   "確認連線中…": "Checking connection…",
@@ -1296,10 +1031,8 @@ const englishMessages = <String, String>{
   "使用內建相機掃描": "Scan with built-in camera",
   "取消準備": "Cancel setup",
   "Document request was superseded.": "Document request was superseded.",
-  "Native cookie request state is unavailable.":
-      "Native cookie request state is unavailable.",
-  "Received 304 without a matching cached representation.":
-      "Received 304 without a matching cached representation.",
+  "Native cookie request state is unavailable.": "Native cookie request state is unavailable.",
+  "Received 304 without a matching cached representation.": "Received 304 without a matching cached representation.",
   "Captured Blob URL changed.": "Captured Blob URL changed.",
   "下載失敗，請重試。": "Download failed. Try again.",
   "Document URL is unavailable.": "Document URL is unavailable.",
@@ -1309,22 +1042,17 @@ const englishMessages = <String, String>{
   "停止": "Stop",
   "網頁內容": "Web content",
   "關閉頁面": "Close page",
-  "送出結果尚未確認，請先檢查伺服器狀態。":
-      "The send result is not confirmed. Check the server status first.",
+  "送出結果尚未確認，請先檢查伺服器狀態。": "The send result is not confirmed. Check the server status first.",
   "儲存檔案": "Save file",
   "此內容格式目前無法呈現。": "This content format cannot be rendered yet.",
   "正在載入互動內容…": "Loading interactive content…",
-  "此頁面由腳本產生內容，尚未完成原生呈現。":
-      "This page was generated by a script and has not finished rendering natively.",
-  "Document canvas color is not supported: {0}":
-      "Document canvas color is not supported: {0}",
+  "此頁面由腳本產生內容，尚未完成原生呈現。": "This page was generated by a script and has not finished rendering natively.",
+  "Document canvas color is not supported: {0}": "Document canvas color is not supported: {0}",
   "PingFang TC": "PingFang TC",
   "Heiti TC": "Heiti TC",
   "確認重新提交表單": "Confirm form resubmission",
-  "這個網頁需要使用你先前輸入的資料才能正確顯示。你可以重新傳送這些資料，不過這麼做會重複執行這個網頁先前執行過的任何動作。":
-      "This webpage needs data you entered earlier to display correctly. You can send that data again, but doing so will repeat any actions the webpage already performed.",
-  "按下重新載入按鈕，重新提交載入網頁所需的資料。":
-      "Press Reload to resubmit the data required to load the webpage.",
+  "這個網頁需要使用你先前輸入的資料才能正確顯示。你可以重新傳送這些資料，不過這麼做會重複執行這個網頁先前執行過的任何動作。": "This webpage needs data you entered earlier to display correctly. You can send that data again, but doing so will repeat any actions the webpage already performed.",
+  "按下重新載入按鈕，重新提交載入網頁所需的資料。": "Press Reload to resubmit the data required to load the webpage.",
   "New messages": "New messages",
   "Waiting for resume": "Waiting for resume",
   "Blocked": "Blocked",
@@ -1332,24 +1060,18 @@ const englishMessages = <String, String>{
   "All tasks completed": "All tasks completed",
   "Uploading…": "Uploading…",
   "Remove {0}": "Remove {0}",
-  "Object URL does not belong to its creator origin.":
-      "Object URL does not belong to its creator origin.",
-  "The gateway connection changed. Close and reopen backend settings.":
-      "The gateway connection changed. Close and reopen backend settings.",
-  "The endpoint lists no models. Add model IDs manually.":
-      "The endpoint lists no models. Add model IDs manually.",
-  "Found {0} model{1}. Select the ones to use.":
-      "Found {0} model{1}. Select the ones to use.",
+  "Object URL does not belong to its creator origin.": "Object URL does not belong to its creator origin.",
+  "The gateway connection changed. Close and reopen backend settings.": "The gateway connection changed. Close and reopen backend settings.",
+  "The endpoint lists no models. Add model IDs manually.": "The endpoint lists no models. Add model IDs manually.",
+  "Found {0} model{1}. Select the ones to use.": "Found {0} model{1}. Select the ones to use.",
   "The connection test failed.": "The connection test failed.",
   "Custom endpoint": "Custom endpoint",
   "Cloud service catalog": "Cloud service catalog",
   "Local server": "Local server",
   "New backend": "New backend",
   "Service": "Service",
-  "Service presets are unavailable. Enter the endpoint details manually.":
-      "Service presets are unavailable. Enter the endpoint details manually.",
-  "Uses pi-ai's {0} catalog. Known models keep their limits and request compatibility.":
-      "Uses pi-ai's {0} catalog. Known models keep their limits and request compatibility.",
+  "Service presets are unavailable. Enter the endpoint details manually.": "Service presets are unavailable. Enter the endpoint details manually.",
+  "Uses pi-ai's {0} catalog. Known models keep their limits and request compatibility.": "Uses pi-ai's {0} catalog. Known models keep their limits and request compatibility.",
   "Backend ID": "Backend ID",
   "OpenAI-compatible chat": "OpenAI-compatible chat",
   "OpenAI chat (legacy)": "OpenAI chat (legacy)",
@@ -1361,23 +1083,19 @@ const englishMessages = <String, String>{
   "Not needed for a local server": "Not needed for a local server",
   "Leave blank for a no-key endpoint": "Leave blank for a no-key endpoint",
   "Remove the saved API key": "Remove the saved API key",
-  "OpenCode compatibility (session routing + pirc User-Agent; automatic for opencode.ai/zen and opencode.ai/inference)":
-      "OpenCode compatibility (session routing + pirc User-Agent; automatic for opencode.ai/zen and opencode.ai/inference)",
+  "OpenCode compatibility (session routing + pirc User-Agent; automatic for opencode.ai/zen and opencode.ai/inference)": "OpenCode compatibility (session routing + pirc User-Agent; automatic for opencode.ai/zen and opencode.ai/inference)",
   "Fetching models…": "Fetching models…",
   "Fetch models from endpoint": "Fetch models from endpoint",
   "Filter {0} models": "Filter {0} models",
   "Select shown": "Select shown",
   "No models match the filter.": "No models match the filter.",
-  "Select at least one model above, or add a model ID.":
-      "Select at least one model above, or add a model ID.",
-  "Fetch the endpoint’s models, or add a model ID.":
-      "Fetch the endpoint’s models, or add a model ID.",
+  "Select at least one model above, or add a model ID.": "Select at least one model above, or add a model ID.",
+  "Fetch the endpoint’s models, or add a model ID.": "Fetch the endpoint’s models, or add a model ID.",
   "Add model": "Add model",
   "Model ID": "Model ID",
   "Testing…": "Testing…",
   "Test connection": "Test connection",
-  "The gateway connection changed. Close and reopen backend settings before continuing.":
-      "The gateway connection changed. Close and reopen backend settings before continuing.",
+  "The gateway connection changed. Close and reopen backend settings before continuing.": "The gateway connection changed. Close and reopen backend settings before continuing.",
   "Save backend": "Save backend",
   "Cancel editing": "Cancel editing",
   "Details": "Details",
@@ -1395,32 +1113,25 @@ const englishMessages = <String, String>{
   "Medium": "Medium",
   "High": "High",
   "Extra high": "Extra high",
-  "Offline draft — it will stay on this device":
-      "Offline draft — it will stay on this device",
+  "Offline draft — it will stay on this device": "Offline draft — it will stay on this device",
   "Take control to send a message": "Take control to send a message",
   "Steer the current run…": "Steer the current run…",
   "Tell the agent what to work on…": "Tell the agent what to work on…",
   "I checked; continue…": "I checked; continue…",
   "Continue after checking?": "Continue after checking?",
-  "Check whether the previous message arrived. Continuing unlocks sending and does not resend that operation.":
-      "Check whether the previous message arrived. Continuing unlocks sending and does not resend that operation.",
-  "Full access: the agent runs commands and changes files without asking. Only your deny-list still asks.":
-      "Full access: the agent runs commands and changes files without asking. Only your deny-list still asks.",
-  "You’re offline. This draft is saved locally and will never be sent automatically.":
-      "You’re offline. This draft is saved locally and will never be sent automatically.",
+  "Check whether the previous message arrived. Continuing unlocks sending and does not resend that operation.": "Check whether the previous message arrived. Continuing unlocks sending and does not resend that operation.",
+  "Full access: the agent runs commands and changes files without asking. Only your deny-list still asks.": "Full access: the agent runs commands and changes files without asking. Only your deny-list still asks.",
+  "You’re offline. This draft is saved locally and will never be sent automatically.": "You’re offline. This draft is saved locally and will never be sent automatically.",
   "Attach files": "Attach files",
   "Reasoning effort": "Reasoning effort",
   "Stop run": "Stop run",
   "Send message": "Send message",
   "Start something useful": "Start something useful",
-  "Describe a task, attach a reference image, or ask the agent to continue work in this workspace.":
-      "Describe a task, attach a reference image, or ask the agent to continue work in this workspace.",
+  "Describe a task, attach a reference image, or ask the agent to continue work in this workspace.": "Describe a task, attach a reference image, or ask the agent to continue work in this workspace.",
   "Connecting to your sessions…": "Connecting to your sessions…",
   "No session could be loaded.": "No session could be loaded.",
-  "Invalid CSS-pixel document viewport.":
-      "Invalid CSS-pixel document viewport.",
-  "Invalid document display environment.":
-      "Invalid document display environment.",
+  "Invalid CSS-pixel document viewport.": "Invalid CSS-pixel document viewport.",
+  "Invalid document display environment.": "Invalid document display environment.",
   "Document object URL is unavailable.": "Document object URL is unavailable.",
   "Media exceeds 32 MiB.": "Media exceeds 32 MiB.",
   "No playable media source.": "No playable media source.",
@@ -1441,8 +1152,7 @@ const englishMessages = <String, String>{
   "此裝置": "This device",
   "連線": "Connection",
   "解除配對": "Unpair",
-  "這會清除此 App 的配對憑證與草稿。":
-      "This will clear this app’s pairing credentials and drafts.",
+  "這會清除此 App 的配對憑證與草稿。": "This will clear this app’s pairing credentials and drafts.",
   "應用程式": "App",
   "切換頁面、管理歷史與關閉視窗": "Switch pages, manage history, and close windows",
   "查看通知、浮窗的授權狀態": "View notification and floating-window authorization status",
@@ -1469,8 +1179,7 @@ const englishMessages = <String, String>{
   "停用推播": "Disable push",
   "傳送測試": "Send test",
   "已送達 {0} 個目標": "Delivered to {0} targets",
-  "請先安裝 UnifiedPush 推播服務（例如 ntfy），再啟用此手機推播。":
-      "Install a UnifiedPush service (such as ntfy) before enabling push notifications for this phone.",
+  "請先安裝 UnifiedPush 推播服務（例如 ntfy），再啟用此手機推播。": "Install a UnifiedPush service (such as ntfy) before enabling push notifications for this phone.",
   "通知類別": "Notification categories",
   "需要你回應": "Action required",
   "問題、確認與等待回覆": "Questions, confirmations, and reply waits",
@@ -1480,35 +1189,28 @@ const englishMessages = <String, String>{
   "其他對話交付的工作": "Work delivered by other conversations",
   "助手想記住的新內容": "New content the assistant wants to remember",
   "工作完成或失敗": "Work completed or failed",
-  "通知此手機已連線對話的執行結果":
-      "Notify about run results from conversations connected to this phone",
+  "通知此手機已連線對話的執行結果": "Notify about run results from conversations connected to this phone",
   "執行中的即時進度": "Live progress during runs",
-  "顯示此手機已連線對話的目前步驟":
-      "Show the current step in conversations connected to this phone",
+  "顯示此手機已連線對話的目前步驟": "Show the current step in conversations connected to this phone",
   "系統通知設定": "System notification settings",
   "聲音、震動與彈出方式": "Sound, vibration, and pop-up behavior",
   "樣式": "Style",
   "下方快速回應視窗": "Quick reply window at the bottom",
-  "從通知開啟，在其他 App 上層確認並回答":
-      "Open from a notification to confirm and reply over other apps",
-  "尚未授權浮窗；通知仍可開啟完整對話":
-      "Floating-window permission is not enabled; notifications can still open the full conversation.",
+  "從通知開啟，在其他 App 上層確認並回答": "Open from a notification to confirm and reply over other apps",
+  "尚未授權浮窗；通知仍可開啟完整對話": "Floating-window permission is not enabled; notifications can still open the full conversation.",
   "授權浮窗": "Authorize floating window",
   "顯示在其他應用程式上層": "Display over other apps",
   "大型互動通知": "Large interactive notifications",
-  "顯示最多三個選項；點選後仍須確認":
-      "Show up to three options; a selection still requires confirmation",
+  "顯示最多三個選項；點選後仍須確認": "Show up to three options; a selection still requires confirmation",
   "處理後自動收回": "Automatically dismiss after handling",
-  "收到最新狀態時，收回已處理的問題通知":
-      "Dismiss handled question notifications when the latest status arrives",
+  "收到最新狀態時，收回已處理的問題通知": "Dismiss handled question notifications when the latest status arrives",
   "鎖定畫面顯示": "Show on lock screen",
   "隱藏內容": "Hide content",
   "只顯示標題": "Show title only",
   "全部顯示": "Show all",
   "勿擾與範圍": "Do not disturb and scope",
   "勿擾時段": "Do not disturb schedule",
-  "{0}–{1} · 需要你回應仍會通知":
-      "{0}–{1} · Action-required notifications will still arrive",
+  "{0}–{1} · 需要你回應仍會通知": "{0}–{1} · Action-required notifications will still arrive",
   "開始時間": "Start time",
   "結束時間": "End time",
   "已靜音 {0} 個": "{0} muted",
@@ -1521,131 +1223,89 @@ const englishMessages = <String, String>{
   "重新整理": "Refresh",
   "{0} 暫時無法載入，請重新整理。": "{0} is temporarily unavailable. Refresh.",
   "目前沒有待處理項目": "No items need attention",
-  "需要你回答的問題與錯過排程會顯示在這裡。":
-      "Questions that need your answer and missed schedules appear here.",
+  "需要你回答的問題與錯過排程會顯示在這裡。": "Questions that need your answer and missed schedules appear here.",
   "{0} 次執行待處理": "{0} runs need attention",
   "最近動態": "Recent activity",
   "此裝置收到的通知": "Notifications received on this device",
   "尚未收到通知": "No notifications received",
   "Unsupported HTML control kind: {0}": "Unsupported HTML control kind: {0}",
-  "URL syntax is outside the supported parser subset: {0}":
-      "URL syntax is outside the supported parser subset: {0}",
-  "Pattern requires JavaScript Unicode-sets v syntax not modeled by Dart RegExp: {0}":
-      "Pattern requires JavaScript Unicode-sets v syntax not modeled by Dart RegExp: {0}",
+  "URL syntax is outside the supported parser subset: {0}": "URL syntax is outside the supported parser subset: {0}",
+  "Pattern requires JavaScript Unicode-sets v syntax not modeled by Dart RegExp: {0}": "Pattern requires JavaScript Unicode-sets v syntax not modeled by Dart RegExp: {0}",
   "Invalid form {0}.": "Invalid form {0}.",
   "Invalid form entries.": "Invalid form entries.",
   "Invalid form entry.": "Invalid form entry.",
   "Invalid inline file.": "Invalid inline file.",
   "Invalid selected-file reference.": "Invalid selected-file reference.",
-  "The selected file is no longer available.":
-      "The selected file is no longer available.",
+  "The selected file is no longer available.": "The selected file is no longer available.",
   "Invalid form value.": "Invalid form value.",
   "Invalid inline file bytes.": "Invalid inline file bytes.",
-  "Inline files exceed the 2 MiB limit.":
-      "Inline files exceed the 2 MiB limit.",
-  "Percentage padding needs a finite containing block width; zero is used.":
-      "Percentage padding needs a finite containing block width; zero is used.",
-  "A finite containing block is required; the intrinsic size is used.":
-      "A finite containing block is required; the intrinsic size is used.",
+  "Inline files exceed the 2 MiB limit.": "Inline files exceed the 2 MiB limit.",
+  "Percentage padding needs a finite containing block width; zero is used.": "Percentage padding needs a finite containing block width; zero is used.",
+  "A finite containing block is required; the intrinsic size is used.": "A finite containing block is required; the intrinsic size is used.",
   "The declaration has no value.": "The declaration has no value.",
   "Expected content-box or border-box.": "Expected content-box or border-box.",
   "Expected one to four lengths.": "Expected one to four lengths.",
   "Expected a single CSS length.": "Expected a single CSS length.",
-  "Percentages are not valid for this property.":
-      "Percentages are not valid for this property.",
-  "This CSS length unit is not supported.":
-      "This CSS length unit is not supported.",
-  "This CSS value is not a supported length.":
-      "This CSS value is not a supported length.",
+  "Percentages are not valid for this property.": "Percentages are not valid for this property.",
+  "This CSS length unit is not supported.": "This CSS length unit is not supported.",
+  "This CSS value is not a supported length.": "This CSS value is not a supported length.",
   "Negative lengths are invalid here.": "Negative lengths are invalid here.",
-  "CSS-wide border values require parent box values.":
-      "CSS-wide border values require parent box values.",
-  "Expected a border width, style, and color.":
-      "Expected a border width, style, and color.",
+  "CSS-wide border values require parent box values.": "CSS-wide border values require parent box values.",
+  "Expected a border width, style, and color.": "Expected a border width, style, and color.",
   "Border width is repeated.": "Border width is repeated.",
   "Border style is repeated.": "Border style is repeated.",
   "Border color is repeated.": "Border color is repeated.",
-  "This border component is unsupported.":
-      "This border component is unsupported.",
+  "This border component is unsupported.": "This border component is unsupported.",
   "Unknown CSS border style.": "Unknown CSS border style.",
-  "Flutter control borders support solid/none; this style is approximated as solid.":
-      "Flutter control borders support solid/none; this style is approximated as solid.",
+  "Flutter control borders support solid/none; this style is approximated as solid.": "Flutter control borders support solid/none; this style is approximated as solid.",
   "Expected one to four border styles.": "Expected one to four border styles.",
   "Expected one to four colors.": "Expected one to four colors.",
-  "Hex colors must contain 3, 4, 6, or 8 digits.":
-      "Hex colors must contain 3, 4, 6, or 8 digits.",
-  "This CSS color is not supported by the local color parser.":
-      "This CSS color is not supported by the local color parser.",
-  "A border-radius value can contain one slash.":
-      "A border-radius value can contain one slash.",
+  "Hex colors must contain 3, 4, 6, or 8 digits.": "Hex colors must contain 3, 4, 6, or 8 digits.",
+  "This CSS color is not supported by the local color parser.": "This CSS color is not supported by the local color parser.",
+  "A border-radius value can contain one slash.": "A border-radius value can contain one slash.",
   "Expected one or two radius lengths.": "Expected one or two radius lengths.",
-  "Expected one to four radius lengths.":
-      "Expected one to four radius lengths.",
-  "SVG fragment backgrounds are unsupported.":
-      "SVG fragment backgrounds are unsupported.",
-  "The recognized character encoding {0} is not implemented.":
-      "The recognized character encoding {0} is not implemented.",
-  "The character encoding {0} is not implemented.":
-      "The character encoding {0} is not implemented.",
-  "此文件保留的選檔內容超過 32 MiB 限制。":
-      "This file’s preserved file-selection data exceeds the 32 MiB limit.",
-  "Must be the exact fragment used to create this file-input state.":
-      "Must be the exact fragment used to create this file-input state.",
+  "Expected one to four radius lengths.": "Expected one to four radius lengths.",
+  "SVG fragment backgrounds are unsupported.": "SVG fragment backgrounds are unsupported.",
+  "The recognized character encoding {0} is not implemented.": "The recognized character encoding {0} is not implemented.",
+  "The character encoding {0} is not implemented.": "The character encoding {0} is not implemented.",
+  "此文件保留的選檔內容超過 32 MiB 限制。": "This file’s preserved file-selection data exceeds the 32 MiB limit.",
+  "Must be the exact fragment used to create this file-input state.": "Must be the exact fragment used to create this file-input state.",
   "HTML file input": "HTML file input",
   "Unknown HTML file input: {0}": "Unknown HTML file input: {0}",
-  "Must be the exact fragment used to create this range state.":
-      "Must be the exact fragment used to create this range state.",
+  "Must be the exact fragment used to create this range state.": "Must be the exact fragment used to create this range state.",
   "Unknown HTML range: {0}": "Unknown HTML range: {0}",
   "一次最多選取 256 個檔案。": "Select up to 256 files at once.",
-  "選取檔案的腳本內容超過 2 MiB 限制。":
-      "The script content of selected files exceeds the 2 MiB limit.",
-  "Script focus target has no control id.":
-      "Script focus target has no control id.",
-  "Form navigation is unavailable in this document.":
-      "Form navigation is unavailable in this document.",
+  "選取檔案的腳本內容超過 2 MiB 限制。": "The script content of selected files exceeds the 2 MiB limit.",
+  "Script focus target has no control id.": "Script focus target has no control id.",
+  "Form navigation is unavailable in this document.": "Form navigation is unavailable in this document.",
   "Form submission failed: {0}": "Form submission failed: {0}",
-  "File selection is unavailable in this document.":
-      "File selection is unavailable in this document.",
+  "File selection is unavailable in this document.": "File selection is unavailable in this document.",
   "SVG could not be rendered": "SVG could not be rendered",
   "Content could not be rendered": "Content could not be rendered",
   "畫布尺寸超過目前原生渲染上限。": "Canvas size exceeds the current native rendering limit.",
   "Expected a control sequence": "Expected a control sequence",
   "Invalid argument number \"{0}\"": "Invalid argument number \"{0}\"",
-  "Argument number \"{0}\" out of order":
-      "Argument number \"{0}\" out of order",
+  "Argument number \"{0}\" out of order": "Argument number \"{0}\" out of order",
   "Expected a macro definition": "Expected a macro definition",
-  "Expected flutter_math_fork MacroExpander context.":
-      "Expected flutter_math_fork MacroExpander context.",
+  "Expected flutter_math_fork MacroExpander context.": "Expected flutter_math_fork MacroExpander context.",
   "Invalid token after macro prefix": "Invalid token after macro prefix",
-  "Use of the macro does not match its definition":
-      "Use of the macro does not match its definition",
-  "Unexpected end of input in a macro argument, expected '{0}'":
-      "Unexpected end of input in a macro argument, expected '{0}'",
-  "Incomplete placeholder at end of macro body":
-      "Incomplete placeholder at end of macro body",
+  "Use of the macro does not match its definition": "Use of the macro does not match its definition",
+  "Unexpected end of input in a macro argument, expected '{0}'": "Unexpected end of input in a macro argument, expected '{0}'",
+  "Incomplete placeholder at end of macro body": "Incomplete placeholder at end of macro body",
   "Not a valid argument number": "Not a valid argument number",
   "Undefined control sequence: {0}": "Undefined control sequence: {0}",
-  "Must be the exact fragment used to create this select state.":
-      "Must be the exact fragment used to create this select state.",
+  "Must be the exact fragment used to create this select state.": "Must be the exact fragment used to create this select state.",
   "Unknown HTML select: {0}": "Unknown HTML select: {0}",
   "Unsupported HTML form encoding: {0}": "Unsupported HTML form encoding: {0}",
-  "Must be a 1–70 character multipart boundary.":
-      "Must be a 1–70 character multipart boundary.",
-  "At most {0} native document element IDs are supported.":
-      "At most {0} native document element IDs are supported.",
-  "Unsanitized parse exception detected: {0}. Please report this error with corresponding input.":
-      "Unsanitized parse exception detected: {0}. Please report this error with corresponding input.",
-  "{0} returned {1} child options for {2} AST children.":
-      "{0} returned {1} child options for {2} AST children.",
-  "{{0}} can be used only in display mode.":
-      "{{0}} can be used only in display mode.",
-  "Too many columns in {0}: expected 1, got {1}":
-      "Too many columns in {0}: expected 1, got {1}",
-  "mathchoice requires exactly four branches.":
-      "mathchoice requires exactly four branches.",
+  "Must be a 1–70 character multipart boundary.": "Must be a 1–70 character multipart boundary.",
+  "At most {0} native document element IDs are supported.": "At most {0} native document element IDs are supported.",
+  "Unsanitized parse exception detected: {0}. Please report this error with corresponding input.": "Unsanitized parse exception detected: {0}. Please report this error with corresponding input.",
+  "{0} returned {1} child options for {2} AST children.": "{0} returned {1} child options for {2} AST children.",
+  "{{0}} can be used only in display mode.": "{{0}} can be used only in display mode.",
+  "Too many columns in {0}: expected 1, got {1}": "Too many columns in {0}: expected 1, got {1}",
+  "mathchoice requires exactly four branches.": "mathchoice requires exactly four branches.",
   "smash requires exactly one body.": "smash requires exactly one body.",
-  "Static position requires a laid-out flow marker":
-      "Static position requires a laid-out flow marker",
+  "Static position requires a laid-out flow marker": "Static position requires a laid-out flow marker",
   "Insert": "Insert",
   "Shift": "Shift",
   "Meta": "Meta",
@@ -1658,229 +1318,159 @@ const englishMessages = <String, String>{
   "Backquote": "Backquote",
   "Comma": "Comma",
   "Unidentified": "Unidentified",
-  "Must be the exact fragment used to create this date state.":
-      "Must be the exact fragment used to create this date state.",
+  "Must be the exact fragment used to create this date state.": "Must be the exact fragment used to create this date state.",
   "Unknown HTML date field: {0}": "Unknown HTML date field: {0}",
-  "Serialize the annotated document clone directly":
-      "Serialize the annotated document clone directly",
-  "Must be the exact fragment used to create this text-field state.":
-      "Must be the exact fragment used to create this text-field state.",
+  "Serialize the annotated document clone directly": "Serialize the annotated document clone directly",
+  "Must be the exact fragment used to create this text-field state.": "Must be the exact fragment used to create this text-field state.",
   "Unknown HTML text field: {0}": "Unknown HTML text field: {0}",
-  "Must be the exact fragment used to create this control state.":
-      "Must be the exact fragment used to create this control state.",
-  "Invalid preserveAspectRatio none value.":
-      "Invalid preserveAspectRatio none value.",
-  "Unsupported preserveAspectRatio value: {0}.":
-      "Unsupported preserveAspectRatio value: {0}.",
-  "Unsupported preserveAspectRatio mode: {0}.":
-      "Unsupported preserveAspectRatio mode: {0}.",
+  "Must be the exact fragment used to create this control state.": "Must be the exact fragment used to create this control state.",
+  "Invalid preserveAspectRatio none value.": "Invalid preserveAspectRatio none value.",
+  "Unsupported preserveAspectRatio value: {0}.": "Unsupported preserveAspectRatio value: {0}.",
+  "Unsupported preserveAspectRatio mode: {0}.": "Unsupported preserveAspectRatio mode: {0}.",
   "left top": "left top",
   "Copy": "Copy",
   "Invalid HTML image snapshot.": "Invalid HTML image snapshot.",
   "Invalid HTML image state.": "Invalid HTML image state.",
   "Invalid HTML image ownership.": "Invalid HTML image ownership.",
-  "Only data:{0}/* URLs are allowed here.":
-      "Only data:{0}/* URLs are allowed here.",
-  "The {0}: URL scheme is not allowed for native media.":
-      "The {0}: URL scheme is not allowed for native media.",
+  "Only data:{0}/* URLs are allowed here.": "Only data:{0}/* URLs are allowed here.",
+  "The {0}: URL scheme is not allowed for native media.": "The {0}: URL scheme is not allowed for native media.",
   "AVIF decode failed": "AVIF decode failed",
-  "Mermaid Kanban exceeds the 50000 character native limit":
-      "Mermaid Kanban exceeds the 50000 character native limit",
+  "Mermaid Kanban exceeds the 50000 character native limit": "Mermaid Kanban exceeds the 50000 character native limit",
   "Kanban parse error on line {0}: {1}": "Kanban parse error on line {0}: {1}",
   "Expected a Kanban header": "Expected a Kanban header",
-  "Kanban class and icon decorators are unsupported":
-      "Kanban class and icon decorators are unsupported",
-  "Metadata must end with a closing brace":
-      "Metadata must end with a closing brace",
-  "Nested metadata objects are unsupported":
-      "Nested metadata objects are unsupported",
-  "Text after a multiline card label is unsupported":
-      "Text after a multiline card label is unsupported",
+  "Kanban class and icon decorators are unsupported": "Kanban class and icon decorators are unsupported",
+  "Metadata must end with a closing brace": "Metadata must end with a closing brace",
+  "Nested metadata objects are unsupported": "Nested metadata objects are unsupported",
+  "Text after a multiline card label is unsupported": "Text after a multiline card label is unsupported",
   "Unterminated multiline card label": "Unterminated multiline card label",
   "Missing Kanban header": "Missing Kanban header",
-  "Items cannot be above the first column level":
-      "Items cannot be above the first column level",
+  "Items cannot be above the first column level": "Items cannot be above the first column level",
   "A card must follow a column": "A card must follow a column",
   "Column or card label is empty": "Column or card label is empty",
   "Unsupported Kanban card shape": "Unsupported Kanban card shape",
-  "Unexpected text after the card shape":
-      "Unexpected text after the card shape",
+  "Unexpected text after the card shape": "Unexpected text after the card shape",
   "Expected key: value metadata": "Expected key: value metadata",
-  "Unsupported Kanban metadata key \"{0}\"":
-      "Unsupported Kanban metadata key \"{0}\"",
-  "Only the source kanbanItem shape is supported":
-      "Only the source kanbanItem shape is supported",
+  "Unsupported Kanban metadata key \"{0}\"": "Unsupported Kanban metadata key \"{0}\"",
+  "Only the source kanbanItem shape is supported": "Only the source kanbanItem shape is supported",
   "Duplicate metadata key \"{0}\"": "Duplicate metadata key \"{0}\"",
   "Unterminated quoted metadata value": "Unterminated quoted metadata value",
-  "Nested Kanban metadata values are unsupported":
-      "Nested Kanban metadata values are unsupported",
+  "Nested Kanban metadata values are unsupported": "Nested Kanban metadata values are unsupported",
   "Radar chart": "Radar chart",
-  "Native XY chart viewport width must be positive":
-      "Native XY chart viewport width must be positive",
-  "Native XY chart dimensions must be positive":
-      "Native XY chart dimensions must be positive",
+  "Native XY chart viewport width must be positive": "Native XY chart viewport width must be positive",
+  "Native XY chart dimensions must be positive": "Native XY chart dimensions must be positive",
   "XY chart has no plot data": "XY chart has no plot data",
-  "Native Mermaid configuration directives are not implemented":
-      "Native Mermaid configuration directives are not implemented",
+  "Native Mermaid configuration directives are not implemented": "Native Mermaid configuration directives are not implemented",
   "Unclosed native pie accDescr block": "Unclosed native pie accDescr block",
-  "Unsupported or invalid native pie statement: {0}":
-      "Unsupported or invalid native pie statement: {0}",
+  "Unsupported or invalid native pie statement: {0}": "Unsupported or invalid native pie statement: {0}",
   "Expected pie diagram": "Expected pie diagram",
   "Native pie values must be finite": "Native pie values must be finite",
-  "Native radar viewport width must be positive":
-      "Native radar viewport width must be positive",
-  "Native radar chart dimensions must be positive":
-      "Native radar chart dimensions must be positive",
-  "Native radar chart requires axes and curves":
-      "Native radar chart requires axes and curves",
-  "Native radar chart exceeds its source bounds":
-      "Native radar chart exceeds its source bounds",
-  "Native radar tick count must be between 0 and 32":
-      "Native radar tick count must be between 0 and 32",
+  "Native radar viewport width must be positive": "Native radar viewport width must be positive",
+  "Native radar chart dimensions must be positive": "Native radar chart dimensions must be positive",
+  "Native radar chart requires axes and curves": "Native radar chart requires axes and curves",
+  "Native radar chart exceeds its source bounds": "Native radar chart exceeds its source bounds",
+  "Native radar tick count must be between 0 and 32": "Native radar tick count must be between 0 and 32",
   "Radar curve {0} has invalid values": "Radar curve {0} has invalid values",
   "Radar max must be greater than min": "Radar max must be greater than min",
-  "Radar curve {0} has {1} values for {2} axes":
-      "Radar curve {0} has {1} values for {2} axes",
-  "GitGraph exceeds the default 50000 character limit.":
-      "GitGraph exceeds the default 50000 character limit.",
-  "Unsupported gitGraph commit type: {0}":
-      "Unsupported gitGraph commit type: {0}",
+  "Radar curve {0} has {1} values for {2} axes": "Radar curve {0} has {1} values for {2} axes",
+  "GitGraph exceeds the default 50000 character limit.": "GitGraph exceeds the default 50000 character limit.",
+  "Unsupported gitGraph commit type: {0}": "Unsupported gitGraph commit type: {0}",
   "Commit ID already exists: {0}": "Commit ID already exists: {0}",
-  "GitGraph init directives are not supported (line {0}).":
-      "GitGraph init directives are not supported (line {0}).",
-  "Expected a gitGraph header (line {0}).":
-      "Expected a gitGraph header (line {0}).",
-  "Block-form accDescr is not supported (line {0}).":
-      "Block-form accDescr is not supported (line {0}).",
+  "GitGraph init directives are not supported (line {0}).": "GitGraph init directives are not supported (line {0}).",
+  "Expected a gitGraph header (line {0}).": "Expected a gitGraph header (line {0}).",
+  "Block-form accDescr is not supported (line {0}).": "Block-form accDescr is not supported (line {0}).",
   "Unsupported gitGraph command: {0}": "Unsupported gitGraph command: {0}",
   "GitGraph exceeds 1000 commits.": "GitGraph exceeds 1000 commits.",
   "Missing gitGraph header.": "Missing gitGraph header.",
   "Unclosed quoted gitGraph value.": "Unclosed quoted gitGraph value.",
   "Invalid quoted gitGraph string.": "Invalid quoted gitGraph string.",
-  "Expected a gitGraph option, got: {0}":
-      "Expected a gitGraph option, got: {0}",
+  "Expected a gitGraph option, got: {0}": "Expected a gitGraph option, got: {0}",
   "Unsupported gitGraph option: {0}": "Unsupported gitGraph option: {0}",
-  "Missing value for gitGraph option: {0}":
-      "Missing value for gitGraph option: {0}",
+  "Missing value for gitGraph option: {0}": "Missing value for gitGraph option: {0}",
   "GitGraph option repeated: {0}": "GitGraph option repeated: {0}",
   "Block diagram.": "Block diagram.",
   " connects to ": " connects to ",
   " with label ": " with label ",
-  "Radar diagram exceeds 50000 characters":
-      "Radar diagram exceeds 50000 characters",
+  "Radar diagram exceeds 50000 characters": "Radar diagram exceeds 50000 characters",
   "Radar diagram exceeds 1200 lines": "Radar diagram exceeds 1200 lines",
-  "Expected radar-beta header, found: {0}":
-      "Expected radar-beta header, found: {0}",
+  "Expected radar-beta header, found: {0}": "Expected radar-beta header, found: {0}",
   "Duplicate radar title": "Duplicate radar title",
-  "Unexpected text after accDescr block":
-      "Unexpected text after accDescr block",
+  "Unexpected text after accDescr block": "Unexpected text after accDescr block",
   "Unclosed accDescr block": "Unclosed accDescr block",
   "Radar supports at most 24 axes": "Radar supports at most 24 axes",
   "Duplicate radar axis: {0}": "Duplicate radar axis: {0}",
   "Radar supports at most 12 curves": "Radar supports at most 12 curves",
   "Duplicate radar curve: {0}": "Duplicate radar curve: {0}",
-  "Radar ticks exceed the supported source bound":
-      "Radar ticks exceed the supported source bound",
-  "Unsupported or invalid native radar statement: {0}":
-      "Unsupported or invalid native radar statement: {0}",
+  "Radar ticks exceed the supported source bound": "Radar ticks exceed the supported source bound",
+  "Unsupported or invalid native radar statement: {0}": "Unsupported or invalid native radar statement: {0}",
   "Expected radar-beta header": "Expected radar-beta header",
   "Radar requires at least three axes": "Radar requires at least three axes",
   "Radar requires at least one curve": "Radar requires at least one curve",
-  "Declare at least three axes before curves":
-      "Declare at least three axes before curves",
-  "Radar curve must contain 1 to 24 values":
-      "Radar curve must contain 1 to 24 values",
-  "Do not mix named and positional radar values":
-      "Do not mix named and positional radar values",
-  "Radar curve has {0} values for {1} axes":
-      "Radar curve has {0} values for {1} axes",
+  "Declare at least three axes before curves": "Declare at least three axes before curves",
+  "Radar curve must contain 1 to 24 values": "Radar curve must contain 1 to 24 values",
+  "Do not mix named and positional radar values": "Do not mix named and positional radar values",
+  "Radar curve has {0} values for {1} axes": "Radar curve has {0} values for {1} axes",
   "Invalid named radar value: {0}": "Invalid named radar value: {0}",
   "Invalid radar axis reference: {0}": "Invalid radar axis reference: {0}",
   "Unknown radar axis reference: {0}": "Unknown radar axis reference: {0}",
   "Duplicate radar axis value: {0}": "Duplicate radar axis value: {0}",
   "Missing radar axis value: {0}": "Missing radar axis value: {0}",
-  "Radar curve values do not match its axes":
-      "Radar curve values do not match its axes",
-  "Invalid non-negative radar number: {0}":
-      "Invalid non-negative radar number: {0}",
-  "Radar number exceeds the supported source bound":
-      "Radar number exceeds the supported source bound",
+  "Radar curve values do not match its axes": "Radar curve values do not match its axes",
+  "Invalid non-negative radar number: {0}": "Invalid non-negative radar number: {0}",
+  "Radar number exceeds the supported source bound": "Radar number exceeds the supported source bound",
   "Radar labels must be quoted strings": "Radar labels must be quoted strings",
   "Invalid radar label": "Invalid radar label",
   "Radar title cannot be empty": "Radar title cannot be empty",
-  "Unsupported native Mermaid radar directive":
-      "Unsupported native Mermaid radar directive",
-  "Radar init directive must contain JSON":
-      "Radar init directive must contain JSON",
-  "Only radar init options are supported":
-      "Only radar init options are supported",
-  "radar init options must be an object":
-      "radar init options must be an object",
+  "Unsupported native Mermaid radar directive": "Unsupported native Mermaid radar directive",
+  "Radar init directive must contain JSON": "Radar init directive must contain JSON",
+  "Only radar init options are supported": "Only radar init options are supported",
+  "radar init options must be an object": "radar init options must be an object",
   "Unsupported radar init option: {0}": "Unsupported radar init option: {0}",
-  "{0} must be a finite supported number":
-      "{0} must be a finite supported number",
+  "{0} must be a finite supported number": "{0} must be a finite supported number",
   "useMaxWidth must be a boolean": "useMaxWidth must be a boolean",
   "Unsupported C4 color: {0}": "Unsupported C4 color: {0}",
-  "Mermaid timeline exceeds the default 50000 character limit":
-      "Mermaid timeline exceeds the default 50000 character limit",
-  "Invalid Mermaid timeline at line {0}: {1}":
-      "Invalid Mermaid timeline at line {0}: {1}",
-  "Mermaid configuration directives are unsupported":
-      "Mermaid configuration directives are unsupported",
+  "Mermaid timeline exceeds the default 50000 character limit": "Mermaid timeline exceeds the default 50000 character limit",
+  "Invalid Mermaid timeline at line {0}: {1}": "Invalid Mermaid timeline at line {0}: {1}",
+  "Mermaid configuration directives are unsupported": "Mermaid configuration directives are unsupported",
   "YAML frontmatter is unsupported": "YAML frontmatter is unsupported",
   "Expected timeline header": "Expected timeline header",
   "Unterminated accDescr block": "Unterminated accDescr block",
   "Event has no preceding period": "Event has no preceding period",
-  "Parse error on line {0}:\nUnexpected token \"{1}\"":
-      "Parse error on line {0}:\nUnexpected token \"{1}\"",
+  "Parse error on line {0}:\nUnexpected token \"{1}\"": "Parse error on line {0}:\nUnexpected token \"{1}\"",
   "Missing Mermaid timeline header": "Missing Mermaid timeline header",
   "Missing branch for commit {0}": "Missing branch for commit {0}",
-  "GitGraph commit parent is missing: {0}":
-      "GitGraph commit parent is missing: {0}",
+  "GitGraph commit parent is missing: {0}": "GitGraph commit parent is missing: {0}",
   "Missing flowchart header.": "Missing flowchart header.",
-  "Expected graph/flowchart and a direction (TD, TB, LR, BT, or RL).":
-      "Expected graph/flowchart and a direction (TD, TB, LR, BT, or RL).",
+  "Expected graph/flowchart and a direction (TD, TB, LR, BT, or RL).": "Expected graph/flowchart and a direction (TD, TB, LR, BT, or RL).",
   "Expected Mermaid class name": "Expected Mermaid class name",
-  "Native flowcharts support at most 500 nodes.":
-      "Native flowcharts support at most 500 nodes.",
-  "This Mermaid statement is not supported by the native flowchart renderer.":
-      "This Mermaid statement is not supported by the native flowchart renderer.",
-  "Mermaid edge has no destination node.":
-      "Mermaid edge has no destination node.",
-  "Native flowcharts support at most 500 edges.":
-      "Native flowcharts support at most 500 edges.",
-  "Unsupported Mermaid style target or class name":
-      "Unsupported Mermaid style target or class name",
+  "Native flowcharts support at most 500 nodes.": "Native flowcharts support at most 500 nodes.",
+  "This Mermaid statement is not supported by the native flowchart renderer.": "This Mermaid statement is not supported by the native flowchart renderer.",
+  "Mermaid edge has no destination node.": "Mermaid edge has no destination node.",
+  "Native flowcharts support at most 500 edges.": "Native flowcharts support at most 500 edges.",
+  "Unsupported Mermaid style target or class name": "Unsupported Mermaid style target or class name",
   "Invalid Mermaid style": "Invalid Mermaid style",
   "Expected Mermaid style property": "Expected Mermaid style property",
-  "Unsupported Mermaid style color: {0}":
-      "Unsupported Mermaid style color: {0}",
+  "Unsupported Mermaid style color: {0}": "Unsupported Mermaid style color: {0}",
   "Unsupported Mermaid stroke width": "Unsupported Mermaid stroke width",
   "Unsupported Mermaid node style: {0}": "Unsupported Mermaid node style: {0}",
   "Mermaid directives are unsupported.": "Mermaid directives are unsupported.",
   "Unclosed Mermaid label.": "Unclosed Mermaid label.",
   "Expected a node ID.": "Expected a node ID.",
-  "This Mermaid node shape is not yet supported natively.":
-      "This Mermaid node shape is not yet supported natively.",
+  "This Mermaid node shape is not yet supported natively.": "This Mermaid node shape is not yet supported natively.",
   "Unclosed circle node.": "Unclosed circle node.",
   "Unclosed node label.": "Unclosed node label.",
   "Unsupported Mermaid edge syntax.": "Unsupported Mermaid edge syntax.",
   "Incomplete Mermaid edge operator.": "Incomplete Mermaid edge operator.",
   "Unclosed edge label.": "Unclosed edge label.",
   "Unsupported Mermaid label markup.": "Unsupported Mermaid label markup.",
-  "State diagram exceeds 50000 characters":
-      "State diagram exceeds 50000 characters",
-  "Invalid stateDiagram-v2 at line {0}: {1}":
-      "Invalid stateDiagram-v2 at line {0}: {1}",
+  "State diagram exceeds 50000 characters": "State diagram exceeds 50000 characters",
+  "Invalid stateDiagram-v2 at line {0}: {1}": "Invalid stateDiagram-v2 at line {0}: {1}",
   "Expected stateDiagram-v2 header": "Expected stateDiagram-v2 header",
   "State diagram has no states": "State diagram has no states",
-  "configuration directives are unsupported":
-      "configuration directives are unsupported",
+  "configuration directives are unsupported": "configuration directives are unsupported",
   "unexpected header": "unexpected header",
   "expected stateDiagram-v2 header": "expected stateDiagram-v2 header",
   "unmatched closing brace": "unmatched closing brace",
-  "parallel separator must be inside a state":
-      "parallel separator must be inside a state",
+  "parallel separator must be inside a state": "parallel separator must be inside a state",
   "parallel regions cannot be empty": "parallel regions cannot be empty",
   "state {0} already has a body": "state {0} already has a body",
   "transition needs two endpoints": "transition needs two endpoints",
@@ -1889,45 +1479,35 @@ const englishMessages = <String, String>{
   "parallel region is empty": "parallel region is empty",
   "invalid state identifier: {0}": "invalid state identifier: {0}",
   "State id is empty": "State id is empty",
-  "Duplicate state id in nested scopes: {0}":
-      "Duplicate state id in nested scopes: {0}",
+  "Duplicate state id in nested scopes: {0}": "Duplicate state id in nested scopes: {0}",
   "unclosed accDescr block": "unclosed accDescr block",
   "classDef has no declarations": "classDef has no declarations",
   "invalid style declaration: {0}": "invalid style declaration: {0}",
   "class statement has no class": "class statement has no class",
   "style has no declarations": "style has no declarations",
-  "unsupported state style property: {0}":
-      "unsupported state style property: {0}",
+  "unsupported state style property: {0}": "unsupported state style property: {0}",
   "empty value for style property: {0}": "empty value for style property: {0}",
   "unsupported stroke-width value: {0}": "unsupported stroke-width value: {0}",
   "unsupported state color: {0}": "unsupported state color: {0}",
   "unbalanced style value": "unbalanced style value",
   "unclosed note": "unclosed note",
-  "Sequence diagram exceeds 50000 characters":
-      "Sequence diagram exceeds 50000 characters",
-  "Invalid Mermaid sequence diagram at line {0}: {1}":
-      "Invalid Mermaid sequence diagram at line {0}: {1}",
-  "Participant identifiers cannot be empty":
-      "Participant identifiers cannot be empty",
-  "Mermaid directives are not supported natively":
-      "Mermaid directives are not supported natively",
+  "Sequence diagram exceeds 50000 characters": "Sequence diagram exceeds 50000 characters",
+  "Invalid Mermaid sequence diagram at line {0}: {1}": "Invalid Mermaid sequence diagram at line {0}: {1}",
+  "Participant identifiers cannot be empty": "Participant identifiers cannot be empty",
+  "Mermaid directives are not supported natively": "Mermaid directives are not supported natively",
   "Expected sequenceDiagram header": "Expected sequenceDiagram header",
   "Only one diagram title is supported": "Only one diagram title is supported",
   "autonumber step must be positive": "autonumber step must be positive",
   "Participant {0} is already declared": "Participant {0} is already declared",
   "Participant labels cannot be empty": "Participant labels cannot be empty",
   "Malformed participant declaration": "Malformed participant declaration",
-  "Cannot deactivate inactive participant {0}":
-      "Cannot deactivate inactive participant {0}",
+  "Cannot deactivate inactive participant {0}": "Cannot deactivate inactive participant {0}",
   "Malformed activation statement": "Malformed activation statement",
   "Unexpected end": "Unexpected end",
-  "{0} does not match the open sequence block":
-      "{0} does not match the open sequence block",
-  "left/right notes require one participant":
-      "left/right notes require one participant",
+  "{0} does not match the open sequence block": "{0} does not match the open sequence block",
+  "left/right notes require one participant": "left/right notes require one participant",
   "Malformed note statement": "Malformed note statement",
-  "Unsupported sequence diagram statement":
-      "Unsupported sequence diagram statement",
+  "Unsupported sequence diagram statement": "Unsupported sequence diagram statement",
   "Unclosed sequence diagram block": "Unclosed sequence diagram block",
   "left of": "left of",
   "right of": "right of",
@@ -1936,329 +1516,212 @@ const englishMessages = <String, String>{
   "Journey width must be positive": "Journey width must be positive",
   "User journey": "User journey",
   "Sankey diagram": "Sankey diagram",
-  "Mermaid journey exceeds the default 50000 character limit":
-      "Mermaid journey exceeds the default 50000 character limit",
+  "Mermaid journey exceeds the default 50000 character limit": "Mermaid journey exceeds the default 50000 character limit",
   "Parse error on line {0}: {1}": "Parse error on line {0}: {1}",
-  "Journey init directives are not supported":
-      "Journey init directives are not supported",
+  "Journey init directives are not supported": "Journey init directives are not supported",
   "Unexpected second journey header": "Unexpected second journey header",
-  "Unexpected text after journey header":
-      "Unexpected text after journey header",
+  "Unexpected text after journey header": "Unexpected text after journey header",
   "Expected journey header": "Expected journey header",
-  "Semicolon-separated statements are unsupported":
-      "Semicolon-separated statements are unsupported",
-  "Section names cannot contain a colon":
-      "Section names cannot contain a colon",
+  "Semicolon-separated statements are unsupported": "Semicolon-separated statements are unsupported",
+  "Section names cannot contain a colon": "Section names cannot contain a colon",
   "Expected a scored task": "Expected a scored task",
   "Task label is empty": "Task label is empty",
   "Task score must be a finite number": "Task score must be a finite number",
   "Task actor names cannot be empty": "Task actor names cannot be empty",
   "Missing Mermaid journey header": "Missing Mermaid journey header",
   "Timeline width must be positive": "Timeline width must be positive",
-  "Gantt diagram exceeds 50000 characters":
-      "Gantt diagram exceeds 50000 characters",
-  "Invalid Mermaid Gantt at line {0}: {1}":
-      "Invalid Mermaid Gantt at line {0}: {1}",
+  "Gantt diagram exceeds 50000 characters": "Gantt diagram exceeds 50000 characters",
+  "Invalid Mermaid Gantt at line {0}: {1}": "Invalid Mermaid Gantt at line {0}: {1}",
   "Expected gantt header": "Expected gantt header",
   "Only one title is supported": "Only one title is supported",
   "Title cannot be empty": "Title cannot be empty",
-  "Only dateFormat YYYY-MM-DD, YYYY-MM-DD HH:mm, and HH:mm are supported":
-      "Only dateFormat YYYY-MM-DD, YYYY-MM-DD HH:mm, and HH:mm are supported",
+  "Only dateFormat YYYY-MM-DD, YYYY-MM-DD HH:mm, and HH:mm are supported": "Only dateFormat YYYY-MM-DD, YYYY-MM-DD HH:mm, and HH:mm are supported",
   "axisFormat cannot be empty": "axisFormat cannot be empty",
   "Only todayMarker off is supported": "Only todayMarker off is supported",
   "Empty excludes entry": "Empty excludes entry",
   "Section name cannot be empty": "Section name cannot be empty",
-  "Native Gantt supports at most 100 sections":
-      "Native Gantt supports at most 100 sections",
-  "This Gantt directive is not supported natively":
-      "This Gantt directive is not supported natively",
-  "Expected a directive, section, or task label : data":
-      "Expected a directive, section, or task label : data",
-  "Task label and task data must be non-empty":
-      "Task label and task data must be non-empty",
-  "Native Gantt supports at most 500 tasks":
-      "Native Gantt supports at most 500 tasks",
+  "Native Gantt supports at most 100 sections": "Native Gantt supports at most 100 sections",
+  "This Gantt directive is not supported natively": "This Gantt directive is not supported natively",
+  "Expected a directive, section, or task label : data": "Expected a directive, section, or task label : data",
+  "Task label and task data must be non-empty": "Task label and task data must be non-empty",
+  "Native Gantt supports at most 500 tasks": "Native Gantt supports at most 500 tasks",
   "Missing Mermaid Gantt header": "Missing Mermaid Gantt header",
-  "Gantt diagram must contain at least one task":
-      "Gantt diagram must contain at least one task",
-  "Invalid Mermaid Gantt excludes date \"{0}\" for dateFormat {1}":
-      "Invalid Mermaid Gantt excludes date \"{0}\" for dateFormat {1}",
+  "Gantt diagram must contain at least one task": "Gantt diagram must contain at least one task",
+  "Invalid Mermaid Gantt excludes date \"{0}\" for dateFormat {1}": "Invalid Mermaid Gantt excludes date \"{0}\" for dateFormat {1}",
   "Duplicate task id \"{0}\"": "Duplicate task id \"{0}\"",
   "Unknown dependency \"{0}\"": "Unknown dependency \"{0}\"",
   "Task dependencies contain a cycle": "Task dependencies contain a cycle",
-  "A task needs a start date or after dependency":
-      "A task needs a start date or after dependency",
-  "Milestone start and end must identify the same instant":
-      "Milestone start and end must identify the same instant",
+  "A task needs a start date or after dependency": "A task needs a start date or after dependency",
+  "Milestone start and end must identify the same instant": "Milestone start and end must identify the same instant",
   "Milestone duration must be zero": "Milestone duration must be zero",
   "Task end must be after task start": "Task end must be after task start",
-  "Task data contains an empty comma-separated field":
-      "Task data contains an empty comma-separated field",
-  "Task start must be a supported date or an after dependency":
-      "Task start must be a supported date or an after dependency",
-  "Task data may contain at most one explicit id":
-      "Task data may contain at most one explicit id",
+  "Task data contains an empty comma-separated field": "Task data contains an empty comma-separated field",
+  "Task start must be a supported date or an after dependency": "Task start must be a supported date or an after dependency",
+  "Task data may contain at most one explicit id": "Task data may contain at most one explicit id",
   "Invalid task id \"{0}\"": "Invalid task id \"{0}\"",
-  "after tasks need an end date or duration":
-      "after tasks need an end date or duration",
-  "Unexpected task fields after its endpoint":
-      "Unexpected task fields after its endpoint",
-  "A task needs exactly one end date or duration":
-      "A task needs exactly one end date or duration",
-  "A dependency is listed more than once":
-      "A dependency is listed more than once",
+  "after tasks need an end date or duration": "after tasks need an end date or duration",
+  "Unexpected task fields after its endpoint": "Unexpected task fields after its endpoint",
+  "A task needs exactly one end date or duration": "A task needs exactly one end date or duration",
+  "A dependency is listed more than once": "A dependency is listed more than once",
   "Invalid dependency id": "Invalid dependency id",
-  "after must name at least one task id":
-      "after must name at least one task id",
-  "Task duration exceeds the supported range":
-      "Task duration exceeds the supported range",
-  "Expected quadrantChart header, found: {0}":
-      "Expected quadrantChart header, found: {0}",
-  "Unexpected second quadrantChart header":
-      "Unexpected second quadrantChart header",
-  "classDef needs a class name and supported styles":
-      "classDef needs a class name and supported styles",
-  "Unsupported or invalid native quadrant statement: {0}":
-      "Unsupported or invalid native quadrant statement: {0}",
+  "after must name at least one task id": "after must name at least one task id",
+  "Task duration exceeds the supported range": "Task duration exceeds the supported range",
+  "Expected quadrantChart header, found: {0}": "Expected quadrantChart header, found: {0}",
+  "Unexpected second quadrantChart header": "Unexpected second quadrantChart header",
+  "classDef needs a class name and supported styles": "classDef needs a class name and supported styles",
+  "Unsupported or invalid native quadrant statement: {0}": "Unsupported or invalid native quadrant statement: {0}",
   "Expected quadrantChart header": "Expected quadrantChart header",
   "Expected non-empty label text": "Expected non-empty label text",
   "Invalid quoted label text": "Invalid quoted label text",
   "Unsupported label syntax": "Unsupported label syntax",
-  "Invalid quadrant point; expected Label: [x, y]":
-      "Invalid quadrant point; expected Label: [x, y]",
-  "Lexical error on line {0}. Unrecognized text.":
-      "Lexical error on line {0}. Unrecognized text.",
+  "Invalid quadrant point; expected Label: [x, y]": "Invalid quadrant point; expected Label: [x, y]",
+  "Lexical error on line {0}. Unrecognized text.": "Lexical error on line {0}. Unrecognized text.",
   "Invalid quadrant point style: {0}": "Invalid quadrant point style: {0}",
-  "Unsupported quadrant style property: {0}":
-      "Unsupported quadrant style property: {0}",
-  "{0} style must be a 3- or 6-digit hex color":
-      "{0} style must be a 3- or 6-digit hex color",
-  "Unsupported native Mermaid directive":
-      "Unsupported native Mermaid directive",
-  "Quadrant init directive must contain JSON":
-      "Quadrant init directive must contain JSON",
-  "Only quadrantChart init options are supported":
-      "Only quadrantChart init options are supported",
-  "quadrantChart init options must be an object":
-      "quadrantChart init options must be an object",
-  "Unsupported quadrantChart option: {0}":
-      "Unsupported quadrantChart option: {0}",
-  "{0} must be a finite non-negative number":
-      "{0} must be a finite non-negative number",
+  "Unsupported quadrant style property: {0}": "Unsupported quadrant style property: {0}",
+  "{0} style must be a 3- or 6-digit hex color": "{0} style must be a 3- or 6-digit hex color",
+  "Unsupported native Mermaid directive": "Unsupported native Mermaid directive",
+  "Quadrant init directive must contain JSON": "Quadrant init directive must contain JSON",
+  "Only quadrantChart init options are supported": "Only quadrantChart init options are supported",
+  "quadrantChart init options must be an object": "quadrantChart init options must be an object",
+  "Unsupported quadrantChart option: {0}": "Unsupported quadrantChart option: {0}",
+  "{0} must be a finite non-negative number": "{0} must be a finite non-negative number",
   "{0} has an unsupported value": "{0} has an unsupported value",
   "{0} must be a boolean": "{0} must be a boolean",
-  "Expected xychart-beta header, found: {0}":
-      "Expected xychart-beta header, found: {0}",
+  "Expected xychart-beta header, found: {0}": "Expected xychart-beta header, found: {0}",
   "Duplicate x-axis declaration": "Duplicate x-axis declaration",
   "Duplicate y-axis declaration": "Duplicate y-axis declaration",
-  "Unsupported or invalid native XY chart statement: {0}":
-      "Unsupported or invalid native XY chart statement: {0}",
+  "Unsupported or invalid native XY chart statement: {0}": "Unsupported or invalid native XY chart statement: {0}",
   "Expected xychart-beta header": "Expected xychart-beta header",
-  "No Plot to render, please provide a plot with some data":
-      "No Plot to render, please provide a plot with some data",
-  "A categorical x-axis needs at least one category":
-      "A categorical x-axis needs at least one category",
-  "Native XY chart does not support a series shorter than its category axis":
-      "Native XY chart does not support a series shorter than its category axis",
-  "{0} accepts a title, numeric range, or x-axis categories":
-      "{0} accepts a title, numeric range, or x-axis categories",
-  "A bar or line plot requires a bracketed data list":
-      "A bar or line plot requires a bracketed data list",
-  "An XY chart data list cannot contain an empty value":
-      "An XY chart data list cannot contain an empty value",
+  "No Plot to render, please provide a plot with some data": "No Plot to render, please provide a plot with some data",
+  "A categorical x-axis needs at least one category": "A categorical x-axis needs at least one category",
+  "Native XY chart does not support a series shorter than its category axis": "Native XY chart does not support a series shorter than its category axis",
+  "{0} accepts a title, numeric range, or x-axis categories": "{0} accepts a title, numeric range, or x-axis categories",
+  "A bar or line plot requires a bracketed data list": "A bar or line plot requires a bracketed data list",
+  "An XY chart data list cannot contain an empty value": "An XY chart data list cannot contain an empty value",
   "Invalid XY chart datum: {0}": "Invalid XY chart datum: {0}",
   "XY chart data list cannot be empty": "XY chart data list cannot be empty",
-  "An x-axis category list must end with ]":
-      "An x-axis category list must end with ]",
+  "An x-axis category list must end with ]": "An x-axis category list must end with ]",
   "x-axis categories cannot be empty": "x-axis categories cannot be empty",
   "Unclosed quoted text": "Unclosed quoted text",
   "Expected non-empty text": "Expected non-empty text",
   "Invalid quoted text": "Invalid quoted text",
   "Unsupported XY chart label syntax": "Unsupported XY chart label syntax",
   "Unclosed quote in XY chart list": "Unclosed quote in XY chart list",
-  "Expected a finite numeric value, found: {0}":
-      "Expected a finite numeric value, found: {0}",
+  "Expected a finite numeric value, found: {0}": "Expected a finite numeric value, found: {0}",
   "Invalid XY chart init directive": "Invalid XY chart init directive",
-  "XY chart init directive must contain an object":
-      "XY chart init directive must contain an object",
-  "xyChart init configuration must be an object":
-      "xyChart init configuration must be an object",
-  "XY chart axis config must be an object":
-      "XY chart axis config must be an object",
-  "XY chart config {0} must be a finite number":
-      "XY chart config {0} must be a finite number",
-  "XY chart config {0} must be a boolean":
-      "XY chart config {0} must be a boolean",
-  "Architecture viewport width must be positive":
-      "Architecture viewport width must be positive",
-  "Architecture diagram exceeds the native layout limit":
-      "Architecture diagram exceeds the native layout limit",
-  "Architecture group membership cycle includes \"{0}\"":
-      "Architecture group membership cycle includes \"{0}\"",
-  "Sankey needs at least one node and flow.":
-      "Sankey needs at least one node and flow.",
-  "Sankey flow {0} → {1} references a missing node.":
-      "Sankey flow {0} → {1} references a missing node.",
-  "Sankey layout needs at least two layers.":
-      "Sankey layout needs at least two layers.",
-  "Sankey source has an empty intermediate layer, which d3-sankey cannot lay out.":
-      "Sankey source has an empty intermediate layer, which d3-sankey cannot lay out.",
-  "Sankey has only zero-valued flows; the pinned D3 layout produces non-finite geometry.":
-      "Sankey has only zero-valued flows; the pinned D3 layout produces non-finite geometry.",
-  "Sankey layout produced invalid geometry.":
-      "Sankey layout produced invalid geometry.",
+  "XY chart init directive must contain an object": "XY chart init directive must contain an object",
+  "xyChart init configuration must be an object": "xyChart init configuration must be an object",
+  "XY chart axis config must be an object": "XY chart axis config must be an object",
+  "XY chart config {0} must be a finite number": "XY chart config {0} must be a finite number",
+  "XY chart config {0} must be a boolean": "XY chart config {0} must be a boolean",
+  "Architecture viewport width must be positive": "Architecture viewport width must be positive",
+  "Architecture diagram exceeds the native layout limit": "Architecture diagram exceeds the native layout limit",
+  "Architecture group membership cycle includes \"{0}\"": "Architecture group membership cycle includes \"{0}\"",
+  "Sankey needs at least one node and flow.": "Sankey needs at least one node and flow.",
+  "Sankey flow {0} → {1} references a missing node.": "Sankey flow {0} → {1} references a missing node.",
+  "Sankey layout needs at least two layers.": "Sankey layout needs at least two layers.",
+  "Sankey source has an empty intermediate layer, which d3-sankey cannot lay out.": "Sankey source has an empty intermediate layer, which d3-sankey cannot lay out.",
+  "Sankey has only zero-valued flows; the pinned D3 layout produces non-finite geometry.": "Sankey has only zero-valued flows; the pinned D3 layout produces non-finite geometry.",
+  "Sankey layout produced invalid geometry.": "Sankey layout produced invalid geometry.",
   "Sankey contains a circular link.": "Sankey contains a circular link.",
-  "Timeline text width must be positive":
-      "Timeline text width must be positive",
-  "Timeline node padding must be non-negative":
-      "Timeline node padding must be non-negative",
-  "Timeline node font and max height must be finite":
-      "Timeline node font and max height must be finite",
-  "Timeline theme color limit must be positive":
-      "Timeline theme color limit must be positive",
-  "Timeline SVG font size must be positive":
-      "Timeline SVG font size must be positive",
-  "Timeline SVG x-height must be finite":
-      "Timeline SVG x-height must be finite",
+  "Timeline text width must be positive": "Timeline text width must be positive",
+  "Timeline node padding must be non-negative": "Timeline node padding must be non-negative",
+  "Timeline node font and max height must be finite": "Timeline node font and max height must be finite",
+  "Timeline theme color limit must be positive": "Timeline theme color limit must be positive",
+  "Timeline SVG font size must be positive": "Timeline SVG font size must be positive",
+  "Timeline SVG x-height must be finite": "Timeline SVG x-height must be finite",
   "Entity relationship diagram": "Entity relationship diagram",
   "ER diagram exceeds 50000 characters": "ER diagram exceeds 50000 characters",
-  "Invalid Mermaid ER diagram at line {0}: {1}":
-      "Invalid Mermaid ER diagram at line {0}: {1}",
+  "Invalid Mermaid ER diagram at line {0}: {1}": "Invalid Mermaid ER diagram at line {0}: {1}",
   "Empty ER entity name": "Empty ER entity name",
-  "Unquoted semicolons are not supported by the pinned ER grammar":
-      "Unquoted semicolons are not supported by the pinned ER grammar",
+  "Unquoted semicolons are not supported by the pinned ER grammar": "Unquoted semicolons are not supported by the pinned ER grammar",
   "Expected erDiagram header": "Expected erDiagram header",
   "Mermaid directives are unsupported": "Mermaid directives are unsupported",
   "Unexpected text after entity block": "Unexpected text after entity block",
   "Duplicate accTitle": "Duplicate accTitle",
   "Duplicate accDescr": "Duplicate accDescr",
-  "Malformed direction or accessibility statement":
-      "Malformed direction or accessibility statement",
+  "Malformed direction or accessibility statement": "Malformed direction or accessibility statement",
   "Unclosed entity alias": "Unclosed entity alias",
   "Empty entity alias": "Empty entity alias",
   "Unsupported ER statement: {0}": "Unsupported ER statement: {0}",
   "Unclosed entity block": "Unclosed entity block",
   "Unclosed quoted text at line {0}": "Unclosed quoted text at line {0}",
-  "Invalid ER attribute comment at line {0}":
-      "Invalid ER attribute comment at line {0}",
-  "Invalid ER attribute at line {0}: expected a type and name":
-      "Invalid ER attribute at line {0}: expected a type and name",
+  "Invalid ER attribute comment at line {0}": "Invalid ER attribute comment at line {0}",
+  "Invalid ER attribute at line {0}: expected a type and name": "Invalid ER attribute at line {0}: expected a type and name",
   "Invalid ER attribute at line {0}": "Invalid ER attribute at line {0}",
   "Unsupported ER cardinality {0}": "Unsupported ER cardinality {0}",
   "zero or more": "zero or more",
   "zero or one": "zero or one",
   "one or more": "one or more",
   "exactly one": "exactly one",
-  "Mermaid architecture exceeds the default 50000 character limit":
-      "Mermaid architecture exceeds the default 50000 character limit",
+  "Mermaid architecture exceeds the default 50000 character limit": "Mermaid architecture exceeds the default 50000 character limit",
   "Expected architecture-beta header": "Expected architecture-beta header",
   "Duplicate architecture-beta header": "Duplicate architecture-beta header",
-  "Unsupported architecture statement \"{0}\"":
-      "Unsupported architecture statement \"{0}\"",
-  "Missing Mermaid architecture-beta header":
-      "Missing Mermaid architecture-beta header",
-  "Unexpected content after accDescr block":
-      "Unexpected content after accDescr block",
-  "Multiline accDescr blocks are unsupported":
-      "Multiline accDescr blocks are unsupported",
+  "Unsupported architecture statement \"{0}\"": "Unsupported architecture statement \"{0}\"",
+  "Missing Mermaid architecture-beta header": "Missing Mermaid architecture-beta header",
+  "Unexpected content after accDescr block": "Unexpected content after accDescr block",
+  "Multiline accDescr blocks are unsupported": "Multiline accDescr blocks are unsupported",
   "Expected junction id": "Expected junction id",
   "Malformed junction declaration": "Malformed junction declaration",
-  "Malformed {0} declaration for \"{1}\"":
-      "Malformed {0} declaration for \"{1}\"",
+  "Malformed {0} declaration for \"{1}\"": "Malformed {0} declaration for \"{1}\"",
   "Unexpected content in {0} \"{1}\"": "Unexpected content in {0} \"{1}\"",
   "Unterminated architecture label": "Unterminated architecture label",
-  "Icon \"{0}\" uses a namespaced icon pack; only native architecture icons are supported":
-      "Icon \"{0}\" uses a namespaced icon pack; only native architecture icons are supported",
-  "Invalid Mermaid architecture at line {0}: unknown built-in icon \"{1}\" on \"{2}\"":
-      "Invalid Mermaid architecture at line {0}: unknown built-in icon \"{1}\" on \"{2}\"",
+  "Icon \"{0}\" uses a namespaced icon pack; only native architecture icons are supported": "Icon \"{0}\" uses a namespaced icon pack; only native architecture icons are supported",
+  "Invalid Mermaid architecture at line {0}: unknown built-in icon \"{1}\" on \"{2}\"": "Invalid Mermaid architecture at line {0}: unknown built-in icon \"{1}\" on \"{2}\"",
   "Malformed edge label": "Malformed edge label",
-  "Architecture diagram exceeds the 500 edge safety limit":
-      "Architecture diagram exceeds the 500 edge safety limit",
-  "Invalid Mermaid architecture at line {0}: invalid port direction \"{1}\"":
-      "Invalid Mermaid architecture at line {0}: invalid port direction \"{1}\"",
+  "Architecture diagram exceeds the 500 edge safety limit": "Architecture diagram exceeds the 500 edge safety limit",
+  "Invalid Mermaid architecture at line {0}: invalid port direction \"{1}\"": "Invalid Mermaid architecture at line {0}: invalid port direction \"{1}\"",
   "Malformed align directive": "Malformed align directive",
-  "Align directive needs at least two members":
-      "Align directive needs at least two members",
+  "Align directive needs at least two members": "Align directive needs at least two members",
   "Align directive repeats a member": "Align directive repeats a member",
-  "{0} id \"{1}\" is already used by {2} declared at line {3}":
-      "{0} id \"{1}\" is already used by {2} declared at line {3}",
-  "Architecture diagram exceeds the 200 node/group safety limit":
-      "Architecture diagram exceeds the 200 node/group safety limit",
-  "Group \"{0}\" references missing parent group \"{1}\"":
-      "Group \"{0}\" references missing parent group \"{1}\"",
-  "Group membership cycle includes \"{0}\"":
-      "Group membership cycle includes \"{0}\"",
-  "Parent group \"{0}\" must be declared before nested group \"{1}\"":
-      "Parent group \"{0}\" must be declared before nested group \"{1}\"",
-  "Edge endpoint \"{0}\" is a group; edges must connect services or junctions":
-      "Edge endpoint \"{0}\" is a group; edges must connect services or junctions",
-  "Edge references missing service or junction \"{0}\"":
-      "Edge references missing service or junction \"{0}\"",
-  "align {0} references unknown service or junction \"{1}\"":
-      "align {0} references unknown service or junction \"{1}\"",
-  "Node \"{0}\" references missing parent group \"{1}\"":
-      "Node \"{0}\" references missing parent group \"{1}\"",
-  "Invalid Mermaid architecture{0}: {1}":
-      "Invalid Mermaid architecture{0}: {1}",
+  "{0} id \"{1}\" is already used by {2} declared at line {3}": "{0} id \"{1}\" is already used by {2} declared at line {3}",
+  "Architecture diagram exceeds the 200 node/group safety limit": "Architecture diagram exceeds the 200 node/group safety limit",
+  "Group \"{0}\" references missing parent group \"{1}\"": "Group \"{0}\" references missing parent group \"{1}\"",
+  "Group membership cycle includes \"{0}\"": "Group membership cycle includes \"{0}\"",
+  "Parent group \"{0}\" must be declared before nested group \"{1}\"": "Parent group \"{0}\" must be declared before nested group \"{1}\"",
+  "Edge endpoint \"{0}\" is a group; edges must connect services or junctions": "Edge endpoint \"{0}\" is a group; edges must connect services or junctions",
+  "Edge references missing service or junction \"{0}\"": "Edge references missing service or junction \"{0}\"",
+  "align {0} references unknown service or junction \"{1}\"": "align {0} references unknown service or junction \"{1}\"",
+  "Node \"{0}\" references missing parent group \"{1}\"": "Node \"{0}\" references missing parent group \"{1}\"",
+  "Invalid Mermaid architecture{0}: {1}": "Invalid Mermaid architecture{0}: {1}",
   "Packet diagram": "Packet diagram",
   "XY chart": "XY chart",
   "X axis: {0}": "X axis: {0}",
   "Y axis: {0}": "Y axis: {0}",
-  "Native packet viewport width must be positive":
-      "Native packet viewport width must be positive",
-  "Invalid native packet geometry config":
-      "Invalid native packet geometry config",
+  "Native packet viewport width must be positive": "Native packet viewport width must be positive",
+  "Invalid native packet geometry config": "Invalid native packet geometry config",
   "packetByte start": "packetByte start",
   "packetByte end": "packetByte end",
   "Person": "Person",
   "Software System": "Software System",
   "Container": "Container",
   "Component": "Component",
-  "C4 diagram exceeds native layout bounds.":
-      "C4 diagram exceeds native layout bounds.",
-  "C4 boundaries contain a cycle or exceed nesting limits.":
-      "C4 boundaries contain a cycle or exceed nesting limits.",
-  "C4 nodes reference an unreachable boundary.":
-      "C4 nodes reference an unreachable boundary.",
-  "C4 relationship references an unknown shape: {0} → {1}.":
-      "C4 relationship references an unknown shape: {0} → {1}.",
-  "C4 relationship has unsupported intersection geometry.":
-      "C4 relationship has unsupported intersection geometry.",
+  "C4 diagram exceeds native layout bounds.": "C4 diagram exceeds native layout bounds.",
+  "C4 boundaries contain a cycle or exceed nesting limits.": "C4 boundaries contain a cycle or exceed nesting limits.",
+  "C4 nodes reference an unreachable boundary.": "C4 nodes reference an unreachable boundary.",
+  "C4 relationship references an unknown shape: {0} → {1}.": "C4 relationship references an unknown shape: {0} → {1}.",
+  "C4 relationship has unsupported intersection geometry.": "C4 relationship has unsupported intersection geometry.",
   "must not be empty": "must not be empty",
-  "width and height must be finite and greater than zero":
-      "width and height must be finite and greater than zero",
-  "a connected tree with {0} nodes must have {1} edges":
-      "a connected tree with {0} nodes must have {1} edges",
+  "width and height must be finite and greater than zero": "width and height must be finite and greater than zero",
+  "a connected tree with {0} nodes must have {1} edges": "a connected tree with {0} nodes must have {1} edges",
   "node index is out of range": "node index is out of range",
-  "self edges and duplicate edges are not tree edges":
-      "self edges and duplicate edges are not tree edges",
+  "self edges and duplicate edges are not tree edges": "self edges and duplicate edges are not tree edges",
   "the input graph must be connected": "the input graph must be connected",
-  "CoSE radial traversal lost its parent edge":
-      "CoSE radial traversal lost its parent edge",
-  "Unable to clip non-overlapping CoSE rectangles":
-      "Unable to clip non-overlapping CoSE rectangles",
-  "Invalid CoSE clipping cardinal direction: {0}":
-      "Invalid CoSE clipping cardinal direction: {0}",
+  "CoSE radial traversal lost its parent edge": "CoSE radial traversal lost its parent edge",
+  "Unable to clip non-overlapping CoSE rectangles": "Unable to clip non-overlapping CoSE rectangles",
+  "Invalid CoSE clipping cardinal direction: {0}": "Invalid CoSE clipping cardinal direction: {0}",
   "Must be finite and non-negative.": "Must be finite and non-negative.",
-  "Must be finite and greater than zero.":
-      "Must be finite and greater than zero.",
-  "Unsupported native Mermaid C4 shape \"{0}\". Supported shapes: person, rounded, fr-rect, cylinder, h-cyl.":
-      "Unsupported native Mermaid C4 shape \"{0}\". Supported shapes: person, rounded, fr-rect, cylinder, h-cyl.",
+  "Must be finite and greater than zero.": "Must be finite and greater than zero.",
+  "Unsupported native Mermaid C4 shape \"{0}\". Supported shapes: person, rounded, fr-rect, cylinder, h-cyl.": "Unsupported native Mermaid C4 shape \"{0}\". Supported shapes: person, rounded, fr-rect, cylinder, h-cyl.",
   "Cyclic state containment": "Cyclic state containment",
   "State nesting exceeds 64 levels": "State nesting exceeds 64 levels",
-  "State references an unrenderable parent":
-      "State references an unrenderable parent",
+  "State references an unrenderable parent": "State references an unrenderable parent",
   "Missing state transition endpoint": "Missing state transition endpoint",
-  "Native Gantt requires at least one task":
-      "Native Gantt requires at least one task",
-  "Native Gantt viewport is too narrow for its fixed margins":
-      "Native Gantt viewport is too narrow for its fixed margins",
-  "Native Gantt vertical task markers are not yet rendered":
-      "Native Gantt vertical task markers are not yet rendered",
-  "Native Gantt exclusion range is too large":
-      "Native Gantt exclusion range is too large",
-  "Native Gantt axis contains too many ticks":
-      "Native Gantt axis contains too many ticks",
+  "Native Gantt requires at least one task": "Native Gantt requires at least one task",
+  "Native Gantt viewport is too narrow for its fixed margins": "Native Gantt viewport is too narrow for its fixed margins",
+  "Native Gantt vertical task markers are not yet rendered": "Native Gantt vertical task markers are not yet rendered",
+  "Native Gantt exclusion range is too large": "Native Gantt exclusion range is too large",
+  "Native Gantt axis contains too many ticks": "Native Gantt axis contains too many ticks",
   "Mon": "Mon",
   "Tue": "Tue",
   "Wed": "Wed",
@@ -2266,50 +1729,33 @@ const englishMessages = <String, String>{
   "Fri": "Fri",
   "Sat": "Sat",
   "Sun": "Sun",
-  "Native Gantt axis format {0} is not yet supported":
-      "Native Gantt axis format {0} is not yet supported",
-  "Block diagram exceeds 50000 characters.":
-      "Block diagram exceeds 50000 characters.",
-  "Expected a block-beta diagram header.":
-      "Expected a block-beta diagram header.",
+  "Native Gantt axis format {0} is not yet supported": "Native Gantt axis format {0} is not yet supported",
+  "Block diagram exceeds 50000 characters.": "Block diagram exceeds 50000 characters.",
+  "Expected a block-beta diagram header.": "Expected a block-beta diagram header.",
   "Missing block-beta diagram header.": "Missing block-beta diagram header.",
   "Unexpected end at line {0}.": "Unexpected end at line {0}.",
   "Invalid block ID at line {0}.": "Invalid block ID at line {0}.",
-  "Block classes and style directives are unsupported (line {0}).":
-      "Block classes and style directives are unsupported (line {0}).",
-  "Invalid columns setting at line {0}.":
-      "Invalid columns setting at line {0}.",
-  "Mermaid directives are unsupported (line {0}).":
-      "Mermaid directives are unsupported (line {0}).",
-  "Block has no matching end (opened before line {0}).":
-      "Block has no matching end (opened before line {0}).",
-  "A space block cannot be connected (line {0}).":
-      "A space block cannot be connected (line {0}).",
+  "Block classes and style directives are unsupported (line {0}).": "Block classes and style directives are unsupported (line {0}).",
+  "Invalid columns setting at line {0}.": "Invalid columns setting at line {0}.",
+  "Mermaid directives are unsupported (line {0}).": "Mermaid directives are unsupported (line {0}).",
+  "Block has no matching end (opened before line {0}).": "Block has no matching end (opened before line {0}).",
+  "A space block cannot be connected (line {0}).": "A space block cannot be connected (line {0}).",
   "Incomplete block edge at line {0}.": "Incomplete block edge at line {0}.",
-  "Expected a complete edge after its label at line {0}.":
-      "Expected a complete edge after its label at line {0}.",
-  "Block edge has no destination at line {0}.":
-      "Block edge has no destination at line {0}.",
-  "Block edges must connect ordinary nodes (line {0}).":
-      "Block edges must connect ordinary nodes (line {0}).",
+  "Expected a complete edge after its label at line {0}.": "Expected a complete edge after its label at line {0}.",
+  "Block edge has no destination at line {0}.": "Block edge has no destination at line {0}.",
+  "Block edges must connect ordinary nodes (line {0}).": "Block edges must connect ordinary nodes (line {0}).",
   "Expected a space count at line {0}.": "Expected a space count at line {0}.",
   "Expected a block ID at line {0}.": "Expected a block ID at line {0}.",
-  "Expected a quoted block label at line {0}.":
-      "Expected a quoted block label at line {0}.",
+  "Expected a quoted block label at line {0}.": "Expected a quoted block label at line {0}.",
   "Unclosed block shape at line {0}.": "Unclosed block shape at line {0}.",
   "Expected a block span at line {0}.": "Expected a block span at line {0}.",
-  "HTML block labels are not supported (line {0}).":
-      "HTML block labels are not supported (line {0}).",
+  "HTML block labels are not supported (line {0}).": "HTML block labels are not supported (line {0}).",
   "Expected quoted text at line {0}.": "Expected quoted text at line {0}.",
   "Unclosed quoted text at line {0}.": "Unclosed quoted text at line {0}.",
-  "Native block chart width must be positive.":
-      "Native block chart width must be positive.",
-  "Native block chart metrics are invalid.":
-      "Native block chart metrics are invalid.",
-  "Columns must be an integer other than zero.":
-      "Columns must be an integer other than zero.",
-  "Block edge {0} to {1} references a missing node.":
-      "Block edge {0} to {1} references a missing node.",
+  "Native block chart width must be positive.": "Native block chart width must be positive.",
+  "Native block chart metrics are invalid.": "Native block chart metrics are invalid.",
+  "Columns must be an integer other than zero.": "Columns must be an integer other than zero.",
+  "Block edge {0} to {1} references a missing node.": "Block edge {0} to {1} references a missing node.",
   "Block positions cannot be negative.": "Block positions cannot be negative.",
   "Quadrant chart": "Quadrant chart",
   "X axis: {0}{1}": "X axis: {0}{1}",
@@ -2318,159 +1764,106 @@ const englishMessages = <String, String>{
   "Unsupported requirement size: {0}": "Unsupported requirement size: {0}",
   "Unsupported requirement style: {0}": "Unsupported requirement style: {0}",
   "Doc Ref: {0}": "Doc Ref: {0}",
-  "Unknown requirement relation endpoint: {0} → {1}":
-      "Unknown requirement relation endpoint: {0} → {1}",
+  "Unknown requirement relation endpoint: {0} → {1}": "Unknown requirement relation endpoint: {0} → {1}",
   "Kanban width must be positive": "Kanban width must be positive",
   "Kanban board": "Kanban board",
-  "Kanban Markdown images are not supported by the native renderer":
-      "Kanban Markdown images are not supported by the native renderer",
-  "Inline HTML styles in Kanban labels are unsupported":
-      "Inline HTML styles in Kanban labels are unsupported",
-  "Native quadrant viewport width must be positive":
-      "Native quadrant viewport width must be positive",
-  "Native quadrant chart dimensions must be positive":
-      "Native quadrant chart dimensions must be positive",
-  "Native quadrant labels leave no room for the plot":
-      "Native quadrant labels leave no room for the plot",
-  "Sankey input exceeds 50000 characters.":
-      "Sankey input exceeds 50000 characters.",
-  "Expected a sankey or sankey-beta header.":
-      "Expected a sankey or sankey-beta header.",
-  "Sankey row {0} must have source, target, and value fields.":
-      "Sankey row {0} must have source, target, and value fields.",
-  "Sankey row {0} has an empty node id.":
-      "Sankey row {0} has an empty node id.",
-  "Sankey row {0} has an unsupported flow value: {1}":
-      "Sankey row {0} has an unsupported flow value: {1}",
+  "Kanban Markdown images are not supported by the native renderer": "Kanban Markdown images are not supported by the native renderer",
+  "Inline HTML styles in Kanban labels are unsupported": "Inline HTML styles in Kanban labels are unsupported",
+  "Native quadrant viewport width must be positive": "Native quadrant viewport width must be positive",
+  "Native quadrant chart dimensions must be positive": "Native quadrant chart dimensions must be positive",
+  "Native quadrant labels leave no room for the plot": "Native quadrant labels leave no room for the plot",
+  "Sankey input exceeds 50000 characters.": "Sankey input exceeds 50000 characters.",
+  "Expected a sankey or sankey-beta header.": "Expected a sankey or sankey-beta header.",
+  "Sankey row {0} must have source, target, and value fields.": "Sankey row {0} must have source, target, and value fields.",
+  "Sankey row {0} has an empty node id.": "Sankey row {0} has an empty node id.",
+  "Sankey row {0} has an unsupported flow value: {1}": "Sankey row {0} has an unsupported flow value: {1}",
   "Sankey needs at least one flow row.": "Sankey needs at least one flow row.",
-  "Unclosed quoted field on Sankey row {0}.":
-      "Unclosed quoted field on Sankey row {0}.",
-  "Unexpected text after a quoted field on Sankey row {0}.":
-      "Unexpected text after a quoted field on Sankey row {0}.",
-  "Unexpected quote in an unquoted field on Sankey row {0}.":
-      "Unexpected quote in an unquoted field on Sankey row {0}.",
-  "Sankey row {0} contains characters outside the pinned ASCII parser subset.":
-      "Sankey row {0} contains characters outside the pinned ASCII parser subset.",
-  "Mermaid diagram exceeds the default 50000 character limit":
-      "Mermaid diagram exceeds the default 50000 character limit",
-  "Invalid Mermaid mindmap at line {0}: {1}":
-      "Invalid Mermaid mindmap at line {0}: {1}",
+  "Unclosed quoted field on Sankey row {0}.": "Unclosed quoted field on Sankey row {0}.",
+  "Unexpected text after a quoted field on Sankey row {0}.": "Unexpected text after a quoted field on Sankey row {0}.",
+  "Unexpected quote in an unquoted field on Sankey row {0}.": "Unexpected quote in an unquoted field on Sankey row {0}.",
+  "Sankey row {0} contains characters outside the pinned ASCII parser subset.": "Sankey row {0} contains characters outside the pinned ASCII parser subset.",
+  "Mermaid diagram exceeds the default 50000 character limit": "Mermaid diagram exceeds the default 50000 character limit",
+  "Invalid Mermaid mindmap at line {0}: {1}": "Invalid Mermaid mindmap at line {0}: {1}",
   "Expected a mindmap header": "Expected a mindmap header",
-  "Class directive has no preceding node":
-      "Class directive has no preceding node",
+  "Class directive has no preceding node": "Class directive has no preceding node",
   "Class directive cannot be empty": "Class directive cannot be empty",
-  "Icon directive has no preceding node":
-      "Icon directive has no preceding node",
+  "Icon directive has no preceding node": "Icon directive has no preceding node",
   "Malformed icon directive": "Malformed icon directive",
-  "There can be only one root. No parent could be found for (\"{0}\")":
-      "There can be only one root. No parent could be found for (\"{0}\")",
+  "There can be only one root. No parent could be found for (\"{0}\")": "There can be only one root. No parent could be found for (\"{0}\")",
   "Missing Mermaid mindmap header": "Missing Mermaid mindmap header",
   "Mindmap must contain a root node": "Mindmap must contain a root node",
   "Node label cannot be empty": "Node label cannot be empty",
-  "Malformed {0} node; expected closing delimiter \"{1}\"":
-      "Malformed {0} node; expected closing delimiter \"{1}\"",
-  "This diagram type is not yet supported by the native Mermaid renderer":
-      "This diagram type is not yet supported by the native Mermaid renderer",
+  "Malformed {0} node; expected closing delimiter \"{1}\"": "Malformed {0} node; expected closing delimiter \"{1}\"",
+  "This diagram type is not yet supported by the native Mermaid renderer": "This diagram type is not yet supported by the native Mermaid renderer",
   "Class diagram": "Class diagram",
-  "Invalid Mermaid class diagram at line {0}: {1}":
-      "Invalid Mermaid class diagram at line {0}: {1}",
+  "Invalid Mermaid class diagram at line {0}: {1}": "Invalid Mermaid class diagram at line {0}: {1}",
   "Empty class annotation": "Empty class annotation",
   "Malformed class method": "Malformed class method",
   "Method name is empty": "Method name is empty",
   "Attribute name is empty": "Attribute name is empty",
   "Unclosed quote in member": "Unclosed quote in member",
-  "Invalid Mermaid class diagram at line {0}: unsupported relation marker {1}":
-      "Invalid Mermaid class diagram at line {0}: unsupported relation marker {1}",
+  "Invalid Mermaid class diagram at line {0}: unsupported relation marker {1}": "Invalid Mermaid class diagram at line {0}: unsupported relation marker {1}",
   "Expected class name": "Expected class name",
   "Unknown class statement": "Unknown class statement",
   "Expected class name after relation": "Expected class name after relation",
-  "Unexpected text after class relation":
-      "Unexpected text after class relation",
-  "Class diagram exceeds 50000 characters":
-      "Class diagram exceeds 50000 characters",
+  "Unexpected text after class relation": "Unexpected text after class relation",
+  "Class diagram exceeds 50000 characters": "Class diagram exceeds 50000 characters",
   "Class name cannot be empty": "Class name cannot be empty",
   "Unexpected closing brace": "Unexpected closing brace",
   "Expected class name after note for": "Expected class name after note for",
   "Unexpected text after note": "Unexpected text after note",
   "Expected quoted note text": "Expected quoted note text",
-  "Styling and clickable class directives are not supported natively":
-      "Styling and clickable class directives are not supported natively",
+  "Styling and clickable class directives are not supported natively": "Styling and clickable class directives are not supported natively",
   "Expected quoted class label": "Expected quoted class label",
-  "Expected closing bracket after class label":
-      "Expected closing bracket after class label",
-  "Unsupported class declaration suffix":
-      "Unsupported class declaration suffix",
-  "Only notes of the form note for Class are supported":
-      "Only notes of the form note for Class are supported",
-  "Expected classDiagram or classDiagram-v2 header":
-      "Expected classDiagram or classDiagram-v2 header",
+  "Expected closing bracket after class label": "Expected closing bracket after class label",
+  "Unsupported class declaration suffix": "Unsupported class declaration suffix",
+  "Only notes of the form note for Class are supported": "Only notes of the form note for Class are supported",
+  "Expected classDiagram or classDiagram-v2 header": "Expected classDiagram or classDiagram-v2 header",
   "Class block lost its owner": "Class block lost its owner",
   "Missing class diagram header": "Missing class diagram header",
   "Unclosed class body": "Unclosed class body",
   "Unclosed namespace": "Unclosed namespace",
-  "Mindmap font tracking must be finite":
-      "Mindmap font tracking must be finite",
-  "Mindmap viewport width must be positive":
-      "Mindmap viewport width must be positive",
-  "Native mindmap label element {0} is not yet supported":
-      "Native mindmap label element {0} is not yet supported",
-  "Native mindmap label CSS {0} is not yet supported":
-      "Native mindmap label CSS {0} is not yet supported",
-  "Requirement diagram exceeds 50000 characters":
-      "Requirement diagram exceeds 50000 characters",
-  "Invalid Mermaid requirement diagram at line {0}: {1}":
-      "Invalid Mermaid requirement diagram at line {0}: {1}",
-  "Expected a requirementDiagram header":
-      "Expected a requirementDiagram header",
-  "Unexpected text after accDescr closing brace":
-      "Unexpected text after accDescr closing brace",
+  "Mindmap font tracking must be finite": "Mindmap font tracking must be finite",
+  "Mindmap viewport width must be positive": "Mindmap viewport width must be positive",
+  "Native mindmap label element {0} is not yet supported": "Native mindmap label element {0} is not yet supported",
+  "Native mindmap label CSS {0} is not yet supported": "Native mindmap label CSS {0} is not yet supported",
+  "Requirement diagram exceeds 50000 characters": "Requirement diagram exceeds 50000 characters",
+  "Invalid Mermaid requirement diagram at line {0}: {1}": "Invalid Mermaid requirement diagram at line {0}: {1}",
+  "Expected a requirementDiagram header": "Expected a requirementDiagram header",
+  "Unexpected text after accDescr closing brace": "Unexpected text after accDescr closing brace",
   "Direction must be TB, BT, LR, or RL": "Direction must be TB, BT, LR, or RL",
-  "Native requirement diagrams support at most 512 nodes":
-      "Native requirement diagrams support at most 512 nodes",
+  "Native requirement diagrams support at most 512 nodes": "Native requirement diagrams support at most 512 nodes",
   "Malformed class or style statement": "Malformed class or style statement",
-  "Native requirement diagrams support at most 1024 relations":
-      "Native requirement diagrams support at most 1024 relations",
-  "Unsupported requirementDiagram statement":
-      "Unsupported requirementDiagram statement",
-  "Missing Mermaid requirementDiagram header":
-      "Missing Mermaid requirementDiagram header",
-  "Unexpected text after node opening brace":
-      "Unexpected text after node opening brace",
+  "Native requirement diagrams support at most 1024 relations": "Native requirement diagrams support at most 1024 relations",
+  "Unsupported requirementDiagram statement": "Unsupported requirementDiagram statement",
+  "Missing Mermaid requirementDiagram header": "Missing Mermaid requirementDiagram header",
+  "Unexpected text after node opening brace": "Unexpected text after node opening brace",
   "Inline class list cannot be empty": "Inline class list cannot be empty",
   "Node name cannot be empty": "Node name cannot be empty",
   "Unsupported requirement type": "Unsupported requirement type",
-  "{0} statement must have targets and a value":
-      "{0} statement must have targets and a value",
+  "{0} statement must have targets and a value": "{0} statement must have targets and a value",
   "Expected a field or closing brace": "Expected a field or closing brace",
-  "Unsupported requirement field \"{0}\"":
-      "Unsupported requirement field \"{0}\"",
+  "Unsupported requirement field \"{0}\"": "Unsupported requirement field \"{0}\"",
   "Unsupported element field \"{0}\"": "Unsupported element field \"{0}\"",
   "Unclosed node definition": "Unclosed node definition",
   "Unknown relationship type": "Unknown relationship type",
   "Relationship has no destination": "Relationship has no destination",
-  "Unexpected text after relationship destination":
-      "Unexpected text after relationship destination",
+  "Unexpected text after relationship destination": "Unexpected text after relationship destination",
   "Unclosed quoted identifier": "Unclosed quoted identifier",
   "Identifier cannot be empty": "Identifier cannot be empty",
   "Unclosed quoted name": "Unclosed quoted name",
   "Unexpected quote in name": "Unexpected quote in name",
   "Name cannot be empty": "Name cannot be empty",
-  "Invalid unquoted name; quote names containing punctuation":
-      "Invalid unquoted name; quote names containing punctuation",
+  "Invalid unquoted name; quote names containing punctuation": "Invalid unquoted name; quote names containing punctuation",
   "Name list contains an empty value": "Name list contains an empty value",
   "Unclosed quoted value": "Unclosed quoted value",
-  "Comma-separated list contains an empty value":
-      "Comma-separated list contains an empty value",
-  "CSS style contains characters unsupported by Mermaid":
-      "CSS style contains characters unsupported by Mermaid",
-  "CSS style must be a non-empty property:value declaration":
-      "CSS style must be a non-empty property:value declaration",
-  "Invalid CSS style declaration \"{0}\"":
-      "Invalid CSS style declaration \"{0}\"",
+  "Comma-separated list contains an empty value": "Comma-separated list contains an empty value",
+  "CSS style contains characters unsupported by Mermaid": "CSS style contains characters unsupported by Mermaid",
+  "CSS style must be a non-empty property:value declaration": "CSS style must be a non-empty property:value declaration",
+  "Invalid CSS style declaration \"{0}\"": "Invalid CSS style declaration \"{0}\"",
   "Unclosed quoted field value": "Unclosed quoted field value",
   "Unexpected quote in field value": "Unexpected quote in field value",
-  "Invalid unquoted field value; quote values containing punctuation":
-      "Invalid unquoted field value; quote values containing punctuation",
+  "Invalid unquoted field value; quote values containing punctuation": "Invalid unquoted field value; quote values containing punctuation",
   "Requirement": "Requirement",
   "Functional Requirement": "Functional Requirement",
   "Interface Requirement": "Interface Requirement",
@@ -2481,143 +1874,92 @@ const englishMessages = <String, String>{
   "Demonstration": "Demonstration",
   "Inspection": "Inspection",
   "Test": "Test",
-  "Mermaid packet source exceeds the 50,000 character limit":
-      "Mermaid packet source exceeds the 50,000 character limit",
-  "Packet YAML frontmatter is unsupported by the native renderer":
-      "Packet YAML frontmatter is unsupported by the native renderer",
-  "Packet init directives must appear before the diagram header":
-      "Packet init directives must appear before the diagram header",
-  "Only one packet init directive is supported":
-      "Only one packet init directive is supported",
-  "Expected packet or packet-beta header, found: {0}":
-      "Expected packet or packet-beta header, found: {0}",
+  "Mermaid packet source exceeds the 50,000 character limit": "Mermaid packet source exceeds the 50,000 character limit",
+  "Packet YAML frontmatter is unsupported by the native renderer": "Packet YAML frontmatter is unsupported by the native renderer",
+  "Packet init directives must appear before the diagram header": "Packet init directives must appear before the diagram header",
+  "Only one packet init directive is supported": "Only one packet init directive is supported",
+  "Expected packet or packet-beta header, found: {0}": "Expected packet or packet-beta header, found: {0}",
   "Unexpected second packet header": "Unexpected second packet header",
-  "Mermaid packet exceeds the 10,000 field limit":
-      "Mermaid packet exceeds the 10,000 field limit",
-  "Packet field {0} is not contiguous; expected {1}":
-      "Packet field {0} is not contiguous; expected {1}",
-  "Packet field {0} is invalid; a field cannot have zero bits":
-      "Packet field {0} is invalid; a field cannot have zero bits",
-  "Packet field {0}-{1} is invalid; end must not precede start":
-      "Packet field {0}-{1} is invalid; end must not precede start",
-  "Mermaid packet exceeds the 10,000 row limit":
-      "Mermaid packet exceeds the 10,000 row limit",
-  "Expected packet or packet-beta header":
-      "Expected packet or packet-beta header",
-  "Only JSON packet init directives are supported":
-      "Only JSON packet init directives are supported",
-  "Packet init directive must contain valid JSON":
-      "Packet init directive must contain valid JSON",
-  "Packet init directive must be a JSON object":
-      "Packet init directive must be a JSON object",
-  "Packet init directive may only contain the packet object":
-      "Packet init directive may only contain the packet object",
-  "Packet init directive requires a packet object":
-      "Packet init directive requires a packet object",
-  "Unsupported packet init setting: {0}":
-      "Unsupported packet init setting: {0}",
-  "packet.paddingX must be smaller than packet.bitWidth":
-      "packet.paddingX must be smaller than packet.bitWidth",
+  "Mermaid packet exceeds the 10,000 field limit": "Mermaid packet exceeds the 10,000 field limit",
+  "Packet field {0} is not contiguous; expected {1}": "Packet field {0} is not contiguous; expected {1}",
+  "Packet field {0} is invalid; a field cannot have zero bits": "Packet field {0} is invalid; a field cannot have zero bits",
+  "Packet field {0}-{1} is invalid; end must not precede start": "Packet field {0}-{1} is invalid; end must not precede start",
+  "Mermaid packet exceeds the 10,000 row limit": "Mermaid packet exceeds the 10,000 row limit",
+  "Expected packet or packet-beta header": "Expected packet or packet-beta header",
+  "Only JSON packet init directives are supported": "Only JSON packet init directives are supported",
+  "Packet init directive must contain valid JSON": "Packet init directive must contain valid JSON",
+  "Packet init directive must be a JSON object": "Packet init directive must be a JSON object",
+  "Packet init directive may only contain the packet object": "Packet init directive may only contain the packet object",
+  "Packet init directive requires a packet object": "Packet init directive requires a packet object",
+  "Unsupported packet init setting: {0}": "Unsupported packet init setting: {0}",
+  "packet.paddingX must be smaller than packet.bitWidth": "packet.paddingX must be smaller than packet.bitWidth",
   "{0} must be a finite number": "{0} must be a finite number",
   "positive and at most {0}": "positive and at most {0}",
   "{0} must be {1}": "{0} must be {1}",
   "Invalid packet field syntax: {0}": "Invalid packet field syntax: {0}",
-  "Packet bit range is outside the supported integer range":
-      "Packet bit range is outside the supported integer range",
-  "Packet labels must be quoted strings":
-      "Packet labels must be quoted strings",
+  "Packet bit range is outside the supported integer range": "Packet bit range is outside the supported integer range",
+  "Packet labels must be quoted strings": "Packet labels must be quoted strings",
   "Unexpected quote in packet label": "Unexpected quote in packet label",
   "Unterminated packet label escape": "Unterminated packet label escape",
   "C4 diagram exceeds 50000 characters": "C4 diagram exceeds 50000 characters",
   "global": "global",
   "Invalid Mermaid C4 at line {0}: {1}": "Invalid Mermaid C4 at line {0}: {1}",
   "Missing Mermaid C4 header": "Missing Mermaid C4 header",
-  "Expected C4Context, C4Container, C4Component, C4Dynamic, or C4Deployment":
-      "Expected C4Context, C4Container, C4Component, C4Dynamic, or C4Deployment",
+  "Expected C4Context, C4Container, C4Component, C4Dynamic, or C4Deployment": "Expected C4Context, C4Container, C4Component, C4Dynamic, or C4Deployment",
   "Unmatched boundary close": "Unmatched boundary close",
-  "Diagram direction is not supported natively":
-      "Diagram direction is not supported natively",
-  "Accessibility metadata is not supported natively":
-      "Accessibility metadata is not supported natively",
+  "Diagram direction is not supported natively": "Diagram direction is not supported natively",
+  "Accessibility metadata is not supported natively": "Accessibility metadata is not supported natively",
   "{0} requires an opening \"{\"": "{0} requires an opening \"{\"",
-  "Unsupported or invalid statement \"{0}\"":
-      "Unsupported or invalid statement \"{0}\"",
-  "Boundary \"{0}\" is missing a closing \"}\"":
-      "Boundary \"{0}\" is missing a closing \"}\"",
-  "Relationship references unknown source \"{0}\"":
-      "Relationship references unknown source \"{0}\"",
-  "Relationship references unknown destination \"{0}\"":
-      "Relationship references unknown destination \"{0}\"",
+  "Unsupported or invalid statement \"{0}\"": "Unsupported or invalid statement \"{0}\"",
+  "Boundary \"{0}\" is missing a closing \"}\"": "Boundary \"{0}\" is missing a closing \"}\"",
+  "Relationship references unknown source \"{0}\"": "Relationship references unknown source \"{0}\"",
+  "Relationship references unknown destination \"{0}\"": "Relationship references unknown destination \"{0}\"",
   "Expected a statement name": "Expected a statement name",
   "Expected whitespace after title": "Expected whitespace after title",
   "Semicolon is not supported in title": "Semicolon is not supported in title",
   "Expected \"(\" after statement name": "Expected \"(\" after statement name",
-  "Text after a closing quote is not supported by Mermaid C4":
-      "Text after a closing quote is not supported by Mermaid C4",
-  "Nested parentheses are not supported in arguments":
-      "Nested parentheses are not supported in arguments",
-  "Semicolon is not supported in C4 statements":
-      "Semicolon is not supported in C4 statements",
+  "Text after a closing quote is not supported by Mermaid C4": "Text after a closing quote is not supported by Mermaid C4",
+  "Nested parentheses are not supported in arguments": "Nested parentheses are not supported in arguments",
+  "Semicolon is not supported in C4 statements": "Semicolon is not supported in C4 statements",
   "Unterminated quoted argument": "Unterminated quoted argument",
   "Unclosed argument list": "Unclosed argument list",
-  "Quoted argument must occupy the complete argument":
-      "Quoted argument must occupy the complete argument",
+  "Quoted argument must occupy the complete argument": "Quoted argument must occupy the complete argument",
   "Unterminated quoted attribute value": "Unterminated quoted attribute value",
   "Unexpected text after statement": "Unexpected text after statement",
   "{0} needs an alias and label": "{0} needs an alias and label",
   "Boundary type needs one value": "Boundary type needs one value",
-  "Boundary type is missing after named attribute \"{0}\"":
-      "Boundary type is missing after named attribute \"{0}\"",
-  "{0} needs source, destination, and label":
-      "{0} needs source, destination, and label",
+  "Boundary type is missing after named attribute \"{0}\"": "Boundary type is missing after named attribute \"{0}\"",
+  "{0} needs source, destination, and label": "{0} needs source, destination, and label",
   "source alias": "source alias",
   "destination alias": "destination alias",
   "extra argument": "extra argument",
-  "The {0} attribute is not supported natively":
-      "The {0} attribute is not supported natively",
-  "UpdateElementStyle needs an alias and at most nine style values":
-      "UpdateElementStyle needs an alias and at most nine style values",
+  "The {0} attribute is not supported natively": "The {0} attribute is not supported natively",
+  "UpdateElementStyle needs an alias and at most nine style values": "UpdateElementStyle needs an alias and at most nine style values",
   "element alias": "element alias",
-  "UpdateRelStyle needs source and destination aliases and at most four style values":
-      "UpdateRelStyle needs source and destination aliases and at most four style values",
-  "UpdateLayoutConfig needs shapeInRow and boundaryInRow":
-      "UpdateLayoutConfig needs shapeInRow and boundaryInRow",
+  "UpdateRelStyle needs source and destination aliases and at most four style values": "UpdateRelStyle needs source and destination aliases and at most four style values",
+  "UpdateLayoutConfig needs shapeInRow and boundaryInRow": "UpdateLayoutConfig needs shapeInRow and boundaryInRow",
   "{0} must begin with an integer": "{0} must begin with an integer",
-  "{0} is outside the supported integer range":
-      "{0} is outside the supported integer range",
+  "{0} is outside the supported integer range": "{0} is outside the supported integer range",
   "{0} must have one value": "{0} must have one value",
   "{0} must be a string": "{0} must be a string",
-  "The \"{0}\" attribute is not supported natively":
-      "The \"{0}\" attribute is not supported natively",
+  "The \"{0}\" attribute is not supported natively": "The \"{0}\" attribute is not supported natively",
   "Unsupported Mermaid directive": "Unsupported Mermaid directive",
-  "Only the Mermaid init setting c4.wrap is supported natively":
-      "Only the Mermaid init setting c4.wrap is supported natively",
+  "Only the Mermaid init setting c4.wrap is supported natively": "Only the Mermaid init setting c4.wrap is supported natively",
   "document canvas pointer surface": "document canvas pointer surface",
-  "while dispatching {0} for canvas pointer {1}":
-      "while dispatching {0} for canvas pointer {1}",
-  "while completing {0} for canvas pointer {1}":
-      "while completing {0} for canvas pointer {1}",
+  "while dispatching {0} for canvas pointer {1}": "while dispatching {0} for canvas pointer {1}",
+  "while completing {0} for canvas pointer {1}": "while completing {0} for canvas pointer {1}",
   "native canvas pointer": "native canvas pointer",
-  "paragraph anywhere min-content width":
-      "paragraph anywhere min-content width",
-  "This form uses a submit control that is not yet supported.":
-      "This form uses a submit control that is not yet supported.",
-  "此表單使用尚未支援的內容，無法送出。":
-      "This form contains unsupported content and cannot be submitted.",
-  "This form uses content that is not yet supported.":
-      "This form uses content that is not yet supported.",
-  "Directional form entries are not yet supported.":
-      "Directional form entries are not yet supported.",
-  "This form includes a control that is not yet supported.":
-      "This form includes a control that is not yet supported.",
-  "Form navigation is not yet available in this native document.":
-      "Form navigation is not yet available in this native document.",
+  "paragraph anywhere min-content width": "paragraph anywhere min-content width",
+  "This form uses a submit control that is not yet supported.": "This form uses a submit control that is not yet supported.",
+  "此表單使用尚未支援的內容，無法送出。": "This form contains unsupported content and cannot be submitted.",
+  "This form uses content that is not yet supported.": "This form uses content that is not yet supported.",
+  "Directional form entries are not yet supported.": "Directional form entries are not yet supported.",
+  "This form includes a control that is not yet supported.": "This form includes a control that is not yet supported.",
+  "Form navigation is not yet available in this native document.": "Form navigation is not yet available in this native document.",
   "此原生頁面尚未支援表單導覽。": "Form navigation is not yet supported on this native page.",
-  "此表單使用尚未支援的提交控制項。":
-      "This form uses a submit control that is not yet supported.",
+  "此表單使用尚未支援的提交控制項。": "This form uses a submit control that is not yet supported.",
   "此表單使用尚未支援的欄位格式。": "This form uses an unsupported field format.",
-  "此表單包含尚未支援的控制項，無法送出。":
-      "This form contains an unsupported control and cannot be submitted.",
+  "此表單包含尚未支援的控制項，無法送出。": "This form contains an unsupported control and cannot be submitted.",
   "此表單的送出格式尚未支援。": "This form’s submission format is not supported.",
   "請輸入有效值。": "Please enter a valid value.",
   "Please enter a valid value.": "Please enter a valid value.",
@@ -2628,141 +1970,85 @@ const englishMessages = <String, String>{
   "請選取一或多個檔案。": "Please select one or more files.",
   "請選取檔案。": "Please select a file.",
   "請填寫這個欄位。": "Please fill out this field.",
-  "Please check this box if you want to proceed.":
-      "Please check this box if you want to proceed.",
+  "Please check this box if you want to proceed.": "Please check this box if you want to proceed.",
   "Please select one of these options.": "Please select one of these options.",
   "Please select an item in the list.": "Please select an item in the list.",
   "Please select one or more files.": "Please select one or more files.",
   "Please select a file.": "Please select a file.",
   "Please fill out this field.": "Please fill out this field.",
   "請輸入網址。": "Please enter a URL.",
-  "請在電子郵件地址中包含「@」。「{0}」未包含「@」。":
-      "Include an “@” in the email address. “{0}” does not include an “@”.",
+  "請在電子郵件地址中包含「@」。「{0}」未包含「@」。": "Include an “@” in the email address. “{0}” does not include an “@”.",
   "請輸入有效的電子郵件地址。": "Please enter a valid email address.",
   "Please enter a URL.": "Please enter a URL.",
   "Please enter an email address.": "Please enter an email address.",
   "請符合要求的格式。": "Please match the required format.",
   "Please match the requested format.": "Please match the requested format.",
-  "Value must be greater than or equal to {0}.":
-      "Value must be greater than or equal to {0}.",
-  "Value must be less than or equal to {0}.":
-      "Value must be less than or equal to {0}.",
-  "Please lengthen this text to {0} characters or more.":
-      "Please lengthen this text to {0} characters or more.",
-  "Please shorten this text to {0} characters or less.":
-      "Please shorten this text to {0} characters or less.",
+  "Value must be greater than or equal to {0}.": "Value must be greater than or equal to {0}.",
+  "Value must be less than or equal to {0}.": "Value must be less than or equal to {0}.",
+  "Please lengthen this text to {0} characters or more.": "Please lengthen this text to {0} characters or more.",
+  "Please shorten this text to {0} characters or less.": "Please shorten this text to {0} characters or less.",
   "提交": "Submit",
   "重設": "Reset",
-  "Expected the original button fragment":
-      "Expected the original button fragment",
-  "The dash pattern period must be finite and greater than zero.":
-      "The dash pattern period must be finite and greater than zero.",
-  "Dashed strokes with unbounded path lengths are unsupported.":
-      "Dashed strokes with unbounded path lengths are unsupported.",
-  "Dash lengths are too small relative to the path for safe native rendering.":
-      "Dash lengths are too small relative to the path for safe native rendering.",
-  "Dashed stroke at commands[{0}] exceeds the native generation budget of {1} segments.":
-      "Dashed stroke at commands[{0}] exceeds the native generation budget of {1} segments.",
-  "commands[{0}].args must be an array.":
-      "commands[{0}].args must be an array.",
-  "{0}.globalAlpha must be in the range 0 to 1.":
-      "{0}.globalAlpha must be in the range 0 to 1.",
-  "{0} line width and miter limit must be non-negative.":
-      "{0} line width and miter limit must be non-negative.",
-  "{0}.lineDash values must be non-negative.":
-      "{0}.lineDash values must be non-negative.",
-  "{0}.imageSmoothingQuality must be low, medium, or high (got \"{1}\").":
-      "{0}.imageSmoothingQuality must be low, medium, or high (got \"{1}\").",
-  "Unsupported Canvas line cap \"{0}\".":
-      "Unsupported Canvas line cap \"{0}\".",
-  "Unsupported Canvas line join \"{0}\".":
-      "Unsupported Canvas line join \"{0}\".",
-  "Unsupported Canvas text alignment \"{0}\".":
-      "Unsupported Canvas text alignment \"{0}\".",
-  "Unsupported Canvas text baseline \"{0}\".":
-      "Unsupported Canvas text baseline \"{0}\".",
-  "Unsupported Canvas text direction \"{0}\".":
-      "Unsupported Canvas text direction \"{0}\".",
-  "{0}.clips must be an array containing at most 32 clips.":
-      "{0}.clips must be an array containing at most 32 clips.",
-  "Unsupported Canvas clip fill rule \"{0}\".":
-      "Unsupported Canvas clip fill rule \"{0}\".",
-  "Canvas command \"{0}\" is not supported by the native painter.":
-      "Canvas command \"{0}\" is not supported by the native painter.",
-  "Path must be an array of captured path segments.":
-      "Path must be an array of captured path segments.",
-  "Canvas snapshot exceeds a path segment limit.":
-      "Canvas snapshot exceeds a path segment limit.",
-  "Path segment arguments must be an array.":
-      "Path segment arguments must be an array.",
-  "Canvas path operation \"{0}\" is not supported.":
-      "Canvas path operation \"{0}\" is not supported.",
-  "Invalid argument count for path operation \"{0}\".":
-      "Invalid argument count for path operation \"{0}\".",
-  "The anticlockwise argument must be boolean.":
-      "The anticlockwise argument must be boolean.",
+  "Expected the original button fragment": "Expected the original button fragment",
+  "The dash pattern period must be finite and greater than zero.": "The dash pattern period must be finite and greater than zero.",
+  "Dashed strokes with unbounded path lengths are unsupported.": "Dashed strokes with unbounded path lengths are unsupported.",
+  "Dash lengths are too small relative to the path for safe native rendering.": "Dash lengths are too small relative to the path for safe native rendering.",
+  "Dashed stroke at commands[{0}] exceeds the native generation budget of {1} segments.": "Dashed stroke at commands[{0}] exceeds the native generation budget of {1} segments.",
+  "commands[{0}].args must be an array.": "commands[{0}].args must be an array.",
+  "{0}.globalAlpha must be in the range 0 to 1.": "{0}.globalAlpha must be in the range 0 to 1.",
+  "{0} line width and miter limit must be non-negative.": "{0} line width and miter limit must be non-negative.",
+  "{0}.lineDash values must be non-negative.": "{0}.lineDash values must be non-negative.",
+  "{0}.imageSmoothingQuality must be low, medium, or high (got \"{1}\").": "{0}.imageSmoothingQuality must be low, medium, or high (got \"{1}\").",
+  "Unsupported Canvas line cap \"{0}\".": "Unsupported Canvas line cap \"{0}\".",
+  "Unsupported Canvas line join \"{0}\".": "Unsupported Canvas line join \"{0}\".",
+  "Unsupported Canvas text alignment \"{0}\".": "Unsupported Canvas text alignment \"{0}\".",
+  "Unsupported Canvas text baseline \"{0}\".": "Unsupported Canvas text baseline \"{0}\".",
+  "Unsupported Canvas text direction \"{0}\".": "Unsupported Canvas text direction \"{0}\".",
+  "{0}.clips must be an array containing at most 32 clips.": "{0}.clips must be an array containing at most 32 clips.",
+  "Unsupported Canvas clip fill rule \"{0}\".": "Unsupported Canvas clip fill rule \"{0}\".",
+  "Canvas command \"{0}\" is not supported by the native painter.": "Canvas command \"{0}\" is not supported by the native painter.",
+  "Path must be an array of captured path segments.": "Path must be an array of captured path segments.",
+  "Canvas snapshot exceeds a path segment limit.": "Canvas snapshot exceeds a path segment limit.",
+  "Path segment arguments must be an array.": "Path segment arguments must be an array.",
+  "Canvas path operation \"{0}\" is not supported.": "Canvas path operation \"{0}\" is not supported.",
+  "Invalid argument count for path operation \"{0}\".": "Invalid argument count for path operation \"{0}\".",
+  "The anticlockwise argument must be boolean.": "The anticlockwise argument must be boolean.",
   "Arc radii must be non-negative.": "Arc radii must be non-negative.",
-  "Transform values exceed the native coordinate limit.":
-      "Transform values exceed the native coordinate limit.",
-  "Canvas paint style \"{0}\" is not supported.":
-      "Canvas paint style \"{0}\" is not supported.",
-  "Radial gradient radii must be non-negative.":
-      "Radial gradient radii must be non-negative.",
-  "A gradient must contain at most 1024 color stops.":
-      "A gradient must contain at most 1024 color stops.",
-  "Gradient offsets must be in the range 0 to 1.":
-      "Gradient offsets must be in the range 0 to 1.",
-  "Canvas font \"{0}\" cannot be parsed by the native text painter.":
-      "Canvas font \"{0}\" cannot be parsed by the native text painter.",
-  "Canvas font \"{0}\" uses a font feature outside the native text subset.":
-      "Canvas font \"{0}\" uses a font feature outside the native text subset.",
-  "Canvas font weight \"{0}\" is unsupported.":
-      "Canvas font weight \"{0}\" is unsupported.",
-  "Canvas font size in \"{0}\" is outside the supported range.":
-      "Canvas font size in \"{0}\" is outside the supported range.",
-  "Canvas font \"{0}\" has no font family.":
-      "Canvas font \"{0}\" has no font family.",
-  "Canvas color \"{0}\" at {1} is not supported by the native color parser.":
-      "Canvas color \"{0}\" at {1} is not supported by the native color parser.",
-  "Canvas composite operation \"{0}\" at {1} is unsupported.":
-      "Canvas composite operation \"{0}\" at {1} is unsupported.",
-  "Unsupported Canvas fill rule \"{0}\" at {1}.":
-      "Unsupported Canvas fill rule \"{0}\" at {1}.",
-  "{0} must contain exactly {1} numbers.":
-      "{0} must contain exactly {1} numbers.",
+  "Transform values exceed the native coordinate limit.": "Transform values exceed the native coordinate limit.",
+  "Canvas paint style \"{0}\" is not supported.": "Canvas paint style \"{0}\" is not supported.",
+  "Radial gradient radii must be non-negative.": "Radial gradient radii must be non-negative.",
+  "A gradient must contain at most 1024 color stops.": "A gradient must contain at most 1024 color stops.",
+  "Gradient offsets must be in the range 0 to 1.": "Gradient offsets must be in the range 0 to 1.",
+  "Canvas font \"{0}\" cannot be parsed by the native text painter.": "Canvas font \"{0}\" cannot be parsed by the native text painter.",
+  "Canvas font \"{0}\" uses a font feature outside the native text subset.": "Canvas font \"{0}\" uses a font feature outside the native text subset.",
+  "Canvas font weight \"{0}\" is unsupported.": "Canvas font weight \"{0}\" is unsupported.",
+  "Canvas font size in \"{0}\" is outside the supported range.": "Canvas font size in \"{0}\" is outside the supported range.",
+  "Canvas font \"{0}\" has no font family.": "Canvas font \"{0}\" has no font family.",
+  "Canvas color \"{0}\" at {1} is not supported by the native color parser.": "Canvas color \"{0}\" at {1} is not supported by the native color parser.",
+  "Canvas composite operation \"{0}\" at {1} is unsupported.": "Canvas composite operation \"{0}\" at {1} is unsupported.",
+  "Unsupported Canvas fill rule \"{0}\" at {1}.": "Unsupported Canvas fill rule \"{0}\" at {1}.",
+  "{0} must contain exactly {1} numbers.": "{0} must contain exactly {1} numbers.",
   "{0} must be an object.": "{0} must be an object.",
   "{0} has a non-string object key.": "{0} has a non-string object key.",
   "{0} must be a string.": "{0} must be a string.",
   "{0} must be a boolean.": "{0} must be a boolean.",
   "{0} must be a finite number.": "{0} must be a finite number.",
-  "{0} is outside the finite coordinate limit.":
-      "{0} is outside the finite coordinate limit.",
+  "{0} is outside the finite coordinate limit.": "{0} is outside the finite coordinate limit.",
   "{0} must be a number array.": "{0} must be a number array.",
   "{0} has an invalid number of items.": "{0} has an invalid number of items.",
-  "Backslashes in document URLs are unsupported.":
-      "Backslashes in document URLs are unsupported.",
-  "The document base must be an absolute HTTP(S) URL.":
-      "The document base must be an absolute HTTP(S) URL.",
-  "Only HTTP(S) document URLs are supported.":
-      "Only HTTP(S) document URLs are supported.",
-  "HTTP(S) URLs without an authority are unsupported.":
-      "HTTP(S) URLs without an authority are unsupported.",
+  "Backslashes in document URLs are unsupported.": "Backslashes in document URLs are unsupported.",
+  "The document base must be an absolute HTTP(S) URL.": "The document base must be an absolute HTTP(S) URL.",
+  "Only HTTP(S) document URLs are supported.": "Only HTTP(S) document URLs are supported.",
+  "HTTP(S) URLs without an authority are unsupported.": "HTTP(S) URLs without an authority are unsupported.",
   "HTTP(S) URLs must include a host.": "HTTP(S) URLs must include a host.",
-  "HTTP(S) URL user info is unsupported.":
-      "HTTP(S) URL user info is unsupported.",
+  "HTTP(S) URL user info is unsupported.": "HTTP(S) URL user info is unsupported.",
   "IPv6 URL hosts are unsupported.": "IPv6 URL hosts are unsupported.",
-  "Non-ASCII and IDN URL hosts are unsupported.":
-      "Non-ASCII and IDN URL hosts are unsupported.",
-  "Percent-encoded URL hosts are unsupported.":
-      "Percent-encoded URL hosts are unsupported.",
-  "This HTTP(S) host syntax is unsupported.":
-      "This HTTP(S) host syntax is unsupported.",
-  "Non-canonical IPv4 URL hosts are unsupported.":
-      "Non-canonical IPv4 URL hosts are unsupported.",
-  "Non-numeric HTTP(S) URL ports are unsupported.":
-      "Non-numeric HTTP(S) URL ports are unsupported.",
-  "HTTP(S) URL ports must be between 0 and 65535.":
-      "HTTP(S) URL ports must be between 0 and 65535.",
+  "Non-ASCII and IDN URL hosts are unsupported.": "Non-ASCII and IDN URL hosts are unsupported.",
+  "Percent-encoded URL hosts are unsupported.": "Percent-encoded URL hosts are unsupported.",
+  "This HTTP(S) host syntax is unsupported.": "This HTTP(S) host syntax is unsupported.",
+  "Non-canonical IPv4 URL hosts are unsupported.": "Non-canonical IPv4 URL hosts are unsupported.",
+  "Non-numeric HTTP(S) URL ports are unsupported.": "Non-numeric HTTP(S) URL ports are unsupported.",
+  "HTTP(S) URL ports must be between 0 and 65535.": "HTTP(S) URL ports must be between 0 and 65535.",
   "Native fragment reveal: {0}": "Native fragment reveal: {0}",
   "target has no proved native box": "target has no proved native box",
   "missing scrollport ancestry": "missing scrollport ancestry",
@@ -2772,203 +2058,115 @@ const englishMessages = <String, String>{
   "inverted focus region": "inverted focus region",
   "missing native scroll limits": "missing native scroll limits",
   "inverted native limits": "inverted native limits",
-  "scroll owner has no current native box":
-      "scroll owner has no current native box",
+  "scroll owner has no current native box": "scroll owner has no current native box",
   "singular scroll transform": "singular scroll transform",
-  "root horizontal reveal has no native range":
-      "root horizontal reveal has no native range",
-  "Multiple background image layers containing gradients are unsupported.":
-      "Multiple background image layers containing gradients are unsupported.",
+  "root horizontal reveal has no native range": "root horizontal reveal has no native range",
+  "Multiple background image layers containing gradients are unsupported.": "Multiple background image layers containing gradients are unsupported.",
   "Malformed CSS gradient function.": "Malformed CSS gradient function.",
-  "Unsupported CSS gradient function: {0}.":
-      "Unsupported CSS gradient function: {0}.",
-  "A CSS gradient needs at least two color stops.":
-      "A CSS gradient needs at least two color stops.",
-  "Unexpected content after CSS gradient.":
-      "Unexpected content after CSS gradient.",
+  "Unsupported CSS gradient function: {0}.": "Unsupported CSS gradient function: {0}.",
+  "A CSS gradient needs at least two color stops.": "A CSS gradient needs at least two color stops.",
+  "Unexpected content after CSS gradient.": "Unexpected content after CSS gradient.",
   "Unclosed CSS gradient function.": "Unclosed CSS gradient function.",
-  "A CSS linear gradient needs at least two color stops.":
-      "A CSS linear gradient needs at least two color stops.",
-  "Only the CSS sRGB gradient interpolation method is supported.":
-      "Only the CSS sRGB gradient interpolation method is supported.",
-  "A radial gradient can have only one position clause.":
-      "A radial gradient can have only one position clause.",
-  "A radial gradient position cannot be empty.":
-      "A radial gradient position cannot be empty.",
-  "Unsupported radial gradient size: {0}.":
-      "Unsupported radial gradient size: {0}.",
-  "A radial gradient cannot combine a size keyword and radii.":
-      "A radial gradient cannot combine a size keyword and radii.",
-  "A circle radius must be one nonnegative length.":
-      "A circle radius must be one nonnegative length.",
-  "An ellipse needs two explicit radii.":
-      "An ellipse needs two explicit radii.",
-  "A CSS radial gradient needs at least two color stops.":
-      "A CSS radial gradient needs at least two color stops.",
+  "A CSS linear gradient needs at least two color stops.": "A CSS linear gradient needs at least two color stops.",
+  "Only the CSS sRGB gradient interpolation method is supported.": "Only the CSS sRGB gradient interpolation method is supported.",
+  "A radial gradient can have only one position clause.": "A radial gradient can have only one position clause.",
+  "A radial gradient position cannot be empty.": "A radial gradient position cannot be empty.",
+  "Unsupported radial gradient size: {0}.": "Unsupported radial gradient size: {0}.",
+  "A radial gradient cannot combine a size keyword and radii.": "A radial gradient cannot combine a size keyword and radii.",
+  "A circle radius must be one nonnegative length.": "A circle radius must be one nonnegative length.",
+  "An ellipse needs two explicit radii.": "An ellipse needs two explicit radii.",
+  "A CSS radial gradient needs at least two color stops.": "A CSS radial gradient needs at least two color stops.",
   "Unsupported conic gradient header.": "Unsupported conic gradient header.",
   "Conic from needs an angle.": "Conic from needs an angle.",
   "A conic gradient needs two stops.": "A conic gradient needs two stops.",
-  "Only one- and two-value radial positions are supported.":
-      "Only one- and two-value radial positions are supported.",
-  "Unsupported radial gradient position: {0}.":
-      "Unsupported radial gradient position: {0}.",
+  "Only one- and two-value radial positions are supported.": "Only one- and two-value radial positions are supported.",
+  "Unsupported radial gradient position: {0}.": "Unsupported radial gradient position: {0}.",
   "Empty CSS gradient color stop.": "Empty CSS gradient color stop.",
   "Unsupported gradient color: {0}.": "Unsupported gradient color: {0}.",
-  "A color stop can have at most two positions.":
-      "A color stop can have at most two positions.",
-  "Unsupported color stop position: {0}.":
-      "Unsupported color stop position: {0}.",
+  "A color stop can have at most two positions.": "A color stop can have at most two positions.",
+  "Unsupported color stop position: {0}.": "Unsupported color stop position: {0}.",
   "Unbalanced CSS function.": "Unbalanced CSS function.",
   "Unbalanced CSS value.": "Unbalanced CSS value.",
-  "Invalid radial gradient geometry for {0}.":
-      "Invalid radial gradient geometry for {0}.",
+  "Invalid radial gradient geometry for {0}.": "Invalid radial gradient geometry for {0}.",
   "Unsupported radial position: {0}.": "Unsupported radial position: {0}.",
   "Canvas": "Canvas",
   "The CSS import cannot be loaded.": "The CSS import cannot be loaded.",
-  "Could not parse the stylesheet media condition.":
-      "Could not parse the stylesheet media condition.",
-  "CSS-wide keyword computation is not implemented for the {0} shorthand; it was not applied.":
-      "CSS-wide keyword computation is not implemented for the {0} shorthand; it was not applied.",
-  "The {0} shorthand is invalid after variable substitution; its initial longhand values are used.":
-      "The {0} shorthand is invalid after variable substitution; its initial longhand values are used.",
-  "CSS-wide keyword computation is not implemented; the value is passed through to the HTML renderer.":
-      "CSS-wide keyword computation is not implemented; the value is passed through to the HTML renderer.",
-  "Ignored CSS construct {0}; its semantics are not implemented.":
-      "Ignored CSS construct {0}; its semantics are not implemented.",
+  "Could not parse the stylesheet media condition.": "Could not parse the stylesheet media condition.",
+  "CSS-wide keyword computation is not implemented for the {0} shorthand; it was not applied.": "CSS-wide keyword computation is not implemented for the {0} shorthand; it was not applied.",
+  "The {0} shorthand is invalid after variable substitution; its initial longhand values are used.": "The {0} shorthand is invalid after variable substitution; its initial longhand values are used.",
+  "CSS-wide keyword computation is not implemented; the value is passed through to the HTML renderer.": "CSS-wide keyword computation is not implemented; the value is passed through to the HTML renderer.",
+  "Ignored CSS construct {0}; its semantics are not implemented.": "Ignored CSS construct {0}; its semantics are not implemented.",
   "The CSS rule has no selector group.": "The CSS rule has no selector group.",
-  "Nested rules or declaration constructs are not supported.":
-      "Nested rules or declaration constructs are not supported.",
-  "The CSS selector has no source text.":
-      "The CSS selector has no source text.",
+  "Nested rules or declaration constructs are not supported.": "Nested rules or declaration constructs are not supported.",
+  "The CSS selector has no source text.": "The CSS selector has no source text.",
   "Selector matching failed: {0}": "Selector matching failed: {0}",
   "The selector has no source span.": "The selector has no source span.",
-  "The state selector has no source span.":
-      "The state selector has no source span.",
-  "The state selector source range could not be mapped.":
-      "The state selector source range could not be mapped.",
-  "The selector has an unsupported :nth-child() expression.":
-      "The selector has an unsupported :nth-child() expression.",
-  "The :nth-child() source range could not be mapped.":
-      "The :nth-child() source range could not be mapped.",
-  "The :nth-child() source did not match its numeric AST.":
-      "The :nth-child() source did not match its numeric AST.",
+  "The state selector has no source span.": "The state selector has no source span.",
+  "The state selector source range could not be mapped.": "The state selector source range could not be mapped.",
+  "The selector has an unsupported :nth-child() expression.": "The selector has an unsupported :nth-child() expression.",
+  "The :nth-child() source range could not be mapped.": "The :nth-child() source range could not be mapped.",
+  "The :nth-child() source did not match its numeric AST.": "The :nth-child() source did not match its numeric AST.",
   "inline style attribute": "inline style attribute",
-  "Nested inline style constructs are not supported.":
-      "Nested inline style constructs are not supported.",
-  "Legacy IE property hacks are ignored.":
-      "Legacy IE property hacks are ignored.",
-  "The declaration has no value expression.":
-      "The declaration has no value expression.",
+  "Nested inline style constructs are not supported.": "Nested inline style constructs are not supported.",
+  "Legacy IE property hacks are ignored.": "Legacy IE property hacks are ignored.",
+  "The declaration has no value expression.": "The declaration has no value expression.",
   "Ignored invalid value for {0}.": "Ignored invalid value for {0}.",
-  "Ignored invalid CSS color value \"{0}\".":
-      "Ignored invalid CSS color value \"{0}\".",
-  "The CSS color function is passed through without validation.":
-      "The CSS color function is passed through without validation.",
-  "The overflow shorthand requires one or two supported overflow keywords.":
-      "The overflow shorthand requires one or two supported overflow keywords.",
-  "The gap shorthand must use one or two supported nonnegative length or percentage values, or normal.":
-      "The gap shorthand must use one or two supported nonnegative length or percentage values, or normal.",
-  "Could not expand this 1-to-4 component value without changing its meaning.":
-      "Could not expand this 1-to-4 component value without changing its meaning.",
-  "Could not safely expand the border width, style, and color components.":
-      "Could not safely expand the border width, style, and color components.",
-  "This font shorthand is invalid or outside the supported CSS font grammar.":
-      "This font shorthand is invalid or outside the supported CSS font grammar.",
-  "The {0} shorthand must use auto, a nonzero integer line, or span with a positive integer.":
-      "The {0} shorthand must use auto, a nonzero integer line, or span with a positive integer.",
-  "The border-radius shorthand must use one to four supported nonnegative lengths on each side of at most one slash.":
-      "The border-radius shorthand must use one to four supported nonnegative lengths on each side of at most one slash.",
-  "The {0} shorthand is not expanded; it was not applied.":
-      "The {0} shorthand is not expanded; it was not applied.",
-  "The flex shorthand must use none, auto, initial, or one to three supported nonnegative flex factors and basis values.":
-      "The flex shorthand must use none, auto, initial, or one to three supported nonnegative flex factors and basis values.",
-  "The flex-flow shorthand must use at most one direction and one wrap value.":
-      "The flex-flow shorthand must use at most one direction and one wrap value.",
-  "The border shorthand contains an unsupported or repeated component.":
-      "The border shorthand contains an unsupported or repeated component.",
-  "The border shorthand has an invalid color component.":
-      "The border shorthand has an invalid color component.",
-  "Unknown media type \"{0}\" does not match this screen environment.":
-      "Unknown media type \"{0}\" does not match this screen environment.",
-  "Media operator \"{0}\" is not supported.":
-      "Media operator \"{0}\" is not supported.",
-  "The media condition uses syntax that the current CSS parser cannot represent completely.":
-      "The media condition uses syntax that the current CSS parser cannot represent completely.",
-  "Media feature \"{0}\" is not supported.":
-      "Media feature \"{0}\" is not supported.",
+  "Ignored invalid CSS color value \"{0}\".": "Ignored invalid CSS color value \"{0}\".",
+  "The CSS color function is passed through without validation.": "The CSS color function is passed through without validation.",
+  "The overflow shorthand requires one or two supported overflow keywords.": "The overflow shorthand requires one or two supported overflow keywords.",
+  "The gap shorthand must use one or two supported nonnegative length or percentage values, or normal.": "The gap shorthand must use one or two supported nonnegative length or percentage values, or normal.",
+  "Could not expand this 1-to-4 component value without changing its meaning.": "Could not expand this 1-to-4 component value without changing its meaning.",
+  "Could not safely expand the border width, style, and color components.": "Could not safely expand the border width, style, and color components.",
+  "This font shorthand is invalid or outside the supported CSS font grammar.": "This font shorthand is invalid or outside the supported CSS font grammar.",
+  "The {0} shorthand must use auto, a nonzero integer line, or span with a positive integer.": "The {0} shorthand must use auto, a nonzero integer line, or span with a positive integer.",
+  "The border-radius shorthand must use one to four supported nonnegative lengths on each side of at most one slash.": "The border-radius shorthand must use one to four supported nonnegative lengths on each side of at most one slash.",
+  "The {0} shorthand is not expanded; it was not applied.": "The {0} shorthand is not expanded; it was not applied.",
+  "The flex shorthand must use none, auto, initial, or one to three supported nonnegative flex factors and basis values.": "The flex shorthand must use none, auto, initial, or one to three supported nonnegative flex factors and basis values.",
+  "The flex-flow shorthand must use at most one direction and one wrap value.": "The flex-flow shorthand must use at most one direction and one wrap value.",
+  "The border shorthand contains an unsupported or repeated component.": "The border shorthand contains an unsupported or repeated component.",
+  "The border shorthand has an invalid color component.": "The border shorthand has an invalid color component.",
+  "Unknown media type \"{0}\" does not match this screen environment.": "Unknown media type \"{0}\" does not match this screen environment.",
+  "Media operator \"{0}\" is not supported.": "Media operator \"{0}\" is not supported.",
+  "The media condition uses syntax that the current CSS parser cannot represent completely.": "The media condition uses syntax that the current CSS parser cannot represent completely.",
+  "Media feature \"{0}\" is not supported.": "Media feature \"{0}\" is not supported.",
   "Custom property cycle: {0}.": "Custom property cycle: {0}.",
-  "Custom property value \"{0}\" is not computed.":
-      "Custom property value \"{0}\" is not computed.",
-  "Custom property \"{0}\" has no usable computed value.":
-      "Custom property \"{0}\" has no usable computed value.",
-  "Could not parse the background value as one CSS declaration.":
-      "Could not parse the background value as one CSS declaration.",
-  "The background image layer list is malformed.":
-      "The background image layer list is malformed.",
-  "The {0} image function is unsupported.":
-      "The {0} image function is unsupported.",
-  "Only one background image or gradient layer is supported.":
-      "Only one background image or gradient layer is supported.",
-  "Only none or one raster URL is supported for background-image.":
-      "Only none or one raster URL is supported for background-image.",
-  "Only one background URL layer is supported.":
-      "Only one background URL layer is supported.",
-  "Could not parse this background shorthand.":
-      "Could not parse this background shorthand.",
-  "The background shorthand layer list is malformed.":
-      "The background shorthand layer list is malformed.",
-  "Only the final background layer may specify a color.":
-      "Only the final background layer may specify a color.",
-  "Only one background size slash is supported.":
-      "Only one background size slash is supported.",
-  "A background size must follow the slash.":
-      "A background size must follow the slash.",
-  "Unsupported background component \"{0}\".":
-      "Unsupported background component \"{0}\".",
-  "Unsupported background size component \"{0}\".":
-      "Unsupported background size component \"{0}\".",
-  "This background shorthand has conflicting or excess components.":
-      "This background shorthand has conflicting or excess components.",
-  "Unable to parse background gradient.":
-      "Unable to parse background gradient.",
-  "The background URL contains an invalid CSS escape.":
-      "The background URL contains an invalid CSS escape.",
-  "Only data:image/* background URLs are supported.":
-      "Only data:image/* background URLs are supported.",
-  "The {0}: background image URL scheme is unsupported.":
-      "The {0}: background image URL scheme is unsupported.",
-  "SVG fragment background images are unsupported.":
-      "SVG fragment background images are unsupported.",
-  "Could not resolve the background URL against its source base: {0}":
-      "Could not resolve the background URL against its source base: {0}",
-  "Could not serialize this CSS expression: {0}":
-      "Could not serialize this CSS expression: {0}",
-  "Ignored declaration because {0} has no value or fallback.":
-      "Ignored declaration because {0} has no value or fallback.",
+  "Custom property value \"{0}\" is not computed.": "Custom property value \"{0}\" is not computed.",
+  "Custom property \"{0}\" has no usable computed value.": "Custom property \"{0}\" has no usable computed value.",
+  "Could not parse the background value as one CSS declaration.": "Could not parse the background value as one CSS declaration.",
+  "The background image layer list is malformed.": "The background image layer list is malformed.",
+  "The {0} image function is unsupported.": "The {0} image function is unsupported.",
+  "Only one background image or gradient layer is supported.": "Only one background image or gradient layer is supported.",
+  "Only none or one raster URL is supported for background-image.": "Only none or one raster URL is supported for background-image.",
+  "Only one background URL layer is supported.": "Only one background URL layer is supported.",
+  "Could not parse this background shorthand.": "Could not parse this background shorthand.",
+  "The background shorthand layer list is malformed.": "The background shorthand layer list is malformed.",
+  "Only the final background layer may specify a color.": "Only the final background layer may specify a color.",
+  "Only one background size slash is supported.": "Only one background size slash is supported.",
+  "A background size must follow the slash.": "A background size must follow the slash.",
+  "Unsupported background component \"{0}\".": "Unsupported background component \"{0}\".",
+  "Unsupported background size component \"{0}\".": "Unsupported background size component \"{0}\".",
+  "This background shorthand has conflicting or excess components.": "This background shorthand has conflicting or excess components.",
+  "Unable to parse background gradient.": "Unable to parse background gradient.",
+  "The background URL contains an invalid CSS escape.": "The background URL contains an invalid CSS escape.",
+  "Only data:image/* background URLs are supported.": "Only data:image/* background URLs are supported.",
+  "The {0}: background image URL scheme is unsupported.": "The {0}: background image URL scheme is unsupported.",
+  "SVG fragment background images are unsupported.": "SVG fragment background images are unsupported.",
+  "Could not resolve the background URL against its source base: {0}": "Could not resolve the background URL against its source base: {0}",
+  "Could not serialize this CSS expression: {0}": "Could not serialize this CSS expression: {0}",
+  "Ignored declaration because {0} has no value or fallback.": "Ignored declaration because {0} has no value or fallback.",
   "The background URL is unsupported.": "The background URL is unsupported.",
-  "The outer and imported media conditions could not be combined.":
-      "The outer and imported media conditions could not be combined.",
+  "The outer and imported media conditions could not be combined.": "The outer and imported media conditions could not be combined.",
   "media condition": "media condition",
-  "Pseudo-elements cannot be mapped to HTML elements.":
-      "Pseudo-elements cannot be mapped to HTML elements.",
-  "Only numeric :nth-child(n) selectors are supported.":
-      "Only numeric :nth-child(n) selectors are supported.",
-  "The :{0}() pseudo-class is not supported.":
-      "The :{0}() pseudo-class is not supported.",
-  ":visited depends on private browsing state and is not applied.":
-      ":visited depends on private browsing state and is not applied.",
-  "The :{0} pseudo-class is not supported.":
-      "The :{0} pseudo-class is not supported.",
-  "An empty :not() selector is unsupported.":
-      "An empty :not() selector is unsupported.",
-  "Named CSS namespaces are unsupported.":
-      "Named CSS namespaces are unsupported.",
-  "Selector component {0} is unsupported.":
-      "Selector component {0} is unsupported.",
-  "\\tag works only in display equations":
-      "\\tag works only in display equations",
-  "Equation tags require the native TeX parser.":
-      "Equation tags require the native TeX parser.",
+  "Pseudo-elements cannot be mapped to HTML elements.": "Pseudo-elements cannot be mapped to HTML elements.",
+  "Only numeric :nth-child(n) selectors are supported.": "Only numeric :nth-child(n) selectors are supported.",
+  "The :{0}() pseudo-class is not supported.": "The :{0}() pseudo-class is not supported.",
+  ":visited depends on private browsing state and is not applied.": ":visited depends on private browsing state and is not applied.",
+  "The :{0} pseudo-class is not supported.": "The :{0} pseudo-class is not supported.",
+  "An empty :not() selector is unsupported.": "An empty :not() selector is unsupported.",
+  "Named CSS namespaces are unsupported.": "Named CSS namespaces are unsupported.",
+  "Selector component {0} is unsupported.": "Selector component {0} is unsupported.",
+  "\\tag works only in display equations": "\\tag works only in display equations",
+  "Equation tags require the native TeX parser.": "Equation tags require the native TeX parser.",
   "Too many columns in {0}": "Too many columns in {0}",
   "Expected equation row break": "Expected equation row break",
   " · {0} sources · {1} tok{2}": " · {0} sources · {1} tok{2}",
@@ -2983,8 +2181,7 @@ const englishMessages = <String, String>{
   "From {0}": "From {0}",
   "{0} by {1}": "{0} by {1}",
   "Used {0} · Expires {1}": "Used {0} · Expires {1}",
-  "USER {0}/{1} characters · MEMORY {2}/{3} characters":
-      "USER {0}/{1} characters · MEMORY {2}/{3} characters",
+  "USER {0}/{1} characters · MEMORY {2}/{3} characters": "USER {0}/{1} characters · MEMORY {2}/{3} characters",
   "New {0}": "New {0}",
   "{0} runs": "{0} runs",
   "From {0}{1}": "From {0}{1}",
@@ -3049,38 +2246,31 @@ const englishMessages = <String, String>{
   "Agent calendar access was updated.": "Agent calendar access was updated.",
   "Agent task": "Agent task",
   "Agent tasks": "Agent tasks",
-  "Agent tasks start at their scheduled time; personal events never start an agent.":
-      "Agent tasks start at their scheduled time; personal events never start an agent.",
-  "Agents can propose event changes. You must confirm each proposal.":
-      "Agents can propose event changes. You must confirm each proposal.",
-  "Agents can read event and schedule details you request.":
-      "Agents can read event and schedule details you request.",
+  "Agent tasks start at their scheduled time; personal events never start an agent.": "Agent tasks start at their scheduled time; personal events never start an agent.",
+  "Agents can propose event changes. You must confirm each proposal.": "Agents can propose event changes. You must confirm each proposal.",
+  "Agents can read event and schedule details you request.": "Agents can read event and schedule details you request.",
   "All day": "All day",
   "All-day event": "All-day event",
   "Allow calendar reads": "Allow calendar reads",
   "Allow change proposals": "Allow change proposals",
   "Apply changes to": "Apply changes to",
   "At start time": "At start time",
-  "Available schedule history is bounded.":
-      "Available schedule history is bounded.",
+  "Available schedule history is bounded.": "Available schedule history is bounded.",
   "Calendar": "Calendar",
   "Calendar day view": "Day",
   "Calendar item details": "Calendar item details",
   "Calendar list": "Calendar list",
   "Calendar month view": "Month",
-  "Calendar reminders cannot be delivered to this device.":
-      "Calendar reminders cannot be delivered to this device.",
+  "Calendar reminders cannot be delivered to this device.": "Calendar reminders cannot be delivered to this device.",
   "Choose date": "Choose date",
   "Choose time zone": "Choose time zone",
   "Create event": "Create event",
   "Date": "Date",
-  "DST transition: repeated or missing clock times share this wall-clock grid.":
-      "DST transition: repeated or missing clock times share this wall-clock grid.",
+  "DST transition: repeated or missing clock times share this wall-clock grid.": "DST transition: repeated or missing clock times share this wall-clock grid.",
   "Delete repeating event": "Delete repeating event",
   "Description": "Description",
   "Does not repeat": "Does not repeat",
-  "Each run starts a new agent session.":
-      "Each run starts a new agent session.",
+  "Each run starts a new agent session.": "Each run starts a new agent session.",
   "End date (exclusive)": "End date (exclusive)",
   "End must be after start.": "End must be after start.",
   "Enter an event title.": "Enter an event title.",
@@ -3116,34 +2306,27 @@ const englishMessages = <String, String>{
   "Number of occurrences": "Number of occurrences",
   "Enter a valid occurrence count.": "Enter a valid occurrence count.",
   "Enter a valid repeat interval.": "Enter a valid repeat interval.",
-  "Calendar account changed. Reopen this draft.":
-      "Calendar account changed. Reopen this draft.",
+  "Calendar account changed. Reopen this draft.": "Calendar account changed. Reopen this draft.",
   "Repeat until": "Repeat until",
   "Repeat until (optional)": "Repeat until (optional)",
   "Run result": "Run result",
   "Save permissions": "Save permissions",
   "Scheduled": "Scheduled",
   "Search time zones": "Search time zones",
-  "Some calendar items are grouped or limited.":
-      "Some calendar items are grouped or limited.",
-  "This event changed elsewhere. Review the current version before saving your draft.":
-      "This event changed elsewhere. Review the current version before saving your draft.",
+  "Some calendar items are grouped or limited.": "Some calendar items are grouped or limited.",
+  "This event changed elsewhere. Review the current version before saving your draft.": "This event changed elsewhere. Review the current version before saving your draft.",
   "Current version: {0} · {1}": "Current version: {0} · {1}",
   "Keep my edits and continue": "Keep my edits and continue",
   "Untitled event": "Untitled event",
-  "A calendar item has an invalid time.":
-      "A calendar item has an invalid time.",
-  "Unable to format calendar time in this time zone.":
-      "Unable to format calendar time in this time zone.",
+  "A calendar item has an invalid time.": "A calendar item has an invalid time.",
+  "Unable to format calendar time in this time zone.": "Unable to format calendar time in this time zone.",
   "Start": "Start",
   "Taipei": "Taipei",
-  "These permissions apply to agent tools only. They do not change your personal calendar view.":
-      "These permissions apply to agent tools only. They do not change your personal calendar view.",
+  "These permissions apply to agent tools only. They do not change your personal calendar view.": "These permissions apply to agent tools only. They do not change your personal calendar view.",
   "This and following": "This and following",
   "This occurrence": "This occurrence",
   "Today": "Today",
-  "Unable to calculate calendar time zone boundaries.":
-      "Unable to calculate calendar time zone boundaries.",
+  "Unable to calculate calendar time zone boundaries.": "Unable to calculate calendar time zone boundaries.",
   "Week": "Week",
   "Whole series": "Whole series",
   "Workspace unavailable": "Workspace unavailable",
@@ -3278,8 +2461,7 @@ const englishMessages = <String, String>{
   "Linked task: {0}": "Linked task: {0}",
   "Lists show at most 100 records per category. Refresh to see current state.": "Lists show at most 100 records per category. Refresh to see current state.",
   "Archive": "Archive",
-  "Archive removes a finished record from pots and frees its place in that limit. It cannot be undone.":
-      "Archive removes a finished record from pots and frees its place in that limit. It cannot be undone.",
+  "Archive removes a finished record from pots and frees its place in that limit. It cannot be undone.": "Archive removes a finished record from pots and frees its place in that limit. It cannot be undone.",
   "Needs refresh": "Needs refresh",
   "No execution session. Tracking is not running.": "No execution session. Tracking is not running.",
   "No responsibilities. Nothing is observed until you explicitly configure and activate one.": "No responsibilities. Nothing is observed until you explicitly configure and activate one.",
@@ -3319,19 +2501,13 @@ const englishMessages = <String, String>{
   "Tracking controls do not stop tools running in the source conversation.": "Tracking controls do not stop tools running in the source conversation.",
   "Unable to load pots. Refresh to try again.": "Unable to load pots. Refresh to try again.",
   "Your personal coordinator. Suggestions are not instructions or permission to act.": "Your personal coordinator. Suggestions are not instructions or permission to act.",
-  "Progress events only: no transcript reading. Execution requires your explicit instruction and Start.":
-      "Progress events only: no transcript reading. Execution requires your explicit instruction and Start.",
-  "Start authorizes one execution in a new session in the same workspace, using only your instruction. No source transcript or approval is copied or answered. The instruction cannot be changed after Start.":
-      "Start authorizes one execution in a new session in the same workspace, using only your instruction. No source transcript or approval is copied or answered. The instruction cannot be changed after Start.",
-  "Start requires an enabled responsibility with coordination unpaused, dispatch budget remaining and a concurrency slot. Pausing coordination does not stop already-running execution.":
-      "Start requires an enabled responsibility with coordination unpaused, dispatch budget remaining and a concurrency slot. Pausing coordination does not stop already-running execution.",
-  "Taken over by you; pots coordination is fenced and the execution conversation accepts your input. Already-running execution continues there; stop it from that conversation.":
-      "Taken over by you; pots coordination is fenced and the execution conversation accepts your input. Already-running execution continues there; stop it from that conversation.",
-  "Until you take over or the task ends, the execution conversation accepts only the pots instruction.":
-      "Until you take over or the task ends, the execution conversation accepts only the pots instruction.",
+  "Progress events only: no transcript reading. Execution requires your explicit instruction and Start.": "Progress events only: no transcript reading. Execution requires your explicit instruction and Start.",
+  "Start authorizes one execution in a new session in the same workspace, using only your instruction. No source transcript or approval is copied or answered. The instruction cannot be changed after Start.": "Start authorizes one execution in a new session in the same workspace, using only your instruction. No source transcript or approval is copied or answered. The instruction cannot be changed after Start.",
+  "Start requires an enabled responsibility with coordination unpaused, dispatch budget remaining and a concurrency slot. Pausing coordination does not stop already-running execution.": "Start requires an enabled responsibility with coordination unpaused, dispatch budget remaining and a concurrency slot. Pausing coordination does not stop already-running execution.",
+  "Taken over by you; pots coordination is fenced and the execution conversation accepts your input. Already-running execution continues there; stop it from that conversation.": "Taken over by you; pots coordination is fenced and the execution conversation accepts your input. Already-running execution continues there; stop it from that conversation.",
+  "Until you take over or the task ends, the execution conversation accepts only the pots instruction.": "Until you take over or the task ends, the execution conversation accepts only the pots instruction.",
   "Execution instruction": "Execution instruction",
-  "Instruction must be 1–20000 UTF-8 bytes.":
-      "Instruction must be 1–20000 UTF-8 bytes.",
+  "Instruction must be 1–20000 UTF-8 bytes.": "Instruction must be 1–20000 UTF-8 bytes.",
   "Authorized instruction: {0}": "Authorized instruction: {0}",
   "Outcome: {0}": "Outcome: {0}",
   "Failure: {0}": "Failure: {0}",
@@ -3340,8 +2516,7 @@ const englishMessages = <String, String>{
   "Starting": "Starting",
   "Queued": "Queued",
   "Waiting for input": "Waiting for input",
-  "Execution session not yet confirmed. Refresh to check current state; do not assume it is stopped.":
-      "Execution session not yet confirmed. Refresh to check current state; do not assume it is stopped.",
+  "Execution session not yet confirmed. Refresh to check current state; do not assume it is stopped.": "Execution session not yet confirmed. Refresh to check current state; do not assume it is stopped.",
   "Saved drafts and pending sends": "Saved drafts and pending sends",
   "Pending cleanup": "Pending cleanup",
   "Discard draft": "Discard draft",
@@ -3349,22 +2524,20 @@ const englishMessages = <String, String>{
   "Deletion not yet confirmed": "Deletion not yet confirmed",
   "First message admitted": "First message admitted",
   "First message outcome is unknown": "First message outcome is unknown",
-  "First message was not admitted": "First message was not admitted",
+  "First message was not executed. You can retry.": "First message was not executed. You can retry.",
+  "first_message_not_sent": "The message was not sent to the Node. You can send it again.",
+  "recovery_unsupported": "This Node must be upgraded before this message can be recovered automatically.",
   "First message stopped or stopping": "First message stopped or stopping",
-  "First message accepted — delivery pending":
-      "First message accepted — delivery pending",
+  "First message accepted — delivery pending": "First message accepted — delivery pending",
   "First message saved on this device": "First message saved on this device",
-  "Check result never resends the message or takes control.":
-      "Check result never resends the message or takes control.",
+  "Check result never resends the message or takes control.": "Check result never resends the message or takes control.",
   "Check result": "Check result",
   "Continue sending": "Continue sending",
   "Open conversation": "Open conversation",
   "Stop pending message": "Stop pending message",
   "This draft is no longer available.": "This draft is no longer available.",
-  "The first message uses the workspace's default approval mode. Change it after admission.":
-      "The first message uses the workspace's default approval mode. Change it after admission.",
-  "This conversation and its chat files will be permanently deleted. This also deletes USER memories and MEMORY notes created by this chat, and its pending memory proposals. Memories created by other chats are kept. Copies already present in other chats are not erased. Any running reply will stop. This cannot be undone.":
-      "This conversation and its chat files will be permanently deleted. This also deletes USER memories and MEMORY notes created by this chat, and its pending memory proposals. Memories created by other chats are kept. Copies already present in other chats are not erased. Any running reply will stop. This cannot be undone.",
+  "The first message uses the workspace's default approval mode. Change it after admission.": "The first message uses the workspace's default approval mode. Change it after admission.",
+  "This conversation and its chat files will be permanently deleted. This also deletes USER memories and MEMORY notes created by this chat, and its pending memory proposals. Memories created by other chats are kept. Copies already present in other chats are not erased. Any running reply will stop. This cannot be undone.": "This conversation and its chat files will be permanently deleted. This also deletes USER memories and MEMORY notes created by this chat, and its pending memory proposals. Memories created by other chats are kept. Copies already present in other chats are not erased. Any running reply will stop. This cannot be undone.",
   "Connect to the Gateway to confirm first-send support before creating a conversation.": "Connect to the Gateway to confirm first-send support before creating a conversation.",
   "First message stopped": "First message stopped",
   "Stopping first message": "Stopping first message",
@@ -3376,18 +2549,12 @@ const englishMessages = <String, String>{
   "Another window changed this draft. Your unsent edits were saved separately. Open the saved draft to review it before sending.": "Another window changed this draft. Your unsent edits were saved separately. Open the saved draft to review it before sending.",
   "Retry original message": "Retry original message",
   "Recover interrupted retry": "Recover interrupted retry",
-  "Recovery blocks a retry the server has not received. It never resends the message.":
-      "Recovery blocks a retry the server has not received. It never resends the message.",
-  "This Gateway cannot recover an interrupted retry.":
-      "This Gateway cannot recover an interrupted retry.",
-  "Only a pending retry of a rejected first message can be recovered.":
-      "Only a pending retry of a rejected first message can be recovered.",
-  "The retry receipt does not match the saved retry.":
-      "The retry receipt does not match the saved retry.",
-  "The retry receipt did not identify a successor attempt.":
-      "The retry receipt did not identify a successor attempt.",
-  "The first-message attempt changed; check its result.":
-      "The first-message attempt changed; check its result.",
+  "Recovery blocks a retry the server has not received. It never resends the message.": "Recovery blocks a retry the server has not received. It never resends the message.",
+  "This Gateway cannot recover an interrupted retry.": "This Gateway cannot recover an interrupted retry.",
+  "Only a pending retry of a rejected first message can be recovered.": "Only a pending retry of a rejected first message can be recovered.",
+  "The retry receipt does not match the saved retry.": "The retry receipt does not match the saved retry.",
+  "The retry receipt did not identify a successor attempt.": "The retry receipt did not identify a successor attempt.",
+  "The first-message attempt changed; check its result.": "The first-message attempt changed; check its result.",
   "node_connection_changed": "The Node reconnected. Check the saved result before continuing.",
   "first_send_unsupported": "This Node does not support reliable first Send. Upgrade it before continuing.",
   "The conversation environment changed; refresh it before starting this action": "The conversation environment changed; refresh it before starting this action",
@@ -3578,8 +2745,7 @@ const traditionalChineseMessages = <String, String>{
   "All": "全部",
   "Loading…": "載入中…",
   "Memory state is unavailable for this session.": "此對話的記憶狀態無法使用。",
-  "Observational memory is disabled in this workspace’s config.":
-      "工作區設定已停用觀察式記憶。",
+  "Observational memory is disabled in this workspace’s config.": "工作區設定已停用觀察式記憶。",
   "{0} rate-limited until {1}": "{0} 已遭限流，將持續到 {1}",
   "No reflections yet.": "尚無反思內容。",
   "Observations": "觀察紀錄",
@@ -3601,8 +2767,7 @@ const traditionalChineseMessages = <String, String>{
   "Schedules": "排程",
   "Loading schedules…": "正在載入排程…",
   "New schedule": "新增排程",
-  "No schedules yet. Make one here, or ask your assistant: it asks you before it adds one.":
-      "尚無排程。可在此建立，或詢問助理：新增排程前會先徵求你的同意。",
+  "No schedules yet. Make one here, or ask your assistant: it asks you before it adds one.": "尚無排程。可在此建立，或詢問助理：新增排程前會先徵求你的同意。",
   "Paused": "已暫停",
   "Done": "完成",
   "{0} waiting for you": "{0} 正在等候你",
@@ -3623,15 +2788,13 @@ const traditionalChineseMessages = <String, String>{
   "Open session": "開啟對話",
   "Unable to initialize the date and time picker.": "無法初始化日期與時間選擇器。",
   "Fill in the workspace, prompt, time and time zone.": "請填寫工作區、提示詞、時間和時區。",
-  "Enter a valid date and time (YYYY-MM-DDTHH:mm).":
-      "請輸入有效的日期與時間（YYYY-MM-DDTHH:mm）。",
+  "Enter a valid date and time (YYYY-MM-DDTHH:mm).": "請輸入有效的日期與時間（YYYY-MM-DDTHH:mm）。",
   "Choose date and time": "選擇日期和時間",
   "Edit schedule": "編輯排程",
   "Workspace": "工作區",
   "Title": "標題",
   "Named after the first line of the prompt": "標題將使用提示詞的第一行",
-  "What the agent should do. Each run starts fresh with only this.":
-      "說明代理程式要執行的工作。每次執行都會重新開始，僅使用這段內容。",
+  "What the agent should do. Each run starts fresh with only this.": "說明代理程式要執行的工作。每次執行都會重新開始，僅使用這段內容。",
   "When": "時間",
   "Repeat": "重複",
   "Once": "一次",
@@ -3652,23 +2815,19 @@ const traditionalChineseMessages = <String, String>{
   "Diff truncated at 1 MB.": "差異內容已截斷（上限 1 MB）。",
   "Expected an absolute HTTP(S) canonical URL.": "必須是絕對的 HTTP(S) 標準網址。",
   "URI component contains an unpaired surrogate.": "URI 元件含有未成對的代理碼。",
-  "A calm command surface for persistent coding-agent sessions.":
-      "為持續運作的程式設計代理程式對話打造的沉穩操作介面。",
+  "A calm command surface for persistent coding-agent sessions.": "為持續運作的程式設計代理程式對話打造的沉穩操作介面。",
   "head meta[name][content]": "head meta[name][content]",
   "Use file default / automatic": "使用檔案預設值／自動",
   "Model backends": "模型後端",
-  "Global settings for this single-user gateway. All model requests run on the gateway; endpoints must be reachable from there.":
-      "供單一使用者閘道使用的全域設定。所有模型請求都會由閘道執行；端點必須能從閘道連線。",
-  "Backend settings are unavailable in demo mode. No real accounts or settings will be changed.":
-      "示範模式無法使用後端設定。實際帳戶或設定都不會受到變更。",
+  "Global settings for this single-user gateway. All model requests run on the gateway; endpoints must be reachable from there.": "供單一使用者閘道使用的全域設定。所有模型請求都會由閘道執行；端點必須能從閘道連線。",
+  "Backend settings are unavailable in demo mode. No real accounts or settings will be changed.": "示範模式無法使用後端設定。實際帳戶或設定都不會受到變更。",
   "Loading backends…": "正在載入後端…",
   "API keys and custom endpoints": "API 金鑰與自訂端點",
   "Add backend": "新增後端",
   "Default model": "預設模型",
   "Gateway default": "閘道預設值",
   "Save default": "儲存預設值",
-  "Applies to new runs that have no explicit model selection.":
-      "適用於未明確選擇模型的新執行工作。",
+  "Applies to new runs that have no explicit model selection.": "適用於未明確選擇模型的新執行工作。",
   "Retry settings": "重試設定",
   "生成中…": "生成中…",
   "生成未完成 · 可查看最後可用版本": "生成未完成 · 可查看最後可用版本",
@@ -3687,13 +2846,10 @@ const traditionalChineseMessages = <String, String>{
   "請 agent 重試…": "請代理程式重試…",
   "在網頁開啟": "在網頁開啟",
   "來源": "來源",
-  "Unable to update backend settings. Check the connection and try again.":
-      "無法更新後端設定。請檢查連線後再試一次。",
-  "Backend request failed ({0}). Check your settings and try again.":
-      "後端請求失敗（{0}）。請檢查設定後再試一次。",
+  "Unable to update backend settings. Check the connection and try again.": "無法更新後端設定。請檢查連線後再試一次。",
+  "Backend request failed ({0}). Check your settings and try again.": "後端請求失敗（{0}）。請檢查設定後再試一次。",
   "Instructions": "指示",
-  "For example: answer in French, and keep trip plans on a budget.":
-      "例如：以法文回答，並讓旅遊計畫控制在預算內。",
+  "For example: answer in French, and keep trip plans on a budget.": "例如：以法文回答，並讓旅遊計畫控制在預算內。",
   "Show earlier messages ({0} more)": "顯示較早的訊息（另有 {0} 則）",
   "Invalid {0} stylesheet snapshot.": "樣式表快照 {0} 無效。",
   "Invalid stylesheet owner descriptor.": "樣式表擁有者描述資料無效。",
@@ -3702,18 +2858,13 @@ const traditionalChineseMessages = <String, String>{
   "Invalid stylesheet order for owner {0}.": "樣式表擁有者 {0} 的順序無效。",
   "Inline stylesheet owner {0} has no cssText.": "行內樣式表擁有者 {0} 缺少 cssText。",
   "Stylesheet owner {0} has no baseURL.": "樣式表擁有者 {0} 缺少 baseURL。",
-  "Stylesheet link owner {0} has no fetchHref (href: {1}).":
-      "樣式表連結擁有者 {0} 缺少 fetchHref（href：{1}）。",
-  "Stylesheet link owner {0} has no transportId.":
-      "樣式表連結擁有者 {0} 缺少 transportId。",
-  "Document stylesheet source limit exceeded ({0}) at {1}.":
-      "文件樣式表來源在 {1} 超過限制（{0}）。",
-  "Document stylesheet decoded-text limit exceeded ({0} UTF-16 bytes) at {1}.":
-      "文件樣式表解碼後的文字在 {1} 超過限制（{0} 個 UTF-16 位元組）。",
+  "Stylesheet link owner {0} has no fetchHref (href: {1}).": "樣式表連結擁有者 {0} 缺少 fetchHref（href：{1}）。",
+  "Stylesheet link owner {0} has no transportId.": "樣式表連結擁有者 {0} 缺少 transportId。",
+  "Document stylesheet source limit exceeded ({0}) at {1}.": "文件樣式表來源在 {1} 超過限制（{0}）。",
+  "Document stylesheet decoded-text limit exceeded ({0} UTF-16 bytes) at {1}.": "文件樣式表解碼後的文字在 {1} 超過限制（{0} 個 UTF-16 位元組）。",
   "Invalid document resource bytes (maximum 2 MiB).": "文件資源位元組無效（上限 2 MiB）。",
   "Script resource returned HTTP {0}.": "指令碼資源回傳 HTTP {0}。",
-  "Document resource exceeds the 4 MiB script message limit.":
-      "文件資源超過指令碼訊息 4 MiB 的限制。",
+  "Document resource exceeds the 4 MiB script message limit.": "文件資源超過指令碼訊息 4 MiB 的限制。",
   "Files": "檔案",
   "Git": "Git",
   "Memory": "記憶",
@@ -3806,10 +2957,8 @@ const traditionalChineseMessages = <String, String>{
   "Invalid native Storage entries.": "原生 Storage 項目無效。",
   "Invalid native Storage entry.": "原生 Storage 項目無效。",
   "Invalid native Storage events.": "原生 Storage 事件無效。",
-  "Too many pending Storage events; reload this document.":
-      "待處理的 Storage 事件過多；請重新載入此文件。",
-  "Pending Storage event data exceeds 32 MiB; reload this document.":
-      "待處理的 Storage 事件資料超過 32 MiB；請重新載入此文件。",
+  "Too many pending Storage events; reload this document.": "待處理的 Storage 事件過多；請重新載入此文件。",
+  "Pending Storage event data exceeds 32 MiB; reload this document.": "待處理的 Storage 事件資料超過 32 MiB；請重新載入此文件。",
   "Invalid Storage write batch.": "Storage 寫入批次無效。",
   "Invalid Storage write length.": "Storage 寫入長度無效。",
   "Incomplete Storage write chunk.": "Storage 寫入區塊不完整。",
@@ -3881,8 +3030,7 @@ const traditionalChineseMessages = <String, String>{
   "Dec": "12 月",
   "Pair {0}": "配對 {0}",
   "Scan with the pirc app": "使用 Pirc 應用程式掃描",
-  "Shown only once. Anyone with this code can use your nodes until you revoke it.":
-      "僅顯示一次。任何取得此代碼的人都能使用你的節點，直到你撤銷該代碼為止。",
+  "Shown only once. Anyone with this code can use your nodes until you revoke it.": "僅顯示一次。任何取得此代碼的人都能使用你的節點，直到你撤銷該代碼為止。",
   "Open in app": "在 App 中開啟",
   "Copied": "已複製",
   "Copy link": "複製連結",
@@ -3892,29 +3040,22 @@ const traditionalChineseMessages = <String, String>{
   "Revoke {0}": "撤銷 {0}",
   "Revoke": "撤銷",
   "Phones": "手機",
-  "Pair the pirc Android app. A phone gets the same access as this browser, including files and shells on your nodes, but cannot manage devices or model backends. Its token stops working after a stretch without use, at a fixed age after pairing, or when revoked here.":
-      "配對 Pirc Android 應用程式。手機會取得與此瀏覽器相同的存取權，包括存取節點上的檔案和 Shell，但無法管理裝置或模型後端。Token 在一段時間未使用、配對後達到固定有效期限，或在此撤銷時便會失效。",
+  "Pair the pirc Android app. A phone gets the same access as this browser, including files and shells on your nodes, but cannot manage devices or model backends. Its token stops working after a stretch without use, at a fixed age after pairing, or when revoked here.": "配對 Pirc Android 應用程式。手機會取得與此瀏覽器相同的存取權，包括存取節點上的檔案和 Shell，但無法管理裝置或模型後端。Token 在一段時間未使用、配對後達到固定有效期限，或在此撤銷時便會失效。",
   "Pairing is unavailable in demo mode.": "示範模式無法配對裝置。",
   "Loading devices…": "正在載入裝置…",
   "No phones paired.": "尚未配對手機。",
   "The active surface identity must be retained.": "必須保留目前介面的識別資訊。",
   "此問題已處理": "此問題已處理",
   "此問題已處理或已失效": "此問題已處理或已失效",
-  "This notification belongs to a different connection. Open the current conversation to review its questions.":
-      "此通知來自另一個連線。請開啟目前的對話查看其中的問題。",
-  "The connection changed. Reopen this question to continue.":
-      "連線已變更。請重新開啟此問題以繼續。",
+  "This notification belongs to a different connection. Open the current conversation to review its questions.": "此通知來自另一個連線。請開啟目前的對話查看其中的問題。",
+  "The connection changed. Reopen this question to continue.": "連線已變更。請重新開啟此問題以繼續。",
   "The question state could not be verified.": "無法確認問題狀態。",
-  "This notification has no question version. Close it and review the current question in the conversation before answering.":
-      "此通知沒有附帶問題版本。請先關閉通知，並在對話中查看目前的問題，再作答。",
-  "Control changed. Check the latest state before answering.":
-      "控制權已變更。請先確認最新狀態，再作答。",
-  "The answer was rejected, but the latest state could not be verified. Check the latest state before answering.":
-      "答覆遭拒，但無法確認最新狀態。請先確認最新狀態，再作答。",
+  "This notification has no question version. Close it and review the current question in the conversation before answering.": "此通知沒有附帶問題版本。請先關閉通知，並在對話中查看目前的問題，再作答。",
+  "Control changed. Check the latest state before answering.": "控制權已變更。請先確認最新狀態，再作答。",
+  "The answer was rejected, but the latest state could not be verified. Check the latest state before answering.": "答覆遭拒，但無法確認最新狀態。請先確認最新狀態，再作答。",
   "The answer status could not be verified.": "無法確認答覆狀態。",
   "The pending question could not be verified.": "無法確認待處理問題。",
-  "The answer may have been received. Check the latest state; it will not be sent again automatically.":
-      "答覆可能已送達。請確認最新狀態；系統不會自動重新傳送。",
+  "The answer may have been received. Check the latest state; it will not be sent again automatically.": "答覆可能已送達。請確認最新狀態；系統不會自動重新傳送。",
   "Checking the latest state…": "正在確認最新狀態…",
   "Controlled by {0}": "由 {0} 控制中",
   "Take control": "接管控制權",
@@ -3932,20 +3073,16 @@ const traditionalChineseMessages = <String, String>{
   "Loading history…": "正在載入歷史紀錄…",
   "Restore this": "還原此項",
   "What your assistant remembers across chats. ": "助理在不同對話之間記住的內容。",
-  " is what you told it about yourself and changes only when you approve. ":
-      "關於你的記憶來自你告訴助理的內容，且只有在你核准後才會變更。",
-  " holds the assistant's own notes. New chats start with both; open chats keep what they started with.":
-      "記錄助理自己的筆記。新對話會同時載入兩者；已開啟的對話則沿用開始時的記憶。",
+  " is what you told it about yourself and changes only when you approve. ": "關於你的記憶來自你告訴助理的內容，且只有在你核准後才會變更。",
+  " holds the assistant's own notes. New chats start with both; open chats keep what they started with.": "記錄助理自己的筆記。新對話會同時載入兩者；已開啟的對話則沿用開始時的記憶。",
   "Loading memory…": "正在載入記憶…",
   "Retry": "再試一次",
   "Waiting for you": "等候你",
   "About you · USER": "關於你 · 使用者",
-  "Nothing yet. When you tell the assistant about yourself, it asks you here first.":
-      "目前還沒有內容。你告訴助理關於自己的事時，助理會先在這裡詢問你。",
+  "Nothing yet. When you tell the assistant about yourself, it asks you here first.": "目前還沒有內容。你告訴助理關於自己的事時，助理會先在這裡詢問你。",
   "The assistant's notes · MEMORY": "助理的筆記 · 記憶",
   "No notes yet.": "目前沒有筆記。",
-  "Forget erases an entry with all its versions and keeps the same text from being saved again; rewordings are not caught. The chats it came from stay on the chat node, and repositories keep their own workspace memory.":
-      "清除會連同某筆記憶的所有版本一起刪除，並避免系統再次儲存相同文字；但無法識別改寫過的內容。來源對話仍會保留在對話節點上，而儲存庫也會保留各自的工作區記憶。",
+  "Forget erases an entry with all its versions and keeps the same text from being saved again; rewordings are not caught. The chats it came from stay on the chat node, and repositories keep their own workspace memory.": "清除會連同某筆記憶的所有版本一起刪除，並避免系統再次儲存相同文字；但無法識別改寫過的內容。來源對話仍會保留在對話節點上，而儲存庫也會保留各自的工作區記憶。",
   "Back to the list": "返回清單",
   "This workspace is no longer available.": "此工作區已無法使用。",
   "Expand sidebar": "展開側邊欄",
@@ -3965,8 +3102,7 @@ const traditionalChineseMessages = <String, String>{
   "Attachment picker response must be a list.": "附件選擇器的回應必須是清單。",
   "Attachment picker item {0} must be an object.": "附件選擇器中的第 {0} 個項目必須是物件。",
   "Could not read {0}: {1}": "無法讀取 {0}：{1}",
-  "Attachment {0} has an invalid byte at offset {1}.":
-      "附件 {0} 在位移 {1} 處含有無效位元組。",
+  "Attachment {0} has an invalid byte at offset {1}.": "附件 {0} 在位移 {1} 處含有無效位元組。",
   "Attachment {0} has invalid base64 bytes.": "附件 {0} 含有無效的 Base64 位元組。",
   "Attachment {0} did not include byte data.": "附件 {0} 未包含位元組資料。",
   "Background connection changed.": "背景連線已變更。",
@@ -3980,33 +3116,26 @@ const traditionalChineseMessages = <String, String>{
   "Open": "開啟",
   "Response": "回應",
   "Your answer": "你的答覆",
-  "Choose whether the agent should continue with this action.":
-      "請選擇是否允許代理程式繼續執行此操作。",
-  "Auto mode then reads the task as if you had typed it in that session, so an operation the task names exactly is not stopped as dangerous. Only for the run the task starts.":
-      "Auto 模式會將任務視為你在該對話中親自輸入的內容來讀取，因此任務中明確指定的操作不會被判定為危險而停止。此設定只適用於它啟動的這次執行。",
+  "Choose whether the agent should continue with this action.": "請選擇是否允許代理程式繼續執行此操作。",
+  "Auto mode then reads the task as if you had typed it in that session, so an operation the task names exactly is not stopped as dangerous. Only for the run the task starts.": "Auto 模式會將任務視為你在該對話中親自輸入的內容來讀取，因此任務中明確指定的操作不會被判定為危險而停止。此設定只適用於它啟動的這次執行。",
   "Unable to read the selected file. Choose it again.": "無法讀取所選檔案。請重新選取。",
   "{0} is larger than the {1} limit.": "{0} 超過 {1} 的限制。",
   "{0} is empty.": "{0} 是空的。",
   "Unable to read the selected file.": "無法讀取所選檔案。",
   "{0}: Unable to read the selected file.": "{0}：無法讀取所選檔案。",
-  "{0} uploaded. Every chat in this project can read {1} now.":
-      "已上傳 {0}。此專案中的所有對話現在都能讀取 {1}。",
+  "{0} uploaded. Every chat in this project can read {1} now.": "已上傳 {0}。此專案中的所有對話現在都能讀取 {1}。",
   "Remove": "移除",
   "Remove…": "移除…",
   "Working…": "處理中…",
   "Upload files": "上傳檔案",
   "PROJECT FILES": "專案檔案",
-  "Files every chat in this project can read, for example notes, documents or data the assistant should know about. The assistant cannot change them. They are kept on the project's node and shared with running chats at once: an upload, a replacement or a removal reaches chats already open. Uploading a file with the same name as an existing one replaces it.":
-      "此專案中每個對話都能讀取的檔案，例如助理應參考的筆記、文件或資料。助理無法修改這些檔案。檔案會存放在專案的節點上，並立即與已開啟的對話共用：新增檔案、替換檔案或移除檔案的變更都會傳送到已開啟的對話。若上傳的檔案名稱與現有檔案相同，現有檔案就會被取代。",
+  "Files every chat in this project can read, for example notes, documents or data the assistant should know about. The assistant cannot change them. They are kept on the project's node and shared with running chats at once: an upload, a replacement or a removal reaches chats already open. Uploading a file with the same name as an existing one replaces it.": "此專案中每個對話都能讀取的檔案，例如助理應參考的筆記、文件或資料。助理無法修改這些檔案。檔案會存放在專案的節點上，並立即與已開啟的對話共用：新增檔案、替換檔案或移除檔案的變更都會傳送到已開啟的對話。若上傳的檔案名稱與現有檔案相同，現有檔案就會被取代。",
   "Loading project files…": "正在載入專案檔案…",
   "No files yet.": "目前沒有檔案。",
   "Project files": "專案檔案",
-  "This workspace's mode is unavailable on the gateway: its history is read-only and it takes no new sessions.":
-      "閘道無法使用此工作區模式：其歷史紀錄為唯讀，且不接受新的對話。",
-  "This project's deletion did not finish: its chats accept no more work. Finish deleting it once the chat node is connected.":
-      "無法完成刪除此專案的操作：此專案的對話不再接受新工作。請在對話節點連線後完成刪除。",
-  "Take control of this session to change its approval mode.":
-      "請先接管此對話的控制權，才能變更其核准模式。",
+  "This workspace's mode is unavailable on the gateway: its history is read-only and it takes no new sessions.": "閘道無法使用此工作區模式：其歷史紀錄為唯讀，且不接受新的對話。",
+  "This project's deletion did not finish: its chats accept no more work. Finish deleting it once the chat node is connected.": "無法完成刪除此專案的操作：此專案的對話不再接受新工作。請在對話節點連線後完成刪除。",
+  "Take control of this session to change its approval mode.": "請先接管此對話的控制權，才能變更其核准模式。",
   "先前送出結果不明，請先檢查最新狀態。": "先前送出結果不明，請先檢查最新狀態。",
   "This project is no longer available.": "此專案已無法使用。",
   "New session": "新增對話",
@@ -4048,8 +3177,7 @@ const traditionalChineseMessages = <String, String>{
   "Ask me every time": "每次都詢問我",
   "Only when the chat read outside content": "只有在對話讀取外部內容時才詢問",
   "Never ask": "永不詢問",
-  "A prompt injection in content the assistant reads can then start work in your workspaces without asking.":
-      "助理讀取的內容若含有提示注入攻擊，可能因此在未徵求你的同意下，於工作區啟動工作。",
+  "A prompt injection in content the assistant reads can then start work in your workspaces without asking.": "助理讀取的內容若含有提示注入攻擊，可能因此在未徵求你的同意下，於工作區啟動工作。",
   "Saving project capabilities…": "正在儲存專案功能…",
   "Saving…": "正在儲存…",
   "Allowed assistant features": "允許助理使用的功能",
@@ -4060,43 +3188,32 @@ const traditionalChineseMessages = <String, String>{
   "Delegation approval": "委派核准",
   "Project capabilities saved.": "已儲存專案功能。",
   "Applies only while delegation is allowed.": "僅在允許委派時適用。",
-  "Outside content: web pages, search, browser, memory search, and delegation reports since your last message.":
-      "外部內容：自你上次傳送訊息以來，助理讀取的網頁、搜尋結果、瀏覽器內容、記憶搜尋結果和委派報告。",
+  "Outside content: web pages, search, browser, memory search, and delegation reports since your last message.": "外部內容：自你上次傳送訊息以來，助理讀取的網頁、搜尋結果、瀏覽器內容、記憶搜尋結果和委派報告。",
   "Device": "裝置",
   "Write lease": "寫入租約",
   "Free": "可用",
   "Held by “{0}”": "由「{0}」持有",
-  "The project's node is offline: its {0} can be changed once it is back.":
-      "專案的節點目前離線：重新連線後才能變更其 {0}。",
+  "The project's node is offline: its {0} can be changed once it is back.": "專案的節點目前離線：重新連線後才能變更其 {0}。",
   "Project instructions": "專案指示",
-  "Instructions for every {0} in this project. Only you can change them: the assistant cannot edit them. They are kept on the project's node, and each {1} keeps the instructions it started with, so a change reaches new {2}s only.":
-      "此專案中每個 {0} 都會遵循的指示。只有你能變更這些指示；助理無法編輯。指示會存放在專案的節點上，而且每個 {1} 都會沿用建立時的指示，因此變更只會套用到之後新增的 {2}。",
+  "Instructions for every {0} in this project. Only you can change them: the assistant cannot edit them. They are kept on the project's node, and each {1} keeps the instructions it started with, so a change reaches new {2}s only.": "此專案中每個 {0} 都會遵循的指示。只有你能變更這些指示；助理無法編輯。指示會存放在專案的節點上，而且每個 {1} 都會沿用建立時的指示，因此變更只會套用到之後新增的 {2}。",
   "Loading project instructions…": "正在載入專案指示…",
-  "Project instructions saved. New {0}s in this project will use them.":
-      "已儲存專案指示。此專案中新建立的 {0} 都會套用這些指示。",
+  "Project instructions saved. New {0}s in this project will use them.": "已儲存專案指示。此專案中新建立的 {0} 都會套用這些指示。",
   "Delete project": "刪除專案",
-  "Deletes the project, its {0}s and what they wrote to memory. You see what goes and what stays before anything is deleted.":
-      "刪除專案、其中的 {0}，以及它們寫入記憶的內容。刪除前，你可以先檢視即將刪除和保留的項目。",
+  "Deletes the project, its {0}s and what they wrote to memory. You see what goes and what stays before anything is deleted.": "刪除專案、其中的 {0}，以及它們寫入記憶的內容。刪除前，你可以先檢視即將刪除和保留的項目。",
   "Delete project…": "刪除專案…",
   "Settings are gone with the project's deletion.": "專案刪除後，其設定也會一併刪除。",
   "Project capabilities": "專案功能",
-  "Choose which assistant features this {0} workspace may use. All capabilities are allowed by default. Changes are saved to and enforced by the gateway, not just hidden in this browser.":
-      "選擇此 {0} 工作區可使用哪些助理功能。預設會允許所有功能。變更會由閘道儲存並強制執行，不會只是在此瀏覽器中隱藏功能。",
-  "This is not a sandbox: these settings do not isolate files, shell commands, or network access. They do not revoke data already in a conversation or stop work already running.":
-      "這不是沙箱：這些設定不會隔離檔案、Shell 命令或網路存取，也不會撤銷對話中已有的資料，或停止已在執行的工作。",
+  "Choose which assistant features this {0} workspace may use. All capabilities are allowed by default. Changes are saved to and enforced by the gateway, not just hidden in this browser.": "選擇此 {0} 工作區可使用哪些助理功能。預設會允許所有功能。變更會由閘道儲存並強制執行，不會只是在此瀏覽器中隱藏功能。",
+  "This is not a sandbox: these settings do not isolate files, shell commands, or network access. They do not revoke data already in a conversation or stop work already running.": "這不是沙箱：這些設定不會隔離檔案、Shell 命令或網路存取，也不會撤銷對話中已有的資料，或停止已在執行的工作。",
   "Loading project capabilities…": "正在載入專案功能…",
-  "The workspace's node is offline: its project config can be reviewed once it is back.":
-      "工作區的節點目前離線：重新連線後才能檢視專案設定。",
+  "The workspace's node is offline: its project config can be reviewed once it is back.": "工作區的節點目前離線：重新連線後才能檢視專案設定。",
   "Project config": "專案設定",
-  "A repository's .pirc/config.json can run hook commands, set environment variables for every command the agent runs, add writable paths, and choose the model new sessions use. The workspace ignores these values until you trust them. If the repository changes them later, they are ignored again until you trust the new values.":
-      "儲存庫中的 .pirc/config.json 可以執行掛鉤命令、設定代理程式執行每個命令時使用的環境變數、新增可寫入的路徑，並指定新對話使用的預設模型。信任前，工作區會忽略這些設定。若儲存庫日後變更設定，系統會再次忽略新設定，直到你重新信任為止。",
+  "A repository's .pirc/config.json can run hook commands, set environment variables for every command the agent runs, add writable paths, and choose the model new sessions use. The workspace ignores these values until you trust them. If the repository changes them later, they are ignored again until you trust the new values.": "儲存庫中的 .pirc/config.json 可以執行掛鉤命令、設定代理程式執行每個命令時使用的環境變數、新增可寫入的路徑，並指定新對話使用的預設模型。信任前，工作區會忽略這些設定。若儲存庫日後變更設定，系統會再次忽略新設定，直到你重新信任為止。",
   "Loading project config…": "正在載入專案設定…",
   "The project config is invalid and is not used: {0}": "專案設定無效，不會套用：{0}",
-  "This workspace's project config sets no hooks, environment, allowed paths or default model.":
-      "此工作區的專案設定未指定掛鉤、環境變數、允許的路徑或預設模型。",
+  "This workspace's project config sets no hooks, environment, allowed paths or default model.": "此工作區的專案設定未指定掛鉤、環境變數、允許的路徑或預設模型。",
   "Trusted": "已信任",
-  "Changed since trusted: ignored until you trust it again":
-      "自信任後已有變更：目前忽略，直到你再次信任",
+  "Changed since trusted: ignored until you trust it again": "自信任後已有變更：目前忽略，直到你再次信任",
   "Not trusted: ignored": "未受信任：已忽略",
   "Hooks": "掛鉤",
   "When a session starts": "對話開始時",
@@ -4108,8 +3225,7 @@ const traditionalChineseMessages = <String, String>{
   "Environment": "環境變數",
   "Allowed paths": "允許的路徑",
   "Trust": "信任",
-  "Trusted. New sessions in this workspace use these hooks, environment, paths and default model.":
-      "已信任。此工作區中的新對話會使用這些掛鉤、環境變數、路徑和預設模型。",
+  "Trusted. New sessions in this workspace use these hooks, environment, paths and default model.": "已信任。此工作區中的新對話會使用這些掛鉤、環境變數、路徑和預設模型。",
   "Revoke trust": "撤銷信任",
   "Trust revoked. New sessions ignore them.": "已撤銷信任。新對話會忽略這些設定。",
   "Escape": "Escape 鍵",
@@ -4145,18 +3261,15 @@ const traditionalChineseMessages = <String, String>{
   "replaceState cannot change its entry key.": "replaceState 無法變更該項目的鍵。",
   "History API URL exceeds its size limit.": "History API URL 超過大小限制。",
   "History API URL is invalid.": "History API URL 無效。",
-  "Blob history API URLs may only change the fragment.":
-      "Blob History API URL 只能變更片段。",
+  "Blob history API URLs may only change the fragment.": "Blob History API URL 只能變更片段。",
   "History API URL scheme is unsupported.": "不支援此 History API URL 配置。",
   "History API URL must remain same-origin.": "History API URL 必須維持同源。",
   "Blob navigation source is unavailable.": "Blob 導覽來源無法使用。",
   "Unsupported final document method: {0}": "不支援最終文件方法：{0}",
   "連線已變更，請回到 App 重新開啟內容。": "連線已變更，請回到 App 重新開啟內容。",
-  "Editing is unavailable. Wait for the session to be idle and take control.":
-      "目前無法編輯。請等到對話閒置後再接管控制權。",
+  "Editing is unavailable. Wait for the session to be idle and take control.": "目前無法編輯。請等到對話閒置後再接管控制權。",
   "Edit message": "編輯訊息",
-  "Saving creates a new branch and regenerates the response. Files and tool actions are not rolled back. Attachments are kept.":
-      "儲存會建立新分支並重新產生回應。檔案和工具操作不會復原。附件會保留。",
+  "Saving creates a new branch and regenerates the response. Files and tool actions are not rolled back. Attachments are kept.": "儲存會建立新分支並重新產生回應。檔案和工具操作不會復原。附件會保留。",
   "Save and regenerate": "儲存並重新產生",
   "Thinking…": "思考中…",
   "Reasoning redacted": "推理內容已隱藏",
@@ -4179,54 +3292,39 @@ const traditionalChineseMessages = <String, String>{
   "My project": "我的專案",
   "Existing directory on that device": "該裝置上的現有目錄",
   "~/projects/my-project": "~/projects/my-project",
-  "A project groups related chats. The assistant keeps its files for you; no folder to pick.":
-      "專案可將相關對話整理在一起。助理會為你保留檔案；無需選擇資料夾。",
-  "Choose an existing folder inside that device’s home directory. No files or folders will be created.":
-      "選擇該裝置家目錄中的現有資料夾。系統不會建立任何檔案或資料夾。",
-  "Each {0} gets its own folder on that device; no folder to pick.":
-      "每個 {0} 都會在該裝置上使用自己的資料夾；無需選擇資料夾。",
-  "No device can host workspaces: the chat node holds chats and projects only.":
-      "沒有裝置可供工作區使用：對話節點僅支援對話和專案。",
+  "A project groups related chats. The assistant keeps its files for you; no folder to pick.": "專案可將相關對話整理在一起。助理會為你保留檔案；無需選擇資料夾。",
+  "Choose an existing folder inside that device’s home directory. No files or folders will be created.": "選擇該裝置家目錄中的現有資料夾。系統不會建立任何檔案或資料夾。",
+  "Each {0} gets its own folder on that device; no folder to pick.": "每個 {0} 都會在該裝置上使用自己的資料夾；無需選擇資料夾。",
+  "No device can host workspaces: the chat node holds chats and projects only.": "沒有裝置可供工作區使用：對話節點僅支援對話和專案。",
   "Create a session": "建立對話",
   "New work": "新工作",
   "Create session": "建立對話",
   "No workspace available": "沒有可用的工作區",
   "Choose a workspace": "選擇工作區",
-  "The session is named from your first message and stays active on the host when this browser disconnects.":
-      "對話名稱會使用你第一則訊息的內容；即使瀏覽器中斷連線，對話仍會在主機上保持啟用。",
-  "The gateway sent an invalid project deletion preview. Reload it before deleting.":
-      "閘道傳回的專案刪除預覽無效。請重新載入後再刪除。",
+  "The session is named from your first message and stays active on the host when this browser disconnects.": "對話名稱會使用你第一則訊息的內容；即使瀏覽器中斷連線，對話仍會在主機上保持啟用。",
+  "The gateway sent an invalid project deletion preview. Reload it before deleting.": "閘道傳回的專案刪除預覽無效。請重新載入後再刪除。",
   "Memory changed since this was shown. Review it again.": "顯示後記憶已有變更。請重新檢視。",
   "Keep as is": "保留原樣",
   "New text": "新文字",
   "Use at most 1000 characters.": "最多使用 1000 個字元。",
   "Loading what the project holds…": "正在載入專案內容…",
-  "An earlier deletion of this project did not finish. Deleting again completes it; entries you kept come up for a decision again.":
-      "先前未完成刪除此專案。再次刪除會完成操作；你先前選擇保留的項目會再次要求你決定。",
+  "An earlier deletion of this project did not finish. Deleting again completes it; entries you kept come up for a decision again.": "先前未完成刪除此專案。再次刪除會完成操作；你先前選擇保留的項目會再次要求你決定。",
   "Deleted": "已刪除",
-  "{0}, with their messages, working files, uploads and private transcripts":
-      "{0}，包括其訊息、工作檔案、上傳檔案和私人逐字稿",
-  "The project's instructions, files, capability settings{0}":
-      "專案指示、檔案、功能設定{0}",
+  "{0}, with their messages, working files, uploads and private transcripts": "{0}，包括其訊息、工作檔案、上傳檔案和私人逐字稿",
+  "The project's instructions, files, capability settings{0}": "專案指示、檔案、功能設定{0}",
   "{0} that run here: {1}": "在此執行的 {0}：{1}",
   "The records of {0} its chats started": "{0} 開始對話時的紀錄",
   "{0} written only here:": "僅在此寫入的 {0}：",
-  "The project's changes to {0}, which go back to their earlier text:":
-      "專案對 {0} 所做的變更，會還原為先前的文字：",
+  "The project's changes to {0}, which go back to their earlier text:": "專案對 {0} 所做的變更，會還原為先前的文字：",
   "Needs your decision": "需要你決定",
-  "These entries mix text from this project with text from other chats, which cannot be separated automatically.":
-      "這些項目混合了此專案和其他對話中的文字，因此無法自動分開。",
+  "These entries mix text from this project with text from other chats, which cannot be separated automatically.": "這些項目混合了此專案和其他對話中的文字，因此無法自動分開。",
   "Not deleted": "未刪除",
   "Schedules its chats created in other workspaces: {0}": "其對話在其他工作區建立的排程：{0}",
-  "Work done by delegated tasks in other workspaces: their sessions, files, commits and the workspace memory they wrote":
-      "委派工作在其他工作區執行的工作：其對話、檔案、提交紀錄，以及寫入的工作區記憶",
-  "Copies in other chats (what they already read, and anything they wrote in their own words)":
-      "其他對話中的副本（它們已讀取的內容，以及它們用自己的文字寫入的內容）",
-  "Files uploaded before this version of pirc, which do not record their project":
-      "此版本的 Pirc 推出前上傳的檔案，未記錄所屬專案",
+  "Work done by delegated tasks in other workspaces: their sessions, files, commits and the workspace memory they wrote": "委派工作在其他工作區執行的工作：其對話、檔案、提交紀錄，以及寫入的工作區記憶",
+  "Copies in other chats (what they already read, and anything they wrote in their own words)": "其他對話中的副本（它們已讀取的內容，以及它們用自己的文字寫入的內容）",
+  "Files uploaded before this version of pirc, which do not record their project": "此版本的 Pirc 推出前上傳的檔案，未記錄所屬專案",
   "Backups, logs and what model providers keep": "備份、記錄檔，以及模型供應商保留的內容",
-  "Forgotten text is not blocked: other chats may write it again. To keep a fact from coming back, forget it in Settings → Memory.":
-      "已清除的文字並未遭封鎖：其他對話仍可能再次寫入。若要避免某項事實再次出現，請前往「設定」→「記憶」清除該項內容。",
+  "Forgotten text is not blocked: other chats may write it again. To keep a fact from coming back, forget it in Settings → Memory.": "已清除的文字並未遭封鎖：其他對話仍可能再次寫入。若要避免某項事實再次出現，請前往「設定」→「記憶」清除該項內容。",
   "Delete project “{0}”?": "要刪除專案「{0}」嗎？",
   "Deleting…": "正在刪除…",
   "Enter a number.": "請輸入數字。",
@@ -4245,30 +3343,22 @@ const traditionalChineseMessages = <String, String>{
   "Frozen": "已凍結",
   "Refresh": "重新整理",
   "Loading context…": "正在載入脈絡…",
-  "Saved snapshot{0}. This is the last request, not current configuration.":
-      "已儲存快照{0}。這是上一次請求的內容，並非目前的設定。",
+  "Saved snapshot{0}. This is the last request, not current configuration.": "已儲存快照{0}。這是上一次請求的內容，並非目前的設定。",
   "Context usage: {0}": "脈絡使用量：{0}",
-  "Estimated input: {0} · Reported input: {1}\nContext window: {2}":
-      "預估輸入量：{0} · 回報的輸入量：{1}\n脈絡視窗：{2}",
-  "Bucket sizes are estimates{0}. Memory is observations/reflections within messages, not an extra copy. System memory stays in system.":
-      "各分類大小為估算值{0}。訊息中的記憶是觀察紀錄／反思內容，不是額外複本。系統記憶會保留在系統中。",
+  "Estimated input: {0} · Reported input: {1}\nContext window: {2}": "預估輸入量：{0} · 回報的輸入量：{1}\n脈絡視窗：{2}",
+  "Bucket sizes are estimates{0}. Memory is observations/reflections within messages, not an extra copy. System memory stays in system.": "各分類大小為估算值{0}。訊息中的記憶是觀察紀錄／反思內容，不是額外複本。系統記憶會保留在系統中。",
   "System sections": "系統區段",
   "Copy all": "全部複製",
   "Copied system prompt.": "已複製系統提示詞。",
-  "Unable to copy. Select the expanded section text instead.":
-      "無法複製。請改為選取展開區段中的文字。",
+  "Unable to copy. Select the expanded section text instead.": "無法複製。請改為選取展開區段中的文字。",
   "Unavailable": "無法使用",
-  "Soul defines the assistant's persona; Chat rules apply to all chats. Files stay on the chat node. Changes apply at the next agent start (new chats or restarted agents), not to an already running agent. Empty Soul restores the built-in identity.":
-      "Soul 定義助理的人設；聊天規則適用於所有對話。檔案會保留在對話節點上。變更會在代理程式下次啟動時（建立新對話或重新啟動代理程式）套用，不會影響已在執行的代理程式。清空 Soul 會還原內建身分設定。",
+  "Soul defines the assistant's persona; Chat rules apply to all chats. Files stay on the chat node. Changes apply at the next agent start (new chats or restarted agents), not to an already running agent. Empty Soul restores the built-in identity.": "Soul 定義助理的人設；聊天規則適用於所有對話。檔案會保留在對話節點上。變更會在代理程式下次啟動時（建立新對話或重新啟動代理程式）套用，不會影響已在執行的代理程式。清空 Soul 會還原內建身分設定。",
   "Assistant": "助理",
-  "Chats no longer read AGENTS.md: move chat-relevant rules into CHAT.md.":
-      "助理已不再讀取 AGENTS.md：請將與對話相關的規則移至 CHAT.md。",
+  "Chats no longer read AGENTS.md: move chat-relevant rules into CHAT.md.": "助理已不再讀取 AGENTS.md：請將與對話相關的規則移至 CHAT.md。",
   "Chat node: {0} — {1}": "對話節點：{0} — {1}",
   "Chat node: ": "對話節點：",
-  "No chat node is bound. Start a chat node to register it.":
-      "尚未綁定對話節點。請啟動對話節點以進行註冊。",
-  "Stop the old chat node before releasing it, or it may reconnect and claim the binding again. Releasing disconnects it; the next chat node to register will be bound.":
-      "解除綁定前，請先停止舊的對話節點，否則它可能重新連線並再次取得綁定。解除綁定會中斷連線；下一個註冊的對話節點將會完成綁定。",
+  "No chat node is bound. Start a chat node to register it.": "尚未綁定對話節點。請啟動對話節點以進行註冊。",
+  "Stop the old chat node before releasing it, or it may reconnect and claim the binding again. Releasing disconnects it; the next chat node to register will be bound.": "解除綁定前，請先停止舊的對話節點，否則它可能重新連線並再次取得綁定。解除綁定會中斷連線；下一個註冊的對話節點將會完成綁定。",
   "Confirm release": "確認解除綁定",
   "Release chat node binding": "解除對話節點綁定",
   "Soul": "Soul",
@@ -4276,8 +3366,7 @@ const traditionalChineseMessages = <String, String>{
   "Saved. Applies at the next chat agent start.": "已儲存。將在對話代理程式下次啟動時套用。",
   "Managed by Nix: edit services.pirc.{0}.": "由 Nix 管理：編輯 services.pirc.{0}。",
   "Managed symlink: edit its source file.": "由受管理的符號連結管理：編輯其來源檔案。",
-  "Read-only: the node does not have permission to edit this file.":
-      "唯讀：此節點沒有權限編輯此檔案。",
+  "Read-only: the node does not have permission to edit this file.": "唯讀：此節點沒有權限編輯此檔案。",
   "{0} / {1} characters": "{0} / {1} 個字元",
   "Revert": "還原",
   "Running": "執行中",
@@ -4294,15 +3383,11 @@ const traditionalChineseMessages = <String, String>{
   "Waiting for output…": "正在等候輸出…",
   "No output returned.": "沒有傳回輸出。",
   "Write blocked. ": "寫入已遭阻擋。",
-  "“{0}” is writing to {1} right now. The agent was told to wait until that run finishes.":
-      "「{0}」目前正在寫入 {1}。已指示代理程式等待該次執行結束。",
-  "Scheduled runs, sessions waiting for your answer, finished delegations and memory changes to approve. Each schedule chooses which of its runs notify.":
-      "排程工作、等待你回答的對話、已完成的委派工作，以及等待核准的記憶變更。每個排程都會設定哪些執行工作會傳送通知。",
+  "“{0}” is writing to {1} right now. The agent was told to wait until that run finishes.": "「{0}」目前正在寫入 {1}。已指示代理程式等待該次執行結束。",
+  "Scheduled runs, sessions waiting for your answer, finished delegations and memory changes to approve. Each schedule chooses which of its runs notify.": "排程工作、等待你回答的對話、已完成的委派工作，以及等待核准的記憶變更。每個排程都會設定哪些執行工作會傳送通知。",
   "Checking notifications…": "正在檢查通知…",
-  "No UnifiedPush distributor is installed. Install one (ntfy, for example), then come back.":
-      "未安裝 UnifiedPush 發送器。請先安裝一個（例如 ntfy），再返回此處。",
-  "Notifications are blocked for this app. Allow them in Android settings.":
-      "此 App 的通知遭到封鎖。請在 Android 設定中允許通知。",
+  "No UnifiedPush distributor is installed. Install one (ntfy, for example), then come back.": "未安裝 UnifiedPush 發送器。請先安裝一個（例如 ntfy），再返回此處。",
+  "Notifications are blocked for this app. Allow them in Android settings.": "此 App 的通知遭到封鎖。請在 Android 設定中允許通知。",
   "Allow notifications": "允許通知",
   "This phone gets notifications.": "此手機會收到通知。",
   "Registering this phone for notifications…": "正在註冊此手機以接收通知…",
@@ -4315,8 +3400,7 @@ const traditionalChineseMessages = <String, String>{
   "Back": "返回",
   "Refresh output": "重新載入輸出",
   "No output yet.": "目前沒有輸出。",
-  "The agent is not running. Background tasks, subagents and teammates appear here while it is.":
-      "代理程式目前未執行。背景工作、子代理程式和隊友會在執行期間顯示於此處。",
+  "The agent is not running. Background tasks, subagents and teammates appear here while it is.": "代理程式目前未執行。背景工作、子代理程式和隊友會在執行期間顯示於此處。",
   "Background tasks": "背景工作",
   "No background tasks.": "沒有背景工作。",
   "Subagents": "子代理程式",
@@ -4349,8 +3433,7 @@ const traditionalChineseMessages = <String, String>{
   "Close terminal {0}": "關閉終端機 {0}",
   "New terminal": "新增終端機",
   "Take control to open a terminal": "請先接管控制權才能開啟終端機",
-  "Run commands in this workspace. The shell runs as the gateway’s account, just like the agent’s own tools.":
-      "在此工作區執行命令。Shell 會以閘道帳戶執行，與代理程式自己使用的工具相同。",
+  "Run commands in this workspace. The shell runs as the gateway’s account, just like the agent’s own tools.": "在此工作區執行命令。Shell 會以閘道帳戶執行，與代理程式自己使用的工具相同。",
   "Open terminal": "開啟終端機",
   "Take control of the session to open one.": "請先接管此對話的控制權再開啟終端機。",
   "Terminal input": "終端機輸入",
@@ -4370,37 +3453,28 @@ const traditionalChineseMessages = <String, String>{
   "Unread": "未讀",
   "Delete chat?": "要刪除此對話嗎？",
   "Delete chat and memories": "刪除對話及記憶",
-  "“{0}” will be permanently deleted, including its messages and chat files.":
-      "「{0}」將永久刪除，包括其中的訊息和對話檔案。",
-  "This also deletes USER memories and MEMORY notes created by this chat, and its pending memory proposals.":
-      "此操作也會刪除此對話建立的 USER 記憶、MEMORY 筆記和待處理的記憶提案。",
+  "“{0}” will be permanently deleted, including its messages and chat files.": "「{0}」將永久刪除，包括其中的訊息和對話檔案。",
+  "This also deletes USER memories and MEMORY notes created by this chat, and its pending memory proposals.": "此操作也會刪除此對話建立的 USER 記憶、MEMORY 筆記和待處理的記憶提案。",
   "Memories created by other chats are kept.": "其他對話建立的記憶會保留。",
-  "Copies already present in other chats are not erased. Any running reply will stop. This cannot be undone.":
-      "已存在於其他對話中的副本不會刪除。任何正在產生的回覆都會停止。此操作無法復原。",
+  "Copies already present in other chats are not erased. Any running reply will stop. This cannot be undone.": "已存在於其他對話中的副本不會刪除。任何正在產生的回覆都會停止。此操作無法復原。",
   "Linked workspaces saved.": "已儲存連結的工作區。",
   "removed from its device": "已從其裝置移除",
   "Linked workspaces": "連結的工作區",
-  "The repositories this project is about. Its assistant lists them first, hands a task to the linked workspace when only one is linked and the task names none, and searches their notes (and those of other clones of the same repository) first.":
-      "此專案所屬儲存庫。助理會優先列出這些儲存庫；若只連結了一個工作區，且任務未指定工作區，助理會將任務交由該工作區處理；也會優先搜尋這些儲存庫的筆記（以及同一儲存庫其他複本中的筆記）。",
-  "A link is not a permission: delegations to linked and unlinked workspaces alike follow the project's Delegation approval setting, and the assistant can still reach workspaces that are not linked. Chats already open keep the workspace list they started with.":
-      "連結不代表授權：委派至已連結或未連結工作區的工作，都會遵循專案的「委派核准」設定；助理仍可存取未連結的工作區。已開啟的對話會沿用開始時的工作區清單。",
+  "The repositories this project is about. Its assistant lists them first, hands a task to the linked workspace when only one is linked and the task names none, and searches their notes (and those of other clones of the same repository) first.": "此專案所屬儲存庫。助理會優先列出這些儲存庫；若只連結了一個工作區，且任務未指定工作區，助理會將任務交由該工作區處理；也會優先搜尋這些儲存庫的筆記（以及同一儲存庫其他複本中的筆記）。",
+  "A link is not a permission: delegations to linked and unlinked workspaces alike follow the project's Delegation approval setting, and the assistant can still reach workspaces that are not linked. Chats already open keep the workspace list they started with.": "連結不代表授權：委派至已連結或未連結工作區的工作，都會遵循專案的「委派核准」設定；助理仍可存取未連結的工作區。已開啟的對話會沿用開始時的工作區清單。",
   "Loading linked workspaces…": "正在載入連結的工作區…",
   "Workspaces": "工作區",
   "No directory workspaces yet.": "尚無目錄工作區。",
   "Output unavailable. {0}": "無法使用輸出。{0}",
   "Could not stop the task. {0}": "無法停止工作。{0}",
-  "Login status is unavailable. Start a new login to retry.":
-      "無法取得登入狀態。請重新登入再試一次。",
-  "Could not confirm cancellation. This login will expire on the gateway.":
-      "無法確認是否已取消。此登入將在閘道上到期。",
-  "Could not open the authorization page. Copy the link and open it in a browser.":
-      "無法開啟授權頁面。請複製連結並在瀏覽器中開啟。",
+  "Login status is unavailable. Start a new login to retry.": "無法取得登入狀態。請重新登入再試一次。",
+  "Could not confirm cancellation. This login will expire on the gateway.": "無法確認是否已取消。此登入將在閘道上到期。",
+  "Could not open the authorization page. Copy the link and open it in a browser.": "無法開啟授權頁面。請複製連結並在瀏覽器中開啟。",
   "{0} · {1} known models": "{0} · {1} 個已知模型",
   "Reconnect": "重新連線",
   "Log in": "登入",
   "Log out {0}": "登出 {0}",
-  "Logging in enables the policies for all known GitHub Copilot models in your account.":
-      "登入後，你帳戶中所有已知的 GitHub Copilot 模型都會啟用相關政策。",
+  "Logging in enables the policies for all known GitHub Copilot models in your account.": "登入後，你帳戶中所有已知的 GitHub Copilot 模型都會啟用相關政策。",
   "I agree, log in": "我同意，登入",
   "Not now": "現在不要",
   "Connected. {0} models are now available.": "已連線。現在有 {0} 個模型可供使用。",
@@ -4413,20 +3487,16 @@ const traditionalChineseMessages = <String, String>{
   "2. Enter it on the authorization page": "2. 在授權頁面輸入代碼",
   "The provider returned an unsupported authorization URL.": "供應商傳回了不支援的授權網址。",
   "Open authorization page": "開啟授權頁面",
-  "Sign in on the authorization page. If this browser runs on the gateway's machine, the login finishes by itself. Otherwise the browser ends on a localhost page that may not load. Copy that page's full address and paste it below.":
-      "請在授權頁面登入。如果此瀏覽器在閘道所在的電腦上執行，登入會自動完成；否則瀏覽器會停留在可能無法載入的 localhost 頁面。請複製該頁面的完整網址並貼在下方。",
-  "Waiting for authorization · expires in {0} minute{1} · closing settings cancels it":
-      "等待核准 · 將於 {0} 分鐘{1}後到期 · 關閉設定會取消登入",
+  "Sign in on the authorization page. If this browser runs on the gateway's machine, the login finishes by itself. Otherwise the browser ends on a localhost page that may not load. Copy that page's full address and paste it below.": "請在授權頁面登入。如果此瀏覽器在閘道所在的電腦上執行，登入會自動完成；否則瀏覽器會停留在可能無法載入的 localhost 頁面。請複製該頁面的完整網址並貼在下方。",
+  "Waiting for authorization · expires in {0} minute{1} · closing settings cancels it": "等待核准 · 將於 {0} 分鐘{1}後到期 · 關閉設定會取消登入",
   "Cancel login": "取消登入",
   "Choose an option": "選擇選項",
   "Finish login": "完成登入",
   "Continue": "繼續",
   "Skip selection": "略過選取",
   "Subscription accounts": "訂閱帳戶",
-  "Sign in with an existing subscription. pi-ai's built-in model list is not a verification of your account's model access or service policy.":
-      "使用現有訂閱登入。pi-ai 內建的模型清單不代表已確認你的帳戶可使用哪些模型，也不代表已確認服務政策。",
-  "Log out removes this gateway's saved credentials and prevents new requests. It does not revoke your account upstream or recall content already sent.":
-      "登出會移除此閘道儲存的憑證，並阻止新的請求。登出不會撤銷上游服務中的帳戶授權，也不會收回已傳送的內容。",
+  "Sign in with an existing subscription. pi-ai's built-in model list is not a verification of your account's model access or service policy.": "使用現有訂閱登入。pi-ai 內建的模型清單不代表已確認你的帳戶可使用哪些模型，也不代表已確認服務政策。",
+  "Log out removes this gateway's saved credentials and prevents new requests. It does not revoke your account upstream or recall content already sent.": "登出會移除此閘道儲存的憑證，並阻止新的請求。登出不會撤銷上游服務中的帳戶授權，也不會收回已傳送的內容。",
   "started automatically": "已自動啟動",
   "Delegated to {0} — {1}": "已委派至 {0} — {1}",
   "Active delegations": "進行中的委派工作",
@@ -4439,8 +3509,7 @@ const traditionalChineseMessages = <String, String>{
   "Not sandboxed{0}": "未在沙箱中執行{0}",
   "Hide side panel": "隱藏側邊面板",
   "Show side panel": "顯示側邊面板",
-  "You’re viewing this session. {0} currently has control.":
-      "你目前正在檢視此對話。{0} 目前持有控制權。",
+  "You’re viewing this session. {0} currently has control.": "你目前正在檢視此對話。{0} 目前持有控制權。",
   "Dismiss error": "關閉錯誤訊息",
   "Backspace": "Backspace 鍵",
   "Enter": "Enter 鍵",
@@ -4457,8 +3526,7 @@ const traditionalChineseMessages = <String, String>{
   "Previous step": "上一步",
   "Next step": "下一步",
   "Browser at this step": "此步驟的瀏覽器畫面",
-  "Install Chromium on the node or set PIRC_BROWSER_EXECUTABLE.":
-      "請在節點上安裝 Chromium，或設定 PIRC_BROWSER_EXECUTABLE。",
+  "Install Chromium on the node or set PIRC_BROWSER_EXECUTABLE.": "請在節點上安裝 Chromium，或設定 PIRC_BROWSER_EXECUTABLE。",
   "The agent needs you: ": "代理程式需要你的協助：",
   "Forward": "前進",
   "Reload": "重新載入",
@@ -4468,16 +3536,14 @@ const traditionalChineseMessages = <String, String>{
   "Drag objects · tap to type": "拖曳物件 · 點一下即可輸入",
   "Swipe to scroll · tap to type": "滑動以捲動 · 點一下即可輸入",
   "Waiting for the first frame…": "正在等候第一個畫面…",
-  "The agent opens a browser when it uses web tools. You can watch it here, take over to log in or fill forms, and record videos.":
-      "代理程式使用網頁工具時會開啟瀏覽器。你可以在此觀看、接管登入或填寫表單，也可以錄製影片。",
+  "The agent opens a browser when it uses web tools. You can watch it here, take over to log in or fill forms, and record videos.": "代理程式使用網頁工具時會開啟瀏覽器。你可以在此觀看、接管登入或填寫表單，也可以錄製影片。",
   "Type into the browser": "在瀏覽器中輸入",
   "Browser activity": "瀏覽器活動",
   "Recordings": "錄影",
   "Activity": "活動",
   "Nothing yet.": "目前沒有活動。",
   "無法開啟相機，請重試或返回貼上配對連結。": "無法開啟相機，請重試或返回貼上配對連結。",
-  "這不是 pirc 配對 QR code，請掃描網頁「設定 → 裝置」顯示的配對碼。":
-      "這不是 pirc 配對 QR code，請掃描網頁「設定 → 裝置」顯示的配對碼。",
+  "這不是 pirc 配對 QR code，請掃描網頁「設定 → 裝置」顯示的配對碼。": "這不是 pirc 配對 QR code，請掃描網頁「設定 → 裝置」顯示的配對碼。",
   "需要相機權限才能掃描": "需要相機權限才能掃描",
   "無法開啟相機": "無法開啟相機",
   "只在掃描配對碼時使用相機。你也可以返回並貼上配對連結。": "只在掃描配對碼時使用相機。你也可以返回並貼上配對連結。",
@@ -4536,16 +3602,14 @@ const traditionalChineseMessages = <String, String>{
   "Unable to request browser approval. Try again.": "無法要求瀏覽器核准。請再試一次。",
   "Unable to open your browser. Try again.": "無法開啟瀏覽器。請再試一次。",
   "Unable to check approval status. Try again.": "無法確認核准狀態。請再試一次。",
-  "Access was cleared here, but the gateway could not confirm revocation.":
-      "已在此清除存取權，但閘道無法確認撤銷狀態。",
+  "Access was cleared here, but the gateway could not confirm revocation.": "已在此清除存取權，但閘道無法確認撤銷狀態。",
   "model backends": "模型後端",
   "paired devices": "已配對裝置",
   "management settings": "管理設定",
   "Paired devices": "已配對裝置",
   "Management settings": "管理設定",
   "Browser management access": "瀏覽器管理存取權",
-  "Approve this app in your browser to manage {0}. Access lasts 15 minutes.":
-      "請在瀏覽器中核准此 App，以管理 {0}。存取權有效 15 分鐘。",
+  "Approve this app in your browser to manage {0}. Access lasts 15 minutes.": "請在瀏覽器中核准此 App，以管理 {0}。存取權有效 15 分鐘。",
   "Checking management access…": "正在確認管理存取權…",
   "Waiting for approval for {0}.": "正在等候核准 {0}。",
   "Waiting for approval in your browser.": "正在等候你在瀏覽器中核准。",
@@ -4555,20 +3619,17 @@ const traditionalChineseMessages = <String, String>{
   "Checking…": "正在檢查…",
   "Check status": "確認狀態",
   "Cancel request": "取消要求",
-  "Current access covers {0}. This page requires {1}.":
-      "目前的存取權涵蓋 {0}。此頁面需要 {1}。",
+  "Current access covers {0}. This page requires {1}.": "目前的存取權涵蓋 {0}。此頁面需要 {1}。",
   "Management access is active.": "管理存取權已啟用。",
   "Management access expires in {0}.": "管理存取權將於 {0} 後到期。",
   "Revoking…": "正在撤銷…",
   "Revoke access": "撤銷存取權",
   "Requesting…": "正在提出要求…",
   "Request additional access": "要求更多存取權",
-  "The approval request expired or management access ended.":
-      "核准要求已到期，或管理存取權已結束。",
+  "The approval request expired or management access ended.": "核准要求已到期，或管理存取權已結束。",
   "Request again": "再次提出要求",
   "Request browser approval": "要求瀏覽器核准",
-  "Prompts that run by themselves at set times, each in a new session of their workspace. Nobody watches a run live: read its final message here or open its session. Runs the gateway could not start on time wait for you to allow them.":
-      "這些提示會在設定的時間自行執行，每次都會在所屬工作區中建立新的對話。沒有人會即時監看執行狀況：請在此查看最後訊息，或開啟該對話。閘道未能準時啟動的執行工作會等待你允許後才開始。",
+  "Prompts that run by themselves at set times, each in a new session of their workspace. Nobody watches a run live: read its final message here or open its session. Runs the gateway could not start on time wait for you to allow them.": "這些提示會在設定的時間自行執行，每次都會在所屬工作區中建立新的對話。沒有人會即時監看執行狀況：請在此查看最後訊息，或開啟該對話。閘道未能準時啟動的執行工作會等待你允許後才開始。",
   "Missed": "錯過",
   "Skipped": "已略過",
   "Dismissed": "已關閉",
@@ -4604,20 +3665,16 @@ const traditionalChineseMessages = <String, String>{
   "權限與快速回應": "權限與快速回應",
   "讓重要的回應找得到你": "讓重要的回應找得到你",
   "依照你的使用方式設定": "依照你的使用方式設定",
-  "通知和快速回應浮窗只在使用相關功能時需要。你可以現在開啟，也可以先開始使用，稍後再到設定調整。":
-      "通知和快速回應浮窗只在使用相關功能時需要。你可以現在開啟，也可以先開始使用，稍後再到設定調整。",
+  "通知和快速回應浮窗只在使用相關功能時需要。你可以現在開啟，也可以先開始使用，稍後再到設定調整。": "通知和快速回應浮窗只在使用相關功能時需要。你可以現在開啟，也可以先開始使用，稍後再到設定調整。",
   "只開啟你會使用的功能。系統權限可隨時從 Android 設定修改。": "只開啟你會使用的功能。系統權限可隨時從 Android 設定修改。",
   "通知": "通知",
   "此 App 可用通知提醒你工作完成、執行失敗，或 agent 等待你回覆。": "此 App 可用通知提醒你工作完成、執行失敗，或代理程式等待你回覆。",
   "未開啟時，仍可在 App 內查看工作和待處理問題。": "未開啟時，仍可在 App 內查看工作和待處理問題。",
   "快速回應浮窗": "快速回應浮窗",
   "允許在其他 App 上層開啟小視窗，讓你查看問題並回覆。": "允許在其他 App 上層開啟小視窗，讓你查看問題並回覆。",
-  "此權限只用於你主動使用快速回應；未開啟時，通知仍會打開完整對話。Android 權限名稱為「顯示在其他應用程式上層」。":
-      "此權限只用於你主動使用快速回應；未開啟時，通知仍會開啟完整對話。Android 權限名稱為「顯示在其他應用程式上層」。",
-  "若使用內建相機掃描配對碼，會在開啟掃描頁時請求相機權限；拒絕後仍可貼上配對連結。":
-      "若使用內建相機掃描配對碼，系統會在開啟掃描器時要求相機權限；即使拒絕，仍可貼上配對連結。",
-  "背景推播需在配對後，到「設定 → 推播與通知目標」完成服務註冊。開啟系統通知權限不代表推播服務已連線。":
-      "配對後，背景推播需要前往「設定 → 推播與通知目標」完成服務註冊。開啟系統通知權限不代表推播服務已連線。",
+  "此權限只用於你主動使用快速回應；未開啟時，通知仍會打開完整對話。Android 權限名稱為「顯示在其他應用程式上層」。": "此權限只用於你主動使用快速回應；未開啟時，通知仍會開啟完整對話。Android 權限名稱為「顯示在其他應用程式上層」。",
+  "若使用內建相機掃描配對碼，會在開啟掃描頁時請求相機權限；拒絕後仍可貼上配對連結。": "若使用內建相機掃描配對碼，系統會在開啟掃描器時要求相機權限；即使拒絕，仍可貼上配對連結。",
+  "背景推播需在配對後，到「設定 → 推播與通知目標」完成服務註冊。開啟系統通知權限不代表推播服務已連線。": "配對後，背景推播需要前往「設定 → 推播與通知目標」完成服務註冊。開啟系統通知權限不代表推播服務已連線。",
   "重新確認權限": "重新確認權限",
   "處理中…": "處理中…",
   "開始使用": "開始使用",
@@ -4629,8 +3686,7 @@ const traditionalChineseMessages = <String, String>{
   "asks before risky commands": "執行風險命令前詢問",
   "never asks": "永不詢問",
   "Give this session full access?": "要給此對話完整存取權嗎？",
-  "The agent will run every command, script and file change without asking you, including ones auto mode would stop as dangerous (deleting files, force-pushing, changing the system).\n\nYour deny-list still asks, writes still take the workspace's write lease, and the node's OS sandbox stays as it is. Teammates and subagents of this session follow it; delegated sessions do not.":
-      "代理程式將不經詢問就執行所有命令、指令碼和檔案變更，包括自動模式會以危險操作為由停止的項目（例如刪除檔案、強制推送、變更系統）。\n\n拒絕清單中的操作仍會先詢問；寫入仍須取得工作區的寫入租約；節點的作業系統沙箱設定維持原狀。此對話的隊友和子代理程式會遵循此設定；委派建立的對話則不會。",
+  "The agent will run every command, script and file change without asking you, including ones auto mode would stop as dangerous (deleting files, force-pushing, changing the system).\n\nYour deny-list still asks, writes still take the workspace's write lease, and the node's OS sandbox stays as it is. Teammates and subagents of this session follow it; delegated sessions do not.": "代理程式將不經詢問就執行所有命令、指令碼和檔案變更，包括自動模式會以危險操作為由停止的項目（例如刪除檔案、強制推送、變更系統）。\n\n拒絕清單中的操作仍會先詢問；寫入仍須取得工作區的寫入租約；節點的作業系統沙箱設定維持原狀。此對話的隊友和子代理程式會遵循此設定；委派建立的對話則不會。",
   "Allow full access": "允許完整存取權",
   "Approval mode": "核准模式",
   "General": "一般",
@@ -4638,17 +3694,14 @@ const traditionalChineseMessages = <String, String>{
   "Devices": "裝置",
   "About": "關於",
   "Show done sessions": "顯示已完成的對話",
-  "Settled (done) sessions are hidden from project and workspace pages unless this is on. Project and workspace settings are on their own pages.":
-      "除非開啟此選項，已完成（已停止）的對話會從專案和工作區頁面隱藏。專案與工作區設定各自在自己的頁面中。",
+  "Settled (done) sessions are hidden from project and workspace pages unless this is on. Project and workspace settings are on their own pages.": "除非開啟此選項，已完成（已停止）的對話會從專案和工作區頁面隱藏。專案與工作區設定各自在自己的頁面中。",
   "Layout": "版面配置",
-  "Restore the sidebar and side panel to their default size and visibility.":
-      "將側邊欄和側邊面板還原為預設大小與顯示狀態。",
+  "Restore the sidebar and side panel to their default size and visibility.": "將側邊欄和側邊面板還原為預設大小與顯示狀態。",
   "Reset": "重設",
   "{0} waiting": "{0} 正在等候",
   "Nodes": "節點",
   "No nodes online.": "目前沒有節點上線。",
-  "(\\S+) is being written by session \"(.+?)\" \\([^)]*\\); wait until its run finishes":
-      "(\\S+) is being written by session \"(.+?)\" \\([^)]*\\); wait until its run finishes",
+  "(\\S+) is being written by session \"(.+?)\" \\([^)]*\\); wait until its run finishes": "(\\S+) is being written by session \"(.+?)\" \\([^)]*\\); wait until its run finishes",
   "{0}\n… {1} more characters not shown": "{0}\n…另有 {1} 個字元未顯示",
   "Modified": "已修改",
   "Renamed": "已重新命名",
@@ -4667,11 +3720,9 @@ const traditionalChineseMessages = <String, String>{
   "Load more": "載入更多",
   "Gateway context is closed.": "閘道脈絡已關閉。",
   "Cannot register a context without a pairing stamp.": "缺少配對戳記，無法註冊脈絡。",
-  "Use ensureContext() to register this gateway context.":
-      "使用 ensureContext() 註冊此閘道脈絡。",
+  "Use ensureContext() to register this gateway context.": "使用 ensureContext() 註冊此閘道脈絡。",
   "Must be a nonnegative integer.": "必須是非負整數。",
-  "^Saved recording (\\.pirc/recordings/\\S+\\.webm)\$":
-      "^Saved recording (\\.pirc/recordings/\\S+\\.webm)\$",
+  "^Saved recording (\\.pirc/recordings/\\S+\\.webm)\$": "^Saved recording (\\.pirc/recordings/\\S+\\.webm)\$",
   "Take control of the session to use the browser.": "請先接管此對話的控制權才能使用瀏覽器。",
   "Enter a valid date and time.": "請輸入有效的日期與時間。",
   "Set date and time": "設定日期和時間",
@@ -4689,8 +3740,7 @@ const traditionalChineseMessages = <String, String>{
   "Back to side panel": "返回側邊面板",
   "連接 pirc": "連接 pirc",
   "讓工作跟著你": "讓工作跟著你",
-  "在網頁版「設定 → 裝置」建立配對，掃描 QR code 或貼上配對連結。":
-      "在網頁版「設定 → 裝置」建立配對，掃描 QR code 或貼上配對連結。",
+  "在網頁版「設定 → 裝置」建立配對，掃描 QR code 或貼上配對連結。": "在網頁版「設定 → 裝置」建立配對，掃描 QR code 或貼上配對連結。",
   "配對連結": "配對連結",
   "pirc://pair?…": "pirc://pair?…",
   "確認連線中…": "正在確認連線…",
@@ -4701,8 +3751,7 @@ const traditionalChineseMessages = <String, String>{
   "取消準備": "取消準備",
   "Document request was superseded.": "文件請求已被後續請求取代。",
   "Native cookie request state is unavailable.": "無法取得原生 Cookie 請求狀態。",
-  "Received 304 without a matching cached representation.":
-      "收到 HTTP 304，但沒有相符的快取內容。",
+  "Received 304 without a matching cached representation.": "收到 HTTP 304，但沒有相符的快取內容。",
   "Captured Blob URL changed.": "擷取的 Blob URL 已變更。",
   "下載失敗，請重試。": "下載失敗，請重試。",
   "Document URL is unavailable.": "文件 URL 無法使用。",
@@ -4721,8 +3770,7 @@ const traditionalChineseMessages = <String, String>{
   "PingFang TC": "PingFang TC",
   "Heiti TC": "Heiti TC",
   "確認重新提交表單": "確認重新提交表單",
-  "這個網頁需要使用你先前輸入的資料才能正確顯示。你可以重新傳送這些資料，不過這麼做會重複執行這個網頁先前執行過的任何動作。":
-      "這個網頁需要使用你先前輸入的資料才能正確顯示。你可以重新傳送這些資料，不過這麼做會重複執行這個網頁先前執行過的任何動作。",
+  "這個網頁需要使用你先前輸入的資料才能正確顯示。你可以重新傳送這些資料，不過這麼做會重複執行這個網頁先前執行過的任何動作。": "這個網頁需要使用你先前輸入的資料才能正確顯示。你可以重新傳送這些資料，不過這麼做會重複執行這個網頁先前執行過的任何動作。",
   "按下重新載入按鈕，重新提交載入網頁所需的資料。": "按下重新載入按鈕，重新提交載入網頁所需的資料。",
   "New messages": "新訊息",
   "Waiting for resume": "等待恢復",
@@ -4731,12 +3779,9 @@ const traditionalChineseMessages = <String, String>{
   "All tasks completed": "所有工作皆已完成",
   "Uploading…": "正在上傳…",
   "Remove {0}": "移除 {0}",
-  "Object URL does not belong to its creator origin.":
-      "Object URL 不屬於建立它的來源 origin。",
-  "The gateway connection changed. Close and reopen backend settings.":
-      "閘道連線已變更。請關閉並重新開啟後端設定。",
-  "The endpoint lists no models. Add model IDs manually.":
-      "端點未列出任何模型。請手動新增模型 ID。",
+  "Object URL does not belong to its creator origin.": "Object URL 不屬於建立它的來源 origin。",
+  "The gateway connection changed. Close and reopen backend settings.": "閘道連線已變更。請關閉並重新開啟後端設定。",
+  "The endpoint lists no models. Add model IDs manually.": "端點未列出任何模型。請手動新增模型 ID。",
   "Found {0} model{1}. Select the ones to use.": "找到 {0} 個模型{1}。請選擇要使用的模型。",
   "The connection test failed.": "連線測試失敗。",
   "Custom endpoint": "自訂端點",
@@ -4744,10 +3789,8 @@ const traditionalChineseMessages = <String, String>{
   "Local server": "本機伺服器",
   "New backend": "新增後端",
   "Service": "服務",
-  "Service presets are unavailable. Enter the endpoint details manually.":
-      "無法使用服務預設值。請手動輸入端點詳細資料。",
-  "Uses pi-ai's {0} catalog. Known models keep their limits and request compatibility.":
-      "使用 pi-ai 的 {0} 目錄。已知模型會保留其限制和請求相容性設定。",
+  "Service presets are unavailable. Enter the endpoint details manually.": "無法使用服務預設值。請手動輸入端點詳細資料。",
+  "Uses pi-ai's {0} catalog. Known models keep their limits and request compatibility.": "使用 pi-ai 的 {0} 目錄。已知模型會保留其限制和請求相容性設定。",
   "Backend ID": "後端 ID",
   "OpenAI-compatible chat": "OpenAI 相容聊天",
   "OpenAI chat (legacy)": "OpenAI 聊天（舊版）",
@@ -4759,22 +3802,19 @@ const traditionalChineseMessages = <String, String>{
   "Not needed for a local server": "本機伺服器不需要",
   "Leave blank for a no-key endpoint": "無金鑰端點請留白",
   "Remove the saved API key": "移除已儲存的 API 金鑰",
-  "OpenCode compatibility (session routing + pirc User-Agent; automatic for opencode.ai/zen and opencode.ai/inference)":
-      "OpenCode 相容模式（對話路由 + pirc User-代理程式；使用 opencode.ai/zen 或 opencode.ai/inference 時會自動啟用）",
+  "OpenCode compatibility (session routing + pirc User-Agent; automatic for opencode.ai/zen and opencode.ai/inference)": "OpenCode 相容模式（對話路由 + pirc User-代理程式；使用 opencode.ai/zen 或 opencode.ai/inference 時會自動啟用）",
   "Fetching models…": "正在擷取模型…",
   "Fetch models from endpoint": "從端點取得模型",
   "Filter {0} models": "篩選 {0} 個模型",
   "Select shown": "全選顯示項目",
   "No models match the filter.": "沒有符合篩選條件的模型。",
-  "Select at least one model above, or add a model ID.":
-      "請至少選取上方的一個模型，或新增模型 ID。",
+  "Select at least one model above, or add a model ID.": "請至少選取上方的一個模型，或新增模型 ID。",
   "Fetch the endpoint’s models, or add a model ID.": "請取得端點上的模型，或新增模型 ID。",
   "Add model": "新增模型",
   "Model ID": "模型 ID",
   "Testing…": "測試中…",
   "Test connection": "測試連線",
-  "The gateway connection changed. Close and reopen backend settings before continuing.":
-      "閘道連線已變更。請先關閉並重新開啟後端設定，再繼續操作。",
+  "The gateway connection changed. Close and reopen backend settings before continuing.": "閘道連線已變更。請先關閉並重新開啟後端設定，再繼續操作。",
   "Save backend": "儲存後端",
   "Cancel editing": "取消編輯",
   "Details": "詳細資料",
@@ -4798,19 +3838,15 @@ const traditionalChineseMessages = <String, String>{
   "Tell the agent what to work on…": "告訴代理要處理什麼…",
   "I checked; continue…": "我已確認；繼續…",
   "Continue after checking?": "確認後繼續？",
-  "Check whether the previous message arrived. Continuing unlocks sending and does not resend that operation.":
-      "檢查先前的訊息是否已送達。繼續後即可傳送訊息，也不會重送該操作。",
-  "Full access: the agent runs commands and changes files without asking. Only your deny-list still asks.":
-      "完整存取權：代理可執行命令並變更檔案，無須詢問。只有你設定的拒絕清單仍會要求核准。",
-  "You’re offline. This draft is saved locally and will never be sent automatically.":
-      "你目前離線。此草稿已儲存至本機，永遠不會自動傳送。",
+  "Check whether the previous message arrived. Continuing unlocks sending and does not resend that operation.": "檢查先前的訊息是否已送達。繼續後即可傳送訊息，也不會重送該操作。",
+  "Full access: the agent runs commands and changes files without asking. Only your deny-list still asks.": "完整存取權：代理可執行命令並變更檔案，無須詢問。只有你設定的拒絕清單仍會要求核准。",
+  "You’re offline. This draft is saved locally and will never be sent automatically.": "你目前離線。此草稿已儲存至本機，永遠不會自動傳送。",
   "Attach files": "附加檔案",
   "Reasoning effort": "推理強度",
   "Stop run": "停止執行",
   "Send message": "傳送訊息",
   "Start something useful": "開始做些有用的事",
-  "Describe a task, attach a reference image, or ask the agent to continue work in this workspace.":
-      "描述工作、附上參考圖片，或要求代理在此工作區繼續處理。",
+  "Describe a task, attach a reference image, or ask the agent to continue work in this workspace.": "描述工作、附上參考圖片，或要求代理在此工作區繼續處理。",
   "Connecting to your sessions…": "正在連線至你的對話…",
   "No session could be loaded.": "無法載入任何對話。",
   "Invalid CSS-pixel document viewport.": "無效的 CSS 像素文件檢視區。",
@@ -4862,8 +3898,7 @@ const traditionalChineseMessages = <String, String>{
   "停用推播": "停用推播",
   "傳送測試": "傳送測試",
   "已送達 {0} 個目標": "已送達 {0} 個目標",
-  "請先安裝 UnifiedPush 推播服務（例如 ntfy），再啟用此手機推播。":
-      "請先安裝 UnifiedPush 推播服務（例如 ntfy），再啟用此手機推播。",
+  "請先安裝 UnifiedPush 推播服務（例如 ntfy），再啟用此手機推播。": "請先安裝 UnifiedPush 推播服務（例如 ntfy），再啟用此手機推播。",
   "通知類別": "通知類別",
   "需要你回應": "需要你回應",
   "問題、確認與等待回覆": "問題、確認與等待回覆",
@@ -4913,10 +3948,8 @@ const traditionalChineseMessages = <String, String>{
   "此裝置收到的通知": "此裝置收到的通知",
   "尚未收到通知": "尚未收到通知",
   "Unsupported HTML control kind: {0}": "不支援的 HTML 控制項類型：{0}",
-  "URL syntax is outside the supported parser subset: {0}":
-      "URL 語法不在支援的解析器子集中：{0}",
-  "Pattern requires JavaScript Unicode-sets v syntax not modeled by Dart RegExp: {0}":
-      "此模式需要 Dart RegExp 未實作的 JavaScript Unicode 集合 v 語法：{0}",
+  "URL syntax is outside the supported parser subset: {0}": "URL 語法不在支援的解析器子集中：{0}",
+  "Pattern requires JavaScript Unicode-sets v syntax not modeled by Dart RegExp: {0}": "此模式需要 Dart RegExp 未實作的 JavaScript Unicode 集合 v 語法：{0}",
   "Invalid form {0}.": "表單 {0} 無效。",
   "Invalid form entries.": "表單項目無效。",
   "Invalid form entry.": "表單項目無效。",
@@ -4926,10 +3959,8 @@ const traditionalChineseMessages = <String, String>{
   "Invalid form value.": "表單值無效。",
   "Invalid inline file bytes.": "內嵌檔案位元組無效。",
   "Inline files exceed the 2 MiB limit.": "內嵌檔案總大小超過 2 MiB 限制。",
-  "Percentage padding needs a finite containing block width; zero is used.":
-      "百分比內距需要有限的容器區塊寬度，已改用 0。",
-  "A finite containing block is required; the intrinsic size is used.":
-      "需要有限的容器區塊，已改用固有尺寸。",
+  "Percentage padding needs a finite containing block width; zero is used.": "百分比內距需要有限的容器區塊寬度，已改用 0。",
+  "A finite containing block is required; the intrinsic size is used.": "需要有限的容器區塊，已改用固有尺寸。",
   "The declaration has no value.": "宣告沒有值。",
   "Expected content-box or border-box.": "預期為 content-box 或 border-box。",
   "Expected one to four lengths.": "預期一到四個長度值。",
@@ -4945,27 +3976,22 @@ const traditionalChineseMessages = <String, String>{
   "Border color is repeated.": "邊框顏色重複。",
   "This border component is unsupported.": "不支援此邊框元件。",
   "Unknown CSS border style.": "未知的 CSS 邊框樣式。",
-  "Flutter control borders support solid/none; this style is approximated as solid.":
-      "Flutter 控制項邊框支援 solid/none；此樣式會以 solid 近似呈現。",
+  "Flutter control borders support solid/none; this style is approximated as solid.": "Flutter 控制項邊框支援 solid/none；此樣式會以 solid 近似呈現。",
   "Expected one to four border styles.": "預期一到四種邊框樣式。",
   "Expected one to four colors.": "預期一到四種顏色。",
   "Hex colors must contain 3, 4, 6, or 8 digits.": "十六進位顏色必須包含 3、4、6 或 8 位數。",
-  "This CSS color is not supported by the local color parser.":
-      "本機顏色解析器不支援此 CSS 顏色。",
+  "This CSS color is not supported by the local color parser.": "本機顏色解析器不支援此 CSS 顏色。",
   "A border-radius value can contain one slash.": "border-radius 值最多只能包含一個斜線。",
   "Expected one or two radius lengths.": "預期一或兩個半徑長度值。",
   "Expected one to four radius lengths.": "預期一到四個半徑長度值。",
   "SVG fragment backgrounds are unsupported.": "不支援 SVG 片段背景。",
-  "The recognized character encoding {0} is not implemented.":
-      "尚未實作識別出的字元編碼 {0}。",
+  "The recognized character encoding {0} is not implemented.": "尚未實作識別出的字元編碼 {0}。",
   "The character encoding {0} is not implemented.": "尚未實作字元編碼 {0}。",
   "此文件保留的選檔內容超過 32 MiB 限制。": "此文件保留的選檔內容超過 32 MiB 限制。",
-  "Must be the exact fragment used to create this file-input state.":
-      "必須是用來建立此檔案輸入狀態的完全相同片段。",
+  "Must be the exact fragment used to create this file-input state.": "必須是用來建立此檔案輸入狀態的完全相同片段。",
   "HTML file input": "HTML 檔案輸入欄位",
   "Unknown HTML file input: {0}": "未知的 HTML 檔案輸入欄位：{0}",
-  "Must be the exact fragment used to create this range state.":
-      "必須是用來建立此範圍狀態的完全相同片段。",
+  "Must be the exact fragment used to create this range state.": "必須是用來建立此範圍狀態的完全相同片段。",
   "Unknown HTML range: {0}": "未知的 HTML range：{0}",
   "一次最多選取 256 個檔案。": "一次最多選取 256 個檔案。",
   "選取檔案的腳本內容超過 2 MiB 限制。": "選取檔案的腳本內容超過 2 MiB 限制。",
@@ -4980,32 +4006,25 @@ const traditionalChineseMessages = <String, String>{
   "Invalid argument number \"{0}\"": "無效的引數編號「{0}」",
   "Argument number \"{0}\" out of order": "引數編號「{0}」順序錯誤",
   "Expected a macro definition": "預期巨集定義",
-  "Expected flutter_math_fork MacroExpander context.":
-      "預期 flutter_math_fork MacroExpander 上下文。",
+  "Expected flutter_math_fork MacroExpander context.": "預期 flutter_math_fork MacroExpander 上下文。",
   "Invalid token after macro prefix": "巨集前綴後的 token 無效",
   "Use of the macro does not match its definition": "巨集的使用方式與定義不相符",
-  "Unexpected end of input in a macro argument, expected '{0}'":
-      "巨集引數內容意外結束，預期有「{0}」",
+  "Unexpected end of input in a macro argument, expected '{0}'": "巨集引數內容意外結束，預期有「{0}」",
   "Incomplete placeholder at end of macro body": "巨集本文結尾的佔位符不完整",
   "Not a valid argument number": "不是有效的引數編號",
   "Undefined control sequence: {0}": "未定義的控制序列：{0}",
-  "Must be the exact fragment used to create this select state.":
-      "必須是用來建立此選取狀態的完全相同片段。",
+  "Must be the exact fragment used to create this select state.": "必須是用來建立此選取狀態的完全相同片段。",
   "Unknown HTML select: {0}": "未知的 HTML select：{0}",
   "Unsupported HTML form encoding: {0}": "不支援的 HTML 表單編碼：{0}",
   "Must be a 1–70 character multipart boundary.": "多部分邊界長度必須為 1 到 70 個字元。",
-  "At most {0} native document element IDs are supported.":
-      "原生文件元素 ID 最多支援 {0} 個。",
-  "Unsanitized parse exception detected: {0}. Please report this error with corresponding input.":
-      "偵測到未清理的解析例外：{0}。請提供相應的輸入內容回報此錯誤。",
-  "{0} returned {1} child options for {2} AST children.":
-      "{0} 傳回 {1} 個子選項，但 AST 有 {2} 個子節點。",
+  "At most {0} native document element IDs are supported.": "原生文件元素 ID 最多支援 {0} 個。",
+  "Unsanitized parse exception detected: {0}. Please report this error with corresponding input.": "偵測到未清理的解析例外：{0}。請提供相應的輸入內容回報此錯誤。",
+  "{0} returned {1} child options for {2} AST children.": "{0} 傳回 {1} 個子選項，但 AST 有 {2} 個子節點。",
   "{{0}} can be used only in display mode.": "{{0}} 只能用於顯示模式。",
   "Too many columns in {0}: expected 1, got {1}": "{0} 欄過多：預期為 1，實際為 {1}",
   "mathchoice requires exactly four branches.": "mathchoice 必須恰好包含四個分支。",
   "smash requires exactly one body.": "smash 必須恰好包含一個主體。",
-  "Static position requires a laid-out flow marker":
-      "靜態位置需要已完成版面的 flow marker。",
+  "Static position requires a laid-out flow marker": "靜態位置需要已完成版面的 flow marker。",
   "Insert": "Insert",
   "Shift": "Shift",
   "Meta": "Meta",
@@ -5018,35 +4037,27 @@ const traditionalChineseMessages = <String, String>{
   "Backquote": "Backquote",
   "Comma": "Comma",
   "Unidentified": "Unidentified",
-  "Must be the exact fragment used to create this date state.":
-      "必須是用來建立此日期狀態的完全相同片段。",
+  "Must be the exact fragment used to create this date state.": "必須是用來建立此日期狀態的完全相同片段。",
   "Unknown HTML date field: {0}": "未知的 HTML 日期欄位：{0}",
   "Serialize the annotated document clone directly": "直接序列化已加註的文件複本",
-  "Must be the exact fragment used to create this text-field state.":
-      "必須是用來建立此文字欄位狀態的完全相同片段。",
+  "Must be the exact fragment used to create this text-field state.": "必須是用來建立此文字欄位狀態的完全相同片段。",
   "Unknown HTML text field: {0}": "未知的 HTML 文字欄位：{0}",
-  "Must be the exact fragment used to create this control state.":
-      "必須是用來建立此控制項狀態的完全相同片段。",
+  "Must be the exact fragment used to create this control state.": "必須是用來建立此控制項狀態的完全相同片段。",
   "Invalid preserveAspectRatio none value.": "preserveAspectRatio 的 none 值無效。",
-  "Unsupported preserveAspectRatio value: {0}.":
-      "不支援的 preserveAspectRatio 值：{0}。",
-  "Unsupported preserveAspectRatio mode: {0}.":
-      "不支援的 preserveAspectRatio 模式：{0}。",
+  "Unsupported preserveAspectRatio value: {0}.": "不支援的 preserveAspectRatio 值：{0}。",
+  "Unsupported preserveAspectRatio mode: {0}.": "不支援的 preserveAspectRatio 模式：{0}。",
   "left top": "左上",
   "Copy": "複製",
   "Invalid HTML image snapshot.": "HTML 影像快照無效。",
   "Invalid HTML image state.": "HTML 影像狀態無效。",
   "Invalid HTML image ownership.": "HTML 影像擁有權無效。",
   "Only data:{0}/* URLs are allowed here.": "此處只允許 data:{0}/* URL。",
-  "The {0}: URL scheme is not allowed for native media.":
-      "此原生媒體不允許使用 {0}: URL 配置。",
+  "The {0}: URL scheme is not allowed for native media.": "此原生媒體不允許使用 {0}: URL 配置。",
   "AVIF decode failed": "AVIF 解碼失敗",
-  "Mermaid Kanban exceeds the 50000 character native limit":
-      "Mermaid Kanban 超過原生限制 50000 個字元",
+  "Mermaid Kanban exceeds the 50000 character native limit": "Mermaid Kanban 超過原生限制 50000 個字元",
   "Kanban parse error on line {0}: {1}": "Kanban 第 {0} 行剖析錯誤：{1}",
   "Expected a Kanban header": "預期 Kanban 標頭",
-  "Kanban class and icon decorators are unsupported":
-      "不支援 Kanban class 和 icon 裝飾語法",
+  "Kanban class and icon decorators are unsupported": "不支援 Kanban class 和 icon 裝飾語法",
   "Metadata must end with a closing brace": "中繼資料必須以右大括號結尾",
   "Nested metadata objects are unsupported": "不支援巢狀中繼資料物件",
   "Text after a multiline card label is unsupported": "多行卡片標籤後不支援其他文字",
@@ -5067,8 +4078,7 @@ const traditionalChineseMessages = <String, String>{
   "Native XY chart viewport width must be positive": "原生 XY 圖表檢視區寬度必須為正數",
   "Native XY chart dimensions must be positive": "原生 XY 圖表尺寸必須為正數",
   "XY chart has no plot data": "XY 圖表沒有繪圖資料",
-  "Native Mermaid configuration directives are not implemented":
-      "尚未實作原生 Mermaid 組態指令",
+  "Native Mermaid configuration directives are not implemented": "尚未實作原生 Mermaid 組態指令",
   "Unclosed native pie accDescr block": "原生圓餅圖的 accDescr 區塊未結束",
   "Unsupported or invalid native pie statement: {0}": "不支援或無效的原生圓餅圖陳述式：{0}",
   "Expected pie diagram": "預期為 pie 圖表",
@@ -5081,15 +4091,12 @@ const traditionalChineseMessages = <String, String>{
   "Radar curve {0} has invalid values": "雷達曲線 {0} 的值無效",
   "Radar max must be greater than min": "最大值必須大於最小值",
   "Radar curve {0} has {1} values for {2} axes": "雷達曲線 {0} 有 {1} 個值，但有 {2} 條軸線",
-  "GitGraph exceeds the default 50000 character limit.":
-      "GitGraph 超過預設的 50000 個字元限制。",
+  "GitGraph exceeds the default 50000 character limit.": "GitGraph 超過預設的 50000 個字元限制。",
   "Unsupported gitGraph commit type: {0}": "不支援的 gitGraph 提交類型：{0}",
   "Commit ID already exists: {0}": "提交 ID 已存在：{0}",
-  "GitGraph init directives are not supported (line {0}).":
-      "不支援 GitGraph init 指令（第 {0} 行）。",
+  "GitGraph init directives are not supported (line {0}).": "不支援 GitGraph init 指令（第 {0} 行）。",
   "Expected a gitGraph header (line {0}).": "預期 gitGraph 標頭（第 {0} 行）。",
-  "Block-form accDescr is not supported (line {0}).":
-      "不支援區塊形式的 accDescr（第 {0} 行）。",
+  "Block-form accDescr is not supported (line {0}).": "不支援區塊形式的 accDescr（第 {0} 行）。",
   "Unsupported gitGraph command: {0}": "不支援的 gitGraph 命令：{0}",
   "GitGraph exceeds 1000 commits.": "GitGraph 提交數量超過 1000。",
   "Missing gitGraph header.": "缺少 gitGraph 標頭。",
@@ -5140,26 +4147,22 @@ const traditionalChineseMessages = <String, String>{
   "{0} must be a finite supported number": "{0} 必須是支援範圍內的有限數值",
   "useMaxWidth must be a boolean": "useMaxWidth 必須是布林值",
   "Unsupported C4 color: {0}": "不支援的 C4 顏色：{0}",
-  "Mermaid timeline exceeds the default 50000 character limit":
-      "Mermaid 時間軸超過預設的 50000 個字元限制",
+  "Mermaid timeline exceeds the default 50000 character limit": "Mermaid 時間軸超過預設的 50000 個字元限制",
   "Invalid Mermaid timeline at line {0}: {1}": "Mermaid 時間軸在第 {0} 行剖析錯誤：{1}",
   "Mermaid configuration directives are unsupported": "不支援 Mermaid 組態指令",
   "YAML frontmatter is unsupported": "不支援 YAML 前置資料",
   "Expected timeline header": "預期時間軸標頭",
   "Unterminated accDescr block": "accDescr 區塊未結束",
   "Event has no preceding period": "事件前缺少時段",
-  "Parse error on line {0}:\nUnexpected token \"{1}\"":
-      "第 {0} 行剖析錯誤：\n非預期 token「{1}」",
+  "Parse error on line {0}:\nUnexpected token \"{1}\"": "第 {0} 行剖析錯誤：\n非預期 token「{1}」",
   "Missing Mermaid timeline header": "缺少 Mermaid 時間軸標頭",
   "Missing branch for commit {0}": "提交 {0} 缺少分支",
   "GitGraph commit parent is missing: {0}": "GitGraph 提交的上層不存在：{0}",
   "Missing flowchart header.": "缺少 flowchart 標頭。",
-  "Expected graph/flowchart and a direction (TD, TB, LR, BT, or RL).":
-      "預期 graph/flowchart 和方向（TD、TB、LR、BT 或 RL）。",
+  "Expected graph/flowchart and a direction (TD, TB, LR, BT, or RL).": "預期 graph/flowchart 和方向（TD、TB、LR、BT 或 RL）。",
   "Expected Mermaid class name": "預期 Mermaid 類別名稱",
   "Native flowcharts support at most 500 nodes.": "原生流程圖最多支援 500 個節點。",
-  "This Mermaid statement is not supported by the native flowchart renderer.":
-      "原生流程圖轉譯器不支援此 Mermaid 陳述式。",
+  "This Mermaid statement is not supported by the native flowchart renderer.": "原生流程圖轉譯器不支援此 Mermaid 陳述式。",
   "Mermaid edge has no destination node.": "Mermaid 邊線缺少目的節點。",
   "Native flowcharts support at most 500 edges.": "原生流程圖最多支援 500 條邊線。",
   "Unsupported Mermaid style target or class name": "不支援此 Mermaid 樣式目標或類別名稱",
@@ -5171,8 +4174,7 @@ const traditionalChineseMessages = <String, String>{
   "Mermaid directives are unsupported.": "不支援 Mermaid 指令。",
   "Unclosed Mermaid label.": "Mermaid 標籤未結束。",
   "Expected a node ID.": "預期節點 ID。",
-  "This Mermaid node shape is not yet supported natively.":
-      "原生尚未支援此 Mermaid 節點形狀。",
+  "This Mermaid node shape is not yet supported natively.": "原生尚未支援此 Mermaid 節點形狀。",
   "Unclosed circle node.": "圓形節點未結束。",
   "Unclosed node label.": "節點標籤未結束。",
   "Unsupported Mermaid edge syntax.": "不支援的 Mermaid 邊線語法。",
@@ -5180,8 +4182,7 @@ const traditionalChineseMessages = <String, String>{
   "Unclosed edge label.": "邊線標籤未結束。",
   "Unsupported Mermaid label markup.": "不支援的 Mermaid 標籤標記語法。",
   "State diagram exceeds 50000 characters": "狀態圖超過 50000 個字元",
-  "Invalid stateDiagram-v2 at line {0}: {1}":
-      "Mermaid stateDiagram-v2 在第 {0} 行無效：{1}",
+  "Invalid stateDiagram-v2 at line {0}: {1}": "Mermaid stateDiagram-v2 在第 {0} 行無效：{1}",
   "Expected stateDiagram-v2 header": "預期 stateDiagram-v2 標頭",
   "State diagram has no states": "狀態圖沒有任何狀態",
   "configuration directives are unsupported": "不支援組態指令",
@@ -5210,8 +4211,7 @@ const traditionalChineseMessages = <String, String>{
   "unbalanced style value": "樣式值的括號不平衡",
   "unclosed note": "note 未結束",
   "Sequence diagram exceeds 50000 characters": "循序圖超過 50000 個字元",
-  "Invalid Mermaid sequence diagram at line {0}: {1}":
-      "Mermaid 循序圖在第 {0} 行無效：{1}",
+  "Invalid Mermaid sequence diagram at line {0}: {1}": "Mermaid 循序圖在第 {0} 行無效：{1}",
   "Participant identifiers cannot be empty": "參與者識別碼不可為空白",
   "Mermaid directives are not supported natively": "原生不支援 Mermaid 指令",
   "Expected sequenceDiagram header": "預期 sequenceDiagram 標頭",
@@ -5235,8 +4235,7 @@ const traditionalChineseMessages = <String, String>{
   "Journey width must be positive": "使用者旅程圖寬度必須為正數",
   "User journey": "使用者旅程",
   "Sankey diagram": "桑基圖",
-  "Mermaid journey exceeds the default 50000 character limit":
-      "Mermaid 使用者旅程圖超過預設的 50000 個字元限制",
+  "Mermaid journey exceeds the default 50000 character limit": "Mermaid 使用者旅程圖超過預設的 50000 個字元限制",
   "Parse error on line {0}: {1}": "第 {0} 行剖析錯誤：{1}",
   "Journey init directives are not supported": "不支援 Journey init 指令",
   "Unexpected second journey header": "出現非預期的第二個 journey 標頭",
@@ -5255,33 +4254,28 @@ const traditionalChineseMessages = <String, String>{
   "Expected gantt header": "預期 gantt 標頭",
   "Only one title is supported": "只能設定一個標題",
   "Title cannot be empty": "標題不可為空白",
-  "Only dateFormat YYYY-MM-DD, YYYY-MM-DD HH:mm, and HH:mm are supported":
-      "只支援 dateFormat YYYY-MM-DD、YYYY-MM-DD HH:mm 和 HH:mm",
+  "Only dateFormat YYYY-MM-DD, YYYY-MM-DD HH:mm, and HH:mm are supported": "只支援 dateFormat YYYY-MM-DD、YYYY-MM-DD HH:mm 和 HH:mm",
   "axisFormat cannot be empty": "axisFormat 不可為空白",
   "Only todayMarker off is supported": "只支援 todayMarker off",
   "Empty excludes entry": "excludes 項目不可為空白",
   "Section name cannot be empty": "區段名稱不可為空白",
   "Native Gantt supports at most 100 sections": "原生甘特圖最多支援 100 個區段",
   "This Gantt directive is not supported natively": "原生不支援此甘特圖指令",
-  "Expected a directive, section, or task label : data":
-      "預期 directive、section 或 task label : data",
+  "Expected a directive, section, or task label : data": "預期 directive、section 或 task label : data",
   "Task label and task data must be non-empty": "工作標籤和工作資料不可為空白",
   "Native Gantt supports at most 500 tasks": "原生甘特圖最多支援 500 個工作",
   "Missing Mermaid Gantt header": "缺少 Mermaid 甘特圖標頭",
   "Gantt diagram must contain at least one task": "甘特圖至少必須包含一項工作",
-  "Invalid Mermaid Gantt excludes date \"{0}\" for dateFormat {1}":
-      "Mermaid 甘特圖的排除日期「{0}」與 dateFormat {1} 不相容",
+  "Invalid Mermaid Gantt excludes date \"{0}\" for dateFormat {1}": "Mermaid 甘特圖的排除日期「{0}」與 dateFormat {1} 不相容",
   "Duplicate task id \"{0}\"": "工作 ID「{0}」重複",
   "Unknown dependency \"{0}\"": "未知的相依工作「{0}」",
   "Task dependencies contain a cycle": "工作相依關係形成循環",
   "A task needs a start date or after dependency": "工作必須有開始日期或 after 相依項目",
-  "Milestone start and end must identify the same instant":
-      "里程碑的開始和結束必須是同一個時間點",
+  "Milestone start and end must identify the same instant": "里程碑的開始和結束必須是同一個時間點",
   "Milestone duration must be zero": "里程碑持續時間必須為零",
   "Task end must be after task start": "工作結束時間必須晚於開始時間",
   "Task data contains an empty comma-separated field": "工作資料包含空白的逗號分隔欄位",
-  "Task start must be a supported date or an after dependency":
-      "工作開始時間必須是支援的日期或 after 相依項目",
+  "Task start must be a supported date or an after dependency": "工作開始時間必須是支援的日期或 after 相依項目",
   "Task data may contain at most one explicit id": "工作資料最多只能包含一個明確指定的 ID",
   "Invalid task id \"{0}\"": "工作 ID「{0}」無效",
   "after tasks need an end date or duration": "after 工作必須有結束日期或持續時間",
@@ -5294,8 +4288,7 @@ const traditionalChineseMessages = <String, String>{
   "Expected quadrantChart header, found: {0}": "預期 quadrantChart 標頭，實際為：{0}",
   "Unexpected second quadrantChart header": "出現非預期的第二個 quadrantChart 標頭",
   "classDef needs a class name and supported styles": "classDef 必須有類別名稱和支援的樣式",
-  "Unsupported or invalid native quadrant statement: {0}":
-      "不支援或無效的原生象限圖陳述式：{0}",
+  "Unsupported or invalid native quadrant statement: {0}": "不支援或無效的原生象限圖陳述式：{0}",
   "Expected quadrantChart header": "預期 quadrantChart 標頭",
   "Expected non-empty label text": "預期非空白標籤文字",
   "Invalid quoted label text": "引號括住的標籤文字無效",
@@ -5316,16 +4309,12 @@ const traditionalChineseMessages = <String, String>{
   "Expected xychart-beta header, found: {0}": "預期 xychart-beta 標頭，實際為：{0}",
   "Duplicate x-axis declaration": "x 軸宣告重複",
   "Duplicate y-axis declaration": "y 軸宣告重複",
-  "Unsupported or invalid native XY chart statement: {0}":
-      "不支援或無效的原生 XY 圖表陳述式：{0}",
+  "Unsupported or invalid native XY chart statement: {0}": "不支援或無效的原生 XY 圖表陳述式：{0}",
   "Expected xychart-beta header": "預期 xychart-beta 標頭",
-  "No Plot to render, please provide a plot with some data":
-      "沒有可繪製的圖表，請提供含有資料的圖表",
+  "No Plot to render, please provide a plot with some data": "沒有可繪製的圖表，請提供含有資料的圖表",
   "A categorical x-axis needs at least one category": "類別式 x 軸至少需要一個類別",
-  "Native XY chart does not support a series shorter than its category axis":
-      "原生 XY 圖表不支援短於類別軸的資料序列",
-  "{0} accepts a title, numeric range, or x-axis categories":
-      "{0} 可接受標題、數值範圍或 x 軸類別",
+  "Native XY chart does not support a series shorter than its category axis": "原生 XY 圖表不支援短於類別軸的資料序列",
+  "{0} accepts a title, numeric range, or x-axis categories": "{0} 可接受標題、數值範圍或 x 軸類別",
   "A bar or line plot requires a bracketed data list": "長條圖或折線圖必須使用方括號括住資料清單",
   "An XY chart data list cannot contain an empty value": "XY 圖表資料清單不可包含空值",
   "Invalid XY chart datum: {0}": "XY 圖表資料值無效：{0}",
@@ -5348,13 +4337,10 @@ const traditionalChineseMessages = <String, String>{
   "Architecture diagram exceeds the native layout limit": "架構圖超出原生版面配置限制",
   "Architecture group membership cycle includes \"{0}\"": "架構群組成員關係循環包含「{0}」",
   "Sankey needs at least one node and flow.": "桑基圖至少需要一個節點和一條流向。",
-  "Sankey flow {0} → {1} references a missing node.":
-      "桑基流向 {0} → {1} 參照了不存在的節點。",
+  "Sankey flow {0} → {1} references a missing node.": "桑基流向 {0} → {1} 參照了不存在的節點。",
   "Sankey layout needs at least two layers.": "桑基圖版面配置至少需要兩層。",
-  "Sankey source has an empty intermediate layer, which d3-sankey cannot lay out.":
-      "桑基來源含有空白的中間層，d3-sankey 無法配置此圖。",
-  "Sankey has only zero-valued flows; the pinned D3 layout produces non-finite geometry.":
-      "桑基圖的流向值全為零；固定版本的 D3 版面配置會產生非有限幾何資料。",
+  "Sankey source has an empty intermediate layer, which d3-sankey cannot lay out.": "桑基來源含有空白的中間層，d3-sankey 無法配置此圖。",
+  "Sankey has only zero-valued flows; the pinned D3 layout produces non-finite geometry.": "桑基圖的流向值全為零；固定版本的 D3 版面配置會產生非有限幾何資料。",
   "Sankey layout produced invalid geometry.": "桑基圖版面配置產生無效幾何資料。",
   "Sankey contains a circular link.": "桑基圖包含循環連結。",
   "Timeline text width must be positive": "時間軸文字寬度必須為正數",
@@ -5367,8 +4353,7 @@ const traditionalChineseMessages = <String, String>{
   "ER diagram exceeds 50000 characters": "ER 圖超過 50000 個字元",
   "Invalid Mermaid ER diagram at line {0}: {1}": "Mermaid ER 圖在第 {0} 行無效：{1}",
   "Empty ER entity name": "ER 實體名稱不可為空白",
-  "Unquoted semicolons are not supported by the pinned ER grammar":
-      "固定版 ER 文法不支援未加引號的分號",
+  "Unquoted semicolons are not supported by the pinned ER grammar": "固定版 ER 文法不支援未加引號的分號",
   "Expected erDiagram header": "預期 erDiagram 標頭",
   "Mermaid directives are unsupported": "不支援 Mermaid 指令",
   "Unexpected text after entity block": "實體區塊後出現非預期文字",
@@ -5381,16 +4366,14 @@ const traditionalChineseMessages = <String, String>{
   "Unclosed entity block": "實體區塊未結束",
   "Unclosed quoted text at line {0}": "第 {0} 行的引號括住文字未結束",
   "Invalid ER attribute comment at line {0}": "第 {0} 行的 ER 屬性註解無效",
-  "Invalid ER attribute at line {0}: expected a type and name":
-      "第 {0} 行的 ER 屬性無效：預期包含類型和名稱",
+  "Invalid ER attribute at line {0}: expected a type and name": "第 {0} 行的 ER 屬性無效：預期包含類型和名稱",
   "Invalid ER attribute at line {0}": "第 {0} 行的 ER 屬性無效",
   "Unsupported ER cardinality {0}": "不支援的 ER 基數 {0}",
   "zero or more": "零或多個",
   "zero or one": "零或一個",
   "one or more": "一個或多個",
   "exactly one": "恰好一個",
-  "Mermaid architecture exceeds the default 50000 character limit":
-      "Mermaid 架構圖超過預設的 50000 個字元限制",
+  "Mermaid architecture exceeds the default 50000 character limit": "Mermaid 架構圖超過預設的 50000 個字元限制",
   "Expected architecture-beta header": "預期 architecture-beta 標頭",
   "Duplicate architecture-beta header": "architecture-beta 標頭重複",
   "Unsupported architecture statement \"{0}\"": "不支援的架構圖陳述式「{0}」",
@@ -5402,35 +4385,23 @@ const traditionalChineseMessages = <String, String>{
   "Malformed {0} declaration for \"{1}\"": "「{1}」的 {0} 宣告格式錯誤",
   "Unexpected content in {0} \"{1}\"": "{0}「{1}」中出現非預期內容",
   "Unterminated architecture label": "架構圖標籤未結束",
-  "Icon \"{0}\" uses a namespaced icon pack; only native architecture icons are supported":
-      "圖示「{0}」使用命名空間圖示套件；原生架構圖只支援原生圖示",
-  "Invalid Mermaid architecture at line {0}: unknown built-in icon \"{1}\" on \"{2}\"":
-      "Mermaid 架構圖第 {0} 行無效：「{2}」中的內建圖示「{1}」未知",
+  "Icon \"{0}\" uses a namespaced icon pack; only native architecture icons are supported": "圖示「{0}」使用命名空間圖示套件；原生架構圖只支援原生圖示",
+  "Invalid Mermaid architecture at line {0}: unknown built-in icon \"{1}\" on \"{2}\"": "Mermaid 架構圖第 {0} 行無效：「{2}」中的內建圖示「{1}」未知",
   "Malformed edge label": "邊線標籤格式錯誤",
-  "Architecture diagram exceeds the 500 edge safety limit":
-      "架構圖超過 500 條邊線的安全上限",
-  "Invalid Mermaid architecture at line {0}: invalid port direction \"{1}\"":
-      "Mermaid 架構圖第 {0} 行無效：連接埠方向「{1}」無效",
+  "Architecture diagram exceeds the 500 edge safety limit": "架構圖超過 500 條邊線的安全上限",
+  "Invalid Mermaid architecture at line {0}: invalid port direction \"{1}\"": "Mermaid 架構圖第 {0} 行無效：連接埠方向「{1}」無效",
   "Malformed align directive": "align 指令格式錯誤",
   "Align directive needs at least two members": "align 指令至少需要兩個成員",
   "Align directive repeats a member": "align 指令中有重複成員",
-  "{0} id \"{1}\" is already used by {2} declared at line {3}":
-      "{0} ID「{1}」已由第 {3} 行宣告的 {2} 使用",
-  "Architecture diagram exceeds the 200 node/group safety limit":
-      "架構圖超過 200 個節點/群組的安全上限",
-  "Group \"{0}\" references missing parent group \"{1}\"":
-      "群組「{0}」參照了不存在的上層群組「{1}」",
+  "{0} id \"{1}\" is already used by {2} declared at line {3}": "{0} ID「{1}」已由第 {3} 行宣告的 {2} 使用",
+  "Architecture diagram exceeds the 200 node/group safety limit": "架構圖超過 200 個節點/群組的安全上限",
+  "Group \"{0}\" references missing parent group \"{1}\"": "群組「{0}」參照了不存在的上層群組「{1}」",
   "Group membership cycle includes \"{0}\"": "群組成員關係循環包含「{0}」",
-  "Parent group \"{0}\" must be declared before nested group \"{1}\"":
-      "上層群組「{0}」必須先於巢狀群組「{1}」宣告",
-  "Edge endpoint \"{0}\" is a group; edges must connect services or junctions":
-      "邊線端點「{0}」是群組；邊線必須連接服務或 junction",
-  "Edge references missing service or junction \"{0}\"":
-      "邊線參照了不存在的服務或 junction「{0}」",
-  "align {0} references unknown service or junction \"{1}\"":
-      "align {0} 參照了未知的服務或 junction「{1}」",
-  "Node \"{0}\" references missing parent group \"{1}\"":
-      "節點「{0}」參照了不存在的上層群組「{1}」",
+  "Parent group \"{0}\" must be declared before nested group \"{1}\"": "上層群組「{0}」必須先於巢狀群組「{1}」宣告",
+  "Edge endpoint \"{0}\" is a group; edges must connect services or junctions": "邊線端點「{0}」是群組；邊線必須連接服務或 junction",
+  "Edge references missing service or junction \"{0}\"": "邊線參照了不存在的服務或 junction「{0}」",
+  "align {0} references unknown service or junction \"{1}\"": "align {0} 參照了未知的服務或 junction「{1}」",
+  "Node \"{0}\" references missing parent group \"{1}\"": "節點「{0}」參照了不存在的上層群組「{1}」",
   "Invalid Mermaid architecture{0}: {1}": "Mermaid 架構圖{0}無效：{1}",
   "Packet diagram": "封包圖",
   "XY chart": "XY 圖表",
@@ -5445,17 +4416,13 @@ const traditionalChineseMessages = <String, String>{
   "Container": "容器",
   "Component": "元件",
   "C4 diagram exceeds native layout bounds.": "C4 圖超出原生版面配置界限。",
-  "C4 boundaries contain a cycle or exceed nesting limits.":
-      "C4 邊界形成循環或超出巢狀層級限制。",
+  "C4 boundaries contain a cycle or exceed nesting limits.": "C4 邊界形成循環或超出巢狀層級限制。",
   "C4 nodes reference an unreachable boundary.": "C4 節點參照了無法到達的邊界。",
-  "C4 relationship references an unknown shape: {0} → {1}.":
-      "C4 關係參照了未知圖形：{0} → {1}。",
-  "C4 relationship has unsupported intersection geometry.":
-      "C4 關係包含不支援的相交幾何形狀。",
+  "C4 relationship references an unknown shape: {0} → {1}.": "C4 關係參照了未知圖形：{0} → {1}。",
+  "C4 relationship has unsupported intersection geometry.": "C4 關係包含不支援的相交幾何形狀。",
   "must not be empty": "不可為空白",
   "width and height must be finite and greater than zero": "寬度和高度必須是有限正數",
-  "a connected tree with {0} nodes must have {1} edges":
-      "包含 {0} 個節點的連通樹必須有 {1} 條邊",
+  "a connected tree with {0} nodes must have {1} edges": "包含 {0} 個節點的連通樹必須有 {1} 條邊",
   "node index is out of range": "節點索引超出範圍",
   "self edges and duplicate edges are not tree edges": "自我連線和重複邊不是樹的邊",
   "the input graph must be connected": "輸入圖形必須連通",
@@ -5464,15 +4431,13 @@ const traditionalChineseMessages = <String, String>{
   "Invalid CoSE clipping cardinal direction: {0}": "CoSE 裁切方向無效：{0}",
   "Must be finite and non-negative.": "必須是有限的非負數。",
   "Must be finite and greater than zero.": "必須是有限正數。",
-  "Unsupported native Mermaid C4 shape \"{0}\". Supported shapes: person, rounded, fr-rect, cylinder, h-cyl.":
-      "不支援原生 Mermaid C4 圖形「{0}」。支援的圖形：person、rounded、fr-rect、cylinder、h-cyl。",
+  "Unsupported native Mermaid C4 shape \"{0}\". Supported shapes: person, rounded, fr-rect, cylinder, h-cyl.": "不支援原生 Mermaid C4 圖形「{0}」。支援的圖形：person、rounded、fr-rect、cylinder、h-cyl。",
   "Cyclic state containment": "狀態包含關係形成循環",
   "State nesting exceeds 64 levels": "狀態巢狀超過 64 層",
   "State references an unrenderable parent": "狀態參照了無法呈現的父狀態",
   "Missing state transition endpoint": "缺少狀態轉換端點",
   "Native Gantt requires at least one task": "原生甘特圖至少需要一項工作",
-  "Native Gantt viewport is too narrow for its fixed margins":
-      "原生甘特圖檢視區太窄，無法容納固定邊界",
+  "Native Gantt viewport is too narrow for its fixed margins": "原生甘特圖檢視區太窄，無法容納固定邊界",
   "Native Gantt vertical task markers are not yet rendered": "尚未呈現原生甘特圖的垂直工作標記",
   "Native Gantt exclusion range is too large": "原生甘特圖排除範圍過大",
   "Native Gantt axis contains too many ticks": "原生甘特圖座標軸的刻度過多",
@@ -5489,19 +4454,15 @@ const traditionalChineseMessages = <String, String>{
   "Missing block-beta diagram header.": "缺少 block-beta 圖表標頭。",
   "Unexpected end at line {0}.": "第 {0} 行意外結束。",
   "Invalid block ID at line {0}.": "第 {0} 行的區塊 ID 無效。",
-  "Block classes and style directives are unsupported (line {0}).":
-      "不支援區塊類別和樣式指令（第 {0} 行）。",
+  "Block classes and style directives are unsupported (line {0}).": "不支援區塊類別和樣式指令（第 {0} 行）。",
   "Invalid columns setting at line {0}.": "第 {0} 行的欄數設定無效。",
   "Mermaid directives are unsupported (line {0}).": "不支援 Mermaid 指令（第 {0} 行）。",
-  "Block has no matching end (opened before line {0}).":
-      "區塊沒有相符的結尾（在第 {0} 行之前開啟）。",
+  "Block has no matching end (opened before line {0}).": "區塊沒有相符的結尾（在第 {0} 行之前開啟）。",
   "A space block cannot be connected (line {0}).": "無法連接 space 區塊（第 {0} 行）。",
   "Incomplete block edge at line {0}.": "第 {0} 行的區塊邊線不完整。",
-  "Expected a complete edge after its label at line {0}.":
-      "標籤後預期完整的邊線（第 {0} 行）。",
+  "Expected a complete edge after its label at line {0}.": "標籤後預期完整的邊線（第 {0} 行）。",
   "Block edge has no destination at line {0}.": "區塊邊線缺少目的節點（第 {0} 行）。",
-  "Block edges must connect ordinary nodes (line {0}).":
-      "區塊邊線必須連接一般節點（第 {0} 行）。",
+  "Block edges must connect ordinary nodes (line {0}).": "區塊邊線必須連接一般節點（第 {0} 行）。",
   "Expected a space count at line {0}.": "第 {0} 行預期空格數量。",
   "Expected a block ID at line {0}.": "第 {0} 行預期區塊 ID。",
   "Expected a quoted block label at line {0}.": "第 {0} 行預期以引號括住的區塊標籤。",
@@ -5513,8 +4474,7 @@ const traditionalChineseMessages = <String, String>{
   "Native block chart width must be positive.": "原生區塊圖寬度必須為正數。",
   "Native block chart metrics are invalid.": "原生區塊圖指標無效。",
   "Columns must be an integer other than zero.": "欄數必須是非零整數。",
-  "Block edge {0} to {1} references a missing node.":
-      "區塊邊線 {0} 到 {1} 參照了不存在的節點。",
+  "Block edge {0} to {1} references a missing node.": "區塊邊線 {0} 到 {1} 參照了不存在的節點。",
   "Block positions cannot be negative.": "區塊位置不可為負數。",
   "Quadrant chart": "象限圖",
   "X axis: {0}{1}": "X 軸：{0}{1}",
@@ -5526,45 +4486,34 @@ const traditionalChineseMessages = <String, String>{
   "Unknown requirement relation endpoint: {0} → {1}": "未知的需求關係端點：{0} → {1}",
   "Kanban width must be positive": "Kanban 寬度必須為正數",
   "Kanban board": "Kanban 看板",
-  "Kanban Markdown images are not supported by the native renderer":
-      "原生轉譯器不支援 Kanban Markdown 圖片",
-  "Inline HTML styles in Kanban labels are unsupported":
-      "Kanban 標籤中的行內 HTML 樣式不受支援",
+  "Kanban Markdown images are not supported by the native renderer": "原生轉譯器不支援 Kanban Markdown 圖片",
+  "Inline HTML styles in Kanban labels are unsupported": "Kanban 標籤中的行內 HTML 樣式不受支援",
   "Native quadrant viewport width must be positive": "原生象限圖檢視區寬度必須為正數",
   "Native quadrant chart dimensions must be positive": "原生象限圖尺寸必須為正數",
   "Native quadrant labels leave no room for the plot": "象限圖標籤占滿版面，沒有空間繪圖",
   "Sankey input exceeds 50000 characters.": "Sankey 輸入超過 50000 個字元。",
   "Expected a sankey or sankey-beta header.": "預期 sankey 或 sankey-beta 標頭。",
-  "Sankey row {0} must have source, target, and value fields.":
-      "Sankey 第 {0} 列必須包含來源、目標和值欄位。",
+  "Sankey row {0} must have source, target, and value fields.": "Sankey 第 {0} 列必須包含來源、目標和值欄位。",
   "Sankey row {0} has an empty node id.": "Sankey 第 {0} 列的節點 ID 為空白。",
-  "Sankey row {0} has an unsupported flow value: {1}":
-      "Sankey 第 {0} 列的流向值不受支援：{1}",
+  "Sankey row {0} has an unsupported flow value: {1}": "Sankey 第 {0} 列的流向值不受支援：{1}",
   "Sankey needs at least one flow row.": "Sankey 至少需要一列流向資料。",
   "Unclosed quoted field on Sankey row {0}.": "Sankey 第 {0} 列中以引號括住的欄位未結束。",
-  "Unexpected text after a quoted field on Sankey row {0}.":
-      "Sankey 第 {0} 列中，以引號括住的欄位後出現非預期文字。",
-  "Unexpected quote in an unquoted field on Sankey row {0}.":
-      "Sankey 第 {0} 列中，未加引號的欄位出現非預期引號。",
-  "Sankey row {0} contains characters outside the pinned ASCII parser subset.":
-      "Sankey 第 {0} 列包含固定 ASCII 解析器子集以外的字元。",
-  "Mermaid diagram exceeds the default 50000 character limit":
-      "Mermaid 圖表超過預設的 50000 個字元限制",
+  "Unexpected text after a quoted field on Sankey row {0}.": "Sankey 第 {0} 列中，以引號括住的欄位後出現非預期文字。",
+  "Unexpected quote in an unquoted field on Sankey row {0}.": "Sankey 第 {0} 列中，未加引號的欄位出現非預期引號。",
+  "Sankey row {0} contains characters outside the pinned ASCII parser subset.": "Sankey 第 {0} 列包含固定 ASCII 解析器子集以外的字元。",
+  "Mermaid diagram exceeds the default 50000 character limit": "Mermaid 圖表超過預設的 50000 個字元限制",
   "Invalid Mermaid mindmap at line {0}: {1}": "Mermaid 心智圖在第 {0} 行無效：{1}",
   "Expected a mindmap header": "預期 mindmap 標頭",
   "Class directive has no preceding node": "class 指令前面沒有節點",
   "Class directive cannot be empty": "class 指令不可為空白",
   "Icon directive has no preceding node": "icon 指令前面沒有節點",
   "Malformed icon directive": "icon 指令格式錯誤",
-  "There can be only one root. No parent could be found for (\"{0}\")":
-      "只能有一個根節點。找不到「{0}」的父節點",
+  "There can be only one root. No parent could be found for (\"{0}\")": "只能有一個根節點。找不到「{0}」的父節點",
   "Missing Mermaid mindmap header": "缺少 Mermaid 心智圖標頭",
   "Mindmap must contain a root node": "心智圖必須包含根節點",
   "Node label cannot be empty": "節點標籤不可為空白",
-  "Malformed {0} node; expected closing delimiter \"{1}\"":
-      "{0} 節點格式錯誤；預期結尾分隔符「{1}」",
-  "This diagram type is not yet supported by the native Mermaid renderer":
-      "原生 Mermaid 轉譯器尚未支援此圖表類型",
+  "Malformed {0} node; expected closing delimiter \"{1}\"": "{0} 節點格式錯誤；預期結尾分隔符「{1}」",
+  "This diagram type is not yet supported by the native Mermaid renderer": "原生 Mermaid 轉譯器尚未支援此圖表類型",
   "Class diagram": "類別圖",
   "Invalid Mermaid class diagram at line {0}: {1}": "Mermaid 類別圖在第 {0} 行無效：{1}",
   "Empty class annotation": "類別註記不可為空白",
@@ -5572,8 +4521,7 @@ const traditionalChineseMessages = <String, String>{
   "Method name is empty": "方法名稱為空白",
   "Attribute name is empty": "屬性名稱為空白",
   "Unclosed quote in member": "成員中的引號未結束",
-  "Invalid Mermaid class diagram at line {0}: unsupported relation marker {1}":
-      "Mermaid 類別圖在第 {0} 行無效：關係標記 {1} 不受支援",
+  "Invalid Mermaid class diagram at line {0}: unsupported relation marker {1}": "Mermaid 類別圖在第 {0} 行無效：關係標記 {1} 不受支援",
   "Expected class name": "預期類別名稱",
   "Unknown class statement": "未知的類別陳述式",
   "Expected class name after relation": "關係後預期類別名稱",
@@ -5584,15 +4532,12 @@ const traditionalChineseMessages = <String, String>{
   "Expected class name after note for": "note for 後預期類別名稱",
   "Unexpected text after note": "note 後出現非預期文字",
   "Expected quoted note text": "預期以引號括住的 note 文字",
-  "Styling and clickable class directives are not supported natively":
-      "原生不支援樣式設定和可點選的類別指令",
+  "Styling and clickable class directives are not supported natively": "原生不支援樣式設定和可點選的類別指令",
   "Expected quoted class label": "預期以引號括住的類別標籤",
   "Expected closing bracket after class label": "類別標籤後預期右中括號",
   "Unsupported class declaration suffix": "不支援的類別宣告後綴",
-  "Only notes of the form note for Class are supported":
-      "只支援 note for Class 格式的註記",
-  "Expected classDiagram or classDiagram-v2 header":
-      "預期 classDiagram 或 classDiagram-v2 標頭",
+  "Only notes of the form note for Class are supported": "只支援 note for Class 格式的註記",
+  "Expected classDiagram or classDiagram-v2 header": "預期 classDiagram 或 classDiagram-v2 標頭",
   "Class block lost its owner": "類別區塊失去其擁有者",
   "Missing class diagram header": "缺少類別圖標頭",
   "Unclosed class body": "類別主體未結束",
@@ -5602,18 +4547,15 @@ const traditionalChineseMessages = <String, String>{
   "Native mindmap label element {0} is not yet supported": "原生心智圖尚未支援標籤元素 {0}",
   "Native mindmap label CSS {0} is not yet supported": "原生心智圖尚未支援標籤 CSS {0}",
   "Requirement diagram exceeds 50000 characters": "需求圖超過 50000 個字元",
-  "Invalid Mermaid requirement diagram at line {0}: {1}":
-      "Mermaid 需求圖在第 {0} 行無效：{1}",
+  "Invalid Mermaid requirement diagram at line {0}: {1}": "Mermaid 需求圖在第 {0} 行無效：{1}",
   "Expected a requirementDiagram header": "預期 requirementDiagram 標頭",
   "Unexpected text after accDescr closing brace": "accDescr 結尾大括號後出現非預期文字",
   "Direction must be TB, BT, LR, or RL": "方向必須是 TB、BT、LR 或 RL",
   "Native requirement diagrams support at most 512 nodes": "原生需求圖最多支援 512 個節點",
   "Malformed class or style statement": "類別或樣式陳述式格式錯誤",
-  "Native requirement diagrams support at most 1024 relations":
-      "原生需求圖最多支援 1024 個關係",
+  "Native requirement diagrams support at most 1024 relations": "原生需求圖最多支援 1024 個關係",
   "Unsupported requirementDiagram statement": "不支援的 requirementDiagram 陳述式",
-  "Missing Mermaid requirementDiagram header":
-      "缺少 Mermaid requirementDiagram 標頭",
+  "Missing Mermaid requirementDiagram header": "缺少 Mermaid requirementDiagram 標頭",
   "Unexpected text after node opening brace": "節點左大括號後出現非預期文字",
   "Inline class list cannot be empty": "行內類別清單不可為空白",
   "Node name cannot be empty": "節點名稱不可為空白",
@@ -5631,20 +4573,16 @@ const traditionalChineseMessages = <String, String>{
   "Unclosed quoted name": "引號括住的名稱未結束",
   "Unexpected quote in name": "名稱中出現非預期引號",
   "Name cannot be empty": "名稱不可為空白",
-  "Invalid unquoted name; quote names containing punctuation":
-      "未加引號的名稱無效；名稱包含標點符號時請加上引號",
+  "Invalid unquoted name; quote names containing punctuation": "未加引號的名稱無效；名稱包含標點符號時請加上引號",
   "Name list contains an empty value": "名稱清單包含空白值",
   "Unclosed quoted value": "引號括住的值未結束",
   "Comma-separated list contains an empty value": "逗號分隔清單包含空白值",
-  "CSS style contains characters unsupported by Mermaid":
-      "CSS 樣式包含 Mermaid 不支援的字元",
-  "CSS style must be a non-empty property:value declaration":
-      "CSS 樣式必須是非空白的 property:value 宣告",
+  "CSS style contains characters unsupported by Mermaid": "CSS 樣式包含 Mermaid 不支援的字元",
+  "CSS style must be a non-empty property:value declaration": "CSS 樣式必須是非空白的 property:value 宣告",
   "Invalid CSS style declaration \"{0}\"": "CSS 樣式宣告「{0}」無效",
   "Unclosed quoted field value": "引號括住的欄位值未結束",
   "Unexpected quote in field value": "欄位值中出現非預期引號",
-  "Invalid unquoted field value; quote values containing punctuation":
-      "未加引號的欄位值無效；值包含標點符號時請加上引號",
+  "Invalid unquoted field value; quote values containing punctuation": "未加引號的欄位值無效；值包含標點符號時請加上引號",
   "Requirement": "需求",
   "Functional Requirement": "功能需求",
   "Interface Requirement": "介面需求",
@@ -5655,33 +4593,25 @@ const traditionalChineseMessages = <String, String>{
   "Demonstration": "展示",
   "Inspection": "檢查",
   "Test": "測試",
-  "Mermaid packet source exceeds the 50,000 character limit":
-      "Mermaid 封包圖來源超過 50000 個字元限制",
-  "Packet YAML frontmatter is unsupported by the native renderer":
-      "原生轉譯器不支援封包圖 YAML 前置資料",
-  "Packet init directives must appear before the diagram header":
-      "封包圖 init 指令必須放在圖表標頭之前",
+  "Mermaid packet source exceeds the 50,000 character limit": "Mermaid 封包圖來源超過 50000 個字元限制",
+  "Packet YAML frontmatter is unsupported by the native renderer": "原生轉譯器不支援封包圖 YAML 前置資料",
+  "Packet init directives must appear before the diagram header": "封包圖 init 指令必須放在圖表標頭之前",
   "Only one packet init directive is supported": "封包圖只能使用一個 init 指令",
-  "Expected packet or packet-beta header, found: {0}":
-      "預期 packet 或 packet-beta 標頭，實際為：{0}",
+  "Expected packet or packet-beta header, found: {0}": "預期 packet 或 packet-beta 標頭，實際為：{0}",
   "Unexpected second packet header": "出現非預期的第二個 packet 標頭",
   "Mermaid packet exceeds the 10,000 field limit": "Mermaid 封包圖欄位數超過 10000",
   "Packet field {0} is not contiguous; expected {1}": "封包圖欄位 {0} 不連續；預期為 {1}",
-  "Packet field {0} is invalid; a field cannot have zero bits":
-      "封包圖欄位 {0} 無效；欄位不可為 0 位元",
-  "Packet field {0}-{1} is invalid; end must not precede start":
-      "封包圖欄位 {0}-{1} 無效；結束位置不可早於開始位置",
+  "Packet field {0} is invalid; a field cannot have zero bits": "封包圖欄位 {0} 無效；欄位不可為 0 位元",
+  "Packet field {0}-{1} is invalid; end must not precede start": "封包圖欄位 {0}-{1} 無效；結束位置不可早於開始位置",
   "Mermaid packet exceeds the 10,000 row limit": "Mermaid 封包圖列數超過 10000",
   "Expected packet or packet-beta header": "預期 packet 或 packet-beta 標頭",
   "Only JSON packet init directives are supported": "只支援 JSON 封包圖 init 指令",
   "Packet init directive must contain valid JSON": "封包圖 init 指令必須包含有效的 JSON",
   "Packet init directive must be a JSON object": "封包圖 init 指令必須是 JSON 物件",
-  "Packet init directive may only contain the packet object":
-      "封包圖 init 指令只能包含 packet 物件",
+  "Packet init directive may only contain the packet object": "封包圖 init 指令只能包含 packet 物件",
   "Packet init directive requires a packet object": "封包圖 init 指令需要 packet 物件",
   "Unsupported packet init setting: {0}": "不支援的封包圖 init 設定：{0}",
-  "packet.paddingX must be smaller than packet.bitWidth":
-      "packet.paddingX 必須小於 packet.bitWidth",
+  "packet.paddingX must be smaller than packet.bitWidth": "packet.paddingX 必須小於 packet.bitWidth",
   "{0} must be a finite number": "{0} 必須是有限數值",
   "positive and at most {0}": "大於 0 且最多為 {0}",
   "{0} must be {1}": "{0} 必須為 {1}",
@@ -5694,8 +4624,7 @@ const traditionalChineseMessages = <String, String>{
   "global": "全域",
   "Invalid Mermaid C4 at line {0}: {1}": "Mermaid C4 在第 {0} 行無效：{1}",
   "Missing Mermaid C4 header": "缺少 Mermaid C4 標頭",
-  "Expected C4Context, C4Container, C4Component, C4Dynamic, or C4Deployment":
-      "預期 C4Context、C4Container、C4Component、C4Dynamic 或 C4Deployment",
+  "Expected C4Context, C4Container, C4Component, C4Dynamic, or C4Deployment": "預期 C4Context、C4Container、C4Component、C4Dynamic 或 C4Deployment",
   "Unmatched boundary close": "邊界結束符號沒有相符的開啟符號",
   "Diagram direction is not supported natively": "原生不支援圖表方向",
   "Accessibility metadata is not supported natively": "原生不支援無障礙中繼資料",
@@ -5708,8 +4637,7 @@ const traditionalChineseMessages = <String, String>{
   "Expected whitespace after title": "title 後預期空白",
   "Semicolon is not supported in title": "title 中不支援分號",
   "Expected \"(\" after statement name": "陳述式名稱後預期「(」",
-  "Text after a closing quote is not supported by Mermaid C4":
-      "結尾引號後的文字不受 Mermaid C4 支援",
+  "Text after a closing quote is not supported by Mermaid C4": "結尾引號後的文字不受 Mermaid C4 支援",
   "Nested parentheses are not supported in arguments": "引數中不支援巢狀括號",
   "Semicolon is not supported in C4 statements": "C4 陳述式中不支援分號",
   "Unterminated quoted argument": "引號括住的引數未結束",
@@ -5725,34 +4653,28 @@ const traditionalChineseMessages = <String, String>{
   "destination alias": "目的地別名",
   "extra argument": "額外引數",
   "The {0} attribute is not supported natively": "原生不支援 {0} 屬性",
-  "UpdateElementStyle needs an alias and at most nine style values":
-      "UpdateElementStyle 需要別名，且最多只能有九個樣式值",
+  "UpdateElementStyle needs an alias and at most nine style values": "UpdateElementStyle 需要別名，且最多只能有九個樣式值",
   "element alias": "元素別名",
-  "UpdateRelStyle needs source and destination aliases and at most four style values":
-      "UpdateRelStyle 需要來源與目的地別名，且最多只能有四個樣式值",
-  "UpdateLayoutConfig needs shapeInRow and boundaryInRow":
-      "UpdateLayoutConfig 需要 shapeInRow 和 boundaryInRow",
+  "UpdateRelStyle needs source and destination aliases and at most four style values": "UpdateRelStyle 需要來源與目的地別名，且最多只能有四個樣式值",
+  "UpdateLayoutConfig needs shapeInRow and boundaryInRow": "UpdateLayoutConfig 需要 shapeInRow 和 boundaryInRow",
   "{0} must begin with an integer": "{0} 必須以整數開頭",
   "{0} is outside the supported integer range": "{0} 超出支援的整數範圍",
   "{0} must have one value": "{0} 必須只有一個值",
   "{0} must be a string": "{0} 必須是字串",
   "The \"{0}\" attribute is not supported natively": "原生不支援「{0}」屬性",
   "Unsupported Mermaid directive": "不支援的 Mermaid 指令",
-  "Only the Mermaid init setting c4.wrap is supported natively":
-      "原生只支援 Mermaid init 設定 c4.wrap",
+  "Only the Mermaid init setting c4.wrap is supported natively": "原生只支援 Mermaid init 設定 c4.wrap",
   "document canvas pointer surface": "文件畫布指標表面",
   "while dispatching {0} for canvas pointer {1}": "派送畫布指標 {1} 的 {0} 時",
   "while completing {0} for canvas pointer {1}": "完成畫布指標 {1} 的 {0} 時",
   "native canvas pointer": "原生畫布指標",
   "paragraph anywhere min-content width": "段落任意位置的 min-content 寬度",
-  "This form uses a submit control that is not yet supported.":
-      "此表單使用尚未支援的送出控制項。",
+  "This form uses a submit control that is not yet supported.": "此表單使用尚未支援的送出控制項。",
   "此表單使用尚未支援的內容，無法送出。": "此表單使用尚未支援的內容，無法送出。",
   "This form uses content that is not yet supported.": "此表單使用了尚未支援的內容。",
   "Directional form entries are not yet supported.": "此表單包含尚未支援的方向性欄位。",
   "This form includes a control that is not yet supported.": "此表單包含尚未支援的控制項。",
-  "Form navigation is not yet available in this native document.":
-      "此原生文件尚未支援表單導覽。",
+  "Form navigation is not yet available in this native document.": "此原生文件尚未支援表單導覽。",
   "此原生頁面尚未支援表單導覽。": "此原生頁面尚未支援表單導覽。",
   "此表單使用尚未支援的提交控制項。": "此表單使用尚未支援的提交控制項。",
   "此表單使用尚未支援的欄位格式。": "此表單使用尚未支援的欄位格式。",
@@ -5787,30 +4709,23 @@ const traditionalChineseMessages = <String, String>{
   "提交": "提交",
   "重設": "重設",
   "Expected the original button fragment": "必須是原始按鈕片段。",
-  "The dash pattern period must be finite and greater than zero.":
-      "虛線圖樣週期必須是有限正數。",
-  "Dashed strokes with unbounded path lengths are unsupported.":
-      "不支援路徑長度無上限的虛線筆畫。",
-  "Dash lengths are too small relative to the path for safe native rendering.":
-      "相對於路徑長度而言，虛線太短，無法安全地以原生方式呈現。",
-  "Dashed stroke at commands[{0}] exceeds the native generation budget of {1} segments.":
-      "commands[{0}] 的虛線筆畫超過原生產生上限 {1} 個線段。",
+  "The dash pattern period must be finite and greater than zero.": "虛線圖樣週期必須是有限正數。",
+  "Dashed strokes with unbounded path lengths are unsupported.": "不支援路徑長度無上限的虛線筆畫。",
+  "Dash lengths are too small relative to the path for safe native rendering.": "相對於路徑長度而言，虛線太短，無法安全地以原生方式呈現。",
+  "Dashed stroke at commands[{0}] exceeds the native generation budget of {1} segments.": "commands[{0}] 的虛線筆畫超過原生產生上限 {1} 個線段。",
   "commands[{0}].args must be an array.": "commands[{0}].args 必須是陣列。",
   "{0}.globalAlpha must be in the range 0 to 1.": "{0}.globalAlpha 必須介於 0 到 1。",
   "{0} line width and miter limit must be non-negative.": "{0} 的線寬和斜接限制必須為非負數。",
   "{0}.lineDash values must be non-negative.": "{0}.lineDash 的值必須為非負數。",
-  "{0}.imageSmoothingQuality must be low, medium, or high (got \"{1}\").":
-      "{0}.imageSmoothingQuality 必須是 low、medium 或 high（實際值為「{1}」）。",
+  "{0}.imageSmoothingQuality must be low, medium, or high (got \"{1}\").": "{0}.imageSmoothingQuality 必須是 low、medium 或 high（實際值為「{1}」）。",
   "Unsupported Canvas line cap \"{0}\".": "不支援的 Canvas 線條端點樣式「{0}」。",
   "Unsupported Canvas line join \"{0}\".": "不支援的 Canvas 線條接合樣式「{0}」。",
   "Unsupported Canvas text alignment \"{0}\".": "不支援的 Canvas 文字對齊方式「{0}」。",
   "Unsupported Canvas text baseline \"{0}\".": "不支援的 Canvas 文字基準線「{0}」。",
   "Unsupported Canvas text direction \"{0}\".": "不支援的 Canvas 文字方向「{0}」。",
-  "{0}.clips must be an array containing at most 32 clips.":
-      "{0}.clips 必須是最多包含 32 個裁切區域的陣列。",
+  "{0}.clips must be an array containing at most 32 clips.": "{0}.clips 必須是最多包含 32 個裁切區域的陣列。",
   "Unsupported Canvas clip fill rule \"{0}\".": "不支援的 Canvas 裁切填滿規則「{0}」。",
-  "Canvas command \"{0}\" is not supported by the native painter.":
-      "原生繪圖器不支援 Canvas 命令「{0}」。",
+  "Canvas command \"{0}\" is not supported by the native painter.": "原生繪圖器不支援 Canvas 命令「{0}」。",
   "Path must be an array of captured path segments.": "路徑必須是擷取的路徑線段陣列。",
   "Canvas snapshot exceeds a path segment limit.": "Canvas 快照超過路徑線段數量限制。",
   "Path segment arguments must be an array.": "路徑線段引數必須是陣列。",
@@ -5823,20 +4738,14 @@ const traditionalChineseMessages = <String, String>{
   "Radial gradient radii must be non-negative.": "放射漸層半徑不可為負數。",
   "A gradient must contain at most 1024 color stops.": "漸層最多只能有 1024 個色標。",
   "Gradient offsets must be in the range 0 to 1.": "漸層位置必須介於 0 到 1。",
-  "Canvas font \"{0}\" cannot be parsed by the native text painter.":
-      "原生文字繪圖器無法剖析 Canvas 字型「{0}」。",
-  "Canvas font \"{0}\" uses a font feature outside the native text subset.":
-      "Canvas 字型「{0}」使用了原生文字子集以外的字型功能。",
+  "Canvas font \"{0}\" cannot be parsed by the native text painter.": "原生文字繪圖器無法剖析 Canvas 字型「{0}」。",
+  "Canvas font \"{0}\" uses a font feature outside the native text subset.": "Canvas 字型「{0}」使用了原生文字子集以外的字型功能。",
   "Canvas font weight \"{0}\" is unsupported.": "不支援 Canvas 字型粗細「{0}」。",
-  "Canvas font size in \"{0}\" is outside the supported range.":
-      "Canvas 字型「{0}」的字型大小超出支援範圍。",
+  "Canvas font size in \"{0}\" is outside the supported range.": "Canvas 字型「{0}」的字型大小超出支援範圍。",
   "Canvas font \"{0}\" has no font family.": "Canvas 字型「{0}」沒有字型系列。",
-  "Canvas color \"{0}\" at {1} is not supported by the native color parser.":
-      "原生顏色解析器不支援位於 {1} 的 Canvas 顏色「{0}」。",
-  "Canvas composite operation \"{0}\" at {1} is unsupported.":
-      "不支援位於 {1} 的 Canvas 合成操作「{0}」。",
-  "Unsupported Canvas fill rule \"{0}\" at {1}.":
-      "不支援位於 {1} 的 Canvas 填滿規則「{0}」。",
+  "Canvas color \"{0}\" at {1} is not supported by the native color parser.": "原生顏色解析器不支援位於 {1} 的 Canvas 顏色「{0}」。",
+  "Canvas composite operation \"{0}\" at {1} is unsupported.": "不支援位於 {1} 的 Canvas 合成操作「{0}」。",
+  "Unsupported Canvas fill rule \"{0}\" at {1}.": "不支援位於 {1} 的 Canvas 填滿規則「{0}」。",
   "{0} must contain exactly {1} numbers.": "{0} 必須恰好包含 {1} 個數字。",
   "{0} must be an object.": "{0} 必須是物件。",
   "{0} has a non-string object key.": "{0} 有非字串的物件鍵。",
@@ -5847,11 +4756,9 @@ const traditionalChineseMessages = <String, String>{
   "{0} must be a number array.": "{0} 必須是數字陣列。",
   "{0} has an invalid number of items.": "{0} 的項目數量無效。",
   "Backslashes in document URLs are unsupported.": "不支援文件 URL 中的反斜線。",
-  "The document base must be an absolute HTTP(S) URL.":
-      "文件基底網址必須是絕對 HTTP(S) URL。",
+  "The document base must be an absolute HTTP(S) URL.": "文件基底網址必須是絕對 HTTP(S) URL。",
   "Only HTTP(S) document URLs are supported.": "只支援 HTTP(S) 文件 URL。",
-  "HTTP(S) URLs without an authority are unsupported.":
-      "不支援沒有 authority 的 HTTP(S) URL。",
+  "HTTP(S) URLs without an authority are unsupported.": "不支援沒有 authority 的 HTTP(S) URL。",
   "HTTP(S) URLs must include a host.": "HTTP(S) URL 必須包含主機名稱。",
   "HTTP(S) URL user info is unsupported.": "不支援 HTTP(S) URL 使用者資訊。",
   "IPv6 URL hosts are unsupported.": "不支援 IPv6 URL 主機。",
@@ -5860,8 +4767,7 @@ const traditionalChineseMessages = <String, String>{
   "This HTTP(S) host syntax is unsupported.": "不支援此 HTTP(S) 主機語法。",
   "Non-canonical IPv4 URL hosts are unsupported.": "不支援非標準格式的 IPv4 URL 主機。",
   "Non-numeric HTTP(S) URL ports are unsupported.": "不支援非數字的 HTTP(S) URL 通訊埠。",
-  "HTTP(S) URL ports must be between 0 and 65535.":
-      "HTTP(S) URL 通訊埠必須介於 0 到 65535 之間。",
+  "HTTP(S) URL ports must be between 0 and 65535.": "HTTP(S) URL 通訊埠必須介於 0 到 65535 之間。",
   "Native fragment reveal: {0}": "原生片段顯示：{0}",
   "target has no proved native box": "目標沒有可證明的原生方塊",
   "missing scrollport ancestry": "缺少捲動區祖先",
@@ -5874,21 +4780,18 @@ const traditionalChineseMessages = <String, String>{
   "scroll owner has no current native box": "捲動擁有者沒有目前的原生方塊",
   "singular scroll transform": "捲動轉換矩陣為奇異矩陣",
   "root horizontal reveal has no native range": "根層水平顯示沒有原生範圍",
-  "Multiple background image layers containing gradients are unsupported.":
-      "不支援包含漸層的多層背景圖片。",
+  "Multiple background image layers containing gradients are unsupported.": "不支援包含漸層的多層背景圖片。",
   "Malformed CSS gradient function.": "CSS 漸層函式格式錯誤。",
   "Unsupported CSS gradient function: {0}.": "不支援的 CSS 漸層函式：{0}。",
   "A CSS gradient needs at least two color stops.": "CSS 漸層至少需要兩個色標。",
   "Unexpected content after CSS gradient.": "CSS 漸層後出現非預期內容。",
   "Unclosed CSS gradient function.": "CSS 漸層函式未結束。",
   "A CSS linear gradient needs at least two color stops.": "CSS 線性漸層至少需要兩個色標。",
-  "Only the CSS sRGB gradient interpolation method is supported.":
-      "只支援 CSS sRGB 漸層內插方式。",
+  "Only the CSS sRGB gradient interpolation method is supported.": "只支援 CSS sRGB 漸層內插方式。",
   "A radial gradient can have only one position clause.": "放射漸層只能有一個位置子句。",
   "A radial gradient position cannot be empty.": "放射漸層位置不可為空白。",
   "Unsupported radial gradient size: {0}.": "不支援的放射漸層尺寸：{0}。",
-  "A radial gradient cannot combine a size keyword and radii.":
-      "放射漸層不可同時使用尺寸關鍵字和半徑。",
+  "A radial gradient cannot combine a size keyword and radii.": "放射漸層不可同時使用尺寸關鍵字和半徑。",
   "A circle radius must be one nonnegative length.": "圓形半徑必須是單一非負長度。",
   "An ellipse needs two explicit radii.": "橢圓必須明確指定兩個半徑。",
   "A CSS radial gradient needs at least two color stops.": "CSS 放射漸層至少需要兩個色標。",
@@ -5908,14 +4811,10 @@ const traditionalChineseMessages = <String, String>{
   "Canvas": "畫布",
   "The CSS import cannot be loaded.": "無法載入 CSS 匯入項目。",
   "Could not parse the stylesheet media condition.": "無法剖析樣式表的媒體條件。",
-  "CSS-wide keyword computation is not implemented for the {0} shorthand; it was not applied.":
-      "尚未實作 {0} 簡寫屬性的 CSS-wide 關鍵字計算，因此未套用。",
-  "The {0} shorthand is invalid after variable substitution; its initial longhand values are used.":
-      "變數代換後，{0} 簡寫屬性無效；將使用初始的長寫屬性值。",
-  "CSS-wide keyword computation is not implemented; the value is passed through to the HTML renderer.":
-      "尚未實作 CSS-wide 關鍵字計算；此值會直接傳遞給 HTML 轉譯器。",
-  "Ignored CSS construct {0}; its semantics are not implemented.":
-      "忽略 CSS 結構 {0}；尚未實作其語意。",
+  "CSS-wide keyword computation is not implemented for the {0} shorthand; it was not applied.": "尚未實作 {0} 簡寫屬性的 CSS-wide 關鍵字計算，因此未套用。",
+  "The {0} shorthand is invalid after variable substitution; its initial longhand values are used.": "變數代換後，{0} 簡寫屬性無效；將使用初始的長寫屬性值。",
+  "CSS-wide keyword computation is not implemented; the value is passed through to the HTML renderer.": "尚未實作 CSS-wide 關鍵字計算；此值會直接傳遞給 HTML 轉譯器。",
+  "Ignored CSS construct {0}; its semantics are not implemented.": "忽略 CSS 結構 {0}；尚未實作其語意。",
   "The CSS rule has no selector group.": "CSS 規則沒有選擇器群組。",
   "Nested rules or declaration constructs are not supported.": "不支援巢狀規則或宣告結構。",
   "The CSS selector has no source text.": "CSS 選擇器沒有來源文字。",
@@ -5923,60 +4822,40 @@ const traditionalChineseMessages = <String, String>{
   "The selector has no source span.": "選擇器沒有來源範圍。",
   "The state selector has no source span.": "狀態選擇器沒有來源範圍。",
   "The state selector source range could not be mapped.": "無法對應狀態選擇器的來源範圍。",
-  "The selector has an unsupported :nth-child() expression.":
-      "狀態選擇器使用不支援的 :nth-child() 運算式。",
-  "The :nth-child() source range could not be mapped.":
-      "無法對應 :nth-child() 的來源範圍。",
-  "The :nth-child() source did not match its numeric AST.":
-      ":nth-child() 來源與其數值 AST 不相符。",
+  "The selector has an unsupported :nth-child() expression.": "狀態選擇器使用不支援的 :nth-child() 運算式。",
+  "The :nth-child() source range could not be mapped.": "無法對應 :nth-child() 的來源範圍。",
+  "The :nth-child() source did not match its numeric AST.": ":nth-child() 來源與其數值 AST 不相符。",
   "inline style attribute": "行內 style 屬性",
   "Nested inline style constructs are not supported.": "不支援巢狀行內 style 結構。",
   "Legacy IE property hacks are ignored.": "忽略舊版 IE 屬性修正語法。",
   "The declaration has no value expression.": "宣告沒有值運算式。",
   "Ignored invalid value for {0}.": "忽略 {0} 的無效值。",
   "Ignored invalid CSS color value \"{0}\".": "忽略無效的 CSS 顏色值「{0}」。",
-  "The CSS color function is passed through without validation.":
-      "CSS 顏色函式會直接傳遞，不經驗證。",
-  "The overflow shorthand requires one or two supported overflow keywords.":
-      "overflow 簡寫屬性需要一或兩個支援的 overflow 關鍵字。",
-  "The gap shorthand must use one or two supported nonnegative length or percentage values, or normal.":
-      "gap 簡寫屬性必須使用一或兩個支援的非負長度或百分比值，或 normal。",
-  "Could not expand this 1-to-4 component value without changing its meaning.":
-      "若不改變其意義，便無法展開此 1 到 4 個元件的值。",
-  "Could not safely expand the border width, style, and color components.":
-      "無法安全地展開 border 的寬度、樣式和顏色元件。",
-  "This font shorthand is invalid or outside the supported CSS font grammar.":
-      "此 font 簡寫屬性無效，或不符合支援的 CSS font 文法。",
-  "The {0} shorthand must use auto, a nonzero integer line, or span with a positive integer.":
-      "{0} 簡寫屬性必須使用 auto、非零整數的 line，或帶正整數的 span。",
-  "The border-radius shorthand must use one to four supported nonnegative lengths on each side of at most one slash.":
-      "border-radius 簡寫屬性的斜線兩側，各自必須使用一到四個支援的非負長度。",
-  "The {0} shorthand is not expanded; it was not applied.":
-      "未展開 {0} 簡寫屬性；此屬性未套用。",
-  "The flex shorthand must use none, auto, initial, or one to three supported nonnegative flex factors and basis values.":
-      "flex 簡寫屬性必須使用 none、auto、initial，或一到三個支援的非負 flex 比例與 basis 值。",
-  "The flex-flow shorthand must use at most one direction and one wrap value.":
-      "flex-flow 簡寫屬性最多只能包含一個 direction 和一個 wrap 值。",
-  "The border shorthand contains an unsupported or repeated component.":
-      "border 簡寫屬性含有不支援或重複的元件。",
+  "The CSS color function is passed through without validation.": "CSS 顏色函式會直接傳遞，不經驗證。",
+  "The overflow shorthand requires one or two supported overflow keywords.": "overflow 簡寫屬性需要一或兩個支援的 overflow 關鍵字。",
+  "The gap shorthand must use one or two supported nonnegative length or percentage values, or normal.": "gap 簡寫屬性必須使用一或兩個支援的非負長度或百分比值，或 normal。",
+  "Could not expand this 1-to-4 component value without changing its meaning.": "若不改變其意義，便無法展開此 1 到 4 個元件的值。",
+  "Could not safely expand the border width, style, and color components.": "無法安全地展開 border 的寬度、樣式和顏色元件。",
+  "This font shorthand is invalid or outside the supported CSS font grammar.": "此 font 簡寫屬性無效，或不符合支援的 CSS font 文法。",
+  "The {0} shorthand must use auto, a nonzero integer line, or span with a positive integer.": "{0} 簡寫屬性必須使用 auto、非零整數的 line，或帶正整數的 span。",
+  "The border-radius shorthand must use one to four supported nonnegative lengths on each side of at most one slash.": "border-radius 簡寫屬性的斜線兩側，各自必須使用一到四個支援的非負長度。",
+  "The {0} shorthand is not expanded; it was not applied.": "未展開 {0} 簡寫屬性；此屬性未套用。",
+  "The flex shorthand must use none, auto, initial, or one to three supported nonnegative flex factors and basis values.": "flex 簡寫屬性必須使用 none、auto、initial，或一到三個支援的非負 flex 比例與 basis 值。",
+  "The flex-flow shorthand must use at most one direction and one wrap value.": "flex-flow 簡寫屬性最多只能包含一個 direction 和一個 wrap 值。",
+  "The border shorthand contains an unsupported or repeated component.": "border 簡寫屬性含有不支援或重複的元件。",
   "The border shorthand has an invalid color component.": "border 簡寫屬性的顏色元件無效。",
-  "Unknown media type \"{0}\" does not match this screen environment.":
-      "未知的媒體類型「{0}」與目前螢幕環境不相符。",
+  "Unknown media type \"{0}\" does not match this screen environment.": "未知的媒體類型「{0}」與目前螢幕環境不相符。",
   "Media operator \"{0}\" is not supported.": "不支援媒體運算子「{0}」。",
-  "The media condition uses syntax that the current CSS parser cannot represent completely.":
-      "媒體條件使用了目前 CSS 解析器無法完整表示的語法。",
+  "The media condition uses syntax that the current CSS parser cannot represent completely.": "媒體條件使用了目前 CSS 解析器無法完整表示的語法。",
   "Media feature \"{0}\" is not supported.": "不支援媒體功能「{0}」。",
   "Custom property cycle: {0}.": "自訂屬性循環：{0}。",
   "Custom property value \"{0}\" is not computed.": "自訂屬性值「{0}」尚未計算。",
   "Custom property \"{0}\" has no usable computed value.": "自訂屬性「{0}」沒有可用的計算值。",
-  "Could not parse the background value as one CSS declaration.":
-      "無法將背景值剖析為單一 CSS 宣告。",
+  "Could not parse the background value as one CSS declaration.": "無法將背景值剖析為單一 CSS 宣告。",
   "The background image layer list is malformed.": "背景圖片圖層清單格式錯誤。",
   "The {0} image function is unsupported.": "不支援 {0} 圖片函式。",
-  "Only one background image or gradient layer is supported.":
-      "只支援一個背景圖片或漸層圖層。",
-  "Only none or one raster URL is supported for background-image.":
-      "background-image 只支援 none 或單一點陣圖 URL。",
+  "Only one background image or gradient layer is supported.": "只支援一個背景圖片或漸層圖層。",
+  "Only none or one raster URL is supported for background-image.": "background-image 只支援 none 或單一點陣圖 URL。",
   "Only one background URL layer is supported.": "只支援單一背景 URL 圖層。",
   "Could not parse this background shorthand.": "無法剖析此 background 簡寫屬性。",
   "The background shorthand layer list is malformed.": "背景簡寫屬性的圖層清單格式錯誤。",
@@ -5985,31 +4864,22 @@ const traditionalChineseMessages = <String, String>{
   "A background size must follow the slash.": "斜線後必須指定背景尺寸。",
   "Unsupported background component \"{0}\".": "不支援背景元件「{0}」。",
   "Unsupported background size component \"{0}\".": "不支援背景尺寸元件「{0}」。",
-  "This background shorthand has conflicting or excess components.":
-      "此背景簡寫屬性含有衝突或過多的元件。",
+  "This background shorthand has conflicting or excess components.": "此背景簡寫屬性含有衝突或過多的元件。",
   "Unable to parse background gradient.": "無法剖析背景漸層。",
-  "The background URL contains an invalid CSS escape.":
-      "背景 URL 包含無效的 CSS 跳脫序列。",
-  "Only data:image/* background URLs are supported.":
-      "背景 URL 只支援 data:image/*。",
-  "The {0}: background image URL scheme is unsupported.":
-      "不支援 {0}: 背景圖片 URL 配置。",
+  "The background URL contains an invalid CSS escape.": "背景 URL 包含無效的 CSS 跳脫序列。",
+  "Only data:image/* background URLs are supported.": "背景 URL 只支援 data:image/*。",
+  "The {0}: background image URL scheme is unsupported.": "不支援 {0}: 背景圖片 URL 配置。",
   "SVG fragment background images are unsupported.": "不支援 SVG 片段背景圖片。",
-  "Could not resolve the background URL against its source base: {0}":
-      "無法根據來源基底解析背景 URL：{0}",
+  "Could not resolve the background URL against its source base: {0}": "無法根據來源基底解析背景 URL：{0}",
   "Could not serialize this CSS expression: {0}": "無法序列化此 CSS 運算式：{0}",
-  "Ignored declaration because {0} has no value or fallback.":
-      "忽略此宣告，因為 {0} 沒有值或備援值。",
+  "Ignored declaration because {0} has no value or fallback.": "忽略此宣告，因為 {0} 沒有值或備援值。",
   "The background URL is unsupported.": "不支援此背景 URL。",
-  "The outer and imported media conditions could not be combined.":
-      "無法合併外層和匯入的媒體條件。",
+  "The outer and imported media conditions could not be combined.": "無法合併外層和匯入的媒體條件。",
   "media condition": "媒體條件",
   "Pseudo-elements cannot be mapped to HTML elements.": "無法將偽元素對應至 HTML 元素。",
-  "Only numeric :nth-child(n) selectors are supported.":
-      "只支援數值形式的 :nth-child(n) 選擇器。",
+  "Only numeric :nth-child(n) selectors are supported.": "只支援數值形式的 :nth-child(n) 選擇器。",
   "The :{0}() pseudo-class is not supported.": "不支援 :{0}() 偽類別。",
-  ":visited depends on private browsing state and is not applied.":
-      ":visited 取決於私人瀏覽狀態，因此不會套用。",
+  ":visited depends on private browsing state and is not applied.": ":visited 取決於私人瀏覽狀態，因此不會套用。",
   "The :{0} pseudo-class is not supported.": "不支援 :{0} 偽類別。",
   "An empty :not() selector is unsupported.": "不支援空白的 :not() 選擇器。",
   "Named CSS namespaces are unsupported.": "不支援具名 CSS 命名空間。",
@@ -6030,8 +4900,7 @@ const traditionalChineseMessages = <String, String>{
   "From {0}": "來自 {0}",
   "{0} by {1}": "{0}（由 {1}）",
   "Used {0} · Expires {1}": "已使用 {0} · 到期時間 {1}",
-  "USER {0}/{1} characters · MEMORY {2}/{3} characters":
-      "使用者 {0}/{1} 字元 · 記憶 {2}/{3} 字元",
+  "USER {0}/{1} characters · MEMORY {2}/{3} characters": "使用者 {0}/{1} 字元 · 記憶 {2}/{3} 字元",
   "New {0}": "新增 {0}",
   "{0} runs": "{0} 次執行",
   "From {0}{1}": "來自 {0}{1}",
@@ -6096,12 +4965,9 @@ const traditionalChineseMessages = <String, String>{
   "Agent calendar access was updated.": "已更新 Agent 存取權限。",
   "Agent task": "Agent 排程",
   "Agent tasks": "Agent 排程",
-  "Agent tasks start at their scheduled time; personal events never start an agent.":
-      "Agent 排程會在指定時間開始；一般行程不會啟動 Agent。",
-  "Agents can propose event changes. You must confirm each proposal.":
-      "Agent 可以提出行程變更，但每項提案都必須由你確認。",
-  "Agents can read event and schedule details you request.":
-      "Agent 可以讀取你要求的行程與排程詳細資料。",
+  "Agent tasks start at their scheduled time; personal events never start an agent.": "Agent 排程會在指定時間開始；一般行程不會啟動 Agent。",
+  "Agents can propose event changes. You must confirm each proposal.": "Agent 可以提出行程變更，但每項提案都必須由你確認。",
+  "Agents can read event and schedule details you request.": "Agent 可以讀取你要求的行程與排程詳細資料。",
   "All day": "全天",
   "All-day event": "全天行程",
   "Allow calendar reads": "允許讀取行事曆",
@@ -6119,8 +4985,7 @@ const traditionalChineseMessages = <String, String>{
   "Choose time zone": "選擇時區",
   "Create event": "建立活動",
   "Date": "日期",
-  "DST transition: repeated or missing clock times share this wall-clock grid.":
-      "夏令時間切換日：重複或不存在的時間會共用此時間軸位置。",
+  "DST transition: repeated or missing clock times share this wall-clock grid.": "夏令時間切換日：重複或不存在的時間會共用此時間軸位置。",
   "Delete repeating event": "刪除重複活動",
   "Description": "說明",
   "Does not repeat": "不重複",
@@ -6168,8 +5033,7 @@ const traditionalChineseMessages = <String, String>{
   "Scheduled": "已排定",
   "Search time zones": "搜尋時區",
   "Some calendar items are grouped or limited.": "部分行事曆項目已合併或顯示受限。",
-  "This event changed elsewhere. Review the current version before saving your draft.":
-      "此活動已在其他地方變更。請先檢視目前版本，再儲存草稿。",
+  "This event changed elsewhere. Review the current version before saving your draft.": "此活動已在其他地方變更。請先檢視目前版本，再儲存草稿。",
   "Current version: {0} · {1}": "目前版本：{0} · {1}",
   "Keep my edits and continue": "保留我的編輯並繼續",
   "Untitled event": "未命名活動",
@@ -6177,8 +5041,7 @@ const traditionalChineseMessages = <String, String>{
   "Unable to format calendar time in this time zone.": "無法依此時區格式化行事曆時間。",
   "Start": "啟動",
   "Taipei": "台北",
-  "These permissions apply to agent tools only. They do not change your personal calendar view.":
-      "這些權限僅適用於代理程式工具，不會變更你的個人行事曆檢視。",
+  "These permissions apply to agent tools only. They do not change your personal calendar view.": "這些權限僅適用於代理程式工具，不會變更你的個人行事曆檢視。",
   "This and following": "此項及後續項目",
   "This occurrence": "此項目",
   "Today": "今天",
@@ -6317,8 +5180,7 @@ const traditionalChineseMessages = <String, String>{
   "Linked task: {0}": "已連結任務：{0}",
   "Lists show at most 100 records per category. Refresh to see current state.": "各類別最多顯示 100 筆。請重新整理以取得最新狀態。",
   "Archive": "封存",
-  "Archive removes a finished record from pots and frees its place in that limit. It cannot be undone.":
-      "封存會將已結束的紀錄從 pots 移除，並釋出它在上限中的名額；無法復原。",
+  "Archive removes a finished record from pots and frees its place in that limit. It cannot be undone.": "封存會將已結束的紀錄從 pots 移除，並釋出它在上限中的名額；無法復原。",
   "Needs refresh": "需要重新檢查",
   "No execution session. Tracking is not running.": "沒有執行對話。追蹤不代表正在執行。",
   "No responsibilities. Nothing is observed until you explicitly configure and activate one.": "尚無責任。明確設定並啟用之前，不會觀察任何內容。",
@@ -6358,16 +5220,11 @@ const traditionalChineseMessages = <String, String>{
   "Tracking controls do not stop tools running in the source conversation.": "追蹤控制不會停止來源對話中正在執行的工具。",
   "Unable to load pots. Refresh to try again.": "無法載入 pots，請重新整理後再試。",
   "Your personal coordinator. Suggestions are not instructions or permission to act.": "你的個人協調助手。建議不是指令，也不代表行動授權。",
-  "Progress events only: no transcript reading. Execution requires your explicit instruction and Start.":
-      "僅使用進度事件，不讀取對話內容。執行需要您提供明確指示並按下「啟動」。",
-  "Start authorizes one execution in a new session in the same workspace, using only your instruction. No source transcript or approval is copied or answered. The instruction cannot be changed after Start.":
-      "啟動會授權在同一工作區的新工作階段執行一次，僅使用您提供的指示。不會複製來源對話或核准要求，也不會回答來源核准。啟動後無法變更指示。",
-  "Start requires an enabled responsibility with coordination unpaused, dispatch budget remaining and a concurrency slot. Pausing coordination does not stop already-running execution.":
-      "啟動需要已啟用且未暫停協調的責任、剩餘派送額度及可用的並行名額。暫停協調不會停止已在執行的工作。",
-  "Taken over by you; pots coordination is fenced and the execution conversation accepts your input. Already-running execution continues there; stop it from that conversation.":
-      "您已接管：pots 協調已隔離，執行對話現在接受您的輸入。已在執行的工作會在那裡繼續；要停止請在該對話中操作。",
-  "Until you take over or the task ends, the execution conversation accepts only the pots instruction.":
-      "在您接管或任務結束前，執行對話只接受 pots 的指令。",
+  "Progress events only: no transcript reading. Execution requires your explicit instruction and Start.": "僅使用進度事件，不讀取對話內容。執行需要您提供明確指示並按下「啟動」。",
+  "Start authorizes one execution in a new session in the same workspace, using only your instruction. No source transcript or approval is copied or answered. The instruction cannot be changed after Start.": "啟動會授權在同一工作區的新工作階段執行一次，僅使用您提供的指示。不會複製來源對話或核准要求，也不會回答來源核准。啟動後無法變更指示。",
+  "Start requires an enabled responsibility with coordination unpaused, dispatch budget remaining and a concurrency slot. Pausing coordination does not stop already-running execution.": "啟動需要已啟用且未暫停協調的責任、剩餘派送額度及可用的並行名額。暫停協調不會停止已在執行的工作。",
+  "Taken over by you; pots coordination is fenced and the execution conversation accepts your input. Already-running execution continues there; stop it from that conversation.": "您已接管：pots 協調已隔離，執行對話現在接受您的輸入。已在執行的工作會在那裡繼續；要停止請在該對話中操作。",
+  "Until you take over or the task ends, the execution conversation accepts only the pots instruction.": "在您接管或任務結束前，執行對話只接受 pots 的指令。",
   "Execution instruction": "執行指示",
   "Instruction must be 1–20000 UTF-8 bytes.": "指示必須為 1–20000 個 UTF-8 位元組。",
   "Authorized instruction: {0}": "已授權的指示：{0}",
@@ -6378,8 +5235,7 @@ const traditionalChineseMessages = <String, String>{
   "Starting": "正在啟動",
   "Queued": "已排入佇列",
   "Waiting for input": "等待輸入",
-  "Execution session not yet confirmed. Refresh to check current state; do not assume it is stopped.":
-      "尚未確認執行工作階段。請重新整理以查看目前狀態，切勿假定工作已停止。",
+  "Execution session not yet confirmed. Refresh to check current state; do not assume it is stopped.": "尚未確認執行工作階段。請重新整理以查看目前狀態，切勿假定工作已停止。",
   "Saved drafts and pending sends": "已儲存的草稿與待確認送出",
   "Pending cleanup": "等待清理",
   "Discard draft": "丟棄草稿",
@@ -6387,21 +5243,20 @@ const traditionalChineseMessages = <String, String>{
   "Deletion not yet confirmed": "尚未確認刪除結果",
   "First message admitted": "第一則訊息已接收",
   "First message outcome is unknown": "第一則訊息的接收結果不明",
-  "First message was not admitted": "第一則訊息未被接收",
+  "First message was not executed. You can retry.": "第一則訊息尚未執行，可以重試。",
+  "first_message_not_sent": "訊息尚未送達節點，可以再次傳送。",
+  "recovery_unsupported": "此節點需先升級，才能自動復原這則訊息。",
   "First message stopped or stopping": "第一則訊息已停止或正在停止",
   "First message accepted — delivery pending": "第一則訊息已儲存，等待送達",
   "First message saved on this device": "第一則訊息已儲存在此裝置",
-  "Check result never resends the message or takes control.":
-      "查詢結果不會重送訊息或取得控制權。",
+  "Check result never resends the message or takes control.": "查詢結果不會重送訊息或取得控制權。",
   "Check result": "查詢結果",
   "Continue sending": "繼續送出",
   "Open conversation": "開啟對話",
   "Stop pending message": "停止待處理訊息",
   "This draft is no longer available.": "此草稿已無法使用。",
-  "The first message uses the workspace's default approval mode. Change it after admission.":
-      "第一則訊息會使用工作區的預設核准模式，接收後即可變更。",
-  "This conversation and its chat files will be permanently deleted. This also deletes USER memories and MEMORY notes created by this chat, and its pending memory proposals. Memories created by other chats are kept. Copies already present in other chats are not erased. Any running reply will stop. This cannot be undone.":
-      "此對話與對話檔案將永久刪除，也會連帶刪除此對話建立的 USER 記憶、MEMORY 筆記及待核准的記憶提議。其他對話建立的記憶會保留，已存在於其他對話中的副本不會一併清除。執行中的回覆會停止，此操作無法復原。",
+  "The first message uses the workspace's default approval mode. Change it after admission.": "第一則訊息會使用工作區的預設核准模式，接收後即可變更。",
+  "This conversation and its chat files will be permanently deleted. This also deletes USER memories and MEMORY notes created by this chat, and its pending memory proposals. Memories created by other chats are kept. Copies already present in other chats are not erased. Any running reply will stop. This cannot be undone.": "此對話與對話檔案將永久刪除，也會連帶刪除此對話建立的 USER 記憶、MEMORY 筆記及待核准的記憶提議。其他對話建立的記憶會保留，已存在於其他對話中的副本不會一併清除。執行中的回覆會停止，此操作無法復原。",
   "Connect to the Gateway to confirm first-send support before creating a conversation.": "請先連線至 Gateway 確認首次送出支援，再建立對話。",
   "First message stopped": "首次訊息已停止",
   "Stopping first message": "正在停止首次訊息",
@@ -6413,11 +5268,9 @@ const traditionalChineseMessages = <String, String>{
   "Another window changed this draft. Your unsent edits were saved separately. Open the saved draft to review it before sending.": "其他視窗已變更此草稿。你尚未送出的修改已另存為草稿，請開啟並檢視後再送出。",
   "Retry original message": "重試原訊息",
   "Recover interrupted retry": "恢復中斷的重試",
-  "Recovery blocks a retry the server has not received. It never resends the message.":
-      "恢復操作會阻止伺服器尚未收到的重試執行，不會重新傳送訊息。",
+  "Recovery blocks a retry the server has not received. It never resends the message.": "恢復操作會阻止伺服器尚未收到的重試執行，不會重新傳送訊息。",
   "This Gateway cannot recover an interrupted retry.": "此 Gateway 不支援恢復中斷的重試。",
-  "Only a pending retry of a rejected first message can be recovered.":
-      "只有尚未確認、且原首則訊息已遭拒絕的重試可以恢復。",
+  "Only a pending retry of a rejected first message can be recovered.": "只有尚未確認、且原首則訊息已遭拒絕的重試可以恢復。",
   "The retry receipt does not match the saved retry.": "重試回執與儲存的重試紀錄不符。",
   "The retry receipt did not identify a successor attempt.": "重試回執未確認後續嘗試的身分。",
   "The first-message attempt changed; check its result.": "首則訊息的嘗試狀態已變更，請檢查結果。",

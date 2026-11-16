@@ -64,6 +64,8 @@ export interface Preparation {
     retryId?: string | null;
     attemptNumber?: number;
     retryEligible?: boolean;
+    /** `voiding`, `voided` or `recovery_unsupported` (the Node needs an upgrade). */
+    recovery?: string;
   };
 }
 export interface FirstDraft {

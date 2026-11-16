@@ -217,3 +217,74 @@ it('interrupted recovery is separate from Retry, stays available while rollout i
   flushSync();
   expect(recovery()).toBeUndefined();
 });
+
+it('an attempt the Node refused for good reads as not executed with an enabled Retry', async () => {
+  app.firstCapabilities = {
+    version: 1,
+    clientContract: 2,
+    requiredClientContract: 2,
+    ownerUser: 'alice',
+    canSubmit: true,
+    canFenceAccount: true,
+    canStopBeforeAllocation: true,
+    canRetryFirstMessage: true,
+  };
+  show('admission_failed');
+  app.firstDraft = {
+    ...app.firstDraft!,
+    preparation: {
+      ...app.firstDraft!.preparation!,
+      messageAdmission: {
+        commandId: 'cmd',
+        attemptNumber: 0,
+        outcome: 'not_admitted',
+        retryEligible: true,
+        stopRequested: false,
+        stopConfirmed: false,
+        recovery: 'voided',
+      },
+    },
+  };
+  const { flushSync } = await import('svelte');
+  flushSync();
+  const text = document.body.textContent ?? '';
+  expect(text).toContain('First message was not executed. You can retry.');
+  expect(text).not.toContain('admitted');
+  expect(text).not.toContain('outcome is unknown');
+  const retry = [...document.querySelectorAll('button')].find(
+    (b) => b.textContent?.trim() === 'Retry original message',
+  )!;
+  expect(retry.disabled).toBe(false);
+  // The original text stays readable.
+  expect(text).toContain('Original private text');
+});
+
+it('a Node that cannot recover an unknown outcome says it needs an upgrade and offers no Retry', async () => {
+  show('outcome_unknown');
+  app.firstDraft = {
+    ...app.firstDraft!,
+    preparation: {
+      ...app.firstDraft!.preparation!,
+      deliveryError: 'recovery_unsupported',
+      messageAdmission: {
+        commandId: 'cmd',
+        attemptNumber: 0,
+        outcome: 'outcome_unknown',
+        retryEligible: false,
+        stopRequested: false,
+        stopConfirmed: false,
+        recovery: 'recovery_unsupported',
+      },
+    },
+  };
+  const { flushSync } = await import('svelte');
+  flushSync();
+  const text = document.body.textContent ?? '';
+  expect(text).toContain('First message outcome is unknown');
+  expect(text).toContain('This Node must be upgraded before this message can be recovered');
+  expect(
+    [...document.querySelectorAll('button')].some(
+      (b) => b.textContent?.trim() === 'Retry original message',
+    ),
+  ).toBe(false);
+});

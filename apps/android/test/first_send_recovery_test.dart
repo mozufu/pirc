@@ -198,6 +198,83 @@ void main() {
     },
   );
   testWidgets(
+    'an attempt the Node refused for good reads as not executed and keeps Retry enabled',
+    (tester) async {
+      final (c, g, p) = await setup();
+      final row = p.records.values.single;
+      row['frozen'] = true;
+      row['prepareAttempted'] = true;
+      row['revision']++;
+      row['preparation'] = {
+        'operationId': row['operationId'],
+        'sessionId': 'pending',
+        'workspaceId': 'w',
+        'accepted': true,
+        'nodeMapped': true,
+        'state': 'admission_failed',
+        'cleanupPending': false,
+        'messageAdmission': {
+          'commandId': 'cmd',
+          'attemptNumber': 0,
+          'outcome': 'not_admitted',
+          'retryEligible': true,
+          'stopRequested': false,
+          'stopConfirmed': false,
+          'recovery': 'voided',
+        },
+      };
+      await c.firstSend.check();
+      await tester.pumpWidget(page(c, () => FirstSendRecovery(controller: c)));
+      expect(
+        find.text('First message was not executed. You can retry.'),
+        findsOneWidget,
+      );
+      expect(find.text('First message admitted'), findsNothing);
+      expect(find.text('First message outcome is unknown'), findsNothing);
+      expect(find.text('Retry original message'), findsOneWidget);
+      await tester.pumpWidget(const SizedBox());
+      c.dispose();
+      await g.stream.close();
+    },
+  );
+  testWidgets(
+    'a Node that cannot recover an unknown outcome says it needs an upgrade',
+    (tester) async {
+      final (c, g, p) = await setup();
+      final row = p.records.values.single;
+      row['frozen'] = true;
+      row['prepareAttempted'] = true;
+      row['revision']++;
+      row['preparation'] = {
+        'operationId': row['operationId'],
+        'sessionId': 'pending',
+        'workspaceId': 'w',
+        'accepted': true,
+        'nodeMapped': true,
+        'state': 'outcome_unknown',
+        'cleanupPending': false,
+        'deliveryError': 'recovery_unsupported',
+        'messageAdmission': {
+          'commandId': 'cmd',
+          'attemptNumber': 0,
+          'outcome': 'outcome_unknown',
+          'retryEligible': false,
+          'stopRequested': false,
+          'stopConfirmed': false,
+          'recovery': 'recovery_unsupported',
+        },
+      };
+      await c.firstSend.check();
+      await tester.pumpWidget(page(c, () => FirstSendRecovery(controller: c)));
+      expect(find.text('First message outcome is unknown'), findsOneWidget);
+      expect(find.textContaining('This Node must be upgraded'), findsOneWidget);
+      expect(find.text('Retry original message'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      c.dispose();
+      await g.stream.close();
+    },
+  );
+  testWidgets(
     'confirmed rejection offers Retry and a lost native reply restores pending status',
     (tester) async {
       final (c, g, p) = await setup();

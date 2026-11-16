@@ -23,7 +23,7 @@
     if (phase === 'stopping') return tr('Stopping first message');
     if (record?.uncertain || phase === 'outcome_unknown')
       return tr('First message outcome is unknown');
-    if (phase === 'admission_failed') return tr('First message was not admitted');
+    if (phase === 'admission_failed') return tr('First message was not executed. You can retry.');
     return tr(
       record?.preparation?.accepted
         ? 'First message accepted — delivery pending'
