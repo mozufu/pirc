@@ -377,4 +377,42 @@ void main() {
       }
     }
   }
+  testWidgets(
+    'forged enctype, formenctype and method attributes never leave the standard encodings',
+    (t) async {
+      const standardTypes = {
+        'application/x-www-form-urlencoded',
+        'text/plain',
+        'multipart/form-data',
+      };
+      final variants = <String>[
+        '<form method="post" enctype="application/json" action="/api/x"><input name="a" value="1"><button>Send</button></form>',
+        '<form method="POST" enctype="ApPlIcAtIoN/JsOn" action="/api/x"><input name="a" value="1"><button>Send</button></form>',
+        '<form method="post" action="/api/x"><input name="a" value="1"><button formenctype="application/json">Send</button></form>',
+        '<form method="get" action="/api/x"><input name="a" value="1"><button formmethod="put" formenctype="application/json">Send</button></form>',
+        '<form method="delete" action="/api/x"><input name="a" value="1"><button>Send</button></form>',
+        '<form method="patch" enctype="text/html" action="/api/x"><input name="a" value="1"><button>Send</button></form>',
+        '<form method="post" enctype="x" action="/api/x"><input name="a" value="1"><button>Send</button></form>',
+      ];
+      for (final source in variants) {
+        final sent = <NativeHtmlFormSubmission>[];
+        await t.pumpWidget(page(source, sent));
+        await t.pumpAndSettle();
+        await submit(t);
+        expect(sent, hasLength(1), reason: source);
+        final request = sent.single.buildRequest();
+        expect(['GET', 'POST'], contains(request.method), reason: source);
+        if (request.method == 'POST') {
+          expect(
+            standardTypes,
+            contains(request.contentType!.split(';').first),
+            reason: source,
+          );
+        } else {
+          expect(request.contentType, isNull, reason: source);
+        }
+        await t.pumpWidget(const SizedBox());
+      }
+    },
+  );
 }

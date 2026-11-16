@@ -487,4 +487,30 @@ void main() {
       );
     }
   });
+  test(
+    'a script-authored submission cannot select a non-standard encoding',
+    () {
+      for (final enctype in ['application/json', 'text/html', 'x/y', '']) {
+        for (final method in ['put', 'delete', 'post', 'get', 'PATCH']) {
+          final request = decodeScriptFormSubmission({
+            'action': '/api/x',
+            'method': method,
+            'enctype': enctype,
+            'target': '',
+            'entries': [
+              {'name': 'a', 'value': '1'},
+            ],
+          }, resolveFile: (_, _, _) => null).buildRequest();
+          expect(['GET', 'POST'], contains(request.method));
+          if (request.method == 'POST') {
+            expect({
+              'application/x-www-form-urlencoded',
+              'text/plain',
+              'multipart/form-data',
+            }, contains(request.contentType!.split(';').first));
+          }
+        }
+      }
+    },
+  );
 }

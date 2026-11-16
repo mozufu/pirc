@@ -31,6 +31,133 @@ void main() {
     });
   });
 
+  group('forged encodings and methods', () {
+    const standardTypes = {
+      'application/x-www-form-urlencoded',
+      'text/plain',
+      'multipart/form-data',
+    };
+    final entries = const [NativeHtmlFormEntry('a', '1')];
+
+    test(
+      'content cannot choose an encoding outside the three standard ones',
+      () {
+        for (final forged in [
+          'application/json',
+          'APPLICATION/JSON',
+          'application/json; charset=utf-8',
+          'text/html',
+          'application/octet-stream',
+          'text/plain; boundary=x',
+          ' text/plain\r\nX-Pirc-Request: 1',
+          'application/x-www-form-urlencoded, application/json',
+          '',
+          'x' * 5000,
+        ]) {
+          final request = _submission(
+            action: '/submit',
+            method: 'post',
+            enctype: forged,
+            entries: entries,
+          ).buildRequest();
+          final type = request.contentType!.split(';').first;
+          expect(
+            standardTypes,
+            contains(type),
+            reason:
+                'enctype "${forged.replaceAll('\r\n', ' ')}" produced $type',
+          );
+          expect(request.contentType, isNot(contains('json')));
+          expect(request.contentType, isNot(contains('\n')));
+        }
+      },
+    );
+
+    test(
+      'odd casing of a standard encoding is normalised, not passed through',
+      () {
+        expect(
+          _submission(
+            action: '/s',
+            method: 'POST',
+            enctype: 'TEXT/PLAIN',
+            entries: entries,
+          ).buildRequest().contentType,
+          'text/plain',
+        );
+        expect(
+          _submission(
+            action: '/s',
+            method: 'Post',
+            enctype: 'Multipart/Form-Data',
+            entries: entries,
+          ).buildRequest().contentType,
+          startsWith('multipart/form-data; boundary='),
+        );
+      },
+    );
+
+    test('only GET and POST can come out of a method attribute', () {
+      for (final forged in [
+        'put',
+        'PUT',
+        'delete',
+        'patch',
+        'head',
+        'options',
+        'trace',
+        'connect',
+        '',
+        ' post',
+        'post ',
+        'po\u0073t\u0000',
+        'get\r\nX-Pirc-Request: 1',
+      ]) {
+        final request = _submission(
+          action: '/s',
+          method: forged,
+          entries: entries,
+        ).buildRequest();
+        expect(
+          ['GET', 'POST'],
+          contains(request.method),
+          reason: 'method "$forged"',
+        );
+      }
+      expect(
+        _submission(
+          action: '/s',
+          method: 'post',
+          entries: entries,
+        ).buildRequest().method,
+        'POST',
+      );
+      expect(
+        () => _submission(
+          action: '/s',
+          method: 'dialog',
+          entries: entries,
+        ).buildRequest(),
+        throwsUnsupportedError,
+      );
+    });
+
+    test(
+      'a request carries no header field, only url, method, body and type',
+      () {
+        final request = _submission(
+          action: '/s',
+          method: 'post',
+          enctype: 'application/json',
+          entries: const [NativeHtmlFormEntry('X-Pirc-Request', '1')],
+        ).buildRequest();
+        // A control named like a header is only form data in the body.
+        expect(request.body, 'X-Pirc-Request=1');
+        expect(request.contentType, 'application/x-www-form-urlencoded');
+      },
+    );
+  });
+
   group('NativeHtmlFormSubmission.buildRequest', () {
     test('GET replaces a relative action query and keeps its fragment', () {
       final request = _submission(
