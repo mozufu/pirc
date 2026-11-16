@@ -25,8 +25,9 @@ String firstSendLabel(Json row) {
   if (row['uncertain'] == true || phase == 'outcome_unknown') {
     return tr('First message outcome is unknown');
   }
-  if (phase == 'admission_failed')
+  if (phase == 'admission_failed') {
     return tr('First message was not executed. You can retry.');
+  }
   if (prep['accepted'] == true) {
     return tr('First message accepted — delivery pending');
   }
