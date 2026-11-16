@@ -61,6 +61,7 @@ fn queue(items: Vec<Value>) -> VecDeque<Value> {
     items.into()
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_browser_tools() {
     let Some(mut agent) = AgentRun::start(browser_options(Vec::new())).await else {
@@ -214,6 +215,7 @@ async fn agent_browser_tools() {
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_browser_handoff_headless() {
     let Some(mut agent) = AgentRun::start(browser_options(vec!["--headless".to_owned()])).await

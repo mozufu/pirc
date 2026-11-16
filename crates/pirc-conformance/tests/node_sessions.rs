@@ -123,6 +123,7 @@ fn agent_pid(root: &Path) -> Option<i32> {
     None
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_routes() {
     // The gateway lets a second user in; the node does not know them.
@@ -413,6 +414,7 @@ async fn node_session_routes() {
     insta::assert_json_snapshot!("node_session_routes", t.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_commands() {
     let llm = HeldLlm::start().await;
@@ -801,6 +803,7 @@ fn outcomes(frames: &[Value]) -> Value {
     )
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_failures() {
     let llm = HeldLlm::start().await;
@@ -856,6 +859,7 @@ async fn node_session_failures() {
     insta::assert_json_snapshot!("node_session_failures", t.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_interactions() {
     let llm = HeldLlm::start().await;
@@ -1080,6 +1084,7 @@ async fn node_session_interactions() {
     insta::assert_json_snapshot!("node_session_interactions", t.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_interaction_answer_race_across_devices() {
     let llm = HeldLlm::start().await;

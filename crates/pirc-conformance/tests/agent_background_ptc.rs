@@ -109,6 +109,7 @@ async fn requests_arrived(agent: &AgentRun, count: usize) {
     }
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_background_tool() {
     let Some(mut agent) = AgentRun::start(
@@ -200,6 +201,7 @@ async fn agent_background_tool() {
 
 /// `agent-background.test.ts`: "wakes the idle agent once when background
 /// work finishes".
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_background_tool_wake() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default().features(FEATURES)).await else {
@@ -230,6 +232,7 @@ async fn agent_background_tool_wake() {
 
 /// `agent-background.test.ts`: "does not wake the agent for tasks it
 /// already waited on".
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_background_tool_waited() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default().features(FEATURES)).await else {
@@ -258,6 +261,7 @@ async fn agent_background_tool_waited() {
 
 /// `agent-background.test.ts`: "wakes the agent with matched output and
 /// supports write".
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_background_tool_tty() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default().features(FEATURES)).await else {
@@ -304,6 +308,7 @@ async fn agent_background_tool_tty() {
 /// monitor pattern", through the tool: matches collected while the agent
 /// works reach it in one wake-up with the finished tasks; a monitor stops
 /// after `MATCH_LIMIT` matches.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_background_tool_monitor() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default().features(FEATURES)).await else {

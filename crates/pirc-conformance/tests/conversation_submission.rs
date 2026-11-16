@@ -19,6 +19,7 @@ fn files(path: &std::path::Path) -> Vec<std::path::PathBuf> {
         .map(|f| f.unwrap().path())
         .collect()
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn accepted_intent_and_attachment_survive_both_hosts_restarting_without_execution() {
     let Some(mut cluster) = Cluster::start_with(GatewayOptions {

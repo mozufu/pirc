@@ -75,6 +75,7 @@ fn session(agent: &AgentRun, r: &mut Recorder) {
     r.note("session file", entries);
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_todo_tool() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default().features("todo")).await else {
@@ -132,6 +133,7 @@ async fn agent_todo_tool() {
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_todo_tool_after_restart() {
     let options = || AgentOptions::default().features("todo");
@@ -177,6 +179,7 @@ async fn agent_todo_tool_after_restart() {
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_todo_tool_in_chat() {
     let mut options = AgentOptions::default().features("todo");

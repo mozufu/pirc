@@ -109,6 +109,7 @@ fn session(r: &mut Recorder, agent: &AgentRun) {
     r.note("session file", entries);
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ptc_surface() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {
@@ -140,6 +141,7 @@ async fn agent_ptc_surface() {
     insta::assert_json_snapshot!("agent_ptc_surface", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ptc_tool_lists() {
     for (name, args) in [
@@ -183,6 +185,7 @@ async fn agent_ptc_tool_lists() {
     }
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ptc_operations() {
     let Some(mut agent) = AgentRun::start(AgentOptions {
@@ -289,6 +292,7 @@ async fn agent_ptc_operations() {
     insta::assert_json_snapshot!("agent_ptc_operations", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ptc_preflight() {
     let Some(mut agent) = AgentRun::start(AgentOptions {
@@ -371,6 +375,7 @@ async fn agent_ptc_preflight() {
     insta::assert_json_snapshot!("agent_ptc_preflight", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ptc_store() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {
@@ -440,6 +445,7 @@ async fn agent_ptc_store() {
 /// A 1×1 PNG.
 const PIXEL: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGD4DwABBAEAwS2OUAAAAABJRU5ErkJggg==";
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ptc_attachments() {
     use base64::Engine;
@@ -494,6 +500,7 @@ async fn agent_ptc_attachments() {
     insta::assert_json_snapshot!("agent_ptc_attachments", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ptc_hooks() {
     let Some(mut agent) = AgentRun::start(AgentOptions {
@@ -606,6 +613,7 @@ async fn agent_ptc_hooks() {
     insta::assert_json_snapshot!("agent_ptc_hooks", json!(all));
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ptc_abort() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {
@@ -649,6 +657,7 @@ async fn agent_ptc_abort() {
     insta::assert_json_snapshot!("agent_ptc_abort", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ptc_unawaited() {
     // No write broker: when the operation reaches its write lease relative
@@ -683,6 +692,7 @@ async fn agent_ptc_unawaited() {
 /// Large values a script handles without the model writing them out: what
 /// events and the session show of them is bounded. Only those parts are
 /// recorded (the requests repeat the large tool call).
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ptc_large_values() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {
@@ -745,6 +755,7 @@ async fn agent_ptc_large_values() {
 
 /// Progress cadence is timing-dependent, but updates must remain inside the
 /// parent tool's lifetime. Feature snapshots validate operation events/results.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ptc_progress_stays_inside_tool_lifetime() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {

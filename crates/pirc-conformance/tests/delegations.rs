@@ -344,6 +344,7 @@ async fn chat_interactions(api: &Api, chat: &str, home: &mut FakeNode) -> Value 
     snapshot.body["interactions"].clone()
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn delegations() {
     let Some(cluster) = start(None).await else {
@@ -711,6 +712,7 @@ async fn delegations() {
     insta::assert_json_snapshot!("delegations", r.t.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn delegation_expiry() {
     let Some(cluster) = start(Some(1000)).await else {
@@ -804,6 +806,7 @@ async fn put_links(api: &Api, r: &mut Recorder, step: &str, workspace: &str, ids
 /// A chat project linked to directory workspaces (docs/architecture/assistant-memory.md):
 /// the links its settings edit, the workspace list its assistant gets, and
 /// `delegate` and `memory_search` without a workspace.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn project_links() {
     let Some(cluster) = start(None).await else {
@@ -970,6 +973,7 @@ async fn project_links() {
 /// delegations: the assistant sees both targets with their modes, and the
 /// gateway starts the delegated session in the scratch workspace.
 /// Assertion-based, so it does not depend on the recorded snapshots.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn delegation_to_a_per_session_workspace() {
     let Some(cluster) = start(None).await else {
@@ -1164,6 +1168,7 @@ async fn set_approval(api: &Api, policy: &str) {
 /// fallback, the cap on automatic delegations, verified quotes reaching the
 /// delegated run, approvals relayed to the chat and answered there without
 /// a lease, and Stop.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn delegation_autonomy() {
     let Some(cluster) = start(None).await else {

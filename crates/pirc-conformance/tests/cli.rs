@@ -34,6 +34,7 @@ async fn run(bin: &Path, args: &[&str]) -> Output {
     .expect("run CLI")
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test]
 async fn public_cli() {
     let Some(dir) = bin_dir() else { return };

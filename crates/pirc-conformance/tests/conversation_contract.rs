@@ -1,6 +1,7 @@
 //! Real Gateway/Node proof that an old/cached client cannot start the new flow.
 use pirc_conformance::{CHATS_WORKSPACE_ID, Cluster, GatewayOptions, HOST, browser_headers};
 use serde_json::json;
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn old_clients_can_inspect_but_cannot_allocate_or_dispatch_new_first_send() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -122,6 +123,7 @@ async fn old_clients_can_inspect_but_cannot_allocate_or_dispatch_new_first_send(
 
 /// The shipped default is closed: a client with the current contract is still
 /// refused new admission by the Gateway itself, not only by its own capability check.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn a_current_client_cannot_start_first_send_while_the_rollout_is_closed() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

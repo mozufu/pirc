@@ -69,6 +69,7 @@ async fn command(agent: &mut AgentRun, command: Value) -> Vec<Value> {
         .await
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_todo_commands() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default().features("todo")).await else {
@@ -148,6 +149,7 @@ async fn agent_todo_commands() {
     insta::assert_json_snapshot!("agent_todo_commands", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_todo_restore() {
     let options = || AgentOptions::default().features("todo");
@@ -179,6 +181,7 @@ async fn agent_todo_restore() {
     insta::assert_json_snapshot!("agent_todo_restore", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_todo_damaged_history() {
     let entry = |id: &str, parent: &str, data: Value| {
@@ -235,6 +238,7 @@ async fn agent_todo_damaged_history() {
     insta::assert_json_snapshot!("agent_todo_damaged_history", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_todo_headless() {
     let Some(mut agent) = AgentRun::start(
@@ -259,6 +263,7 @@ async fn agent_todo_headless() {
     insta::assert_json_snapshot!("agent_todo_headless", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_todo_in_chat() {
     let mut options = AgentOptions::default().features("todo");
@@ -279,6 +284,7 @@ async fn agent_todo_in_chat() {
     insta::assert_json_snapshot!("agent_todo_in_chat", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_todo_in_chat_enabled() {
     let mut options = AgentOptions {

@@ -165,6 +165,7 @@ const CHAT_IDENTITY: &str = "You are pirc, the user's personal assistant";
 const CHAT_ENVIRONMENT: &str = "This chat has its own private working directory";
 const CODING_IDENTITY: &str = "You are pirc, a coding agent";
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_chat() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -690,6 +691,7 @@ fn refused(
     json!({ "exit code": status.code(), "output names the reason": log.contains(reason) })
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_chat_startup() {
     let (Some(chat), Some(coding)) = (node_command(true), node_command(false)) else {
@@ -849,6 +851,7 @@ fn tool_text(request: &Value) -> String {
 /// the gateway, kept in `<state>/chat/<project>/files`, read (never
 /// written) by the project's chats, also when added while a chat runs, and
 /// removed with the project.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_chat_project_files() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

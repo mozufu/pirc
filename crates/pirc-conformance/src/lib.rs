@@ -4,6 +4,10 @@
 //! `PIRC_CONFORMANCE_BIN_DIR` and talk to them only over HTTP and WebSocket,
 //! so the same scenarios run against the TypeScript build (whose behavior the
 //! committed snapshots record) and the Rust build that replaces it.
+//!
+//! Without `PIRC_CONFORMANCE_BIN_DIR` at build time the tests that need the
+//! executables are ignored (see `build.rs`), so `cargo test` reports them as
+//! ignored rather than passed. `PIRC_CONFORMANCE_REQUIRED` makes that a failure.
 
 mod agent;
 mod client;

@@ -63,6 +63,7 @@ fn answer(agent: &AgentRun, op: &str, replies: impl IntoIterator<Item = Value>) 
         .extend(replies);
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_assistant_frozen_memory() {
     let Some(mut agent) = AgentRun::start(chat()).await else {
@@ -91,6 +92,7 @@ async fn agent_assistant_frozen_memory() {
     insta::assert_json_snapshot!("agent_assistant_frozen_memory", log.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_assistant_policy_and_decisions() {
     let Some(mut agent) = AgentRun::start(chat()).await else {
@@ -132,6 +134,7 @@ async fn agent_assistant_policy_and_decisions() {
     insta::assert_json_snapshot!("agent_assistant_policy_and_decisions", log.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_assistant_gateway_unreachable() {
     let Some(mut agent) = AgentRun::start(chat()).await else {
@@ -161,6 +164,7 @@ async fn agent_assistant_gateway_unreachable() {
     insta::assert_json_snapshot!("agent_assistant_gateway_unreachable", log.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_assistant_memory_disabled() {
     let Some(mut agent) = AgentRun::start(chat()).await else {
@@ -180,6 +184,7 @@ async fn agent_assistant_memory_disabled() {
     insta::assert_json_snapshot!("agent_assistant_memory_disabled", log.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_assistant_delivered_messages() {
     let Some(mut agent) = AgentRun::start(chat()).await else {
@@ -222,6 +227,7 @@ fn user_only(user: Value) -> Value {
 
 /// A coding session starts with the approved USER entries, frozen, and
 /// none of the assistant's tools.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_assistant_coding_session() {
     let Some(mut agent) = AgentRun::start(coding()).await else {
@@ -249,6 +255,7 @@ async fn agent_assistant_coding_session() {
 
 /// An unreachable gateway never holds a coding session up: it runs without
 /// USER, the user is told once, and a later run loads it.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_assistant_coding_session_unreachable() {
     let Some(mut agent) = AgentRun::start(coding()).await else {
@@ -315,6 +322,7 @@ async fn held_turn(log: &mut Log, agent: &mut AgentRun, step: &str, message: &st
 /// A gateway that never answers holds each run of a coding session up for
 /// the 3 s `assistant.context` timeout only: it runs without USER, the user
 /// is told once, and the next run asks again.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_assistant_coding_session_context_timeout() {
     let Some(mut agent) = AgentRun::start(coding()).await else {
@@ -367,6 +375,7 @@ async fn agent_assistant_coding_session_context_timeout() {
 }
 
 /// A coding session with no USER entries freezes that too.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_assistant_coding_session_without_user() {
     let Some(mut agent) = AgentRun::start(coding()).await else {
@@ -391,6 +400,7 @@ async fn agent_assistant_coding_session_without_user() {
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_assistant_chat_without_gateway() {
     let mut options = AgentOptions::default().features("assistant");
@@ -407,6 +417,7 @@ async fn agent_assistant_chat_without_gateway() {
     insta::assert_json_snapshot!("agent_assistant_chat_without_gateway", log.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn partial_policy_refresh_never_reenables_denied_memory_tools() {
     let Some(mut agent) = AgentRun::start(chat()).await else {

@@ -14,6 +14,7 @@ async fn register(gateway: &FakeGateway) -> pirc_conformance::NodeLink {
 fn req(method: &str, path: &str, payload: Value) -> Value {
     json!({"method":method,"url":path,"user":USER,"payload":payload})
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() {
     let gateway = FakeGateway::bind().await;
@@ -230,6 +231,7 @@ async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() 
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn terminal_stream_reports_the_fence_while_a_peer_remains_interactive() {
     let gateway = FakeGateway::bind().await;
@@ -368,6 +370,7 @@ async fn terminal_stream_reports_the_fence_while_a_peer_remains_interactive() {
     assert_eq!(peer_removed["data"]["status"], 204, "{peer_removed}");
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn terminal_observation_survives_restart_and_an_unknown_shell_blocks_deletion() {
     for settle_before_crash in [true, false] {
@@ -506,6 +509,7 @@ async fn terminal_observation_survives_restart_and_an_unknown_shell_blocks_delet
 
 /// Real Node and Git processes with the conformance sandbox stand-in. This
 /// proves request retirement/output gating, not native OS descendant revocation.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn in_flight_git_panel_stops_on_fence_and_peer_file_reads_survive() {
     use std::{fs, process::Command, time::Duration};

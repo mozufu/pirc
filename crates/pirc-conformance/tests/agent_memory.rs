@@ -11,6 +11,7 @@ async fn turn(agent: &mut AgentRun, text: &str) {
     agent.settle().await;
     agent.drain(Duration::from_millis(50)).await;
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn legacy_settings_do_not_restart_observer_reflector_or_promoter() {
     for settings in [
@@ -41,6 +42,7 @@ async fn legacy_settings_do_not_restart_observer_reflector_or_promoter() {
         assert!(commands.contains("om:workspace"));
     }
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn work_notes_refresh_and_disappear_on_revocation_without_activating_a_ledger() {
     let options = AgentOptions {
@@ -85,6 +87,7 @@ async fn work_notes_refresh_and_disappear_on_revocation_without_activating_a_led
             .any(|e| e["customType"] == "om.workspace.snapshot")
     );
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn chat_cannot_load_repository_memory_even_with_explicit_enable() {
     let options = AgentOptions {
@@ -113,6 +116,7 @@ async fn chat_cannot_load_repository_memory_even_with_explicit_enable() {
 }
 // Keep type imports checked alongside the feature's wire fixture shape.
 const _: fn(Value) -> Value = |v| v;
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn independent_extraction_uses_one_call_and_rate_limit_falls_back_on_the_next_sync() {
     let options=AgentOptions{env:vec![("PIRC_GATEWAY".into(),"1".into())],config:json!({"features":{"workspaceMemory":{"model":{"provider":"fake","id":"small-model"},"fallbackModels":[{"provider":"fake","id":"fake-model"}]}}}),..Default::default()}.features("workspace-memory");
@@ -171,6 +175,7 @@ async fn independent_extraction_uses_one_call_and_rate_limit_falls_back_on_the_n
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn rejected_retirement_recovers_but_ambiguous_postcommit_failure_stays_withheld() {
     for code in [
@@ -231,6 +236,7 @@ async fn rejected_retirement_recovers_but_ambiguous_postcommit_failure_stays_wit
     }
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn legacy_global_passive_and_forced_passive_never_start_automatic_work_extraction() {
     for forced in [false, true] {
@@ -274,6 +280,7 @@ async fn legacy_global_passive_and_forced_passive_never_start_automatic_work_ext
     }
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn blocked_sources_are_visible_without_claiming_extraction_or_starting_retries() {
     let options = AgentOptions {
@@ -326,6 +333,7 @@ async fn blocked_sources_are_visible_without_claiming_extraction_or_starting_ret
     agent.finish().await;
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn cold_cutover_state_is_visible_and_manual_sync_never_claims_success_before_activation() {
     let Some(mut agent) = AgentRun::start(

@@ -14,6 +14,7 @@ async fn register(gateway: &FakeGateway) -> pirc_conformance::NodeLink {
     .await;
     link
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn creation_attachment_survives_process_crash_and_does_not_revive_after_delete() {
     let gateway = FakeGateway::bind().await;
@@ -117,6 +118,7 @@ async fn creation_attachment_survives_process_crash_and_does_not_revive_after_de
     assert!(tombstone["upload"].get("storageName").is_none());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn pre_allocation_stop_survives_a_process_crash_and_fences_late_initial_admission() {
     let gateway = FakeGateway::bind().await;

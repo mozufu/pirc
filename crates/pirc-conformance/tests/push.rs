@@ -82,6 +82,7 @@ fn topic_of(tag: &str) -> String {
     topic.chars().take(32).collect()
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn push_notifications() {
     let push = FakePush::start().await.expect("fake push service");
@@ -373,6 +374,7 @@ async fn push_notifications() {
 
 /// Without configured keys the gateway makes a key pair once and keeps it
 /// in its state directory; plain http endpoints are refused by default.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn push_key_and_https() {
     let push = FakePush::start().await.expect("fake push service");

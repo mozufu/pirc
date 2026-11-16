@@ -177,6 +177,7 @@ fn session_outline(agent: &AgentRun) -> Value {
 
 /// Every message is in the session file before its `message_end`; a reply
 /// that cannot be persisted has no `message_end` and ends the run.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_loop_persistence_before_message_end() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {
@@ -229,6 +230,7 @@ async fn agent_loop_persistence_before_message_end() {
 
 /// The calls of one reply run one at a time, in call order: a call sees
 /// what the one before it did, however long that took.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_loop_serial_tools() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {
@@ -294,6 +296,7 @@ async fn agent_loop_serial_tools() {
 
 /// A message sent now, or an abort, interrupts the running call; the calls
 /// after it are recorded as not run, and never run.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_loop_tool_interruptions() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {
@@ -352,6 +355,7 @@ async fn agent_loop_tool_interruptions() {
 /// Retried attempts end with `message_end` but are never persisted; a reply
 /// with text is not retried; an abort during the retry delay persists the
 /// aborted reply without another `message_end`.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_loop_retry_order() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {
@@ -420,6 +424,7 @@ async fn agent_loop_retry_order() {
 
 /// Every retry used: three delays (2 s, 5 s, 15 s), then the last failure
 /// is the persisted reply.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_loop_retry_exhausted() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {
@@ -443,6 +448,7 @@ async fn agent_loop_retry_exhausted() {
 
 /// A retryable failure with a role that lists another model switches to it
 /// at once, without a retry delay; the failed attempt is not persisted.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_loop_role_fallback() {
     let mut models = pirc_conformance::fake_models();
@@ -509,6 +515,7 @@ fn handoff() -> ModelReply {
 /// compacted, and the turn runs again. A second overflow in the same run is
 /// persisted without another compaction; a failed compaction persists the
 /// overflow it could not recover from.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_loop_overflow_compaction() {
     let Some(mut agent) = AgentRun::start(compaction_options()).await else {

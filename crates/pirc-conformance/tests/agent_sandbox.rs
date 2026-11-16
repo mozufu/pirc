@@ -10,6 +10,7 @@ use feature_support::{Masker, tools, turn};
 use pirc_conformance::{AgentOptions, AgentRun, ModelReply, Recorder};
 use serde_json::json;
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_sandbox_prompt() {
     for (name, env, args) in [

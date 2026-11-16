@@ -6,6 +6,7 @@ use pirc_protocol::mode::{AssistantAccess, ModeId, PromptSection, ScheduleScope,
 use serde_json::{Value, json};
 use std::time::Duration;
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn custom_mode_catalog_prompt_capabilities_and_removal() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

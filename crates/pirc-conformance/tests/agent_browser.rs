@@ -43,6 +43,7 @@ const BROWSER_TOOLS: [&str; 12] = [
     "browser_record",
 ];
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_web_fetch() {
     let Some(mut agent) = AgentRun::start(browser_options(json!({}))).await else {
@@ -118,6 +119,7 @@ async fn agent_web_fetch() {
     insta::assert_json_snapshot!("agent_web_fetch", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_browser_absent() {
     for (name, options) in [

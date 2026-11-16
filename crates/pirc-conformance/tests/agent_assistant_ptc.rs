@@ -71,6 +71,7 @@ fn usage() -> Value {
     json!({ "used": 40, "max": 8000 })
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_assistant_notes_and_proposals() {
     let Some(mut agent) = AgentRun::start(chat("assistant")).await else {
@@ -212,6 +213,7 @@ async fn agent_assistant_notes_and_proposals() {
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_assistant_revisions_after_restart() {
     let Some(mut agent) = AgentRun::start(chat("assistant")).await else {
@@ -264,6 +266,7 @@ async fn agent_assistant_revisions_after_restart() {
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_assistant_delegation() {
     let Some(mut agent) = AgentRun::start(chat("assistant")).await else {
@@ -363,6 +366,7 @@ async fn agent_assistant_delegation() {
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_assistant_search_and_recall() {
     let Some(mut agent) = AgentRun::start(chat("observational-memory,assistant")).await else {
@@ -427,6 +431,7 @@ async fn agent_assistant_search_and_recall() {
 
 /// In a project linked to workspaces: the list marks them, `delegate` may
 /// leave the workspace out, and `memory_search` says where it looked.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_assistant_project_links() {
     let Some(mut agent) = AgentRun::start(chat("assistant")).await else {

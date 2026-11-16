@@ -45,6 +45,7 @@ fn model_of(start: &Value) -> Value {
 /// A 1×1 PNG.
 const PNG: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_link_side_link() {
     let server = FakeGateway::bind().await;
@@ -388,6 +389,7 @@ fn recap_request(start: &Value) -> Value {
         "toolChoice": request["toolChoice"] })
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_link_side_runs() {
     let server = FakeGateway::bind().await;
@@ -664,6 +666,7 @@ fn mirror_of(key: &'static str) -> impl Fn(&Value) -> bool {
     move |frame: &Value| is_mirror(frame) && frame["ledgerKey"] == key
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_link_side_mirror() {
     let server = FakeGateway::bind().await;
@@ -948,6 +951,7 @@ async fn control_lines(node: &LoneNode, count: usize) -> Vec<Value> {
     }
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_link_side_sandbox() {
     let server = FakeGateway::bind().await;
@@ -1196,6 +1200,7 @@ async fn node_link_side_sandbox() {
 /// A gateway refusing the node's credentials (close 4401) is reported once,
 /// not on every retry, and again only after the node has registered in
 /// between: a wrong token used to be retried silently forever.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_link_side_reports_refused_credentials() {
     let server = FakeGateway::bind().await;
@@ -1231,6 +1236,7 @@ async fn node_link_side_reports_refused_credentials() {
 
 /// Real Node + Agent/PTC + relayed human confirmation, with a fake gateway/model.
 /// The approved shell writes only this fixture; duplicate devices cannot replay it.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test]
 async fn node_link_side_host_management() {
     let server = FakeGateway::bind().await;

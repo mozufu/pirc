@@ -65,6 +65,7 @@ fn done(line: &Value) -> bool {
         && line.get("statusText").is_none()
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_recap() {
     let Some(mut agent) = AgentRun::start(recap_options()).await else {
@@ -169,6 +170,7 @@ async fn agent_recap() {
     insta::assert_json_snapshot!("agent_recap", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_recap_unavailable() {
     let gateway = |kind: Option<&str>| {

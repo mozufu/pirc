@@ -87,6 +87,7 @@ fn exists(agent: &AgentRun, r: &mut Recorder, files: &[&str]) {
 
 /// Without a UI, a dangerous bash call from a script fails with
 /// `ApprovalDenied` and no dialog.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_auto_mode_ptc_headless() {
     let Some(mut agent) = AgentRun::start(options(json!({}), true)).await else {
@@ -111,6 +112,7 @@ async fn agent_auto_mode_ptc_headless() {
 
 /// With a UI, a dangerous bash call from a script asks the human and runs
 /// only when approved.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_auto_mode_ptc_approval() {
     let Some(mut agent) = AgentRun::start(options(json!({}), false)).await else {
@@ -141,6 +143,7 @@ async fn agent_auto_mode_ptc_approval() {
 
 /// Cancelling a script while its approval dialog is open withdraws the
 /// dialog; a late "yes" grants nothing and the operation never runs.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_auto_mode_ptc_cancel() {
     let Some(mut agent) = AgentRun::start(options(json!({}), false)).await else {
@@ -189,6 +192,7 @@ fn deny_config() -> Value {
 
 /// The user's deny-list applies to the script text itself: refused
 /// without a UI, before the script runs.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_auto_mode_ptc_deny_headless() {
     let Some(mut agent) = AgentRun::start(options(deny_config(), true)).await else {
@@ -205,6 +209,7 @@ async fn agent_auto_mode_ptc_deny_headless() {
 }
 
 /// With a UI, a denied script text asks the human; approved, it runs.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_auto_mode_ptc_deny_approval() {
     let Some(mut agent) = AgentRun::start(options(deny_config(), false)).await else {
@@ -230,6 +235,7 @@ async fn agent_auto_mode_ptc_deny_approval() {
 /// leased; only the write its bash call makes takes the lease. (No
 /// classifier reply is queued: a classifier request would take a main
 /// reply and change the transcript.)
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_auto_mode_ptc_unclassified() {
     let config = json!({ "features": { "autoMode": { "useModel": true } } });
@@ -265,6 +271,7 @@ async fn agent_auto_mode_ptc_unclassified() {
 /// `read-only` mode is refused a write, from a script and directly; switched
 /// to `full-access` over RPC (recorded in the session, reported by
 /// `get_state`) the same write runs, and the deny-list still refuses.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_approval_modes() {
     let config = json!({ "features": { "autoMode": {

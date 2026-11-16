@@ -81,6 +81,7 @@ fn surface(request: &Value) -> Value {
     json!({ "capabilities": section, "tools": tools })
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_team_surface() {
     let Some(mut agent) = AgentRun::start(options()).await else {
@@ -152,6 +153,7 @@ async fn offered(options: AgentOptions, r: &mut Recorder, step: &str) {
     agent.finish().await;
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_team_settings() {
     let Some(probe) = AgentRun::start(options()).await else {
@@ -211,6 +213,7 @@ fn child(mode: &str) -> AgentOptions {
     options
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_team_member() {
     let Some(mut agent) = AgentRun::start(child("team")).await else {
@@ -289,6 +292,7 @@ async fn agent_team_member() {
     insta::assert_json_snapshot!("agent_team_member", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_team_subagent() {
     let Some(mut agent) = AgentRun::start(child("subagent")).await else {

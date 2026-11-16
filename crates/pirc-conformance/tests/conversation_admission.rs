@@ -111,6 +111,7 @@ async fn wait_calls(cluster: &Cluster, count: usize) {
     }
     assert_eq!(cluster.llm.requests().len(), count);
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn initial_admission_survives_restart_and_duplicate_dispatch_never_calls_the_model_again() {
     let Some((mut cluster, headers, session)) = setup(true).await else {
@@ -235,6 +236,7 @@ async fn initial_admission_survives_restart_and_duplicate_dispatch_never_calls_t
             .is_null()
     );
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn stop_before_first_send_prevents_late_dispatch_but_permits_an_explicit_new_message() {
     let Some((mut cluster, headers, session)) = setup(false).await else {

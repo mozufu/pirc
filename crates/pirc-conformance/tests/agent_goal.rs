@@ -25,6 +25,7 @@ fn goal_options(config: Value) -> AgentOptions {
     .features("goal")
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_goal_commands() {
     let Some(mut agent) = AgentRun::start(goal_options(
@@ -126,6 +127,7 @@ async fn agent_goal_commands() {
     insta::assert_json_snapshot!("agent_goal_commands", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_goal_interrupted() {
     let Some(mut agent) = AgentRun::start(goal_options(json!({}))).await else {
@@ -185,6 +187,7 @@ async fn agent_goal_interrupted() {
     insta::assert_json_snapshot!("agent_goal_interrupted", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_goal_restored() {
     let options = || goal_options(json!({ "features": { "goal": { "defaultMaxRounds": 1 } } }));
@@ -255,6 +258,7 @@ async fn agent_goal_restored() {
     insta::assert_json_snapshot!("agent_goal_restored", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_goal_off() {
     for (name, options) in [
@@ -334,6 +338,7 @@ async fn agent_goal_off() {
 
 /// An unfinished todo is not nagged about while the goal goes on to
 /// another round; the last round gets the reminder.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_goal_with_todo() {
     let Some(mut agent) = AgentRun::start(

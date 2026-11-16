@@ -168,6 +168,7 @@ async fn close(agent: AgentRun, r: &mut Recorder, children: &[i32]) {
     r.note("children alive after shutdown", json!(alive));
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_team_spawn() {
     let Some(mut agent) = AgentRun::start(options()).await else {
@@ -215,6 +216,7 @@ async fn agent_team_spawn() {
     insta::assert_json_snapshot!("agent_team_spawn", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_team_invalid() {
     let Some(mut agent) = AgentRun::start(options()).await else {
@@ -253,6 +255,7 @@ async fn agent_team_invalid() {
     insta::assert_json_snapshot!("agent_team_invalid", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_team_tasks() {
     let Some(mut agent) = AgentRun::start(options()).await else {
@@ -300,6 +303,7 @@ return out.join('\n');"#;
     insta::assert_json_snapshot!("agent_team_tasks", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_team_background_subagent() {
     let Some(mut agent) = AgentRun::start(options()).await else {
@@ -338,6 +342,7 @@ async fn agent_team_background_subagent() {
     insta::assert_json_snapshot!("agent_team_background_subagent", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_team_foreground_subagent() {
     let Some(mut agent) = AgentRun::start(options()).await else {
@@ -371,6 +376,7 @@ async fn agent_team_foreground_subagent() {
     insta::assert_json_snapshot!("agent_team_foreground_subagent", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_team_steer_while_waiting() {
     let Some(mut agent) = AgentRun::start(options()).await else {
@@ -412,6 +418,7 @@ async fn agent_team_steer_while_waiting() {
     insta::assert_json_snapshot!("agent_team_steer_while_waiting", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_team_abort_holds_results() {
     let Some(mut agent) = AgentRun::start(options()).await else {
@@ -459,6 +466,7 @@ async fn agent_team_abort_holds_results() {
     insta::assert_json_snapshot!("agent_team_abort_holds_results", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_team_question() {
     let Some(mut agent) = AgentRun::start(options()).await else {

@@ -5,6 +5,7 @@ use node_link_side_support::{Gateway, models, registered, settled_in};
 use pirc_conformance::{FakeGateway, LoneNode, NodeOptions};
 use serde_json::json;
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn transition_cancels_source_inference_while_peer_finishes_and_context_survives() {
     let server = FakeGateway::bind().await;

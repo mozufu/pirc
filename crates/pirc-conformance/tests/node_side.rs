@@ -42,6 +42,7 @@ fn models() -> Value {
     })
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_side_link() {
     let gateway = FakeGateway::bind().await;

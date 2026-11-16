@@ -35,6 +35,7 @@ async fn device(cluster: &Cluster, name: &str) -> (Vec<(&'static str, String)>, 
         paired["device"]["id"].as_str().unwrap().to_owned(),
     )
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn unmapped_stop_survives_offline_takeover_restart_and_allows_only_explicit_new_work() {
     let Some(mut cluster) = Cluster::start_with(GatewayOptions {

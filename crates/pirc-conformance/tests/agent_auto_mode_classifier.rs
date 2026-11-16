@@ -78,6 +78,7 @@ async fn turn(agent: &mut AgentRun, r: &mut Recorder, q: &mut Requests, step: &s
 /// Read, write and dangerous verdicts, the verdict cache (never for
 /// dangerous ones), reasons and their defaults, and the human's recent
 /// requests in the classifier's prompt.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_classifier_verdicts() {
     let Some(mut agent) = AgentRun::start(options(json!({ "useModel": true }))).await else {
@@ -140,6 +141,7 @@ async fn agent_classifier_verdicts() {
 /// the session model, deduplicated), their thinking and token limits,
 /// failures falling through to the next one, unparseable replies, and the
 /// classifier-unavailable warning (once until a verdict succeeds again).
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_classifier_fallbacks() {
     let Some(mut agent) = AgentRun::start(options(json!({
@@ -181,6 +183,7 @@ async fn agent_classifier_fallbacks() {
 }
 
 /// Without auto mode's own models, observational memory's come first.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_classifier_memory_models() {
     let Some(mut agent) = AgentRun::start(AgentOptions {
@@ -273,6 +276,7 @@ fn memory_session() -> String {
 
 /// Memory notes and the trimmed action in the classifier's prompt; a
 /// dangerous verdict is refused outright without a UI.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_classifier_memory_notes() {
     let Some(mut agent) = AgentRun::start(AgentOptions {
@@ -304,6 +308,7 @@ async fn agent_classifier_memory_notes() {
 }
 
 /// `useMemory: false` leaves the notes out.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_classifier_without_memory() {
     let Some(mut agent) = AgentRun::start(AgentOptions {
@@ -334,6 +339,7 @@ async fn agent_classifier_without_memory() {
 
 /// A classifier that does not answer within `timeoutMs` fails over to the
 /// next candidate, then to the write fallback.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_classifier_timeout() {
     let Some(mut agent) = AgentRun::start(options(json!({
@@ -360,6 +366,7 @@ async fn agent_classifier_timeout() {
 
 /// Cancelling the run while the classifier thinks cancels the call; the
 /// command never runs.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_classifier_abort() {
     let Some(mut agent) = AgentRun::start(options(json!({ "useModel": true }))).await else {

@@ -167,6 +167,7 @@ async fn stream(
     .await
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_terminals() {
     let Some(cluster) = Cluster::start_with(terminal_env()).await else {
@@ -547,6 +548,7 @@ async fn node_terminals() {
     insta::assert_json_snapshot!("node_terminals", t.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_terminals_disabled() {
     let mut options = terminal_env();
@@ -596,6 +598,7 @@ async fn node_terminals_disabled() {
     insta::assert_json_snapshot!("node_terminals_disabled", t.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn isolated_terminal_never_falls_back_to_host_on_an_unsupported_backend() {
     let Some(cluster) = Cluster::start_with(terminal_env()).await else {
@@ -629,6 +632,7 @@ async fn isolated_terminal_never_falls_back_to_host_on_an_unsupported_backend() 
 
 /// Human review/confirmation uses the ordinary authenticated Gateway relay. This
 /// case is a real host shell in an owned fixture, not native sandbox acceptance.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_host_terminal_review() {
     let Some(cluster) = Cluster::start_with(terminal_env()).await else {
@@ -708,6 +712,7 @@ async fn node_host_terminal_review() {
     assert_eq!(closed_retry.body["hostManagement"]["state"], "unconfirmed");
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn isolated_terminal_requests_report_no_start_without_host_fallback() {
     let Some(cluster) = Cluster::start_with(terminal_env()).await else {
@@ -750,6 +755,7 @@ async fn isolated_terminal_requests_report_no_start_without_host_fallback() {
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn terminal_requests_are_discoverable_through_the_gateway_without_control() {
     let Some(cluster) = Cluster::start_with(terminal_env()).await else {
@@ -803,6 +809,7 @@ async fn terminal_requests_are_discoverable_through_the_gateway_without_control(
     assert_eq!(closed.status, 204, "{closed:?}");
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn terminal_request_errors_and_acknowledgement_are_specific_through_the_gateway() {
     let Some(cluster) = Cluster::start_with(terminal_env()).await else {
@@ -836,6 +843,7 @@ async fn terminal_request_errors_and_acknowledgement_are_specific_through_the_ga
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn old_clients_without_an_execution_path_are_asked_to_update_by_default() {
     let mut options = terminal_env();

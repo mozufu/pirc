@@ -32,6 +32,7 @@ async fn lease(cluster: &Cluster, headers: &[(&str, String)], session: &str) -> 
     )["lease"]["generation"]
         .clone()
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn paired_retry_reuses_the_same_conversation_and_file_and_survives_both_hosts_restarting() {
     let Some(mut cluster) = Cluster::start_with(GatewayOptions {

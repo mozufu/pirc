@@ -38,6 +38,7 @@ fn script(calls: &[(&str, Value)]) -> String {
     code
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_schedule_tool() {
     let Some(mut agent) = AgentRun::start(gateway_options(json!({}))).await else {
@@ -151,6 +152,7 @@ async fn agent_schedule_tool() {
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_schedule_tool_absent() {
     for (name, options) in [

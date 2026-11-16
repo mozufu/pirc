@@ -50,6 +50,7 @@ async fn compact(agent: &mut AgentRun, r: &mut Recorder, step: &str, message: &s
     r.requests(&format!("{step}: model requests"), agent.take_requests());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_compact_command() {
     let Some(mut agent) = AgentRun::start(

@@ -281,6 +281,7 @@ async fn offline(api: &Api, node: &str) {
     panic!("{node} stayed online");
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn memory() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

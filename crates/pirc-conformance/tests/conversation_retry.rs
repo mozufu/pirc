@@ -11,6 +11,7 @@ async fn register(gateway: &FakeGateway, models: Value) -> pirc_conformance::Nod
         .await;
     link
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn rejected_first_attempt_retries_in_the_same_session_with_the_same_file_after_restart() {
     let gateway = FakeGateway::bind().await;

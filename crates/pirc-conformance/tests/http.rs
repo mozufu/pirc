@@ -9,6 +9,7 @@ use serde_json::json;
 /// `PIRC_UPLOAD_MAX_BYTES`, the gateway's body limit, in this scenario.
 const BODY_LIMIT: usize = 4096;
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn http_edges() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

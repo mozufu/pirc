@@ -5,6 +5,7 @@
 use pirc_conformance::{Cluster, HOST, Transcript, WORKSPACE_ID, browser_headers};
 use serde_json::json;
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn device_token_lifecycle() {
     let Some(cluster) = Cluster::start().await else {

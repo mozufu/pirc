@@ -19,6 +19,7 @@ async fn responses(agent: &mut AgentRun, count: usize) -> Vec<Value> {
         .await
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_startup_options() {
     let Some(mut agent) = AgentRun::start(AgentOptions {
@@ -59,6 +60,7 @@ async fn agent_startup_options() {
     insta::assert_json_snapshot!("agent_startup_options", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_rpc_lines() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {
@@ -120,6 +122,7 @@ async fn agent_rpc_lines() {
     insta::assert_json_snapshot!("agent_rpc_lines", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_configure_errors() {
     let mut r = None;

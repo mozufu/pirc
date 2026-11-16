@@ -20,6 +20,7 @@ async fn send(socket: &mut WebSocket, frame: Value) {
     socket.send_json(&frame).await;
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn relayed_streams() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

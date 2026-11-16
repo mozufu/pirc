@@ -151,6 +151,7 @@ fn names(dir: &Path) -> Vec<String> {
     names
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn project_deletion() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

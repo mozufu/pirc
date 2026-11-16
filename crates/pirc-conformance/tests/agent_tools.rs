@@ -27,6 +27,7 @@ async fn turn(agent: &mut AgentRun, r: &mut Recorder, step: &str, message: &str)
     r.turn(step, agent, events);
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_hooks() {
     let options = AgentOptions {
@@ -73,6 +74,7 @@ async fn agent_hooks() {
     insta::assert_json_snapshot!("agent_hooks", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_auto_mode() {
     // This policy scenario records a missing interpreter, independent of whether
@@ -130,6 +132,7 @@ async fn agent_auto_mode() {
     insta::assert_json_snapshot!("agent_auto_mode", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ptc_docs() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {

@@ -52,6 +52,7 @@ fn brief() -> Value {
     })
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_web_search() {
     let Some(mut agent) = AgentRun::start(options("web-search", json!({}))).await else {
@@ -123,6 +124,7 @@ async fn agent_web_search() {
     insta::assert_json_snapshot!("agent_web_search", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_web_search_absent() {
     for (name, options) in [
@@ -176,6 +178,7 @@ async fn agent_web_search_absent() {
     }
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_cron() {
     let Some(mut agent) = AgentRun::start(options("schedules", json!({}))).await else {
@@ -267,6 +270,7 @@ async fn agent_cron() {
     insta::assert_json_snapshot!("agent_cron", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_cron_in_chat() {
     let Some(mut agent) = AgentRun::start(

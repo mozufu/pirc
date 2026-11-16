@@ -301,21 +301,25 @@ async fn scenario(stop: bool, take_over: bool) {
     hold.release();
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn pots_start_is_one_shot_and_records_completion_without_source_transcript() {
     scenario(false, false).await;
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn pots_stop_aborts_only_the_dedicated_execution() {
     scenario(true, false).await;
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn pots_takeover_leaves_running_execution_alive_until_completion() {
     scenario(false, true).await;
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn pots_stop_after_takeover_leaves_the_users_conversation_running() {
     scenario(true, true).await;

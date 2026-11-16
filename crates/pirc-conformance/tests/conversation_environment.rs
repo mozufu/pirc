@@ -3,6 +3,7 @@
 use pirc_conformance::{CHATS_WORKSPACE_ID, Cluster, GatewayOptions, HOST, browser_headers};
 use serde_json::json;
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn browser_and_paired_device_keep_intent_across_policy_changes() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -177,6 +178,7 @@ async fn browser_and_paired_device_keep_intent_across_policy_changes() {
 #[path = "conversation_environment_support/gate.rs"]
 mod gate;
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn policy_change_after_gateway_admission_prevents_node_dispatch_and_survives_restart() {
     let Some(mut cluster) = Cluster::start_with(GatewayOptions {

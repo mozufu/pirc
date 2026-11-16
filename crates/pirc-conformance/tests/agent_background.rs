@@ -123,6 +123,7 @@ async fn call(agent: &mut AgentRun, run: &mut Run, step: &str, command: Value) -
     response
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_background_commands() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default().features(FEATURES)).await else {
@@ -195,6 +196,7 @@ async fn agent_background_commands() {
     insta::assert_json_snapshot!("agent_background_commands", run.r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_background_wakes() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default().features(FEATURES)).await else {
@@ -255,6 +257,7 @@ async fn agent_background_wakes() {
     insta::assert_json_snapshot!("agent_background_wakes", run.r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_background_stops_while_running() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default().features(FEATURES)).await else {
@@ -301,6 +304,7 @@ async fn agent_background_stops_while_running() {
     insta::assert_json_snapshot!("agent_background_stops_while_running", run.r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_background_panel() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default().features(FEATURES)).await else {
@@ -408,6 +412,7 @@ async fn agent_background_panel() {
     insta::assert_json_snapshot!("agent_background_panel", run.r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_background_tty() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default().features(FEATURES)).await else {
@@ -449,6 +454,7 @@ async fn agent_background_tty() {
     insta::assert_json_snapshot!("agent_background_tty", run.r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_background_shutdown() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default().features(FEATURES)).await else {
@@ -475,6 +481,7 @@ async fn agent_background_shutdown() {
     insta::assert_json_snapshot!("agent_background_shutdown", run.r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_background_headless() {
     let Some(mut agent) = AgentRun::start(
@@ -506,6 +513,7 @@ async fn agent_background_headless() {
     insta::assert_json_snapshot!("agent_background_headless", run.r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_background_in_chat() {
     let mut options = AgentOptions::default().features(FEATURES);
@@ -531,6 +539,7 @@ async fn agent_background_in_chat() {
     insta::assert_json_snapshot!("agent_background_in_chat", run.r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_background_in_chat_enabled() {
     let mut options = AgentOptions {

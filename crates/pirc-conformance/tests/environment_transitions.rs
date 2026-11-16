@@ -2,6 +2,7 @@
 use pirc_conformance::{Cluster, WORKSPACE_ID, browser_headers};
 use serde_json::json;
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn preview_survives_gateway_restart_and_node_offline_without_changing_binding() {
     let Some(mut cluster) = Cluster::start().await else {
@@ -282,6 +283,7 @@ mod switching {
         .await
     }
 
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn an_enabled_switch_installs_after_confirmed_or_acknowledged_revocation() {
         let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -432,6 +434,7 @@ mod switching {
             .clone()
     }
 
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn a_gateway_crash_after_confirmation_is_finished_by_the_recovery_sweep() {
         let Some(mut cluster) = Cluster::start_with(switching()).await else {
@@ -458,6 +461,7 @@ mod switching {
         let _ = generation;
     }
 
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn an_offline_node_keeps_the_switch_pending_and_a_restarted_node_finishes_it() {
         let Some(mut cluster) = Cluster::start_with(switching()).await else {
@@ -514,6 +518,7 @@ mod switching {
         );
     }
 
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn concurrent_steps_install_once_and_a_takeover_moves_control() {
         let Some(cluster) = Cluster::start_with(switching()).await else {
@@ -562,6 +567,7 @@ mod switching {
         assert_eq!(continued["transition"]["state"], "installed", "{continued}");
     }
 
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn cancel_after_the_drain_keeps_the_original_workspace_and_reopens_work() {
         let Some(cluster) = Cluster::start_with(switching()).await else {
@@ -630,6 +636,7 @@ mod switching {
 
     /// O1: confirm, then every client goes away and control expires. The
     /// backend finishes exactly one binding update with operation authority.
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn o1_a_confirmed_switch_finishes_after_control_expires_and_clients_close() {
         let Some(mut cluster) = Cluster::start_with(with_authority("60", "1500")).await else {
@@ -661,6 +668,7 @@ mod switching {
 
     /// O2 and O6: the Node is away past the lease and the authority deadline.
     /// Nothing installs; the current controller must reauthorize to continue.
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn o2_o6_expired_authority_needs_reauthorization_before_installing() {
         let Some(mut cluster) = Cluster::start_with(with_authority("3", "1500")).await else {
@@ -707,6 +715,7 @@ mod switching {
 
     /// X2: advance and cancel race on two requests; exactly one result commits
     /// and the binding matches it.
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn x2_racing_install_and_cancel_commit_exactly_one_result() {
         let Some(cluster) = Cluster::start_with(switching()).await else {
@@ -743,6 +752,7 @@ mod switching {
 
     /// X5: the binding commits, then the first runtime launch fails because the
     /// target vanished. Readiness reports it; the binding is not reverted.
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn x5_a_failed_first_launch_keeps_the_committed_binding() {
         let Some(cluster) = Cluster::start_with(switching()).await else {
@@ -791,6 +801,7 @@ mod switching {
     /// C6a-2 (C1 O5, C3 X3): a grant revoked while a confirmed switch waits makes
     /// the reviewed plan stale. No step installs it, cancelling returns to the
     /// source without the grant, and widening waits for the transition.
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn o5_x3_a_grant_revoked_between_phases_is_never_installed_or_restored() {
         let mut options = switching();

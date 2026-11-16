@@ -25,6 +25,7 @@ fn history(snapshot: &Value) -> Vec<String> {
         .collect()
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn edited_messages_preserve_switchable_history_and_model_context() {
     let llm = HeldLlm::start().await;

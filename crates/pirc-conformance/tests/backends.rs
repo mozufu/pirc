@@ -45,6 +45,7 @@ fn settled(frame: &Value) -> bool {
     frame["type"] == "pi_event" && frame["data"]["type"] == "agent_settled"
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn backends() {
     let Some(cluster) = Cluster::start().await else {

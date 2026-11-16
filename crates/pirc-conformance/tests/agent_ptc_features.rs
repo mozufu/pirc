@@ -119,6 +119,7 @@ fn session(r: &mut Recorder, agent: &AgentRun) {
     r.note("session file", entries);
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ptc_todo() {
     let Some(mut agent) = AgentRun::start(
@@ -179,6 +180,7 @@ fn page(content: &str) -> Value {
         "truncated": false } })
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ptc_untrusted() {
     let Some(mut agent) = AgentRun::start(
@@ -255,6 +257,7 @@ async fn agent_ptc_untrusted() {
     insta::assert_json_snapshot!("agent_ptc_untrusted", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ptc_sandbox() {
     let Some(mut agent) = AgentRun::start(

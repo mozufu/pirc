@@ -14,6 +14,7 @@ async fn create(api: &Api) -> String {
     assert_eq!(r.status, 201, "{}", r.body);
     r.body["session"]["id"].as_str().unwrap().into()
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn saved_upload_origin_is_shared_across_devices_and_survives_restart() {
     let Some(mut cluster) = Cluster::start_with(GatewayOptions {

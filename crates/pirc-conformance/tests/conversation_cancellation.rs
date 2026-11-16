@@ -180,10 +180,12 @@ async fn exercise(materialized: bool) {
     );
     assert!(cluster.llm.requests().is_empty());
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn deletion_without_a_known_node_session_survives_offline_and_gateway_restart() {
     exercise(false).await;
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn materialized_files_are_cleaned_after_the_same_node_reconnects() {
     exercise(true).await;

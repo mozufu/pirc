@@ -83,6 +83,7 @@ fn session(agent: &AgentRun, r: &mut Recorder) {
     r.note("session file", entries);
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ask_question() {
     let Some(mut agent) = AgentRun::start(options()).await else {
@@ -128,6 +129,7 @@ async fn agent_ask_question() {
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ask_question_invalid() {
     let Some(mut agent) = AgentRun::start(options()).await else {
@@ -163,6 +165,7 @@ async fn agent_ask_question_invalid() {
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ask_question_abort() {
     let Some(mut agent) = AgentRun::start(options()).await else {
@@ -189,6 +192,7 @@ async fn agent_ask_question_abort() {
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_ask_question_headless() {
     let Some(mut agent) = AgentRun::start(AgentOptions {

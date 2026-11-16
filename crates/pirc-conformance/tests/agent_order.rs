@@ -39,6 +39,7 @@ async fn lines_until_settled(agent: &mut AgentRun) -> Vec<Value> {
         .collect()
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_line_order() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {
@@ -90,6 +91,7 @@ async fn agent_line_order() {
 
 /// Prompt acknowledgement waits for the `beforePrompt` hook and persisted
 /// user message. Deliver keeps its existing synchronous acknowledgement.
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_line_order_with_hooks() {
     let options = AgentOptions {

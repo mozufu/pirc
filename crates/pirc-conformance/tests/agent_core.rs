@@ -24,6 +24,7 @@ async fn turn(agent: &mut AgentRun, r: &mut Recorder, step: &str, message: &str)
     r.turn(step, agent, events);
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_text_turn() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {
@@ -48,6 +49,7 @@ async fn agent_text_turn() {
     insta::assert_json_snapshot!("agent_text_turn", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_rpc_commands() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {
@@ -129,6 +131,7 @@ async fn agent_rpc_commands() {
     insta::assert_json_snapshot!("agent_rpc_commands", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_tool_round() {
     let Some(mut agent) = AgentRun::start(AgentOptions {
@@ -186,6 +189,7 @@ async fn agent_tool_round() {
     insta::assert_json_snapshot!("agent_tool_round", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_tool_errors() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {
@@ -234,6 +238,7 @@ async fn agent_tool_errors() {
     insta::assert_json_snapshot!("agent_tool_errors", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_queues() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {
@@ -337,6 +342,7 @@ async fn agent_queues() {
     insta::assert_json_snapshot!("agent_queues", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_model_failures() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default()).await else {

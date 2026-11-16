@@ -95,6 +95,7 @@ async fn serve_node(api: &Api) -> (Arc<Mutex<Vec<Value>>>, tokio::task::JoinHand
     (seen, task)
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn session_routes() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

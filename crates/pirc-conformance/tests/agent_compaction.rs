@@ -22,6 +22,7 @@ fn handoff() -> ModelReply {
         ModelReply::Text(json!({"state":{"goal":[{"text":"Continue the repository task","sources":[{"sessionId":source["sessionId"],"entryId":source["entryId"]}]}],"activeConstraints":[],"progress":[],"decisions":[],"openQuestions":[],"nextSteps":[]},"resolvedConstraints":[]}).to_string())
     })
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn native_manual_handoff_is_atomic_and_raw_sources_survive_restart() {
     let Some(mut agent) = AgentRun::start(options()).await else {
@@ -57,6 +58,7 @@ async fn native_manual_handoff_is_atomic_and_raw_sources_survive_restart() {
     assert!(agent.session_entries().contains(&old));
     assert!(!agent.take_requests().is_empty());
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn native_invalid_handoff_never_replaces_raw_context() {
     let Some(mut agent) = AgentRun::start(options()).await else {
@@ -85,6 +87,7 @@ async fn native_invalid_handoff_never_replaces_raw_context() {
             .collect::<Vec<_>>()
     );
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn native_overflow_uses_the_same_handoff_engine_once() {
     let Some(mut agent) = AgentRun::start(options()).await else {

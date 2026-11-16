@@ -41,6 +41,7 @@ async fn record_socket(t: &mut Transcript, step: &str, connection: Connection) {
     }
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn browser_request_matrix() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -122,6 +123,7 @@ async fn browser_request_matrix() {
     insta::assert_json_snapshot!("browser_request_matrix", t.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn untrusted_peer() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -146,6 +148,7 @@ async fn untrusted_peer() {
     insta::assert_json_snapshot!("untrusted_peer", t.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn proxy_secret() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

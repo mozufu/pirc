@@ -34,6 +34,7 @@ async fn turn(agent: &mut AgentRun, r: &mut Recorder, step: &str, message: &str)
     r.turn(step, agent, events);
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_project_config() {
     let Some(mut agent) = AgentRun::start(AgentOptions {
@@ -74,6 +75,7 @@ async fn agent_project_config() {
     insta::assert_json_snapshot!("agent_project_config", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_chat_prompts() {
     let Some(mut agent) = AgentRun::start(AgentOptions {
@@ -165,6 +167,7 @@ fn old_session() -> String {
     )
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_resume_session() {
     let Some(mut agent) = AgentRun::start(AgentOptions {

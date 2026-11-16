@@ -84,6 +84,7 @@ async fn callback(url: &str) -> Value {
         "details": text(r#"<div class="details">([^<]*)</div>"#) })
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn provider_auth() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

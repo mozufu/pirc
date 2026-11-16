@@ -40,6 +40,7 @@ fn calls(steps: &[(&str, &str)]) -> String {
     code
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_goal_ptc_complete() {
     let Some(mut agent) = AgentRun::start(goal_options(json!({}))).await else {
@@ -76,6 +77,7 @@ async fn agent_goal_ptc_complete() {
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_goal_ptc_limit() {
     let Some(mut agent) = AgentRun::start(goal_options(json!({}))).await else {
@@ -107,6 +109,7 @@ async fn agent_goal_ptc_limit() {
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_goal_ptc_authority() {
     let Some(mut agent) = AgentRun::start(goal_options(
@@ -219,6 +222,7 @@ async fn agent_goal_ptc_authority() {
     insta::assert_json_snapshot!("agent_goal_ptc_authority", value);
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_goal_ptc_disabled() {
     let Some(mut agent) = AgentRun::start(goal_options(

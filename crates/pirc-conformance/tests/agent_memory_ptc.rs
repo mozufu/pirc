@@ -28,6 +28,7 @@ fn ptc_result(entries: &[Value]) -> &Value {
         .find(|e| e["message"]["role"] == "toolResult" && e["message"]["toolName"] == "ptc")
         .unwrap()
 }
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn history_replay_taint_survives_ptc_store_and_process_restart() {
     let Some(mut agent) = AgentRun::start(options()).await else {

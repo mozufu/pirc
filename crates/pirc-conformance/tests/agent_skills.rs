@@ -106,6 +106,7 @@ async fn notice(agent: &mut AgentRun, r: &mut Recorder, step: &str, message: &st
     r.note(step, json!(lines));
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_skills() {
     let Some(mut agent) = AgentRun::start(
@@ -182,6 +183,7 @@ async fn agent_skills() {
     insta::assert_json_snapshot!("agent_skills", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_skills_disabled() {
     let Some(mut agent) = AgentRun::start(

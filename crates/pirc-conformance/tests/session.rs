@@ -21,6 +21,7 @@ fn cursor(watermark: &Value) -> String {
     format!("{}:{}", watermark["epoch"], watermark["sequence"])
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn session_lifecycle() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

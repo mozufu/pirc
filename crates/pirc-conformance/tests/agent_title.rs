@@ -70,6 +70,7 @@ async fn pause() {
     tokio::time::sleep(std::time::Duration::from_millis(300)).await;
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_session_title() {
     let Some(mut agent) = AgentRun::start(options(
@@ -119,6 +120,7 @@ async fn agent_session_title() {
     insta::assert_json_snapshot!("agent_session_title", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_title_retry() {
     let Some(mut agent) = AgentRun::start(options(json!({}))).await else {
@@ -149,6 +151,7 @@ async fn agent_title_retry() {
     agent.finish().await;
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_title_settings() {
     let Some(mut agent) = AgentRun::start(options(json!({
@@ -183,6 +186,7 @@ async fn agent_title_settings() {
     agent.finish().await;
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn human_rename_wins_over_inflight_title() {
     let Some(mut agent) = AgentRun::start(options(json!({}))).await else {
@@ -211,6 +215,7 @@ async fn human_rename_wins_over_inflight_title() {
     agent.finish().await;
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_title_named_by_user() {
     let Some(mut agent) = AgentRun::start(options(json!({}))).await else {
@@ -234,6 +239,7 @@ async fn agent_title_named_by_user() {
     insta::assert_json_snapshot!("agent_title_named_by_user", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_title_headless() {
     // Team sub-agents run headless and are never shown in the session list.
@@ -260,6 +266,7 @@ async fn agent_title_headless() {
     insta::assert_json_snapshot!("agent_title_headless", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_title_disabled() {
     let Some(mut agent) = AgentRun::start(options(

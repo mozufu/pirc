@@ -29,9 +29,11 @@ pub const NODE_TOKEN: &str = "conformance-node-token-0123456789abcdef";
 /// The node's only workspace, as the gateway names it.
 pub const WORKSPACE_ID: &str = "test:test";
 
-/// Directory of the executables under test; tests are skipped without it.
+/// Directory of the executables under test. Without it the tests that need them
+/// are ignored (`build.rs`), not passed.
 const BIN_DIR_VARIABLE: &str = "PIRC_CONFORMANCE_BIN_DIR";
-/// Set by `bun run test:conformance` (and so CI): skipping is then a failure.
+/// Set by `bun run test:conformance` (and so CI): a missing directory is then a
+/// failure, not a skip.
 const REQUIRED_VARIABLE: &str = "PIRC_CONFORMANCE_REQUIRED";
 /// The top-level chats workspace of a chat node, as the gateway names it.
 pub const CHATS_WORKSPACE_ID: &str = "test:chats";

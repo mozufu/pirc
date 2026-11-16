@@ -43,6 +43,7 @@ async fn sections(agent: &mut AgentRun, r: &mut Recorder, step: &str) {
     r.note(step, sections);
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_project_instructions() {
     let options = |text: &str| chat(Some(text));
@@ -65,6 +66,7 @@ async fn agent_project_instructions() {
     insta::assert_json_snapshot!("agent_project_instructions", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_project_instructions_added_later() {
     // A chat that started without instructions keeps starting without them.
@@ -83,6 +85,7 @@ async fn agent_project_instructions_added_later() {
     insta::assert_json_snapshot!("agent_project_instructions_added_later", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_project_instructions_older_chat() {
     // A chat that began before instructions existed: messages, no snapshot.
@@ -111,6 +114,7 @@ async fn agent_project_instructions_older_chat() {
     insta::assert_json_snapshot!("agent_project_instructions_older_chat", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_project_instructions_outside_chat() {
     let Some(mut agent) = AgentRun::start(
@@ -131,6 +135,7 @@ async fn agent_project_instructions_outside_chat() {
     insta::assert_json_snapshot!("agent_project_instructions_outside_chat", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_role_from_configure() {
     let Some(mut agent) = AgentRun::start(
@@ -152,6 +157,7 @@ async fn agent_role_from_configure() {
     insta::assert_json_snapshot!("agent_role_from_configure", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_role_without_instructions() {
     let Some(mut agent) = AgentRun::start(
@@ -171,6 +177,7 @@ async fn agent_role_without_instructions() {
     insta::assert_json_snapshot!("agent_role_without_instructions", r.into_value());
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_role_set_and_resumed() {
     let options = || {

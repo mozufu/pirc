@@ -28,6 +28,7 @@ fn script(calls: &[(&str, Value)]) -> String {
     code
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_sandbox_tools() {
     let mut options = AgentOptions::default().features("sandbox");
@@ -135,6 +136,7 @@ async fn agent_sandbox_tools() {
     );
 }
 
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_sandbox_tools_absent() {
     let Some(mut agent) = AgentRun::start(AgentOptions::default().features("sandbox")).await else {
