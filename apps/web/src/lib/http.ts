@@ -20,6 +20,17 @@ export interface RequestOptions {
   errorMessage?: (body: any, status: number) => string;
 }
 
+/**
+ * Header every state-changing request carries (any method but GET, HEAD and
+ * OPTIONS). The gateway accepts such a request only with this header or with a
+ * JSON body, which a plain HTML form cannot produce.
+ */
+export const REQUEST_HEADER = 'x-pirc-request';
+export const REQUEST_VALUE = '1';
+
+const isStateChanging = (method: string | undefined): boolean =>
+  !['GET', 'HEAD', 'OPTIONS'].includes((method ?? 'GET').toUpperCase());
+
 const defaultMessage = (body: any, status: number): string =>
   body?.error?.message ?? body?.message ?? tr('Request failed ({0})', [status]);
 
@@ -51,6 +62,7 @@ export async function requestWithStatus<T>(
   )
     headers.set('content-type', 'application/json');
   headers.set('accept', 'application/json');
+  if (isStateChanging(init.method)) headers.set(REQUEST_HEADER, REQUEST_VALUE);
   const response = await fetch(path, { ...init, headers, credentials: 'include' });
   if (!response.ok) {
     const body = await response.json().catch(() => null);

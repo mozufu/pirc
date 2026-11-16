@@ -227,6 +227,36 @@ const marked = new Marked({
   },
 });
 
+/**
+ * Attributes that give a form (or a button of one) a submission target. Content
+ * shown here is not the app: a form in it may submit to other sites, but never
+ * to the app's own origin, whatever form the URL is written in (relative,
+ * absolute, protocol-relative).
+ */
+const FORM_TARGET_ATTRIBUTES = ['action', 'formaction'];
+
+function dropSameOriginFormTargets(node: Element) {
+  for (const name of FORM_TARGET_ATTRIBUTES) {
+    const value = node.getAttribute?.(name);
+    if (value === null || value === undefined) continue;
+    let sameOrigin = true;
+    try {
+      sameOrigin = new URL(value.trim(), document.baseURI).origin === window.location.origin;
+    } catch {
+      // A target that cannot be resolved is not kept.
+    }
+    if (sameOrigin) node.removeAttribute(name);
+  }
+}
+
+/** Options for untrusted content: styles never come with it. */
+const CONTENT_SANITIZE = {
+  // `formaction` is allowed so forms to other sites work; same-origin ones are dropped by the hook.
+  ADD_ATTR: ['target', 'data-copy', 'data-file-link', 'formaction'],
+  ADD_TAGS: ['semantics', 'annotation'],
+  FORBID_TAGS: ['style'],
+};
+
 let hooked = false;
 function purifier() {
   if (!hooked && typeof window !== 'undefined') {
@@ -237,6 +267,7 @@ function purifier() {
         node.setAttribute('href', stripFileScheme(href) || '#');
     });
     DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+      dropSameOriginFormTargets(node);
       if (node.tagName !== 'A' || !node.getAttribute('href')) return;
       // Workspace file links open in the side panel (see enhanceMarkdown), not a new tab.
       if (localFilePath(node.getAttribute('href'))) {
@@ -297,10 +328,7 @@ export function renderMarkdownChecked(
   const html = marked.parse(input, { async: false });
   const pending = usedFallback;
   return {
-    html: purifier().sanitize(html, {
-      ADD_ATTR: ['target', 'data-copy', 'data-file-link'],
-      ADD_TAGS: ['semantics', 'annotation'],
-    }),
+    html: purifier().sanitize(html, CONTENT_SANITIZE),
     pending,
   };
 }
@@ -313,7 +341,9 @@ export const MAX_HIGHLIGHT = 200_000;
 
 /** Highlight a standalone snippet (tool input/output). Returns sanitized HTML. */
 export function highlightCode(code: string, language?: string): string {
-  return code.length > MAX_HIGHLIGHT ? escapeHtml(code) : highlight(code, language ?? '');
+  const html = code.length > MAX_HIGHLIGHT ? escapeHtml(code) : highlight(code, language ?? '');
+  // The highlighter only produces spans; nothing else passes.
+  return purifier().sanitize(html, { ALLOWED_TAGS: ['span'], ALLOWED_ATTR: ['class'] });
 }
 
 /** At most `MAX_HIGHLIGHT` characters of `text`, with a note of how much was cut. */
