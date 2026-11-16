@@ -896,7 +896,6 @@ class GatewayBridge(private val activity: MainActivity, engine: FlutterEngine) {
                             optionalString("topLevelUrl"),
                         )
                         "image" -> runtime.image(str("source"), optionalString("baseUrl"), optionalString("documentUrl"), optionalString("crossOrigin"))
-                        "appImage" -> runtime.appImage(str("path"))
                         "imageCapabilities" -> NativeRasterImages.capabilities()
                         "normalizeAvif" -> NativeRasterImages.normalize(optionalBytes("bytes") ?: throw IllegalArgumentException("Image bytes are required"))
                         "managementStatus" -> runtime.managementStatus()

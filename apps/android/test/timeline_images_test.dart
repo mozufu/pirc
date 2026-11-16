@@ -225,37 +225,35 @@ void main() {
     await g.stream.close();
   });
   testWidgets(
-    'gateway attachment paths load through the app request, other sources stay page content',
+    'timeline image urls are page content and never select a credentialed request',
     (t) async {
       final g = FakeGateway();
       g.handler = (_, _) async => timelineSvg('landscape');
+      final sources = [
+        '/api/sessions/s/attachments/a1',
+        '//gateway.example/api/sessions/s/attachments/a2',
+        'https://gateway.example/api/sessions/s/attachments/a3',
+        'https://images.example/a.svg',
+        '/timeline-image/landscape.svg?id=content',
+      ];
       await t.pumpWidget(
         timelineImageShell(
           TimelineImages([
-            {'url': '/api/sessions/s/attachments/a1'},
-            {'url': 'https://images.example/a.svg'},
-            {'url': '/timeline-image/landscape.svg?id=content'},
-            {'url': '//images.example/api/x.svg'},
+            for (final source in sources) {'url': source},
           ], gateway: g),
         ),
       );
       await awaitTimelineImages(
         t,
-        () => find.byType(SvgPicture).evaluate().length == 4,
+        () => find.byType(SvgPicture).evaluate().length == sources.length,
       );
-      final calls = g.calls
-          .where((c) => c.$1 == 'image' || c.$1 == 'appImage')
-          .toList();
+      // Only the credential-free image request is ever used, with the source alone.
+      expect(g.calls.map((c) => c.$1).toSet(), {'image'});
       expect(
-        calls.where((c) => c.$1 == 'appImage').map((c) => c.$2),
-        [
-          {'path': '/api/sessions/s/attachments/a1'},
-        ],
-        reason: 'only a native-resolved Gateway path is app-owned',
+        g.calls.map((c) => c.$2['source']).toList(),
+        unorderedEquals(sources),
       );
-      expect(calls.where((c) => c.$1 == 'image'), hasLength(3));
-      // The app-owned request never takes a base, document, origin or flag from Dart.
-      expect(calls.firstWhere((c) => c.$1 == 'appImage').$2.keys, ['path']);
+      expect(g.calls.every((c) => c.$2.keys.toList().length == 1), isTrue);
       await t.pumpWidget(const SizedBox());
       await g.stream.close();
     },

@@ -292,7 +292,7 @@ class NativeDocumentTransport internal constructor(
                 request.header(
                     "Origin",
                     originForRequest(
-                        cappedSourceOrigin(effectiveSourceOrigin, currentUrl),
+                        cappedSourceOrigin(effectiveSourceOrigin),
                         activeReferrerPolicy,
                         currentUrl,
                     ),
@@ -567,11 +567,14 @@ class NativeDocumentTransport internal constructor(
         return if (sameOrigin(parsed, pairingOrigin) && !sameOrigin(target, pairingOrigin)) "" else source
     }
 
-    /** Same cap for the Origin header: the paired origin is not named to other origins. */
-    private fun cappedSourceOrigin(source: String?, target: HttpUrl): String? {
+    /**
+     * Content on the paired origin is not first-party: unless the app started the request, its
+     * Origin is opaque ("null") for every destination, the paired origin included.
+     */
+    private fun cappedSourceOrigin(source: String?): String? {
         if (source == null || pairingOrigin == null || initiator.mayCarry(pairing)) return source
         val parsed = source.toHttpUrlOrNull() ?: return source
-        return if (sameOrigin(parsed, pairingOrigin) && !sameOrigin(target, pairingOrigin)) null else source
+        return if (sameOrigin(parsed, pairingOrigin)) null else source
     }
 
     private fun initialReferrerPolicy(value: String?): String {

@@ -214,8 +214,6 @@ class GatewayRuntime private constructor(val context: Context) {
     )
     private data class SocketKey(val contextId: String, val tag: String)
     private val contexts = ContextRegistry()
-    /** The only issuer of app-initiated request handles; revoked whenever the account scope changes. */
-    private val appRequests = AppRequestAuthority()
     private val watchHub = SessionWatchHub()
     private val sessionWatches = mutableMapOf<String, SessionWatchState>()
     private var watched: String? = null
@@ -244,7 +242,6 @@ class GatewayRuntime private constructor(val context: Context) {
     // A lost POST response is uncertain; HTTP transport must not replay mutations.
     private fun connectedApi(pairing: Pairing) = PircApi(pairing, defaultHttpClient().newBuilder().retryOnConnectionFailure(false).addInterceptor(ReadRecovery()).build())
     private fun rotatePairingStamp(): String {
-        appRequests.revokeAll()
         val stamp = UUID.randomUUID().toString()
         if (!pairingIdentity.edit().putString("stamp", stamp).commit())
             throw ApiException(503, "account_changed", NativeI18n.text("無法保存配對狀態，請稍後再試"))
@@ -323,7 +320,6 @@ class GatewayRuntime private constructor(val context: Context) {
         closeSocketsFor(closed.contextId)
     }
     fun closeAllContexts(releaseLeases: Boolean = true) {
-        appRequests.revokeAll()
         documentStorage.closeAllReaders()
         contexts.invalidateAll()
         val change = watchHub.clear()
@@ -578,39 +574,6 @@ class GatewayRuntime private constructor(val context: Context) {
 
     private fun pairingOriginUrl(pairing: Pairing?): HttpUrl? =
         pairing?.baseUrl?.toHttpUrlOrNull()
-
-    /**
-     * Loads one Gateway image for an app-owned surface (for example an attachment preview). The
-     * app resolves the reference itself: only an `/api/` path on the paired origin is accepted,
-     * the credential is attached by this native code path alone, and it is dropped for good if a
-     * redirect leaves the origin. Page content cannot reach this method's trust: the engine's
-     * `image` request never takes this path.
-     */
-    suspend fun appImage(path: String): Map<String, Any> = withContext(Dispatchers.IO) {
-        require(
-            path.length <= 4096 && path.startsWith("/api/") && !path.startsWith("//") &&
-                path.none { it.code < 0x21 || it.code == 0x7f || it == '\\' || it == '#' } &&
-                path.substringBefore('?').split('/').none { it == ".." || it == "." },
-        ) { "Invalid app image path" }
-        val captured = answerLock.withLock {
-            val pairing = credentials.load()
-                ?: throw ApiException(401, "unpaired", NativeI18n.text("請先配對此裝置"))
-            Triple(pairing, ensurePairingStamp(), appRequests.issue(pairing))
-        }
-        val image = NativeImageTransport(
-            captured.first,
-            cookies = null,
-            initiator = captured.third,
-        ).load(captured.first.baseUrl + path)
-        answerLock.withLock {
-            val currentPairing = credentials.load()
-            val currentStamp = currentPairing?.let { ensurePairingStamp() }
-            check(currentPairing == captured.first && currentStamp == captured.second) {
-                NativeI18n.text("Image connection changed")
-            }
-        }
-        image
-    }
 
     suspend fun document(
         source: String,

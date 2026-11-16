@@ -24,17 +24,22 @@ class CredentialBoundaryTest {
         .replace(Regex("/\\*.*?\\*/", RegexOption.DOT_MATCHES_ALL), "")
         .lines().joinToString("\n") { it.substringBefore("//") }
 
-    @Test fun onlyTheNativeRuntimeCanMintAnAppInitiatedRequest() {
+    @Test fun noProductionCodeMintsAnAppInitiatedRequestAndTheBridgeCannotSelectOne() {
         val code = sources().mapValues { withoutComments(it.value) }
-        val minting = code.filter { (_, text) ->
-            "RequestInitiator.App" in text || "AppRequestAuthority" in text || "appRequests" in text
+        // The mechanism exists for native-only callers; today nothing in main sources mints a handle.
+        val minting = code.filter { (name, text) ->
+            name != "RequestInitiator.kt" &&
+                ("RequestInitiator.App" in text || "AppRequestAuthority" in text || ".issue(" in text)
         }.keys
-        assertEquals(setOf("RequestInitiator.kt", "GatewayRuntime.kt"), minting)
-        // Nothing that arrives over the bridge can select or name a trust level.
+        assertEquals(emptySet<String>(), minting)
+        // Nothing that arrives over the bridge can select or name a trust level, and no bridge
+        // method resolves a path into a credentialed request.
         val bridge = code.getValue("GatewayBridge.kt")
         assertFalse("RequestInitiator" in bridge)
         assertFalse("AppRequestAuthority" in bridge)
         assertFalse("trusted" in bridge.lowercase())
+        assertFalse("appImage" in bridge)
+        assertFalse("appImage" in code.getValue("GatewayRuntime.kt"))
     }
 
     @Test fun everyTransportDefaultsToPageContentAndGuardsTheCredential() {

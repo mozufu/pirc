@@ -77,18 +77,9 @@ class _TimelineAttachmentImageState extends State<TimelineAttachmentImage> {
       } else if (widget.gateway != null &&
           uri != null &&
           ['', 'http', 'https'].contains(uri.scheme)) {
-        // A Gateway attachment path is loaded by the app itself: native resolves it
-        // against the paired origin and attaches the credential. Anything else is
-        // ordinary page content and uses the credential-free image request.
-        final appOwned =
-            uri.scheme.isEmpty &&
-            !uri.hasAuthority &&
-            source.startsWith('/api/');
+        // Timeline entries are page content: this is the credential-free request.
         final result = obj(
-          await widget.gateway!.call(
-            appOwned ? 'appImage' : 'image',
-            appOwned ? {'path': source} : {'source': source},
-          ),
+          await widget.gateway!.call('image', {'source': source}),
         );
         bytes = result['bytes'] as Uint8List;
         mime = '${result['mimeType']}';

@@ -728,7 +728,12 @@ class NativeDocumentTransportTest {
                 "multipart/form-data; boundary=b", bodyBytes = "--b--\r\n".toByteArray(),
                 originUrl = page.toString(), initiatorUrl = page.toString(), topLevelUrl = page.toString())
 
-            repeat(5) { assertNoPairedIdentity(gateway.takeRequest()) }
+            val recorded = List(5) { gateway.takeRequest() }
+            recorded.forEach(::assertNoPairedIdentity)
+            // Content is not first-party: its POSTs name an opaque origin, even to the paired origin.
+            recorded.filter { it.method == "POST" }.also { assertEquals(4, it.size) }
+                .forEach { assertEquals("null", it.headers["Origin"]) }
+            assertNull(recorded.first().headers["Origin"])
             // The Gateway's own Set-Cookie on a content request is not stored for later reuse.
             assertEquals("seed=1", cookies.requestHeader(gateway.url("/"), cookieContextFor(page)))
         }
