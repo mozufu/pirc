@@ -87,6 +87,32 @@ class PircApiTest {
     }
 
     @Test
+    fun everyStateChangingRequestCarriesTheRequestShapeHeader() = runTest {
+        // JSON writes, raw/binary uploads, bodyless writes and reads all come from PircApi.request.
+        server.enqueue(MockResponse.Builder().body("""{"session":{"id":"s","workspaceId":"w","name":"n"}}""").build())
+        server.enqueue(MockResponse.Builder().body("""{"upload":{"id":"u","mimeType":"image/png","byteSize":1,"kind":"image"}}""").build())
+        server.enqueue(MockResponse.Builder().body("""{"file":{"name":"a","byteSize":1,"modifiedAt":1}}""").build())
+        server.enqueue(MockResponse.Builder().code(204).build())
+        server.enqueue(MockResponse.Builder().body("""{"nodes":[]}""").build())
+        runCatching { api.createSession("w") }
+        runCatching { api.upload("s", byteArrayOf(1), "image/png", "a.png") }
+        runCatching { api.uploadProjectFile("w", "a", byteArrayOf(1).toRequestBody("application/octet-stream".toMediaType())) }
+        runCatching { api.deleteSchedule("x") }
+        api.nodes()
+        val methods = mutableListOf<String>()
+        repeat(5) {
+            val request = server.takeRequest()
+            methods += request.method
+            assertEquals("1", request.headers["X-Pirc-Request"])
+        }
+        assertEquals(listOf("POST", "POST", "POST", "DELETE", "GET"), methods)
+        // Sockets and the live event stream are built from the same request builder.
+        assertEquals("1", api.terminalRequest("s", "t").header("X-Pirc-Request"))
+        assertEquals("1", api.browserRequest("s").header("X-Pirc-Request"))
+        assertEquals("1", api.request("/api/anything").build().header("X-Pirc-Request"))
+    }
+
+    @Test
     fun sendsTheDeviceTokenAndNoOrigin() = runTest {
         server.enqueue(MockResponse.Builder().body("""{"nodes":[{"id":"m5pro","workspaces":[{"id":"pirc","displayName":"pirc"}]}]}""").build())
         assertEquals("m5pro", api.nodes().single().id)

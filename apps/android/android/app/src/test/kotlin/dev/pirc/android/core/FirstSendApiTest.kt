@@ -19,6 +19,7 @@ class FirstSendApiTest {
         api.request("PUT", "/api/conversation-submissions/op/attachments/f1", "使用者@example.test~!()'", bytes = byteArrayOf(0, 1, -1))
         val request = server.takeRequest()
         assertEquals("Bearer secret-fixture-token", request.headers["Authorization"])
+        assertEquals("1", request.headers["X-Pirc-Request"])
         assertEquals("%E4%BD%BF%E7%94%A8%E8%80%85%40example.test~!()'", request.headers["x-pirc-account"])
         assertEquals("application/octet-stream", request.headers["Content-Type"])
         assertArrayEquals(byteArrayOf(0, 1, -1), request.body!!.toByteArray())

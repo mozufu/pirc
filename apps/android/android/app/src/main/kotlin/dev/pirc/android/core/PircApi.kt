@@ -52,6 +52,9 @@ internal fun String.urlSegment(): String = URLEncoder.encode(this, Charsets.UTF_
 
 private val JSON = "application/json".toMediaType()
 
+/** Request-shape marker the Gateway requires on state-changing requests. Page content can never set it. */
+internal const val REQUEST_SHAPE_HEADER = "X-Pirc-Request"
+
 val PircJson = Json {
     ignoreUnknownKeys = true
     explicitNulls = false
@@ -425,6 +428,8 @@ open class PircApi(val pairing: Pairing, internal val client: OkHttpClient = def
     internal fun request(path: String): Request.Builder {
         val builder = Request.Builder().url(pairing.baseUrl + path)
             .header("Authorization", "Bearer ${pairing.token}")
+            // Marks this as the app's own client; every Gateway request the app makes is built here.
+            .header(REQUEST_SHAPE_HEADER, "1")
         val route = builder.build().url.encodedPath
         val capability = when {
             Regex("^/api/(providers|provider-auth)(/|$)").containsMatchIn(route) -> "providers"
