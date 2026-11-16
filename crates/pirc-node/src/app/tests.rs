@@ -69,12 +69,17 @@ pub(crate) async fn workspace_test_node() -> (tempfile::TempDir, Node) {
 }
 /// The same Node, with `<dir>/grant-root` as its only folder grant root (C6a).
 pub(crate) async fn workspace_test_node_grants(grants: bool) -> (tempfile::TempDir, Node) {
+    let dir = tempfile::tempdir_in("/tmp").unwrap();
+    let node = start_workspace_node(dir.path(), grants).await;
+    (dir, node)
+}
+/// Start (or, after `close`, restart) the test Node on the state in `dir`.
+pub(crate) async fn start_workspace_node(dir: &Path, grants: bool) -> Node {
     use pirc_config::Env;
     use pirc_protocol::NodeRole;
     use pirc_protocol::mode::default_work;
 
-    let dir = tempfile::tempdir_in("/tmp").unwrap();
-    let root = dir.path().canonicalize().unwrap();
+    let root = dir.canonicalize().unwrap();
     let state = root.join("state").display().to_string();
     let config_dir = root.join("config").display().to_string();
     let home = root.display().to_string();
@@ -100,7 +105,7 @@ pub(crate) async fn workspace_test_node_grants(grants: bool) -> (tempfile::TempD
     let mut review = default_work();
     review.id = ModeId::new("review").unwrap();
     node.replace_modes(vec![default_work(), review]).await;
-    (dir, node)
+    node
 }
 
 #[tokio::test]

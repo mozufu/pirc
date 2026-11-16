@@ -170,6 +170,10 @@ pub fn routes(config: &NodeConfig) -> Vec<Route> {
             "/api/session-creations/:id/admission/retry",
             crate::session_creation::admission::retry,
         ),
+        post(
+            "/api/session-creations/:id/admission/void",
+            crate::session_creation::admission::void,
+        ),
         get(
             "/api/session-creations/:id/admission/attempts/:commandId",
             crate::session_creation::admission::attempt_status,

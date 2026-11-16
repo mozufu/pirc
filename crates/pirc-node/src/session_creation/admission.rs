@@ -1,5 +1,6 @@
 //! Immutable first-message attempts, durable Stop and read-only outcome recovery.
 mod retry;
+mod void;
 use super::*;
 use crate::{
     runner::{CommandPayload, InitialSettings},
@@ -8,6 +9,7 @@ use crate::{
 };
 pub(crate) use retry::{attempt_status, retry};
 use serde_json::Value;
+pub(crate) use void::void;
 
 #[derive(Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -185,6 +187,8 @@ pub(crate) async fn submit(node: crate::services::Node, request: Request) -> Api
         let mut db = node.db.lock();
         let tx = db.transaction_with_behavior(TransactionBehavior::Immediate)?;
         let parent = creation(&tx, &request.user, &op)?;
+        // A voided command id is refused first, whatever else is true.
+        void::require_not_voided(&tx, &request.user, &op, &input.command_id)?;
         if parent.submission_hash != input.submission_hash {
             return Err(ApiError::conflict("Submission identity changed"));
         }

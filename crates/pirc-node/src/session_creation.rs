@@ -257,7 +257,7 @@ pub(crate) async fn prepare(node: Node, request: Request) -> ApiResult<Response>
 
 pub(crate) async fn capabilities(node: Node, _request: Request) -> ApiResult<Response> {
     Ok(Response::json(
-        json!({"version":1,"canAllocate":true,"canTransferAttachments":true,"attachmentMimeInQuery":true,"canAdmitFirstMessage":true,"canReadFirstMessageReceipt":true,"canReadCommandReceipts":true,"canCancelCreation":true,"canStopBeforeAllocation":true,"canRetryInitialAdmission":true,"maxUploadBytes":node.config.upload_max_bytes,"maxAttachments":16}),
+        json!({"version":1,"canAllocate":true,"canTransferAttachments":true,"attachmentMimeInQuery":true,"canAdmitFirstMessage":true,"canReadFirstMessageReceipt":true,"canReadCommandReceipts":true,"canCancelCreation":true,"canStopBeforeAllocation":true,"canRetryInitialAdmission":true,"canVoidInitialAdmission":true,"maxUploadBytes":node.config.upload_max_bytes,"maxAttachments":16}),
     ))
 }
 

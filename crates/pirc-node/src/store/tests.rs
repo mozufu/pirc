@@ -231,6 +231,7 @@ fn migrates_the_first_node_schema() {
         .replace(include_str!("../execution_fences/cancellation.sql"), "")
         .replace(include_str!("../execution_fences/notice_protocol.sql"), "")
         .replace(include_str!("../grants.sql"), "")
+        .replace(include_str!("creation_admission_voids.sql"), "")
             .replace(
                 "  kind TEXT NOT NULL DEFAULT 'image',\n  -- Where it was uploaded; it is usable in that workspace only and is\n  -- deleted with it. NULL for uploads older than schema 2001.\n  workspace_id TEXT,\n  session_id TEXT\n);\nCREATE INDEX uploads_workspace ON uploads(workspace_id);",
                 "  kind TEXT NOT NULL DEFAULT 'image'\n);",
@@ -693,4 +694,62 @@ fn sessions_serialize_as_the_public_row() {
                 "settledAt": null, "unread": false, "createdAt": 1, "updatedAt": 2 })
     );
     Db::memory();
+}
+
+#[test]
+fn a_database_from_a_newer_node_is_refused_and_left_untouched() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("node.sqlite");
+    drop(Db::open(&path).unwrap());
+    let newer = SCHEMA_VERSION + 1;
+    let connection = Connection::open(&path).unwrap();
+    connection
+        .execute_batch(&format!("PRAGMA user_version = {newer};"))
+        .unwrap();
+    drop(connection);
+    let error = Db::open(&path).err().unwrap();
+    assert!(error.contains("does not know"), "{error}");
+    let connection = Connection::open(&path).unwrap();
+    let version: i64 = connection
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap();
+    assert_eq!(version, newer);
+}
+
+#[test]
+fn schema_2038_upgrades_to_the_first_message_void_layer_in_one_step() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("node.sqlite");
+    drop(Db::open(&path).unwrap());
+    // Put the file back to 2038: no void table, no void triggers.
+    let old = Connection::open(&path).unwrap();
+    old.execute_batch(&format!(
+        "{}\nPRAGMA user_version = 2038;",
+        include_str!("../remove_admission_voids.sql")
+    ))
+    .unwrap();
+    old.execute(
+        "INSERT INTO session_creations(owner_user,operation_id,workspace_id,submission_hash,session_id,state,created_at) VALUES('u','op','w','h','s','reserved',1)",
+        [],
+    )
+    .unwrap();
+    drop(old);
+    let db = Db::open(&path).unwrap();
+    let connection = db.lock();
+    let version: i64 = connection
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap();
+    assert_eq!(version, SCHEMA_VERSION);
+    assert_eq!(SCHEMA_VERSION, 2039);
+    let kept: i64 = connection
+        .query_row("SELECT count(*) FROM session_creations", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(kept, 1);
+    connection
+        .execute(
+            "INSERT INTO creation_admission_voids(owner_user,operation_id,command_id,session_id,input_hash,created_at) VALUES('u','op','c','s','h',1)",
+            [],
+        )
+        .unwrap();
+    assert_eq!(columns(&connection), columns(&Db::memory().lock()));
 }
