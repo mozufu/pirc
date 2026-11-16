@@ -13,6 +13,7 @@ pub(crate) fn start_cleanup(app: &AppState) {
     attachments::start_cleanup(app);
     cancellation::start_cleanup(app);
     pre_stop::start(app);
+    dispatch::start_recovery(app);
 }
 pub(crate) use dispatch::{note_stop, observe_stop};
 

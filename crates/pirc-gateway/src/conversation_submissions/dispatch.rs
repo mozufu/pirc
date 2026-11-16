@@ -1,5 +1,6 @@
 //! Each initial admission attempt is sent once. Known rejection permits an
 //! explicit, held-lease successor; unknown outcomes only reconcile receipts.
+mod recovery;
 mod retry;
 use super::acceptance::{require_caller, require_current, target};
 use super::*;
@@ -15,6 +16,11 @@ pub(super) struct MessageAdmission {
     retry_eligible: bool,
     stop_requested: bool,
     pub(super) stop_confirmed: bool,
+    /// `voiding`: the Node is being asked to refuse this attempt for good;
+    /// `voided`: it did, so nothing was executed and an explicit retry applies;
+    /// `recovery_unsupported`: the Node must be upgraded to recover it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    recovery: Option<String>,
 }
 struct Record {
     command: String,
@@ -44,6 +50,7 @@ pub(super) fn decorate(
             retry_eligible: retry::eligible(&record),
             stop_requested: record.stop,
             stop_confirmed: record.confirmed,
+            recovery: recovery::state(db, owner, op, &record),
         });
         if row.state == Phase::Cancelled {
             return Ok(());
@@ -295,6 +302,10 @@ fn apply_for(
             "outcome_unknown" => ("outcome_unknown", "outcome_unknown"),
             _ => return Err(invalid_receipt()),
         }
+    } else if recovery::answered_void(&tx, &identity.user, op, &previous.command)? {
+        // The Node refused this attempt for good: its empty receipt is the
+        // expected, final answer, never a reason to call the outcome unknown.
+        ("rejected", "not_admitted")
     } else if evidence["stopConfirmed"] == true
         || (previous.confirmed && previous.outcome == "not_admitted")
     {
@@ -512,21 +523,28 @@ fn unsent(app: &AppState, identity: &Identity, op: &str, command: &str) -> ApiRe
     })
 }
 async fn reconcile(app: &AppState, identity: &Identity, op: &str) -> ApiResult<Preparation> {
-    let (row, target, record, retried) = {
+    let (row, target, record, retried, voided) = {
         let db = app.db.lock();
         let row = lookup(&db, &identity.user, op)?;
         let target = target(&db, &identity.user, op)?;
         let record = read(&db, &identity.user, op)?;
+        let voided = record
+            .as_ref()
+            .map(|r| recovery::answered_void(&db, &identity.user, op, &r.command))
+            .transpose()?
+            .unwrap_or(false);
         let retried = record
             .as_ref()
             .map(|r| retry::current_id(&db, &identity.user, op, &r.command))
             .transpose()?
             .flatten()
             .is_some();
-        (row, target, record, retried)
+        (row, target, record, retried, voided)
     };
     if row.state == Phase::Cancelled
         || record.is_none()
+        // The Node refused this attempt for good; there is nothing to ask it.
+        || voided
         || (row.state == Phase::Admitted
             && !record.as_ref().is_some_and(|r| r.stop && !r.confirmed))
         // Only a never-dispatched input can finish reconciliation here. A
@@ -550,6 +568,9 @@ async fn reconcile(app: &AppState, identity: &Identity, op: &str) -> ApiResult<P
     let result = app
         .relay(&target.node, identity, HttpMethod::Get, url, None)
         .await;
+    // The Node holds no record of the attempt: not proof by itself, only the
+    // reason to ask it to void the command id.
+    let mut absent = !retried && recovery::holds_nothing(&result);
     if retried && result.as_ref().is_ok_and(|r| r.status == 404) {
         // An unreceived successor has no per-attempt receipt. A separately
         // confirmed creation-wide Stop still fences it and all late copies.
@@ -576,11 +597,18 @@ async fn reconcile(app: &AppState, identity: &Identity, op: &str) -> ApiResult<P
             if retry::apply_global_fence(app, identity, op, proof).unwrap_or(false) {
                 return lookup(&app.db.lock(), &identity.user, op);
             }
+            absent = proof["stopRequested"] == false
+                && proof["stopConfirmed"] == false
+                && !matches!(proof["state"].as_str(), Some("deleting" | "deleted"));
         }
     }
     complete(app, identity, op, &record.command, result)?;
+    if absent {
+        recovery::settle(app, identity, op).await?;
+    }
     lookup(&app.db.lock(), &identity.user, op)
 }
+pub(super) use recovery::start as start_recovery;
 pub(super) fn routes() -> Router<AppState> {
     Router::new()
         .route(

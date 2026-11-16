@@ -168,6 +168,7 @@ fn migrates_the_first_rust_schema() {
             .replace(include_str!("../conversation_submissions/pre_stop.sql"), "")
             .replace(include_str!("../conversation_submissions/retries.sql"), "")
             .replace(include_str!("../conversation_submissions/retry_retirements.sql"), "")
+            .replace(include_str!("../conversation_submissions/recovery.sql"), "")
             .replace(include_str!("../conversation_submissions/dispatch.sql"), "")
         .replace(include_str!("../conversation_submissions/cancellation.sql"), "")
             .replace(include_str!("../conversation_submissions/acceptance.sql"), "")
@@ -324,6 +325,7 @@ fn reconciles_upstream_memory_and_local_calendar_checkpoint_schemas() {
                 include_str!("../conversation_submissions/retry_retirements.sql"),
                 "",
             )
+            .replace(include_str!("../conversation_submissions/recovery.sql"), "")
             .replace(include_str!("../conversation_submissions/dispatch.sql"), "")
             .replace(
                 include_str!("../conversation_submissions/cancellation.sql"),
@@ -834,4 +836,57 @@ fn nested_atomic_failure_preserves_the_callers_transaction() {
             .unwrap(),
         1
     );
+}
+
+#[test]
+fn a_database_from_a_newer_gateway_is_refused_and_left_untouched() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("gateway.sqlite");
+    drop(Db::open(&path).unwrap());
+    let newer = SCHEMA_VERSION + 1;
+    let connection = Connection::open(&path).unwrap();
+    connection
+        .execute_batch(&format!("PRAGMA user_version = {newer};"))
+        .unwrap();
+    drop(connection);
+    let error = Db::open(&path).err().unwrap();
+    assert!(error.contains("newer than this gateway"), "{error}");
+    let version: i64 = Connection::open(&path)
+        .unwrap()
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap();
+    assert_eq!(version, newer);
+}
+
+#[test]
+fn schema_1032_upgrades_to_the_first_message_reconciliation_layer_in_one_step() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("gateway.sqlite");
+    drop(Db::open(&path).unwrap());
+    // Put the file back to 1032: none of this layer's tables or triggers.
+    let old = Connection::open(&path).unwrap();
+    old.execute_batch(
+        "DROP TRIGGER submission_void_blocks_command; DROP TRIGGER submission_void_blocks_redispatch; \
+         DROP TRIGGER submission_void_blocks_dispatch; DROP TRIGGER submission_void_retained; \
+         DROP TRIGGER submission_void_answered_once; DROP TRIGGER submission_void_needs_unadmitted_attempt; \
+         DROP TABLE conversation_submission_voids; DROP TABLE conversation_submission_reconcile_attempts; \
+         PRAGMA user_version = 1032;",
+    )
+    .unwrap();
+    drop(old);
+    assert_eq!(SCHEMA_VERSION, 1033);
+    let db = Db::open(&path).unwrap();
+    let conn = db.lock();
+    let version: i64 = conn
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap();
+    assert_eq!(version, SCHEMA_VERSION);
+    let objects: i64 = conn
+        .query_row(
+            "SELECT count(*) FROM sqlite_master WHERE name LIKE 'submission_void_%' OR name IN ('conversation_submission_voids','conversation_submission_reconcile_attempts')",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(objects, 8);
 }
