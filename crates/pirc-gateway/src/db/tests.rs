@@ -151,6 +151,7 @@ fn migrates_the_first_rust_schema() {
         .expect("schema.sql changed: update this test");
     let end = links + SCHEMA[links..].find("\n);\n").unwrap() + "\n);\n".len();
     let first = format!("{}{}", &SCHEMA[..links], &SCHEMA[end..])
+            .replace(include_str!("../conversation_bindings/transitions/void.sql"), "")
             .replace(include_str!("../conversation_bindings/transitions/cancellation.sql"), "")
             .replace(include_str!("../conversation_bindings/transitions/authority.sql"), "")
             .replace(include_str!("../conversation_bindings/transitions/installation.sql"), "")
@@ -291,6 +292,10 @@ fn reconciles_upstream_memory_and_local_calendar_checkpoint_schemas() {
         let path = dir.path().join("gateway.sqlite");
         let conn = Connection::open(&path).unwrap();
         let mut schema = SCHEMA
+            .replace(
+                include_str!("../conversation_bindings/transitions/void.sql"),
+                "",
+            )
             .replace(
                 include_str!("../conversation_bindings/transitions/cancellation.sql"),
                 "",
@@ -866,7 +871,10 @@ fn schema_1032_upgrades_to_the_first_message_reconciliation_layer_in_one_step() 
     // Put the file back to 1032: none of this layer's tables or triggers.
     let old = Connection::open(&path).unwrap();
     old.execute_batch(
-        "DROP TRIGGER submission_void_blocks_command; DROP TRIGGER submission_void_blocks_redispatch; \
+        "DROP TRIGGER conversation_transition_void_blocks_fence_receipt; DROP TRIGGER conversation_transition_void_blocks_fenced; \
+         DROP TRIGGER conversation_transition_void_retained; DROP TRIGGER conversation_transition_void_answered_once; \
+         DROP TRIGGER conversation_transition_void_needs_unknown_outcome; DROP TABLE conversation_transition_voids; \
+         DROP TRIGGER submission_void_blocks_command; DROP TRIGGER submission_void_blocks_redispatch; \
          DROP TRIGGER submission_void_blocks_dispatch; DROP TRIGGER submission_void_retained; \
          DROP TRIGGER submission_void_answered_once; DROP TRIGGER submission_void_needs_unadmitted_attempt; \
          DROP TABLE conversation_submission_voids; DROP TABLE conversation_submission_reconcile_attempts; \
@@ -874,7 +882,7 @@ fn schema_1032_upgrades_to_the_first_message_reconciliation_layer_in_one_step() 
     )
     .unwrap();
     drop(old);
-    assert_eq!(SCHEMA_VERSION, 1033);
+    assert_eq!(SCHEMA_VERSION, 1034);
     let db = Db::open(&path).unwrap();
     let conn = db.lock();
     let version: i64 = conn
@@ -889,4 +897,78 @@ fn schema_1032_upgrades_to_the_first_message_reconciliation_layer_in_one_step() 
         )
         .unwrap();
     assert_eq!(objects, 8);
+}
+
+/// The progress trigger as schema 1033 had it (installation.sql), before a void
+/// could end an unknown outcome.
+fn progress_trigger_1033() -> &'static str {
+    let installation = include_str!("../conversation_bindings/transitions/installation.sql");
+    let start = installation
+        .find("CREATE TRIGGER conversation_transition_acceptance_progress")
+        .unwrap();
+    let end = start + installation[start..].find("\nEND;").unwrap() + "\nEND;".len();
+    &installation[start..end]
+}
+
+#[test]
+fn schema_1033_upgrades_to_the_transition_void_layer_keeping_its_data() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("gateway.sqlite");
+    drop(Db::open(&path).unwrap());
+    // Put the file back to 1033: no void table, and the earlier progress trigger.
+    let old = Connection::open(&path).unwrap();
+    old.execute_batch(&format!(
+        "DROP TRIGGER conversation_transition_void_blocks_fence_receipt; DROP TRIGGER conversation_transition_void_blocks_fenced; \
+         DROP TRIGGER conversation_transition_void_retained; DROP TRIGGER conversation_transition_void_answered_once; \
+         DROP TRIGGER conversation_transition_void_needs_unknown_outcome; DROP TABLE conversation_transition_voids; \
+         DROP TRIGGER conversation_transition_acceptance_progress; {} \
+         PRAGMA user_version = 1033;",
+        progress_trigger_1033()
+    ))
+    .unwrap();
+    old.execute(
+        "INSERT INTO conversation_transition_acceptances VALUES('alice','op','s','h','{}','outcome_unknown',1)",
+        [],
+    )
+    .unwrap();
+    // The old file could not leave an unknown outcome except by a Node fence.
+    assert!(
+        old.execute(
+            "UPDATE conversation_transition_acceptances SET state='released'",
+            []
+        )
+        .is_err()
+    );
+    drop(old);
+    assert_eq!(SCHEMA_VERSION, 1034);
+    let db = Db::open(&path).unwrap();
+    let conn = db.lock();
+    let version: i64 = conn
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap();
+    assert_eq!(version, SCHEMA_VERSION);
+    let kept: String = conn
+        .query_row(
+            "SELECT state FROM conversation_transition_acceptances WHERE operation_id='op'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(kept, "outcome_unknown");
+    let objects: i64 = conn
+        .query_row(
+            "SELECT count(*) FROM sqlite_master WHERE name LIKE 'conversation_transition_void%' OR name='conversation_transition_voids'",
+            [],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(objects, 6);
+    // Still refused without a receipt (the trigger is the new one, not a hole).
+    assert!(
+        conn.execute(
+            "UPDATE conversation_transition_acceptances SET state='released'",
+            []
+        )
+        .is_err()
+    );
 }

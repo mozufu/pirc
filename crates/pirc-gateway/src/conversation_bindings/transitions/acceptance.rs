@@ -218,6 +218,8 @@ fn observe_reply(
             body,
         )?;
         let updated=tx.execute("UPDATE conversation_transition_acceptances SET state='node_fenced' WHERE owner_user=?1 AND session_id=?2 AND operation_id=?3 AND state IN ('accepted','outcome_unknown')",params![identity.user,id,op])?;
+        // The wait hint of an unknown outcome no longer applies.
+        tx.execute("DELETE FROM conversation_transition_progress WHERE owner_user=?1 AND operation_id=?2 AND json_extract(receipt_json,'$.stage')='outcome_unknown'",params![identity.user,op])?;
         Ok(!duplicate || updated != 0)
     })?;
     if changed {
@@ -257,11 +259,18 @@ async fn dispatch_once(
             tx.validate_lease_user(id, &identity.user)?;
             // Persist uncertainty BEFORE issuing the sole POST. Crashes even in
             // the pre-send gap keep the fence and require read-only recovery.
-            Ok(tx.execute("UPDATE conversation_transition_acceptances SET state='outcome_unknown' WHERE owner_user=?1 AND session_id=?2 AND operation_id=?3 AND state='accepted'",params![identity.user,id,op])?==1)
+            // Never once a void is requested (it cannot be: a void needs this state).
+            Ok(tx.execute("UPDATE conversation_transition_acceptances SET state='outcome_unknown' WHERE owner_user=?1 AND session_id=?2 AND operation_id=?3 AND state='accepted' AND NOT EXISTS(SELECT 1 FROM conversation_transition_voids v WHERE v.owner_user=?1 AND v.operation_id=?3)",params![identity.user,id,op])?==1)
         })?;
         (f, send)
     };
     if !send {
+        return status(app, identity, id, op);
+    }
+    // The user may cancel between the commit above and the send: once a void is
+    // requested the original request is never sent. (A copy already on its way
+    // is refused by the Node's void.)
+    if coordinator::void::requested(&app.db.lock(), &identity.user, op)? {
         return status(app, identity, id, op);
     }
     let response = app
@@ -297,19 +306,35 @@ async fn dispatch_once(
         access(app, &db, identity, id)?;
         same_source(&db, identity, id, &f)?;
     }
-    if app.nodes.require_connection(&f.node, connection).is_ok()
-        && let Ok(r) = response
-        && r.status == 200
-    {
-        observe_reply(
-            app,
-            identity,
-            id,
-            op,
-            &f,
-            &r.body.unwrap_or(Value::Null),
-            connection,
-        )?;
+    if app.nodes.require_connection(&f.node, connection).is_ok() {
+        match response {
+            Ok(r) if r.status == 200 => {
+                observe_reply(
+                    app,
+                    identity,
+                    id,
+                    op,
+                    &f,
+                    &r.body.unwrap_or(Value::Null),
+                    connection,
+                )?;
+            }
+            // Hints only (state stays `outcome_unknown`, nothing is released): a
+            // refusal or a request that never left the link proves nothing, since
+            // a copy may yet arrive. The user decides by cancelling.
+            Ok(r) => coordinator::void::hint(
+                app,
+                identity,
+                id,
+                op,
+                "node_refused",
+                r.body.as_ref().and_then(|b| b["error"]["code"].as_str()),
+            )?,
+            Err(error) if error.is_not_sent() => {
+                coordinator::void::hint(app, identity, id, op, "request_not_sent", None)?
+            }
+            Err(_) => coordinator::void::hint(app, identity, id, op, "reply_unavailable", None)?,
+        }
     }
     app.sessions_changed(Some(&identity.user));
     status(app, identity, id, op)

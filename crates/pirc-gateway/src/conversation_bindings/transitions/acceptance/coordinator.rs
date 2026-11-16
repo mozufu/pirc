@@ -5,6 +5,8 @@
 use super::*;
 use pirc_protocol::NodeHttpResponse;
 
+pub(super) mod void;
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct Control {
@@ -52,13 +54,21 @@ fn sanitize(t: &Value) -> Value {
 }
 /// The durable cancellation intent, if any.
 pub(super) fn cancellation(db: &Connection, user: &str, op: &str) -> ApiResult<Option<Value>> {
-    Ok(db
+    let intent = db
         .query_row(
             "SELECT requested_at FROM conversation_transition_cancellations WHERE owner_user=?1 AND operation_id=?2",
             params![user, op],
             |r| Ok(json!({"requestedAt":r.get::<_,i64>(0)?})),
         )
-        .optional()?)
+        .optional()?;
+    // Only a cancellation of an unknown outcome carries a void request.
+    Ok(match (intent, void::status(db, user, op)?) {
+        (Some(mut intent), Some(void)) => {
+            intent["void"] = void;
+            Some(intent)
+        }
+        (intent, _) => intent,
+    })
 }
 /// The last sanitized Node receipt, with `observedAt` so a reader can judge
 /// freshness without asking the Node.
@@ -313,7 +323,16 @@ async fn advance(
         }
     }
     if current(app, identity, id, op)?.1 == "outcome_unknown" {
-        reconcile(app, identity, id, op).await?;
+        if void::requested(&app.db.lock(), &identity.user, op)? {
+            // The user cancelled: keep asking the Node until it answers.
+            void::resolve(app, identity, id, op).await?;
+        } else {
+            // Reconciliation only. A 404 here is a hint, never a void.
+            let observation = reconcile(app, identity, id, op)
+                .await?
+                .and_then(|v| v["reconciliationState"].as_str().map(str::to_owned));
+            void::note(app, identity, id, op, observation.as_deref())?;
+        }
     }
     let (f, s) = current(app, identity, id, op)?;
     if s == "installed"
@@ -442,7 +461,8 @@ async fn acknowledge(
     advance(app, identity, id, op, Some(lease)).await
 }
 /// Explicit cancel. Before dispatch it only closes the Gateway intent; after a
-/// Node fence it asks the Node to release. Never after installation.
+/// Node fence it asks the Node to release; while the outcome is unknown it asks
+/// the Node to void (see `void`). Never after installation.
 async fn cancel(
     app: &AppState,
     identity: &Identity,
@@ -451,6 +471,13 @@ async fn cancel(
     lease: (String, i64),
 ) -> ApiResult<Value> {
     control(&app.db.lock(), id, &identity.user, &lease)?;
+    // An unknown outcome ends only on the Node's own proof (a void receipt), or by
+    // adopting the fence the Node turns out to hold, which cancels as usual.
+    if current(app, identity, id, op)?.1 == "outcome_unknown"
+        && let void::Outcome::Done(result) = void::cancel(app, identity, id, op, &lease).await?
+    {
+        return Ok(result);
+    }
     {
         let db = app.db.lock();
         access(app, &db, identity, id)?;
