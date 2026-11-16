@@ -65,13 +65,16 @@ internal fun receiveNativeSetCookies(
  * This carries form bytes as UTF-8, applies navigation redirect method rules, and computes Referer
  * for top-level document requests. It manually applies the optional browser cookie store on each
  * hop, while the underlying OkHttp CookieJar is disabled. The pairing bearer token is added only
- * for the exact pairing origin.
+ * for the exact pairing origin and only for requests the app itself initiated; a redirect that
+ * leaves the pairing origin ends that for the rest of the chain.
  */
 class NativeDocumentTransport internal constructor(
     private val pairing: Pairing?,
     client: OkHttpClient = sharedClient,
     private val limit: Int = DEFAULT_LIMIT,
     private val cookies: NativeDocumentCookies? = null,
+    /** Who started these requests; anything not declared as the app never carries the credential. */
+    private val initiator: RequestInitiator = RequestInitiator.Content,
 ) {
     enum class ResourceType { DOCUMENT, STYLESHEET, MEDIA }
     enum class CacheMode { DEFAULT, RELOAD, REVALIDATE }
@@ -87,6 +90,9 @@ class NativeDocumentTransport internal constructor(
             "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
         private const val ACCEPT_STYLESHEET = "text/css,*/*;q=0.1"
         private const val ACCEPT_MEDIA = "audio/*,video/*,*/*;q=0.1"
+        private val FORM_CHARSET_PARAMETER = Regex("^charset=\"?utf-8\"?$", RegexOption.IGNORE_CASE)
+        private val FORM_BOUNDARY_PARAMETER =
+            Regex("^boundary=(?:\"[0-9A-Za-z'()+_,./:=?-]{1,70}\"|[0-9A-Za-z'()+_,./:=?-]{1,70})$")
 
         private val REFERRER_POLICIES = setOf(
             "no-referrer",
@@ -200,11 +206,8 @@ class NativeDocumentTransport internal constructor(
         } else {
             null
         }
-        var requestContentType = if (requestMethod == "POST") {
-            contentType ?: DEFAULT_FORM_CONTENT_TYPE
-        } else {
-            null
-        }
+        var requestContentType = if (requestMethod == "POST") validatedFormContentType(contentType) else null
+        var authorizationMayBeSent = true
 
         var currentUrl = resolveHttpUrl(url, baseUrl)
         val initialRepresentationUrl = withoutFragment(currentUrl)
@@ -248,7 +251,8 @@ class NativeDocumentTransport internal constructor(
                 credentialsEnabled = true,
                 crossSiteRedirect = crossedCookieSiteBoundary,
             )
-            val cookieHeader = cookies?.requestHeader(currentUrl, cookieContext)
+            val cookiesApply = cookiesMayApply(initiator, pairing, pairingOrigin, currentUrl)
+            val cookieHeader = if (cookiesApply) cookies?.requestHeader(currentUrl, cookieContext) else null
             requestCookieKey = opaqueCookieRequestKey(cookieHeader)
             cookieHeader?.let { request.header("Cookie", it) }
 
@@ -271,7 +275,11 @@ class NativeDocumentTransport internal constructor(
             }
 
             val requestReferrer = if (resourceType == ResourceType.DOCUMENT) {
-                referrerForTarget(referrerSource, activeReferrerPolicy, currentUrl)
+                referrerForTarget(
+                    cappedReferrerSource(referrerSource, currentUrl),
+                    activeReferrerPolicy,
+                    currentUrl,
+                )
             } else {
                 ""
             }
@@ -283,7 +291,11 @@ class NativeDocumentTransport internal constructor(
             if (resourceType == ResourceType.DOCUMENT && requestMethod == "POST") {
                 request.header(
                     "Origin",
-                    originForRequest(effectiveSourceOrigin, activeReferrerPolicy, currentUrl),
+                    originForRequest(
+                        cappedSourceOrigin(effectiveSourceOrigin, currentUrl),
+                        activeReferrerPolicy,
+                        currentUrl,
+                    ),
                 )
             }
 
@@ -297,18 +309,21 @@ class NativeDocumentTransport internal constructor(
                 request.get()
             }
 
-            if (pairingOrigin?.let { sameOrigin(currentUrl, it) } == true) {
+            if (authorizationMayBeSent &&
+                initiator.mayCarry(pairing) &&
+                pairingOrigin?.let { sameOrigin(currentUrl, it) } == true
+            ) {
                 request.header("Authorization", "Bearer ${checkNotNull(pairing).token}")
             }
 
             var redirected = false
             httpClient.newCall(request.build()).execute().use { response ->
-                setCookieProcessed = receiveNativeSetCookies(
+                setCookieProcessed = (cookiesApply && receiveNativeSetCookies(
                     cookies,
                     currentUrl,
                     response,
                     cookieContext,
-                ) || setCookieProcessed
+                )) || setCookieProcessed
                 val location = response.header("Location")
                 if (response.code in REDIRECT_CODES && location != null) {
                     check(hop < MAX_REDIRECTS) { "Too many document redirects" }
@@ -326,6 +341,10 @@ class NativeDocumentTransport internal constructor(
                     val validatedTarget = validateUrl(target, "Document redirect URL")
                     if (!NativeDocumentCookies.schemefulSameSite(currentUrl, validatedTarget)) {
                         crossedCookieSiteBoundary = true
+                    }
+                    if (!sameOrigin(currentUrl, validatedTarget)) {
+                        // One way: a chain that has left this origin never gets the credential back.
+                        authorizationMayBeSent = false
                     }
                     if (resourceType == ResourceType.DOCUMENT) {
                         // Redirect policies can only reprocess the value this request disclosed.
@@ -510,6 +529,49 @@ class NativeDocumentTransport internal constructor(
             "$label must not contain credentials"
         }
         return url
+    }
+
+    /**
+     * Only the three standard form encodings may be sent. Content chooses the encoding through
+     * markup, so anything else (for example a JSON or arbitrary media type) is refused here
+     * regardless of what the caller assembled. Returns the value to send.
+     */
+    private fun validatedFormContentType(value: String?): String {
+        if (value == null) return DEFAULT_FORM_CONTENT_TYPE
+        require(value.length <= 256 && value.none { it.code < 0x20 || it.code == 0x7f }) {
+            "Unsupported document form encoding"
+        }
+        val parts = value.split(';')
+        val essence = parts.first().trim().lowercase(Locale.ROOT)
+        val parameters = parts.drop(1).map { it.trim() }.filter { it.isNotEmpty() }
+        when (essence) {
+            "application/x-www-form-urlencoded", "text/plain" -> require(
+                parameters.all { FORM_CHARSET_PARAMETER.matches(it) },
+            ) { "Unsupported document form encoding" }
+            "multipart/form-data" -> require(
+                parameters.size == 1 && FORM_BOUNDARY_PARAMETER.matches(parameters.single()),
+            ) { "Unsupported document form encoding" }
+            else -> throw IllegalArgumentException("Unsupported document form encoding")
+        }
+        return value
+    }
+
+    /**
+     * A document on the paired origin is the app's own surface. Unless the app itself started the
+     * request, that document's URL never leaves the paired origin in Referer, whatever policy the
+     * content asks for: content may only tighten the policy, never loosen it.
+     */
+    private fun cappedReferrerSource(source: String?, target: HttpUrl): String? {
+        if (source.isNullOrEmpty() || pairingOrigin == null || initiator.mayCarry(pairing)) return source
+        val parsed = source.toHttpUrlOrNull() ?: return source
+        return if (sameOrigin(parsed, pairingOrigin) && !sameOrigin(target, pairingOrigin)) "" else source
+    }
+
+    /** Same cap for the Origin header: the paired origin is not named to other origins. */
+    private fun cappedSourceOrigin(source: String?, target: HttpUrl): String? {
+        if (source == null || pairingOrigin == null || initiator.mayCarry(pairing)) return source
+        val parsed = source.toHttpUrlOrNull() ?: return source
+        return if (sameOrigin(parsed, pairingOrigin) && !sameOrigin(target, pairingOrigin)) null else source
     }
 
     private fun initialReferrerPolicy(value: String?): String {

@@ -155,7 +155,7 @@ class NativeScriptResourceTransportTest {
             val blobUrl = "blob:${server.url("/object/nonce/id")}"
             val source = NativeScriptResourceTransport.originForDocument(blobUrl, creatorUrl)
 
-            val response = NativeScriptResourceTransport(pairing(server)).load(
+            val response = NativeScriptResourceTransport(pairing(server), initiator = appInitiated(pairing(server))).load(
                 source,
                 NativeScriptResourceTransport.ResourceRequest(
                     url = server.url("/resource").toString(),
@@ -191,7 +191,7 @@ class NativeScriptResourceTransportTest {
                         .build(),
                 )
 
-                val result = NativeScriptResourceTransport(pairing(gateway)).load(
+                val result = NativeScriptResourceTransport(pairing(gateway), initiator = appInitiated(pairing(gateway))).load(
                     sourceOrigin = origin(gateway.url("/document")),
                     request = NativeScriptResourceTransport.ResourceRequest(
                         url = gateway.url("/redirect").toString(),
@@ -238,7 +238,7 @@ class NativeScriptResourceTransportTest {
                         .build(),
                 )
 
-                val result = NativeScriptResourceTransport(pairing(gateway)).load(
+                val result = NativeScriptResourceTransport(pairing(gateway), initiator = appInitiated(pairing(gateway))).load(
                     source,
                     NativeScriptResourceTransport.ResourceRequest(
                         url = gateway.url("/start").toString(),
@@ -381,7 +381,7 @@ class NativeScriptResourceTransportTest {
                 )
 
                 val source = origin(gateway.url("/document"))
-                val result = NativeScriptResourceTransport(pairing(gateway)).load(
+                val result = NativeScriptResourceTransport(pairing(gateway), initiator = appInitiated(pairing(gateway))).load(
                     source,
                     NativeScriptResourceTransport.ResourceRequest(
                         url = gateway.url("/redirect-image").toString(),
@@ -458,7 +458,7 @@ class NativeScriptResourceTransportTest {
             )
             val source = origin(server.url("/document"))
 
-            val result = NativeScriptResourceTransport(pairing(server)).load(
+            val result = NativeScriptResourceTransport(pairing(server), initiator = appInitiated(pairing(server))).load(
                 source,
                 NativeScriptResourceTransport.ResourceRequest(
                     url = server.url("/image.png").toString(),
@@ -523,7 +523,7 @@ class NativeScriptResourceTransportTest {
             server.start()
             server.enqueue(MockResponse.Builder().body("ok").build())
             server.enqueue(MockResponse.Builder().body("ok").build())
-            val transport = NativeScriptResourceTransport(pairing(server))
+            val transport = NativeScriptResourceTransport(pairing(server), initiator = appInitiated(pairing(server)))
             val source = origin(server.url("/document"))
 
             transport.load(
@@ -644,7 +644,7 @@ class NativeScriptResourceTransportTest {
         MockWebServer().use { server ->
             server.start()
             server.enqueue(MockResponse.Builder().body("ok").build())
-            val transport = NativeScriptResourceTransport(pairing(server))
+            val transport = NativeScriptResourceTransport(pairing(server), initiator = appInitiated(pairing(server)))
             val source = origin(server.url("/document"))
             val request = NativeScriptResourceTransport.ResourceRequest(url = server.url("/upload").toString(),
                 method = "POST", body = "body".toByteArray(), forcePreflight = true)
@@ -1262,8 +1262,158 @@ class NativeScriptResourceTransportTest {
         }
     }
 
+    // ---- credential boundary ----
+
+    private val pairedIdentityHeaders = listOf("Authorization", "X-Pirc-Management", "X-Pirc-Request", "Cookie")
+
+    @Test fun requestsFromScriptsAndSubresourcesCarryNoPairedIdentityEvenOnThePairedOrigin() {
+        MockWebServer().use { gateway ->
+            gateway.start()
+            val page = gateway.url("/?session=SESSION-ID-3")
+            val cookies = NativeDocumentCookies()
+            cookies.receive(
+                gateway.url("/"), listOf("seed=1; Path=/"),
+                CookieRequestContext(initiatorUrl = page, topLevelUrl = page, topLevelNavigation = true),
+            )
+            val p = pairing(gateway)
+            // The declared initiator is the default: page content.
+            val transport = NativeScriptResourceTransport(p, cookies = cookies)
+            val source = origin(page)
+            val kinds = listOf(
+                NativeScriptResourceTransport.Kind.FETCH to "application/json",
+                NativeScriptResourceTransport.Kind.IMAGE to "image/png",
+                NativeScriptResourceTransport.Kind.STYLESHEET to "text/css",
+                NativeScriptResourceTransport.Kind.CLASSIC_SCRIPT to "text/javascript",
+            )
+            for ((kind, mime) in kinds) {
+                gateway.enqueue(
+                    MockResponse.Builder().addHeader("Content-Type", mime)
+                        .addHeader("Set-Cookie", "gw=1; Path=/").body("x").build(),
+                )
+                transport.load(
+                    source,
+                    NativeScriptResourceTransport.ResourceRequest(
+                        url = gateway.url("/api/sessions/s/resource").toString(),
+                        kind = kind,
+                        credentials = NativeScriptResourceTransport.Credentials.INCLUDE,
+                        crossOrigin = if (kind == NativeScriptResourceTransport.Kind.FETCH) null else "use-credentials",
+                    ),
+                    referrerUrl = page.toString(), initiatorUrl = page.toString(), topLevelUrl = page.toString(),
+                )
+                val request = gateway.takeRequest()
+                pairedIdentityHeaders.forEach { assertNull("$kind $it", request.headers[it]) }
+            }
+            gateway.enqueue(MockResponse.Builder().body("{}").build())
+            transport.load(
+                source,
+                NativeScriptResourceTransport.ResourceRequest(
+                    url = gateway.url("/api/sessions/s/commands").toString(),
+                    method = "POST", body = "{}".toByteArray(),
+                    credentials = NativeScriptResourceTransport.Credentials.INCLUDE,
+                ),
+                referrerUrl = page.toString(), initiatorUrl = page.toString(), topLevelUrl = page.toString(),
+            )
+            val post = gateway.takeRequest()
+            pairedIdentityHeaders.forEach { assertNull(it, post.headers[it]) }
+            // The page is not named as the Gateway origin: Origin is opaque.
+            assertEquals("null", post.headers["Origin"])
+            assertEquals(
+                "seed=1",
+                cookies.requestHeader(
+                    gateway.url("/"),
+                    CookieRequestContext(initiatorUrl = page, topLevelUrl = page, topLevelNavigation = true),
+                ),
+            )
+        }
+    }
+
+    @Test fun scriptsCannotAddRequestShapeOrManagementHeaders() {
+        MockWebServer().use { server ->
+            server.start()
+            val source = origin(server.url("/"))
+            val transport = NativeScriptResourceTransport(pairing(server))
+            for (name in listOf("X-Pirc-Request", "x-pirc-request", "X-Pirc-Management", "X-PIRC-Anything", "x-pirc-first-send-contract")) {
+                assertThrows(name, IllegalArgumentException::class.java) {
+                    transport.load(
+                        source,
+                        NativeScriptResourceTransport.ResourceRequest(
+                            url = server.url("/api/x").toString(), method = "POST", body = "{}".toByteArray(),
+                            mode = NativeScriptResourceTransport.Mode.SAME_ORIGIN,
+                            headers = listOf(NativeScriptResourceTransport.Header(name, "1")),
+                        ),
+                    )
+                }
+            }
+            assertEquals(0, server.requestCount)
+        }
+    }
+
+    @Test fun scriptOwnedRequestsFromThePairedOriginNeverNameItInRefererOrOrigin() {
+        MockWebServer().use { gateway -> MockWebServer().use { external ->
+            gateway.start(); external.start()
+            val internal = gateway.url("/?session=SESSION-ID-4").toString()
+            val gatewayOrigin = origin(gateway.url("/"))
+            val transport = NativeScriptResourceTransport(pairing(gateway))
+            val cases = listOf(
+                NativeScriptResourceTransport.ResourceRequest(
+                    url = external.url("/fetch").toString(), referrerPolicy = "unsafe-url",
+                ),
+                NativeScriptResourceTransport.ResourceRequest(
+                    url = external.url("/image").toString(), kind = NativeScriptResourceTransport.Kind.IMAGE,
+                    crossOrigin = "anonymous", referrerPolicy = "unsafe-url",
+                ),
+                NativeScriptResourceTransport.ResourceRequest(
+                    url = external.url("/style").toString(), kind = NativeScriptResourceTransport.Kind.STYLESHEET,
+                    crossOrigin = "anonymous", referrerPolicy = "origin",
+                ),
+                NativeScriptResourceTransport.ResourceRequest(
+                    url = external.url("/post").toString(), method = "POST", body = "a".toByteArray(),
+                    referrerPolicy = "unsafe-url",
+                ),
+            )
+            for (request in cases) {
+                external.enqueue(
+                    MockResponse.Builder().addHeader("Access-Control-Allow-Origin", "*")
+                        .addHeader("Content-Type", if (request.kind == NativeScriptResourceTransport.Kind.STYLESHEET) "text/css" else "text/plain")
+                        .body("ok").build(),
+                )
+                transport.load(
+                    gatewayOrigin, request, referrerUrl = internal,
+                    initiatorUrl = internal, topLevelUrl = internal,
+                )
+                val seen = external.takeRequest()
+                assertNull(seen.headers["Referer"])
+                assertTrue(seen.headers["Origin"] == null || seen.headers["Origin"] == "null")
+                seen.headers.forEach { (name, value) ->
+                    assertFalse("$name: $value", value.contains("SESSION-ID-4"))
+                    assertFalse("$name: $value", value.contains(gatewayOrigin))
+                }
+            }
+        } }
+    }
+
+    @Test fun aThirdPartyDocumentKeepsItsOwnRefererBehaviour() {
+        MockWebServer().use { gateway -> MockWebServer().use { external ->
+            gateway.start(); external.start()
+            val page = external.url("/doc?x=1").toString()
+            external.enqueue(MockResponse.Builder().addHeader("Content-Type", "text/plain").body("ok").build())
+            NativeScriptResourceTransport(pairing(gateway)).load(
+                origin(external.url("/")),
+                NativeScriptResourceTransport.ResourceRequest(
+                    url = external.url("/next").toString(), mode = NativeScriptResourceTransport.Mode.NO_CORS,
+                    referrerPolicy = "unsafe-url",
+                ),
+                referrerUrl = page,
+            )
+            assertEquals(page, external.takeRequest().headers["Referer"])
+        } }
+    }
+
     private fun pairing(server: MockWebServer): Pairing =
         Pairing(server.url("/").toString().trimEnd('/'), "device-token")
+
+    /** Test stand-in for a request the app itself started (the only way to carry the credential). */
+    private fun appInitiated(pairing: Pairing) = AppRequestAuthority().issue(pairing)
 
     private fun origin(url: okhttp3.HttpUrl): String =
         "${url.scheme}://${url.host}:${url.port}"

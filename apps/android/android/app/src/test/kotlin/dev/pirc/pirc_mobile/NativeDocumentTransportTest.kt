@@ -8,7 +8,9 @@ import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 import mockwebserver3.MockResponse
 import mockwebserver3.MockResponseBody
+import mockwebserver3.Dispatcher
 import mockwebserver3.MockWebServer
+import mockwebserver3.RecordedRequest
 import mockwebserver3.SocketEffect
 import okhttp3.Cookie
 import okhttp3.CookieJar
@@ -30,7 +32,7 @@ class NativeDocumentTransportTest {
             )
             server.start()
 
-            val response = NativeDocumentTransport(pairing(server)).load(
+            val response = NativeDocumentTransport(pairing(server), initiator = appInitiated(pairing(server))).load(
                 server.url("/media.ogg").toString(),
                 "GET",
                 null,
@@ -52,6 +54,23 @@ class NativeDocumentTransportTest {
             assertEquals("null", response["requestOriginSource"])
             assertArrayEquals("media".toByteArray(), response["bytes"] as ByteArray)
             assertEquals("audio/ogg", response["mimeType"])
+        }
+    }
+
+    @Test fun mediaResourceFromContentCarriesNoPairingAuthorizationOrReferrer() {
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse.Builder().addHeader("Content-Type", "audio/ogg").body("media").build())
+            server.start()
+            val page = server.url("/?session=s").toString()
+            NativeDocumentTransport(pairing(server)).load(
+                server.url("/api/sessions/s/browser/recording").toString(), "GET", null, null,
+                resourceType = NativeDocumentTransport.ResourceType.MEDIA,
+                referrerUrl = page, referrerPolicy = "unsafe-url", initiatorUrl = page, topLevelUrl = page,
+            )
+            val request = server.takeRequest()
+            assertNull(request.headers["Authorization"])
+            assertNull(request.headers["Referer"])
+            assertNull(request.headers["Cookie"])
         }
     }
 
@@ -201,7 +220,7 @@ class NativeDocumentTransportTest {
                         .build(),
                 )
                 gateway.enqueue(MockResponse.Builder().body("done").build())
-                val response = NativeDocumentTransport(pairing(gateway)).load(
+                val response = NativeDocumentTransport(pairing(gateway), initiator = appInitiated(pairing(gateway))).load(
                     gateway.url("/start").toString(),
                     "POST",
                     "synthetic=2",
@@ -221,7 +240,8 @@ class NativeDocumentTransportTest {
                 assertEquals(gatewayOrigin, third.headers["Origin"])
                 assertNull(third.headers["Authorization"])
                 assertEquals("null", final.headers["Origin"])
-                assertEquals("Bearer device-token", final.headers["Authorization"])
+                // Once the chain has left the paired origin the credential is not restored.
+                assertNull(final.headers["Authorization"])
                 assertEquals("null", response["requestOrigin"])
                 assertEquals(gatewayOrigin, response["requestOriginSource"])
                 assertEquals("unsafe-url", response["requestReferrerPolicy"])
@@ -366,7 +386,7 @@ class NativeDocumentTransportTest {
                         .body("landed")
                         .build(),
                 )
-                val response = NativeDocumentTransport(pairing(gateway)).load(
+                val response = NativeDocumentTransport(pairing(gateway), initiator = appInitiated(pairing(gateway))).load(
                     gateway.url("/start").toString(),
                     "GET",
                     null,
@@ -669,8 +689,318 @@ class NativeDocumentTransportTest {
         }
     }
 
+    // ---- credential boundary: who started the request decides what identity it carries ----
+
+    private val pairedIdentityHeaders = listOf("Authorization", "X-Pirc-Management", "X-Pirc-Request", "Cookie")
+
+    private fun assertNoPairedIdentity(request: RecordedRequest) {
+        pairedIdentityHeaders.forEach { assertNull(it, request.headers[it]) }
+    }
+
+    private fun cookieContextFor(page: HttpUrl) =
+        CookieRequestContext(initiatorUrl = page, topLevelUrl = page, topLevelNavigation = true)
+
+    @Test fun contentInitiatedRequestsToThePairedOriginCarryNoPairedIdentity() {
+        MockWebServer().use { gateway ->
+            repeat(5) {
+                gateway.enqueue(MockResponse.Builder().addHeader("Set-Cookie", "gw=1; Path=/").body("{}").build())
+            }
+            gateway.start()
+            val page = gateway.url("/?session=s1")
+            val cookies = NativeDocumentCookies()
+            cookies.receive(gateway.url("/"), listOf("seed=1; Path=/"), cookieContextFor(page))
+            // No initiator is declared: unspecified means page content.
+            val transport = NativeDocumentTransport(pairing(gateway), cookies = cookies)
+            val common = mapOf("initiatorUrl" to page.toString())
+
+            transport.load(gateway.url("/api/sessions").toString(), "GET", null, null,
+                initiatorUrl = common["initiatorUrl"], topLevelUrl = common["initiatorUrl"])
+            for ((type, body) in listOf(
+                "text/plain" to "a=1",
+                "application/x-www-form-urlencoded" to "a=1",
+                "application/x-www-form-urlencoded; charset=UTF-8" to "",
+            )) {
+                transport.load(gateway.url("/api/sessions/s1/commands").toString(), "POST", body, type,
+                    originUrl = page.toString(), referrerUrl = page.toString(),
+                    initiatorUrl = page.toString(), topLevelUrl = page.toString())
+            }
+            transport.load(gateway.url("/api/workspaces/w/files?filename=x").toString(), "POST", null,
+                "multipart/form-data; boundary=b", bodyBytes = "--b--\r\n".toByteArray(),
+                originUrl = page.toString(), initiatorUrl = page.toString(), topLevelUrl = page.toString())
+
+            repeat(5) { assertNoPairedIdentity(gateway.takeRequest()) }
+            // The Gateway's own Set-Cookie on a content request is not stored for later reuse.
+            assertEquals("seed=1", cookies.requestHeader(gateway.url("/"), cookieContextFor(page)))
+        }
+    }
+
+    @Test fun appInitiatedRequestsToThePairedOriginStillCarryTheCredentialAndCookieScope() {
+        MockWebServer().use { gateway ->
+            repeat(2) { gateway.enqueue(MockResponse.Builder().body("{}").build()) }
+            gateway.start()
+            val page = gateway.url("/")
+            val cookies = NativeDocumentCookies()
+            cookies.receive(page, listOf("seed=1; Path=/"), cookieContextFor(page))
+            val p = pairing(gateway)
+            val transport = NativeDocumentTransport(p, cookies = cookies, initiator = appInitiated(p))
+            transport.load(gateway.url("/api/sessions").toString(), "GET", null, null,
+                initiatorUrl = page.toString(), topLevelUrl = page.toString())
+            transport.load(gateway.url("/api/sessions").toString(), "POST", "a=1", "text/plain",
+                initiatorUrl = page.toString(), topLevelUrl = page.toString())
+            repeat(2) {
+                val request = gateway.takeRequest()
+                assertEquals("Bearer device-token", request.headers["Authorization"])
+                assertEquals("seed=1", request.headers["Cookie"])
+                assertNull(request.headers["X-Pirc-Management"])
+            }
+        }
+    }
+
+    @Test fun externalRedirectBackToThePairedOriginNeverRestoresTheCredential() {
+        MockWebServer().use { gateway -> MockWebServer().use { external ->
+            gateway.start(); external.start()
+            val back = gateway.url("/api/sessions").toString()
+            // Content-initiated chain: external hop, then back to the Gateway.
+            external.enqueue(MockResponse.Builder().code(302).addHeader("Location", back).build())
+            gateway.enqueue(MockResponse.Builder().body("{}").build())
+            NativeDocumentTransport(pairing(gateway)).load(external.url("/start").toString(), "GET", null, null)
+            assertNoPairedIdentity(external.takeRequest())
+            assertNoPairedIdentity(gateway.takeRequest())
+
+            // App-initiated chain that leaves the origin and returns: not restored either (GET and POST).
+            for (method in listOf("GET", "POST")) {
+                gateway.enqueue(MockResponse.Builder().code(307).addHeader("Location", external.url("/hop")).build())
+                external.enqueue(MockResponse.Builder().code(307).addHeader("Location", back).build())
+                gateway.enqueue(MockResponse.Builder().body("{}").build())
+                val p = pairing(gateway)
+                NativeDocumentTransport(p, initiator = appInitiated(p)).load(
+                    gateway.url("/api/start").toString(), method, if (method == "POST") "a=1" else null, null)
+                assertEquals("Bearer device-token", gateway.takeRequest().headers["Authorization"])
+                assertNoPairedIdentity(external.takeRequest())
+                assertNoPairedIdentity(gateway.takeRequest())
+            }
+        } }
+    }
+
+    @Test fun anUntrustedChainAndItsSameOriginRedirectsNeverCarryTheCredential() {
+        MockWebServer().use { gateway ->
+            gateway.enqueue(MockResponse.Builder().code(302).addHeader("Location", "/api/next").build())
+            gateway.enqueue(MockResponse.Builder().body("{}").build())
+            gateway.start()
+            NativeDocumentTransport(pairing(gateway)).load(gateway.url("/api/start").toString(), "GET", null, null)
+            repeat(2) { assertNoPairedIdentity(gateway.takeRequest()) }
+        }
+    }
+
+    @Test fun aFormToAnExternalOriginIsDeliveredIntactWithoutPairedIdentity() {
+        MockWebServer().use { gateway -> MockWebServer().use { external ->
+            gateway.start(); external.start()
+            val page = gateway.url("/?session=SESSION-ID-1")
+            val transport = NativeDocumentTransport(pairing(gateway), cookies = NativeDocumentCookies())
+            val cases = listOf(
+                Triple("application/x-www-form-urlencoded", "name=%E4%BD%A0&x=1".toByteArray(), false),
+                Triple("text/plain", "name=你\r\nx=1\r\n".toByteArray(), false),
+                Triple("multipart/form-data; boundary=zz", "--zz\r\nContent-Disposition: form-data; name=\"f\"\r\n\r\nv\r\n--zz--\r\n".toByteArray(), true),
+            )
+            for ((type, payload, binary) in cases) {
+                external.enqueue(MockResponse.Builder().body("ok").build())
+                transport.load(external.url("/submit").toString(), "POST",
+                    if (binary) null else String(payload, Charsets.UTF_8), type,
+                    bodyBytes = if (binary) payload else null,
+                    originUrl = page.toString(), referrerUrl = page.toString(),
+                    initiatorUrl = page.toString(), topLevelUrl = page.toString())
+                val request = external.takeRequest()
+                assertEquals(type, request.headers["Content-Type"])
+                assertArrayEquals(payload, request.body!!.toByteArray())
+                assertNoPairedIdentity(request)
+                assertEquals("null", request.headers["Origin"])
+                assertNull(request.headers["Referer"])
+                request.headers.forEach { (_, value) ->
+                    assertFalse(value.contains("SESSION-ID-1"))
+                    assertFalse(value.contains(gateway.hostName + ":" + gateway.port))
+                }
+            }
+        } }
+    }
+
+    @Test fun contentInitiatedRefererNeverNamesTheInternalDocumentOutsideThePairedOrigin() {
+        MockWebServer().use { gateway -> MockWebServer().use { external -> MockWebServer().use { other ->
+            gateway.start(); external.start(); other.start()
+            val internal = gateway.url("/?session=SESSION-ID-2").toString()
+            val gatewayOrigin = gateway.url("/").toString().removeSuffix("/")
+            val policies = listOf(
+                null, "no-referrer", "no-referrer-when-downgrade", "origin", "origin-when-cross-origin",
+                "same-origin", "strict-origin", "strict-origin-when-cross-origin", "unsafe-url",
+                "UNSAFE-URL", "bogus, unsafe-url",
+            )
+            fun assertNothingLeaks(request: RecordedRequest) {
+                request.headers.forEach { (name, value) ->
+                    assertFalse("$name: $value", value.contains("SESSION-ID-2"))
+                    assertFalse("$name: $value", value.contains(gatewayOrigin))
+                }
+                assertNull(request.headers["Referer"])
+            }
+            for (policy in policies) for (method in listOf("GET", "POST")) {
+                // Direct request, then one that redirects (with a loosening response policy) onward.
+                external.enqueue(MockResponse.Builder().body("ok").build())
+                NativeDocumentTransport(pairing(gateway)).load(
+                    external.url("/direct").toString(), method, if (method == "POST") "a=1" else null, null,
+                    referrerUrl = internal, referrerPolicy = policy, originUrl = internal,
+                )
+                assertNothingLeaks(external.takeRequest())
+
+                external.enqueue(MockResponse.Builder().code(307).addHeader("Location", other.url("/second"))
+                    .addHeader("Referrer-Policy", "unsafe-url").build())
+                other.enqueue(MockResponse.Builder().body("ok").build())
+                NativeDocumentTransport(pairing(gateway)).load(
+                    external.url("/first").toString(), method, if (method == "POST") "a=1" else null, null,
+                    referrerUrl = internal, referrerPolicy = policy, originUrl = internal,
+                )
+                assertNothingLeaks(external.takeRequest())
+                assertNothingLeaks(other.takeRequest())
+            }
+        } } }
+    }
+
+    @Test fun refererForOtherDocumentsAndSameOriginRequestsKeepsTheirPolicy() {
+        MockWebServer().use { gateway -> MockWebServer().use { external ->
+            gateway.start(); external.start()
+            val externalPage = external.url("/page?x=1").toString()
+            val internal = gateway.url("/?session=s").toString()
+            // A third-party document keeps normal referrer behaviour (cap is only for the paired origin's page).
+            external.enqueue(MockResponse.Builder().body("ok").build())
+            NativeDocumentTransport(pairing(gateway)).load(
+                external.url("/next").toString(), "GET", null, null,
+                referrerUrl = externalPage, referrerPolicy = "unsafe-url",
+            )
+            assertEquals(externalPage, external.takeRequest().headers["Referer"])
+            // The paired origin's own page toward the paired origin: only the Gateway sees it.
+            gateway.enqueue(MockResponse.Builder().body("ok").build())
+            NativeDocumentTransport(pairing(gateway)).load(
+                gateway.url("/other").toString(), "GET", null, null,
+                referrerUrl = internal, referrerPolicy = "unsafe-url",
+            )
+            assertEquals(internal, gateway.takeRequest().headers["Referer"])
+        } }
+    }
+
+    @Test fun formEncodingsAndMethodsAreConstrainedToTheStandardOnes() {
+        MockWebServer().use { server ->
+            server.start()
+            val transport = NativeDocumentTransport(null)
+            val url = server.url("/f").toString()
+            val forged = listOf(
+                "application/json", "APPLICATION/JSON", "application/json; charset=utf-8", "text/html",
+                "application/octet-stream", "multipart/form-data", "multipart/form-data; boundary=",
+                "multipart/form-data; boundary=a b", "multipart/form-data; boundary=x; foo=bar",
+                "text/plain; foo=bar", "text/plain, application/json",
+                "application/x-www-form-urlencoded, application/json", "", " ",
+                "text/plain\r\nX-Pirc-Request: 1", "text/plain\nX-Pirc-Request: 1",
+                "multipart/form-data; boundary=" + "a".repeat(71),
+            )
+            for (type in forged) {
+                assertThrows(type, IllegalArgumentException::class.java) {
+                    transport.load(url, "POST", "a=1", type)
+                }
+            }
+            for (method in listOf("PUT", "DELETE", "PATCH", "HEAD", "OPTIONS", "TRACE", "dialog", "", " POST", "POST ")) {
+                assertThrows(method, IllegalArgumentException::class.java) {
+                    transport.load(url, method, null, null)
+                }
+            }
+            assertEquals(0, server.requestCount)
+            // The standard encodings, in any casing, still go out.
+            for (type in listOf(
+                "Text/Plain", "APPLICATION/X-WWW-FORM-URLENCODED; charset=UTF-8",
+                "application/x-www-form-urlencoded;charset=\"utf-8\"", "MULTIPART/FORM-DATA; boundary=----WebKitFormBoundaryAbC123",
+            )) {
+                server.enqueue(MockResponse.Builder().body("ok").build())
+                transport.load(url, "post", "a=1", type)
+                assertEquals(type, server.takeRequest().headers["Content-Type"])
+            }
+        }
+    }
+
+    @Test fun navigationAndFormRequestsCannotCarryAuthoredHeaders() {
+        MockWebServer().use { server ->
+            server.start()
+            val allowed = setOf(
+                "accept", "host", "connection", "accept-encoding", "user-agent", "content-type", "content-length",
+                "origin", "referer", "cookie", "cache-control", "pragma", "if-none-match", "if-modified-since",
+            )
+            val hostile = "x\r\nX-Pirc-Request: 1"
+            fun check(block: () -> Unit) {
+                server.enqueue(MockResponse.Builder().body("ok").build())
+                runCatching(block)
+                if (server.requestCount > 0) {
+                    val names = server.takeRequest().headers.names().map { it.lowercase() }.toSet()
+                    assertTrue(names.toString(), allowed.containsAll(names))
+                }
+            }
+            val transport = NativeDocumentTransport(null)
+            val base = server.url("/").toString()
+            check { transport.load(server.url("/a\r\nX-Pirc-Request: 1").toString(), "GET", null, null) }
+            check { transport.load("/a?b=${hostile}", "GET", null, null, base) }
+            check { transport.load(server.url("/a").toString(), "GET", null, null, referrerUrl = hostile, referrerPolicy = hostile, originUrl = hostile) }
+            check { transport.load(server.url("/a").toString(), "POST", "a=1", "text/plain", referrerUrl = base + hostile, originUrl = base + hostile) }
+            assertThrows(IllegalArgumentException::class.java) {
+                transport.load(server.url("/a").toString(), "GET", null, null, ifNoneMatch = hostile)
+            }
+            assertThrows(IllegalArgumentException::class.java) {
+                transport.load(server.url("/a").toString(), "GET", null, null, ifModifiedSince = hostile)
+            }
+        }
+    }
+
+    @Test fun staleOrRevokedAppHandlesNeverCarryAnyCredential() {
+        MockWebServer().use { gateway -> MockWebServer().use { other ->
+            gateway.start(); other.start()
+            val authority = AppRequestAuthority()
+            val p = pairing(gateway)
+            val handle = authority.issue(p)
+
+            // Handle minted for one pairing does not authorize another server's credential.
+            gateway.enqueue(MockResponse.Builder().body("{}").build())
+            val different = Pairing(p.baseUrl, "another-device-token")
+            NativeDocumentTransport(different, initiator = handle).load(gateway.url("/api/x").toString(), "GET", null, null)
+            assertNull(gateway.takeRequest().headers["Authorization"])
+
+            // Revoked handle (unpair / re-pair / stamp rotation) is useless afterwards.
+            authority.revokeAll()
+            gateway.enqueue(MockResponse.Builder().body("{}").build())
+            NativeDocumentTransport(p, initiator = handle).load(gateway.url("/api/x").toString(), "GET", null, null)
+            assertNull(gateway.takeRequest().headers["Authorization"])
+            // A handle issued after the change is a fresh, working one.
+            gateway.enqueue(MockResponse.Builder().body("{}").build())
+            NativeDocumentTransport(p, initiator = authority.issue(p)).load(gateway.url("/api/x").toString(), "GET", null, null)
+            assertEquals("Bearer device-token", gateway.takeRequest().headers["Authorization"])
+        } }
+    }
+
+    @Test fun revocationBetweenRedirectHopsDropsTheCredentialForTheRestOfTheChain() {
+        MockWebServer().use { gateway ->
+            gateway.start()
+            val authority = AppRequestAuthority()
+            val p = pairing(gateway)
+            val handle = authority.issue(p)
+            gateway.dispatcher = object : Dispatcher() {
+                override fun dispatch(request: RecordedRequest): MockResponse =
+                    if (request.target.startsWith("/api/first")) {
+                        authority.revokeAll() // the account changes while the response is in flight
+                        MockResponse.Builder().code(302).addHeader("Location", "/api/second").build()
+                    } else MockResponse.Builder().body("{}").build()
+            }
+            NativeDocumentTransport(p, initiator = handle).load(gateway.url("/api/first").toString(), "GET", null, null)
+            assertEquals("Bearer device-token", gateway.takeRequest().headers["Authorization"])
+            assertNull(gateway.takeRequest().headers["Authorization"])
+        }
+    }
+
     private fun pairing(server: MockWebServer) =
         Pairing(server.url("/").toString().trimEnd('/'), "device-token")
+
+    /** Test stand-in for a request the app itself started (the only way to carry the credential). */
+    private fun appInitiated(pairing: Pairing) = AppRequestAuthority().issue(pairing)
 
     @Test fun cacheModesSetRestrictedHeadersAndConditionalValidators() {
         MockWebServer().use { server ->
@@ -795,7 +1125,7 @@ class NativeDocumentTransportTest {
                 )
                 external.enqueue(MockResponse.Builder().body("external target").build())
 
-                val transport = NativeDocumentTransport(pairing(gateway))
+                val transport = NativeDocumentTransport(pairing(gateway), initiator = appInitiated(pairing(gateway)))
                 fun revalidate(path: String) = transport.load(
                     gateway.url(path).toString(),
                     "GET",
@@ -946,7 +1276,7 @@ class NativeDocumentTransportTest {
 
             val body = "text=你好&encoded=%7E"
             val base = server.url("/forms/current?old=1").toString()
-            val result = NativeDocumentTransport(pairing(server)).load(
+            val result = NativeDocumentTransport(pairing(server), initiator = appInitiated(pairing(server))).load(
                 "submit?key=%7E",
                 "POST",
                 body,
@@ -983,7 +1313,7 @@ class NativeDocumentTransportTest {
             server.enqueue(MockResponse.Builder().body("p { color: red }").build())
             server.start()
 
-            val transport = NativeDocumentTransport(pairing(server))
+            val transport = NativeDocumentTransport(pairing(server), initiator = appInitiated(pairing(server)))
             val result = transport.load(
                 server.url("/style.css").toString(),
                 "GET",
@@ -1031,7 +1361,7 @@ class NativeDocumentTransportTest {
                 server.start()
 
                 val formBody = "name=%E4%B8%AD"
-                val result = NativeDocumentTransport(pairing(server)).load(
+                val result = NativeDocumentTransport(pairing(server), initiator = appInitiated(pairing(server))).load(
                     server.url("/forms/start").toString(),
                     "POST",
                     formBody,
@@ -1079,7 +1409,7 @@ class NativeDocumentTransportTest {
                     .followSslRedirects(true)
                     .retryOnConnectionFailure(true)
                     .build()
-                NativeDocumentTransport(pairing(gateway), injectedClient).load(
+                NativeDocumentTransport(pairing(gateway), injectedClient, initiator = appInitiated(pairing(gateway))).load(
                     gateway.url("/start").toString(),
                     "POST",
                     "x=1",

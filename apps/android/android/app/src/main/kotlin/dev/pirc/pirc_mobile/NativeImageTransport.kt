@@ -9,12 +9,17 @@ import okhttp3.Request
 import okhttp3.CookieJar
 import java.io.ByteArrayOutputStream
 
-/** Image GETs use browser cookie scope; pairing bearer credentials stay on the gateway origin. */
+/**
+ * Image GETs use browser cookie scope. The pairing bearer credential goes only to the gateway
+ * origin and only for requests the app initiated; once a redirect leaves that origin it is not
+ * restored. Page content (the default) never carries it.
+ */
 class NativeImageTransport internal constructor(
     private val pairing: Pairing?,
     client: OkHttpClient = sharedClient,
     private val limit: Int = 32 * 1024 * 1024,
     private val cookies: NativeDocumentCookies? = null,
+    private val initiator: RequestInitiator = RequestInitiator.Content,
 ) {
     companion object { private val sharedClient = defaultHttpClient() }
     private val httpClient = client.newBuilder()
@@ -50,6 +55,7 @@ class NativeImageTransport internal constructor(
         var crossedCookieSiteBoundary = false
         var requestCookieKey = opaqueCookieRequestKey(null)
         var setCookieProcessed = false
+        var authorizationMayBeSent = true
         repeat(11) { hop ->
             require(url.username.isEmpty() && url.password.isEmpty()) { "Image URL contains credentials" }
             val request = Request.Builder().url(url).header("Accept", "image/*")
@@ -61,23 +67,25 @@ class NativeImageTransport internal constructor(
                 credentialsEnabled = true,
                 crossSiteRedirect = crossedCookieSiteBoundary,
             )
-            val cookieHeader = cookies?.requestHeader(url, cookieContext)
+            val cookiesApply = cookiesMayApply(initiator, pairing, base, url)
+            val cookieHeader = if (cookiesApply) cookies?.requestHeader(url, cookieContext) else null
             requestCookieKey = opaqueCookieRequestKey(cookieHeader)
             cookieHeader?.let { request.header("Cookie", it) }
-            if (base != null && sameOrigin(url, base)) request.header("Authorization", "Bearer "+pairing!!.token)
+            if (authorizationMayBeSent && initiator.mayCarry(pairing) && base != null && sameOrigin(url, base)) request.header("Authorization", "Bearer "+pairing!!.token)
             httpClient.newCall(request.build()).execute().use { response ->
-                setCookieProcessed = receiveNativeSetCookies(
+                setCookieProcessed = (cookiesApply && receiveNativeSetCookies(
                     cookies,
                     url,
                     response,
                     cookieContext,
-                ) || setCookieProcessed
+                )) || setCookieProcessed
                 if (response.code in listOf(301, 302, 303, 307, 308)) {
                     check(hop < 10) { "Too many image redirects" }
                     val target = url.resolve(response.header("Location") ?: error("Image redirect has no location")) ?: error("Invalid image redirect")
                     if (!NativeDocumentCookies.schemefulSameSite(url, target)) {
                         crossedCookieSiteBoundary = true
                     }
+                    if (!sameOrigin(url, target)) authorizationMayBeSent = false
                     url = target
                 } else {
                     check(response.isSuccessful) { NativeI18n.text("Image request failed ({0})", response.code) }

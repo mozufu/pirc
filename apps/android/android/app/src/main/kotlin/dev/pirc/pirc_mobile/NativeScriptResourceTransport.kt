@@ -29,6 +29,8 @@ internal class NativeScriptResourceTransport(
     private val responseLimit: Int = DEFAULT_RESPONSE_LIMIT,
     timeoutMillis: Long = DEFAULT_TIMEOUT_MILLIS,
     private val cookies: NativeDocumentCookies? = null,
+    /** Script, fetch, stylesheet and image requests are page content unless the app says otherwise. */
+    private val initiator: RequestInitiator = RequestInitiator.Content,
 ) {
     enum class Mode { CORS, NO_CORS, SAME_ORIGIN }
     enum class Credentials { OMIT, SAME_ORIGIN, INCLUDE }
@@ -219,7 +221,9 @@ internal class NativeScriptResourceTransport(
             headers["accept"] = Header("Accept", "text/css,*/*;q=0.1")
         }
         var authorizationMayBeSent = true
-        var originIsTainted = false
+        // A document on the paired origin is the app's own surface; unless the app initiated the
+        // request, the paired origin is never named to other origins in Origin.
+        var originIsTainted = pairingOrigin != null && source == pairingOrigin && !initiator.mayCarry(pairing)
         var corsRedirected = false
         var redirected = false
         var crossedCookieSiteBoundary = false
@@ -272,7 +276,8 @@ internal class NativeScriptResourceTransport(
 
             val outgoing = Request.Builder().url(url)
             headers.values.forEach { outgoing.addHeader(it.name, it.value) }
-            val cookieHeader = cookies?.requestHeader(url, cookieContext)
+            val cookiesApply = cookiesMayApply(initiator, pairing, pairingOrigin?.toHttpUrlOrNull(), url)
+            val cookieHeader = if (cookiesApply) cookies?.requestHeader(url, cookieContext) else null
             requestCookieKey = opaqueCookieRequestKey(cookieHeader)
             cookieHeader?.let { outgoing.header("Cookie", it) }
             if ((currentMethod != "GET" && currentMethod != "HEAD") ||
@@ -285,10 +290,14 @@ internal class NativeScriptResourceTransport(
             } else {
                 referrerUrl
             }
-            requestReferrer?.let { computeReferrer(it, url, request.referrerPolicy) }?.let {
+            val referrerWithheld = pairingOrigin != null && !initiator.mayCarry(pairing) &&
+                requestReferrer?.toHttpUrlOrNull()?.let { originOf(it) == pairingOrigin } == true &&
+                originOf(url) != pairingOrigin
+            requestReferrer?.takeUnless { referrerWithheld }
+                ?.let { computeReferrer(it, url, request.referrerPolicy) }?.let {
                 outgoing.header("Referer", it)
             }
-            if (authorizationMayBeSent && credentials != Credentials.OMIT &&
+            if (authorizationMayBeSent && initiator.mayCarry(pairing) && credentials != Credentials.OMIT &&
                 source == pairingOrigin && originOf(url) == pairingOrigin
             ) {
                 outgoing.header("Authorization", "Bearer ${checkNotNull(pairing).token}")
@@ -301,12 +310,12 @@ internal class NativeScriptResourceTransport(
             outgoing.method(currentMethod, requestBody)
 
             withCancellableCall(httpClient.newCall(outgoing.build()), cancellation) { response ->
-                setCookieProcessed = receiveNativeSetCookies(
+                setCookieProcessed = (cookiesApply && receiveNativeSetCookies(
                     cookies,
                     url,
                     response,
                     cookieContext,
-                ) || setCookieProcessed
+                )) || setCookieProcessed
                 val location = response.header("Location")
                 if (response.code in REDIRECT_CODES && location != null) {
                     if (request.redirect == Redirect.ERROR) {
@@ -523,7 +532,10 @@ internal class NativeScriptResourceTransport(
         request.headers.forEach { header ->
             val name = header.name.lowercase(Locale.ROOT)
             require(TOKEN.matches(header.name)) { "Invalid fetch request header name" }
-            require(name !in FORBIDDEN_HEADERS && !name.startsWith("proxy-") && !name.startsWith("sec-")) {
+            require(
+                name !in FORBIDDEN_HEADERS && !name.startsWith("proxy-") && !name.startsWith("sec-") &&
+                    !name.startsWith("x-pirc-"),
+            ) {
                 "Fetch request header is forbidden: ${header.name}"
             }
             require('\r' !in header.value && '\n' !in header.value && '\u0000' !in header.value) {
