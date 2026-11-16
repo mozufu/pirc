@@ -1,5 +1,19 @@
 # Upgrades
 
+## Unreleased: reconciling an unknown first message
+
+Gateway schema **1033** and Node schema **2039**. When a first message's delivery
+outcome is unknown, the Gateway now asks the Node for its receipt and, if the Node
+holds nothing, asks it to refuse that command id for good (a durable void). The
+attempt then counts as not executed and the existing explicit Retry applies; a
+request that provably never left the Gateway can simply be sent again. This runs
+in the background, every 5 s and on every Node reconnect, with no client open.
+Upgrade the Gateway and its Nodes together: against a Node older than schema 2039
+the outcome stays unknown and is reported as needing a Node upgrade; no void is
+assumed. The first-send flow itself stays off unless `PIRC_FIRST_SEND` is set.
+Back up both states with their binaries; older executables reject the new schemas.
+Protocol, client formats, lockfiles and Nix hashes are unchanged. Local code only.
+
 ## Unreleased: API request shape for state-changing calls
 
 The Gateway now answers `415` with `request_shape_required` to any state-changing

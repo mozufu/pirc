@@ -445,7 +445,7 @@ or `full-access` escalation is authorized by the design.
 | U6 — bounded proactive pots                    | Progress-only observation and explicit dispatch exist                                                                                                                                                        | Scoped content observation, finite budgets, quiet suggestions and synchronized notification/decision lifecycle        |
 
 **The new U1 flow is still gated by `canSubmit: false`.** Pushing its code does
-not enable it. Current formats are Gateway schema **1032**, Node schema **2038** (the
+not enable it. Current formats are Gateway schema **1033**, Node schema **2039** (the
 `SCHEMA_VERSION` constants in `crates/pirc-gateway/src/db.rs` and
 `crates/pirc-node/src/store/mod.rs` are the source of truth),
 protocol **15**, client recovery contract **2**, and Web IndexedDB/native private
