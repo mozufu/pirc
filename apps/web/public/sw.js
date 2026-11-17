@@ -1,3 +1,9 @@
+/**
+ * Replaced when the app is built (see sw-build-id.ts), so that every build has a
+ * service worker file that differs from the last: open pages then see an update
+ * and offer it. The shell cache below is rewritten from the network on each visit.
+ */
+const BUILD_ID = '__PIRC_BUILD_ID__';
 const CACHE_VERSION = 'relay-static-v1';
 /** The last app shell (index.html) served by the network, for starting offline. */
 const SHELL_CACHE = 'relay-shell-v1';

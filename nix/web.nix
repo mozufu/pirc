@@ -22,6 +22,7 @@ let
         && !(lib.hasPrefix ".env." file.name)
       ) ../apps/web/src)
       ../apps/web/public
+      ../apps/web/csp-policy.ts
       ../apps/web/package.json
       ../apps/web/index.html
       ../apps/web/tsconfig.json
