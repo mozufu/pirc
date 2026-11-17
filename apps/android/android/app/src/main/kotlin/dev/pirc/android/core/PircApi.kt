@@ -55,6 +55,9 @@ private val JSON = "application/json".toMediaType()
 /** Request-shape marker the Gateway requires on state-changing requests. Page content can never set it. */
 internal const val REQUEST_SHAPE_HEADER = "X-Pirc-Request"
 
+/** Error code of a state-changing request the gateway refused for its shape (HTTP 415). */
+internal const val REQUEST_SHAPE_REQUIRED = "request_shape_required"
+
 val PircJson = Json {
     ignoreUnknownKeys = true
     explicitNulls = false
@@ -461,6 +464,9 @@ open class PircApi(val pairing: Pairing, internal val client: OkHttpClient = def
             // The gateway says whether the token expired or was revoked.
             response.code == 401 -> unauthorizedMessage(detail?.message)
             response.isRedirect -> "The gateway redirected the request; check the proxy routes device tokens to pirc."
+            // The gateway needs a request shape this build does not send; only an update fixes that.
+            response.code == 415 && detail?.code == REQUEST_SHAPE_REQUIRED ->
+                "This version of the app is out of date. Update the app, then try again."
             else -> detail?.message ?: "Request failed (${response.code})"
         }
         return ApiException(response.code, detail?.code, message)

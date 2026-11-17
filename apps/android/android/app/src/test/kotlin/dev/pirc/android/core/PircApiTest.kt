@@ -113,6 +113,31 @@ class PircApiTest {
     }
 
     @Test
+    fun aRequestShapeRefusalIsAnUpdatePromptAndIsNeverRetriedInAnotherShape() = runTest {
+        server.enqueue(MockResponse.Builder().code(415).body(
+            """{"error":{"code":"request_shape_required","message":"State-changing requests must be JSON or send the X-Pirc-Request header"}}""",
+        ).build())
+        try {
+            api.upload("s", byteArrayOf(1), "image/png", "a.png")
+            fail("expected the refusal")
+        } catch (error: ApiException) {
+            assertEquals(415, error.status)
+            assertEquals("request_shape_required", error.code)
+            assertEquals("This version of the app is out of date. Update the app, then try again.", error.message)
+        }
+        // One request: nothing is resent without the check, or in any other shape.
+        assertEquals(1, server.requestCount)
+        // Any other 415 keeps the server's own words.
+        server.enqueue(MockResponse.Builder().code(415).body("""{"error":{"code":"unsupported_media","message":"No such type"}}""").build())
+        try {
+            api.upload("s", byteArrayOf(1), "image/png", "a.png")
+            fail("expected the refusal")
+        } catch (error: ApiException) {
+            assertEquals("No such type", error.message)
+        }
+    }
+
+    @Test
     fun sendsTheDeviceTokenAndNoOrigin() = runTest {
         server.enqueue(MockResponse.Builder().body("""{"nodes":[{"id":"m5pro","workspaces":[{"id":"pirc","displayName":"pirc"}]}]}""").build())
         assertEquals("m5pro", api.nodes().single().id)

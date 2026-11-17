@@ -2033,6 +2033,14 @@ class LiveController extends ChangeNotifier {
             );
           }
           return '狀態已改變，請重新載入後再操作。';
+        case 'HTTP_415':
+          // A Gateway that requires the request-shape marker refused a request
+          // from an app that cannot send it; updating is the only way forward.
+          if (obj(e.details)['code'] == 'request_shape_required') {
+            return tr(
+              'This version of the app is out of date. Update the app, then try again.',
+            );
+          }
         case 'NETWORK':
           return '連線或裝置操作失敗，請確認連線後重試。';
       }

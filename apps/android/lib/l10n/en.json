@@ -2725,5 +2725,6 @@
   "Reconcile": "Reconcile",
   "Show more items": "Show more items",
   "Acknowledge all {0} items and switch": "Acknowledge all {0} items and switch",
-  "Showing {0} of {1} items": "Showing {0} of {1} items"
+  "Showing {0} of {1} items": "Showing {0} of {1} items",
+  "This version of the app is out of date. Update the app, then try again.": "This version of the app is out of date. Update the app, then try again."
 }
