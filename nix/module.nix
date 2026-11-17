@@ -853,6 +853,15 @@ in
           tryFiles = "$uri $uri/ /index.html";
           extraConfig = ''
             auth_request /_pirc_auth;
+            # Response headers of the static app. `frame-ancestors` only works as a
+            # header (the page's own Content-Security-Policy is a <meta> element,
+            # added when the bundle is built). Kept in this location: an add_header
+            # here replaces those of the enclosing blocks, and the gateway already
+            # sets its own headers on /api/.
+            add_header Content-Security-Policy "frame-ancestors 'none'" always;
+            add_header Referrer-Policy "no-referrer" always;
+            add_header X-Content-Type-Options "nosniff" always;
+            add_header X-Frame-Options "DENY" always;
           '';
         };
       };

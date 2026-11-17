@@ -19,6 +19,7 @@ Rules that hold for every route:
 - Use TLS end to end from the client to the proxy. The proxy → gateway hop is plain HTTP on loopback or a private interface.
 - Do not expose the gateway or the proxy on the public Internet (no Tailscale Funnel). Forward auth is a second factor for a private network, not an Internet-facing login.
 - Static serving: the bundle is immutable per build. The `index.html` and `sw.js` should be served with `Cache-Control: no-cache` so upgrades are seen; hashed files under `/assets/` may be cached for long.
+- Send the [security response headers](#security-response-headers) with the static app.
 
 ## Device tokens
 
@@ -87,11 +88,45 @@ server {
   location / {
     auth_request /_pirc_auth;
     try_files $uri $uri/ /index.html;
+    # Static app only; see "Security response headers". `add_header` in a location
+    # replaces the ones of the enclosing blocks, so keep them together here.
+    add_header Content-Security-Policy "frame-ancestors 'none'" always;
+    add_header Referrer-Policy "no-referrer" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
   }
 }
 ```
 
 `proxy_set_header x-pirc-user $pirc_user` with an empty variable removes the header, which is what the device-token branch relies on.
+
+## Security response headers
+
+The static app (not `/api/` or `/node/`) is sent with these headers:
+
+| Header                                            | Why                                                                                                                |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `Content-Security-Policy: frame-ancestors 'none'` | No other site can embed the app in a frame. Only a header works for this directive; a `<meta>` element ignores it. |
+| `X-Frame-Options: DENY`                           | The same for browsers that do not read `frame-ancestors`.                                                          |
+| `Referrer-Policy: no-referrer`                    | A link followed from the app does not tell the destination where the app is.                                       |
+| `X-Content-Type-Options: nosniff`                 | Files are used as the type they are served as. The gateway already sets this on `/api/`.                           |
+
+The rest of the page policy (what the page may load: its own scripts and styles, images only from itself or inline, no plugins) is a `<meta http-equiv="Content-Security-Policy">` element that the web build writes into `index.html`, so every deployment has it without proxy configuration. Do not add a second, different `Content-Security-Policy` header with other directives for the same page: browsers apply every policy they are sent, so the strictest combination wins. The app does not set `form-action`: a form in a message may submit to another site on purpose.
+
+nginx and Traefik: see the examples above. The NixOS module sets them on the static location. Caddy (a fragment for the static routes; keep the `/api/` and `/node/` handlers as they are):
+
+```caddyfile
+pirc.example.ts.net {
+  @app not path /api/* /node/*
+  header @app {
+    Content-Security-Policy "frame-ancestors 'none'"
+    Referrer-Policy "no-referrer"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+  }
+  # … forward auth, /api/ and /node/connect handlers, static file server …
+}
+```
 
 ## Proxy shared secret
 
@@ -148,7 +183,7 @@ http:
       rule: Host(`pirc.example.ts.net`)
       priority: 50
       service: pirc-web
-      middlewares: [authelia]
+      middlewares: [authelia, pirc-security-headers]
   middlewares:
     authelia:
       forwardAuth:
@@ -159,6 +194,13 @@ http:
       headers:
         customRequestHeaders:
           X-Pirc-User: '' # an empty value removes the header
+    pirc-security-headers: # static app only
+      headers:
+        customResponseHeaders:
+          Content-Security-Policy: "frame-ancestors 'none'"
+          Referrer-Policy: no-referrer
+          X-Content-Type-Options: nosniff
+          X-Frame-Options: DENY
   services:
     pirc-gateway:
       loadBalancer:
@@ -198,6 +240,9 @@ curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $TOKEN" $H/ap
 # 5. A node without a token is refused with a WebSocket close, not an auth redirect.
 curl -s -o /dev/null -w '%{http_code}\n' -H 'Upgrade: websocket' -H 'Connection: Upgrade' \
   -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGVzdA==' $H/node/connect
+
+# 6. The static app carries the security headers (all four lines appear).
+curl -sI $H/ | grep -iE '^(content-security-policy|referrer-policy|x-content-type-options|x-frame-options):'
 ```
 
 Then log in through the browser and confirm `GET /api/nodes` lists every node.
