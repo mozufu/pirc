@@ -1,3 +1,4 @@
+import 'package:pirc_mobile/live/remote_content_gate.dart';
 import 'dart:convert';
 import 'dart:ui' as ui;
 
@@ -24,6 +25,9 @@ class MediaAcceptanceGateway extends Gateway {
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  // These suites exercise the image/media loaders themselves, not the hold-back.
+  setUpAll(() => NativeRemoteContentPolicy.debugOpenForTests = true);
+  tearDownAll(() => NativeRemoteContentPolicy.debugOpenForTests = false);
 
   testWidgets(
     'real Android HTML media decodes video/audio, acknowledges paused seek, caches read, and enforces context ownership',

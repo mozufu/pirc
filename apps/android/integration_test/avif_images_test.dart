@@ -1,4 +1,5 @@
 // Static AVIF Chrome pixel oracle; Android 12+ native decode, Flutter UI.
+import 'package:pirc_mobile/live/remote_content_gate.dart';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +16,9 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart' as md;
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  // These suites exercise the image/media loaders themselves, not the hold-back.
+  setUpAll(() => NativeRemoteContentPolicy.debugOpenForTests = true);
+  tearDownAll(() => NativeRemoteContentPolicy.debugOpenForTests = false);
   final fixture =
       jsonDecode(r'''{
   "browser": "155.0.8059.40",

@@ -1,4 +1,5 @@
 // Android scroll/visibility acceptance; in-memory image Gateway, real Flutter SVG.
+import 'package:pirc_mobile/live/remote_content_gate.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -71,6 +72,9 @@ Future<void> _waitForSource(
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  // These suites exercise the image/media loaders themselves, not the hold-back.
+  setUpAll(() => NativeRemoteContentPolicy.debugOpenForTests = true);
+  tearDownAll(() => NativeRemoteContentPolicy.debugOpenForTests = false);
   setUp(() {
     final view = WidgetsBinding.instance.platformDispatcher.views.first;
     expect(

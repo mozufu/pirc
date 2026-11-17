@@ -1,3 +1,4 @@
+import 'package:pirc_mobile/live/remote_content_gate.dart';
 import 'dart:convert';
 import 'dart:ui' as ui;
 
@@ -160,6 +161,9 @@ Future<void> _pumpRasterHtml(
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  // These suites exercise the image/media loaders themselves, not the hold-back.
+  setUpAll(() => NativeRemoteContentPolicy.debugOpenForTests = true);
+  tearDownAll(() => NativeRemoteContentPolicy.debugOpenForTests = false);
   setUpAll(() async {
     theme = await PircTheme.load();
     expect(_positionCases, hasLength(17));
