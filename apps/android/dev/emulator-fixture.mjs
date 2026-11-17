@@ -47,7 +47,8 @@ function listen(name, port, handler) {
     for await (const chunk of request) chunks.push(chunk);
     const body = Buffer.concat(chunks);
     const url = new URL(request.url, 'http://x');
-    if (url.pathname === '/__log') return json(response, 200, { log: seen[name], state: state[name] ?? null });
+    if (url.pathname === '/__log')
+      return json(response, 200, { log: seen[name], state: state[name] ?? null });
     if (url.pathname === '/__reset') {
       for (const key of Object.keys(seen)) seen[key] = [];
       for (const key of Object.keys(state)) state[key] = { applied: 0 };
@@ -63,17 +64,29 @@ function gateway(name, port, token) {
   listen(name, port, (request, response, url) => {
     const authorized = request.headers['authorization'] === `Bearer ${token}`;
     if (url.pathname.startsWith('/api/') && !authorized) {
-      return json(response, 401, { error: { code: 'unauthorized', message: 'Device token is not valid' } });
+      return json(response, 401, {
+        error: { code: 'unauthorized', message: 'Device token is not valid' },
+      });
     }
     if (url.pathname === '/api/sessions' && request.method === 'GET') {
-      return json(response, 200, { sessions: [{ id: 's1', workspaceId: 'w', name: `Fixture ${name}` }] });
+      return json(response, 200, {
+        sessions: [{ id: 's1', workspaceId: 'w', name: `Fixture ${name}` }],
+      });
     }
-    if (request.method !== 'GET' && request.method !== 'HEAD' && request.headers['x-pirc-request'] !== '1' &&
-      !String(request.headers['content-type'] ?? '').startsWith('application/json')) {
-      return json(response, 415, { error: { code: 'request_shape_required', message: 'Wrong request shape' } });
+    if (
+      request.method !== 'GET' &&
+      request.method !== 'HEAD' &&
+      request.headers['x-pirc-request'] !== '1' &&
+      !String(request.headers['content-type'] ?? '').startsWith('application/json')
+    ) {
+      return json(response, 415, {
+        error: { code: 'request_shape_required', message: 'Wrong request shape' },
+      });
     }
     if (url.pathname === '/api/sessions/s1/uploads' && request.method === 'POST') {
-      return json(response, 200, { upload: { id: `u-${name}`, mimeType: 'image/png', byteSize: 1, kind: 'image' } });
+      return json(response, 200, {
+        upload: { id: `u-${name}`, mimeType: 'image/png', byteSize: 1, kind: 'image' },
+      });
     }
     if (url.pathname.startsWith('/api/memory/') && request.method === 'POST') {
       state[name].applied++;
