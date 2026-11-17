@@ -1,3 +1,4 @@
+import 'package:pirc_mobile/live/remote_content_gate.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
@@ -289,6 +290,8 @@ Widget _directBackgroundHost(Decoration decoration) => MaterialApp(
 );
 
 void main() {
+  setUpAll(() => NativeRemoteContentPolicy.debugOpenForTests = true);
+  tearDownAll(() => NativeRemoteContentPolicy.debugOpenForTests = false);
   for (final testCase in _rasterCases) {
     final declarations = _object(
       testCase['authoredCss'],

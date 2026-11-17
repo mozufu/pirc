@@ -11,6 +11,7 @@ import 'document_navigation_state.dart';
 import 'document_object_urls.dart';
 import 'document_download.dart';
 import 'markdown_image.dart';
+import 'remote_content_gate.dart';
 import 'common.dart' show guarded;
 
 String htmlMediaSignature(NativeHtmlMediaSpec spec) =>
@@ -318,7 +319,12 @@ class HtmlMediaState extends ChangeNotifier {
 }
 
 /// Flutter controls and texture display for an HTML media element.
-class NativeHtmlMedia extends StatefulWidget {
+///
+/// In held content a remote source (including a poster) is a placeholder until
+/// the user taps it: the player, which opens the media and fetches the poster,
+/// is not built before that. Inline `data:` and local `blob:` sources play as
+/// before.
+class NativeHtmlMedia extends StatelessWidget {
   const NativeHtmlMedia({
     super.key,
     required this.gateway,
@@ -334,11 +340,61 @@ class NativeHtmlMedia extends StatefulWidget {
   final NativeDocumentScope? scope;
   final Object? accountIdentity;
   final Map<String, String> styles;
+
+  static String? _remoteReference(String? raw) {
+    if (raw == null) return null;
+    final value = raw
+        .replaceAll(RegExp(r'[\t\n\r]'), '')
+        .replaceAll(RegExp(r'^[\x00-\x20]+|[\x00-\x20]+$'), '');
+    final scheme = Uri.tryParse(value)?.scheme.toLowerCase();
+    return scheme == 'data' || scheme == 'blob' ? null : value;
+  }
+
   @override
-  State<NativeHtmlMedia> createState() => _NativeHtmlMediaState();
+  Widget build(BuildContext context) {
+    final player = NativeHtmlMediaPlayer(
+      gateway: gateway,
+      spec: spec,
+      baseUrl: baseUrl,
+      scope: scope,
+      accountIdentity: accountIdentity,
+      styles: styles,
+    );
+    final remote = [
+      for (final candidate in spec.candidates) _remoteReference(candidate.url),
+      _remoteReference(spec.poster),
+    ].nonNulls.firstOrNull;
+    if (remote == null) return player;
+    return NativeRemoteContentGate(
+      source: remote,
+      kind: NativeRemoteContentKind.media,
+      builder: (_) => player,
+    );
+  }
 }
 
-class _NativeHtmlMediaState extends State<NativeHtmlMedia>
+/// The player behind [NativeHtmlMedia]; building it starts the media load.
+class NativeHtmlMediaPlayer extends StatefulWidget {
+  const NativeHtmlMediaPlayer({
+    super.key,
+    required this.gateway,
+    required this.spec,
+    this.baseUrl,
+    this.scope,
+    this.accountIdentity,
+    this.styles = const {},
+  });
+  final Gateway gateway;
+  final NativeHtmlMediaSpec spec;
+  final String? baseUrl;
+  final NativeDocumentScope? scope;
+  final Object? accountIdentity;
+  final Map<String, String> styles;
+  @override
+  State<NativeHtmlMediaPlayer> createState() => _NativeHtmlMediaState();
+}
+
+class _NativeHtmlMediaState extends State<NativeHtmlMediaPlayer>
     with WidgetsBindingObserver {
   late HtmlMediaState state;
   NativeDocumentObjectUrlBinding? _objectUrls;
@@ -372,7 +428,7 @@ class _NativeHtmlMediaState extends State<NativeHtmlMedia>
   }
 
   @override
-  void didUpdateWidget(NativeHtmlMedia old) {
+  void didUpdateWidget(NativeHtmlMediaPlayer old) {
     super.didUpdateWidget(old);
     if (old.gateway != widget.gateway ||
         old.baseUrl != widget.baseUrl ||

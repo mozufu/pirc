@@ -24,6 +24,7 @@ import 'markdown_spacing.dart';
 import 'markdown_cursor.dart';
 import 'markdown_selection.dart';
 import 'html_syntax.dart';
+import '../live/remote_content_gate.dart' show nativeHeldMarkdownImage;
 
 /// Flutter widgets only; no web view and no HTML/JS execution. All unsupported
 /// rich-content cases remain visible and tracked in PARITY.md.
@@ -140,11 +141,15 @@ class _NativeMarkdownState extends State<NativeMarkdown> {
     final size = fontSize ?? 15.0;
     final em = MediaQuery.textScalerOf(context).scale(size);
     final height = lineHeight ?? (compact ? 1.6 : (phone ? 1.65 : 1.75));
-    final imageUris = widget.imageBuilder == null ? null : _MarkdownImageUris();
-    final MarkdownImageBuilder? markdownImageBuilder = imageUris == null
-        ? null
-        : (uri, title, alt) =>
-              widget.imageBuilder!(imageUris.restore(uri), title, alt);
+    // Without a caller-supplied builder, images still go through the hold-back
+    // for remote sources; the package default would fetch them on display.
+    final imageUris = _MarkdownImageUris();
+    Widget markdownImageBuilder(Uri uri, String? title, String? alt) =>
+        (widget.imageBuilder ?? nativeHeldMarkdownImage)(
+          imageUris.restore(uri),
+          title,
+          alt,
+        );
     TextStyle heading(double scale) => TextStyle(
       fontSize: size * scale,
       height: 1.35,
@@ -199,7 +204,7 @@ class _NativeMarkdownState extends State<NativeMarkdown> {
       },
       checkboxBuilder: (checked) => NativeTaskCheckbox(checked: checked),
       imageBuilder: markdownImageBuilder,
-      imageSourceTransform: imageUris?.preserve,
+      imageSourceTransform: imageUris.preserve,
       onTapLink: (_, href, _) {
         if (href != null) onLink(href);
       },

@@ -1,3 +1,4 @@
+import 'package:pirc_mobile/live/remote_content_gate.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -65,6 +66,8 @@ Future<void> _waitForSource(
 }
 
 void main() {
+  setUpAll(() => NativeRemoteContentPolicy.debugOpenForTests = true);
+  tearDownAll(() => NativeRemoteContentPolicy.debugOpenForTests = false);
   testWidgets(
     'HTML lazy images load near the viewport once; eager remains eager',
     (tester) async {

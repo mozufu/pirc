@@ -1,3 +1,4 @@
+import 'package:pirc_mobile/live/remote_content_gate.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -64,6 +65,8 @@ Future<ui.Image> firstImage(ImageProvider provider) {
 }
 
 void main() {
+  setUpAll(() => NativeRemoteContentPolicy.debugOpenForTests = true);
+  tearDownAll(() => NativeRemoteContentPolicy.debugOpenForTests = false);
   TestWidgetsFlutterBinding.ensureInitialized();
   for (final item in cases) {
     testWidgets(

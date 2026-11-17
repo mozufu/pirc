@@ -28,6 +28,7 @@ import '../rendering/document_scroll_commands.dart';
 import 'common.dart';
 import 'gateway.dart';
 import 'document_navigation_state.dart';
+import 'remote_content_gate.dart';
 import 'document_scripts.dart';
 import 'document_environment.dart';
 import 'document_object_urls.dart';
@@ -2477,7 +2478,12 @@ class _NativeFetchedDocumentViewState extends State<NativeFetchedDocumentView> {
                   unawaited(_scripts!.requestModalClose()),
             }
           : const {},
-      child: page,
+      // A page on another origin is the page the user went to and loads its
+      // own images; one the paired Gateway served is held content.
+      child: NativeRemoteContentPolicy(
+        loadOnActivation: document.pairedOrigin,
+        child: page,
+      ),
     );
   }
 

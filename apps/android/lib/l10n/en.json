@@ -2726,5 +2726,9 @@
   "Show more items": "Show more items",
   "Acknowledge all {0} items and switch": "Acknowledge all {0} items and switch",
   "Showing {0} of {1} items": "Showing {0} of {1} items",
-  "This version of the app is out of date. Update the app, then try again.": "This version of the app is out of date. Update the app, then try again."
+  "This version of the app is out of date. Update the app, then try again.": "This version of the app is out of date. Update the app, then try again.",
+  "Remote image from {0}": "Remote image from {0}",
+  "Remote media from {0}": "Remote media from {0}",
+  "Tap to load": "Tap to load",
+  "this server": "this server"
 }

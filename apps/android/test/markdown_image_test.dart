@@ -1,3 +1,4 @@
+import 'package:pirc_mobile/live/remote_content_gate.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -44,6 +45,8 @@ Widget imageShell(Widget child, {double width = 390}) => MaterialApp(
   ),
 );
 void main() {
+  setUpAll(() => NativeRemoteContentPolicy.debugOpenForTests = true);
+  tearDownAll(() => NativeRemoteContentPolicy.debugOpenForTests = false);
   testWidgets('HTML image crossorigin changes reach native image transport', (
     t,
   ) async {

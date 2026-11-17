@@ -36,6 +36,7 @@ import '../theme.dart';
 import '../live/document_navigation_state.dart';
 import '../live/document_background_image.dart';
 import '../live/html_media.dart';
+import '../live/remote_content_gate.dart';
 import 'html_media_spec.dart';
 import 'html_background_gradient.dart';
 import 'html_gradient_decoration.dart';
@@ -2221,6 +2222,9 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
     final scope = NativeDocumentScope.maybeOf(context);
     final objectUrls = NativeDocumentObjectUrlScope.maybeOf(context)?.binding;
     final account = scope?.accountIdentity;
+    // CSS background images have no tap target to hold them behind, so held
+    // content never loads a remote one (inline data: and local blob: do).
+    final holdRemote = NativeRemoteContentPolicy.holdsRemoteContent(context);
     final backgroundOwner = scope?.window ?? scope?.windows ?? this;
     final currentDocument = scope?.window?.currentDocument;
     final backgroundBase = currentDocument?.url == scope?.documentUrl
@@ -2236,6 +2240,7 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
       if (uri.scheme != 'data' && uri.scheme != 'blob' && scope == null) {
         return null;
       }
+      if (holdRemote && nativeRemoteContentSource(uri)) return null;
       return NativeDocumentBackgroundImage(
         source: uri,
         objectUrls: objectUrls,
@@ -2319,6 +2324,7 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
             widget.layoutRevision,
             account,
             backgroundOwner,
+            holdRemote,
             imageViewport,
             imageDpr,
             imageDark,
@@ -6188,11 +6194,15 @@ class _NativeHtmlFactory extends WidgetFactory {
     }
     // Standalone renderer: never accept the core package's file:/asset: loaders.
     if (uri.scheme == 'http' || uri.scheme == 'https') {
-      return Image.network(
-        src.url,
-        scale: density,
-        semanticLabel: src.image?.alt,
-        errorBuilder: (_, _, _) => Text(src.image?.alt ?? ''),
+      return NativeRemoteContentGate(
+        source: src.url,
+        alt: src.image?.alt,
+        builder: (_) => Image.network(
+          src.url,
+          scale: density,
+          semanticLabel: src.image?.alt,
+          errorBuilder: (_, _, _) => Text(src.image?.alt ?? ''),
+        ),
       );
     }
     if (uri.scheme == 'data' &&

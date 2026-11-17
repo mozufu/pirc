@@ -1,3 +1,4 @@
+import 'package:pirc_mobile/live/remote_content_gate.dart';
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -98,6 +99,8 @@ Widget host(
   home: Scaffold(body: RichTextBody(markup, gateway: g)),
 );
 void main() {
+  setUpAll(() => NativeRemoteContentPolicy.debugOpenForTests = true);
+  tearDownAll(() => NativeRemoteContentPolicy.debugOpenForTests = false);
   test('direct src failure never tries child sources', () async {
     final g = MediaGateway();
     g.handler = (method, args) async {

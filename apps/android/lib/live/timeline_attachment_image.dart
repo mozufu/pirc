@@ -12,8 +12,12 @@ import 'timeline_models.dart';
 import 'web_controls.dart';
 import 'timeline_image_wrap.dart';
 import 'gateway.dart';
+import 'remote_content_gate.dart';
 
-class TimelineAttachmentImage extends StatefulWidget {
+/// An image attached to a timeline entry. Inline bytes (`base64`, `data:`)
+/// display directly; an entry that names a URL is a remote reference, shown as
+/// a placeholder until the user taps it.
+class TimelineAttachmentImage extends StatelessWidget {
   const TimelineAttachmentImage({
     super.key,
     required this.entry,
@@ -23,12 +27,45 @@ class TimelineAttachmentImage extends StatefulWidget {
   final Json entry;
   final String label;
   final Gateway? gateway;
+
   @override
-  State<TimelineAttachmentImage> createState() =>
+  Widget build(BuildContext context) {
+    final loaded = _LoadedTimelineAttachmentImage(
+      entry: entry,
+      label: label,
+      gateway: gateway,
+    );
+    final source = value(entry, 'url');
+    final uri = Uri.tryParse(source);
+    if (entry['base64'] != null ||
+        source.isEmpty ||
+        (uri != null && !nativeRemoteContentSource(uri))) {
+      return loaded;
+    }
+    return NativeRemoteContentGate(
+      source: source,
+      alt: label,
+      builder: (_) => loaded,
+    );
+  }
+}
+
+class _LoadedTimelineAttachmentImage extends StatefulWidget {
+  const _LoadedTimelineAttachmentImage({
+    required this.entry,
+    required this.label,
+    this.gateway,
+  });
+  final Json entry;
+  final String label;
+  final Gateway? gateway;
+  @override
+  State<_LoadedTimelineAttachmentImage> createState() =>
       _TimelineAttachmentImageState();
 }
 
-class _TimelineAttachmentImageState extends State<TimelineAttachmentImage> {
+class _TimelineAttachmentImageState
+    extends State<_LoadedTimelineAttachmentImage> {
   Uint8List? _bytes;
   Size? _natural;
   bool _svg = false, _failed = false;
@@ -44,7 +81,7 @@ class _TimelineAttachmentImageState extends State<TimelineAttachmentImage> {
   }
 
   @override
-  void didUpdateWidget(covariant TimelineAttachmentImage oldWidget) {
+  void didUpdateWidget(covariant _LoadedTimelineAttachmentImage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.entry['url'] != widget.entry['url'] ||
         oldWidget.entry['base64'] != widget.entry['base64'] ||

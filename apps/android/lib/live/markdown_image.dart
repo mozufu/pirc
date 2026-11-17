@@ -12,9 +12,15 @@ import '../rendering/native_raster_images.dart';
 import 'gateway.dart';
 import 'document_object_urls.dart';
 import 'document_navigation_state.dart';
+import 'remote_content_gate.dart';
 
 /// Markdown images follow the gateway page URL, not the workspace file base.
-class NativeMarkdownImage extends StatefulWidget {
+///
+/// A remote source in held content (chat, previews, tool output, Gateway
+/// documents) is a placeholder until the user taps it: this wrapper does not
+/// build the loader, so nothing is requested before then. Inline `data:` and
+/// local `blob:` sources display as before.
+class NativeMarkdownImage extends StatelessWidget {
   const NativeMarkdownImage({
     super.key,
     required this.gateway,
@@ -29,11 +35,46 @@ class NativeMarkdownImage extends StatefulWidget {
   final String? alt, title;
   final String? baseUrl;
   final double borderRadius;
+
   @override
-  State<NativeMarkdownImage> createState() => _NativeMarkdownImageState();
+  Widget build(BuildContext context) {
+    final loaded = _NativeLoadedMarkdownImage(
+      gateway: gateway,
+      source: source,
+      alt: alt,
+      title: title,
+      baseUrl: baseUrl,
+      borderRadius: borderRadius,
+    );
+    if (!nativeRemoteContentSource(source)) return loaded;
+    return NativeRemoteContentGate(
+      source: source.toString(),
+      alt: alt,
+      builder: (_) => loaded,
+    );
+  }
 }
 
-class _NativeMarkdownImageState extends State<NativeMarkdownImage> {
+class _NativeLoadedMarkdownImage extends StatefulWidget {
+  const _NativeLoadedMarkdownImage({
+    required this.gateway,
+    required this.source,
+    this.alt,
+    this.title,
+    this.baseUrl,
+    this.borderRadius = 12,
+  });
+  final Gateway gateway;
+  final Uri source;
+  final String? alt, title;
+  final String? baseUrl;
+  final double borderRadius;
+  @override
+  State<_NativeLoadedMarkdownImage> createState() =>
+      _NativeMarkdownImageState();
+}
+
+class _NativeMarkdownImageState extends State<_NativeLoadedMarkdownImage> {
   Uint8List? bytes;
   Size? size;
   bool svg = false, failed = false;
@@ -73,7 +114,7 @@ class _NativeMarkdownImageState extends State<NativeMarkdownImage> {
   }
 
   @override
-  void didUpdateWidget(covariant NativeMarkdownImage old) {
+  void didUpdateWidget(covariant _NativeLoadedMarkdownImage old) {
     super.didUpdateWidget(old);
     if (old.source != widget.source ||
         old.gateway != widget.gateway ||

@@ -2728,6 +2728,10 @@ const englishMessages = <String, String>{
   "Acknowledge all {0} items and switch": "Acknowledge all {0} items and switch",
   "Showing {0} of {1} items": "Showing {0} of {1} items",
   "This version of the app is out of date. Update the app, then try again.": "This version of the app is out of date. Update the app, then try again.",
+  "Remote image from {0}": "Remote image from {0}",
+  "Remote media from {0}": "Remote media from {0}",
+  "Tap to load": "Tap to load",
+  "this server": "this server",
 };
 const traditionalChineseMessages = <String, String>{
   "無法確認最新狀態，請重試": "無法確認最新狀態，請重試",
@@ -5458,4 +5462,8 @@ const traditionalChineseMessages = <String, String>{
   "Acknowledge all {0} items and switch": "確認知悉全部 {0} 個項目並切換",
   "Showing {0} of {1} items": "顯示 {1} 個項目中的 {0} 個",
   "This version of the app is out of date. Update the app, then try again.": "此版本的 App 已過期，請更新 App 後再試。",
+  "Remote image from {0}": "來自 {0} 的遠端圖片",
+  "Remote media from {0}": "來自 {0} 的遠端媒體",
+  "Tap to load": "點一下以載入",
+  "this server": "此伺服器",
 };

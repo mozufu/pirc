@@ -1,3 +1,4 @@
+import 'package:pirc_mobile/live/remote_content_gate.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -51,6 +52,8 @@ Widget timelineImageShell(
   ),
 );
 void main() {
+  setUpAll(() => NativeRemoteContentPolicy.debugOpenForTests = true);
+  tearDownAll(() => NativeRemoteContentPolicy.debugOpenForTests = false);
   for (final width in [362.0, 732.0]) {
     testWidgets(
       'image flex rows preserve intrinsic sizes and stretch peers at $width',
