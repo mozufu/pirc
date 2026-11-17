@@ -30,12 +30,14 @@ pub const REQUEST_VALUE: &str = "1";
 /// The machine-readable error code of a request of the wrong shape.
 pub const SHAPE_CODE: &str = "request_shape_required";
 
+/// The text shown to a person. Clients built before the request shape was
+/// required show it as it is, so it says what to do rather than what the
+/// protocol expects.
+pub const SHAPE_MESSAGE: &str =
+    "This version of the app or page is out of date. Reload the page or update the app.";
+
 fn shape_required() -> ApiError {
-    ApiError::new(
-        415,
-        SHAPE_CODE,
-        "State-changing requests must be JSON or send the X-Pirc-Request header",
-    )
+    ApiError::new(415, SHAPE_CODE, SHAPE_MESSAGE)
 }
 
 /// Requests with methods that never change state need no particular shape.

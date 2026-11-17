@@ -12,6 +12,18 @@ Panel terminals are deliberately unsandboxed login shells and enabled by default
 
 The optional reverse-proxy shared secret must be configured if other processes can reach the trusted proxy-facing listener; trusted source IP alone does not identify the proxy process. User-configured model backend URLs may use HTTP for LAN/tailnet services. Generic host names retained in examples are not secrets. None of these choices authorizes exposure to untrusted users or networks.
 
+## Rendered content from messages, tools and files
+
+Text from agents, tools and workspace files is shown, but it is not the app. The Web client applies these rules (the Android app has its own gate for the same first rule):
+
+- **Remote images and media load only on the user's click.** Nothing in such content makes a request by itself: the sanitiser removes every attribute that would fetch a remote source (images and `srcset`, `picture`, `video` and `audio` sources and posters, `input type=image`, SVG `image`/`use`/`feImage`, `url()` in styles, link preloads, `ping`, refresh, legacy `background`/`lowsrc`/`dynsrc`) and a placeholder shows the alternative text and the source address with a button. The button opens the address in a **new tab**, straight from the user's device, without a referrer or opener. There is no image proxy in the Gateway. `data:` images still display.
+- **An address is not trusted for its shape.** A relative or same-origin URL in content is gated like any other. Images the app itself shows (attachments, file previews) are loaded by the app from identifiers it holds, not from addresses written in content.
+- **Content stays in its box.** Rendered content cannot paint over, cover or intercept the controls around it (fixed or absolute positioning, oversized or transformed boxes, `z-index`); the content box clips and isolates it. Diagrams are shown as images, which are separate documents: their styles cannot reach the page and they load nothing of their own. Raw CSS from a diagram (`themeCSS`) is not accepted.
+- **The page has a Content-Security-Policy** (a `<meta>` element written into `index.html` by the build) that allows its own scripts and styles and images only from itself or inline, as a second line behind the sanitiser; the static server adds `frame-ancestors 'none'`, `X-Frame-Options`, `Referrer-Policy: no-referrer` and `X-Content-Type-Options: nosniff` ([reverse proxy](../deploy/reverse-proxy.md#security-response-headers)). `form-action` is not set: forms in messages may submit to other sites by design.
+- **Pages learn about new releases.** Each build gives `sw.js` its own bytes so that an open page is offered the update, and a request the Gateway refuses as out of date shows a reload prompt.
+
+Browser checks for these rules are in `apps/web/tool/browser/` (see the web [README](../../apps/web/README.md#browser-checks)).
+
 ## S10: host replacement of Linux protected paths
 
 **High risk, accepted by the user on 2026-10-12; not fixed.** Linux can detach another mount namespace's bind mount when the host unlinks or atomically replaces the protected file. A running sandbox may then see the replacement through its writable parent without the original read/write restriction.

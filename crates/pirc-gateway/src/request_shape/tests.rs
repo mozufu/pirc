@@ -252,7 +252,9 @@ pub(crate) async fn send(
 }
 
 pub(crate) fn is_shape_rejection(status: u16, body: &Value) -> bool {
-    status == 415 && body["error"]["code"] == SHAPE_CODE
+    status == 415
+        && body["error"]["code"] == SHAPE_CODE
+        && body["error"]["message"] == SHAPE_MESSAGE
 }
 
 /// What one state-changing operation must show: every forged shape is
@@ -350,7 +352,13 @@ async fn forged_shapes_are_refused_and_accepted_shapes_keep_their_body() {
             "{}",
             forged.name
         );
+        // A person reads this text: it says to reload or update, not what the protocol is.
+        assert_eq!(error.message, SHAPE_MESSAGE, "{}", forged.name);
     }
+    assert_eq!(
+        SHAPE_MESSAGE,
+        "This version of the app or page is out of date. Reload the page or update the app."
+    );
     for method in ["POST", "PUT", "PATCH", "DELETE"] {
         let header = probe("header", &[("x-pirc-request", "1")], "raw bytes");
         assert_eq!(enforce_with(method, &header).await.unwrap(), b"raw bytes");

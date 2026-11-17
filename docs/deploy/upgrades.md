@@ -1,5 +1,24 @@
 # Upgrades
 
+## Unreleased: remote content on click, security headers, page updates
+
+Web bundle and Gateway message text; no schema, protocol, lockfile or Nix hash
+change. Local code only.
+
+- Remote images and media in messages, tool output and previewed files are no longer
+  loaded when shown. A placeholder offers to open the address in a new tab. `data:`
+  images, attachments and file previews are unchanged.
+- The web build writes a Content-Security-Policy `<meta>` element into `index.html`
+  and gives every build its own `sw.js` bytes, so open pages are offered the update.
+  Serve `sw.js` and `index.html` with `Cache-Control: no-cache` (see
+  [reverse proxy](reverse-proxy.md)).
+- Add the [security response headers](reverse-proxy.md#security-response-headers) to
+  the static app on your proxy. The NixOS module sets them.
+- A client that predates the request-shape rule now receives the message "This version
+  of the app or page is out of date. Reload the page or update the app." (the code
+  `request_shape_required` is unchanged). The new Web client shows a reload prompt;
+  reload open tabs after the Gateway and bundle are updated together.
+
 ## Unreleased: cancelling a switch whose Node outcome is unknown
 
 Gateway schema **1034** and Node schema **2040**. When environment switching is

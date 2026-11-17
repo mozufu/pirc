@@ -9,6 +9,7 @@
 //   - pixels of the header and dock compared with a baseline render
 //   - computed style of the outside controls compared with the baseline
 // Cases U1-U3 use the `style` attribute; U4-U5 use Mermaid.
+// --without-containment drops the containment declarations again (the earlier stylesheet).
 // Without --report-only any escape (or a diagram that no longer renders) exits non-zero.
 import assert from 'node:assert/strict';
 import { writeFile } from 'node:fs/promises';
@@ -16,6 +17,8 @@ import { launchTestBrowser, openFixture, startFixtureServer, startReceiver } fro
 
 const args = process.argv.slice(2);
 const reportOnly = args.includes('--report-only');
+// Emulates the stylesheet before the content box was contained, to show what the checks catch.
+const withoutContainment = args.includes('--without-containment');
 const jsonOut = args.includes('--json') ? args[args.indexOf('--json') + 1] : undefined;
 
 const html = (style, text = 'x') => `<div style="${style}">${text}</div>`;
@@ -66,7 +69,7 @@ const cases = (recv) => [
     id: 'U2c',
     title: 'style attribute: translated element lands on the neighbouring message',
     markdown: html(
-      'position:relative;z-index:99;height:60px;transform:translateY(120px);background:rgba(255,0,0,.9);color:#fff',
+      'position:relative;z-index:99;height:60px;transform:translateY(90px);background:rgba(255,0,0,.9);color:#fff',
       'COVERS THE NEXT MESSAGE',
     ),
   },
@@ -338,6 +341,11 @@ const results = [];
 async function run(target, markdown, withDiagram) {
   const page = await openFixture(browser.context, fixture.origin);
   try {
+    if (withoutContainment)
+      await page.addStyleTag({
+        content:
+          '.markdown{contain:none!important;isolation:auto!important;position:static!important}',
+      });
     await target.render(page, markdown);
     await settle(page, withDiagram);
     const seen = await observe(page, target.box);
