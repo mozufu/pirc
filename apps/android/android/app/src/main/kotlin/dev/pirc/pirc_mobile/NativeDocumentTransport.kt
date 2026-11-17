@@ -452,6 +452,9 @@ class NativeDocumentTransport internal constructor(
             "headersRelevant" to relevantHeaders,
             "nativeCookieRequestKey" to requestCookieKey,
             "nativeSetCookieProcessed" to setCookieProcessed,
+            // Decided here from the final URL of the response (after every redirect): bytes the
+            // paired origin served are shown as inert content and never get a script environment.
+            "pairedOrigin" to PairedOriginPolicy.isPairedOrigin(pairingOrigin, finalUrl),
         )
     }
 

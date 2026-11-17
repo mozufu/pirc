@@ -2025,7 +2025,8 @@ class _NativeFetchedDocumentViewState extends State<NativeFetchedDocumentView> {
 
   void _attachScripts() {
     final document = widget.document;
-    if (documentIsAttachment(document.headers) ||
+    if (document.pairedOrigin ||
+        documentIsAttachment(document.headers) ||
         !NativeDocumentScripts.needsRuntime(document.content)) {
       return;
     }

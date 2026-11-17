@@ -1266,10 +1266,12 @@ class NativeScriptResourceTransportTest {
 
     private val pairedIdentityHeaders = listOf("Authorization", "X-Pirc-Management", "X-Pirc-Request", "Cookie")
 
-    @Test fun requestsFromScriptsAndSubresourcesCarryNoPairedIdentityEvenOnThePairedOrigin() {
-        MockWebServer().use { gateway ->
-            gateway.start()
-            val page = gateway.url("/?session=SESSION-ID-3")
+    @Test fun requestsFromScriptsAndSubresourcesCarryNoPairedIdentityToThePairedOrigin() {
+        MockWebServer().use { gateway -> MockWebServer().use { external ->
+            gateway.start(); external.start()
+            // The document is an external page; the paired origin is only a destination.
+            val page = external.url("/?session=SESSION-ID-3")
+            val documentOrigin = origin(page)
             val cookies = NativeDocumentCookies()
             cookies.receive(
                 gateway.url("/"), listOf("seed=1; Path=/"),
@@ -1278,7 +1280,7 @@ class NativeScriptResourceTransportTest {
             val p = pairing(gateway)
             // The declared initiator is the default: page content.
             val transport = NativeScriptResourceTransport(p, cookies = cookies)
-            val source = origin(page)
+            val source = documentOrigin
             val kinds = listOf(
                 NativeScriptResourceTransport.Kind.FETCH to "application/json",
                 NativeScriptResourceTransport.Kind.IMAGE to "image/png",
@@ -1288,6 +1290,8 @@ class NativeScriptResourceTransportTest {
             for ((kind, mime) in kinds) {
                 gateway.enqueue(
                     MockResponse.Builder().addHeader("Content-Type", mime)
+                        .addHeader("Access-Control-Allow-Origin", documentOrigin)
+                        .addHeader("Access-Control-Allow-Credentials", "true")
                         .addHeader("Set-Cookie", "gw=1; Path=/").body("x").build(),
                 )
                 transport.load(
@@ -1303,7 +1307,8 @@ class NativeScriptResourceTransportTest {
                 val request = gateway.takeRequest()
                 pairedIdentityHeaders.forEach { assertNull("$kind $it", request.headers[it]) }
             }
-            gateway.enqueue(MockResponse.Builder().body("{}").build())
+            gateway.enqueue(MockResponse.Builder().addHeader("Access-Control-Allow-Origin", documentOrigin)
+                .addHeader("Access-Control-Allow-Credentials", "true").body("{}").build())
             transport.load(
                 source,
                 NativeScriptResourceTransport.ResourceRequest(
@@ -1315,8 +1320,8 @@ class NativeScriptResourceTransportTest {
             )
             val post = gateway.takeRequest()
             pairedIdentityHeaders.forEach { assertNull(it, post.headers[it]) }
-            // The page is not named as the Gateway origin: Origin is opaque.
-            assertEquals("null", post.headers["Origin"])
+            // The external page names itself, never the Gateway.
+            assertEquals(documentOrigin, post.headers["Origin"])
             assertEquals(
                 "seed=1",
                 cookies.requestHeader(
@@ -1324,7 +1329,7 @@ class NativeScriptResourceTransportTest {
                     CookieRequestContext(initiatorUrl = page, topLevelUrl = page, topLevelNavigation = true),
                 ),
             )
-        }
+        } }
     }
 
     @Test fun scriptsCannotAddRequestShapeOrManagementHeaders() {
@@ -1348,11 +1353,13 @@ class NativeScriptResourceTransportTest {
         }
     }
 
-    @Test fun scriptOwnedRequestsFromThePairedOriginNeverNameItInRefererOrOrigin() {
+    @Test fun aDocumentThatCameFromThePairedOriginNeverNamesItInRefererOrOrigin() {
         MockWebServer().use { gateway -> MockWebServer().use { external ->
             gateway.start(); external.start()
             val internal = gateway.url("/?session=SESSION-ID-4").toString()
             val gatewayOrigin = origin(gateway.url("/"))
+            // The document is an external page that was reached from an internal one.
+            val documentOrigin = origin(external.url("/"))
             val transport = NativeScriptResourceTransport(pairing(gateway))
             val cases = listOf(
                 NativeScriptResourceTransport.ResourceRequest(
@@ -1378,18 +1385,32 @@ class NativeScriptResourceTransportTest {
                         .body("ok").build(),
                 )
                 transport.load(
-                    gatewayOrigin, request, referrerUrl = internal,
-                    initiatorUrl = internal, topLevelUrl = internal,
+                    documentOrigin, request, referrerUrl = internal,
+                    initiatorUrl = external.url("/doc").toString(), topLevelUrl = external.url("/doc").toString(),
                 )
                 val seen = external.takeRequest()
                 assertNull(seen.headers["Referer"])
-                assertTrue(seen.headers["Origin"] == null || seen.headers["Origin"] == "null")
+                assertTrue(seen.headers["Origin"] == null || seen.headers["Origin"] == "null" ||
+                    seen.headers["Origin"] == documentOrigin)
                 seen.headers.forEach { (name, value) ->
                     assertFalse("$name: $value", value.contains("SESSION-ID-4"))
                     assertFalse("$name: $value", value.contains(gatewayOrigin))
                 }
             }
         } }
+    }
+
+    @Test fun theGatewayOriginNeverGetsAScriptEnvironmentForResources() {
+        MockWebServer().use { gateway ->
+            gateway.start()
+            assertThrows(IllegalArgumentException::class.java) {
+                NativeScriptResourceTransport(pairing(gateway)).load(
+                    origin(gateway.url("/")),
+                    NativeScriptResourceTransport.ResourceRequest(gateway.url("/api/x").toString()),
+                )
+            }
+            assertEquals(0, gateway.requestCount)
+        }
     }
 
     @Test fun aThirdPartyDocumentKeepsItsOwnRefererBehaviour() {

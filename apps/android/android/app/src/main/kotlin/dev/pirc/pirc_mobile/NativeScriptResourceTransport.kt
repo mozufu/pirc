@@ -204,6 +204,11 @@ internal class NativeScriptResourceTransport(
     ): ResourceResponse {
         cancellation?.throwIfCancelled()
         val source = parseOrigin(sourceOrigin, "Document origin")
+        // A document served by the paired origin is inert: its content gets no same-origin script,
+        // stylesheet or fetch resources and no scope of the paired origin (PairedOriginPolicy).
+        require(pairingOrigin == null || source != pairingOrigin || initiator.mayCarry(pairing)) {
+            "Documents served by the paired origin do not load script resources"
+        }
         val cookieInitiator = nativeCookieContextUrl(initiatorUrl, source.toHttpUrlOrNull())
         val cookieTopLevel = nativeCookieContextUrl(topLevelUrl, cookieInitiator)
         val method = request.method.uppercase(Locale.ROOT)
@@ -221,9 +226,8 @@ internal class NativeScriptResourceTransport(
             headers["accept"] = Header("Accept", "text/css,*/*;q=0.1")
         }
         var authorizationMayBeSent = true
-        // A document on the paired origin is the app's own surface; unless the app initiated the
-        // request, the paired origin is never named to other origins in Origin.
-        var originIsTainted = pairingOrigin != null && source == pairingOrigin && !initiator.mayCarry(pairing)
+        // Fetch taints the request origin once a redirect chain has crossed origins.
+        var originIsTainted = false
         var corsRedirected = false
         var redirected = false
         var crossedCookieSiteBoundary = false

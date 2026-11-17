@@ -311,7 +311,9 @@ internal class PushEnableCoordinator {
 class GatewayBridge(private val activity: MainActivity, engine: FlutterEngine) {
     private val runtime = GatewayRuntime.get(activity)
     private val recordings = RecordingPlayer(activity, engine)
-    private val documentScripts = NativeDocumentScripts(activity.applicationContext)
+    private val documentScripts = NativeDocumentScripts(activity.applicationContext) { url, blobCreator ->
+        runtime.requireScriptableDocument(url, blobCreator)
+    }
     private val accountContextMutationLock = Mutex()
     private val firstSend = NativeFirstSend(
         java.io.File(activity.noBackupFilesDir, "first-send-v1"),

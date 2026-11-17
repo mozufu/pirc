@@ -487,6 +487,7 @@ class GatewayRuntime private constructor(val context: Context) {
             if (principal.pairingStamp != stamp) {
                 throw ApiException(409, "account_changed", NativeI18n.text("Browser storage account changed; reload the document."))
             }
+            requireNotPairedOrigin(pairing, principal.documentOrigin)
             val lease = contextLease(principal.contextId)
             if (!contextLeaseIsCurrent(lease) || lease.pairingStamp != stamp) {
                 throw ApiException(409, "context_expired", NativeI18n.text("The browser storage context is no longer current."))
@@ -520,6 +521,7 @@ class GatewayRuntime private constructor(val context: Context) {
         if (principal.pairingStamp != stamp) {
             throw ApiException(409, "account_changed", NativeI18n.text("Cookie account changed; reload the document."))
         }
+        requireNotPairedOrigin(pairing, principal.documentOrigin)
         val lease = contextLease(principal.contextId)
         if (!contextLeaseIsCurrent(lease) || lease.pairingStamp != principal.pairingStamp) {
             throw ApiException(409, "context_expired", NativeI18n.text("This native context is no longer current."))
@@ -572,8 +574,23 @@ class GatewayRuntime private constructor(val context: Context) {
         }
     }
 
-    private fun pairingOriginUrl(pairing: Pairing?): HttpUrl? =
-        pairing?.baseUrl?.toHttpUrlOrNull()
+    private fun pairingOriginUrl(pairing: Pairing?): HttpUrl? = PairedOriginPolicy.originOf(pairing)
+
+    /**
+     * The native decision that keeps documents served by the paired origin inert: asked by the
+     * script engine before it creates an isolate, from the document URL it derives its origin from.
+     */
+    internal suspend fun requireScriptableDocument(documentUrl: String, blobCreatorUrl: String?) {
+        val pairing = withContext(Dispatchers.IO) { credentials.load() }
+        PairedOriginPolicy.requireScriptable(pairing, documentUrl, blobCreatorUrl)
+    }
+
+    /** Paired-origin cookie and storage scopes belong to the app, never to a document's script. */
+    private fun requireNotPairedOrigin(pairing: Pairing?, documentOrigin: String) {
+        if (PairedOriginPolicy.isPairedOrigin(pairing, documentOrigin)) {
+            throw ApiException(403, "paired_origin_document", NativeI18n.text("Documents served by the paired Gateway do not use the paired origin's scopes."))
+        }
+    }
 
     suspend fun document(
         source: String,
@@ -695,6 +712,7 @@ class GatewayRuntime private constructor(val context: Context) {
         val principal = answerLock.withLock {
             val pairing = credentials.load()
                 ?: throw ApiException(401, "unpaired", NativeI18n.text("請先配對此裝置"))
+            requireNotPairedOrigin(pairing, sourceOrigin)
             val stamp = ensurePairingStamp()
             requirePairingStamp(expectedPairingStamp, stamp)
             if (contexts.currentPairingStamp() != stamp) {
@@ -809,6 +827,7 @@ class GatewayRuntime private constructor(val context: Context) {
             require(crossOrigin in setOf("", "anonymous", "use-credentials")) { "Invalid image crossorigin" }
             val sourceOrigin = documentUrl?.let { NativeScriptResourceTransport.originForDocument(it) }
                 ?: throw IllegalArgumentException(NativeI18n.text("A CORS image requires its document URL"))
+            requireNotPairedOrigin(captured.first, sourceOrigin)
             val response = NativeScriptResourceTransport(captured.first,
                 responseLimit = 32 * 1024 * 1024, cookies = captured.third).load(
                 sourceOrigin,

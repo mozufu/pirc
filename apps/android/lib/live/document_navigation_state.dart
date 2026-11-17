@@ -182,9 +182,15 @@ class NativeFetchedDocument {
     this.stylesheets = const [],
     this.styleDiagnostics = const [],
     this.preparedStyles = const [],
+    this.pairedOrigin = false,
   });
   final int id, status;
   final String url, mimeType;
+  /// Set by the native transport from the final response URL: the bytes were
+  /// served by the paired Gateway origin. Such a document is shown as inert
+  /// content: no script environment, no author stylesheets, no paired-origin
+  /// resources. The native script engine enforces the same rule on its own.
+  final bool pairedOrigin;
   final Uint8List bytes;
   final NativeHtmlDocumentContent content;
   final Json headers;
@@ -844,6 +850,7 @@ class NativeDocumentWindow extends ChangeNotifier {
         ),
         reloadRequest: reloadRequest,
         blobSource: isBlob ? source : null,
+        pairedOrigin: !isBlob && response['pairedOrigin'] == true,
         referrer: isBlob
             ? source!.documentReferrer
             : response['requestReferrer'] as String? ?? '',
@@ -922,7 +929,11 @@ class NativeDocumentWindow extends ChangeNotifier {
     Object account, {
     bool revalidate = false,
   }) async {
-    if (document.content.isHtml && _valid(generation, account)) {
+    // A document the paired origin served is inert: it gets no author
+    // stylesheets, which would be same-origin resources of that document.
+    if (document.content.isHtml &&
+        !document.pairedOrigin &&
+        _valid(generation, account)) {
       final loadedStyles =
           await NativeDocumentStyleLoader(
             isCurrent: () => _valid(generation, account),
@@ -1263,6 +1274,7 @@ class NativeDocumentWindow extends ChangeNotifier {
               navigationReferrer: old.navigationReferrer,
               navigationOrigin: old.navigationOrigin,
               inheritedReferrerPolicy: old.inheritedReferrerPolicy,
+              pairedOrigin: old.pairedOrigin,
             )
             ..resolvedBase = old.resolvedBase
             ..historyApiAckRevision = old.historyApiAckRevision

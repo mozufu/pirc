@@ -34,8 +34,17 @@ internal class DocumentScriptException(
     message: String,
 ) : Exception(message)
 
-/** One bridge-scoped JavaScript sandbox with a separate persistent isolate per document. */
-internal class NativeDocumentScripts(context: Context) {
+/**
+ * One bridge-scoped JavaScript sandbox with a separate persistent isolate per document.
+ *
+ * [documentGate] is asked, with the document URL this class derives its own origin from, before
+ * any execution environment is created; it throws to refuse. The native runtime supplies the check
+ * that keeps documents served by the paired origin inert ([PairedOriginPolicy]).
+ */
+internal class NativeDocumentScripts(
+    context: Context,
+    private val documentGate: suspend (documentUrl: String, blobCreatorUrl: String?) -> Unit,
+) {
     private data class Session(
         val id: Int,
         val owner: String,
@@ -164,6 +173,8 @@ internal class NativeDocumentScripts(context: Context) {
             "Blob creator URL is too long"
         }
         val documentOrigin = NativeScriptResourceTransport.originForDocument(documentUrl, blobCreatorUrl)
+        // Decided before the sandbox is touched, so a refused document never owns an isolate.
+        documentGate(documentUrl, blobCreatorUrl)
         val boundContextId = contextId ?: ContextRegistry.PRIMARY_CONTEXT_ID
         val connected = requireSupportedSandbox()
         val reservation = synchronized(stateLock) {
