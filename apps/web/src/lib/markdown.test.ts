@@ -287,9 +287,11 @@ describe('HTML sinks', () => {
         ),
       )
       .map(([path]) => path);
-    // The one other writer is the Mermaid figure, which is sanitised on the line before.
-    expect(writers).toEqual(['./markdown.ts']);
+    // Not even the Mermaid figure: a diagram is shown as an image (an isolated document),
+    // built from sanitised SVG, never written into the page.
+    expect(writers).toEqual([]);
     const mermaid = sources['./markdown.ts']!;
-    expect(mermaid).toMatch(/figure\.innerHTML = purifier\(\)\.sanitize\(svg/);
+    expect(mermaid).toMatch(/image\.src = diagram\.src/);
+    expect(mermaid).not.toMatch(/figure\.innerHTML/);
   });
 });

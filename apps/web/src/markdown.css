@@ -2,6 +2,14 @@
 .markdown {
   min-width: 0;
   overflow-wrap: anywhere;
+  /* Rendered content is untrusted. Whatever its own styles say (fixed or absolute
+     positioning, huge sizes, transforms, z-index), it is painted inside this box and
+     cannot cover or intercept the controls around it: paint containment clips it and
+     makes this box the containing block of fixed/absolute descendants, and the
+     isolated stacking context keeps its z-index values local. */
+  position: relative;
+  isolation: isolate;
+  contain: paint;
 }
 .markdown > :first-child {
   margin-top: 0;
@@ -244,7 +252,8 @@
   background: var(--bg);
   text-align: center;
 }
-.markdown .mermaid-block svg {
+/* The diagram is an image (an isolated document), see diagramImage in markdown.ts. */
+.markdown .mermaid-block img {
   max-width: 100%;
   height: auto;
 }
@@ -360,4 +369,54 @@
 }
 .hljs-strong {
   font-weight: 700;
+}
+
+/* Remote images and media wait for the user (see remote-content.ts). */
+.markdown .remote-media {
+  display: inline-flex;
+  max-width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  box-sizing: border-box;
+  margin: 2px 0;
+  padding: 8px 10px;
+  border: 1px dashed var(--line-dark);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  vertical-align: top;
+}
+.markdown .remote-media-title {
+  color: var(--ink);
+  font-weight: 600;
+}
+.markdown .remote-media-alt {
+  overflow-wrap: anywhere;
+}
+.markdown .remote-media-url {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 11px;
+}
+.markdown .remote-media-open {
+  padding: 4px 10px;
+  border: 1px solid var(--line-dark);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--bubble, var(--bg));
+  color: var(--ink);
+  font-size: 12px;
+  cursor: pointer;
+}
+.markdown .remote-media-open:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }

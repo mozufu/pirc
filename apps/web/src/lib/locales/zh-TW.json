@@ -1550,5 +1550,12 @@
   "Switched; execution state unknown.": "已切換；執行狀態不明。",
   "control moved to another device": "控制權已移至另一部裝置",
   "the reviewed environment changed": "已檢視的環境已變更",
-  "the Node holds a fence this Gateway never accepted": "節點持有此閘道從未接受的隔離"
+  "the Node holds a fence this Gateway never accepted": "節點持有此閘道從未接受的隔離",
+  "Diagram": "圖表",
+  "Remote image not loaded": "遠端圖片尚未載入",
+  "Remote video not loaded": "遠端影片尚未載入",
+  "Remote audio not loaded": "遠端音訊尚未載入",
+  "Open image in a new tab": "在新分頁開啟圖片",
+  "Open video in a new tab": "在新分頁開啟影片",
+  "Open audio in a new tab": "在新分頁開啟音訊"
 }

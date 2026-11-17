@@ -21,6 +21,13 @@ import {
   requestFilePreview,
   stripFileScheme,
 } from './file-links';
+import {
+  clearRemoteMarkers,
+  gateRemoteContent,
+  neutralizeRemoteSources,
+  openRemote,
+  REMOTE_OPEN,
+} from './remote-content';
 
 const escapeHtml = (value: string) =>
   value
@@ -261,12 +268,17 @@ let hooked = false;
 function purifier() {
   if (!hooked && typeof window !== 'undefined') {
     DOMPurify.addHook('beforeSanitizeAttributes', (node) => {
+      // Our own markers on an element come from this module only, never from the content.
+      clearRemoteMarkers(node);
       // DOMPurify drops `file:` URLs; keep them as plain paths so they stay previewable.
       const href = node.tagName === 'A' ? node.getAttribute('href') : null;
       if (href && /^file:/i.test(href.trim()))
         node.setAttribute('href', stripFileScheme(href) || '#');
     });
+    // The sanitiser instance is shared with Mermaid's own label sanitising, so this
+    // also keeps remote sources out of diagram labels.
     DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+      neutralizeRemoteSources(node);
       dropSameOriginFormTargets(node);
       if (node.tagName !== 'A' || !node.getAttribute('href')) return;
       // Workspace file links open in the side panel (see enhanceMarkdown), not a new tab.
@@ -327,10 +339,22 @@ export function renderMarkdownChecked(
   const input = options.streaming ? closeOpenFence(source) : source;
   const html = marked.parse(input, { async: false });
   const pending = usedFallback;
-  return {
-    html: purifier().sanitize(html, CONTENT_SANITIZE),
-    pending,
-  };
+  return { html: sanitizeContent(html), pending };
+}
+
+/**
+ * Sanitise untrusted HTML. Remote images and media do not load: they come out
+ * as placeholders with a button (see remote-content.ts).
+ */
+function sanitizeContent(html: string): string {
+  const fragment = purifier().sanitize(html, {
+    ...CONTENT_SANITIZE,
+    RETURN_DOM_FRAGMENT: true,
+  });
+  gateRemoteContent(fragment);
+  const holder = document.createElement('div');
+  holder.append(fragment);
+  return holder.innerHTML;
 }
 
 /**
@@ -420,9 +444,22 @@ let mermaidCount = 0;
 
 function loadMermaid(): Promise<MermaidApi> {
   mermaidLoader ??= import('mermaid').then(({ default: mermaid }) => {
+    // Make sure the sanitiser hooks are installed before any diagram is rendered.
+    purifier();
     mermaid.initialize({
       startOnLoad: false,
       securityLevel: 'strict',
+      // A diagram may not set these itself (init directives). `themeCSS` is raw CSS
+      // that Mermaid places in the page while it measures the diagram.
+      secure: [
+        'secure',
+        'securityLevel',
+        'startOnLoad',
+        'maxTextSize',
+        'suppressErrorRendering',
+        'maxEdges',
+        'themeCSS',
+      ],
       theme: matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'base',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
       themeVariables: matchMedia('(prefers-color-scheme: dark)').matches
@@ -443,6 +480,61 @@ function loadMermaid(): Promise<MermaidApi> {
   return mermaidLoader;
 }
 
+/**
+ * A rendered diagram as an image source. The SVG is sanitised, then shown as an
+ * `<img>` rather than inlined: an SVG used as an image is its own document, so
+ * its `<style>` rules cannot reach the page, scripts cannot run in it, and it
+ * cannot load images, fonts or style sheets of its own. Untrusted diagram text
+ * therefore cannot restyle or reposition anything outside the diagram.
+ * A data: URL has the same isolation as blob: without a URL to revoke later.
+ */
+export function diagramImage(
+  svg: string,
+): { src: string; width: number; height: number; label: string } | undefined {
+  const dom = purifier().sanitize(svg, {
+    USE_PROFILES: { html: true, svg: true, svgFilters: true },
+    // HTML labels sit in foreignObject, which DOMPurify treats as a place HTML may
+    // start only when told (Mermaid's own sanitising does the same).
+    ADD_TAGS: ['foreignObject'],
+    HTML_INTEGRATION_POINTS: { foreignobject: true },
+    RETURN_DOM: true,
+  });
+  const root = (dom as HTMLElement).querySelector('svg');
+  if (!root) return undefined;
+  const box = root
+    .getAttribute('viewBox')
+    ?.trim()
+    .split(/[\s,]+/)
+    .map(Number);
+  const width = box && box.length === 4 ? Math.ceil(box[2]!) : 0;
+  const height = box && box.length === 4 ? Math.ceil(box[3]!) : 0;
+  // A standalone image needs a size of its own; the CSS scales it down to fit.
+  if (width > 0 && height > 0) {
+    root.setAttribute('width', String(width));
+    root.setAttribute('height', String(height));
+  }
+  // Redundant namespace declarations are re-created by the serialiser; duplicates are invalid XML.
+  root.querySelectorAll('[xmlns]').forEach((element) => element.removeAttribute('xmlns'));
+  // The gate's markers (an image's original address) have no use inside the image.
+  root
+    .querySelectorAll('[data-remote-src]')
+    .forEach((element) => element.removeAttribute('data-remote-src'));
+  const text = root.cloneNode(true) as SVGElement;
+  text.querySelectorAll('style').forEach((style) => style.remove());
+  const words: string[] = [];
+  const walker = document.createTreeWalker(text, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode())
+    words.push(node.nodeValue ?? '');
+  const label = words.join(' ').replace(/\s+/g, ' ').trim().slice(0, 500);
+  const markup = new XMLSerializer().serializeToString(root);
+  return {
+    src: `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`,
+    width,
+    height,
+    label,
+  };
+}
+
 async function renderMermaidBlocks(root: HTMLElement) {
   const blocks = [...root.querySelectorAll<HTMLElement>('.mermaid-block:not([data-rendered])')];
   if (!blocks.length) return;
@@ -453,14 +545,31 @@ async function renderMermaidBlocks(root: HTMLElement) {
     try {
       const { svg } = await mermaid.render(`pirc-mermaid-${++mermaidCount}`, source);
       if (!block.isConnected) continue;
+      const diagram = diagramImage(svg);
+      if (!diagram) throw new Error('invalid diagram');
       const figure = document.createElement('div');
       figure.className = 'mermaid-figure';
-      // Mermaid's strict mode sanitizes labels; this also covers the SVG it builds around them.
-      figure.innerHTML = purifier().sanitize(svg, {
-        USE_PROFILES: { html: true, svg: true, svgFilters: true },
-        // HTML labels sit in foreignObject.
-        ADD_TAGS: ['foreignObject'],
-      });
+      const image = document.createElement('img');
+      image.alt = diagram.label || tr('Diagram');
+      image.decoding = 'async';
+      if (diagram.width > 0) {
+        image.width = diagram.width;
+        image.height = diagram.height;
+      }
+      image.addEventListener(
+        'error',
+        () => {
+          figure.remove();
+          block.dataset.rendered = 'error';
+          const note = document.createElement('p');
+          note.className = 'mermaid-error';
+          note.textContent = 'Mermaid: invalid diagram';
+          block.append(note);
+        },
+        { once: true },
+      );
+      image.src = diagram.src;
+      figure.append(image);
       block.prepend(figure);
       block.dataset.rendered = 'ok';
     } catch (error) {
@@ -501,6 +610,14 @@ export function enhanceMarkdown(node: HTMLElement, params: EnhanceParams) {
     if (event.button === 1) openFileLink(event);
   };
   const onClick = (event: MouseEvent) => {
+    const remote = (event.target as HTMLElement).closest<HTMLButtonElement>(`[${REMOTE_OPEN}]`);
+    if (remote && node.contains(remote)) {
+      // Only the user's own click opens a remote source.
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.isTrusted) openRemote(remote.getAttribute(REMOTE_OPEN));
+      return;
+    }
     if (openFileLink(event)) return;
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-copy]');
     if (!button || !node.contains(button)) return;
