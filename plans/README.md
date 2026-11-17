@@ -129,6 +129,47 @@ data-protection contracts that still apply are kept.
 - **(i) Status reporting.** Status uses four separate states that must not be
   merged: design complete, code complete, acceptance passed, activation allowed.
 
+### Confirmed 2026-11-17 follow-ups
+
+Decided on 2026-11-17. Publication stays paused (follow-up (h) above); this is a
+strategy and a set of rules for local work, not a release.
+
+- **(a) Remote images and media in untrusted content load only on user
+  activation.** "Untrusted content" is chat messages, previewed Markdown/HTML files
+  and tool output. A placeholder shows the alternative text and the source; the
+  content is loaded only after the user activates it, directly from the user's
+  device, with nothing sent before. There is **no Gateway image proxy**. `data:`
+  images and the app's own attachments and file previews are unchanged. On Web the
+  activation opens the address in a new tab without referrer or opener; on Android
+  it displays in place without credentials or referrer. Displaying in place on Web
+  is **not** implemented: it would require widening the page policy to all remote
+  images. Still a proposal: whether Web should offer it.
+- **(b) Controlled attachments come from trusted identifiers, not URL shape.** A
+  relative or same-origin URL written in content is not treated as the app's own.
+  No current feature loads an image by URL, so nothing is built for this yet; a
+  future one would use server-issued identifiers from a trusted session snapshot.
+  This is a design principle only.
+- **(c) Security response headers.** The static web app is served with
+  `frame-ancestors 'none'`, `X-Frame-Options`, `Referrer-Policy: no-referrer` and
+  `X-Content-Type-Options: nosniff`, and the build writes a page
+  Content-Security-Policy. Forms in messages may still submit to other sites.
+- **(d) Rendered content is contained within its box and diagram styles are
+  isolated** (Web). Content cannot cover or intercept controls outside its message
+  or preview, and diagrams are shown as isolated images. Common styling and forms
+  are kept.
+- **(e) Release order (strategy only; it does not lift the pause).** A compatible
+  signed APK first; then the Web bundle and the Gateway together; open Web tabs are
+  prompted to reload and the old service-worker shell is replaced; a client that
+  does not meet the new rules receives an explicit "update" message. No check is
+  bypassed to keep an old client working. New clients are verified locally against
+  new and old Gateways, and old clients against the new Gateway, before any
+  publication is discussed.
+
+Status of each item is in the four-state table in
+[unified completion contracts](unified-completion-contracts.md#reliability-and-gate-fixes-2026-11-16).
+Items still proposals: in-place remote images on Web, server-issued identifiers for
+controlled attachments, and the compatibility matrix against a real reverse proxy.
+
 ### Still proposals (not decided)
 
 - Pairing-flow redesign

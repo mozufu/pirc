@@ -249,7 +249,11 @@ if (lib) {
       // Start a terminal when the node offers one.
       const open = page.getByRole('button', { name: 'Open terminal' });
       if ((await open.count()) && (await open.isEnabled())) await open.click();
-      await page.locator('.xterm').first().waitFor({ timeout: 15000 }).catch(() => {});
+      await page
+        .locator('.xterm')
+        .first()
+        .waitFor({ timeout: 15000 })
+        .catch(() => {});
       await page.waitForTimeout(1000);
     });
     note(

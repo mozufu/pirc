@@ -18,7 +18,9 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { freePort, launchTestBrowser, webRoot } from './harness.mjs';
 
-const { build } = await import(pathToFileURL(path.join(webRoot, 'node_modules/vite/dist/node/index.js')));
+const { build } = await import(
+  pathToFileURL(path.join(webRoot, 'node_modules/vite/dist/node/index.js'))
+);
 const base = await mkdtemp(path.join(tmpdir(), 'pirc-update-flow-'));
 const dir = { a: path.join(base, 'a'), b: path.join(base, 'b'), same: path.join(base, 'same') };
 await build({ root: webRoot, logLevel: 'error', build: { outDir: dir.a, emptyOutDir: true } });
@@ -39,8 +41,10 @@ await build({
 await cp(dir.b, dir.same, { recursive: true });
 await writeFile(path.join(dir.same, 'sw.js'), await readFile(path.join(dir.a, 'sw.js')));
 
-const swId = async (d) => /BUILD_ID = '([0-9a-f]{16})'/.exec(await readFile(path.join(d, 'sw.js'), 'utf8'))?.[1];
-const entryOf = async (d) => /src="\/assets\/(index-[^"]+\.js)"/.exec(await readFile(path.join(d, 'index.html'), 'utf8'))?.[1];
+const swId = async (d) =>
+  /BUILD_ID = '([0-9a-f]{16})'/.exec(await readFile(path.join(d, 'sw.js'), 'utf8'))?.[1];
+const entryOf = async (d) =>
+  /src="\/assets\/(index-[^"]+\.js)"/.exec(await readFile(path.join(d, 'index.html'), 'utf8'))?.[1];
 const [idA, idB] = [await swId(dir.a), await swId(dir.b)];
 assert.ok(idA && idB && idA !== idB, `sw.js build identifiers: ${idA} / ${idB}`);
 assert.ok(!(await readFile(path.join(dir.a, 'sw.js'), 'utf8')).includes('__PIRC_BUILD_ID__'));
@@ -48,19 +52,32 @@ console.log(`build A: sw id ${idA}, entry ${await entryOf(dir.a)}`);
 console.log(`build B: sw id ${idB}, entry ${await entryOf(dir.b)}`);
 
 let current = dir.a;
-const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
+const types = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.webmanifest': 'application/manifest+json',
+};
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x.invalid');
   if (url.pathname.startsWith('/api/')) {
     res.writeHead(503, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ error: { code: 'unavailable', message: 'no gateway in this check' } }));
+    res.end(
+      JSON.stringify({ error: { code: 'unavailable', message: 'no gateway in this check' } }),
+    );
     return;
   }
   let file = path.join(current, decodeURIComponent(url.pathname));
   if (!existsSync(file) || file === current + path.sep) file = path.join(current, 'index.html');
   try {
     const body = await readFile(file);
-    res.writeHead(200, { 'content-type': types[path.extname(file)] ?? 'application/octet-stream', 'cache-control': 'no-cache' });
+    res.writeHead(200, {
+      'content-type': types[path.extname(file)] ?? 'application/octet-stream',
+      'cache-control': 'no-cache',
+    });
     res.end(body);
   } catch {
     res.writeHead(404);
@@ -96,32 +113,54 @@ const shellEntry = (page) =>
     return response ? /src="\/assets\/(index-[^"]+\.js)"/.exec(await response.text())?.[1] : null;
   });
 const workerId = (page) =>
-  page.evaluate(async () => /BUILD_ID = '([0-9a-f]{16})'/.exec(await (await fetch('/sw.js', { cache: 'no-store' })).text())?.[1]);
+  page.evaluate(
+    async () =>
+      /BUILD_ID = '([0-9a-f]{16})'/.exec(
+        await (await fetch('/sw.js', { cache: 'no-store' })).text(),
+      )?.[1],
+  );
 
 try {
   // 1-3: the stamped worker.
   let page = await openControlled();
-  check('A: the page is controlled by build A\'s worker and its cached shell is build A\'s', (await shellEntry(page)) === (await entryOf(dir.a)), String(await shellEntry(page)));
+  check(
+    "A: the page is controlled by build A's worker and its cached shell is build A's",
+    (await shellEntry(page)) === (await entryOf(dir.a)),
+    String(await shellEntry(page)),
+  );
   current = dir.b; // the deployment is replaced
   await page.evaluate(() => navigator.serviceWorker.getRegistration().then((r) => r.update()));
   await page.locator('.update-toast', { hasText: 'Update ready' }).waitFor({ timeout: 15000 });
   check('B deployed: the open page offers "Update ready" after its update check', true);
-  check('the page is still build A until the user acts', (await page.evaluate(() => document.querySelector('script[src*="/assets/index-"]')?.getAttribute('src'))) === `/assets/${await entryOf(dir.a)}`);
+  check(
+    'the page is still build A until the user acts',
+    (await page.evaluate(() =>
+      document.querySelector('script[src*="/assets/index-"]')?.getAttribute('src'),
+    )) === `/assets/${await entryOf(dir.a)}`,
+  );
   await Promise.all([
     page.waitForEvent('load'),
     page.locator('.update-toast button', { hasText: 'Update' }).first().click(),
   ]);
   await page.waitForFunction(() => !!navigator.serviceWorker.controller);
-  const loaded = await page.evaluate(() => document.querySelector('script[src*="/assets/index-"]')?.getAttribute('src'));
+  const loaded = await page.evaluate(() =>
+    document.querySelector('script[src*="/assets/index-"]')?.getAttribute('src'),
+  );
   check('after Update the page runs build B', loaded === `/assets/${await entryOf(dir.b)}`, loaded);
-  check('the worker file now served and active is build B\'s', (await workerId(page)) === idB);
+  check("the worker file now served and active is build B's", (await workerId(page)) === idB);
   // The shell cache is rewritten from the network on the visit.
-  await page.waitForFunction(async (entry) => {
-    const cache = await caches.open('relay-shell-v1');
-    const response = await cache.match('/');
-    return !!response && (await response.text()).includes(entry);
-  }, await entryOf(dir.b));
-  check('the cached shell is build B\'s (an offline start uses the new shell)', (await shellEntry(page)) === (await entryOf(dir.b)));
+  await page.waitForFunction(
+    async (entry) => {
+      const cache = await caches.open('relay-shell-v1');
+      const response = await cache.match('/');
+      return !!response && (await response.text()).includes(entry);
+    },
+    await entryOf(dir.b),
+  );
+  check(
+    "the cached shell is build B's (an offline start uses the new shell)",
+    (await shellEntry(page)) === (await entryOf(dir.b)),
+  );
   await page.close();
 
   // Control, in a fresh profile: a release whose sw.js bytes did not change is not noticed.
@@ -131,7 +170,10 @@ try {
     current = dir.same;
     await page.evaluate(() => navigator.serviceWorker.getRegistration().then((r) => r.update()));
     await page.waitForTimeout(2500);
-    check('control: with an unchanged sw.js the open page sees no update', (await page.locator('.update-toast').count()) === 0);
+    check(
+      'control: with an unchanged sw.js the open page sees no update',
+      (await page.locator('.update-toast').count()) === 0,
+    );
   } finally {
     await fresh.close();
   }
