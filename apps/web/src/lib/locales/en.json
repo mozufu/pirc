@@ -1557,5 +1557,7 @@
   "Remote audio not loaded": "Remote audio not loaded",
   "Open image in a new tab": "Open image in a new tab",
   "Open video in a new tab": "Open video in a new tab",
-  "Open audio in a new tab": "Open audio in a new tab"
+  "Open audio in a new tab": "Open audio in a new tab",
+  "This page is out of date": "This page is out of date",
+  "Reload the page to continue; your draft is kept.": "Reload the page to continue; your draft is kept."
 }

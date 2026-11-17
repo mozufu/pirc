@@ -1,3 +1,4 @@
+import { writable } from 'svelte/store';
 import { tr } from './i18n.svelte';
 /** JSON-over-fetch shared by the gateway clients (`api.ts`, `panel-api.ts`). */
 
@@ -27,6 +28,16 @@ export interface RequestOptions {
  */
 export const REQUEST_HEADER = 'x-pirc-request';
 export const REQUEST_VALUE = '1';
+
+/** The error code of a request the gateway refuses because of how it was made. */
+export const REQUEST_SHAPE_CODE = 'request_shape_required';
+
+/**
+ * True once the gateway refused a request with {@link REQUEST_SHAPE_CODE}: this
+ * page was built before the rule and cannot work with the gateway until it is
+ * reloaded (the shell is then replaced). The app shows a reload prompt.
+ */
+export const clientOutdated = writable(false);
 
 const isStateChanging = (method: string | undefined): boolean =>
   !['GET', 'HEAD', 'OPTIONS'].includes((method ?? 'GET').toUpperCase());
@@ -66,10 +77,12 @@ export async function requestWithStatus<T>(
   const response = await fetch(path, { ...init, headers, credentials: 'include' });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
+    const code = body?.error?.code ?? body?.code;
+    if (response.status === 415 && code === REQUEST_SHAPE_CODE) clientOutdated.set(true);
     throw new ApiError(
       (options.errorMessage ?? defaultMessage)(body, response.status),
       response.status,
-      body?.error?.code ?? body?.code,
+      code,
     );
   }
   if (response.status === 204) return { status: 204, body: undefined as T };

@@ -1557,5 +1557,7 @@
   "Remote audio not loaded": "遠端音訊尚未載入",
   "Open image in a new tab": "在新分頁開啟圖片",
   "Open video in a new tab": "在新分頁開啟影片",
-  "Open audio in a new tab": "在新分頁開啟音訊"
+  "Open audio in a new tab": "在新分頁開啟音訊",
+  "This page is out of date": "此頁面已過期",
+  "Reload the page to continue; your draft is kept.": "請重新載入頁面以繼續；草稿會保留。"
 }

@@ -47,6 +47,7 @@
   import type { PanelTab } from './lib/panel-api';
   import { onFilePreviewRequest } from './lib/file-links';
   import { loadHighlighter } from './lib/markdown';
+  import { clientOutdated } from './lib/http';
   import { activateUpdate, registerPwa } from './lib/pwa';
   import { loadLayout, saveLayout } from './lib/storage';
   import { MESSAGE_PAGE } from './lib/app.svelte';
@@ -761,7 +762,29 @@
   <MobileTabs current={mobileTab} chats={hasChats} onpick={pickTab} />
 {/if}
 
-{#if updateRegistration}
+{#if $clientOutdated}
+  <!-- The gateway refused a request because this page is older than its rules. -->
+  <div class="update-toast" role="alert">
+    <Download size={18} />
+    <div>
+      <strong>{tr('This page is out of date')}</strong><span
+        >{tr('Reload the page to continue; your draft is kept.')}</span
+      >
+    </div>
+    <button
+      type="button"
+      onclick={() => {
+        // A waiting worker holds the new shell; otherwise a reload fetches it from the network.
+        if (updateRegistration?.waiting) activateUpdate(updateRegistration);
+        else location.reload();
+      }}>{tr('Reload')}</button
+    ><button
+      type="button"
+      aria-label={tr('Dismiss update')}
+      onclick={() => clientOutdated.set(false)}><X size={15} /></button
+    >
+  </div>
+{:else if updateRegistration}
   <div class="update-toast" role="status">
     <Download size={18} />
     <div>

@@ -1,6 +1,15 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { REQUEST_HEADER, REQUEST_VALUE, request, requestWithStatus } from './http';
+import { get } from 'svelte/store';
+import {
+  ApiError,
+  clientOutdated,
+  REQUEST_HEADER,
+  REQUEST_SHAPE_CODE,
+  REQUEST_VALUE,
+  request,
+  requestWithStatus,
+} from './http';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -87,5 +96,40 @@ describe('the one place requests are made', () => {
       .filter(([, text]) => /<form[^>]*\saction=|\.submit\(\)|requestSubmit\(/.test(text))
       .map(([path]) => path);
     expect(offenders).toEqual([]);
+  });
+});
+
+describe('a gateway that refuses an out-of-date page', () => {
+  const refuse = (status: number, code: string, message = 'text from the gateway') =>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ error: { code, message } }), {
+            status,
+            headers: { 'content-type': 'application/json' },
+          }),
+      ),
+    );
+
+  it('marks the page outdated and still reports the gateway message', async () => {
+    clientOutdated.set(false);
+    refuse(415, REQUEST_SHAPE_CODE, 'This version of the app or page is out of date.');
+    const error = (await request('/api/x', { method: 'POST' }).catch((e) => e)) as ApiError;
+    expect(error).toBeInstanceOf(ApiError);
+    expect(error.code).toBe(REQUEST_SHAPE_CODE);
+    expect(error.message).toBe('This version of the app or page is out of date.');
+    expect(get(clientOutdated)).toBe(true);
+  });
+
+  it('leaves the flag alone for other refusals', async () => {
+    clientOutdated.set(false);
+    refuse(415, 'unsupported_media_type');
+    await request('/api/x', { method: 'POST' }).catch(() => undefined);
+    refuse(403, REQUEST_SHAPE_CODE);
+    await request('/api/x', { method: 'POST' }).catch(() => undefined);
+    refuse(409, 'conflict');
+    await request('/api/x', { method: 'POST' }).catch(() => undefined);
+    expect(get(clientOutdated)).toBe(false);
   });
 });

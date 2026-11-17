@@ -4,6 +4,7 @@ import { flushSync, mount, tick, unmount } from 'svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App.svelte';
 import { app, MESSAGE_PAGE } from './lib/app.svelte';
+import { clientOutdated } from './lib/http';
 import { panelApi } from './lib/panel-api';
 import { demoWorkspaces } from './lib/mock';
 import { seedApp, stubMatchMedia } from './lib/testing/app-state';
@@ -296,5 +297,37 @@ describe('App native management link', () => {
     expect(app.bootstrap).toHaveBeenCalledTimes(1);
     expect(location.search).toBe('?nativeManagement=req%2Fone&session=existing-session');
     expect(fetch.mock.calls.map(([, init]) => init?.method ?? 'GET')).toEqual(['GET']);
+  });
+});
+
+describe('a gateway that refuses an out-of-date page', () => {
+  const toast = () => target.querySelector<HTMLElement>('.update-toast');
+
+  it('asks the user to reload, and the prompt can be dismissed', async () => {
+    await start(2);
+    expect(toast()).toBeNull();
+    clientOutdated.set(true);
+    await tick();
+    flushSync();
+    expect(toast()?.textContent).toContain('This page is out of date');
+    expect(toast()?.getAttribute('role')).toBe('alert');
+    target
+      .querySelector<HTMLButtonElement>('.update-toast button[aria-label="Dismiss update"]')!
+      .click();
+    await tick();
+    flushSync();
+    expect(toast()).toBeNull();
+  });
+
+  it('reloads the page from the prompt', async () => {
+    const reload = vi.fn();
+    vi.stubGlobal('location', { ...window.location, reload });
+    await start(2);
+    clientOutdated.set(true);
+    await tick();
+    flushSync();
+    target.querySelector<HTMLButtonElement>('.update-toast button')!.click();
+    expect(reload).toHaveBeenCalledTimes(1);
+    clientOutdated.set(false);
   });
 });
