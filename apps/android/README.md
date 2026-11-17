@@ -249,6 +249,37 @@ mode catalog, delegation approvals, management grants and cross-device interacti
 synchronization need the matching gateway/web update. See the
 [upgrade notes](../../docs/deploy/upgrades.md).
 
+## Content boundary
+
+Content the agent or a document supplies is treated as untrusted:
+
+- **Initiator.** The paired credential is attached only to requests the app
+  itself starts. Page content, forms, scripts and subresources use the content
+  initiator and carry no credential, paired-origin cookie or Referer.
+- **Gateway documents are inert.** A document whose final response URL (computed
+  by the native transport after every redirect) is the paired origin is shown as
+  text and controls but never gets a script environment, author stylesheets,
+  same-origin script/fetch resources, or the paired origin's cookie and storage
+  scopes (`PairedOriginPolicy`). The native script engine re-checks the document
+  URL itself before it creates an isolate. The app still recognises its own Web
+  shell. Documents and scripts from other origins, images, files, downloads and
+  forms work as before.
+- **Remote images and media load on a tap.** In chat messages, previews, tool
+  output and Gateway documents, a remote image, poster or media source is an
+  app-owned placeholder (`NativeRemoteContentGate`) showing the alt text and
+  source until the user taps it; only then is it requested. Inline `data:`
+  images display directly. CSS background images have no tap target and are not
+  loaded in these places. A page the user navigated to on another origin loads
+  its own images.
+- **Update prompt.** A `request_shape_required` (HTTP 415) reply asks the user to
+  update the app and is not retried in another shape.
+
+`test/remote_content_gate_test.dart`, `test/paired_origin_document_test.dart`,
+`PairedOriginDocumentTest.kt` and `test/ui_integrity_native_test.dart` pin these
+with request counts and measured layout. `integration_test/
+content_boundary_emulator_test.dart` and `dev/emulator-fixture.mjs` repeat the
+checks on a device against local servers (not yet run on a device).
+
 ## Workspace modes
 
 The app loads the gateway's mode catalog (`GET /api/modes`) with the workspace
