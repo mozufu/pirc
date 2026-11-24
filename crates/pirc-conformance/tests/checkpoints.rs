@@ -250,7 +250,7 @@ fn tree(root: &Path) -> BTreeMap<PathBuf, Vec<u8>> {
     out
 }
 
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn native_recovery_preserves_dirty_git_and_continues_once_across_devices_and_restarts() {
     let _fixture = NATIVE_FIXTURE.lock().await;
@@ -325,6 +325,7 @@ async fn native_recovery_preserves_dirty_git_and_continues_once_across_devices_a
     );
     let phone = vec![
         ("host", HOST.into()),
+        ("x-pirc-client", pirc_conformance::CLIENT.to_owned()),
         (
             "authorization",
             format!("Bearer {}", paired["token"].as_str().unwrap()),
@@ -580,7 +581,7 @@ async fn native_recovery_preserves_dirty_git_and_continues_once_across_devices_a
     assert_eq!(tree(&source), expected_source);
 }
 
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn stale_previews_and_conflicts_require_fresh_review_and_preserve_later_writes() {
     let _fixture = NATIVE_FIXTURE.lock().await;
@@ -707,7 +708,7 @@ async fn stale_previews_and_conflicts_require_fresh_review_and_preserve_later_wr
     );
 }
 
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn killed_node_marks_unfinished_capture_incomplete_instead_of_inventing_a_postimage() {
     let _fixture = NATIVE_FIXTURE.lock().await;

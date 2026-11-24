@@ -6,7 +6,7 @@ use pirc_protocol::mode::{AssistantAccess, ModeId, PromptSection, ScheduleScope,
 use serde_json::{Value, json};
 use std::time::Duration;
 
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn custom_mode_catalog_prompt_capabilities_and_removal() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

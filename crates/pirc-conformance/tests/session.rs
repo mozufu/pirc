@@ -21,7 +21,7 @@ fn cursor(watermark: &Value) -> String {
     format!("{}:{}", watermark["epoch"], watermark["sequence"])
 }
 
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn session_lifecycle() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

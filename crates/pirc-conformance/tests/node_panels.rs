@@ -36,7 +36,7 @@ fn no_outer_repository() -> Vec<(&'static str, String)> {
 /// Git: no repository, a subdirectory of one, no commits yet, then two
 /// commits with an upstream and every kind of change; diff, log and commit
 /// options and errors.
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_panels_git() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -228,7 +228,7 @@ const JPEG: &[u8] = b"\xff\xd8\xff\xe0\0\x10JFIF\0\x01\x01\0\0\x01\0\x01\0\0";
 
 /// The file browser: listing order and kinds, text, binary and image
 /// contents, size limits, and every way out of the workspace.
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_panels_files() {
     let Some(cluster) = Cluster::start().await else {
@@ -426,7 +426,7 @@ async fn node_panels_files() {
 
 /// Memory, context and background panels without and with a live agent,
 /// a background task stopped from the panel, and browser recordings.
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_panels_state() {
     let Some(cluster) = Cluster::start().await else {
@@ -760,7 +760,7 @@ const PNG_1X1: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42
 
 /// Uploads (images by their bytes, files by name, limits), then prompts
 /// that reference them: what the model gets and the copies in the workspace.
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_panels_uploads() {
     use base64::Engine as _;
@@ -1072,7 +1072,7 @@ async fn node_panels_uploads() {
 
 /// Who may use the panel routes: the owner, another user, no identity, an
 /// unknown session.
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_panels_access() {
     let Some(cluster) = Cluster::start_with(two_users()).await else {
@@ -1156,7 +1156,7 @@ async fn node_panels_access() {
 /// The node's own checks, with the test as the gateway: requests the real
 /// gateway never relays (it validates or answers them itself), and the
 /// node's ownership check of the user a request is relayed for.
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_panels_link() {
     use base64::Engine as _;

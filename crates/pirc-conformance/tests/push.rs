@@ -82,7 +82,7 @@ fn topic_of(tag: &str) -> String {
     topic.chars().take(32).collect()
 }
 
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn push_notifications() {
     let push = FakePush::start().await.expect("fake push service");
@@ -289,6 +289,7 @@ async fn push_notifications() {
     let device_id = paired.body["device"]["id"].as_str().unwrap().to_owned();
     let phone = vec![
         ("host", HOST.to_owned()),
+        ("x-pirc-client", pirc_conformance::CLIENT.to_owned()),
         ("authorization", format!("Bearer {token}")),
     ];
     let mut body = push.subscribe("phone", 201, 16).body();

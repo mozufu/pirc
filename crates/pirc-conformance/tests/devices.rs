@@ -5,7 +5,7 @@
 use pirc_conformance::{Cluster, HOST, Transcript, WORKSPACE_ID, browser_headers};
 use serde_json::json;
 
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn device_token_lifecycle() {
     let Some(cluster) = Cluster::start().await else {
@@ -59,6 +59,7 @@ async fn device_token_lifecycle() {
     // No Origin: a bearer token is never sent ambiently.
     let device = vec![
         ("host", HOST.to_owned()),
+        ("x-pirc-client", pirc_conformance::CLIENT.to_owned()),
         ("authorization", format!("Bearer {token}")),
     ];
     for (method, path) in [

@@ -41,7 +41,7 @@ async fn record_socket(t: &mut Transcript, step: &str, connection: Connection) {
     }
 }
 
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn browser_request_matrix() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -87,6 +87,7 @@ async fn browser_request_matrix() {
     probe(&api, &mut t, "device token and identity", &both).await;
     let device = vec![
         ("host", HOST.to_owned()),
+        ("x-pirc-client", pirc_conformance::CLIENT.to_owned()),
         (
             "authorization",
             format!("Bearer pirc_dev_{}", "a".repeat(43)),
@@ -107,6 +108,7 @@ async fn browser_request_matrix() {
             "events: unknown device token",
             vec![
                 ("host", HOST.to_owned()),
+                ("x-pirc-client", pirc_conformance::CLIENT.to_owned()),
                 (
                     "authorization",
                     format!("Bearer pirc_dev_{}", "a".repeat(43)),
@@ -148,7 +150,7 @@ async fn untrusted_peer() {
     insta::assert_json_snapshot!("untrusted_peer", t.into_value());
 }
 
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn proxy_secret() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

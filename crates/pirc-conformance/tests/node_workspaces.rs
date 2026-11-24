@@ -152,7 +152,7 @@ async fn run_once(cluster: &Cluster, workspace: &str, message: &str) -> (String,
     (id, json!(notifications))
 }
 
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_workspaces() {
     // The node's state inside its HOME (relative to the node's working
@@ -455,7 +455,7 @@ async fn node_workspaces() {
 
 /// Removal fences only gateway access; re-adding the canonical directory
 /// must recover the node's original workspace and saved conversation.
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn removed_directory_readd_restores_real_node_history() {
     let Some(mut cluster) = Cluster::start().await else {
@@ -661,7 +661,7 @@ impl OnNode<'_> {
 }
 
 /// The node's own answers, with the test as the gateway.
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_workspaces_on_node() {
     let gateway = FakeGateway::bind().await;

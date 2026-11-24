@@ -43,7 +43,7 @@ async fn exercise(materialized: bool) {
     );
     let headers = vec![
         ("host", HOST.into()),
-        ("x-pirc-first-send-contract", "2".into()),
+        ("x-pirc-client", pirc_conformance::CLIENT.into()),
         (
             "authorization",
             format!("Bearer {}", paired["token"].as_str().unwrap()),

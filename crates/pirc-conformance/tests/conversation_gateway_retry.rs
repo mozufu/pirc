@@ -13,7 +13,7 @@ fn headers(token: &str) -> Vec<(&'static str, String)> {
     vec![
         ("host", HOST.into()),
         ("authorization", format!("Bearer {token}")),
-        ("x-pirc-first-send-contract", "2".into()),
+        ("x-pirc-client", pirc_conformance::CLIENT.into()),
         ("x-pirc-account", USER.replace('@', "%40")),
     ]
 }

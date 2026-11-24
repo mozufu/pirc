@@ -26,7 +26,7 @@ async fn device(cluster: &Cluster, name: &str) -> (Vec<(&'static str, String)>, 
     (
         vec![
             ("host", HOST.into()),
-            ("x-pirc-first-send-contract", "2".into()),
+            ("x-pirc-client", pirc_conformance::CLIENT.into()),
             (
                 "authorization",
                 format!("Bearer {}", paired["token"].as_str().unwrap()),

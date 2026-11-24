@@ -46,7 +46,7 @@ async fn accepted_intent_and_attachment_survive_both_hosts_restarting_without_ex
     // All further requests use only the paired bearer: no Origin or browser login.
     let headers = vec![
         ("host", HOST.into()),
-        ("x-pirc-first-send-contract", "2".into()),
+        ("x-pirc-client", pirc_conformance::CLIENT.into()),
         ("authorization", format!("Bearer {token}")),
     ];
     let path = "/api/conversation-submissions/native-draft";

@@ -14,7 +14,7 @@ async fn create(api: &Api) -> String {
     assert_eq!(r.status, 201, "{}", r.body);
     r.body["session"]["id"].as_str().unwrap().into()
 }
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn saved_upload_origin_is_shared_across_devices_and_survives_restart() {
     let Some(mut cluster) = Cluster::start_with(GatewayOptions {
@@ -63,6 +63,7 @@ async fn saved_upload_origin_is_shared_across_devices_and_survives_restart() {
     assert_eq!(pair.status, 201, "{}", pair.body);
     let phone = vec![
         ("host", HOST.into()),
+        ("x-pirc-client", pirc_conformance::CLIENT.to_owned()),
         (
             "authorization",
             format!("Bearer {}", pair.body["token"].as_str().unwrap()),

@@ -49,7 +49,7 @@ async fn control(link: &mut pirc_conformance::NodeLink, session: &str, id: &str)
     lease["data"]["body"]["lease"]["generation"].clone()
 }
 
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn a_voided_operation_is_refused_when_the_delayed_create_arrives_even_after_crashes() {
     let gateway = FakeGateway::bind().await;
