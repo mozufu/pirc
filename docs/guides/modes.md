@@ -1,6 +1,6 @@
 # Workspace modes
 
-[Guides](README.md) · [Implementation plan](../../plans/modes.md)
+[Guides](README.md) · [Implementation plan](../development/historical-records.md#retired-plans-2026-11-24)
 
 Workspace modes are gateway-managed combinations of capabilities, prompt
 sections, features and tools. Chat and Work are default files, not reserved

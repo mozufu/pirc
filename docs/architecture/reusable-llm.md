@@ -1,6 +1,6 @@
 # Reusable LLM foundations: extraction checkpoint
 
-[Architecture](README.md) · [Model backends](backend-auth.md) · [pots guide](../guides/pots.md) · [Plan and remaining gates](../../plans/library-extraction.md)
+[Architecture](README.md) · [Model backends](backend-auth.md) · [pots guide](../guides/pots.md) · [Plan and remaining gates](../development/historical-records.md#retired-plans-2026-11-24)
 
 Status: staged local implementation, 2026-10-24. The implementation baseline is
 `eb45f71d8fdefb35a796704ebd9ba7accdf098ff`. The user authorized phased code work

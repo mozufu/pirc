@@ -4,6 +4,29 @@
 
 Completed implementation diaries and evaluation artifacts are kept in Git rather than maintained alongside current documentation. Use the [architecture references](../architecture/README.md), [user guides](../guides/README.md) and [deployment guides](../deploy/README.md) for current behavior. Historical proposals, commands and paid-run approvals are not current instructions or permission to rerun an evaluation.
 
+## Retired plans (2026-11-24)
+
+The pirc 2 plan reset replaced every earlier plan with [Open work](../../plans/README.md),
+the [roadmap](../../plans/roadmap.md) and its specifications. The behavioral contracts
+that still apply were extracted into [Behavioral contracts](../architecture/contracts.md),
+and the remaining acceptance gaps into the roadmap's carried-over items. The last
+commit containing the retired plans is `a165ee7a92b27ee2fe68d61e7525f11497d17aeb`:
+
+```sh
+git ls-tree -r --name-only a165ee7a92b27ee2fe68d61e7525f11497d17aeb -- plans
+git show a165ee7a92b27ee2fe68d61e7525f11497d17aeb:plans/unified-conversations.md
+git show a165ee7a92b27ee2fe68d61e7525f11497d17aeb:plans/pots/design.md
+```
+
+The retired files are `calendar.md`, `checkpoints.md`, `conversation-binding-migration.md`,
+`conversation-execution-contracts.md`, `delegation-autonomy.md`, `execution-isolation.md`,
+`folder-grants.md`, `library-extraction.md`, `memory-handoff.md`, `memory-search.md`,
+`mobile.md`, `modes.md`, `release-0.9.3.md`, `sandbox-gpu.md`, `transition-installation.md`,
+`unified-architecture-review.md`, `unified-completion-contracts.md`,
+`unified-conversations.md` and `pots/` (`README.md`, `design.md`, `acceptance.md`). The
+plans index before the reset is `git show 162c113b:plans/README.md`. Their status
+lines and authorization statements are history, not instructions.
+
 ## Retrieve the retired documents
 
 The complete pre-cleanup snapshot is commit `af7074fc51742e79c8f0c76a9aaf64f80b414f7e`. In a clone containing that commit:

@@ -9,20 +9,20 @@ acceptance, activation.
 
 ## Status
 
-| Milestone                                                     | Design   | Code        | Acceptance | Notes                  |
-| ------------------------------------------------------------- | -------- | ----------- | ---------- | ---------------------- |
-| [M0 Unify the working tree](#m0-unify-the-working-tree)       | complete | complete    | n/a        | `e1a08db9`, `162c113b` |
-| [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            |                        |
-| [M2 Backend baseline](#m2-backend-baseline)                   | complete |             |            |                        |
-| [M3 Usage ledger](#m3-usage-ledger)                           | complete |             |            | Q7                     |
-| [M4 Pots backend](#m4-pots-backend)                           | complete |             |            | Q6                     |
-| [M5 Client foundation](#m5-client-foundation)                 | complete |             |            |                        |
-| [M6 Work and settings screens](#m6-work-and-settings-screens) | outline  |             |            |                        |
-| [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                        |
-| [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                        |
-| [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                     |
-| [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                        |
-| [M11 Release](#m11-release)                                   | outline  |             |            |                        |
+| Milestone                                                     | Design   | Code        | Acceptance | Notes                                               |
+| ------------------------------------------------------------- | -------- | ----------- | ---------- | --------------------------------------------------- |
+| [M0 Unify the working tree](#m0-unify-the-working-tree)       | complete | complete    | n/a        | `e1a08db9`, `162c113b`                              |
+| [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement) |
+| [M2 Backend baseline](#m2-backend-baseline)                   | complete | in progress |            | step 1 done (`0d2dd8ef`, `283dd48c`)                |
+| [M3 Usage ledger](#m3-usage-ledger)                           | complete |             |            | Q7                                                  |
+| [M4 Pots backend](#m4-pots-backend)                           | complete |             |            | Q6                                                  |
+| [M5 Client foundation](#m5-client-foundation)                 | complete |             |            |                                                     |
+| [M6 Work and settings screens](#m6-work-and-settings-screens) | outline  |             |            |                                                     |
+| [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                     |
+| [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                     |
+| [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                  |
+| [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                                                     |
+| [M11 Release](#m11-release)                                   | outline  |             |            |                                                     |
 
 "Outline" milestones get their detailed steps written (rule P12) before they start,
 using what the earlier milestones produced.

@@ -99,7 +99,7 @@ use this isolation mode. Legacy shared directories remain observational, and
 Local macOS real-process continuation, multi-client HTTP/WebSocket, restart and
 SIGKILL acceptance pass; all checkpoint API replies explicitly disable caching.
 Linux runtime/full-disk and real-device continuation acceptance is still pending.
-See [Checkpoints](../../plans/checkpoints.md#phase-5-local-integrated-acceptance).
+See [Checkpoints](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Identity and link
 

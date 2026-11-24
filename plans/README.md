@@ -15,11 +15,10 @@ specifications it links, this file wins.
 | [client.md](client.md)                 | The single Flutter client (Android and Web): packages, transport, state, rendering, layout  |
 | [design (E)](../docs/design/README.md) | Product design handoff: screens E1–E36, D and C specifications, tokens and prototypes       |
 
-The other files in this folder (`unified-*.md`, `conversation-*.md`, `checkpoints.md`,
-`execution-isolation.md`, `transition-installation.md`, `mobile.md`, `pots/`, …) are
-**reference material awaiting retirement** in milestone M1. Read them only for the
-contracts that [roadmap M1](roadmap.md#m1-plans-reset) lists as still valid; their
-status lines, queues, "do not ask again" wording and authorization statements are void.
+The plans before the reset are retired; see
+[historical records](../docs/development/historical-records.md#retired-plans-2026-11-24).
+Their still-valid invariants are in
+[Behavioral contracts](../docs/architecture/contracts.md).
 
 ## Direction (2026-11-24)
 

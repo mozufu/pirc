@@ -96,7 +96,7 @@ Upgrading from the pre-Rust **0.3.x** releases still requires fresh state: re-pa
 
 ## Documentation
 
-The native Flutter Android app is in [apps/android](apps/android/README.md); its [remaining work and validation limits](plans/mobile.md) are tracked separately.
+The native Flutter Android app is in [apps/android](apps/android/README.md); its [remaining work and validation limits](docs/development/historical-records.md#retired-plans-2026-11-24) are tracked separately.
 
 Start with the [documentation index](docs/README.md). Current usage guides and architecture references are separate from [implementation plans](plans/README.md) and historical designs.
 

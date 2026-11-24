@@ -189,7 +189,7 @@ and historical epochs remain explicit unresolved evidence. This now prevents new
 permission commit. Unknown trusted-wrapper exit is still unknown, and it does not
 cover macOS, approved host commands, panel terminals or every admitted effect. The transition receipt exposes
 `sandboxProcesses` counts but still never claims `revocationConfirmed`. See the
-[current U4 evidence and remaining gates](../../plans/unified-conversations.md#u4-implementation-checkpoint-fenced-terminal-input-2026-10-28).
+[current U4 evidence and remaining gates](historical-records.md#retired-plans-2026-11-24).
 
 ## Data
 

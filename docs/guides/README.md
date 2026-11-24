@@ -20,4 +20,4 @@ tracking-only tasks and the execution-unavailable checkpoint boundary.
 prompt sections, feature/tool restrictions and reload behavior. Dynamic client
 navigation remains a phase-3 follow-up.
 
-For environment variables and host prerequisites, use the [gateway](../deploy/gateway.md), [node](../deploy/node.md), and [sandbox/browser deployment](../deploy/sandbox-and-browser.md) references. For pending UI work, see the [mobile follow-ups](../../plans/mobile.md), not the completed design history.
+For environment variables and host prerequisites, use the [gateway](../deploy/gateway.md), [node](../deploy/node.md), and [sandbox/browser deployment](../deploy/sandbox-and-browser.md) references. For pending UI work, see the [mobile follow-ups](../development/historical-records.md#retired-plans-2026-11-24), not the completed design history.

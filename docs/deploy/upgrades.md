@@ -141,7 +141,7 @@ Existing requests stay unacknowledged. Gateway **1029**,
 protocol/client/private-envelope **15/2/3**, lockfiles and Nix hashes remain
 unchanged. Back up Node state with its binary; older readers reject 2030 and
 rollback requires matching state/binary backups. Local code only. See the
-[validation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-terminal-request-acknowledgement-and-specific-errors-2026-11-06).
+[validation checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Local checkpoint: terminal request discovery and result parity
 
@@ -155,7 +155,7 @@ and outcomes are kept without new reasons or grants. Gateway **1029**,
 protocol/client/private-envelope **15/2/3**, lockfiles and Nix hashes remain
 unchanged. Back up Node state with its binary; older readers reject 2029 and
 rollback requires matching state/binary backups. Local code only, no deployment
-or Release. See the [validation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-terminal-request-discovery-and-result-parity-2026-11-06).
+or Release. See the [validation checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Local checkpoint: durable isolated work-terminal requests
 
@@ -168,7 +168,7 @@ terminals and scopes gain no request IDs or grants. Gateway **1029**,
 protocol/client/private-envelope **15/2/3**, lockfiles and Nix hashes remain
 unchanged. Back up Node state with its binary; older readers reject 2028 and
 rollback requires matching state/binary backups. Local code only, no deployment
-or Release. See the [validation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-durable-isolated-work-terminal-requests-2026-11-06).
+or Release. See the [validation checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Local checkpoint: explicit human host-terminal review
 
@@ -188,7 +188,7 @@ Gateway **1029**, protocol/client/private-envelope **15/2/3**, lockfiles and Nix
 hashes remain unchanged. Back up Node state with its binary; older readers reject
 2027 and rollback requires matching state/binary backups. Web/Android controls,
 client recovery, isolated-by-default rollout and full revocation/install remain
-open. Local code only, no deployment or Release. See the [validation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-host-terminal-review-and-once-only-launch-2026-11-04).
+open. Local code only, no deployment or Release. See the [validation checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Local checkpoint: terminal I/O owner recovery
 
@@ -207,7 +207,7 @@ lockfiles and Nix hashes remain unchanged. Back up Node state with its matching
 binary before upgrade; older readers reject 2026. Rollback requires restoring
 matching binary/state backups. This is local code only, with no deployment or
 Release. Actual Linux runtime acceptance, host-terminal grants and client/default
-rollout remain open. See the [validation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-terminal-io-owner-recovery-2026-11-04).
+rollout remain open. See the [validation checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Local fix: Agent and terminal journal slots
 
@@ -223,7 +223,7 @@ This fixes multi-terminal/Agent coexistence; lost-I/O-owner recovery, mode choic
 and default rollout remain open. Gateway **1029**, protocol/client/private-envelope
 **15/2/3**, dependency/lockfile/Nix hashes stay unchanged. Older binaries refuse
 2025; rollback requires matching state/binary backups. Local only, no deployment
-or Release. See the [validation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-agent-and-terminal-journal-slots-2026-11-04).
+or Release. See the [validation checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Local checkpoint: guarded isolated work terminals
 
@@ -241,7 +241,7 @@ false. Linux detached-writer/native-PTY acceptance is not verified on this macOS
 host. Gateway **1029**, protocol/client/private-envelope **15/2/3**, dependencies,
 lockfiles and Nix hashes stay unchanged. Older binaries refuse 2024; rollback needs
 matching state/binary backups. Local only, no deployment/Release. See the
-[execution-path checkpoint](../../plans/execution-isolation.md#local-implementation-checkpoint-guarded-isolated-work-terminals-2026-11-04).
+[execution-path checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Local checkpoint: host-management approval origin
 
@@ -259,7 +259,7 @@ switching retain their prior state; isolated PTY/command adapters and Web/Androi
 mode choices remain open. Gateway schema **1029**, protocol/client/private-envelope
 **15/2/3** and dependency/lockfile/Nix hashes stay unchanged. Older Node binaries
 refuse 2023; use matching state/binary backups for rollback. Local only, no
-migration of a deployed service or Release. See the [execution-path checkpoint](../../plans/execution-isolation.md#local-implementation-checkpoint-host-management-approval-origin-2026-11-04).
+migration of a deployed service or Release. See the [execution-path checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Local checkpoint: terminal I/O settlement
 
@@ -275,8 +275,8 @@ and identities are preserved; old binaries refuse 2022, requiring matching
 binary/state backups for rollback. This does not invent descendant/history proof,
 enable public switching or implement the newly adopted isolated-work/host-management
 adapters. Package/dependency/lockfile/Nix hashes remain unchanged; local only, no
-deployment or Release. See the [validation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-terminal-io-settlement-2026-11-04)
-and [adopted execution-path contract](../../plans/execution-isolation.md).
+deployment or Release. See the [validation checkpoint](../development/historical-records.md#retired-plans-2026-11-24)
+and [adopted execution-path contract](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Local checkpoint: native proxy retirement
 
@@ -296,7 +296,7 @@ Gateway remains **1029**, protocol/client/private-envelope **15/2/3**. Existing
 rows are unchanged; old Node binaries refuse 2021. Before eventual deployment,
 retain matching binary/state backups for rollback. No package/dependency/lockfile/
 Nix hash changes, deployment or Release. See the [sandbox guide](sandbox-and-browser.md#source-fences-and-native-proxy-retirement)
-and [validation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-native-proxy-retirement-2026-11-04).
+and [validation checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Local checkpoint: transition supervisor Stop commands
 
@@ -317,7 +317,7 @@ and target installation false. Source binding/history/files and peer work remain
 No target installation, public switching, package/dependency/lockfile/Nix hash
 change, deployment or release is implied. Protocol/client/private-envelope stay
 **15/2/3**. Web/paired devices use the existing API; no Flutter code changed and
-client controls remain pending. See the [Stop checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-durable-transition-stop-commands-2026-11-04)
+client controls remain pending. See the [Stop checkpoint](../development/historical-records.md#retired-plans-2026-11-24)
 for unit/HTTP/process evidence and remaining acceptance gaps.
 
 ## Local checkpoint: Gateway accepted transition intent
@@ -340,7 +340,7 @@ Before eventual deployment, back up consistent Gateway state. Older Gateway
 binaries refuse 1028; rollback needs matching state/binary backups. Node stays
 **2019**, protocol/client/private-envelope **15/2/3**. No package/dependency/
 lockfile/Nix hash changes. This is local implementation, with no deployment or
-new release. See the [acceptance checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-gateway-accepted-intent-journal-2026-11-04)
+new release. See the [acceptance checkpoint](../development/historical-records.md#retired-plans-2026-11-24)
 for exact test scope and remaining limitations.
 
 ## Local checkpoint: Gateway Node-fence receipt reconciliation
@@ -364,7 +364,7 @@ deployment, back up consistent Gateway state; older Gateway binaries refuse 1027
 and rollback requires a matching state/binary backup. No deployment is authorized.
 This is recovery of an already-accepted Node fact; initial Gateway acceptance
 before remote effects, full revocation and replacement installation remain open.
-See the [receipt reconciliation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-gateway-node-fence-receipt-reconciliation-2026-11-04).
+See the [receipt reconciliation checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Local checkpoint: resource-bound transition admission
 
@@ -387,7 +387,7 @@ the Node runner epoch, bound into the Gateway observation hash. Neither is a
 grant. Node capability `resourceFenceVersion: 1` identifies checked admission;
 legacy fence requests remain admission-only. All receipts still explicitly deny
 full revocation and replacement installation, and public switching remains gated.
-See the [resource-bound admission checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-resource-bound-node-admission-2026-11-04).
+See the [resource-bound admission checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Local checkpoint: durable transition previews
 
@@ -404,7 +404,7 @@ accepted-message, attachment, memory or task retention changes. Node remains
 and Nix hashes are unchanged. This update is local only. Before eventual
 deployment, back up consistent Gateway state; older binaries refuse 1026 and
 rollback requires a matching backup rather than editing the version or tables.
-See the [preview checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-durable-gateway-transition-previews-2026-10-28)
+See the [preview checkpoint](../development/historical-records.md#retired-plans-2026-11-24)
 for validation scope and remaining work.
 
 ## Local checkpoint: page-owned engine and network admission
@@ -420,7 +420,7 @@ resource owner.
 This adds no schema or deployment migration. It is local-only code and does not
 enable workspace switching or first-Send activation. Shared context/unowned
 resources and established connections still require separate containment; see the
-[page-resource checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-page-owned-engine-and-network-admission-2026-10-28)
+[page-resource checkpoint](../development/historical-records.md#retired-plans-2026-11-24)
 for the exact validation scope and remaining limits.
 
 ## Local checkpoint: browser resource and recorder retirement
@@ -440,7 +440,7 @@ descendants/descriptors. Public switching and U1 activation remain disabled.
 
 This slice is local only. It changes no schema, dependency, package version or Nix
 hash, and does not deploy or activate existing transitions. See the
-[resource checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-browser-resource-guards-and-recorder-retirement-2026-10-28)
+[resource checkpoint](../development/historical-records.md#retired-plans-2026-11-24)
 for validation scope and remaining work.
 
 ## Unreleased checkpoint: foreground browser admission
@@ -458,7 +458,7 @@ network/worker, screencast or recording retirement. Existing uncertain-close
 handling still applies. Public workspace switching and U1 activation remain
 closed. No schema, dependency, package version or Nix hash changes are included
 (Node 2018 / Gateway 1025 / protocol-client-envelope 15/2/3). See the
-[implementation evidence and remaining limits](../../plans/unified-conversations.md#u4-implementation-checkpoint-foreground-browser-effect-admission-2026-10-28).
+[implementation evidence and remaining limits](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Unreleased checkpoint: browser supervision
 
@@ -484,7 +484,7 @@ incarnation and outcome/timestamps, not URLs, input, cookies or credentials.
 These observations are not OS-wide browser containment or per-CDP-effect
 revocation. Historical coverage and revocation/installation flags remain false.
 Public environment switching and U1 activation remain disabled. See the
-[implementation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-durable-browser-supervision-2026-10-28).
+[implementation checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Unreleased local checkpoint: terminal supervision
 
@@ -512,7 +512,7 @@ They remain after session deletion for reconciliation.
 foreground job or writable file descriptor. Old terminals have no inventory;
 `historyComplete`, `revocationConfirmed` and `targetInstalled` remain false, and
 public switching remains disabled. See the
-[implementation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-durable-terminal-supervision-2026-10-28).
+[implementation checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Unreleased local checkpoint: memory cutover admission
 
@@ -527,7 +527,7 @@ holding DB; it returns `host_admission_busy` before spawning. Retry after that
 state operation finishes. The operator must still stop untracked/other-Node
 writers and explicitly request cutover. No ledger is activated by deployment.
 See [memory activation](../architecture/observational-memory.md#activation-status-and-large-histories)
-and the [implementation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-memory-cutover-host-exclusion-2026-10-28).
+and the [implementation checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Unreleased local checkpoint: host write-resource retention
 
@@ -565,7 +565,7 @@ reconciliation remain U4 work. `historyComplete`, `revocationConfirmed` and
 `targetInstalled` stay false; public switching and U1 activation remain disabled.
 Gateway stays 1025; protocol/client/private-envelope formats remain 15/2/3. No
 package version, lockfile or Nix dependency changes are needed. See the
-[resource-retention checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-host-write-resource-retention-2026-10-28).
+[resource-retention checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Unreleased local checkpoint: supervised approved host commands
 
@@ -593,7 +593,7 @@ credentials, including after session deletion.
 Pre-2015 commands lack an inventory, so `historyComplete` remains false even when
 all new records settled. Full revocation/target-installation flags remain false
 and public environment switching stays disabled. This local work does not deploy
-or enable the new first-Send flow. See the [implementation checkpoint](../../plans/unified-conversations.md#u4-implementation-checkpoint-supervised-host-commands-2026-10-28).
+or enable the new first-Send flow. See the [implementation checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Unreleased local checkpoint: guarded native Linux runner startup
 
@@ -1403,7 +1403,7 @@ existing pots requirement to upgrade compatible Gateway/Nodes together still
 applies. Future first-send integration must detect an unsupported route and fail
 closed; it must not silently use legacy non-idempotent creation. Existing session
 commands and specialized schedule/delegation/checkpoint/pots flows are unchanged.
-See the [implementation checkpoint](../../plans/unified-conversations.md#u1-implementation-checkpoint-node-allocation-2026-10-26).
+See the [implementation checkpoint](../development/historical-records.md#retired-plans-2026-11-24).
 
 ## Unreleased: explicit pots execution
 

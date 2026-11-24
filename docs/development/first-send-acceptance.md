@@ -263,4 +263,4 @@ stops its processes and removes its private state. After the test process exits,
 remove only the run-owned target/log directory you created. Keep this proof
 separate from the remaining permission/device-race, Stop/delete, actual-device,
 migration/rollback and activation gates recorded in
-[the architecture plan](../../plans/unified-conversations.md).
+[the architecture plan](historical-records.md#retired-plans-2026-11-24).
