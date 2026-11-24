@@ -105,13 +105,11 @@ pub fn receive(
             match expected {
                 Some(expected) if expected == &current.binding => {}
                 Some(_) => return Err(changed(&current.binding)),
-                None if current.binding.execution.generation == 1
-                    && current.binding.membership.revision == 1 => {}
                 None => {
                     return Err(ApiError::new(
                         409,
                         "environment_required",
-                        "Refresh or update this client before starting work in a changed conversation environment",
+                        "Every command except Stop names the conversation environment it expects",
                     ));
                 }
             }

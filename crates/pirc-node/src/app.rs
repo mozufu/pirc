@@ -1469,6 +1469,14 @@ async fn command(node: Node, request: Request) -> ApiResult<Response> {
         crate::session_creation::admission::require_generic(&node.db.lock(), &session.id)?;
         node.session_mode(&session.id)?;
     }
+    let is_stop = matches!(
+        payload,
+        CommandPayload::Stop | CommandPayload::StopTransition { .. }
+    );
+    // Every command except Stop names the environment the Gateway admitted it in.
+    if !is_stop && !map.get("commandEnvironment").is_some_and(Value::is_object) {
+        return Err(ApiError::invalid_input());
+    }
     let stored = serde_json::to_value(&payload).unwrap_or_default();
     let (row, duplicate, initial_stop) = {
         let mut db = node.db.lock();
@@ -1479,10 +1487,7 @@ async fn command(node: Node, request: Request) -> ApiResult<Response> {
         crate::command_environment::record(
             &tx,
             &command_id,
-            if matches!(
-                payload,
-                CommandPayload::Stop | CommandPayload::StopTransition { .. }
-            ) {
+            if is_stop {
                 None
             } else {
                 map.get("commandEnvironment")

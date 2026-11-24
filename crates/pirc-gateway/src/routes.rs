@@ -1211,8 +1211,7 @@ pub async fn command(
         )?;
         return Err(ApiError::new(503, "node_offline", "Node is offline").into());
     }
-    let versioned = input.expected_binding.is_some()
-        && !crate::conversation_bindings::commands::is_stop(&payload);
+    let versioned = !crate::conversation_bindings::commands::is_stop(&payload);
     let connection = if versioned || payload["type"] == "stop_transition" {
         let support = if payload["type"] == "stop_transition" {
             crate::conversation_bindings::commands::transition_stop_supported(

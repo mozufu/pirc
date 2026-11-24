@@ -108,13 +108,13 @@ fn fresh_expected_binding_cannot_hide_a_routing_change_after_claim() {
 }
 
 #[test]
-fn stop_remains_available_from_stale_and_legacy_clients() {
+fn stop_remains_available_with_a_stale_or_missing_binding() {
     let db = Db::memory();
     let conn = db.lock();
     let old = setup(&conn);
     change(&conn);
     let current = conn.get_session(&old.id).unwrap();
-    for (id, expected) in [("stop-old", Some(&old.binding)), ("stop-legacy", None)] {
+    for (id, expected) in [("stop-old", Some(&old.binding)), ("stop-unversioned", None)] {
         let payload = json!({"type":"stop"});
         assert!(
             !receive(&conn, &current, "alice", id, &payload, expected)
@@ -131,15 +131,17 @@ fn stop_remains_available_from_stale_and_legacy_clients() {
 }
 
 #[test]
-fn unchanged_legacy_client_is_supported_but_other_binding_fields_are_not_ignored() {
+fn commands_without_an_expected_binding_are_refused_and_every_binding_field_counts() {
     let db = Db::memory();
     let conn = db.lock();
     let session = setup(&conn);
-    assert!(
-        !receive(&conn, &session, "alice", "legacy", &prompt(), None)
-            .unwrap()
-            .1
+    assert_eq!(
+        receive(&conn, &session, "alice", "unversioned", &prompt(), None)
+            .unwrap_err()
+            .code,
+        "environment_required"
     );
+    assert!(conn.get_command("unversioned").is_err());
     for mutate in [
         |b: &mut Binding| b.membership.revision += 1,
         |b: &mut Binding| b.membership.legacy_workspace_id = "another".into(),
