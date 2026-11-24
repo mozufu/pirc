@@ -59,16 +59,17 @@ Used by pots (and later any capped actor):
 
 ## Views and API
 
-| Endpoint                                 | Returns                                                                                                                      |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| `GET /api/usage/summary`                 | The six overview numbers (E28): e.g. this month's spend, today's tokens, active days streak, sessions, pots, most used model |
-| `GET /api/usage/daily?from&to`           | Daily token and cost totals for the heatmap (18/26–30/40 weeks by layout)                                                    |
-| `GET /api/usage/weekly?weeks=12`         | Weekly totals                                                                                                                |
-| `GET /api/usage/cumulative`              | Running totals for the area chart                                                                                            |
-| `GET /api/usage/breakdown?month&by=actor | model`                                                                                                                       | Who used how much and which models this month |
+`GET /api/usage?from=YYYY-MM-DD&to=YYYY-MM-DD[&tz=Area/City]` (implemented in
+`crates/pirc-gateway/src/usage/api.rs`) returns the signed-in owner's usage for 1 to
+400 local days (default zone: the Gateway's): per day, per model (with how it was
+paid), per actor and per purpose, totals, the streak of consecutive active days
+ending on the last day, and the pricing revision. The usage page builds the
+overview numbers, the heatmap (one request covering 18–40 weeks), the 12-week
+chart, the cumulative chart and the monthly breakdown from it.
 
-All amounts carry `auth_kind`/`plan` breakdowns so subscription and billed usage are
-never summed silently. The share action renders charts to an image on the client; no
+Billed cost (`billedMicros`) and the subscription API-equivalent estimate
+(`subscriptionApiEquivalentMicros`) are separate fields, so subscription usage is
+never summed into spending silently. The share action renders charts to an image on the client; no
 raw rows leave the device.
 
 ## Acceptance cases

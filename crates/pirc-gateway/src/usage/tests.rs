@@ -266,3 +266,73 @@ fn every_finished_request_is_recorded_once_with_its_price() {
         "subscriptions are never billed per token"
     );
 }
+
+#[test]
+fn days_follow_the_requested_zone_through_daylight_saving() {
+    let date = |text| chrono::NaiveDate::parse_from_str(text, "%Y-%m-%d").unwrap();
+    let days =
+        api::day_bounds_for_tests(date("2026-03-07"), date("2026-03-09"), "America/New_York");
+    let hours: Vec<i64> = days.iter().map(|(_, s, e)| (e - s) / 3_600_000).collect();
+    // 2026-03-08 is 23 hours long in New York.
+    assert_eq!(hours, vec![24, 23, 24]);
+    assert_eq!(days[0].0, "2026-03-07");
+    // Midnight UTC+8 on 2026-11-24 is 16:00 UTC the day before.
+    let taipei = api::day_bounds_for_tests(date("2026-11-24"), date("2026-11-24"), "Asia/Taipei");
+    assert_eq!(taipei[0].1, 1_763_913_600_000 + 365 * 86_400_000);
+}
+
+#[test]
+fn the_report_is_owner_scoped_and_keeps_subscriptions_apart() {
+    let (app, _dir) = app();
+    let db = app.db.lock();
+    let insert = |owner: &str,
+                  at: i64,
+                  auth: &str,
+                  plan: Option<&str>,
+                  cost: Option<i64>,
+                  equiv: Option<i64>| {
+        db.execute(
+            "INSERT INTO usage_events(at,owner_user,node_id,node_session,actor_kind,actor_id,provider,model,
+              auth_kind,plan,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,cost_micros,
+              api_equiv_micros,outcome,purpose)
+             VALUES(?1,?2,'n','s','user',?2,'p','m',?3,?4,100,10,0,0,?5,?6,'ok','turn')",
+            rusqlite::params![at, owner, auth, plan, cost, equiv],
+        )
+        .unwrap();
+    };
+    let day = 86_400_000;
+    insert("alice", 10, "api_key", None, Some(500), Some(500));
+    insert(
+        "alice",
+        day + 10,
+        "subscription",
+        Some("Plan"),
+        None,
+        Some(700),
+    );
+    insert("alice", day + 20, "keyless", None, None, None);
+    insert("bob", 30, "api_key", None, Some(9_999), Some(9_999));
+    let days = vec![
+        ("d1".to_owned(), 0, day),
+        ("d2".to_owned(), day, 2 * day),
+        ("d3".to_owned(), 2 * day, 3 * day),
+    ];
+    let report = api::report(&db, "alice", &days).unwrap();
+    let requests: Vec<i64> = report["days"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|d| d["requests"].as_i64().unwrap())
+        .collect();
+    assert_eq!(requests, vec![1, 2, 0]);
+    assert_eq!(report["total"]["billedMicros"], 500);
+    assert_eq!(report["total"]["subscriptionApiEquivalentMicros"], 700);
+    assert_eq!(report["total"]["subscriptionTokens"], 110);
+    assert_eq!(report["total"]["tokens"]["total"], 330);
+    // The last day had nothing.
+    assert_eq!(report["streakDays"], 0);
+    assert_eq!(report["byModel"].as_array().unwrap().len(), 3);
+    assert_eq!(report["byPurpose"][0]["purpose"], "turn");
+    let streak = api::report(&db, "alice", &days[..2]).unwrap();
+    assert_eq!(streak["streakDays"], 2);
+}

@@ -353,6 +353,7 @@ pub fn router(app: AppState) -> Router {
         )
         .route("/api/health", get(routes::health))
         .route("/api/capabilities", get(crate::capabilities::get))
+        .route("/api/usage", get(crate::usage::api::get))
         .route("/api/nodes", get(routes::list_nodes))
         .route("/api/assistant/node", get(routes::assistant_node))
         .route(

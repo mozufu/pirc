@@ -3,6 +3,8 @@
 //! whose runner capability admitted the request, never from what the agent
 //! claims; prices come from the pinned model catalog.
 
+pub mod api;
+
 use rusqlite::{Connection, OptionalExtension, params};
 
 use pirc_protocol::Usage;
