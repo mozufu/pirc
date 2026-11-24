@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>C 平板版型</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{rootCls}}" style="{{rootStyle}}">
+
+  <sc-if value="{{sideInline}}" hint-placeholder-val="{{ false }}">
+  <nav class="c-side" aria-label="側欄">
+    <div class="c-brand"><span class="c-mark sm">π</span>pirc<span style="flex: 1"></span><button class="c-ib" aria-label="搜尋聊天" onClick="{{demo}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button><button class="c-ib" aria-label="收合側欄" onClick="{{demo}}"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg></button></div>
+    <div class="c-mode"><button class="chosen">聊天</button><button onClick="{{demo}}">工作<span class="att"></span></button></div>
+    <div style="padding: 0 12px; display: flex; flex-direction: column">
+      <button class="c-drow c-new" onClick="{{demo}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a1 1 0 0 1 3 3L12.4 14.6a2 2 0 0 1-.85.5l-2.87.84a.5.5 0 0 1-.62-.62l.84-2.87a2 2 0 0 1 .5-.85z"/></svg><span class="c-row-t" style="flex: 1">新聊天</span></button>
+      <button class="c-drow" onClick="{{demo}}"><span style="width: 18px; display: grid; place-items: center"><span class="state-dot wait"></span></span><span class="c-row-main"><span class="c-row-t">待你處理</span><span class="c-row-s">最急：14 分後過期</span></span><span class="c-count">2</span></button>
+      <div class="c-sec" style="padding-left: 12px">最近</div>
+      <button class="c-drow sel"><span class="c-row-main"><span class="c-row-t" style="font-size: 14px">Flutter 與 Compose 平板適配</span><span class="c-row-s" style="font-size: 12px">成果：比較表</span></span></button>
+      <button class="c-drow" onClick="{{demo}}"><span class="c-row-main"><span class="c-row-t" style="font-size: 14px">介面改版方案</span><span class="c-row-s" style="font-size: 12px">成果 v2</span></span></button>
+      <button class="c-drow" onClick="{{demo}}"><span class="c-row-main"><span class="c-row-t" style="font-size: 14px">週末出遊預算估算</span><span class="c-row-s" style="font-size: 12px">估算面板</span></span></button>
+    </div>
+  </nav>
+  </sc-if>
+
+  <sc-if value="{{showChat}}" hint-placeholder-val="{{ true }}">
+  <main class="c-pane" style="{{chatStyle}}">
+    <div class="c-top" style="padding-top: 8px; height: 64px">
+      <sc-if value="{{menuBtn}}" hint-placeholder-val="{{ true }}"><button class="c-ib" aria-label="開啟側欄" onClick="{{toggleSide}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button></sc-if>
+      <div class="c-title" style="align-items: flex-start; padding-left: 10px"><b>Flutter 與 Compose 平板適配</b><small>聊天 · pirc 行動版</small></div>
+      <button class="c-ib" aria-label="工作面板" onClick="{{openFiles}}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></svg></button>
+      <button class="c-ib" aria-label="待處理 2 件" onClick="{{demo}}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="c-badge">2</span></button>
+    </div>
+    <div class="c-scroll">
+      <div class="c-thread" style="max-width: 680px; margin: 0 auto; padding: 12px 28px 24px">
+        <div class="c-user">幫我比較 Flutter 和 Compose 的平板適配方式</div>
+        <div class="c-asst"><p>兩者都能依可用寬度切換版型；差別在於多窗格元件是否現成，以及能否共用 iOS。</p></div>
+        <article class="{{cardCls}}">
+          <div class="c-res-body">
+            <div style="display: flex; align-items: center; gap: 6px"><span class="eyebrow">比較表 · v1</span><span style="flex: 1"></span><sc-if value="{{resultOpen}}" hint-placeholder-val="{{ true }}"><span class="c-st run"><span class="state-dot ongoing" style="animation: none"></span>在右側開啟中</span></sc-if></div>
+            <div class="c-res-title">平板適配比較：Flutter 與 Compose</div>
+            <div class="c-res-sum">5 個面向。要共用 iOS 選 Flutter；只做 Android 則 Compose 較省工。</div>
+          </div>
+          <div class="c-res-foot"><span class="c-meta" style="flex: 1">4 個來源</span><button class="c-btn primary small" onClick="{{openResult}}">{{openLabel}}</button></div>
+        </article>
+        <div class="c-asst"><p>若 iOS 也要一致，Flutter 的整體成本較低。</p></div>
+      </div>
+    </div>
+    <div class="c-wrap" style="padding: 0 20px 16px">
+      <div class="c-composer focus" style="max-width: 720px; margin: 0 auto; width: 100%">
+        <div class="c-ta">再補一列：鍵盤與 IME 處理<span class="c-caret"></span></div>
+        <div class="c-tools"><button class="c-tb" aria-label="附件" onClick="{{demo}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button class="c-sel" onClick="{{demo}}">預設模型 · 中<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg></button><span style="flex: 1"></span><button class="c-send" aria-label="送出" onClick="{{demo}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7M12 19V5"/></svg></button></div>
+      </div>
+    </div>
+  </main>
+  </sc-if>
+
+  <sc-if value="{{showResult}}" hint-placeholder-val="{{ true }}">
+  <section class="c-pane c-pane-r" style="{{resultStyle}}" aria-label="右欄">
+    <sc-if value="{{paneFiles}}" hint-placeholder-val="{{ false }}">
+    <div class="c-top" style="padding-top: 8px; height: 64px">
+      <button class="c-ib" aria-label="{{closeLabel}}" onClick="{{closeResult}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      <div class="c-title" style="align-items: flex-start"><b>工作面板</b><small>聊天 · 只有檔案、Tasks、記憶、瀏覽器</small></div>
+    </div>
+    <div class="c-ptabs" style="grid-template-columns: repeat(4, minmax(0, 1fr))" role="tablist">
+      <button class="c-ptab on" role="tab" aria-selected="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9L9.6 3.9A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>檔案</button>
+      <button class="c-ptab" role="tab" aria-selected="false" onClick="{{demo}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4M3 7l2 2 4-4M13 6h8M13 12h8M13 18h8"/></svg>Tasks</button>
+      <button class="c-ptab" role="tab" aria-selected="false" onClick="{{demo}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/></svg>記憶</button>
+      <button class="c-ptab" role="tab" aria-selected="false" onClick="{{demo}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></svg>瀏覽器</button>
+    </div>
+    <div class="c-scroll">
+      <div class="c-crumb"><b>這個聊天的資料夾</b></div>
+      <sc-for list="{{chatFiles}}" as="f" hint-placeholder-count="4">
+        <button class="c-row" onClick="{{demo}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span class="c-row-main"><span class="c-row-t c-mono" style="font-size: 14px">{{f.name}}</span><span class="c-row-s">{{f.sub}}</span></span></button>
+      </sc-for>
+      <div class="c-meta" style="padding: 12px 16px">上傳的附件與 agent 輸出的檔案都放在這裡。聊天沒有 Git 與終端，和網頁一致。</div>
+    </div>
+    </sc-if>
+    <sc-if value="{{paneResult}}" hint-placeholder-val="{{ true }}">
+    <div class="c-top" style="padding-top: 8px; height: 64px; border-bottom: 1px solid var(--line)">
+      <button class="c-ib" aria-label="{{closeLabel}}" onClick="{{closeResult}}"><sc-if value="{{split}}" hint-placeholder-val="{{ false }}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></sc-if><sc-if value="{{notSplit}}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></sc-if></button>
+      <div class="c-title" style="align-items: flex-start"><b>平板適配比較</b><small>比較表 v1 · 來自第 2 則回覆</small></div>
+      <button class="c-ib" aria-label="分享" onClick="{{demo}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg></button>
+      <sc-if value="{{notSplit}}" hint-placeholder-val="{{ true }}"><button class="c-ib" aria-label="全螢幕" onClick="{{demo}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button></sc-if>
+    </div>
+    <div class="c-scroll">
+      <div class="c-reader" style="max-width: 680px; margin: 0 auto; padding-top: 18px">
+        <h1 style="margin-top: 0">平板適配比較：Flutter 與 Compose</h1>
+        <p>兩者都以「可用視窗寬度」決定版型。差異在現成的多窗格元件，以及能否一次涵蓋 iOS。</p>
+        <div style="overflow-x: auto"><table class="c-tbl" style="min-width: 380px">
+          <thead><tr><th>面向</th><th>Flutter</th><th>Compose</th></tr></thead>
+          <tbody>
+            <tr><td>寬度判斷</td><td>LayoutBuilder、MediaQuery.sizeOf</td><td>WindowSizeClass</td></tr>
+            <tr><td>列表＋詳情</td><td>自行組合版型</td><td>ListDetailPaneScaffold</td></tr>
+            <tr><td>折疊／分割</td><td>displayFeatures</td><td>Jetpack WindowManager</td></tr>
+            <tr><td>iOS</td><td>同一份程式</td><td>需另做</td></tr>
+            <tr><td>沿用現有程式</td><td>UI 需重寫</td><td>可沿用</td></tr>
+          </tbody>
+        </table></div>
+        <h2>建議</h2>
+        <p>若 iOS 在一年內確定要做，選 Flutter；若只做 Android，Compose 的現成 adaptive 元件能更快交付。</p>
+      </div>
+    </div>
+    </sc-if>
+  </section>
+  </sc-if>
+
+  <sc-if value="{{sideOverlay}}" hint-placeholder-val="{{ false }}">
+    <button class="c-scrim" aria-label="關閉側欄" onClick="{{toggleSide}}"></button>
+    <nav class="c-drawer" style="width: 300px" aria-label="側欄">
+      <div class="c-brand"><span class="c-mark sm">π</span>pirc<span style="flex: 1"></span><button class="c-ib" aria-label="關閉側欄" onClick="{{toggleSide}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+      <div class="c-mode"><button class="chosen">聊天</button><button onClick="{{demo}}">工作<span class="att"></span></button></div>
+      <div style="padding: 0 8px">
+        <button class="c-drow sel" onClick="{{toggleSide}}"><span class="c-row-main"><span class="c-row-t" style="font-size: 14px">Flutter 與 Compose 平板適配</span><span class="c-row-s" style="font-size: 12px">成果：比較表</span></span></button>
+        <button class="c-drow" onClick="{{demo}}"><span class="c-row-main"><span class="c-row-t" style="font-size: 14px">介面改版方案</span></span></button>
+      </div>
+    </nav>
+  </sc-if>
+
+  <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}"><div class="c-toast" style="left: auto; right: 24px; width: 340px; bottom: 120px">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"layout":{"editor":"enum","options":["wide","portrait","split"],"default":"wide"},"result":{"editor":"boolean","default":true},"dark":{"editor":"boolean","default":false},"pane":{"editor":"enum","options":["result","files"],"default":"result"},"$preview":{"width":1024,"height":768}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const p = this.props || {};
+    const layout = p.layout || 'wide';
+    const dims = { wide: [1024, 768], portrait: [768, 1024], split: [507, 768] }[layout] || [1024, 768];
+    const W = dims[0], H = dims[1];
+    const dark = p.dark === true || p.dark === 'true';
+    const propResult = !(p.result === false || p.result === 'false');
+    const resultOpen = s.resultOpen !== undefined ? s.resultOpen : propResult;
+    const split = layout === 'split';
+    const pane = s.pane || p.pane || 'result';
+    const sideInline = !split && !resultOpen;
+    const sideW = sideInline ? 280 : 0;
+    let chatW, resW;
+    if (split) { chatW = resultOpen ? 0 : W; resW = resultOpen ? W : 0; }
+    else if (resultOpen) { chatW = layout === 'wide' ? 480 : 384; resW = W - chatW; }
+    else { chatW = W - sideW; resW = 0; }
+    const toastMsg = (m) => { this.setState({ toast: m }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: null }), 2400); };
+    return {
+      rootCls: dark ? 'pc c-tab dark' : 'pc c-tab',
+      /* 24px status bar inset + 12px gesture inset, so the device corner radius never clips content */
+      rootStyle: 'width: ' + W + 'px; height: ' + H + 'px; padding: 24px 0 12px; box-sizing: border-box',
+      paneFiles: pane === 'files', paneResult: pane !== 'files',
+      chatFiles: [
+        { name: '平板適配比較.md', sub: 'outputs · 成果匯出 · 10:24' },
+        { name: 'compose-adaptive.png', sub: 'uploads · 你上傳的截圖' },
+        { name: 'notes.md', sub: '1.1 KB · 昨天' }
+      ],
+      openFiles: () => this.setState({ resultOpen: true, pane: 'files', side: false }),
+      split: split, notSplit: !split,
+      sideInline: sideInline, sideOverlay: !!s.side && !sideInline,
+      menuBtn: !sideInline,
+      showChat: chatW > 0, showResult: resW > 0, resultOpen: resultOpen,
+      chatStyle: 'width: ' + chatW + 'px; flex: none',
+      resultStyle: 'width: ' + resW + 'px; flex: none',
+      cardCls: resultOpen && pane !== 'files' ? 'c-res flash' : 'c-res',
+      resultOpen: resultOpen && pane !== 'files',
+      openLabel: resultOpen && pane !== 'files' ? '已開啟' : (split ? '開啟' : '在右側開啟'),
+      closeLabel: split ? '返回聊天' : '關閉成果',
+      hasToast: !!s.toast, toast: s.toast || '',
+      demo: () => toastMsg('原型示範：此入口保留，畫面之後展開'),
+      toggleSide: () => this.setState({ side: !s.side }),
+      openResult: () => this.setState({ resultOpen: true, pane: 'result', side: false }),
+      closeResult: () => { this.setState({ resultOpen: false, pane: 'result' }); toastMsg(split ? '已回到聊天原位置 · 草稿保留' : '側欄已恢復'); }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -22,4 +22,7 @@ test-results/
 DEPLOY.md
 
 # Per-workspace agent runtime data (uploads, screenshots, recordings)
-.pirc/
+.pirc/*
+!.pirc/skills/
+.pirc/skills/*
+!.pirc/skills/pirc-design/

@@ -12,3 +12,8 @@ apps/android/app/build
 
 # Tool descriptions are prompt text: keep them exactly as written.
 apps/gateway/src/agent/prompts/tools/*.md
+apps/mobile/.dart_tool
+apps/mobile/build
+apps/mobile/android/.gradle
+apps/mobile/android/.kotlin
+apps/mobile/android/app/build

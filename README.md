@@ -8,7 +8,8 @@ It consists of:
 - a **chat node** (`pirc-chat`) for assistant chats and projects;
 - one or more **coding nodes** (`pirc-node`), one per machine with workspaces, which connect out to the gateway and run one built-in agent subprocess per session (over a JSONL RPC on stdin/stdout), plus side-panel shells;
 - a responsive Svelte PWA;
-- a native Android client in progress ([`apps/android`](./apps/android/README.md)), which pairs through device tokens.
+- a native Android client in progress ([`apps/android`](./apps/android/README.md)), which pairs through device tokens;
+- a Flutter Android testing client ([`apps/mobile`](./apps/mobile/README.md)) with the Claude Design phone/tablet UI, sharing the original Android API and event reducer: live chat, work panels, PTY, browser, schedules, notifications, quick-reply overlays, and manually selected reading versions.
 
 The gateway never runs agents or tools; it only runs model requests on their behalf (see [Agent](#agent)). On a single machine, run the gateway and a node side by side; across devices, each device runs a node that connects to one central gateway over a private VPN. See [`apps/gateway/README.md`](./apps/gateway/README.md) for setup and the current limitations.
 

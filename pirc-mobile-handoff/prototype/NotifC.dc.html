@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>C Android 通知元件</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="pc" style="width: 1840px; height: 1400px; box-sizing: border-box; padding: 48px; background: #EEF0F3; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 40px; align-items: start">
+
+  <!-- column 1 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <div style="font-size: 19px; font-weight: 600">1 · Heads-up 彈出（收合）</div>
+    <div class="an" style="box-shadow: 0 8px 28px rgba(0,0,0,.14)">
+      <div class="an-app"><span class="an-ico">π</span>pirc · 檢查 nightly test · 現在</div>
+      <div class="an-t">需要你回答</div>
+      <div class="an-b">是否只重新執行失敗案例？</div>
+      <div class="an-acts"><button class="an-act">回答…</button><button class="an-act">開啟對話</button></div>
+    </div>
+    <div class="c-meta" style="font-size: 13.5px; line-height: 21px">類別「需要你回應」設為高重要性才會彈出。收合時不放選項，只給「回答…」（展開）和「開啟對話」。</div>
+
+    <div style="font-size: 19px; font-weight: 600; margin-top: 20px">2 · 展開（自訂版面）</div>
+    <div class="an">
+      <div class="an-app"><span class="an-ico">π</span>pirc · 檢查 nightly test · 現在<span style="flex: 1"></span><span class="tag-new">提案</span></div>
+      <div class="an-t">需要你回答：是否只重新執行失敗案例？</div>
+      <div class="an-b">CI-runner / pirc · 14 分後過期</div>
+      <div class="an-opts">
+        <button class="an-opt">只重跑失敗的 3 個案例</button>
+        <button class="an-opt">全部重跑</button>
+        <button class="an-opt">先不要重跑，只給我報告</button>
+      </div>
+      <div class="an-acts"><button class="an-act">開啟對話</button><button class="an-act">30 分鐘後提醒</button></div>
+    </div>
+    <div class="c-meta" style="font-size: 13.5px; line-height: 21px">Android 自訂通知版面（DecoratedCustomViewStyle）。最多直接放 3 個選項；超過 3 個、複選、輸入或 editor 類的問題，只顯示「開啟對話回答」。點任何選項都會開啟 App 並預選答案，不會直接送出。</div>
+  </div>
+
+  <!-- column 2 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <div style="font-size: 19px; font-weight: 600">3 · 錯過的排程</div>
+    <div class="an">
+      <div class="an-app"><span class="an-ico">π</span>pirc · 排程 · 41 分鐘前</div>
+      <div class="an-t">錯過「每天早上檢查測試」</div>
+      <div class="an-b">08:00 的執行沒有開始，不會自動補跑。</div>
+      <div class="an-acts"><button class="an-act">查看並執行</button><button class="an-act">略過…</button></div>
+    </div>
+    <div class="c-meta" style="font-size: 13.5px; line-height: 21px">按鈕文字帶「查看」與「…」，表示會先進 App 確認。事件本身已存在；通知上的按鈕是新提案。</div>
+
+    <div style="font-size: 19px; font-weight: 600; margin-top: 20px">4 · 執行中即時進度</div>
+    <div class="an">
+      <div class="an-app"><span class="an-ico">π</span>pirc · 執行中 · 6 分<span style="flex: 1"></span><span class="tag-new">提案</span></div>
+      <div class="an-t">修復登入頁鍵盤遮住送出鈕</div>
+      <div class="an-b">步驟 2 · 編輯 LoginScreen.kt</div>
+      <div class="an-prog"><i></i></div>
+      <div class="an-acts"><button class="an-act">開啟</button><button class="an-act">停止…</button></div>
+    </div>
+    <div class="c-meta" style="font-size: 13.5px; line-height: 21px">常駐通知。Android 16 以上可用 ProgressStyle 顯示在即時更新區；較舊版本降級為一般常駐通知。因為沒有總步驟數，進度條是不定長度的。</div>
+
+    <div style="font-size: 19px; font-weight: 600; margin-top: 20px">5 · 完成或失敗</div>
+    <div class="an">
+      <div class="an-app"><span class="an-ico">π</span>pirc · 昨天<span style="flex: 1"></span><span class="tag-new">提案</span></div>
+      <div class="an-t">重構 session store 失敗</div>
+      <div class="an-b">寫入逾時 · Server / gateway</div>
+    </div>
+  </div>
+
+  <!-- column 3 -->
+  <div style="display: flex; flex-direction: column; gap: 14px">
+    <div style="font-size: 19px; font-weight: 600">6 · 已由其他裝置處理</div>
+    <div class="an" style="opacity: .92">
+      <div class="an-app"><span class="an-ico">π</span>pirc · 檢查 nightly test · 08:51</div>
+      <div class="an-t">已由 iPad 回答</div>
+      <div class="an-b">答案：全部重跑。這則通知會在 5 秒後收回。</div>
+    </div>
+    <div class="c-meta" style="font-size: 13.5px; line-height: 21px">需要後端推送「已處理」事件，內容包含處理者裝置名稱與處理時間（寫入後端需求清單）。若沒收到這個事件，使用者點開時由 App 重新確認後顯示。</div>
+
+    <div style="font-size: 19px; font-weight: 600; margin-top: 20px">7 · 已過期</div>
+    <div class="an">
+      <div class="an-app"><span class="an-ico">π</span>pirc · 檢查 nightly test · 09:03</div>
+      <div class="an-t">問題已過期</div>
+      <div class="an-b">agent 沒有收到回答，已依預設停止重跑。</div>
+      <div class="an-acts"><button class="an-act">開啟對話</button></div>
+    </div>
+
+    <div style="font-size: 19px; font-weight: 600; margin-top: 20px">8 · 鎖定畫面：只顯示標題</div>
+    <div class="an">
+      <div class="an-app"><span class="an-ico">π</span>pirc · 現在</div>
+      <div class="an-t">1 則需要你回應</div>
+      <div class="an-b">解鎖後查看內容</div>
+    </div>
+    <div class="c-meta" style="font-size: 13.5px; line-height: 21px">依設定「鎖定畫面顯示」產生公開版本（public version）；選項按鈕只在解鎖後出現。</div>
+  </div>
+
+  <!-- column 4 : flow -->
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="font-size: 19px; font-weight: 600">點通知之後</div>
+    <div class="c-res" style="padding: 12px 14px; font-size: 14px; line-height: 21px"><b>點選項或「查看並執行」</b><div class="c-meta">直接開啟 App 畫面（Android 12 起不能經由中介 service 轉跳）</div></div>
+    <div style="text-align: center; color: #6E7278">↓</div>
+    <div class="c-res" style="padding: 12px 14px; font-size: 14px; line-height: 21px"><b>整頁：重新連線並取得最新狀態</b><div class="c-meta">重新取得 session snapshot、interaction、控制權租約</div></div>
+    <div style="text-align: center; color: #6E7278">↓ 依結果分成四種</div>
+    <div class="c-res" style="padding: 12px 14px; font-size: 14px; line-height: 21px; box-shadow: 0 0 0 1.5px #4B6BA6"><b>仍有效</b> → 對話頁＋確認 sheet，預選通知上點的答案。按「送出答案」才會送出。</div>
+    <div class="c-res" style="padding: 12px 14px; font-size: 14px; line-height: 21px"><b>已被回答或略過</b> → 「這項已經處理過了」，顯示處理者與時間，不提供操作。</div>
+    <div class="c-res" style="padding: 12px 14px; font-size: 14px; line-height: 21px"><b>已過期</b> → 對話頁中問題卡標示已過期，不能再回答。</div>
+    <div class="c-res" style="padding: 12px 14px; font-size: 14px; line-height: 21px"><b>控制權在其他裝置</b> → 確認 sheet 上方顯示「由 MacBook 控制中」與「取得控制權」，取得後才能送出。</div>
+    <div class="c-res" style="padding: 12px 14px; font-size: 14px; line-height: 21px"><b>離線或連不上</b> → 保留預選答案，顯示「無法確認最新狀態」，只提供「重試」，不送出。</div>
+    <div class="c-meta" style="font-size: 13.5px; line-height: 21px; margin-top: 8px">iOS 若之後納入：用 Notification Content Extension 做同樣的展開版面，流程相同。</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1840,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

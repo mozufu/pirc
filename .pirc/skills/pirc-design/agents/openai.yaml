@@ -1,0 +1,4 @@
+interface:
+  display_name: "pirc Design"
+  short_description: "依 Claude Design C 實作 pirc 行動介面、通知與版本化成果"
+  default_prompt: "Use $pirc-design to implement this pirc interface using the approved design and real APIs."
