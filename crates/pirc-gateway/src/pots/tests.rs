@@ -439,3 +439,37 @@ mod http {
         assert_eq!(capabilities["features"]["pots"]["enabled"], true);
     }
 }
+
+#[test]
+fn the_context_is_the_asking_sessions_pot_only() {
+    let db = db();
+    let mut conn = db.lock();
+    let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+    let other = create(&mut conn, "alice", input("Researcher")).unwrap();
+    conn.execute(
+        "UPDATE pot_runtime SET session_id='session-of-tester' WHERE pot_id=?1",
+        [&pot.id],
+    )
+    .unwrap();
+    let context = super::ops::context(&conn, "alice", "session-of-tester").unwrap();
+    assert_eq!(context["pot"]["id"], pot.id.as_str());
+    assert_eq!(context["pot"]["name"], "Tester");
+    assert_eq!(context["pot"]["personality"], "Calm and exact.");
+    let summary = context["pot"]["permissions"].as_str().unwrap();
+    assert!(summary.contains("start work"), "{summary}");
+    assert!(summary.contains("node:repo (write)"), "{summary}");
+    // Another session, or another owner, is not this pot.
+    assert_eq!(
+        super::ops::context(&conn, "alice", "unknown")
+            .unwrap_err()
+            .code,
+        "not_a_pot"
+    );
+    assert_eq!(
+        super::ops::context(&conn, "bob", "session-of-tester")
+            .unwrap_err()
+            .code,
+        "not_a_pot"
+    );
+    assert_ne!(context["pot"]["id"], other.id.as_str());
+}

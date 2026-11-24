@@ -39,6 +39,7 @@ enum Parsed {
     Schedule(schedules::Op),
     Calendar(calendar::agent::Op),
     Web(web_search::Op),
+    Pot(crate::pots::ops::Op),
     WorkspaceMirror(String),
     HistoryAuthority,
     CommandAuthority(CommandAuthority),
@@ -103,6 +104,9 @@ fn parse(op: &str, args: &Value) -> Option<Result<Parsed, ()>> {
     }
     if let Some(parsed) = schedules::parse_op(op, args) {
         return Some(parsed.map(Parsed::Schedule));
+    }
+    if let Some(parsed) = crate::pots::ops::parse_op(op, args) {
+        return Some(parsed.map(Parsed::Pot));
     }
     if let Some(parsed) = calendar::agent::parse_op(op, args) {
         return Some(parsed.map(Parsed::Calendar));
@@ -222,6 +226,7 @@ pub async fn run(
             Parsed::Schedule(op) => schedules::run_op(app, &context, op).await,
             Parsed::Calendar(op) => calendar::agent::run_op(app, &context, op).await,
             Parsed::Web(op) => web_search::run_op(app, &context, op).await,
+            Parsed::Pot(op) => crate::pots::ops::run_op(app, &context, op).await,
         }
     }
     .await;

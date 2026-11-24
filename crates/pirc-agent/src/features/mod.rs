@@ -13,6 +13,7 @@ pub mod calendar;
 pub mod compact;
 pub mod goal;
 pub mod memory;
+pub mod pot;
 pub mod project_instructions;
 pub mod recap;
 pub mod role;
@@ -61,6 +62,8 @@ pub fn builtin_features() -> Vec<Rc<dyn Feature>> {
         workspace_memory::feature(),
         // Chat sessions only: the user's memory, held by the gateway.
         assistant::feature(),
+        // A pot's own session only: its identity, from the gateway.
+        pot::feature(),
         skills::feature(),
         recap::feature(),
         // Node agents with a browser only (PIRC_BROWSER=1).
@@ -154,6 +157,7 @@ mod tests {
                 "observational-memory",
                 "workspace-memory",
                 "assistant",
+                "pot",
                 "skills",
                 "recap",
                 "browser",
