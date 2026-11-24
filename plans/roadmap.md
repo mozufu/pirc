@@ -177,32 +177,83 @@ Specification: [usage.md](usage.md). Steps:
 
 ## M4 Pots backend
 
-Specification: [pots.md](pots.md). Steps (each a pushable slice):
+Specification: [pots.md](pots.md). Each step is one or a few pushable commits; each
+lists what it builds on. Gateway code lives in a new `crates/pirc-gateway/src/pots/`
+(after step 0 frees the name); pot tools reach the Gateway through the existing
+agent-operation channel (`agent_ops.rs`, `pot.*` operations), which already checks
+that a session can only act as itself.
 
-1. **Schema and store** for pots, permissions, models, threads, messages, activity,
-   approvals, handovers, de-duplication layers (pots.md [Data model](pots.md#data-model)).
-2. **Pot CRUD API** (create in one request with all four steps' settings; read;
-   update; pause/resume) and the global settings (caps, exhaustion policy, retention).
-3. **Pot runtime on the chat node**: the `pot` mode replacing `chat`, one persistent
-   session per pot, private directory, prompt assembly from personality and work
-   description, wake queue and delivery.
-4. **Threads and messaging**: user↔pot, groups (host, `@mention`, user-only `@all`),
-   pot↔pot DMs with send/receive rules; pot tools for sending.
-5. **Activity log and point-of-view queries**, with retention.
-6. **Work dispatch**: open and continue work sessions through the creation service
-   (M2.2), "From <pot>" provenance, allowed models with direct/ask, model approvals.
-7. **Autonomy**: review timer, self-scheduling, thinking self-adjustment, fallback
-   switching, all logged.
-8. **Observation and de-duplication** (L0–L3) with causal-root accounting and limits.
-9. **Handover, archive and delete**.
-10. **Remove the old assistant and pots**: chat mode, `assistant_node` singleton
-    claim semantics (the chat node stays as the pot host), `SOUL.md`/`CHAT.md`
-    routes, chat projects that only served assistant chats, the model-free pots
-    tracker (gateway `src/pots`, node `pots.rs` ledger once replaced), and the
-    assistant tools that pot tools replace. Split the session-level legacy
-    observational memory out of `crates/pirc-agent/src/features/memory/` (moved
-    here from M2.6): keep what workspace memory and the per-pot memory use, delete
-    the read-only archive and `docs/architecture/legacy-observational-memory.md`.
+0. **Remove the model-free pots tracker.** Gateway `src/pots/` (routes, store,
+   execution sweep, `node_events` hook, `pots_*` tables), Node `pots.rs` and
+   `pots_tests.rs` (dispatch ledger, `pots_dispatches`, `require_generic_input`), the
+   `pots_request` link frame and `PotsRequest`/`PotsOperation`/`PotsControl`
+   (link protocol 17), conformance `pots.rs`, `docs/guides/pots.md` (replaced by a
+   short note pointing to `plans/pots.md`). Keep, generalized: a client-replayable
+   route can never mint backend provenance (`app.rs` delivery filter), now for the
+   `pot-*` custom message types.
+   Done when: workspace builds, gateway and node unit tests pass, no `pots_` table
+   remains.
+1. **Schema and store.** `pots/schema.sql` with the tables of
+   [pots.md](pots.md#data-model) (real columns, revisions, finite defaults), and
+   `pots/store.rs` with typed rows and transactional create/read/update by section
+   (`profile`, `work`, `permissions`, `models`), pause/resume, owner-wide settings.
+   Limits: 32 pots per owner, 200 threads, message bodies 32 KiB.
+   Done when: store tests cover create-all-sections-at-once, revision conflicts,
+   default limits never absent, and owner scoping.
+2. **CRUD API and events.** `GET/POST /api/pots`, `GET/PATCH /api/pots/{id}`,
+   `POST /api/pots/{id}/pause|resume`, `GET/PATCH /api/pots/settings`; capability
+   `features.pots`; `/api/events` change kind `pots`. Validation: work models must be
+   in the catalog the Gateway serves; locations must be owned workspaces/projects.
+   Done when: HTTP tests for each route, including device tokens and foreign owners.
+3. **Runtime on the chat node.**
+   - Node: a `pot` mode (`crates/pirc-config/src/modes/pot.md`) and a `pots`
+     workspace on the chat node whose sessions each get a private directory, like
+     today's chat workspace. The chat mode stays until step 10.
+   - Gateway: creating a pot allocates its session through the internal creation
+     entry (M2.1); deleting it deletes the session.
+   - Prompt: the agent asks `pot.context` (new agent operation) at start and per
+     wake; the Gateway returns the personality, intro, work description,
+     responsibilities, a permission summary and the user's display name. Pot ID comes
+     from the session mapping, never from the agent.
+   - Wakes: a per-pot queue table; the Gateway delivers one wake at a time with
+     `deliver` and custom type `pot-wake` (source, thread, causal root, payload). The
+     next wake waits for the run to settle (node events already report it).
+   - Replies: when a wake's run settles, the Gateway reads the final assistant text
+     and stores it as the pot's message in the wake's reply thread.
+     Done when: a conformance-free integration test with the fake model drives one
+     wake end to end through Gateway and Node unit harnesses; pause stops delivery.
+4. **Threads and messages.** Tables from step 1; `GET/POST /api/threads`,
+   `GET /api/threads/{id}/messages` (paged), `POST /api/threads/{id}/messages`
+   (mentions, user-only `all`); routing rules (host, `@pot`, DM rules); the
+   `pot.message.send` operation; events kind `threads`. Each delivered message
+   becomes a wake of the addressed pot.
+5. **Activity and point of view.** Writes from every earlier step go through one
+   `activity::log`; `GET /api/activity` with filters and paging; `GET /api/pots/{id}/view`;
+   retention sweep.
+6. **Work dispatch and model approvals.** Operations `pot.work.open`,
+   `pot.work.send`, `pot.work.status`; work sessions created through the internal
+   entry with a `pot-instruction` delivery that renders as "From <pot>" (backend
+   provenance only); at-most-once delivery with an uncertain state; `model_approvals`
+   with `GET /api/model-approvals` and `POST …/{id}/answer` (deny, deny with reason,
+   allow once); "Needs you" listing.
+7. **Autonomy.** Review timer (`autonomy_interval_s`, default 2 days, off allowed)
+   driven by the Gateway's scheduler; `pot.set_autonomy`, `pot.remind_me` (a
+   pot-target schedule), `pot.set_thinking` (applied through the existing session
+   thinking control, logged), fallback switches reported by the agent and logged.
+8. **Budgets, causal roots and the loop guard.** Usage admission (M3.5) before each
+   pot-attributed model request (the inference path refuses with
+   `budget_exhausted`), `causal_roots` with depth/fan-out, `pot.budget.status` and
+   `pot.budget.request` (decision card), the loop guard of
+   [pots.md](pots.md#loop-guard); usage attribution gains `actor_kind='pot'`.
+9. **Observation and de-duplication** (L0–L3): observed sources feed `obs_events`,
+   per-pot `obs_observations`, lead/merged notifications, one dispatch per purpose.
+10. **Handover, archive and delete**, then **remove the old assistant**: chat mode,
+    `assistant_node` claim semantics (the chat node stays as the pot host),
+    `SOUL.md`/`CHAT.md` routes, assistant-only chat projects, the assistant tools that
+    pot tools replace, and the legacy session observational memory in
+    `crates/pirc-agent/src/features/memory/` (moved here from M2.6; keep what
+    workspace memory and pot memory use; delete
+    `docs/architecture/legacy-observational-memory.md`).
     Deletes: an estimated 10–15k lines including tests.
 
 ---
