@@ -204,6 +204,10 @@ pub struct Mode {
     pub recap: bool,
     pub delete_sessions: bool,
     pub projects: bool,
+    /// A pot's own session: the Gateway supplies its identity and messages.
+    /// Written only when set, so other modes keep their shape.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub pot: bool,
 }
 
 #[derive(Deserialize)]
@@ -246,6 +250,8 @@ struct ModeFields {
     delete_sessions: bool,
     #[serde(default)]
     projects: bool,
+    #[serde(default)]
+    pot: bool,
 }
 
 impl<'de> Deserialize<'de> for Mode {
@@ -274,6 +280,7 @@ impl<'de> Deserialize<'de> for Mode {
             recap: raw.recap,
             delete_sessions: raw.delete_sessions,
             projects: raw.projects,
+            pot: raw.pot,
         };
         mode.validate().map_err(serde::de::Error::custom)?;
         Ok(mode)
@@ -403,6 +410,7 @@ pub fn default_work() -> Mode {
         recap: true,
         delete_sessions: false,
         projects: false,
+        pot: false,
     }
 }
 
@@ -441,6 +449,7 @@ pub fn default_chat() -> Mode {
         recap: false,
         delete_sessions: true,
         projects: true,
+        pot: false,
     }
 }
 

@@ -96,7 +96,7 @@ fn reload_keeps_valid_edits_and_skips_invalid_files() {
     let catalog = f.app.catalog();
     assert_eq!(catalog.warnings.len(), 1);
     assert!(!catalog.modes[&ModeId::new("chat").unwrap()].delegate);
-    assert_eq!(catalog.modes.len(), 2);
+    assert_eq!(catalog.modes.len(), 3);
     std::fs::remove_file(chat_file).unwrap();
     f.app.reload_modes();
     assert!(f.app.mode(&ModeId::new("chat").unwrap()).is_none());

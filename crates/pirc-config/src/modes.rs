@@ -21,6 +21,7 @@ use crate::{ConfigError, Env, default_config_dir};
 pub const DEFAULT_MODE_FILES: &[(&str, &str)] = &[
     ("chat.md", include_str!("modes/chat.md")),
     ("directory.md", include_str!("modes/directory.md")),
+    ("pot.md", include_str!("modes/pot.md")),
 ];
 
 /// A skipped file and the validation or I/O rule it failed.
@@ -389,7 +390,8 @@ mod tests {
         assert!(initialize_modes(&dir).unwrap());
         let catalog = load_modes(&dir).unwrap();
         assert!(catalog.warnings.is_empty());
-        assert_eq!(ids(&catalog), ["chat", "directory"]);
+        assert_eq!(ids(&catalog), ["chat", "directory", "pot"]);
+        assert!(catalog.modes[&ModeId::new("pot").unwrap()].pot);
         assert_eq!(catalog.modes[&ModeId::new("chat").unwrap()], default_chat());
         assert_eq!(
             catalog.modes[&ModeId::new("directory").unwrap()],
@@ -422,7 +424,7 @@ mod tests {
         assert_eq!(fs::read_to_string(dir.join("chat.md")).unwrap(), changed);
         assert!(!dir.join("directory.md").exists());
         let catalog = load_modes(&dir).unwrap();
-        assert_eq!(ids(&catalog), ["chat"]);
+        assert_eq!(ids(&catalog), ["chat", "pot"]);
         assert_eq!(catalog.modes.values().next().unwrap().label, "Research");
     }
 

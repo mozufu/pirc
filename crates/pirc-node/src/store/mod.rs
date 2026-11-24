@@ -498,6 +498,7 @@ pub trait Store {
         host_id: &str,
         display_name: &str,
         canonical_path: &str,
+        mode: &str,
     ) -> ApiResult<Workspace>;
     /// 409 `conflict` "Workspace ID or path is already registered".
     fn add_workspace(
@@ -906,12 +907,13 @@ impl Store for Connection {
         host_id: &str,
         display_name: &str,
         canonical_path: &str,
+        mode: &str,
     ) -> ApiResult<Workspace> {
         self.execute(
             "INSERT INTO workspaces (id,host_id,display_name,canonical_path,defaults_json,created_at,kind) \
-             VALUES (?1,?2,?3,?4,'{}',?5,'chat') ON CONFLICT(id) DO UPDATE SET \
-             host_id=excluded.host_id, canonical_path=excluded.canonical_path, kind='chat'",
-            params![workspace_id, host_id, display_name, canonical_path, now_ms()],
+             VALUES (?1,?2,?3,?4,'{}',?5,?6) ON CONFLICT(id) DO UPDATE SET \
+             host_id=excluded.host_id, canonical_path=excluded.canonical_path, kind=excluded.kind",
+            params![workspace_id, host_id, display_name, canonical_path, now_ms(), mode],
         )?;
         self.get_workspace(workspace_id)
     }

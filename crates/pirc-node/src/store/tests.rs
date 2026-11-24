@@ -322,7 +322,7 @@ fn workspaces_and_role_pin() {
             .contains("incompatible with configured accepted modes")
     );
     let chat = db
-        .ensure_chat_workspace("chats", "node", "Chats", "/s/chat/chats")
+        .ensure_chat_workspace("chats", "node", "Chats", "/s/chat/chats", "chat")
         .unwrap();
     assert_eq!(chat.mode, ModeId::new("chat").unwrap());
     assert_eq!(

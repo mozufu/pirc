@@ -19,6 +19,8 @@ use crate::{
 /// Local id of the top-level chat workspace a chat node creates for
 /// uncategorized chats.
 pub const CHAT_WORKSPACE_ID: &str = "chats";
+/// The chat node's workspace that holds each pot's own session.
+pub const POTS_WORKSPACE_ID: &str = "pots";
 
 /// Hostnames that may use plain `ws://` (`new URL(...).hostname` keeps the
 /// brackets of an IPv6 address).

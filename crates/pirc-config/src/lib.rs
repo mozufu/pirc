@@ -23,7 +23,8 @@ pub mod registry;
 pub mod text;
 
 pub use node::{
-    BrowserSettings, CHAT_WORKSPACE_ID, ConfigWorkspace, NodeConfig, SandboxSettings, Viewport,
+    BrowserSettings, CHAT_WORKSPACE_ID, ConfigWorkspace, NodeConfig, POTS_WORKSPACE_ID,
+    SandboxSettings, Viewport,
 };
 
 const DAY_MS: u64 = 24 * 60 * 60 * 1000;

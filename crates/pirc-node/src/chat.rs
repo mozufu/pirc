@@ -16,7 +16,7 @@ use std::io::Write;
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
 use std::path::{Path, PathBuf};
 
-use pirc_config::{CHAT_WORKSPACE_ID, NodeConfig};
+use pirc_config::{CHAT_WORKSPACE_ID, NodeConfig, POTS_WORKSPACE_ID};
 use pirc_protocol::mode::{Mode, Workdir};
 use rusqlite::Connection;
 
@@ -60,6 +60,20 @@ pub fn ensure_top_level_chats(config: &NodeConfig, db: &Connection) -> ApiResult
         &config.node_id,
         "Chats",
         &dir.to_string_lossy(),
+        "chat",
+    )
+}
+
+/// The workspace holding each pot's own session, on a chat node that has the
+/// `pot` mode. Each session gets its private directory under it.
+pub fn ensure_pots(config: &NodeConfig, db: &Connection) -> ApiResult<Workspace> {
+    let dir = chat_workspace_dir(config, POTS_WORKSPACE_ID)?;
+    db.ensure_chat_workspace(
+        POTS_WORKSPACE_ID,
+        &config.node_id,
+        "Pots",
+        &dir.to_string_lossy(),
+        "pot",
     )
 }
 

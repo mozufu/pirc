@@ -269,6 +269,9 @@ impl Services {
             if config.chat() && config.modes.iter().any(|mode| mode.as_str() == "chat") {
                 crate::chat::ensure_top_level_chats(&config, &connection).map_err(failed)?;
             }
+            if config.chat() && config.modes.iter().any(|mode| mode.as_str() == "pot") {
+                crate::chat::ensure_pots(&config, &connection).map_err(failed)?;
+            }
             let recovery = connection.recover_startup().map_err(failed)?;
             crate::log::info(&format!(
                 "node startup recovery complete: {}",
