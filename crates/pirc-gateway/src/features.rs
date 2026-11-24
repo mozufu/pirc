@@ -26,7 +26,6 @@ pub fn routes() -> Router<AppState> {
         .merge(crate::memory::routes())
         .merge(crate::schedules::routes())
         .merge(crate::calendar::routes())
-        .merge(crate::pots::routes())
         .merge(crate::push::routes())
 }
 
@@ -36,7 +35,7 @@ fn no_store_route(method: &Method, path: &str) -> bool {
     let segments: Vec<&str> = path.trim_start_matches('/').split('/').collect();
     let one = |s: &str| !s.is_empty();
     match (method.as_str(), segments.as_slice()) {
-        (_, ["api", "calendar" | "pots", ..]) => true,
+        (_, ["api", "calendar", ..]) => true,
         // Checkpoint manifests and file previews contain private workspace data;
         // deny caching for authentication/stale/invalid responses as well.
         (_, ["api", "sessions", id, "checkpoints", ..]) => one(id),
@@ -226,7 +225,6 @@ pub fn start(app: &AppState) -> Result<(), String> {
     crate::push::start(app)?;
     crate::delegations::start(app);
     crate::schedules::start(app);
-    crate::pots::start(app);
     crate::calendar::reminders::start(app);
     Ok(())
 }

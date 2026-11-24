@@ -25,8 +25,7 @@ pub use inference::{
 };
 pub use link::{
     GatewayMessage, HttpMethod, NodeHttpRequest, NodeHttpResponse, NodeMessage, NodeRole,
-    PotsControl, PotsOperation, PotsRequest, RegisteredWorkspace, Registration, SessionActivity,
-    SessionRun, TerminalKind, WorkspaceRole,
+    RegisteredWorkspace, Registration, SessionActivity, SessionRun, TerminalKind, WorkspaceRole,
 };
 pub use mode::{Mode, ModeId};
 pub use models::{InferenceConfig, Model, ModelApi, ModelRef, Models, Provider, ThinkingLevel};
@@ -39,7 +38,7 @@ use serde_json::Value;
 
 /// Both sides must speak the same version; the gateway closes a node that
 /// registers with another one with [`PROTOCOL_MISMATCH_CLOSE`].
-pub const NODE_PROTOCOL_VERSION: u32 = 16;
+pub const NODE_PROTOCOL_VERSION: u32 = 17;
 /// Close code for a node that speaks another protocol version.
 pub const PROTOCOL_MISMATCH_CLOSE: u16 = 4426;
 

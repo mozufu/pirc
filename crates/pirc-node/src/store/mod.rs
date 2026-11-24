@@ -31,7 +31,7 @@ use crate::util::{now_ms, prefix_uuid, safe_json};
 
 /// `PRAGMA user_version` of the pirc 2 node schema. Databases from earlier
 /// releases are refused, never migrated: pirc 2 starts from fresh state.
-pub const SCHEMA_VERSION: i64 = 2100;
+pub const SCHEMA_VERSION: i64 = 2101;
 /// The pirc 2 gateway's `user_version`, recognized to give a clear error.
 const GATEWAY_SCHEMA_VERSION: i64 = 1100;
 const SCHEMA: &str = concat!(
@@ -1230,12 +1230,6 @@ impl Store for Connection {
                 )?;
             }
             db.execute("DELETE FROM sessions WHERE id=?1", [session_id])?;
-            // Files and runner have already been stopped/removed. Preserve the
-            // dispatch tombstone so cancellation can settle after deletion.
-            db.execute(
-                "UPDATE pots_dispatches SET state='stopped',fenced=1 WHERE session_id=?1",
-                [session_id],
-            )?;
             db.execute(
                 "UPDATE session_deletions SET status='deleted' WHERE session_id=?1",
                 [session_id],

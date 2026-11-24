@@ -167,9 +167,6 @@ impl App {
         }
         let kind = event.get("type").and_then(Value::as_str);
         let data = event.get("data").cloned();
-        if let Some(kind) = kind {
-            crate::pots::host::on_progress(self, &session, kind, data.as_ref());
-        }
         // `typeof data === 'object'`: arrays too (they carry no name).
         if kind == Some("session_renamed")
             && let Some(data @ (Value::Object(_) | Value::Array(_))) = &data

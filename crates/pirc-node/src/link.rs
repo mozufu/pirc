@@ -526,8 +526,7 @@ fn within_limits(message: &GatewayMessage) -> bool {
         GatewayMessage::ModelDelta { request_id: id, .. }
         | GatewayMessage::ModelEnd { request_id: id, .. }
         | GatewayMessage::ModelError { request_id: id, .. }
-        | GatewayMessage::AgentResponse { request_id: id, .. }
-        | GatewayMessage::PotsRequest { request_id: id, .. } => request_id(id),
+        | GatewayMessage::AgentResponse { request_id: id, .. } => request_id(id),
         GatewayMessage::MemoryMirrorAck { ledger_key, .. } => {
             ledger_key.len() == 16
                 && ledger_key
@@ -621,13 +620,6 @@ async fn handle(node: &Node, id: u64, registered: &mut bool, message: GatewayMes
                 "models updated by daemon; new agents use them; providers: {}",
                 providers.join(", ")
             ));
-        }
-        GatewayMessage::PotsRequest { request_id, data } => {
-            let node = node.clone();
-            tokio::spawn(async move {
-                let data = crate::pots::handle(&node, data).await;
-                node.link.send(&NodeMessage::Response { request_id, data });
-            });
         }
         GatewayMessage::Request { request_id, data } => {
             let node = node.clone();

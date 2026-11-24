@@ -212,11 +212,6 @@ pub enum GatewayMessage {
         request_id: String,
         data: NodeHttpRequest,
     },
-    /// Backend-issued pots commands, never replayed from a browser route.
-    PotsRequest {
-        request_id: String,
-        data: PotsRequest,
-    },
     TerminalOpen {
         stream_id: String,
         user: String,
@@ -254,46 +249,6 @@ pub enum GatewayMessage {
 pub enum TerminalKind {
     Terminal,
     Browser,
-}
-
-/// A backend-only, owner-bound pots dispatch. No user message is provenance.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PotsRequest {
-    pub user: String,
-    pub dispatch_id: String,
-    pub binding_id: String,
-    pub generation: u64,
-    #[serde(flatten)]
-    pub operation: PotsOperation,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "op", rename_all = "snake_case", rename_all_fields = "camelCase")]
-pub enum PotsOperation {
-    Prepare {
-        workspace_id: String,
-        content: String,
-        /// Absolute evidence deadline; Node rechecks immediately before RPC.
-        expires_at: i64,
-    },
-    Start,
-    Status,
-    Control {
-        action: PotsControl,
-    },
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum PotsControl {
-    /// Fence pots work without stopping it: an unsent instruction is
-    /// cancelled, delivered work keeps running and stays stoppable by pots.
-    TakeOver,
-    /// Fence and hand the execution conversation to the user (explicit
-    /// takeover, or the task is over). A later Stop no longer stops it.
-    Release,
-    Stop,
 }
 
 /// An HTTP request the gateway replays on a node.
@@ -345,28 +300,6 @@ mod tests {
     use super::*;
     use crate::round_trip;
     use serde_json::json;
-
-    #[test]
-    fn pots_commands_have_a_dedicated_backend_frame() {
-        for operation in [
-            serde_json::json!({"op":"prepare","workspaceId":"w","content":"User instruction","expiresAt":4000000000000i64}),
-            serde_json::json!({"op":"start"}),
-            serde_json::json!({"op":"status"}),
-            serde_json::json!({"op":"control","action":"take_over"}),
-            serde_json::json!({"op":"control","action":"stop"}),
-        ] {
-            let mut data =
-                serde_json::json!({"user":"u","dispatchId":"d","bindingId":"task","generation":1});
-            data.as_object_mut()
-                .unwrap()
-                .extend(operation.as_object().unwrap().clone());
-            let frame = serde_json::json!({"type":"pots_request","requestId":"r","data":data});
-            assert!(matches!(
-                round_trip::<GatewayMessage>(&frame).unwrap(),
-                GatewayMessage::PotsRequest { .. }
-            ));
-        }
-    }
 
     #[test]
     fn keeps_a_null_payload_distinct_from_none() {

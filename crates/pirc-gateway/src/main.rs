@@ -28,7 +28,6 @@ mod memory;
 mod memory_records;
 mod node_events;
 mod nodes;
-mod pots;
 mod project_deletion;
 mod project_links;
 mod push;

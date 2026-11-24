@@ -40,11 +40,10 @@ pub(crate) use sql_text_enum;
 /// `PRAGMA user_version` of the pirc 2 schema. Databases from earlier
 /// releases (any other version) are refused, never migrated: pirc 2 starts
 /// from fresh state.
-pub const SCHEMA_VERSION: i64 = 1101;
+pub const SCHEMA_VERSION: i64 = 1102;
 const SCHEMA: &str = concat!(
     include_str!("schema.sql"),
     include_str!("calendar/schema.sql"),
-    include_str!("pots/schema.sql"),
     include_str!("conversation_submissions/schema.sql"),
     include_str!("conversation_submissions/attachments.sql"),
     include_str!("conversation_submissions/acceptance.sql"),

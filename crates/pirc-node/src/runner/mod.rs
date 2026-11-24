@@ -471,9 +471,6 @@ impl RunnerManager {
             Some(lock.lock().await)
         };
         let node = self.node()?;
-        if !matches!(payload, CommandPayload::Stop) {
-            crate::pots::require_generic_input(&node.db.lock(), session_id)?;
-        }
         node.db
             .lock()
             .validate_lease(session_id, lease.0, lease.1)?;
@@ -847,16 +844,9 @@ impl RunnerManager {
     pub async fn deliver(&self, session_id: &str, delivery: &Delivery) -> ApiResult<()> {
         let node = self.node()?;
         crate::session_creation::admission::require_generic(&node.db.lock(), session_id)?;
-        if delivery.custom_type == "pots-dispatch" {
-            return Err(ApiError::invalid_input());
-        }
-        crate::pots::require_generic_input(&node.db.lock(), session_id)?;
-        self.deliver_checked(session_id, delivery, || {
-            crate::pots::require_generic_input(&node.db.lock(), session_id)?;
-            Ok(true)
-        })
-        .await
-        .map(|_| ())
+        self.deliver_checked(session_id, delivery, || Ok(true))
+            .await
+            .map(|_| ())
     }
 
     /// Claim a backend send only after startup/configuration and the command lock.

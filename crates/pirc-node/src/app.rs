@@ -1262,8 +1262,8 @@ fn delivery(body: &Value) -> ApiResult<Delivery> {
         return Err(ApiError::invalid_input());
     }
     let delivery: Delivery = parse(body)?;
-    // pots-dispatch is backend-only provenance. Do not add it to this
-    // user-replayable route: pots::handle owns both the ledger and message.
+    // Only the custom types the Gateway issues itself; provenance such as
+    // scheduled runs cannot be minted through this route.
     let role_ok = delivery.role.as_deref().is_none_or(|role| {
         let mut chars = role.chars();
         chars.next().is_some_and(|c| c.is_ascii_lowercase())
@@ -1297,7 +1297,6 @@ fn delivery(body: &Value) -> ApiResult<Delivery> {
 async fn deliver(node: Node, request: Request) -> ApiResult<Response> {
     let session = claim_mutable(&node, &request)?;
     let body = delivery(request.json())?;
-    crate::pots::require_generic_input(&node.db.lock(), &session.id)?;
     node.runners.deliver(&session.id, &body).await?;
     Ok(Response::status(202, json!({ "delivered": true })))
 }
@@ -1459,7 +1458,6 @@ async fn command(node: Node, request: Request) -> ApiResult<Response> {
         payload,
         CommandPayload::Stop | CommandPayload::StopTransition { .. }
     ) {
-        crate::pots::require_generic_input(&node.db.lock(), &session.id)?;
         crate::session_creation::admission::require_generic(&node.db.lock(), &session.id)?;
         node.session_mode(&session.id)?;
     }
