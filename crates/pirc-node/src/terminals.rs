@@ -49,7 +49,7 @@ mod isolated;
 #[cfg(test)]
 mod isolated_tests;
 pub(crate) mod journal;
-pub(crate) mod pty;
+pub mod pty;
 pub(crate) mod requests;
 mod supervision;
 pub(crate) use input::Control;

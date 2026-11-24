@@ -1426,7 +1426,7 @@ async fn isolated_work_terminal_guards_start_and_retires_detached_writers() {
     let detached = workspace.join("detached-output");
     let peer = f.root.join("outside/user-kept");
     fs::write(&peer, "later user change").unwrap();
-    fs::write(&shell,format!("#!/bin/sh\n: </dev/tty || exit 72\ncat '{}' > '{}' 2>/dev/null || :\nprintf changed > '{}' 2>/dev/null || :\nsetsid /bin/sh -c 'exec 3>"$1"; while :; do printf x >&3; sleep 0.05; done' detached '{}' &\nprintf ready > '{}'\nwait\n",f.root.join("state/secret").display(),workspace.join("leaked").display(),peer.display(),detached.display(),marker.display())).unwrap();
+    fs::write(&shell,format!("#!/bin/sh\n: </dev/tty || exit 72\ncat '{}' > '{}' 2>/dev/null || :\nprintf changed > '{}' 2>/dev/null || :\nsetsid /bin/sh -c 'exec 3>\"$1\"; while :; do printf x >&3; sleep 0.05; done' detached '{}' &\nprintf ready > '{}'\nwait\n",f.root.join("state/secret").display(),workspace.join("leaked").display(),peer.display(),detached.display(),marker.display())).unwrap();
     use std::os::unix::fs::PermissionsExt;
     fs::set_permissions(&shell, fs::Permissions::from_mode(0o700)).unwrap();
     let session = f.config.sessions_dir.join("work-terminal");
