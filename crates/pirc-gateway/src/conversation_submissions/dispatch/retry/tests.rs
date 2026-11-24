@@ -629,35 +629,6 @@ async fn retry_requires_the_full_workflow_and_pins_its_capability_connection() {
         );
     }
 }
-#[tokio::test]
-async fn closing_the_rollout_keeps_retry_of_an_accepted_operation_available() {
-    let (app, _dir, first) = rejected(false).await;
-    let app = crate::conversation_submissions::tests::close_rollout(app);
-    assert!(!app.config.first_send);
-    let calls = node(&app, &first, false, true, true);
-    let retry = input(&first, "retry-a");
-    let (code, value) = call(
-        &app,
-        "POST",
-        "/api/conversation-submissions/draft-1/retry",
-        Some("alice"),
-        None,
-        Some(body(&retry)),
-    )
-    .await;
-    assert_eq!(code, 200, "{value}");
-    assert_eq!(value["preparation"]["state"], "admitted");
-    assert_eq!(
-        calls
-            .lock()
-            .unwrap()
-            .iter()
-            .filter(|(m, _)| *m == HttpMethod::Post)
-            .count(),
-        1
-    );
-    assert_eq!(count(&app.db.lock(), "commands"), 2);
-}
 
 #[tokio::test]
 async fn a_retry_that_never_left_the_link_consumes_no_attempt_and_keeps_the_rejection() {

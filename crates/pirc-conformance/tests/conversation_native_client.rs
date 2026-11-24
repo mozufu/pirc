@@ -70,7 +70,6 @@ async fn native_reopens_lost_receipts_and_revoked_device_cannot_send_or_erase_lo
     )
     .unwrap();
     let mut cluster = Cluster::start_with(GatewayOptions {
-        env: vec![("PIRC_FIRST_SEND", "1".into())],
         chat_node: true,
         agent_core_only: true,
         ..Default::default()
@@ -265,7 +264,6 @@ async fn native_takeover_stop_and_delete_fence_delayed_web_dispatch_across_resta
     )
     .unwrap();
     let mut cluster = Cluster::start_with(GatewayOptions {
-        env: vec![("PIRC_FIRST_SEND", "1".into())],
         chat_node: true,
         agent_core_only: true,
         ..Default::default()
@@ -349,7 +347,6 @@ async fn web_offline_stop_or_delete_fences_native_allocation_and_recovers_on_res
     for id in ["offline-stop", "offline-delete"] {
         let deleting = id == "offline-delete";
         let mut cluster = Cluster::start_with(GatewayOptions {
-            env: vec![("PIRC_FIRST_SEND", "1".into())],
             chat_node: true,
             agent_core_only: true,
             ..Default::default()
@@ -492,7 +489,6 @@ async fn lost_node_storage_reply_recovers_same_allocation_and_upload_only_after_
             "allocation-reply-loss"
         };
         let mut cluster = Cluster::start_with(GatewayOptions {
-            env: vec![("PIRC_FIRST_SEND", "1".into())],
             without_node: true,
             ..Default::default()
         })

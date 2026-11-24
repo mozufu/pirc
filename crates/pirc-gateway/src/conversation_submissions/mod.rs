@@ -299,18 +299,10 @@ pub fn router() -> Router<AppState> {
         )
 }
 async fn capabilities(
-    State(app): State<AppState>,
     Extension(identity): Extension<Identity>,
     headers: axum::http::HeaderMap,
 ) -> axum::Json<Value> {
-    // Rollout stays closed (`PIRC_FIRST_SEND` unset) until the complete
-    // client/process failure matrix passes; `prepare`, attachment staging and
-    // `accept` enforce the same setting.
-    axum::Json(client::capabilities(
-        &identity,
-        &headers,
-        app.config.first_send,
-    ))
+    axum::Json(client::capabilities(&identity, &headers))
 }
 async fn pending_for_session(
     State(app): State<AppState>,
@@ -343,13 +335,6 @@ async fn prepare(
             "account_changed",
             "The signed-in account changed. Reopen this operation in its original account.",
         ));
-    }
-    // New admission only: repeating `prepare` for an operation that already has
-    // a durable acceptance row is an outcome query for that accepted operation.
-    if !app.config.first_send
-        && acceptance::summary(&app.db.lock(), &identity.user, &input.operation_id)?.is_none()
-    {
-        return Err(client::disabled());
     }
     input.validate(app.config.upload_max_bytes as u64)?;
     // A duplicate is an outcome query, even after a model/mode was removed.

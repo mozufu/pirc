@@ -19,30 +19,13 @@ pub(super) fn require(headers: &HeaderMap) -> ApiResult<()> {
         ))
     }
 }
-/// The server-side rollout gate (`PIRC_FIRST_SEND`). It closes only the
-/// admission of new submissions; an operation with a durable acceptance row keeps
-/// running under the authority it was accepted with.
-pub(super) fn disabled() -> ApiError {
-    ApiError::new(
-        409,
-        "first_send_disabled",
-        "Sending a new first message is not enabled on this Gateway",
-    )
-}
-pub(super) fn require_enabled(app: &AppState) -> ApiResult<()> {
-    if app.config.first_send {
-        Ok(())
-    } else {
-        Err(disabled())
-    }
-}
-pub(super) fn capabilities(identity: &Identity, headers: &HeaderMap, rollout: bool) -> Value {
+pub(super) fn capabilities(identity: &Identity, headers: &HeaderMap) -> Value {
     let compatible = negotiated(headers);
     json!({"version":1,"clientContract":if compatible {CONTRACT}else{0},"requiredClientContract":CONTRACT,
       "ownerUser":identity.user,"canFenceAccount":true,"canFindPendingSession":true,
       "canPrepare":true,"canStageAttachments":true,"canAcceptIntent":true,"canMaterialize":true,
       "canDispatchFirstMessage":true,"canRetryFirstMessage":true,"canRetireFirstMessageRetry":true,"canCancelCreation":true,"canStopBeforeAllocation":true,
-      "attachmentRetentionDays":7,"canSubmit":rollout && compatible})
+      "attachmentRetentionDays":7,"canSubmit":compatible})
 }
 #[cfg(test)]
 mod tests;

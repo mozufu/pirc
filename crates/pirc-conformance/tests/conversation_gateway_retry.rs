@@ -36,7 +36,6 @@ async fn lease(cluster: &Cluster, headers: &[(&str, String)], session: &str) -> 
 #[tokio::test(flavor = "multi_thread")]
 async fn paired_retry_reuses_the_same_conversation_and_file_and_survives_both_hosts_restarting() {
     let Some(mut cluster) = Cluster::start_with(GatewayOptions {
-        env: vec![("PIRC_FIRST_SEND", "1".into())],
         chat_node: true,
         agent_core_only: true,
         node_env: vec![("PIRC_AGENT_COMMAND", "{run_dir}/agent-for-retry".into())],

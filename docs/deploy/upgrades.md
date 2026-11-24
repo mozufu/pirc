@@ -50,7 +50,7 @@ request that provably never left the Gateway can simply be sent again. This runs
 in the background, every 5 s and on every Node reconnect, with no client open.
 Upgrade the Gateway and its Nodes together: against a Node older than schema 2039
 the outcome stays unknown and is reported as needing a Node upgrade; no void is
-assumed. The first-send flow itself stays off unless `PIRC_FIRST_SEND` is set.
+assumed.
 Back up both states with their binaries; older executables reject the new schemas.
 Protocol, client formats, lockfiles and Nix hashes are unchanged. Local code only.
 

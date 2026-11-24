@@ -1,8 +1,6 @@
 # First-send live client acceptance
 
-The first-send flow remains disabled by default (`PIRC_FIRST_SEND` unset, so
-`canSubmit: false` and the Gateway refuses new admission). These
-acceptance fixtures run the production Web `FirstSend`, HTTP transport and
+First-send is the only way to create a session. These acceptance fixtures run the production Web `FirstSend`, HTTP transport and
 IndexedDB, or the actual native Kotlin engine in separate JVM processes, against
 isolated real Gateway, Node and Agent executables. The model
 provider and sandbox launcher are the existing conformance fakes: this does not
@@ -34,10 +32,8 @@ does not mean it ran. It fails if binaries, browser or dependencies are missing.
 Use a fresh run-owned `CARGO_TARGET_DIR`; preserve shared caches, SDKs and APKs.
 
 The fixture binds only loopback and uses its own synthetic owner and provider.
-Its trusted-proxy adapter adds the fixture identity only. The fixture Gateway is
-started with `PIRC_FIRST_SEND=1`, because the Gateway enforces the rollout itself;
-the adapter asserts that it reports `canSubmit: true`. Production configuration is
-never changed.
+Its trusted-proxy adapter adds the fixture identity only; it asserts that the
+Gateway reports `canSubmit: true`.
 All prepare, upload, accept, materialize, control, dispatch and receipt operations
 are real HTTP calls to the built Gateway.
 
@@ -87,7 +83,7 @@ suite and must be run explicitly; it fails on missing prerequisites.
 The harness creates two paired device tokens through the real Gateway API. Both
 native clients send their own bearer tokens without a browser identity or Origin.
 The test-only interceptor supplies the fixture Host routing and asserts the
-fixture Gateway (started with `PIRC_FIRST_SEND=1`) reports `canSubmit: true`.
+fixture Gateway reports `canSubmit: true`.
 Gateway/Node APIs, pairing authorization and revocation remain real. Synthetic
 credentials live only in the fixture's private config file and are removed on exit.
 

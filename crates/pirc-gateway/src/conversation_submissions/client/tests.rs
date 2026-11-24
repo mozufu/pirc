@@ -1,5 +1,5 @@
 use super::super::acceptance::tests::{identity, model, prepared, register};
-use super::super::tests::{app, call, closed_app, count, disk_app};
+use super::super::tests::{app, call, count, disk_app};
 use super::*;
 use axum::http::{HeaderMap, HeaderValue};
 use tower::ServiceExt;
@@ -50,11 +50,11 @@ async fn request(
     (code, serde_json::from_slice(&bytes).unwrap_or(Value::Null))
 }
 #[test]
-fn rollout_alone_cannot_enable_old_unknown_or_duplicate_client_versions() {
+fn old_unknown_or_duplicate_client_versions_cannot_submit() {
     for values in [vec![], vec!["1"], vec!["3"], vec!["02"], vec!["2", "2"]] {
         let h = headers(&values);
         assert!(require(&h).is_err());
-        let response = capabilities(&identity(), &h, true);
+        let response = capabilities(&identity(), &h);
         assert_eq!(response["version"], 1);
         assert_eq!(response["requiredClientContract"], 2);
         assert_eq!(response["canSubmit"], false);
@@ -62,34 +62,7 @@ fn rollout_alone_cannot_enable_old_unknown_or_duplicate_client_versions() {
     }
     let h = headers(&["2"]);
     require(&h).unwrap();
-    assert_eq!(capabilities(&identity(), &h, true)["canSubmit"], true);
-    assert_eq!(capabilities(&identity(), &h, false)["canSubmit"], false);
-}
-#[tokio::test]
-async fn http_negotiation_keeps_rollout_closed_for_every_client_and_creates_no_state() {
-    let (app, _dir) = closed_app();
-    for (values, version) in [
-        (vec![], 0),
-        (vec!["1"], 0),
-        (vec!["2"], 2),
-        (vec!["2", "2"], 0),
-    ] {
-        let (code, body) = request(
-            &app,
-            "GET",
-            "/api/conversation-submissions/capabilities",
-            &values,
-            None,
-        )
-        .await;
-        assert_eq!(code, 200);
-        assert_eq!(body["canSubmit"], false);
-        assert_eq!(body["clientContract"], version);
-        assert_eq!(body["ownerUser"], "alice");
-        assert_eq!(body["canRetireFirstMessageRetry"], true);
-    }
-    assert_eq!(count(&app.db.lock(), "conversation_submissions"), 0);
-    assert_eq!(count(&app.db.lock(), "sessions"), 0);
+    assert_eq!(capabilities(&identity(), &h)["canSubmit"], true);
 }
 #[tokio::test]
 async fn stale_cached_activation_cannot_prepare_accept_materialize_or_dispatch() {

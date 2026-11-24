@@ -1,6 +1,4 @@
 /** Real Web first-send/IndexedDB acceptance, driven by conversation_web_client.rs.
- * The fixture Gateway runs with PIRC_FIRST_SEND=1 (the server refuses new
- * first-send admission otherwise); the shipped default stays disabled.
  * A dedicated test executable and a new profile are mandatory. Never use Chrome.app.
  */
 import assert from 'node:assert/strict';
@@ -104,7 +102,7 @@ async function proxy(req, res) {
   traffic.push({ method: req.method, path: req.url, status: reply.status });
   if (req.url === '/api/conversation-submissions/capabilities' && reply.status === 200) {
     const value = JSON.parse(reply.body);
-    assert.equal(value.canSubmit, true, 'The fixture Gateway must run with PIRC_FIRST_SEND=1');
+    assert.equal(value.canSubmit, true, 'The fixture Gateway must report canSubmit');
     assert.equal(value.clientContract, 2);
     assert.equal(value.requiredClientContract, 2);
     capabilityChecks++;

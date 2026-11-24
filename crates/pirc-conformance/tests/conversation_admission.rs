@@ -13,7 +13,6 @@ fn ok(response: Response, status: u16) -> Value {
 }
 async fn setup(with_attachment: bool) -> Option<(Cluster, Vec<(&'static str, String)>, String)> {
     let cluster = Cluster::start_with(GatewayOptions {
-        env: vec![("PIRC_FIRST_SEND", "1".into())],
         chat_node: true,
         agent_core_only: true,
         ..Default::default()
