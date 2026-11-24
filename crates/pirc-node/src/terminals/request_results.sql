@@ -1,6 +1,5 @@
 -- A start failure after reservation keeps its error code once, only for its own
 -- not-started run. Owner/session pages read requests in creation order.
-DROP TRIGGER terminal_work_monotonic;
 CREATE TRIGGER terminal_work_monotonic BEFORE UPDATE OF state,error_code ON terminal_work_requests
 WHEN NOT (OLD.state='accepted' AND NEW.state='accepted' AND OLD.run_id IS NOT NULL
   AND OLD.error_code IS NULL AND NEW.error_code IS NOT NULL
@@ -9,7 +8,6 @@ WHEN NOT (OLD.state='accepted' AND NEW.state='accepted' AND OLD.run_id IS NOT NU
   OR OLD.error_code IS NOT NULL) BEGIN
  SELECT RAISE(ABORT,'Work terminal outcome cannot be retried or reset');
 END;
-ALTER TABLE terminal_host_requests ADD COLUMN error_code TEXT;
 CREATE TRIGGER terminal_host_error_once BEFORE UPDATE OF error_code ON terminal_host_requests
 WHEN OLD.error_code IS NOT NULL OR NEW.error_code IS NULL OR OLD.run_id IS NULL
  OR NOT EXISTS(SELECT 1 FROM terminal_runs r WHERE r.id=OLD.run_id AND r.state='not_started') BEGIN

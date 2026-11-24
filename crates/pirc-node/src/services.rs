@@ -251,7 +251,7 @@ impl Services {
             .map_err(|error| format!("cannot register node private directories: {error}"))?;
         let legacy = config.state_dir.join("gateway.sqlite");
         if legacy != config.database_path {
-            crate::store::refuse_typescript_database(&legacy)?;
+            crate::store::refuse_earlier_database(&legacy)?;
         }
         let db = Db::open(&config.database_path)?;
         {

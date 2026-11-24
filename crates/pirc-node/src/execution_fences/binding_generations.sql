@@ -1,6 +1,6 @@
--- The Node's binding history for revocation evaluation. Existing sessions start
--- as legacy coverage: launches before the journals cannot be ruled out. New
--- sessions and every installed generation have complete journal coverage.
+-- The Node's binding history for revocation evaluation. Every session and every
+-- installed generation has complete journal coverage; `legacy` coverage (launches
+-- that cannot be ruled out) is no longer written.
 CREATE TABLE session_binding_generations (
  session_id TEXT NOT NULL,
  generation INTEGER NOT NULL CHECK(generation>=1),
@@ -12,7 +12,6 @@ CREATE TABLE session_binding_generations (
  PRIMARY KEY(session_id,generation),
  CHECK((generation=1)=(operation_id IS NULL))
 );
-INSERT INTO session_binding_generations SELECT id,1,workspace_id,'legacy',0,0,NULL FROM sessions;
 CREATE TRIGGER session_binding_generation_new AFTER INSERT ON sessions BEGIN
  INSERT INTO session_binding_generations VALUES(NEW.id,1,NEW.workspace_id,'complete',NEW.runner_epoch,0,NULL);
 END;

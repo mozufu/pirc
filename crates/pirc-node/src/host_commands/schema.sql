@@ -9,7 +9,8 @@ CREATE TABLE host_command_runs (
  request_id TEXT NOT NULL,
  state TEXT NOT NULL CHECK(state IN ('launching','running','not_started','settled','unconfirmed')),
  created_at INTEGER NOT NULL,
- updated_at INTEGER NOT NULL
+ updated_at INTEGER NOT NULL,
+ binding_generation INTEGER
 );
 CREATE UNIQUE INDEX host_command_request ON host_command_runs(session_id,runner_epoch,incarnation,request_id);
 CREATE INDEX host_command_session ON host_command_runs(session_id,state);

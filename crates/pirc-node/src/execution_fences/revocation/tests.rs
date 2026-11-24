@@ -1,8 +1,5 @@
 use super::*;
-use crate::{
-    store::{Db, Store},
-    workspace_memory::tests::Fixture,
-};
+use crate::{store::Store, workspace_memory::tests::Fixture};
 
 fn kinds(evaluation: &Evaluation) -> Vec<(&'static str, &'static str, bool)> {
     evaluation
@@ -224,49 +221,6 @@ async fn generations_are_immutable_follow_the_session_and_detect_unrecorded_move
     f.node.close().await;
 }
 
-#[test]
-fn existing_sessions_upgrade_as_legacy_and_new_sessions_start_complete() {
-    let dir = tempfile::tempdir().unwrap();
-    let file = dir.path().join("node.sqlite");
-    let old = {
-        let db = Db::open(&file).unwrap();
-        let db = db.lock();
-        db.add_workspace(
-            "repo",
-            "node",
-            "Repo",
-            "/repo",
-            crate::store::ModeId::new("directory").unwrap(),
-        )
-        .unwrap();
-        db.execute_batch(include_str!("../remove_binding_generations.sql"))
-            .unwrap();
-        let old = db
-            .create_session("repo", "/private/old", "alice")
-            .unwrap()
-            .id;
-        db.increment_epoch(&old).unwrap();
-        db.pragma_update(None, "user_version", 2030).unwrap();
-        old
-    };
-    let db = Db::open(&file).unwrap();
-    let db = db.lock();
-    let row = |session: &str| -> (String, i64, Option<String>) {
-        db.query_row(
-            "SELECT coverage,start_epoch,operation_id FROM session_binding_generations WHERE session_id=?1 AND generation=1",
-            [session],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
-        )
-        .unwrap()
-    };
-    assert_eq!(row(&old), ("legacy".into(), 0, None));
-    let fresh = db.create_session("repo", "/private/new", "alice").unwrap();
-    assert_eq!(
-        row(&fresh.id),
-        ("complete".into(), fresh.runner_epoch, None)
-    );
-}
-
 #[tokio::test]
 async fn receipts_carry_the_evaluation_without_claiming_revocation_or_installation() {
     use super::super::{Intent, accept, network_observation, receipt};
@@ -397,28 +351,4 @@ async fn r2_attribution_follows_the_recorded_generation_not_clocks() {
             .is_err()
     );
     f.node.close().await;
-}
-#[test]
-fn r3_rows_from_before_attribution_stay_explicit_legacy_risks() {
-    let dir = tempfile::tempdir().unwrap();
-    let file = dir.path().join("node.sqlite");
-    {
-        let db = Db::open(&file).unwrap();
-        let db = db.lock();
-        db.execute_batch(include_str!("../remove_generation_attribution.sql"))
-            .unwrap();
-        db.execute("INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES('old','s','repo',0,'n','r','settled',5,5)", []).unwrap();
-        db.pragma_update(None, "user_version", 2033).unwrap();
-    }
-    let db = Db::open(&file).unwrap();
-    let db = db.lock();
-    let generation: Option<i64> = db
-        .query_row(
-            "SELECT binding_generation FROM host_command_runs WHERE id='old'",
-            [],
-            |r| r.get(0),
-        )
-        .unwrap();
-    // Migration assigns nothing: the row remains unattributed legacy evidence.
-    assert_eq!(generation, None);
 }

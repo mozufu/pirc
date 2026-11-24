@@ -257,30 +257,6 @@ async fn journal_survives_reopen_and_does_not_rewrite_or_replay_outcomes() {
     f.node.close().await;
 }
 
-#[test]
-fn migration_does_not_invent_pre_journal_terminal_history() {
-    let tmp = tempfile::tempdir().unwrap();
-    let path = tmp.path().join("node.sqlite");
-    {
-        let db = Db::open(&path).unwrap();
-        db.lock()
-            .execute_batch(include_str!("remove_journal.sql"))
-            .unwrap();
-        db.lock().pragma_update(None, "user_version", 2016).unwrap();
-    }
-    let db = Db::open(&path).unwrap();
-    let db = db.lock();
-    assert_eq!(
-        db.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))
-            .unwrap(),
-        crate::store::SCHEMA_VERSION
-    );
-    assert_eq!(
-        serde_json::to_value(journal::summary(&db, "old").unwrap()).unwrap(),
-        json!({"launches":0,"notStarted":0,"observersSettled":0,"unresolved":0,"historyComplete":false})
-    );
-}
-
 #[tokio::test]
 async fn io_retirement_joins_both_owners_before_releasing_the_master() {
     let (master, _slave) = pty::open(24, 80).unwrap();

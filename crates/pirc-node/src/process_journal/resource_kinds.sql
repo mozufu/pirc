@@ -1,14 +1,6 @@
+-- One durable identity per actual spawn attempt, retained across deletion. An
+-- absent supervisor is never proof of termination of this launch's descendants.
 -- One agent per runner epoch, but multiple independently identified work terminals.
--- Rebuild to remove the old table-level UNIQUE(session_id,runner_epoch).
-DROP TRIGGER sandbox_launch_identity;
-DROP TRIGGER sandbox_kernel_identity;
-DROP TRIGGER sandbox_launch_terminal;
-DROP TRIGGER sandbox_launch_retained;
-DROP TRIGGER sandbox_guard_monotonic;
-DROP INDEX sandbox_launches_pending;
-DROP INDEX sandbox_guard_pending;
-DROP INDEX IF EXISTS sandbox_agent_epoch;
-ALTER TABLE sandbox_launches RENAME TO sandbox_launches_before_resources;
 CREATE TABLE sandbox_launches (
  launch_id TEXT PRIMARY KEY,
  session_id TEXT NOT NULL,
@@ -21,17 +13,13 @@ CREATE TABLE sandbox_launches (
  updated_at INTEGER NOT NULL,
  guard_state TEXT NOT NULL DEFAULT 'untracked' CHECK(guard_state IN ('untracked','waiting','released','denied')),
  resource_kind TEXT NOT NULL CHECK(resource_kind IN ('agent','terminal')),
+ -- C2: every new launch or effect records the binding generation it ran under,
+ -- in its own insert, before spawn. NULL means unattributed evidence; it is
+ -- never assigned afterwards by time or workspace.
+ binding_generation INTEGER,
  CHECK(state!='terminated' OR identity_json IS NOT NULL),
  CHECK(state!='not_started' OR identity_json IS NULL)
 );
-INSERT INTO sandbox_launches
- SELECT l.launch_id,l.session_id,l.workspace_id,l.runner_epoch,l.incarnation,
- l.state,l.identity_json,l.created_at,l.updated_at,l.guard_state,
- CASE WHEN EXISTS(SELECT 1 FROM terminal_runs t WHERE t.id=l.launch_id
-  AND t.session_id=l.session_id AND t.workspace_id=l.workspace_id
-  AND t.incarnation=l.incarnation) THEN 'terminal' ELSE 'agent' END
- FROM sandbox_launches_before_resources l;
-DROP TABLE sandbox_launches_before_resources;
 CREATE UNIQUE INDEX sandbox_agent_epoch ON sandbox_launches(session_id,runner_epoch)
  WHERE resource_kind='agent';
 CREATE INDEX sandbox_launches_pending ON sandbox_launches(session_id,updated_at)

@@ -359,43 +359,6 @@ async fn delayed_initial_admission_is_fenced_without_model_inference_or_a_lease(
 }
 
 #[test]
-fn migration_from_2007_preserves_existing_admission_and_storage() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("node.sqlite");
-    let db = Db::open(&path).unwrap();
-    let creation = ready(&mut db.lock(), dir.path());
-    initial(&db.lock(), &creation);
-    let command = db.lock().get_command("first-command").unwrap();
-    let storage = dir.path().join(&creation.session_id).join("session.jsonl");
-    std::fs::write(&storage, "existing history").unwrap();
-    db.lock()
-        .execute_batch(concat!(include_str!("../../host_commands/remove_approval.sql"), "DROP TRIGGER browser_groups_identity; DROP TRIGGER browser_groups_terminal; DROP TRIGGER browser_groups_retained; DROP TABLE browser_groups; DROP TRIGGER terminal_runs_identity; DROP TRIGGER terminal_runs_terminal; DROP TRIGGER terminal_runs_retained; DROP TABLE terminal_runs; DROP TRIGGER host_resources_immutable; DROP TRIGGER host_resources_retained; DROP TABLE host_command_resources; DROP INDEX host_commands_pending; DROP TRIGGER host_command_identity; DROP TRIGGER host_command_terminal; DROP TRIGGER host_command_retained; DROP TABLE host_command_runs; DROP TRIGGER sandbox_launch_identity; DROP TRIGGER sandbox_kernel_identity; DROP TRIGGER sandbox_launch_terminal; DROP TRIGGER sandbox_launch_retained; DROP TABLE sandbox_launches; DROP TRIGGER execution_fence_identity; DROP TRIGGER execution_fence_retained; DROP TRIGGER execution_fence_session_deleted; DROP INDEX execution_fence_active; DROP TABLE execution_fences; DROP TRIGGER upload_origin_capture; DROP TRIGGER upload_origin_immutable; DROP TRIGGER upload_origin_remove; DROP TRIGGER upload_record_immutable; DROP TABLE upload_origins; DROP TRIGGER command_environment_immutable; DROP TABLE command_environments; DROP TABLE creation_admission_attempts; DROP TABLE creation_pre_stops; PRAGMA user_version=2007;"))
-        .unwrap();
-    drop(db);
-    let db = Db::open(&path).unwrap();
-    let version: i64 = db
-        .lock()
-        .pragma_query_value(None, "user_version", |r| r.get(0))
-        .unwrap();
-    assert_eq!(version, crate::store::SCHEMA_VERSION);
-    assert_eq!(count(&db.lock(), "creation_pre_stops"), 0);
-    assert_eq!(db.lock().get_command("first-command").unwrap(), command);
-    assert_eq!(flags(&db.lock(), &creation.session_id), (false, false));
-    assert_eq!(
-        std::fs::read_to_string(storage).unwrap(),
-        "existing history"
-    );
-    assert_eq!(
-        fence(&mut db.lock(), "alice", &input()).unwrap_err().code,
-        "initial_admission_exists"
-    );
-    let other = Input {
-        operation_id: "not-yet-allocated".into(),
-        ..input()
-    };
-    assert!(fence(&mut db.lock(), "alice", &other).unwrap().confirmed);
-}
-#[test]
 fn private_recovery_workspace_owner_is_checked_before_creating_any_fence() {
     let db = Db::memory();
     setup(&db.lock());

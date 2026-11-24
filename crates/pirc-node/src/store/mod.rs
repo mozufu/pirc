@@ -29,99 +29,11 @@ use serde_json::{Map, Value};
 use crate::error::{ApiError, ApiResult};
 use crate::util::{now_ms, prefix_uuid, safe_json};
 
-/// `PRAGMA user_version` of the node's schema. The TS node's database used
-/// the gateway's migrations (1 to 19) and the Rust gateway's schema is 1000;
-/// the node's line starts apart from both, so each is recognized.
-/// 2001: uploads record their workspace and session; `workspace_deletions`.
-pub const SCHEMA_VERSION: i64 = 2040;
-/// Upgrades from each earlier node schema, applied in order.
-const MIGRATIONS: &[(i64, &str)] = &[
-    (
-        2001,
-        "ALTER TABLE uploads ADD COLUMN workspace_id TEXT;
-     ALTER TABLE uploads ADD COLUMN session_id TEXT;
-     CREATE INDEX uploads_workspace ON uploads(workspace_id);
-     CREATE TABLE workspace_deletions (
-       workspace_id TEXT PRIMARY KEY, owner_user TEXT NOT NULL,
-       status TEXT NOT NULL, created_at INTEGER NOT NULL
-     );",
-    ),
-    (
-        2002,
-        r#"CREATE TABLE IF NOT EXISTS checkpoint_intents (
-  job TEXT PRIMARY KEY, owner TEXT NOT NULL, source_session TEXT NOT NULL,
-  capture TEXT NOT NULL, expected_revision INTEGER NOT NULL,
-  accept_unresolved INTEGER NOT NULL, scope_json TEXT NOT NULL,
-  created_at INTEGER NOT NULL
-);
-CREATE TABLE IF NOT EXISTS checkpoint_workspaces (
-  workspace_id TEXT PRIMARY KEY,
-  job TEXT NOT NULL UNIQUE REFERENCES checkpoint_intents(job),
-  owner TEXT NOT NULL,
-  session_id TEXT NOT NULL UNIQUE,
-  created_at INTEGER NOT NULL
-);"#,
-    ),
-    (2003, include_str!("pots.sql")),
-    (2004, include_str!("session_creations.sql")),
-    (2005, include_str!("creation_uploads.sql")),
-    (2006, include_str!("creation_admissions.sql")),
-    (2007, include_str!("creation_cancellations.sql")),
-    (2008, include_str!("creation_pre_stops.sql")),
-    (2009, include_str!("creation_admission_attempts.sql")),
-    (2010, include_str!("../command_environment.sql")),
-    (2011, include_str!("../upload_origins.sql")),
-    (2012, include_str!("../execution_fences/schema.sql")),
-    (2013, include_str!("../process_journal/schema.sql")),
-    (2014, include_str!("../process_journal/guard.sql")),
-    (2015, include_str!("../host_commands/schema.sql")),
-    (2016, include_str!("../host_commands/resources.sql")),
-    (2017, include_str!("../terminals/journal.sql")),
-    (2018, include_str!("../browser/journal.sql")),
-    // Resource-bound fence intents are not understood by older receipt readers.
-    (2019, "SELECT 1;"),
-    // Stop-transition command payloads and receipt recovery require this reader.
-    (2020, "SELECT 1;"),
-    // Native proxy retirement participates in transition Stop receipts.
-    (2021, "SELECT 1;"),
-    // Terminal settlement now acknowledges both PTY I/O owners as well as the child.
-    (2022, "SELECT 1;"),
-    (2023, include_str!("../host_commands/approval.sql")),
-    // Isolated terminal rows share a guarded kernel launch identity.
-    (2024, "SELECT 1;"),
-    (2025, include_str!("../process_journal/resource_kinds.sql")),
-    (2026, include_str!("../terminals/io_owners.sql")),
-    (2027, include_str!("../terminals/host.sql")),
-    (2028, include_str!("../terminals/requests.sql")),
-    (2029, include_str!("../terminals/request_results.sql")),
-    (
-        2030,
-        include_str!("../terminals/request_acknowledgements.sql"),
-    ),
-    (
-        2031,
-        include_str!("../execution_fences/binding_generations.sql"),
-    ),
-    (2032, include_str!("../execution_fences/installation.sql")),
-    (2033, include_str!("../execution_fences/authority.sql")),
-    (
-        2034,
-        include_str!("../execution_fences/generation_attribution.sql"),
-    ),
-    (2035, include_str!("../execution_fences/evaluations.sql")),
-    (2036, include_str!("../execution_fences/cancellation.sql")),
-    (
-        2037,
-        include_str!("../execution_fences/notice_protocol.sql"),
-    ),
-    (2038, include_str!("../grants.sql")),
-    (2039, include_str!("creation_admission_voids.sql")),
-    (2040, include_str!("../execution_fences/voids.sql")),
-];
-/// The first node schema.
-const FIRST_SCHEMA_VERSION: i64 = 2000;
-/// The Rust gateway's `user_version`.
-const GATEWAY_SCHEMA_VERSION: i64 = 1000;
+/// `PRAGMA user_version` of the pirc 2 node schema. Databases from earlier
+/// releases are refused, never migrated: pirc 2 starts from fresh state.
+pub const SCHEMA_VERSION: i64 = 2100;
+/// The pirc 2 gateway's `user_version`, recognized to give a clear error.
+const GATEWAY_SCHEMA_VERSION: i64 = 1100;
 const SCHEMA: &str = concat!(
     include_str!("schema.sql"),
     include_str!("session_creations.sql"),
@@ -132,9 +44,6 @@ const SCHEMA: &str = concat!(
     include_str!("creation_admission_attempts.sql"),
     include_str!("../command_environment.sql"),
     include_str!("../upload_origins.sql"),
-    include_str!("../execution_fences/schema.sql"),
-    include_str!("../process_journal/schema.sql"),
-    include_str!("../process_journal/guard.sql"),
     include_str!("../host_commands/schema.sql"),
     include_str!("../host_commands/resources.sql"),
     include_str!("../terminals/journal.sql"),
@@ -213,9 +122,9 @@ impl Db {
     }
 }
 
-/// A TS-era `gateway.sqlite` left in the state directory while
-/// `PIRC_DATABASE_PATH` points elsewhere is refused too.
-pub fn refuse_typescript_database(path: &Path) -> Result<(), String> {
+/// A `gateway.sqlite` from an earlier release left in the state directory
+/// while `PIRC_DATABASE_PATH` points elsewhere is refused too.
+pub fn refuse_earlier_database(path: &Path) -> Result<(), String> {
     if !path.exists() {
         return Ok(());
     }
@@ -224,17 +133,16 @@ pub fn refuse_typescript_database(path: &Path) -> Result<(), String> {
     let version: i64 = connection
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .map_err(|error| format!("{}: {error}", path.display()))?;
-    if (1..GATEWAY_SCHEMA_VERSION).contains(&version) {
-        return Err(typescript_era(path));
+    if version != 0 && version < GATEWAY_SCHEMA_VERSION {
+        return Err(earlier_release(path));
     }
     Ok(())
 }
 
-fn typescript_era(path: &Path) -> String {
+fn earlier_release(path: &Path) -> String {
     format!(
-        "{} was written by the TypeScript node (pirc 0.3 or earlier). This node starts from a \
-         fresh state directory: sessions start anew. See the upgrade notes \
-         (docs/deploy/upgrades.md), then move the old state directory away.",
+        "{} was created by an earlier pirc. pirc 2 cannot read it; move or delete the state \
+         directory and start fresh (docs/deploy/upgrades.md).",
         path.display()
     )
 }
@@ -327,22 +235,14 @@ fn apply_schema(connection: &Connection, path: &Path) -> Result<(), String> {
         .map_err(describe)?;
     match version {
         SCHEMA_VERSION => return Ok(()),
-        FIRST_SCHEMA_VERSION..SCHEMA_VERSION => {
-            for (to, sql) in MIGRATIONS.iter().filter(|(to, _)| *to > version) {
-                connection
-                    .execute_batch(&format!("{sql}\nPRAGMA user_version = {to};"))
-                    .map_err(describe)?;
-            }
-            return Ok(());
-        }
         0 => {}
-        1..GATEWAY_SCHEMA_VERSION => return Err(typescript_era(path)),
         GATEWAY_SCHEMA_VERSION => {
             return Err(format!(
                 "{} is a pirc-gateway database, not a node's; give the node its own state directory",
                 path.display()
             ));
         }
+        version if version < SCHEMA_VERSION => return Err(earlier_release(path)),
         _ => {
             return Err(format!(
                 "{} has schema version {version}, which this node ({SCHEMA_VERSION}) does not know",

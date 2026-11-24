@@ -191,41 +191,6 @@ fn restart_keeps_original_ranges_even_without_session_or_workspace() {
     );
 }
 #[test]
-fn migration_does_not_invent_ranges_for_legacy_commands() {
-    let dir = tempfile::tempdir().unwrap();
-    let file = dir.path().join("node.db");
-    {
-        let db = Db::open(&file).unwrap();
-        let db = db.lock();
-        record(&db, "legacy", "running", None);
-        db.execute_batch(include_str!("../terminals/remove_journal.sql"))
-            .unwrap();
-        db.execute_batch(include_str!("remove_resources.sql"))
-            .unwrap();
-        db.execute_batch("PRAGMA user_version=2015").unwrap();
-    }
-    let db = Db::open(&file).unwrap();
-    let db = db.lock();
-    assert_eq!(
-        db.query_row("SELECT count(*) FROM host_command_resources", [], |r| r
-            .get::<_, i64>(0))
-            .unwrap(),
-        0
-    );
-    assert_eq!(
-        resources::require_available(&db, Path::new("/any/path"), None)
-            .unwrap_err()
-            .code,
-        "host_write_pending"
-    );
-    db.execute(
-        "UPDATE host_command_runs SET state='settled' WHERE id='legacy'",
-        [],
-    )
-    .unwrap();
-    resources::require_available(&db, Path::new("/any/path"), None).unwrap();
-}
-#[test]
 fn malformed_snapshots_and_lost_inventory_fail_closed() {
     for snapshot in ["[]", "[1]", r#"["relative"]"#] {
         let db = Db::memory();
@@ -245,7 +210,7 @@ fn malformed_snapshots_and_lost_inventory_fail_closed() {
     }
     let db = Db::memory();
     let db = db.lock();
-    db.execute_batch(include_str!("remove_resources.sql"))
+    db.execute_batch("DROP TABLE host_command_resources")
         .unwrap();
     assert!(resources::require_available(&db, Path::new("/any"), None).is_err());
 }

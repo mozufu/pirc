@@ -448,39 +448,3 @@ fn ownership_capture_is_immutable_and_an_atomic_reservation_prerequisite() {
     invalid.version = 2;
     assert!(store::atomic(&db, |db| record(db, "another", &invalid)).is_err());
 }
-#[test]
-fn migration_never_invents_old_owner_or_io_closure_evidence() {
-    let dir = tempfile::tempdir().unwrap();
-    let file = dir.path().join("node.sqlite");
-    {
-        let db = Db::open(&file).unwrap();
-        let db = db.lock();
-        seed(
-            &db,
-            "old-session",
-            "old-terminal",
-            "old-node",
-            Some(&owner(100)),
-            State::Terminated,
-        );
-        db.execute_batch(include_str!("../remove_io_owners.sql"))
-            .unwrap();
-        db.pragma_update(None, "user_version", 2025).unwrap();
-    }
-    let db = Db::open(&file).unwrap();
-    let db = db.lock();
-    assert_eq!(
-        db.query_row("SELECT count(*) FROM terminal_io_owners", [], |r| r
-            .get::<_, i64>(0))
-            .unwrap(),
-        0
-    );
-    assert_eq!(status(&db, "old-terminal"), "unconfirmed");
-    assert!(
-        db.execute(
-            "UPDATE terminal_runs SET state='settled' WHERE id='old-terminal'",
-            []
-        )
-        .is_err()
-    );
-}

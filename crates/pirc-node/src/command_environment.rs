@@ -220,21 +220,4 @@ mod tests {
         assert!(conn.get_command("cmd").is_err());
         assert!(origin(&conn, "cmd").is_none());
     }
-    #[test]
-    fn migration_keeps_historical_commands_unattributed() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("node.db");
-        {
-            let db = Db::open(&path).unwrap();
-            let conn = db.lock();
-            let session = setup(&conn);
-            command(&conn, &session, "old");
-            conn.execute_batch(concat!(include_str!("host_commands/remove_approval.sql"), "DROP TRIGGER browser_groups_identity; DROP TRIGGER browser_groups_terminal; DROP TRIGGER browser_groups_retained; DROP TABLE browser_groups; DROP TRIGGER terminal_runs_identity; DROP TRIGGER terminal_runs_terminal; DROP TRIGGER terminal_runs_retained; DROP TABLE terminal_runs; DROP TRIGGER host_resources_immutable; DROP TRIGGER host_resources_retained; DROP TABLE host_command_resources; DROP INDEX host_commands_pending; DROP TRIGGER host_command_identity; DROP TRIGGER host_command_terminal; DROP TRIGGER host_command_retained; DROP TABLE host_command_runs; DROP TRIGGER sandbox_launch_identity; DROP TRIGGER sandbox_kernel_identity; DROP TRIGGER sandbox_launch_terminal; DROP TRIGGER sandbox_launch_retained; DROP TABLE sandbox_launches; DROP TRIGGER execution_fence_identity; DROP TRIGGER execution_fence_retained; DROP TRIGGER execution_fence_session_deleted; DROP INDEX execution_fence_active; DROP TABLE execution_fences; DROP TRIGGER upload_origin_capture; DROP TRIGGER upload_origin_immutable; DROP TRIGGER upload_origin_remove; DROP TRIGGER upload_record_immutable; DROP TABLE upload_origins; DROP TRIGGER command_environment_immutable; DROP TABLE command_environments; PRAGMA user_version=2009;")).unwrap();
-        }
-        let db = Db::open(&path).unwrap();
-        let conn = db.lock();
-        assert!(origin(&conn, "old").is_none());
-        record(&conn, "old", Some(&json!({"version":1})), true).unwrap();
-        assert!(origin(&conn, "old").is_none());
-    }
 }

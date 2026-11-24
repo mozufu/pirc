@@ -849,7 +849,7 @@ mod tests {
         f.node
             .db
             .lock()
-            .execute_batch(include_str!("host_commands/remove_schema.sql"))
+            .execute_batch("PRAGMA foreign_keys=OFF; DROP TABLE host_command_resources; DROP TABLE host_command_runs;")
             .unwrap();
         assert!(activity(&f.node).is_err());
         f.node.close().await;

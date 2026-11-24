@@ -7,7 +7,8 @@ CREATE TABLE browser_groups (
  incarnation TEXT NOT NULL,
  state TEXT NOT NULL CHECK(state IN ('active','settled','unconfirmed')),
  created_at INTEGER NOT NULL,
- updated_at INTEGER NOT NULL
+ updated_at INTEGER NOT NULL,
+ binding_generation INTEGER
 );
 CREATE INDEX browser_groups_session ON browser_groups(session_id,state);
 CREATE TRIGGER browser_groups_identity BEFORE UPDATE OF id,session_id,workspace_id,root,incarnation,created_at ON browser_groups BEGIN

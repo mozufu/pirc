@@ -1,4 +1,3 @@
-
 -- Creation identity outlives session/project deletion so delayed retries cannot
 -- resurrect them. No prompt, attachment content or credentials are stored here.
 CREATE TABLE session_creations (

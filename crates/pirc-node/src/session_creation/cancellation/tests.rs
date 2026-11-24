@@ -228,24 +228,3 @@ async fn a_reserved_crash_orphan_is_removed_only_when_empty() {
     assert!(!path.exists());
     node.close().await;
 }
-#[test]
-fn migration_from_2006_preserves_existing_creation_and_receipts() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("node.sqlite");
-    let db = Db::open(&path).unwrap();
-    setup(&db.lock());
-    let original = super::super::reserve(&mut db.lock(), "alice", &input()).unwrap();
-    db.lock()
-        .execute_batch(concat!(include_str!("../../host_commands/remove_approval.sql"), "DROP TRIGGER browser_groups_identity; DROP TRIGGER browser_groups_terminal; DROP TRIGGER browser_groups_retained; DROP TABLE browser_groups; DROP TRIGGER terminal_runs_identity; DROP TRIGGER terminal_runs_terminal; DROP TRIGGER terminal_runs_retained; DROP TABLE terminal_runs; DROP TRIGGER host_resources_immutable; DROP TRIGGER host_resources_retained; DROP TABLE host_command_resources; DROP INDEX host_commands_pending; DROP TRIGGER host_command_identity; DROP TRIGGER host_command_terminal; DROP TRIGGER host_command_retained; DROP TABLE host_command_runs; DROP TRIGGER sandbox_launch_identity; DROP TRIGGER sandbox_kernel_identity; DROP TRIGGER sandbox_launch_terminal; DROP TRIGGER sandbox_launch_retained; DROP TABLE sandbox_launches; DROP TRIGGER execution_fence_identity; DROP TRIGGER execution_fence_retained; DROP TRIGGER execution_fence_session_deleted; DROP INDEX execution_fence_active; DROP TABLE execution_fences; DROP TRIGGER upload_origin_capture; DROP TRIGGER upload_origin_immutable; DROP TRIGGER upload_origin_remove; DROP TRIGGER upload_record_immutable; DROP TABLE upload_origins; DROP TRIGGER command_environment_immutable; DROP TABLE command_environments; DROP TABLE creation_admission_attempts; DROP TABLE creation_pre_stops; DROP TABLE creation_cancellations; PRAGMA user_version=2006;"))
-        .unwrap();
-    drop(db);
-    let db = Db::open(&path).unwrap();
-    assert_eq!(
-        super::super::read(&db.lock(), "alice", "creation-1")
-            .unwrap()
-            .unwrap()
-            .session_id,
-        original.session_id
-    );
-    assert_eq!(count(&db.lock(), "creation_cancellations"), 0);
-}

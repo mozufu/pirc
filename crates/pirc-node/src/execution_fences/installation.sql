@@ -1,11 +1,8 @@
+-- A transition's admission fence survives process/reply loss. It is not proof
+-- of OS revocation or installation. Keep a tombstone after session deletion.
 -- Installation and explicit release end a fence. Both are terminal and inactive:
 -- admission reopens only under the installed or original binding. Installation
 -- requires the drain and the new binding generation in the same transaction.
-DROP TRIGGER execution_fence_identity;
-DROP TRIGGER execution_fence_retained;
-DROP TRIGGER execution_fence_session_deleted;
-DROP INDEX execution_fence_active;
-ALTER TABLE execution_fences RENAME TO execution_fences_2031;
 CREATE TABLE execution_fences (
  owner_user TEXT NOT NULL,
  operation_id TEXT NOT NULL,
@@ -15,10 +12,12 @@ CREATE TABLE execution_fences (
  error_code TEXT,
  created_at INTEGER NOT NULL,
  updated_at INTEGER NOT NULL,
+ -- C3: a durable cancellation request on the fence itself. Release, drain and
+ -- installation serialize on this row; a request never clears and blocks install.
+ cancel_requested_at INTEGER,
+ cancel_reason TEXT,
  PRIMARY KEY(owner_user,operation_id)
 );
-INSERT INTO execution_fences SELECT owner_user,operation_id,session_id,intent_json,state,error_code,created_at,updated_at FROM execution_fences_2031;
-DROP TABLE execution_fences_2031;
 CREATE UNIQUE INDEX execution_fence_active ON execution_fences(session_id) WHERE state NOT IN ('deleted','installed','released');
 CREATE TRIGGER execution_fence_identity BEFORE UPDATE OF owner_user,operation_id,session_id,intent_json,created_at ON execution_fences BEGIN
  SELECT RAISE(ABORT,'Execution fence identity is immutable');
@@ -83,10 +82,6 @@ CREATE TABLE environment_events (
 CREATE INDEX environment_events_pending ON environment_events(session_id) WHERE state='pending';
 CREATE TRIGGER environment_event_identity BEFORE UPDATE OF owner_user,operation_id,session_id,from_workspace_id,to_workspace_id,revocation,created_at ON environment_events BEGIN
  SELECT RAISE(ABORT,'Environment event identity is immutable');
-END;
-CREATE TRIGGER environment_event_once BEFORE UPDATE OF state ON environment_events
-WHEN NOT ((OLD.state='pending' AND NEW.state='sending') OR (OLD.state='sending' AND NEW.state IN ('delivered','uncertain'))) BEGIN
- SELECT RAISE(ABORT,'An environment notice is sent at most once');
 END;
 CREATE TRIGGER environment_event_session_deleted AFTER DELETE ON sessions BEGIN
  DELETE FROM environment_events WHERE session_id=OLD.id;

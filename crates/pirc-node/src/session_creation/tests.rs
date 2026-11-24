@@ -381,35 +381,6 @@ fn invalid_inputs_do_not_reserve_or_expose_submission_hashes() {
 }
 
 #[test]
-fn migration_from_2003_preserves_existing_sessions() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("node.sqlite");
-    let old = Connection::open(&path).unwrap();
-    old.execute_batch(include_str!("../store/schema.sql"))
-        .unwrap();
-    old.pragma_update(None, "user_version", 2003).unwrap();
-    setup(&old);
-    let old_session = old
-        .create_session("repo", "/existing-session", OWNER)
-        .unwrap();
-    drop(old);
-    let db = Db::open(&path).unwrap();
-    let mut conn = db.lock();
-    assert_eq!(
-        conn.get_session(&old_session.id)
-            .unwrap()
-            .private_session_path,
-        "/existing-session"
-    );
-    assert_eq!(count(&conn, "session_creations"), 0);
-    reserve(&mut conn, OWNER, &input()).unwrap();
-    let version: i64 = conn
-        .pragma_query_value(None, "user_version", |r| r.get(0))
-        .unwrap();
-    assert_eq!(version, crate::store::SCHEMA_VERSION);
-}
-
-#[test]
 fn retry_never_recreates_missing_ready_storage() {
     let db = Db::memory();
     let mut conn = db.lock();

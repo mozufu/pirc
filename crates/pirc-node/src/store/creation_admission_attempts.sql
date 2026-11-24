@@ -7,6 +7,3 @@ CREATE TABLE creation_admission_attempts (
  FOREIGN KEY(owner_user,operation_id) REFERENCES creation_initial_admissions(owner_user,operation_id),
  CHECK(previous_command_id IS NULL OR previous_command_id!=command_id)
 );
-INSERT INTO creation_admission_attempts(owner_user,operation_id,command_id,input_hash,created_at)
- SELECT owner_user,operation_id,command_id,input_hash,created_at
- FROM creation_initial_admissions WHERE command_id IS NOT NULL;

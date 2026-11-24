@@ -133,11 +133,13 @@ fn opens_private_and_refuses_other_databases() {
     assert_eq!(mode & 0o777, 0o600);
     // Opening again keeps it.
     Db::open(&path).unwrap();
-    refuse_typescript_database(&path).unwrap();
+    refuse_earlier_database(&path).unwrap();
 
     for (version, message) in [
-        (19, "TypeScript node"),
-        (1000, "pirc-gateway database"),
+        (19, "earlier pirc"),
+        (1000, "earlier pirc"),
+        (2040, "earlier pirc"),
+        (1100, "pirc-gateway database"),
         (5000, "does not know"),
     ] {
         let other = dir.path().join(format!("{version}.sqlite"));
@@ -152,9 +154,9 @@ fn opens_private_and_refuses_other_databases() {
         assert!(error.contains(message), "{error}");
     }
     assert!(
-        refuse_typescript_database(&dir.path().join("19.sqlite"))
+        refuse_earlier_database(&dir.path().join("19.sqlite"))
             .unwrap_err()
-            .contains("upgrade notes")
+            .contains("upgrades.md")
     );
     let unversioned = dir.path().join("unversioned.sqlite");
     Connection::open(&unversioned)
@@ -167,108 +169,6 @@ fn opens_private_and_refuses_other_databases() {
             .unwrap()
             .contains("no pirc schema version")
     );
-}
-
-/// Columns of every table and the indexes.
-fn columns(connection: &Connection) -> Vec<String> {
-    let mut statement = connection
-        .prepare(
-            "SELECT m.name || '.' || p.name || ':' || p.type FROM sqlite_master m, \
-                 pragma_table_info(m.name) p WHERE m.type='table' ORDER BY m.name, p.cid",
-        )
-        .unwrap();
-    let mut out: Vec<String> = statement
-        .query_map([], |row| row.get(0))
-        .unwrap()
-        .map(Result::unwrap)
-        .collect();
-    let mut indexes = connection
-        .prepare(
-            "SELECT name FROM sqlite_master WHERE type='index' AND sql IS NOT NULL ORDER BY name",
-        )
-        .unwrap();
-    out.extend(
-        indexes
-            .query_map([], |row| row.get::<_, String>(0))
-            .unwrap()
-            .map(Result::unwrap),
-    );
-    out
-}
-
-#[test]
-fn migrates_the_first_node_schema() {
-    // Schema 2000: no upload provenance, no project fence.
-    let first = SCHEMA
-            .replace(include_str!("pots.sql"), "")
-            .replace(include_str!("session_creations.sql"), "")
-            .replace(include_str!("creation_uploads.sql"), "")
-            .replace(include_str!("creation_admissions.sql"), "")
-        .replace(include_str!("creation_cancellations.sql"), "")
-        .replace(include_str!("creation_pre_stops.sql"), "")
-        .replace(include_str!("creation_admission_attempts.sql"), "")
-        .replace(include_str!("../command_environment.sql"), "")
-        .replace(include_str!("../upload_origins.sql"), "")
-        .replace(include_str!("../execution_fences/schema.sql"), "")
-        .replace(include_str!("../process_journal/schema.sql"), "")
-        .replace(include_str!("../process_journal/guard.sql"), "")
-        .replace(include_str!("../host_commands/schema.sql"), "")
-        .replace(include_str!("../host_commands/resources.sql"), "")
-        .replace(include_str!("../terminals/journal.sql"), "")
-        .replace(include_str!("../browser/journal.sql"), "")
-        .replace(include_str!("../host_commands/approval.sql"), "")
-        .replace(include_str!("../process_journal/resource_kinds.sql"), "")
-        .replace(include_str!("../terminals/io_owners.sql"), "")
-        .replace(include_str!("../terminals/host.sql"), "")
-        .replace(include_str!("../terminals/requests.sql"), "")
-        .replace(include_str!("../terminals/request_results.sql"), "")
-        .replace(include_str!("../terminals/request_acknowledgements.sql"), "")
-        .replace(include_str!("../execution_fences/binding_generations.sql"), "")
-        .replace(include_str!("../execution_fences/installation.sql"), "")
-        .replace(include_str!("../execution_fences/authority.sql"), "")
-        .replace(include_str!("../execution_fences/generation_attribution.sql"), "")
-        .replace(include_str!("../execution_fences/evaluations.sql"), "")
-        .replace(include_str!("../execution_fences/cancellation.sql"), "")
-        .replace(include_str!("../execution_fences/notice_protocol.sql"), "")
-        .replace(include_str!("../grants.sql"), "")
-        .replace(include_str!("creation_admission_voids.sql"), "")
-        .replace(include_str!("../execution_fences/voids.sql"), "")
-            .replace(
-                "  kind TEXT NOT NULL DEFAULT 'image',\n  -- Where it was uploaded; it is usable in that workspace only and is\n  -- deleted with it. NULL for uploads older than schema 2001.\n  workspace_id TEXT,\n  session_id TEXT\n);\nCREATE INDEX uploads_workspace ON uploads(workspace_id);",
-                "  kind TEXT NOT NULL DEFAULT 'image'\n);",
-            );
-    let fence = first.find("-- A chat project being deleted").unwrap();
-    let end = fence + first[fence..].find("\n);\n").unwrap() + "\n);\n".len();
-    let first = format!("{}{}", &first[..fence], &first[end..]);
-    assert!(
-        !first.contains("workspace_deletions") && !first.contains("uploads_workspace"),
-        "schema.sql changed: update this test"
-    );
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("node.sqlite");
-    let old = Connection::open(&path).unwrap();
-    old.execute_batch(&format!(
-        "BEGIN; {first}\nPRAGMA user_version = {FIRST_SCHEMA_VERSION}; COMMIT;"
-    ))
-    .unwrap();
-    old.execute(
-        "INSERT INTO uploads (id,owner_user,mime_type,byte_size,storage_name,sha256,created_at) \
-             VALUES ('upload_old','u','image/png',1,'old.bin','s',0)",
-        [],
-    )
-    .unwrap();
-    drop(old);
-    let db = Db::open(&path).unwrap();
-    let connection = db.lock();
-    let version: i64 = connection
-        .pragma_query_value(None, "user_version", |row| row.get(0))
-        .unwrap();
-    assert_eq!(version, SCHEMA_VERSION);
-    assert_eq!(
-        connection.get_upload("upload_old").unwrap().workspace_id,
-        None
-    );
-    assert_eq!(columns(&connection), columns(&Db::memory().lock()));
 }
 
 #[test]
@@ -715,106 +615,4 @@ fn a_database_from_a_newer_node_is_refused_and_left_untouched() {
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .unwrap();
     assert_eq!(version, newer);
-}
-
-#[test]
-fn schema_2038_upgrades_to_the_first_message_void_layer_in_one_step() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("node.sqlite");
-    drop(Db::open(&path).unwrap());
-    // Put the file back to 2038: no void table, no void triggers.
-    let old = Connection::open(&path).unwrap();
-    old.execute_batch(&format!(
-        "{}\nPRAGMA user_version = 2038;",
-        include_str!("../remove_admission_voids.sql")
-    ))
-    .unwrap();
-    old.execute(
-        "INSERT INTO session_creations(owner_user,operation_id,workspace_id,submission_hash,session_id,state,created_at) VALUES('u','op','w','h','s','reserved',1)",
-        [],
-    )
-    .unwrap();
-    drop(old);
-    let db = Db::open(&path).unwrap();
-    let connection = db.lock();
-    let version: i64 = connection
-        .pragma_query_value(None, "user_version", |row| row.get(0))
-        .unwrap();
-    assert_eq!(version, SCHEMA_VERSION);
-    assert_eq!(SCHEMA_VERSION, 2040);
-    let kept: i64 = connection
-        .query_row("SELECT count(*) FROM session_creations", [], |r| r.get(0))
-        .unwrap();
-    assert_eq!(kept, 1);
-    connection
-        .execute(
-            "INSERT INTO creation_admission_voids(owner_user,operation_id,command_id,session_id,input_hash,created_at) VALUES('u','op','c','s','h',1)",
-            [],
-        )
-        .unwrap();
-    assert_eq!(columns(&connection), columns(&Db::memory().lock()));
-}
-
-#[test]
-fn schema_2039_upgrades_to_the_transition_void_layer_keeping_its_data() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("node.sqlite");
-    drop(Db::open(&path).unwrap());
-    // Put the file back to 2039: no transition void table or triggers, but a
-    // fence, a creation and a first-message void that must survive the upgrade.
-    let old = Connection::open(&path).unwrap();
-    old.execute(
-        "INSERT INTO session_creations(owner_user,operation_id,workspace_id,submission_hash,session_id,state,created_at) VALUES('u','op','w','h','s','reserved',1)",
-        [],
-    )
-    .unwrap();
-    old.execute(
-        "INSERT INTO creation_admission_voids(owner_user,operation_id,command_id,session_id,input_hash,created_at) VALUES('u','op','c','s','h',1)",
-        [],
-    )
-    .unwrap();
-    old.execute_batch(&format!(
-        "{}\nPRAGMA user_version = 2039;",
-        include_str!("../remove_transition_voids.sql")
-    ))
-    .unwrap();
-    old.execute(
-        "INSERT INTO execution_fences(owner_user,operation_id,session_id,intent_json,state,created_at,updated_at) VALUES('u','fence-op','s2','{}','fenced',1,1)",
-        [],
-    )
-    .unwrap();
-    drop(old);
-    assert_eq!(SCHEMA_VERSION, 2040);
-    let db = Db::open(&path).unwrap();
-    let connection = db.lock();
-    let version: i64 = connection
-        .pragma_query_value(None, "user_version", |row| row.get(0))
-        .unwrap();
-    assert_eq!(version, SCHEMA_VERSION);
-    let kept = |sql: &str| -> i64 { connection.query_row(sql, [], |r| r.get(0)).unwrap() };
-    assert_eq!(kept("SELECT count(*) FROM session_creations"), 1);
-    assert_eq!(kept("SELECT count(*) FROM creation_admission_voids"), 1);
-    assert_eq!(kept("SELECT count(*) FROM execution_fences"), 1);
-    // The new layer is live: a void of the existing fence is refused, another is not.
-    assert!(connection
-        .execute(
-            "INSERT INTO execution_fence_voids(owner_user,operation_id,session_id,plan_hash,created_at) VALUES('u','fence-op','s2','p',1)",
-            [],
-        )
-        .is_err());
-    connection
-        .execute(
-            "INSERT INTO execution_fence_voids(owner_user,operation_id,session_id,plan_hash,created_at) VALUES('u','void-op','s2','p',1)",
-            [],
-        )
-        .unwrap();
-    assert_eq!(columns(&connection), columns(&Db::memory().lock()));
-    let objects: i64 = connection
-        .query_row(
-            "SELECT count(*) FROM sqlite_master WHERE name LIKE 'execution_fence_void%' OR name='execution_fence_blocked_by_void'",
-            [],
-            |r| r.get(0),
-        )
-        .unwrap();
-    assert_eq!(objects, 5);
 }

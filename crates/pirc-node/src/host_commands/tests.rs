@@ -1,5 +1,4 @@
 use super::*;
-use crate::store::Db;
 use crate::workspace_memory::tests::Fixture;
 use std::path::Path;
 
@@ -241,76 +240,6 @@ async fn stale_epoch_and_accepted_transition_refuse_new_host_effects() {
     );
     assert_eq!(snapshot(&f, &f.current).launches, 0);
     f.node.close().await;
-}
-#[test]
-fn migration_restart_and_deletion_preserve_uncertainty_and_minimal_evidence() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("node.db");
-    let session = {
-        let db = Db::open(&path).unwrap();
-        let db = db.lock();
-        db.add_workspace(
-            "repo",
-            "node",
-            "Repo",
-            "/repo",
-            crate::store::ModeId::new("directory").unwrap(),
-        )
-        .unwrap();
-        let row = db
-            .create_session("repo", "/private-session", "alice")
-            .unwrap();
-        db.increment_epoch(&row.id).unwrap();
-        db.execute_batch(include_str!("remove_schema.sql")).unwrap();
-        db.execute_batch("PRAGMA user_version=2014;").unwrap();
-        row.id
-    };
-    {
-        let db = Db::open(&path).unwrap();
-        let db = db.lock();
-        db.require_session_available(&session).unwrap();
-        crate::execution_fences::require_open(&db, &session).unwrap();
-        assert_eq!(summary(&db, &session).unwrap().launches, 0);
-        assert!(!summary(&db, &session).unwrap().history_complete);
-        for (id, state) in [
-            ("a", "launching"),
-            ("b", "running"),
-            ("c", "unconfirmed"),
-            ("d", "settled"),
-        ] {
-            db.execute(
-                "INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES(?1,?3,'repo',1,'previous-node',?1,?2,1,1)",
-                params![id, state, session],
-            )
-            .unwrap();
-        }
-    }
-    let db = Db::open(&path).unwrap();
-    let db = db.lock();
-    assert_eq!(summary(&db, &session).unwrap().unresolved, 3);
-    db.begin_session_deletion(&session, "alice").unwrap();
-    db.finish_session_deletion(&session).unwrap();
-    assert!(db.get_session(&session).is_err());
-    assert_eq!(summary(&db, &session).unwrap().unresolved, 3);
-    assert!(db.execute("DELETE FROM host_command_runs", []).is_err());
-    assert!(
-        db.execute("UPDATE host_command_runs SET runner_epoch=2", [])
-            .is_err()
-    );
-    assert!(
-        db.execute(
-            "UPDATE host_command_runs SET state='running' WHERE id='d'",
-            []
-        )
-        .is_err()
-    );
-    assert!(
-        db.execute(
-            "UPDATE host_command_runs SET state='settled' WHERE id='c'",
-            []
-        )
-        .is_err()
-    );
 }
 
 fn creation(f: &Fixture) -> i64 {

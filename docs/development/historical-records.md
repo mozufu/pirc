@@ -27,6 +27,16 @@ The retired files are `calendar.md`, `checkpoints.md`, `conversation-binding-mig
 plans index before the reset is `git show 162c113b:plans/README.md`. Their status
 lines and authorization statements are history, not instructions.
 
+## Upgrade notes before pirc 2
+
+`docs/deploy/upgrades.md` was reset for pirc 2, which starts from fresh state. The
+release-by-release upgrade notes and local checkpoint notes up to 0.10.0 and the
+unreleased work that followed are in commit `b643ff4c9fe698bee998537eb999a4f8183b7944`:
+
+```sh
+git show b643ff4c9fe698bee998537eb999a4f8183b7944:docs/deploy/upgrades.md
+```
+
 ## Retrieve the retired documents
 
 The complete pre-cleanup snapshot is commit `af7074fc51742e79c8f0c76a9aaf64f80b414f7e`. In a clone containing that commit:

@@ -17,7 +17,6 @@ END;
 CREATE TRIGGER terminal_owner_retained BEFORE DELETE ON terminal_io_owners BEGIN
  SELECT RAISE(ABORT,'Terminal I/O ownership evidence is retained');
 END;
-DROP TRIGGER terminal_runs_terminal;
 CREATE TRIGGER terminal_runs_terminal BEFORE UPDATE OF state ON terminal_runs
 WHEN OLD.state IN ('not_started','settled','unconfirmed') AND NEW.state!=OLD.state
  AND NOT (OLD.state='unconfirmed' AND NEW.state='settled' AND EXISTS(

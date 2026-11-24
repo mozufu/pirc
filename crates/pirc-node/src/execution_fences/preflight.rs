@@ -543,53 +543,6 @@ mod acceptance_tests {
         node.close().await;
     }
     #[tokio::test]
-    async fn semantic_upgrade_preserves_legacy_receipts_and_does_not_invent_proofs() {
-        let (_dir, node, request, input) = fixture().await;
-        let (mut intent, generation) = intent(&node, &request, &input);
-        intent.preflight = None;
-        let id = request.param("id").unwrap();
-        super::super::accept(
-            &node.db.lock(),
-            &request.user,
-            id,
-            &intent,
-            "phone",
-            generation,
-        )
-        .unwrap();
-        let path = node.config.database_path.clone();
-        node.db
-            .lock()
-            .execute_batch(include_str!("../host_commands/remove_approval.sql"))
-            .unwrap();
-        node.db
-            .lock()
-            .pragma_update(None, "user_version", 2018)
-            .unwrap();
-        node.close().await;
-        drop(node);
-        let db = crate::store::Db::open(&path).unwrap();
-        let db = db.lock();
-        assert_eq!(
-            db.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))
-                .unwrap(),
-            crate::store::SCHEMA_VERSION
-        );
-        let saved = receipt(&db, &request.user, id, &intent.operation_id)
-            .unwrap()
-            .unwrap();
-        assert_eq!(saved.intent, intent);
-        assert!(
-            serde_json::to_value(saved).unwrap()["intent"]
-                .get("preflight")
-                .is_none()
-        );
-        assert_eq!(
-            require_open(&db, id).unwrap_err().code,
-            "environment_transition_pending"
-        );
-    }
-    #[tokio::test]
     async fn bare_acceptance_cannot_bypass_resource_validation() {
         let (_dir, node, request, input) = fixture().await;
         let (intent, generation) = intent(&node, &request, &input);

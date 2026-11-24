@@ -262,34 +262,3 @@ async fn raw_command_lookup_neither_claims_an_unowned_session_nor_renews_its_lea
     );
     node.close().await;
 }
-
-#[test]
-fn migration_from_2005_preserves_creation_and_command_receipts() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("node.sqlite");
-    let db = Db::open(&path).unwrap();
-    let session = {
-        let conn = db.lock();
-        let session = setup(&conn);
-        conn.receive_command("legacy-command", &session, "hash", &json!({"type":"stop"}))
-            .unwrap();
-        conn.execute_batch(concat!(include_str!("../../host_commands/remove_approval.sql"), "DROP TRIGGER browser_groups_identity; DROP TRIGGER browser_groups_terminal; DROP TRIGGER browser_groups_retained; DROP TABLE browser_groups; DROP TRIGGER terminal_runs_identity; DROP TRIGGER terminal_runs_terminal; DROP TRIGGER terminal_runs_retained; DROP TABLE terminal_runs; DROP TRIGGER host_resources_immutable; DROP TRIGGER host_resources_retained; DROP TABLE host_command_resources; DROP INDEX host_commands_pending; DROP TRIGGER host_command_identity; DROP TRIGGER host_command_terminal; DROP TRIGGER host_command_retained; DROP TABLE host_command_runs; DROP TRIGGER sandbox_launch_identity; DROP TRIGGER sandbox_kernel_identity; DROP TRIGGER sandbox_launch_terminal; DROP TRIGGER sandbox_launch_retained; DROP TABLE sandbox_launches; DROP TRIGGER execution_fence_identity; DROP TRIGGER execution_fence_retained; DROP TRIGGER execution_fence_session_deleted; DROP INDEX execution_fence_active; DROP TABLE execution_fences; DROP TRIGGER upload_origin_capture; DROP TRIGGER upload_origin_immutable; DROP TRIGGER upload_origin_remove; DROP TRIGGER upload_record_immutable; DROP TABLE upload_origins; DROP TRIGGER command_environment_immutable; DROP TABLE command_environments; DROP TABLE creation_admission_attempts; DROP TABLE creation_pre_stops; DROP TABLE creation_cancellations; DROP TABLE creation_initial_admissions; PRAGMA user_version=2005;"))
-            .unwrap();
-        session
-    };
-    drop(db);
-    let db = Db::open(&path).unwrap();
-    let conn = db.lock();
-    assert_eq!(
-        conn.get_command("legacy-command").unwrap().session_id,
-        session
-    );
-    let status = receipt(&conn, "alice", "creation-1").unwrap().body.unwrap();
-    assert_eq!(status["admission"]["state"], "not_submitted");
-    assert!(status["admission"]["command"].is_null());
-    assert_eq!(
-        conn.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
-            .unwrap(),
-        crate::store::SCHEMA_VERSION
-    );
-}

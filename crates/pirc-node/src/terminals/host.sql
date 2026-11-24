@@ -11,6 +11,9 @@ CREATE TABLE terminal_host_requests (
  expires_at INTEGER NOT NULL,
  run_id TEXT UNIQUE REFERENCES terminal_runs(id),
  terminal_id TEXT UNIQUE,
+ error_code TEXT,
+ acknowledged_at INTEGER,
+ acknowledged_by TEXT,
  UNIQUE(owner_user,session_id,request_id),
  CHECK((run_id IS NULL)=(terminal_id IS NULL))
 );

@@ -1,6 +1,6 @@
 use super::*;
 use crate::router::Body;
-use crate::store::{Db, Store};
+use crate::store::Store;
 
 fn input(command: &str, generation: i64) -> Input {
     serde_json::from_value(json!({"commandId":command,"submissionHash":"a".repeat(64),"model":{"provider":"fake","id":"m"},"thinking":"low","message":"Keep the exact first input","uploadIds":[],"clientId":"phone","generation":generation})).unwrap()
@@ -238,22 +238,4 @@ async fn restart_preserves_old_rejection_but_never_replays_an_unacknowledged_ret
     assert!(node.runners.get(&session).is_none());
     node.close().await;
     drop(dir);
-}
-#[test]
-fn schema_2008_migration_keeps_command_and_stop_history() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("node.sqlite");
-    {
-        let db = Db::open(&path).unwrap();
-        let conn = db.lock();
-        conn.execute("INSERT INTO creation_initial_admissions(owner_user,operation_id,session_id,command_id,input_hash,stop_requested,created_at,updated_at) VALUES('alice','op','session','first','hash',1,1,1)",[]).unwrap();
-        conn.execute_batch(concat!(include_str!("../../../host_commands/remove_approval.sql"), "DROP TRIGGER browser_groups_identity; DROP TRIGGER browser_groups_terminal; DROP TRIGGER browser_groups_retained; DROP TABLE browser_groups; DROP TRIGGER terminal_runs_identity; DROP TRIGGER terminal_runs_terminal; DROP TRIGGER terminal_runs_retained; DROP TABLE terminal_runs; DROP TRIGGER host_resources_immutable; DROP TRIGGER host_resources_retained; DROP TABLE host_command_resources; DROP INDEX host_commands_pending; DROP TRIGGER host_command_identity; DROP TRIGGER host_command_terminal; DROP TRIGGER host_command_retained; DROP TABLE host_command_runs; DROP TRIGGER sandbox_launch_identity; DROP TRIGGER sandbox_kernel_identity; DROP TRIGGER sandbox_launch_terminal; DROP TRIGGER sandbox_launch_retained; DROP TABLE sandbox_launches; DROP TRIGGER execution_fence_identity; DROP TRIGGER execution_fence_retained; DROP TRIGGER execution_fence_session_deleted; DROP INDEX execution_fence_active; DROP TABLE execution_fences; DROP TRIGGER upload_origin_capture; DROP TRIGGER upload_origin_immutable; DROP TRIGGER upload_origin_remove; DROP TRIGGER upload_record_immutable; DROP TABLE upload_origins; DROP TRIGGER command_environment_immutable; DROP TABLE command_environments; DROP TABLE creation_admission_attempts; PRAGMA user_version=2008;"))
-            .unwrap();
-    }
-    let db = Db::open(&path).unwrap();
-    let conn = db.lock();
-    assert_eq!(count(&conn, "creation_admission_attempts"), 1);
-    let (id,stop):(String,bool)=conn.query_row("SELECT command_id,stop_requested FROM creation_initial_admissions WHERE operation_id='op'",[],|r|Ok((r.get(0)?,r.get(1)?))).unwrap();
-    assert_eq!(id, "first");
-    assert!(stop);
 }

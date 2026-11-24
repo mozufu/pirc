@@ -121,37 +121,3 @@ fn saved_bytes_refuse_same_length_changes_symlinks_and_unexpected_size() {
     assert!(read_verified(dir.path(), &escape).is_err());
     assert_eq!(std::fs::read(&outside).unwrap(), b"test");
 }
-#[test]
-fn migration_preserves_legacy_scope_without_inventing_a_creation_origin() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("db");
-    let (a, b) = {
-        let db = Db::open(&path).unwrap();
-        let db = db.lock();
-        let ids = setup(&db);
-        db.execute_batch(concat!(
-            include_str!("../host_commands/remove_schema.sql"),
-            include_str!("../process_journal/remove_schema.sql"),
-            include_str!("../execution_fences/remove_schema.sql"),
-            include_str!("remove_schema.sql")
-        ))
-        .unwrap();
-        let mut u = upload(&ids.0);
-        u.workspace_id = None;
-        u.session_id = None;
-        db.create_upload(&u).unwrap();
-        db.execute_batch("PRAGMA user_version=2010;").unwrap();
-        ids
-    };
-    let db = Db::open(&path).unwrap();
-    let db = db.lock();
-    db.execute("UPDATE sessions SET workspace_id='other' WHERE id=?", [&a])
-        .unwrap();
-    assert!(authorize(&db, &a, "alice", "file").is_ok());
-    assert!(authorize(&db, &b, "alice", "file").is_ok());
-    assert!(origin(&db, "file").unwrap().is_none());
-    let reference = reference(&db, &a, "alice", "file").unwrap();
-    assert_eq!(reference["provenance"], "legacy");
-    assert_eq!(reference["scope"], "legacy_owner");
-    assert!(reference["origin"]["modeId"].is_null());
-}

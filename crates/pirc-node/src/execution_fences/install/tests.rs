@@ -420,50 +420,6 @@ async fn the_environment_notice_is_retransmitted_with_one_id_until_confirmed() {
     f.node.close().await;
 }
 
-#[test]
-fn upgrade_keeps_fences_and_states_and_adds_no_installation() {
-    use crate::store::Db;
-    let dir = tempfile::tempdir().unwrap();
-    let file = dir.path().join("node.sqlite");
-    {
-        let db = Db::open(&file).unwrap();
-        let db = db.lock();
-        db.execute_batch(include_str!("../remove_installation.sql"))
-            .unwrap();
-        db.execute(
-            "INSERT INTO execution_fences VALUES('u','op','s','{}','supervisor_drained',NULL,1,1)",
-            [],
-        )
-        .unwrap();
-        db.pragma_update(None, "user_version", 2031).unwrap();
-    }
-    let db = Db::open(&file).unwrap();
-    let db = db.lock();
-    let state: String = db
-        .query_row(
-            "SELECT state FROM execution_fences WHERE operation_id='op'",
-            [],
-            |r| r.get(0),
-        )
-        .unwrap();
-    assert_eq!(state, "supervisor_drained");
-    for table in [
-        "execution_fence_targets",
-        "transition_acknowledgements",
-        "environment_events",
-    ] {
-        let n: i64 = db
-            .query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r.get(0))
-            .unwrap();
-        assert_eq!(n, 0, "{table}");
-    }
-    // Installation needs its generation row, so a bare state change is refused.
-    assert!(
-        db.execute("UPDATE execution_fences SET state='installed'", [])
-            .is_err()
-    );
-}
-
 fn grant(revision: i64, token: &str, ttl_ms: i64) -> Value {
     json!({"revision":revision,"tokenHash":crate::util::sha256_hex(token),"deadlineAt":now_ms()+ttl_ms})
 }

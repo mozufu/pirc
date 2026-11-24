@@ -263,41 +263,6 @@ async fn a_transition_fence_blocks_new_browser_work_and_reports_saved_unknown_gr
     })
     .await;
 }
-#[test]
-fn migration_preserves_unknown_history_and_origin_is_immutable() {
-    use crate::store::Db;
-    let temp = tempfile::tempdir().unwrap();
-    let path = temp.path().join("node.sqlite");
-    {
-        let db = Db::open(&path).unwrap();
-        db.lock()
-            .execute_batch(include_str!("remove_journal.sql"))
-            .unwrap();
-        db.lock().pragma_update(None, "user_version", 2017).unwrap();
-    }
-    let db = Db::open(&path).unwrap();
-    let db = db.lock();
-    assert_eq!(
-        serde_json::to_value(journal::summary(&db, "old").unwrap()).unwrap(),
-        json!({"groups":0,"observersSettled":0,"unresolved":0,"historyComplete":false})
-    );
-    db.execute_batch(
-        "INSERT INTO browser_groups(id,session_id,workspace_id,root,incarnation,state,created_at,updated_at) VALUES('old','s','w','/origin','previous','active',1,1);",
-    )
-    .unwrap();
-    assert_eq!(
-        journal::require_settled(&db, "s", None).unwrap_err().code,
-        "browser_stop_unconfirmed"
-    );
-    for sql in [
-        "UPDATE browser_groups SET root='/new'",
-        "DELETE FROM browser_groups",
-    ] {
-        assert!(db.execute(sql, []).is_err());
-    }
-    journal::Record("old".into()).finish(&db, false).unwrap();
-    assert!(journal::Record("old".into()).finish(&db, true).is_err());
-}
 
 #[tokio::test]
 async fn foreground_guard_rechecks_control_epoch_binding_and_fences_at_the_effect() {

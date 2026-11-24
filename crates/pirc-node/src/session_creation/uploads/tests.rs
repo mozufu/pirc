@@ -578,57 +578,6 @@ fn concurrent_independent_connections_keep_one_upload_id() {
 }
 
 #[test]
-fn migration_from_2004_preserves_creation_identity_and_existing_uploads() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("node.sqlite");
-    let old = Connection::open(&path).unwrap();
-    old.execute_batch(concat!(
-        include_str!("../../store/schema.sql"),
-        include_str!("../../store/session_creations.sql"),
-        "PRAGMA user_version=2004;"
-    ))
-    .unwrap();
-    setup(&old);
-    let original = old
-        .create_session(
-            "repo",
-            dir.path().join("legacy-private").to_str().unwrap(),
-            "alice",
-        )
-        .unwrap();
-    old.execute("INSERT INTO session_creations(owner_user,operation_id,workspace_id,submission_hash,session_id,state,created_at) VALUES('alice','creation-1','repo',?1,?2,'ready',1)",params!["a".repeat(64),original.id]).unwrap();
-    let legacy = UploadRow {
-        id: "legacy".into(),
-        owner_user: "alice".into(),
-        mime_type: "text/plain".into(),
-        byte_size: 4,
-        storage_name: format!("{}.bin", "a".repeat(48)),
-        sha256: sha256_hex(b"test"),
-        kind: crate::store::UploadKind::File,
-        filename: Some("legacy.txt".into()),
-        workspace_id: Some("repo".into()),
-        session_id: Some(original.id.clone()),
-    };
-    old.create_upload(&legacy).unwrap();
-    drop(old);
-    let db = Db::open(&path).unwrap();
-    let conn = db.lock();
-    assert_eq!(conn.get_upload("legacy").unwrap(), legacy);
-    assert_eq!(
-        super::super::read(&conn, "alice", "creation-1")
-            .unwrap()
-            .unwrap()
-            .session_id,
-        original.id
-    );
-    assert_eq!(count(&conn, "creation_uploads"), 0);
-    assert_eq!(
-        conn.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
-            .unwrap(),
-        crate::store::SCHEMA_VERSION
-    );
-}
-#[test]
 fn reserved_creation_from_another_owner_blocks_project_deletion() {
     let db = Db::memory();
     let mut conn = db.lock();

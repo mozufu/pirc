@@ -13,6 +13,10 @@ CREATE TABLE terminal_work_requests (
  run_id TEXT UNIQUE REFERENCES terminal_runs(id),
  terminal_id TEXT UNIQUE,
  created_at INTEGER NOT NULL,
+ -- A user may acknowledge an unconfirmed start once. It only hides the request
+ -- from discovery: the outcome, run evidence and transition blocks are unchanged.
+ acknowledged_at INTEGER,
+ acknowledged_by TEXT,
  PRIMARY KEY(owner_user,session_id,request_id),
  CHECK((run_id IS NULL)=(terminal_id IS NULL)),
  CHECK(state!='not_started' OR run_id IS NULL)
@@ -29,10 +33,6 @@ WHEN OLD.run_id IS NOT NULL OR NEW.run_id IS NULL OR NEW.terminal_id IS NULL OR 
   AND l.resource_kind='terminal' AND l.runner_epoch=OLD.runner_epoch
   AND l.state='launching' AND l.guard_state='waiting') BEGIN
  SELECT RAISE(ABORT,'Work terminal request can reserve its own scope only once');
-END;
-CREATE TRIGGER terminal_work_monotonic BEFORE UPDATE OF state,error_code ON terminal_work_requests
-WHEN OLD.state!='accepted' OR NEW.state='accepted' OR (NEW.state='not_started' AND OLD.run_id IS NOT NULL) BEGIN
- SELECT RAISE(ABORT,'Work terminal outcome cannot be retried or reset');
 END;
 CREATE TRIGGER terminal_work_retained BEFORE DELETE ON terminal_work_requests BEGIN
  SELECT RAISE(ABORT,'Work terminal request evidence is retained');

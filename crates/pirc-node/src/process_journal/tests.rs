@@ -128,43 +128,6 @@ fn immutable_identity_and_terminal_proof_survive_late_observers_and_new_generati
 }
 
 #[test]
-fn migration_retains_legacy_uncertainty_without_fencing_ordinary_sessions() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("node.sqlite");
-    let (a, b) = {
-        let db = Db::open(&path).unwrap();
-        let db = db.lock();
-        let (a, b) = setup(&db);
-        db.execute_batch(concat!(
-            include_str!("../host_commands/remove_schema.sql"),
-            include_str!("remove_schema.sql"),
-            "PRAGMA user_version=2012;"
-        ))
-        .unwrap();
-        (a, b)
-    };
-    let db = Db::open(&path).unwrap();
-    let db = db.lock();
-    for session in [&a, &b] {
-        assert_eq!(summary(&db, session).unwrap().legacy_untracked, 1);
-        assert_eq!(summary(&db, session).unwrap().unresolved, 1);
-        crate::execution_fences::require_open(&db, session).unwrap();
-    }
-    let fresh = db
-        .create_session("repo", "/private/fresh", "alice")
-        .unwrap();
-    assert_eq!(summary(&db, &fresh.id).unwrap(), Summary::default());
-    assert!(
-        db.execute(
-            "UPDATE sandbox_launches SET state='terminated',identity_json='{}'",
-            []
-        )
-        .is_err()
-    );
-    assert_eq!(db.get_session(&a).unwrap().runner_epoch, 1);
-}
-
-#[test]
 fn parallel_agent_observers_cannot_regress_another_launch_or_its_termination() {
     let db = Arc::new(Db::memory());
     let (a, b) = setup(&db.lock());
@@ -418,30 +381,6 @@ fn fence_denies_unreleased_launch_after_restart_without_inventing_kernel_exit() 
         .is_err()
     );
 }
-#[test]
-fn migration_never_infers_a_guard_for_prior_launches() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("node.db");
-    let launch = {
-        let db = Db::open(&path).unwrap();
-        let db = db.lock();
-        let (a, _) = setup(&db);
-        let launch = reserve(&db, &a, "repo", 1, "legacy").unwrap();
-        db.execute_batch(include_str!("../host_commands/remove_schema.sql"))
-            .unwrap();
-        db.execute_batch("DROP TRIGGER sandbox_guard_monotonic; DROP INDEX sandbox_guard_pending; ALTER TABLE sandbox_launches DROP COLUMN guard_state; PRAGMA user_version=2013;").unwrap();
-        launch
-    };
-    let db = Db::open(&path).unwrap();
-    let db = db.lock();
-    assert_eq!(guard_state(&db, &launch), "untracked");
-    assert!(authorize(&db, &launch, "repo", &snapshot(State::Running, 22)).is_err());
-    assert_eq!(saved(&db, &launch).unwrap().1, None);
-    assert_eq!(
-        summary(&db, &launch.session).unwrap().guarded_not_released,
-        0
-    );
-}
 
 #[test]
 fn agent_epoch_dedup_does_not_consume_independent_terminal_slots() {
@@ -529,127 +468,6 @@ fn terminal_settlement_does_not_retire_agent_or_peer_terminal_in_the_same_epoch(
         pending
             .iter()
             .any(|(launch, _)| launch.kind == Kind::Terminal && launch.id == b.id)
-    );
-}
-
-fn old_resource_schema(db: &Connection) {
-    db.execute_batch(include_str!("../terminals/remove_io_owners.sql"))
-        .unwrap();
-    db.execute_batch(include_str!("remove_schema.sql")).unwrap();
-    db.execute_batch(concat!(
-        include_str!("schema.sql"),
-        include_str!("guard.sql")
-    ))
-    .unwrap();
-    db.pragma_update(None, "user_version", 2024).unwrap();
-}
-#[test]
-fn resource_kind_migration_uses_retained_matching_origins_and_preserves_observations() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("node.sqlite");
-    let session = {
-        let db = Db::open(&path).unwrap();
-        let db = db.lock();
-        old_resource_schema(&db);
-        let (session, _) = setup(&db);
-        let kernel = serde_json::to_string(&identity(22)).unwrap();
-        db.execute("INSERT INTO sandbox_launches VALUES('old-agent',?1,'repo',1,'old-node','running',?2,1,2,'released')",params![session,kernel]).unwrap();
-        db.execute("INSERT INTO sandbox_launches VALUES('old-terminal',?1,'repo',0,'old-node','unconfirmed',?2,3,4,'denied')",params![session,kernel]).unwrap();
-        db.execute("INSERT INTO terminal_runs(id,session_id,workspace_id,cwd,incarnation,state,created_at,updated_at) VALUES('old-terminal',?1,'repo','/repo','old-node','unconfirmed',3,4)",[&session]).unwrap();
-        db.execute("INSERT INTO sandbox_launches VALUES('mismatch',?1,'repo',2,'old-node','launching',NULL,5,6,'waiting')",[&session]).unwrap();
-        db.execute("INSERT INTO terminal_runs(id,session_id,workspace_id,cwd,incarnation,state,created_at,updated_at) VALUES('mismatch',?1,'another-workspace','/repo','old-node','running',5,6)",[&session]).unwrap();
-        session
-    };
-    let db = Db::open(&path).unwrap();
-    let db = db.lock();
-    let mut statement=db.prepare("SELECT launch_id,resource_kind,state,guard_state,identity_json,created_at,updated_at FROM sandbox_launches ORDER BY launch_id").unwrap();
-    let rows = statement
-        .query_map([], |r| {
-            Ok((
-                r.get::<_, String>(0)?,
-                r.get::<_, String>(1)?,
-                r.get::<_, String>(2)?,
-                r.get::<_, String>(3)?,
-                r.get::<_, Option<String>>(4)?,
-                r.get::<_, i64>(5)?,
-                r.get::<_, i64>(6)?,
-            ))
-        })
-        .unwrap()
-        .collect::<Result<Vec<_>, _>>()
-        .unwrap();
-    assert_eq!(
-        rows[0],
-        (
-            "mismatch".into(),
-            "agent".into(),
-            "launching".into(),
-            "waiting".into(),
-            None,
-            5,
-            6
-        )
-    );
-    assert_eq!(rows[1].1, "agent");
-    assert_eq!(rows[1].2, "running");
-    assert_eq!(rows[1].3, "released");
-    assert_eq!(rows[2].1, "terminal");
-    assert_eq!(rows[2].2, "unconfirmed");
-    assert_eq!(rows[2].3, "denied");
-    assert_eq!(
-        rows[1].4,
-        Some(serde_json::to_string(&identity(22)).unwrap())
-    );
-    assert_eq!(rows[1].4, rows[2].4);
-    assert!(reserve_terminal(&db, &session, "repo", 1, "new-node").is_ok());
-    assert!(reserve_with_guard(&db, &session, "repo", 1, "new-node", true).is_err());
-    assert!(db.execute("DELETE FROM sandbox_launches", []).is_err());
-}
-#[test]
-fn failed_resource_migration_rolls_back_schema_version_rows_and_guards() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("node.sqlite");
-    {
-        let db = Db::open(&path).unwrap();
-        let db = db.lock();
-        old_resource_schema(&db);
-        db.execute("INSERT INTO sandbox_launches VALUES('keep','session','repo',0,'old-node','launching',NULL,1,1,'waiting')",[]).unwrap();
-        db.execute_batch("CREATE TABLE sandbox_launches_before_resources(sentinel TEXT)")
-            .unwrap();
-    }
-    assert!(Db::open(&path).is_err());
-    let raw = Connection::open(&path).unwrap();
-    assert_eq!(
-        raw.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))
-            .unwrap(),
-        2024
-    );
-    assert_eq!(
-        raw.query_row(
-            "SELECT guard_state FROM sandbox_launches WHERE launch_id='keep'",
-            [],
-            |r| r.get::<_, String>(0)
-        )
-        .unwrap(),
-        "waiting"
-    );
-    assert!(
-        raw.execute("UPDATE sandbox_launches SET guard_state='untracked'", [])
-            .is_err()
-    );
-    raw.execute_batch("DROP TABLE sandbox_launches_before_resources")
-        .unwrap();
-    drop(raw);
-    let db = Db::open(&path).unwrap();
-    let db = db.lock();
-    assert_eq!(
-        db.query_row(
-            "SELECT resource_kind FROM sandbox_launches WHERE launch_id='keep'",
-            [],
-            |r| r.get::<_, String>(0)
-        )
-        .unwrap(),
-        "agent"
     );
 }
 

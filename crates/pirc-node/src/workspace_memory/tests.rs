@@ -1733,7 +1733,7 @@ async fn cold_cutover_allows_disjoint_known_hosts_but_not_missing_inventory() {
     f.node
         .db
         .lock()
-        .execute_batch(include_str!("../host_commands/remove_resources.sql"))
+        .execute_batch("DROP TABLE host_command_resources")
         .unwrap();
     assert!(f.mutate("workspace.cold", json!({})).is_err());
     assert!(snapshot(&f.node, &f.scope).unwrap().control.is_none());

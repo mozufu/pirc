@@ -119,36 +119,6 @@ async fn interrupted_preparation_survives_restart_as_unknown_without_replay() {
     assert!(restarted.terminals.list(&f.current).is_empty());
     restarted.close().await;
 }
-#[test]
-fn upgrade_keeps_legacy_scopes_without_inventing_request_ids() {
-    let dir = tempfile::tempdir().unwrap();
-    let file = dir.path().join("node.sqlite");
-    {
-        let db = Db::open(&file).unwrap();
-        let db = db.lock();
-        db.execute("INSERT INTO terminal_runs(id,session_id,workspace_id,cwd,incarnation,state,created_at,updated_at) VALUES('legacy','session','repo','/repo','old','unconfirmed',1,1)",[]).unwrap();
-        db.execute_batch(include_str!("../remove_requests.sql"))
-            .unwrap();
-        db.pragma_update(None, "user_version", 2027).unwrap();
-    }
-    let db = Db::open(&file).unwrap();
-    let db = db.lock();
-    assert_eq!(
-        db.query_row("SELECT count(*) FROM terminal_work_requests", [], |r| r
-            .get::<_, i64>(0))
-            .unwrap(),
-        0
-    );
-    assert_eq!(
-        db.query_row(
-            "SELECT state FROM terminal_runs WHERE id='legacy'",
-            [],
-            |r| r.get::<_, String>(0)
-        )
-        .unwrap(),
-        "unconfirmed"
-    );
-}
 
 #[test]
 fn a_work_request_cannot_claim_an_agent_launch_as_its_terminal_scope() {
@@ -390,48 +360,6 @@ async fn unresolved_requests_list_only_open_decisions_in_stable_pages() {
     f.node.close().await;
 }
 
-#[test]
-fn result_layer_upgrade_keeps_requests_and_adds_no_failure_reasons() {
-    let dir = tempfile::tempdir().unwrap();
-    let file = dir.path().join("node.sqlite");
-    {
-        let db = Db::open(&file).unwrap();
-        let db = db.lock();
-        db.execute("INSERT INTO terminal_work_requests(owner_user,session_id,request_id,incarnation,workspace_id,runner_epoch,cwd,intent_hash,state,error_code,run_id,terminal_id,created_at) VALUES('alice','session','kept','old','repo',0,'/repo',?1,'outcome_unknown','terminal_start_unconfirmed',NULL,NULL,1)",["a".repeat(64)]).unwrap();
-        db.execute_batch(include_str!("../remove_request_results.sql"))
-            .unwrap();
-        db.pragma_update(None, "user_version", 2028).unwrap();
-    }
-    let db = Db::open(&file).unwrap();
-    let db = db.lock();
-    let kept: (String, Option<String>) = db
-        .query_row(
-            "SELECT state,error_code FROM terminal_work_requests WHERE request_id='kept'",
-            [],
-            |r| Ok((r.get(0)?, r.get(1)?)),
-        )
-        .unwrap();
-    assert_eq!(
-        kept,
-        (
-            "outcome_unknown".into(),
-            Some("terminal_start_unconfirmed".into())
-        )
-    );
-    let reasons: i64 = db
-        .query_row(
-            "SELECT count(*) FROM terminal_host_requests WHERE error_code IS NOT NULL",
-            [],
-            |r| r.get(0),
-        )
-        .unwrap();
-    assert_eq!(reasons, 0);
-    assert!(
-        db.execute("UPDATE terminal_work_requests SET error_code='changed'", [])
-            .is_err()
-    );
-}
-
 #[tokio::test]
 async fn acknowledged_unknowns_leave_discovery_but_keep_their_outcome() {
     let f = Fixture::new().await;
@@ -587,28 +515,4 @@ async fn acknowledgement_route_needs_control_and_one_explicit_request() {
         assert_eq!(response.status, status, "{payload}: {response:?}");
     }
     f.node.close().await;
-}
-
-#[test]
-fn acknowledgement_upgrade_keeps_requests_unacknowledged() {
-    let dir = tempfile::tempdir().unwrap();
-    let file = dir.path().join("node.sqlite");
-    {
-        let db = Db::open(&file).unwrap();
-        let db = db.lock();
-        db.execute("INSERT INTO terminal_work_requests(owner_user,session_id,request_id,incarnation,workspace_id,runner_epoch,cwd,intent_hash,state,created_at) VALUES('alice','session','kept','old','repo',0,'/repo',?1,'accepted',1)",["a".repeat(64)]).unwrap();
-        db.execute_batch(include_str!("../remove_request_acknowledgements.sql"))
-            .unwrap();
-        db.pragma_update(None, "user_version", 2029).unwrap();
-    }
-    let db = Db::open(&file).unwrap();
-    let db = db.lock();
-    let acknowledged: Option<i64> = db
-        .query_row(
-            "SELECT acknowledged_at FROM terminal_work_requests WHERE request_id='kept'",
-            [],
-            |r| r.get(0),
-        )
-        .unwrap();
-    assert_eq!(acknowledged, None);
 }

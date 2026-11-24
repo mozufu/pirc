@@ -1,9 +1,5 @@
 use super::*;
-use crate::{
-    services::Services,
-    store::{Db, Store},
-    workspace_memory::tests::Fixture,
-};
+use crate::{services::Services, store::Store, workspace_memory::tests::Fixture};
 
 struct Input {
     root: std::path::PathBuf,
@@ -413,35 +409,6 @@ async fn crash_after_consumption_never_replays_a_reserved_terminal() {
     assert_eq!(count(&restarted, "terminal_runs"), 1);
     assert!(restarted.terminals.list(&f.current).is_empty());
     restarted.close().await;
-}
-
-#[test]
-fn migration_does_not_convert_legacy_terminals_to_approved_host_management() {
-    let dir = tempfile::tempdir().unwrap();
-    let file = dir.path().join("node.sqlite");
-    {
-        let db = Db::open(&file).unwrap();
-        let db = db.lock();
-        db.execute("INSERT INTO terminal_runs(id,session_id,workspace_id,cwd,incarnation,state,created_at,updated_at) VALUES('old','session','repo','/repo','old-node','unconfirmed',1,1)",[]).unwrap();
-        db.execute_batch(include_str!("../remove_host.sql"))
-            .unwrap();
-        db.pragma_update(None, "user_version", 2026).unwrap();
-    }
-    let db = Db::open(&file).unwrap();
-    let db = db.lock();
-    assert_eq!(
-        db.query_row("SELECT count(*) FROM terminal_host_requests", [], |r| r
-            .get::<_, i64>(0))
-            .unwrap(),
-        0
-    );
-    assert_eq!(
-        db.query_row("SELECT state FROM terminal_runs WHERE id='old'", [], |r| {
-            r.get::<_, String>(0)
-        })
-        .unwrap(),
-        "unconfirmed"
-    );
 }
 
 #[tokio::test]

@@ -1,8 +1,5 @@
 use super::*;
-use crate::{
-    store::{Db, Store},
-    workspace_memory::tests::Fixture,
-};
+use crate::{store::Store, workspace_memory::tests::Fixture};
 use serde_json::json;
 use std::path::Path;
 use tokio::sync::watch;
@@ -259,43 +256,6 @@ async fn grant_identity_survives_session_deletion_without_regranting() {
         assert!(origin.authority.validate(&db, &f.node, &origin).is_err());
     }
     f.node.close().await;
-}
-#[test]
-fn migration_preserves_legacy_runs_without_inventing_user_approvals() {
-    let dir = tempfile::tempdir().unwrap();
-    let file = dir.path().join("node.sqlite");
-    {
-        let db = Db::open(&file).unwrap();
-        let db = db.lock();
-        db.execute("INSERT INTO host_command_runs(id,session_id,workspace_id,runner_epoch,incarnation,request_id,state,created_at,updated_at) VALUES('old','old-session','old-workspace',0,'old-node','old-request','settled',1,1)",[]).unwrap();
-        db.execute_batch(include_str!("../remove_approval.sql"))
-            .unwrap();
-        db.pragma_update(None, "user_version", 2022).unwrap();
-    }
-    let db = Db::open(&file).unwrap();
-    let db = db.lock();
-    assert_eq!(
-        db.query_row("SELECT count(*) FROM host_execution_approvals", [], |r| r
-            .get::<_, i64>(
-            0
-        ))
-        .unwrap(),
-        0
-    );
-    assert_eq!(
-        db.query_row(
-            "SELECT state FROM host_command_runs WHERE id='old'",
-            [],
-            |r| r.get::<_, String>(0)
-        )
-        .unwrap(),
-        "settled"
-    );
-    assert_eq!(
-        db.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))
-            .unwrap(),
-        crate::store::SCHEMA_VERSION
-    );
 }
 
 #[tokio::test]

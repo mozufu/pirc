@@ -1,10 +1,3 @@
--- C2: every new launch or effect records the binding generation it ran under,
--- in its own insert, before spawn. Rows from before this migration stay NULL:
--- explicitly unattributed legacy evidence, never assigned by time or workspace.
-ALTER TABLE sandbox_launches ADD COLUMN binding_generation INTEGER;
-ALTER TABLE host_command_runs ADD COLUMN binding_generation INTEGER;
-ALTER TABLE terminal_runs ADD COLUMN binding_generation INTEGER;
-ALTER TABLE browser_groups ADD COLUMN binding_generation INTEGER;
 CREATE TRIGGER sandbox_launch_generation AFTER INSERT ON sandbox_launches WHEN NEW.binding_generation IS NULL BEGIN
  UPDATE sandbox_launches SET binding_generation=(SELECT max(generation) FROM session_binding_generations WHERE session_id=NEW.session_id) WHERE launch_id=NEW.launch_id;
 END;

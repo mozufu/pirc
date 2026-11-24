@@ -141,32 +141,6 @@ fn concurrent_transition_intents_have_one_winner_and_preserve_other_sessions() {
         "repo"
     );
 }
-#[test]
-fn migration_does_not_invent_historical_transition_fences() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("node.db");
-    let session = {
-        let db = Db::open(&path).unwrap();
-        let db = db.lock();
-        let (session, _, _) = setup(&db);
-        db.execute_batch(concat!(
-            include_str!("../host_commands/remove_schema.sql"),
-            include_str!("../process_journal/remove_schema.sql"),
-            include_str!("remove_schema.sql")
-        ))
-        .unwrap();
-        db.execute_batch("PRAGMA user_version=2011;").unwrap();
-        session
-    };
-    let db = Db::open(&path).unwrap();
-    let db = db.lock();
-    assert!(require_open(&db, &session).is_ok());
-    let count: i64 = db
-        .query_row("SELECT COUNT(*) FROM execution_fences", [], |r| r.get(0))
-        .unwrap();
-    assert_eq!(count, 0);
-    assert_eq!(db.get_session(&session).unwrap().workspace_id, "repo");
-}
 #[tokio::test]
 async fn draining_is_idempotent_does_not_touch_files_and_never_claims_revocation() {
     let f = crate::workspace_memory::tests::Fixture::new().await;
