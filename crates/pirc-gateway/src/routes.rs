@@ -161,12 +161,6 @@ pub async fn list_nodes(
                         .and_then(|id| pirc_protocol::ModeId::new(id).ok())
                         .and_then(|id| app.mode(&id));
                     workspace["available"] = json!(mode.is_some());
-                    if let Some(mode) = mode {
-                        workspace["kind"] = json!(match mode.workdir {
-                            pirc_protocol::mode::Workdir::PerSession => "chat",
-                            _ => "directory",
-                        });
-                    }
                 }
             }
         }

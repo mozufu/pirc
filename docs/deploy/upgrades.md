@@ -121,14 +121,6 @@ protocol/client/private-envelope **15/2/3**, lockfiles and Nix hashes remain
 unchanged. Back up Node state with its binary; older readers reject 2031 and
 rollback requires matching state/binary backups. Local code only.
 
-## Local checkpoint: compatibility host terminals off by default
-
-Terminal requests without `executionPath` (old clients' unreviewed host shell)
-now return `426 terminal_execution_path_required` by default. Set
-`PIRC_LEGACY_HOST_TERMINALS=true` on the Node to keep old APKs working until
-they update. Existing terminals and results are unchanged. No schema, protocol,
-client-format, lockfile or Nix hash change.
-
 ## Local checkpoint: terminal request acknowledgement and specific errors
 
 Node schema **2030** adds once-only `acknowledged_at`/`acknowledged_by` to terminal

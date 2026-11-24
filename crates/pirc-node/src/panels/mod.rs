@@ -330,35 +330,21 @@ pub fn routes() -> Vec<Route> {
                 )
                 .await;
             }
-            let terminal = match body.get("executionPath") {
-                // Old clients: an unreviewed host shell, only when explicitly allowed.
-                None if !node.config.legacy_host_terminals => {
-                    return Err(ApiError::new(
-                        426,
-                        "terminal_execution_path_required",
-                        "Update this client: new terminals need isolated work or a reviewed host-management terminal",
-                    ));
-                }
-                None => node.terminals.create(
-                    &session.id,
-                    &cwd,
-                    Some(cols.unwrap_or(80)),
-                    Some(rows.unwrap_or(24)),
-                    (&client_id, generation),
-                )?,
+            match body.get("executionPath") {
+                None => Err(ApiError::new(
+                    400,
+                    "terminal_execution_path_required",
+                    "New terminals need isolated work or a reviewed host-management terminal",
+                )),
                 // Isolated work is admitted only with a durable request identity.
-                Some(Value::String(path)) if path == "isolated_work" => {
-                    return Err(ApiError::new(
-                        400,
-                        "work_terminal_request_required",
-                        "Isolated work terminals need a stable requestId",
-                    ));
-                }
+                Some(Value::String(path)) if path == "isolated_work" => Err(ApiError::new(
+                    400,
+                    "work_terminal_request_required",
+                    "Isolated work terminals need a stable requestId",
+                )),
                 // Explicit host requests must use the review contract above.
-                // Other labels never authorize the compatibility host path.
-                _ => return Err(ApiError::invalid_input()),
-            };
-            Ok(Response::status(201, json!({ "terminal": terminal })))
+                _ => Err(ApiError::invalid_input()),
+            }
         }),
         post(
             "/api/sessions/:id/terminals/:terminalId/close",

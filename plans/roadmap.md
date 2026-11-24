@@ -104,7 +104,8 @@ and not patched in the meantime.
    `expectedBinding`; `routes::command`'s legacy relay branch and its tests go.
 3. **Delete other legacy switches.** `PIRC_LEGACY_HOST_TERMINALS` and the unreviewed
    host-shell path; the legacy workspace `kind` field (Gateway `routes.rs`, Node
-   `app.rs`); the optional form of `x-pirc-account` (required where it is checked).
+   `app.rs`). `x-pirc-account` stays optional: it is an account fence that
+   WebSocket upgrades cannot carry, not a legacy switch.
 4. **One capability document.** `GET /api/capabilities` returns
    `{ apiVersion, server, features: { <name>: { supported, enabled, version } } }`.
    Clients send `X-Pirc-Client: <app>/<apiVersion>`; an unaccepted `apiVersion` gets
@@ -147,6 +148,8 @@ and not patched in the meantime.
      `POST /api/sessions`. Add one harness helper that starts a conversation through
      first-send (prepare, accept, materialize, dispatch, wait for the run) and use it
      everywhere; snapshots that recorded the old route are re-recorded.
+   - Terminal tests that set `PIRC_LEGACY_HOST_TERMINALS` move to isolated-work
+     terminal requests; workspace creation in fixtures passes `mode`, not `kind`.
    - Fix the failures that predate the rewrite: `pirc-node` Linux sandbox tests do not
      compile (private `pty` module, a macro syntax error), and the Nix hash job fails.
      Done when: the Check workflow is green on `main`, or every remaining failure is

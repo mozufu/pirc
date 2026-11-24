@@ -342,8 +342,7 @@ fn created(body: Value) -> ApiResult<Response> {
 
 // ---------- workspaces ----------
 
-/// A requested catalog mode. Legacy `kind` is only an input alias, never
-/// a source of capabilities; omitted ids use the node role's default id.
+/// A requested catalog mode.
 struct NewWorkspace {
     mode: ModeId,
     path: Option<String>,
@@ -353,20 +352,15 @@ struct NewWorkspace {
 
 fn new_workspace(body: &Value, _chat_node: bool) -> ApiResult<NewWorkspace> {
     let map = object(body)?;
+    if map.contains_key("kind") {
+        return Err(ApiError::invalid_input());
+    }
     let mode = optional_string(map, "mode", false, 1, 40)?;
-    let kind = optional_string(map, "kind", false, 1, 40)?;
-    if mode
-        .as_ref()
-        .zip(kind.as_ref())
-        .is_some_and(|(mode, kind)| mode != kind)
-    {
+    if mode.is_none() && !map.contains_key("path") {
         return Err(ApiError::invalid_input());
     }
-    if mode.is_none() && kind.is_none() && !map.contains_key("path") {
-        return Err(ApiError::invalid_input());
-    }
-    // Legacy path-only callers request a directory, regardless of node role.
-    let mode = ModeId::new(mode.or(kind).unwrap_or_else(|| "directory".to_owned()))
+    // A path without a mode is a directory workspace, regardless of node role.
+    let mode = ModeId::new(mode.unwrap_or_else(|| "directory".to_owned()))
         .map_err(|_| ApiError::invalid_input())?;
     Ok(NewWorkspace {
         mode,

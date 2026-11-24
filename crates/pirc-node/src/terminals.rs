@@ -219,10 +219,12 @@ impl Terminals {
             .collect()
     }
 
-    /// Start a shell in `cwd` (409 `conflict` past the limits, 503 while
+    /// Start a plain shell in `cwd` (409 `conflict` past the limits, 503 while
     /// the node shuts down, 500 `runner_unavailable` "Could not start
-    /// shell: ..." when it cannot start).
-    pub fn create(
+    /// shell: ..." when it cannot start). Tests only: clients get isolated
+    /// work or a reviewed host terminal.
+    #[cfg(test)]
+    pub(crate) fn create(
         &self,
         session_id: &str,
         cwd: &Path,

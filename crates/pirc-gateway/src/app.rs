@@ -677,8 +677,9 @@ async fn authenticate(
                     Ok(request) => request,
                     Err(error) => return error.into_response(),
                 };
-            // Optional for legacy clients. Durable operations always send this
-            // fence so changed browser cookies cannot retarget old local content.
+            // Optional because WebSocket upgrades cannot carry it. Durable
+            // operations always send this fence so changed browser cookies
+            // cannot retarget old local content.
             let expected = request.headers().get_all("x-pirc-account");
             if expected.iter().count() > 1 {
                 return ApiError::invalid_input().into_response();

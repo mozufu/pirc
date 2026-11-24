@@ -3,7 +3,8 @@ use super::*;
 #[test]
 fn workspace_bodies() {
     let parsed = |value: Value| new_workspace(&value, false);
-    let chat = parsed(json!({ "kind": "chat", "displayName": " Trip " })).unwrap();
+    assert!(parsed(json!({ "kind": "chat", "displayName": "Trip" })).is_err());
+    let chat = parsed(json!({ "mode": "chat", "displayName": " Trip " })).unwrap();
     assert_eq!(chat.mode.as_str(), "chat");
     assert_eq!(chat.display_name, "Trip");
     assert!(!chat.restore_existing);
