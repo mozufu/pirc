@@ -2,9 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'rendering/render_theme.dart';
+import 'package:pirc_render/src/render_theme.dart';
 
-export 'rendering/render_theme.dart' show RenderColors;
+export 'package:pirc_render/src/render_theme.dart' show RenderColors;
 
 // The renderer owns the color extension; the app keeps its name.
 typedef PircColors = RenderColors;

@@ -7,10 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/mermaid/native_mermaid.dart';
-import 'package:pirc_mobile/rendering/mermaid/xy_parser.dart';
-import 'package:pirc_mobile/rendering/mermaid/xy_rendering.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
+import 'package:pirc_render/src/mermaid/native_mermaid.dart';
+import 'package:pirc_render/src/mermaid/xy_parser.dart';
+import 'package:pirc_render/src/mermaid/xy_rendering.dart';
+import 'package:pirc_render/src/native_markdown.dart';
 import '../../test/live_test.dart' show theme;
 import 'capture_fonts.dart';
 

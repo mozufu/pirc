@@ -4,14 +4,14 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:html/parser.dart' as html;
 import 'package:pirc_mobile/live/document_navigation_state.dart';
-import 'package:pirc_mobile/rendering/html_document_content.dart';
-import 'package:pirc_mobile/rendering/html_document_styles.dart';
+import 'package:pirc_render/src/html_document_content.dart';
+import 'package:pirc_render/src/html_document_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/html_text_fields.dart';
-import 'package:pirc_mobile/rendering/html_document_box.dart';
+import 'package:pirc_render/src/html_text_fields.dart';
+import 'package:pirc_render/src/html_document_box.dart';
 
 import 'package:pirc_mobile/theme.dart';
 import 'package:integration_test/integration_test.dart';

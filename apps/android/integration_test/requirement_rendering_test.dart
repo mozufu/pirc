@@ -4,8 +4,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:pirc_mobile/theme.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
-import 'package:pirc_mobile/rendering/mermaid/requirement_rendering.dart';
+import 'package:pirc_render/src/native_markdown.dart';
+import 'package:pirc_render/src/mermaid/requirement_rendering.dart';
 
 // Sources come from the pinned Mermaid parser/Chrome oracle fixture.
 const cases = <Map<String, String>>[

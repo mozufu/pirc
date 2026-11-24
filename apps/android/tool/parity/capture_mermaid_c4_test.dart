@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/mermaid/c4_parser.dart';
-import 'package:pirc_mobile/rendering/mermaid/c4_rendering.dart';
+import 'package:pirc_render/src/mermaid/c4_parser.dart';
+import 'package:pirc_render/src/mermaid/c4_rendering.dart';
 
 void main() {
   testWidgets('capture native C4 phone/tablet figures', (t) async {

@@ -7,7 +7,7 @@ import 'package:pirc_mobile/live/common.dart';
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/html_buttons.dart';
+import 'package:pirc_render/src/html_buttons.dart';
 
 import 'document_navigation_widget_test.dart'
     show DocumentGateway, clickSubmit, response;

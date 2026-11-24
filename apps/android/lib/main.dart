@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'theme.dart';
-import 'rendering/licenses.dart';
-import 'rendering/native_raster_images.dart';
+import 'package:pirc_render/src/licenses.dart';
+import 'package:pirc_render/src/native_raster_images.dart';
 import 'live/app.dart';
 import 'live/gateway.dart';
 import 'live/render_host_adapter.dart';

@@ -3,10 +3,10 @@ import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:flutter_math_fork/src/ast/nodes/symbol.dart';
 import 'package:flutter_math_fork/src/ast/syntax_tree.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/native_equation_numbers.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
-import 'package:pirc_mobile/rendering/native_math_tags.dart';
-import 'package:pirc_mobile/rendering/native_math_paragraph.dart';
+import 'package:pirc_render/src/native_equation_numbers.dart';
+import 'package:pirc_render/src/native_markdown.dart';
+import 'package:pirc_render/src/native_math_tags.dart';
+import 'package:pirc_render/src/native_math_paragraph.dart';
 import 'live_test.dart' show theme;
 // ignore_for_file: implementation_imports
 

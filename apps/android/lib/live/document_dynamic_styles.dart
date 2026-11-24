@@ -1,5 +1,5 @@
 import '../l10n/app_i18n.dart';
-import '../rendering/html_document_styles.dart';
+import 'package:pirc_render/src/html_document_styles.dart';
 import 'document_style_loading.dart';
 import 'gateway.dart';
 

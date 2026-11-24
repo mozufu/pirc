@@ -21,6 +21,7 @@ dependencies:
   xml: 7.0.1
   flutter_widget_from_html_core: 0.17.4
   html: 0.15.6
+  pirc_render:
   qr: 3.0.2
   mobile_scanner: 7.4.2
 dev_dependencies:
@@ -33,7 +34,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/design-tokens.json
-    - assets/d3-sankey-license.txt
     - assets/document-canvas-text.js
     - assets/document-canvas-text.wasm
     - assets/document-canvas-text.LICENSE.txt

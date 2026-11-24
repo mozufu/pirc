@@ -7,7 +7,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:html/parser.dart' as html;
-import 'package:pirc_mobile/rendering/html_date.dart';
+import 'package:pirc_render/src/html_date.dart';
 import 'capture_fonts.dart';
 
 Future<void> _loadCaptureFonts() async {

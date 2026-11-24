@@ -2,7 +2,7 @@ import '../l10n/app_i18n.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../rendering/code_block.dart';
+import 'package:pirc_render/src/code_block.dart';
 import 'common.dart';
 import 'gateway.dart';
 import 'timeline_models.dart';

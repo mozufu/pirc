@@ -3,15 +3,15 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../rendering/html_media_spec.dart';
-import '../rendering/html_media_box.dart';
-import '../rendering/html_inline_intrinsic_overflow.dart';
+import 'package:pirc_render/src/html_media_spec.dart';
+import 'package:pirc_render/src/html_media_box.dart';
+import 'package:pirc_render/src/html_inline_intrinsic_overflow.dart';
 import 'gateway.dart';
 import 'document_navigation_state.dart';
-import '../rendering/document_object_urls.dart';
+import 'package:pirc_render/src/document_object_urls.dart';
 import 'document_download.dart';
 import 'markdown_image.dart';
-import '../rendering/remote_content_gate.dart';
+import 'package:pirc_render/src/remote_content_gate.dart';
 import 'common.dart' show guarded;
 
 String htmlMediaSignature(NativeHtmlMediaSpec spec) =>

@@ -8,17 +8,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart'
     show WidgetsBinding, WidgetsBindingObserver, AppLifecycleState;
 import 'package:html/parser.dart' as html;
-import '../rendering/html_document_content.dart';
-import '../rendering/document_canvas.dart';
-import '../rendering/document_html_image.dart';
+import 'package:pirc_render/src/html_document_content.dart';
+import 'package:pirc_render/src/document_canvas.dart';
+import 'package:pirc_render/src/document_html_image.dart';
 import 'gateway.dart';
 import 'document_script_resources.dart';
 import 'document_script_images.dart';
-import '../rendering/document_object_urls.dart';
+import 'package:pirc_render/src/document_object_urls.dart';
 import 'document_style_loading.dart';
 import 'document_dynamic_styles.dart';
 import 'document_environment.dart';
-import '../rendering/html_document_styles.dart';
+import 'package:pirc_render/src/html_document_styles.dart';
 
 /// One isolated environment per fetched document. DOM snapshots and bounded
 /// resource messages cross this boundary; credentials/native APIs stay outside JS.

@@ -1,4 +1,4 @@
-import 'package:pirc_mobile/rendering/remote_content_gate.dart';
+import 'package:pirc_render/src/remote_content_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -10,7 +10,7 @@ import 'package:pirc_mobile/live/files_pane.dart';
 import 'package:pirc_mobile/live/gateway.dart';
 import 'package:pirc_mobile/live/markdown_image.dart';
 import 'package:pirc_mobile/theme.dart';
-import 'package:pirc_mobile/rendering/code_block.dart';
+import 'package:pirc_render/src/code_block.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

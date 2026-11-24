@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_mobile/live/gateway.dart';
 import 'package:pirc_mobile/live/html_file_picker.dart';
-import 'package:pirc_mobile/rendering/html_file.dart';
+import 'package:pirc_render/src/html_file.dart';
 
 class _PickerGateway extends Gateway {
   final calls = <(String, Json)>[];

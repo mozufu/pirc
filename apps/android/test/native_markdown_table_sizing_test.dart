@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/native_inline_math.dart'
+import 'package:pirc_render/src/native_inline_math.dart'
     show RenderNativeInlineMath;
-import 'package:pirc_mobile/rendering/native_markdown.dart';
-import 'package:pirc_mobile/rendering/native_math_paragraph.dart';
+import 'package:pirc_render/src/native_markdown.dart';
+import 'package:pirc_render/src/native_math_paragraph.dart';
 
 import '../tool/parity/capture_fonts.dart' show loadParityFonts;
 import 'live_test.dart' show theme;

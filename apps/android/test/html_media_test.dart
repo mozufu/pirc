@@ -1,14 +1,14 @@
-import 'package:pirc_mobile/rendering/remote_content_gate.dart';
+import 'package:pirc_render/src/remote_content_gate.dart';
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:html/parser.dart' as html;
 import 'package:pirc_mobile/live/common.dart';
-import 'package:pirc_mobile/rendering/document_object_urls.dart';
+import 'package:pirc_render/src/document_object_urls.dart';
 import 'package:pirc_mobile/live/gateway.dart';
 import 'package:pirc_mobile/live/html_media.dart';
-import 'package:pirc_mobile/rendering/html_media_spec.dart';
+import 'package:pirc_render/src/html_media_spec.dart';
 import 'live_test.dart' show theme;
 
 NativeHtmlMediaSpec spec(String source) =>

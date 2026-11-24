@@ -5,9 +5,9 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/html_file.dart';
-import 'package:pirc_mobile/rendering/html_syntax.dart';
-import 'package:pirc_mobile/rendering/native_html.dart';
+import 'package:pirc_render/src/html_file.dart';
+import 'package:pirc_render/src/html_syntax.dart';
+import 'package:pirc_render/src/native_html.dart';
 
 import 'live_test.dart' show theme;
 

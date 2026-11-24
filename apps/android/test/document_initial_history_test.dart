@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
-import 'package:pirc_mobile/rendering/html_form_submission.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
 import 'document_navigation_widget_test.dart' show DocumentGateway, response;
 import 'document_initial_fragment_wait_test.dart' show WaitingScripts;
 import 'live_test.dart' show theme;

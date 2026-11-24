@@ -4,11 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:pirc_mobile/live/document_scripts.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/html_buttons.dart';
-import 'package:pirc_mobile/rendering/html_file.dart';
-import 'package:pirc_mobile/rendering/html_form_submission.dart';
-import 'package:pirc_mobile/rendering/html_syntax.dart';
-import 'package:pirc_mobile/rendering/native_html.dart';
+import 'package:pirc_render/src/html_buttons.dart';
+import 'package:pirc_render/src/html_file.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
+import 'package:pirc_render/src/html_syntax.dart';
+import 'package:pirc_render/src/native_html.dart';
 import 'package:pirc_mobile/theme.dart';
 
 const resetFilesHtml = '''<!doctype html><html><body>

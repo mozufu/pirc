@@ -16,7 +16,7 @@ import 'package:pirc_mobile/live/gateway.dart';
 import 'package:pirc_mobile/live/session_sidebar.dart';
 import 'package:pirc_mobile/live/side_panel.dart';
 import 'package:pirc_mobile/live/timeline_tools.dart' show TimelineRun;
-import 'package:pirc_mobile/rendering/code_block.dart';
+import 'package:pirc_render/src/code_block.dart';
 
 import '../../test/live_test.dart' show FakeGateway, theme;
 import 'capture_fonts.dart';

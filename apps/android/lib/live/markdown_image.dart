@@ -1,18 +1,18 @@
 import '../l10n/app_i18n.dart';
 import 'dart:convert';
-import '../rendering/svg_dimensions.dart';
-import '../rendering/native_image_density.dart';
-import '../rendering/native_image_frame.dart';
+import 'package:pirc_render/src/svg_dimensions.dart';
+import 'package:pirc_render/src/native_image_density.dart';
+import 'package:pirc_render/src/native_image_frame.dart';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import '../rendering/native_raster_images.dart';
+import 'package:pirc_render/src/native_raster_images.dart';
 import 'gateway.dart';
-import '../rendering/document_object_urls.dart';
+import 'package:pirc_render/src/document_object_urls.dart';
 import 'document_navigation_state.dart';
-import '../rendering/remote_content_gate.dart';
+import 'package:pirc_render/src/remote_content_gate.dart';
 
 /// Markdown images follow the gateway page URL, not the workspace file base.
 ///

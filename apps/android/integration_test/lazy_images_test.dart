@@ -1,5 +1,5 @@
 // Android scroll/visibility acceptance; in-memory image Gateway, real Flutter SVG.
-import 'package:pirc_mobile/rendering/remote_content_gate.dart';
+import 'package:pirc_render/src/remote_content_gate.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
@@ -9,9 +9,9 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart' as md;
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_mobile/live/markdown_image.dart';
-import 'package:pirc_mobile/rendering/html_syntax.dart';
-import 'package:pirc_mobile/rendering/native_html.dart';
-import 'package:pirc_mobile/rendering/native_image_density.dart';
+import 'package:pirc_render/src/html_syntax.dart';
+import 'package:pirc_render/src/native_html.dart';
+import 'package:pirc_render/src/native_image_density.dart';
 
 import 'package:pirc_mobile/live/gateway.dart';
 import 'package:pirc_mobile/theme.dart';

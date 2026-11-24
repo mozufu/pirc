@@ -8,7 +8,7 @@ import 'package:pirc_mobile/live/document_navigation_state.dart';
 import 'package:pirc_mobile/live/document_window_manager.dart';
 import 'package:pirc_mobile/live/gateway.dart';
 import 'package:pirc_mobile/live/web_controls.dart';
-import 'package:pirc_mobile/rendering/html_document_content.dart';
+import 'package:pirc_render/src/html_document_content.dart';
 
 import 'live_test.dart' show theme;
 

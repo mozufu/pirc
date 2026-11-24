@@ -5,12 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:pirc_mobile/rendering/document_background_image.dart';
+import 'package:pirc_render/src/document_background_image.dart';
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/html_background_layers.dart';
-import 'package:pirc_mobile/rendering/html_form_submission.dart';
+import 'package:pirc_render/src/html_background_layers.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
 import 'package:pirc_mobile/theme.dart';
 
 void main() {

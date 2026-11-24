@@ -4,15 +4,15 @@ import 'dart:typed_data';
 import 'package:integration_test/integration_test.dart';
 import 'package:flutter/foundation.dart' show debugPrintSynchronously;
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/html_document_urls.dart';
+import 'package:pirc_render/src/html_document_urls.dart';
 import 'package:pirc_mobile/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:html/parser.dart' as html;
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
-import 'package:pirc_mobile/rendering/document_fragment.dart';
-import 'package:pirc_mobile/rendering/html_form_submission.dart';
+import 'package:pirc_render/src/document_fragment.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
 
 const fixtureOrigin = String.fromEnvironment('PIRC_CHART_FIXTURE_ORIGIN');
 void main() {

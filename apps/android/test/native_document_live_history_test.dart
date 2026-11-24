@@ -8,8 +8,8 @@ import 'package:pirc_mobile/live/app.dart';
 import 'package:pirc_mobile/live/app_document_route.dart';
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/html_buttons.dart';
-import 'package:pirc_mobile/rendering/html_document_urls.dart';
+import 'package:pirc_render/src/html_buttons.dart';
+import 'package:pirc_render/src/html_document_urls.dart';
 import 'app_document_live_routes_test.dart' show RouteGateway, scope;
 import 'live_test.dart' show theme;
 

@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/html_form_submission.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
 
 class _StylesGateway extends Gateway {
   final urls = <String>[];

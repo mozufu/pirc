@@ -5,9 +5,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:html/parser.dart' as html;
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
-import 'package:pirc_mobile/rendering/html_form_submission.dart';
-import 'package:pirc_mobile/rendering/html_syntax.dart';
-import 'package:pirc_mobile/rendering/native_html.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
+import 'package:pirc_render/src/html_syntax.dart';
+import 'package:pirc_render/src/native_html.dart';
 import 'document_navigation_widget_test.dart' show DocumentGateway, response;
 import 'live_test.dart' show theme;
 

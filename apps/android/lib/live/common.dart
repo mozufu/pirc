@@ -3,8 +3,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../rendering/native_markdown.dart';
-import '../rendering/file_links.dart';
+import 'package:pirc_render/src/native_markdown.dart';
+import 'package:pirc_render/src/file_links.dart';
 import '../theme.dart';
 import 'gateway.dart';
 import 'web_controls.dart';
@@ -12,7 +12,7 @@ import 'markdown_image.dart';
 import 'document_navigation.dart';
 import 'document_navigation_state.dart';
 import 'html_media.dart';
-import '../rendering/native_html.dart' show NativeHtmlLink;
+import 'package:pirc_render/src/native_html.dart' show NativeHtmlLink;
 
 PircColors palette(BuildContext context) =>
     Theme.of(context).extension<PircColors>()!;

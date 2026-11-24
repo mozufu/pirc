@@ -8,7 +8,7 @@ import 'package:pirc_mobile/live/gateway.dart';
 import 'package:pirc_mobile/live/native_app_surface.dart';
 import 'package:pirc_mobile/live/scoped_gateway.dart';
 import 'package:pirc_mobile/live/settings_dialog.dart';
-import 'package:pirc_mobile/rendering/html_form_submission.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
 import 'package:pirc_mobile/theme.dart';
 
 void main() {

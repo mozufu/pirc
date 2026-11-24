@@ -4,7 +4,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/document_object_urls.dart';
+import 'package:pirc_render/src/document_object_urls.dart';
 import 'package:pirc_mobile/live/gateway.dart' show Json;
 
 Json bridgeValue(

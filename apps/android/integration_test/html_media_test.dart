@@ -1,4 +1,4 @@
-import 'package:pirc_mobile/rendering/remote_content_gate.dart';
+import 'package:pirc_render/src/remote_content_gate.dart';
 import 'dart:convert';
 import 'dart:ui' as ui;
 
@@ -10,7 +10,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:pirc_mobile/live/gateway.dart';
 import 'package:pirc_mobile/live/html_media.dart';
 import 'package:pirc_mobile/live/scoped_gateway.dart';
-import 'package:pirc_mobile/rendering/html_media_spec.dart';
+import 'package:pirc_render/src/html_media_spec.dart';
 
 class MediaAcceptanceGateway extends Gateway {
   final opened = <Json>[];

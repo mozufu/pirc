@@ -9,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_mobile/live/gateway.dart';
 import 'package:pirc_mobile/live/files_state.dart';
 import 'package:pirc_mobile/live/files_pane.dart';
-import 'package:pirc_mobile/rendering/file_links.dart';
+import 'package:pirc_render/src/file_links.dart';
 import 'live_test.dart' show FakeGateway, theme;
 import '../tool/parity/capture_fonts.dart' show loadParityFonts;
 

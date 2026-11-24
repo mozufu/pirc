@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
-import 'package:pirc_mobile/rendering/mermaid/git_graph_rendering.dart';
-import 'package:pirc_mobile/rendering/mermaid/journey_rendering.dart';
-import 'package:pirc_mobile/rendering/mermaid/kanban_rendering.dart';
-import 'package:pirc_mobile/rendering/mermaid/sankey_rendering.dart';
-import 'package:pirc_mobile/rendering/mermaid/block_rendering.dart';
+import 'package:pirc_render/src/native_markdown.dart';
+import 'package:pirc_render/src/mermaid/git_graph_rendering.dart';
+import 'package:pirc_render/src/mermaid/journey_rendering.dart';
+import 'package:pirc_render/src/mermaid/kanban_rendering.dart';
+import 'package:pirc_render/src/mermaid/sankey_rendering.dart';
+import 'package:pirc_render/src/mermaid/block_rendering.dart';
 import 'live_test.dart' show theme;
 
 void main() {

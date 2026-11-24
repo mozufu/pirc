@@ -7,12 +7,12 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:html/parser.dart' as html;
 import 'package:integration_test/integration_test.dart';
-import 'package:pirc_mobile/rendering/document_background_image.dart';
+import 'package:pirc_render/src/document_background_image.dart';
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/html_buttons.dart';
-import 'package:pirc_mobile/rendering/html_document_content.dart';
+import 'package:pirc_render/src/html_buttons.dart';
+import 'package:pirc_render/src/html_document_content.dart';
 import 'package:pirc_mobile/theme.dart';
 
 class _SaveCapturingGateway extends Gateway {

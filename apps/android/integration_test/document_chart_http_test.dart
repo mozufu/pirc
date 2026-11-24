@@ -10,10 +10,10 @@ import 'package:integration_test/integration_test.dart';
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/document_canvas.dart';
-import 'package:pirc_mobile/rendering/html_background_gradient.dart'
+import 'package:pirc_render/src/document_canvas.dart';
+import 'package:pirc_render/src/html_background_gradient.dart'
     show parseNativeCssColor;
-import 'package:pirc_mobile/rendering/html_form_submission.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
 import 'package:pirc_mobile/theme.dart';
 
 const _fixtureOrigin = String.fromEnvironment('PIRC_CHART_FIXTURE_ORIGIN');

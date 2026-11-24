@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/mermaid/gantt_parser.dart';
-import 'package:pirc_mobile/rendering/mermaid/gantt_rendering.dart';
-import 'package:pirc_mobile/rendering/mermaid/native_mermaid.dart';
+import 'package:pirc_render/src/mermaid/gantt_parser.dart';
+import 'package:pirc_render/src/mermaid/gantt_rendering.dart';
+import 'package:pirc_render/src/mermaid/native_mermaid.dart';
 import '../../test/live_test.dart' show theme;
 import 'capture_fonts.dart';
 

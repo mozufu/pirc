@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:html/parser.dart' as html;
-import 'package:pirc_mobile/rendering/html_buttons.dart';
-import 'package:pirc_mobile/rendering/html_controls.dart';
-import 'package:pirc_mobile/rendering/html_select.dart';
-import 'package:pirc_mobile/rendering/html_range.dart';
+import 'package:pirc_render/src/html_buttons.dart';
+import 'package:pirc_render/src/html_controls.dart';
+import 'package:pirc_render/src/html_select.dart';
+import 'package:pirc_render/src/html_range.dart';
 import 'native_html_test.dart' show shell, tapText;
 
 void main() {

@@ -8,7 +8,7 @@ import 'package:html/parser.dart' as html;
 import 'package:integration_test/integration_test.dart';
 import 'package:pirc_mobile/live/document_scripts.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/document_canvas.dart';
+import 'package:pirc_render/src/document_canvas.dart';
 
 class _ProbeGateway extends Gateway {
   int? fontBytes;

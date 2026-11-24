@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:html/parser.dart' as html;
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
-import 'package:pirc_mobile/rendering/html_form_submission.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
 import 'document_fragment_scroll_case.dart' show FragmentScrollGateway;
 import '../document_navigation_widget_test.dart' show response;
 

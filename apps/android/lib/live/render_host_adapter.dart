@@ -3,10 +3,10 @@ import 'dart:typed_data';
 import 'package:flutter/widgets.dart';
 
 import '../l10n/app_i18n.dart';
-import '../rendering/html_file.dart' show NativeHtmlFilePicker;
-import '../rendering/html_media_spec.dart' show NativeHtmlMediaSpec;
-import '../rendering/render_host.dart';
-import '../rendering/render_l10n.dart' show RenderL10n, RenderLocalizations;
+import 'package:pirc_render/src/html_file.dart' show NativeHtmlFilePicker;
+import 'package:pirc_render/src/html_media_spec.dart' show NativeHtmlMediaSpec;
+import 'package:pirc_render/src/render_host.dart';
+import 'package:pirc_render/src/render_l10n.dart' show RenderL10n, RenderLocalizations;
 import 'document_navigation_state.dart';
 import 'gateway.dart';
 import 'html_file_picker.dart';

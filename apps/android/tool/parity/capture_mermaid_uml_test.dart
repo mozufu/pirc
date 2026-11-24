@@ -6,10 +6,10 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
-import 'package:pirc_mobile/rendering/mermaid/native_mermaid.dart';
-import 'package:pirc_mobile/rendering/mermaid/state_diagram.dart';
-import 'package:pirc_mobile/rendering/mermaid/class_diagram.dart';
+import 'package:pirc_render/src/native_markdown.dart';
+import 'package:pirc_render/src/mermaid/native_mermaid.dart';
+import 'package:pirc_render/src/mermaid/state_diagram.dart';
+import 'package:pirc_render/src/mermaid/class_diagram.dart';
 import '../../test/live_test.dart' show theme;
 import 'capture_fonts.dart';
 

@@ -1,5 +1,5 @@
 import '../l10n/app_i18n.dart';
-import '../rendering/render_host.dart';
+import 'package:pirc_render/src/render_host.dart';
 import 'render_host_adapter.dart' show gatewayImageFetcher;
 import 'dart:async';
 import 'dart:collection';
@@ -8,18 +8,18 @@ import 'dart:math' show Random;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/services.dart' show PlatformException;
-import '../rendering/html_document_content.dart';
-import '../rendering/html_document_urls.dart';
-import '../rendering/html_document_styles.dart';
+import 'package:pirc_render/src/html_document_content.dart';
+import 'package:pirc_render/src/html_document_urls.dart';
+import 'package:pirc_render/src/html_document_styles.dart';
 import 'document_style_loading.dart';
-import '../rendering/html_form_submission.dart';
-import '../rendering/html_file.dart';
-import '../rendering/native_html.dart';
-import '../rendering/document_scroll_anchor.dart';
-import '../rendering/document_fragment.dart';
-import '../rendering/document_disclosures.dart';
-import '../rendering/html_document_controls.dart';
-import '../rendering/document_element_scroll.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
+import 'package:pirc_render/src/html_file.dart';
+import 'package:pirc_render/src/native_html.dart';
+import 'package:pirc_render/src/document_scroll_anchor.dart';
+import 'package:pirc_render/src/document_fragment.dart';
+import 'package:pirc_render/src/document_disclosures.dart';
+import 'package:pirc_render/src/html_document_controls.dart';
+import 'package:pirc_render/src/document_element_scroll.dart';
 import 'gateway.dart';
 import 'document_scripts.dart';
 import 'app_document_route.dart';
@@ -28,7 +28,7 @@ import 'document_response_cache.dart';
 import 'document_referrer.dart';
 import 'document_origin.dart';
 import 'document_download.dart';
-import '../rendering/document_object_urls.dart';
+import 'package:pirc_render/src/document_object_urls.dart';
 
 class NativeDocumentScope extends InheritedWidget
     implements RenderDocumentScope {

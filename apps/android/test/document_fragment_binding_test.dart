@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart' as fm;
-import 'package:pirc_mobile/rendering/native_html.dart';
-import 'package:pirc_mobile/rendering/html_syntax.dart';
-import 'package:pirc_mobile/rendering/html_text_fields.dart';
+import 'package:pirc_render/src/native_html.dart';
+import 'package:pirc_render/src/html_syntax.dart';
+import 'package:pirc_render/src/html_text_fields.dart';
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
-import 'package:pirc_mobile/rendering/html_form_submission.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
 import 'document_navigation_widget_test.dart' show DocumentGateway, response;
 import 'live_test.dart' show theme;
 import 'native_html_test.dart' show tapText;

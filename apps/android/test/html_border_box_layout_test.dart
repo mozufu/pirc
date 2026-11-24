@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/html_text_fields.dart';
-import 'package:pirc_mobile/rendering/html_document_box.dart';
+import 'package:pirc_render/src/html_text_fields.dart';
+import 'package:pirc_render/src/html_document_box.dart';
 import 'html_flex_layout_test.dart' show flexDocument;
 import 'live_test.dart' show theme;
 

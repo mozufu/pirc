@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/mermaid/sequence.dart';
+import 'package:pirc_render/src/mermaid/sequence.dart';
 import '../tool/parity/capture_fonts.dart';
 
 void main() {

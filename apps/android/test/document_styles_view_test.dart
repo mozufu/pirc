@@ -6,8 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/html_document_content.dart';
-import 'package:pirc_mobile/rendering/html_document_styles.dart';
+import 'package:pirc_render/src/html_document_content.dart';
+import 'package:pirc_render/src/html_document_styles.dart';
 
 import 'live_test.dart' show theme;
 

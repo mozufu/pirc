@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:html/parser.dart' as html;
 import 'package:integration_test/integration_test.dart';
 import 'package:pirc_mobile/live/document_download.dart';
-import 'package:pirc_mobile/rendering/document_object_urls.dart';
+import 'package:pirc_render/src/document_object_urls.dart';
 import 'package:pirc_mobile/live/document_scripts.dart';
 import 'package:pirc_mobile/live/gateway.dart';
 

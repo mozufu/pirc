@@ -1,4 +1,4 @@
-import 'package:pirc_mobile/rendering/remote_content_gate.dart';
+import 'package:pirc_render/src/remote_content_gate.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -8,11 +8,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
-import 'package:pirc_mobile/rendering/svg_dimensions.dart';
+import 'package:pirc_render/src/native_markdown.dart';
+import 'package:pirc_render/src/svg_dimensions.dart';
 import 'package:pirc_mobile/live/common.dart';
 import 'package:pirc_mobile/live/markdown_image.dart';
-import 'package:pirc_mobile/rendering/native_image_density.dart';
+import 'package:pirc_render/src/native_image_density.dart';
 import 'live_test.dart' show theme, FakeGateway;
 import '../tool/parity/capture_fonts.dart' show loadParityFonts;
 

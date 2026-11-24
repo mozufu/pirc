@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
+import 'package:pirc_render/src/native_markdown.dart';
 import 'package:pirc_mobile/theme.dart';
 
 // Oracle SHA-256: d7dfadf8528856665e067e784654af76f2074c9dd7b3b0958e9a49f6085ed643

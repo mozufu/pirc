@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:pirc_mobile/rendering/mermaid/requirement_parser.dart';
-import 'package:pirc_mobile/rendering/mermaid/requirement_rendering.dart';
+import 'package:pirc_render/src/mermaid/requirement_parser.dart';
+import 'package:pirc_render/src/mermaid/requirement_rendering.dart';
 import '../tool/parity/capture_fonts.dart' show loadParityFonts;
 
 void main() {

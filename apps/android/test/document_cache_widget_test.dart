@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/html_controls.dart';
-import 'package:pirc_mobile/rendering/html_select_widget.dart';
+import 'package:pirc_render/src/html_controls.dart';
+import 'package:pirc_render/src/html_select_widget.dart';
 import 'document_navigation_widget_test.dart'
     show DocumentGateway, response, app, clickSubmit;
 

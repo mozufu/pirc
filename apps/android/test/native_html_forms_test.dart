@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/html_buttons.dart';
-import 'package:pirc_mobile/rendering/html_form_feedback.dart';
-import 'package:pirc_mobile/rendering/html_form_submission.dart';
-import 'package:pirc_mobile/rendering/html_form_validation.dart';
-import 'package:pirc_mobile/rendering/html_forms.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
+import 'package:pirc_render/src/html_buttons.dart';
+import 'package:pirc_render/src/html_form_feedback.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
+import 'package:pirc_render/src/html_form_validation.dart';
+import 'package:pirc_render/src/html_forms.dart';
+import 'package:pirc_render/src/native_markdown.dart';
 import 'live_test.dart' show theme;
 
 Widget page(

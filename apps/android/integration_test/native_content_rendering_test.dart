@@ -1,14 +1,14 @@
-import 'package:pirc_mobile/rendering/remote_content_gate.dart';
+import 'package:pirc_render/src/remote_content_gate.dart';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:pirc_mobile/theme.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
-import 'package:pirc_mobile/rendering/mermaid/kanban_rendering.dart';
-import 'package:pirc_mobile/rendering/mermaid/sankey_rendering.dart';
-import 'package:pirc_mobile/rendering/mermaid/block_rendering.dart';
+import 'package:pirc_render/src/native_markdown.dart';
+import 'package:pirc_render/src/mermaid/kanban_rendering.dart';
+import 'package:pirc_render/src/mermaid/sankey_rendering.dart';
+import 'package:pirc_render/src/mermaid/block_rendering.dart';
 import 'package:pirc_mobile/live/markdown_image.dart';
 import 'package:pirc_mobile/live/gateway.dart';
 

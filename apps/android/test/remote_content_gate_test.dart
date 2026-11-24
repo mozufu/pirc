@@ -8,11 +8,11 @@ import 'package:pirc_mobile/l10n/app_i18n.dart';
 import 'package:pirc_mobile/live/common.dart';
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
-import 'package:pirc_mobile/rendering/html_document_content.dart';
+import 'package:pirc_render/src/html_document_content.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/remote_content_gate.dart';
+import 'package:pirc_render/src/remote_content_gate.dart';
 import 'package:pirc_mobile/live/timeline_tools.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
+import 'package:pirc_render/src/native_markdown.dart';
 
 import 'live_test.dart' show theme;
 

@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:html/parser.dart' as html;
 import 'package:pirc_mobile/live/document_style_loading.dart';
-import 'package:pirc_mobile/rendering/html_document_styles.dart';
+import 'package:pirc_render/src/html_document_styles.dart';
 
 void main() {
   test(

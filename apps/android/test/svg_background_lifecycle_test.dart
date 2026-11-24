@@ -4,8 +4,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/document_background_image.dart';
-import 'package:pirc_mobile/rendering/html_image_background_decoration.dart';
+import 'package:pirc_render/src/document_background_image.dart';
+import 'package:pirc_render/src/html_image_background_decoration.dart';
 import 'live_test.dart' show FakeGateway;
 
 const key = ValueKey('svg-lifecycle');

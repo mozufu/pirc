@@ -11,10 +11,10 @@ import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/html_buttons.dart';
-import 'package:pirc_mobile/rendering/html_document_content.dart';
-import 'package:pirc_mobile/rendering/html_text_fields.dart';
-import 'package:pirc_mobile/rendering/html_input_sizing.dart';
+import 'package:pirc_render/src/html_buttons.dart';
+import 'package:pirc_render/src/html_document_content.dart';
+import 'package:pirc_render/src/html_text_fields.dart';
+import 'package:pirc_render/src/html_input_sizing.dart';
 
 import '../../test/live_test.dart' show theme;
 import 'capture_fonts.dart';

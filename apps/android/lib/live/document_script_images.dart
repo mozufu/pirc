@@ -7,8 +7,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../rendering/native_raster_images.dart';
-import '../rendering/svg_dimensions.dart';
+import 'package:pirc_render/src/native_raster_images.dart';
+import 'package:pirc_render/src/svg_dimensions.dart';
 import 'gateway.dart';
 
 typedef NativeDocumentImageDecoder =

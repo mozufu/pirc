@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
-import 'package:pirc_mobile/rendering/mermaid/native_mermaid.dart';
-import 'package:pirc_mobile/rendering/mermaid/pie.dart';
-import 'package:pirc_mobile/rendering/mermaid/flowchart.dart';
-import 'package:pirc_mobile/rendering/mermaid/sequence.dart';
-import 'package:pirc_mobile/rendering/mermaid/class_diagram.dart';
-import 'package:pirc_mobile/rendering/mermaid/state_diagram.dart';
-import 'package:pirc_mobile/rendering/mermaid/er_rendering.dart';
+import 'package:pirc_render/src/native_markdown.dart';
+import 'package:pirc_render/src/mermaid/native_mermaid.dart';
+import 'package:pirc_render/src/mermaid/pie.dart';
+import 'package:pirc_render/src/mermaid/flowchart.dart';
+import 'package:pirc_render/src/mermaid/sequence.dart';
+import 'package:pirc_render/src/mermaid/class_diagram.dart';
+import 'package:pirc_render/src/mermaid/state_diagram.dart';
+import 'package:pirc_render/src/mermaid/er_rendering.dart';
 import 'live_test.dart' show theme;
 
 void main() {

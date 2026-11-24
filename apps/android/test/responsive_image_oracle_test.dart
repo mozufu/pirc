@@ -7,10 +7,10 @@ import 'package:html/parser.dart' as html;
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
 import 'package:pirc_mobile/live/markdown_image.dart';
-import 'package:pirc_mobile/rendering/html_document_content.dart';
-import 'package:pirc_mobile/rendering/html_document_styles.dart';
-import 'package:pirc_mobile/rendering/html_responsive_image.dart';
-import 'package:pirc_mobile/rendering/native_image_frame.dart';
+import 'package:pirc_render/src/html_document_content.dart';
+import 'package:pirc_render/src/html_document_styles.dart';
+import 'package:pirc_render/src/html_responsive_image.dart';
+import 'package:pirc_render/src/native_image_frame.dart';
 import 'live_test.dart' show FakeGateway, theme;
 import 'markdown_image_test.dart' show waitImage;
 

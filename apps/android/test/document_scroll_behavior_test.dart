@@ -1,14 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:html/parser.dart' as html;
-import 'package:pirc_mobile/rendering/document_computed_styles.dart';
-import 'package:pirc_mobile/rendering/html_document_styles.dart';
+import 'package:pirc_render/src/document_computed_styles.dart';
+import 'package:pirc_render/src/html_document_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show OverflowBoxFit;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/document_element_scroll.dart';
-import 'package:pirc_mobile/rendering/document_scroll_commands.dart';
-import 'package:pirc_mobile/rendering/document_scroll_anchor.dart';
+import 'package:pirc_render/src/document_element_scroll.dart';
+import 'package:pirc_render/src/document_scroll_commands.dart';
+import 'package:pirc_render/src/document_scroll_anchor.dart';
 import 'live_test.dart' show theme;
 
 final fixture =

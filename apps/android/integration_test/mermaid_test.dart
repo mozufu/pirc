@@ -4,10 +4,10 @@ import 'package:integration_test/integration_test.dart';
 import 'package:pirc_mobile/live/app.dart';
 import 'package:pirc_mobile/live/gateway.dart';
 import 'package:pirc_mobile/theme.dart';
-import 'package:pirc_mobile/rendering/mermaid/native_mermaid.dart';
-import 'package:pirc_mobile/rendering/mermaid/flowchart.dart';
-import 'package:pirc_mobile/rendering/mermaid/sequence.dart';
-import 'package:pirc_mobile/rendering/mermaid/pie.dart';
+import 'package:pirc_render/src/mermaid/native_mermaid.dart';
+import 'package:pirc_render/src/mermaid/flowchart.dart';
+import 'package:pirc_render/src/mermaid/sequence.dart';
+import 'package:pirc_render/src/mermaid/pie.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();

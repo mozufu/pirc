@@ -4,10 +4,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/mermaid/gantt_parser.dart';
-import 'package:pirc_mobile/rendering/mermaid/gantt_rendering.dart';
-import 'package:pirc_mobile/rendering/mermaid/native_mermaid.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
+import 'package:pirc_render/src/mermaid/gantt_parser.dart';
+import 'package:pirc_render/src/mermaid/gantt_rendering.dart';
+import 'package:pirc_render/src/mermaid/native_mermaid.dart';
+import 'package:pirc_render/src/native_markdown.dart';
 import '../tool/parity/capture_fonts.dart';
 import 'live_test.dart' show theme;
 

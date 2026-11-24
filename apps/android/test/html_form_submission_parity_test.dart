@@ -6,10 +6,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:html/parser.dart' as html;
-import 'package:pirc_mobile/rendering/html_buttons.dart';
-import 'package:pirc_mobile/rendering/html_form_submission.dart';
-import 'package:pirc_mobile/rendering/native_html.dart';
-import 'package:pirc_mobile/rendering/html_named_properties.dart';
+import 'package:pirc_render/src/html_buttons.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
+import 'package:pirc_render/src/native_html.dart';
+import 'package:pirc_render/src/html_named_properties.dart';
 import 'native_html_forms_test.dart' show page, forms, entries;
 import 'native_html_test.dart' show structure;
 

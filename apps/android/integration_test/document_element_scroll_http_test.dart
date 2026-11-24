@@ -9,8 +9,8 @@ import 'package:integration_test/integration_test.dart';
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/html_form_submission.dart';
-import 'package:pirc_mobile/rendering/html_buttons.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
+import 'package:pirc_render/src/html_buttons.dart';
 import 'package:pirc_mobile/theme.dart';
 
 // Exact 20-case oracle data from the dedicated Chromium 153 capture, embedded

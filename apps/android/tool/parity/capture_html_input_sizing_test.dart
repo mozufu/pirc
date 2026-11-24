@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:html/parser.dart' as html;
 import 'package:html/dom.dart' as dom;
-import 'package:pirc_mobile/rendering/html_text_fields.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
+import 'package:pirc_render/src/html_text_fields.dart';
+import 'package:pirc_render/src/native_markdown.dart';
 import '../../test/live_test.dart' show theme;
 import 'capture_fonts.dart';
 

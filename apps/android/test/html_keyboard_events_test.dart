@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/html_keyboard_events.dart';
+import 'package:pirc_render/src/html_keyboard_events.dart';
 import 'package:pirc_mobile/l10n/app_i18n.dart';
 
 void main() {

@@ -4,9 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_math_fork/flutter_math.dart'
     show MathStyle, TexParserSettings;
-import 'package:pirc_mobile/rendering/native_markdown.dart';
-import 'package:pirc_mobile/rendering/native_math_paragraph.dart';
-import 'package:pirc_mobile/rendering/native_tex_adapter.dart';
+import 'package:pirc_render/src/native_markdown.dart';
+import 'package:pirc_render/src/native_math_paragraph.dart';
+import 'package:pirc_render/src/native_tex_adapter.dart';
 
 import 'live_test.dart' show theme;
 

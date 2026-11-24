@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_mobile/live/document_dynamic_styles.dart';
 import 'package:pirc_mobile/live/document_style_loading.dart';
-import 'package:pirc_mobile/rendering/html_document_styles.dart';
+import 'package:pirc_render/src/html_document_styles.dart';
 
 const _baseUrl = 'https://example.test/page/';
 

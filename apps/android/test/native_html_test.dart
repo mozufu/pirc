@@ -8,9 +8,9 @@ import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html;
-import 'package:pirc_mobile/rendering/code_block.dart';
-import 'package:pirc_mobile/rendering/native_html.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
+import 'package:pirc_render/src/code_block.dart';
+import 'package:pirc_render/src/native_html.dart';
+import 'package:pirc_render/src/native_markdown.dart';
 import 'package:pirc_mobile/live/gateway.dart';
 import 'live_test.dart' show theme;
 

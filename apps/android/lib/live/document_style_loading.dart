@@ -2,8 +2,8 @@ import '../l10n/app_i18n.dart';
 import 'package:html/parser.dart' as html;
 import 'package:flutter/services.dart';
 
-import '../rendering/html_document_content.dart';
-import '../rendering/html_document_styles.dart';
+import 'package:pirc_render/src/html_document_content.dart';
+import 'package:pirc_render/src/html_document_styles.dart';
 import 'gateway.dart';
 import 'document_referrer.dart';
 import 'dart:convert';

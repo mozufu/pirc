@@ -6,13 +6,13 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import '../rendering/svg_dimensions.dart';
+import 'package:pirc_render/src/svg_dimensions.dart';
 import 'common.dart';
 import 'timeline_models.dart';
 import 'web_controls.dart';
 import 'timeline_image_wrap.dart';
 import 'gateway.dart';
-import '../rendering/remote_content_gate.dart';
+import 'package:pirc_render/src/remote_content_gate.dart';
 
 /// An image attached to a timeline entry. Inline bytes (`base64`, `data:`)
 /// display directly; an entry that names a URL is a remote reference, shown as

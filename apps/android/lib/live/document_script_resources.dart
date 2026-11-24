@@ -1,7 +1,7 @@
 import '../l10n/app_i18n.dart';
 import 'dart:convert';
 import 'dart:typed_data';
-import '../rendering/html_document_content.dart';
+import 'package:pirc_render/src/html_document_content.dart';
 import 'gateway.dart';
 
 /// Only the native transport decides origins, credentials, CORS, MIME and SRI.

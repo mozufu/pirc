@@ -1,7 +1,7 @@
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html;
 
-import '../rendering/html_document_content.dart';
+import 'package:pirc_render/src/html_document_content.dart';
 import 'app_document_route.dart';
 
 const _pircDescription =

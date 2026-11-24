@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/native_math_block.dart';
-import 'package:pirc_mobile/rendering/native_tex_adapter.dart';
+import 'package:pirc_render/src/native_math_block.dart';
+import 'package:pirc_render/src/native_tex_adapter.dart';
 
 import 'capture_fonts.dart' show loadParityFonts;
 import '../../test/live_test.dart' show theme;

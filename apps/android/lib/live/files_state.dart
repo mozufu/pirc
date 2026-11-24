@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import '../rendering/file_links.dart';
+import 'package:pirc_render/src/file_links.dart';
 import 'gateway.dart';
 
 class FilesState extends ChangeNotifier {

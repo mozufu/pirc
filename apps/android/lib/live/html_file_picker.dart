@@ -2,7 +2,7 @@ import '../l10n/app_i18n.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import '../rendering/html_file.dart';
+import 'package:pirc_render/src/html_file.dart';
 import 'gateway.dart';
 
 /// Adapts the Android attachment picker wire format to native HTML file inputs.

@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/markdown_stream.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
+import 'package:pirc_render/src/markdown_stream.dart';
+import 'package:pirc_render/src/native_markdown.dart';
 import 'live_test.dart' show theme;
 
 final streamTheme = theme.build(Brightness.light);

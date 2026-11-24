@@ -15,12 +15,12 @@ import 'package:flutter_math_fork/src/ast/nodes/style.dart';
 import 'package:flutter_math_fork/src/ast/nodes/symbol.dart';
 import 'package:flutter_math_fork/src/ast/syntax_tree.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
-import 'package:pirc_mobile/rendering/native_math_block.dart';
-import 'package:pirc_mobile/rendering/native_inline_math.dart'
+import 'package:pirc_render/src/native_markdown.dart';
+import 'package:pirc_render/src/native_math_block.dart';
+import 'package:pirc_render/src/native_inline_math.dart'
     show RenderNativeInlineMath;
-import 'package:pirc_mobile/rendering/native_math_paragraph.dart';
-import 'package:pirc_mobile/rendering/native_tex_adapter.dart';
+import 'package:pirc_render/src/native_math_paragraph.dart';
+import 'package:pirc_render/src/native_tex_adapter.dart';
 
 import '../../test/live_test.dart' show theme;
 import 'capture_fonts.dart' show loadParityFonts;

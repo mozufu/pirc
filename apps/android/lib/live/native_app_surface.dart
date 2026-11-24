@@ -2,7 +2,7 @@ import '../l10n/app_i18n.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../rendering/native_equation_numbers.dart';
+import 'package:pirc_render/src/native_equation_numbers.dart';
 
 /// Keeps a local Navigator stack for each retained App history surface while
 /// mounting [child] under only the active surface's root route.

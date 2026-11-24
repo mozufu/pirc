@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_mobile/live/common.dart';
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
-import 'package:pirc_mobile/rendering/html_text_fields.dart';
+import 'package:pirc_render/src/html_text_fields.dart';
 
 import 'document_navigation_widget_test.dart'
     show DocumentGateway, clickSubmit, response;

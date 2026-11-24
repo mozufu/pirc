@@ -9,8 +9,8 @@ import 'package:integration_test/integration_test.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
 import 'package:pirc_mobile/live/document_scripts.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/html_document_styles.dart';
-import 'package:pirc_mobile/rendering/html_form_submission.dart';
+import 'package:pirc_render/src/html_document_styles.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
 
 const _page = r'''<!doctype html>
 <html><head><base id="base" href="/base/one/">

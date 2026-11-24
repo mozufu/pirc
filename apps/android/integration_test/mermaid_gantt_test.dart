@@ -4,7 +4,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:pirc_mobile/live/app.dart';
 import 'package:pirc_mobile/live/gateway.dart';
 import 'package:pirc_mobile/live/scoped_gateway.dart';
-import 'package:pirc_mobile/rendering/mermaid/gantt_rendering.dart';
+import 'package:pirc_render/src/mermaid/gantt_rendering.dart';
 import 'package:pirc_mobile/theme.dart';
 
 void main() {

@@ -6,14 +6,14 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart' as fm;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html;
-import 'package:pirc_mobile/rendering/document_element_scroll.dart';
-import 'package:pirc_mobile/rendering/document_layout.dart';
-import 'package:pirc_mobile/rendering/document_layout_visibility.dart';
-import 'package:pirc_mobile/rendering/document_offsets.dart';
-import 'package:pirc_mobile/rendering/document_margin_collapse.dart';
-import 'package:pirc_mobile/rendering/html_document_styles.dart';
-import 'package:pirc_mobile/rendering/html_syntax.dart';
-import 'package:pirc_mobile/rendering/native_html.dart';
+import 'package:pirc_render/src/document_element_scroll.dart';
+import 'package:pirc_render/src/document_layout.dart';
+import 'package:pirc_render/src/document_layout_visibility.dart';
+import 'package:pirc_render/src/document_offsets.dart';
+import 'package:pirc_render/src/document_margin_collapse.dart';
+import 'package:pirc_render/src/html_document_styles.dart';
+import 'package:pirc_render/src/html_syntax.dart';
+import 'package:pirc_render/src/native_html.dart';
 
 import 'live_test.dart' show theme;
 

@@ -5,10 +5,10 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/mermaid/c4_layout.dart';
-import 'package:pirc_mobile/rendering/mermaid/c4_rendering.dart';
-import 'package:pirc_mobile/rendering/mermaid/native_mermaid.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
+import 'package:pirc_render/src/mermaid/c4_layout.dart';
+import 'package:pirc_render/src/mermaid/c4_rendering.dart';
+import 'package:pirc_render/src/mermaid/native_mermaid.dart';
+import 'package:pirc_render/src/native_markdown.dart';
 import 'package:pirc_mobile/theme.dart';
 
 final _parserFixture = _readJson([

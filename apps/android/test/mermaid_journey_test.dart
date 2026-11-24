@@ -3,10 +3,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/mermaid/journey_model.dart';
-import 'package:pirc_mobile/rendering/mermaid/journey_parser.dart';
-import 'package:pirc_mobile/rendering/mermaid/journey_rendering.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
+import 'package:pirc_render/src/mermaid/journey_model.dart';
+import 'package:pirc_render/src/mermaid/journey_parser.dart';
+import 'package:pirc_render/src/mermaid/journey_rendering.dart';
+import 'package:pirc_render/src/native_markdown.dart';
 
 import '../tool/parity/capture_fonts.dart' show loadParityFonts;
 import 'live_test.dart' show theme;

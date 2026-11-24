@@ -6,12 +6,12 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/html_date.dart';
-import 'package:pirc_mobile/rendering/html_file.dart';
-import 'package:pirc_mobile/rendering/html_form_feedback.dart';
-import 'package:pirc_mobile/rendering/html_form_validation.dart';
-import 'package:pirc_mobile/rendering/html_syntax.dart';
-import 'package:pirc_mobile/rendering/native_html.dart';
+import 'package:pirc_render/src/html_date.dart';
+import 'package:pirc_render/src/html_file.dart';
+import 'package:pirc_render/src/html_form_feedback.dart';
+import 'package:pirc_render/src/html_form_validation.dart';
+import 'package:pirc_render/src/html_syntax.dart';
+import 'package:pirc_render/src/native_html.dart';
 import '../../test/live_test.dart' show theme;
 import 'capture_fonts.dart';
 

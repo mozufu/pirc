@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_mobile/live/app_document_route.dart';
 import 'package:pirc_mobile/live/app_document_shell.dart';
-import 'package:pirc_mobile/rendering/html_document_content.dart';
+import 'package:pirc_render/src/html_document_content.dart';
 
 const _root = 'https://pirc.example/';
 const _description =

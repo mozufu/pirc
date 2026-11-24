@@ -9,7 +9,23 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
+  csslib: 1.0.2
+  flutter_markdown_plus: 1.0.12
+  # Exact pin: the math renderer imports flutter_math_fork's internal
+  # `src/` libraries (parser, AST and layout), which change without notice
+  # between releases. Upgrade only together with the math tests.
+  flutter_math_fork: 0.7.4
+  flutter_svg: 2.3.0
+  flutter_widget_from_html_core: 0.17.4
+  html: 0.15.6
+  lucide_icons_flutter: ^3.0.0
+  markdown: ^7.3.1
+  re_highlight: ^0.0.3
+  xml: 7.0.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+flutter:
+  assets:
+    - assets/d3-sankey-license.txt

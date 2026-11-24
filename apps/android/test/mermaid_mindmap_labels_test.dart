@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/mermaid/mindmap_parser.dart';
-import 'package:pirc_mobile/rendering/mermaid/mindmap_rendering.dart';
+import 'package:pirc_render/src/mermaid/mindmap_parser.dart';
+import 'package:pirc_render/src/mermaid/mindmap_rendering.dart';
 import '../tool/parity/capture_fonts.dart' show loadParityFonts;
 
 List<({String text, TextStyle style})> runs(

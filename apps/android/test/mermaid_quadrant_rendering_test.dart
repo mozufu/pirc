@@ -3,10 +3,10 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/rendering/mermaid/native_mermaid.dart';
-import 'package:pirc_mobile/rendering/mermaid/quadrant_parser.dart';
-import 'package:pirc_mobile/rendering/mermaid/quadrant_rendering.dart';
-import 'package:pirc_mobile/rendering/native_markdown.dart';
+import 'package:pirc_render/src/mermaid/native_mermaid.dart';
+import 'package:pirc_render/src/mermaid/quadrant_parser.dart';
+import 'package:pirc_render/src/mermaid/quadrant_rendering.dart';
+import 'package:pirc_render/src/native_markdown.dart';
 import 'live_test.dart' show theme;
 
 void main() {

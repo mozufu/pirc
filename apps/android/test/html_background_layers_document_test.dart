@@ -6,10 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
 import 'document_navigation_widget_test.dart' show DocumentGateway, response;
-import 'package:pirc_mobile/rendering/html_form_submission.dart';
-import 'package:pirc_mobile/rendering/html_background_layers.dart';
-import 'package:pirc_mobile/rendering/html_gradient_decoration.dart';
-import 'package:pirc_mobile/rendering/html_image_background_decoration.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
+import 'package:pirc_render/src/html_background_layers.dart';
+import 'package:pirc_render/src/html_gradient_decoration.dart';
+import 'package:pirc_render/src/html_image_background_decoration.dart';
 
 import 'live_test.dart' show theme;
 

@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'package:pirc_mobile/rendering/document_canvas.dart';
+import 'package:pirc_render/src/document_canvas.dart';
 import 'package:flutter/foundation.dart' show debugPrintSynchronously;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,7 +10,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:pirc_mobile/live/document_navigation.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_mobile/rendering/html_form_submission.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
 import 'package:pirc_mobile/theme.dart';
 
 import 'document_chart_types_test.dart' show verifyPaint, captureCanvasLayer;
