@@ -91,6 +91,14 @@ fn invalid() -> ApiError {
 }
 
 impl DeviceTokens {
+    /// How long a newly paired device lives, for approval screens.
+    pub fn pairing_terms(&self) -> crate::management::PairingTerms {
+        crate::management::PairingTerms {
+            idle_days: self.idle_ms / 86_400_000,
+            max_days: self.max_age_ms / 86_400_000,
+        }
+    }
+
     pub fn new(db: Arc<Db>, idle_ms: u64, max_age_ms: u64) -> Arc<Self> {
         Arc::new(Self {
             db,

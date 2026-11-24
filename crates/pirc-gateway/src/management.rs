@@ -35,10 +35,19 @@ const VERIFIER_LENGTH: usize = 43;
 const GRANT_TOKEN_PREFIX: &str = "pirc_mgmt_";
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
 pub enum ManagementCapability {
+    #[serde(rename = "providers")]
     Providers,
-    Devices,
+    /// List paired devices.
+    #[serde(rename = "devices:read")]
+    DevicesRead,
+    /// Revoke a paired device.
+    #[serde(rename = "devices:revoke")]
+    DevicesRevoke,
+    /// Pair a new long-lived device; the approval screen says so and shows the
+    /// lifetime in [`ManagementRequestView::pairing`].
+    #[serde(rename = "devices:pair")]
+    DevicesPair,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -61,6 +70,17 @@ pub struct ManagementRequestView {
     pub server_now: i64,
     pub device_name: String,
     pub capabilities: Vec<ManagementCapability>,
+    /// Lifetime of a device this grant could pair; present with `devices:pair`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pairing: Option<PairingTerms>,
+}
+
+/// What approving `devices:pair` allows: each new device lives this long.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PairingTerms {
+    pub idle_days: i64,
+    pub max_days: i64,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -109,7 +129,7 @@ struct ManagementRequest {
 }
 
 impl ManagementRequest {
-    fn view(&self, stamp: i64) -> ManagementRequestView {
+    fn view(&self, stamp: i64, terms: PairingTerms) -> ManagementRequestView {
         ManagementRequestView {
             id: self.id.clone(),
             status: self.status,
@@ -117,6 +137,10 @@ impl ManagementRequest {
             server_now: stamp,
             device_name: self.device_name.clone(),
             capabilities: self.capabilities.clone(),
+            pairing: self
+                .capabilities
+                .contains(&ManagementCapability::DevicesPair)
+                .then_some(terms),
         }
     }
 
@@ -382,7 +406,7 @@ impl NativeManagementGrants {
             grant_token_hash: None,
             cleanup_at: request_expires_at.saturating_add(TERMINAL_RETENTION_MS),
         };
-        let view = request.view(stamp);
+        let view = request.view(stamp, self.devices.pairing_terms());
         state.requests.insert(id.clone(), request);
         Ok(ManagementRequestCreated {
             request: view,
@@ -399,7 +423,7 @@ impl NativeManagementGrants {
         let stamp = self.stamp();
         let mut state = self.lock();
         let request = self.owned_request(&mut state, owner, device_id, id, stamp)?;
-        Ok(request.view(stamp))
+        Ok(request.view(stamp, self.devices.pairing_terms()))
     }
 
     pub fn decide(
@@ -434,7 +458,7 @@ impl NativeManagementGrants {
             request.cleanup_at = stamp.saturating_add(TERMINAL_RETENTION_MS);
             ManagementRequestStatus::Denied
         };
-        Ok(request.view(stamp))
+        Ok(request.view(stamp, self.devices.pairing_terms()))
     }
 
     pub fn claim(
@@ -512,7 +536,7 @@ impl NativeManagementGrants {
             Self::finish(&mut state, id, ManagementRequestStatus::Revoked, stamp);
         }
         let request = state.requests.get(id).ok_or_else(request_not_found)?;
-        Ok(request.view(stamp))
+        Ok(request.view(stamp, self.devices.pairing_terms()))
     }
 }
 
@@ -603,12 +627,14 @@ fn capability_for_route(method: &str, pathname: &str) -> Option<ManagementCapabi
     {
         return Some(ManagementCapability::Providers);
     }
-    if (method == "GET" || method == "POST") && pathname == "/api/devices"
-        || method == "DELETE" && one_segment_after(pathname, "/api/devices/")
-    {
-        return Some(ManagementCapability::Devices);
+    match method.as_str() {
+        "GET" if pathname == "/api/devices" => Some(ManagementCapability::DevicesRead),
+        "POST" if pathname == "/api/devices" => Some(ManagementCapability::DevicesPair),
+        "DELETE" if one_segment_after(pathname, "/api/devices/") => {
+            Some(ManagementCapability::DevicesRevoke)
+        }
+        _ => None,
     }
-    None
 }
 
 fn one_segment_after(pathname: &str, prefix: &str) -> bool {
@@ -965,7 +991,7 @@ mod tests {
             "owner",
             &phone.id,
             &secret,
-            vec![ManagementCapability::Devices],
+            vec![ManagementCapability::DevicesRead],
         );
         let first_grant = grant(&management, "owner", &phone.id, &first.request.id, &secret);
         assert!(management.authorize(
@@ -1065,12 +1091,77 @@ mod tests {
             "owner",
             &phone.id,
             &secret,
-            vec![ManagementCapability::Devices],
+            vec![ManagementCapability::DevicesRead],
         );
         clock.fetch_add(MANAGEMENT_REQUEST_TTL_MS, Ordering::SeqCst);
         let expired = management.view("owner", None, &created.request.id).unwrap();
         assert_eq!(expired.status, ManagementRequestStatus::Expired);
         assert_eq!(expired.expires_at, created.request.expires_at);
+    }
+
+    #[test]
+    fn device_capabilities_are_separate_and_pairing_shows_its_lifetime() {
+        assert_eq!(
+            capability_for_route("GET", "/api/devices"),
+            Some(ManagementCapability::DevicesRead)
+        );
+        assert_eq!(
+            capability_for_route("POST", "/api/devices"),
+            Some(ManagementCapability::DevicesPair)
+        );
+        assert_eq!(
+            serde_json::to_value([
+                ManagementCapability::DevicesRead,
+                ManagementCapability::DevicesRevoke,
+                ManagementCapability::DevicesPair,
+            ])
+            .unwrap(),
+            serde_json::json!(["devices:read", "devices:revoke", "devices:pair"])
+        );
+        assert!(
+            serde_json::from_value::<ManagementCapability>(serde_json::json!("devices")).is_err()
+        );
+
+        let (devices, management, _) = setup();
+        let (phone, _) = devices.create("owner", "Pixel").unwrap();
+        let secret = verifier();
+        let read_only = request(
+            &management,
+            "owner",
+            &phone.id,
+            &secret,
+            vec![ManagementCapability::DevicesRead],
+        );
+        assert_eq!(read_only.request.pairing, None);
+        let token = grant(
+            &management,
+            "owner",
+            &phone.id,
+            &read_only.request.id,
+            &secret,
+        )
+        .token;
+        assert!(management.authorize("owner", &phone.id, &token, "GET", "/api/devices"));
+        assert!(!management.authorize("owner", &phone.id, &token, "POST", "/api/devices"));
+        assert!(!management.authorize("owner", &phone.id, &token, "DELETE", "/api/devices/x"));
+
+        let secret = verifier();
+        let pairing = management
+            .create(
+                "owner",
+                &phone.id,
+                &digest(&secret),
+                vec![ManagementCapability::DevicesPair],
+                true,
+            )
+            .unwrap();
+        assert_eq!(
+            pairing.request.pairing,
+            Some(PairingTerms {
+                idle_days: 7,
+                max_days: 30
+            })
+        );
     }
 
     #[test]
@@ -1129,7 +1220,7 @@ mod tests {
         );
         assert_eq!(
             capability_for_route("DELETE", "/api/devices/device_1"),
-            Some(ManagementCapability::Devices)
+            Some(ManagementCapability::DevicesRevoke)
         );
         for (method, path) in [
             ("HEAD", "/api/providers"),

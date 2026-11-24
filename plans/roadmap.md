@@ -13,7 +13,7 @@ acceptance, activation.
 | ------------------------------------------------------------- | -------- | ----------- | ---------- | --------------------------------------------------- |
 | [M0 Unify the working tree](#m0-unify-the-working-tree)       | complete | complete    | n/a        | `e1a08db9`, `162c113b`                              |
 | [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement) |
-| [M2 Backend baseline](#m2-backend-baseline)                   | complete | in progress |            | steps 1–4 done                                      |
+| [M2 Backend baseline](#m2-backend-baseline)                   | complete | in progress |            | steps 1–5 and 7 done; 6 moved to M4                 |
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete |             |            | P20                                                 |
 | [M4 Pots backend](#m4-pots-backend)                           | complete |             |            | Q6                                                  |
 | [M5 Client foundation](#m5-client-foundation)                 | complete |             |            |                                                     |
