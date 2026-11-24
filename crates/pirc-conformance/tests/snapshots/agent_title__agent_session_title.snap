@@ -982,6 +982,7 @@ expression: r.into_value()
         ],
         "modelId": "fake-model",
         "providerName": "fake",
+        "purpose": "title",
         "sessionId": "<hex16:1>-title",
         "systemPrompt": "You name coding-agent sessions from the user's first message.\nWrite a concise title of 3 to 7 words that captures the task (for example \"Fix login button on mobile\").\nUse the same language as the user's message. Use sentence case, no quotes, no emoji, and no trailing punctuation.\nWrap the title in <title></title> tags and output nothing else. If the message does not describe a task or topic, output <title>none</title>.",
         "thinking": "off",
