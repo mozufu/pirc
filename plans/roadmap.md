@@ -16,7 +16,7 @@ acceptance, activation.
 | [M2 Backend baseline](#m2-backend-baseline)                   | complete | in progress |            | steps 1–5 and 7 done; 6 moved to M4                 |
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete |             |            | P20                                                 |
 | [M4 Pots backend](#m4-pots-backend)                           | complete |             |            | Q6                                                  |
-| [M5 Client foundation](#m5-client-foundation)                 | complete |             |            |                                                     |
+| [M5 Client foundation](#m5-client-foundation)                 | complete | in progress |            | steps detailed                                      |
 | [M6 Work and settings screens](#m6-work-and-settings-screens) | outline  |             |            |                                                     |
 | [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                     |
 | [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                     |
@@ -207,25 +207,114 @@ Specification: [pots.md](pots.md). Steps (each a pushable slice):
 
 ## M5 Client foundation
 
-Specification: [client.md](client.md). Steps:
+Specification: [client.md](client.md). The client work touches only `pubspec.yaml`
+(root), `apps/app`, `packages/`, `apps/android` and a new CI workflow; it runs beside
+the backend milestones. Flutter comes from the Nix shell (`nix develop`, Flutter
+3.44.4); Android builds need `ANDROID_HOME` set to a local SDK. Each push runs
+`flutter analyze` on the touched members and their fast tests.
 
-1. **Workspace layout**: Dart pub workspace, `apps/app` (new Flutter app, Android and
-   Web targets), `packages/pirc_render`, `packages/pirc_client`, `packages/pirc_ui`.
-   The old `apps/android` keeps building until M8.
-   The Android app has two Gradle flavors from the start, `standard` and `tailscale`
-   ([client.md](client.md#embedded-tailscale-m10)), selected together with
-   `--dart-define=PIRC_TAILSCALE`; until M10 they differ only in application ID.
-2. **Rendering package**: break the `rendering/` ↔ `live/` cycle, inject localization,
-   theme and host services, move engine files out of `live/`, put tier-3 code behind
-   interfaces so chat Markdown does not compile it in, add test tags.
-3. **Client package**: API models, the timeline reducer ported to Dart and tested
-   against `fixtures/timeline/`, HTTP and WebSocket transport with Web and Android
-   adapters, reconnect and cursor resume, command identities and uncertain-outcome
-   markers.
-4. **State and app shell**: Riverpod, routing, adaptive scaffold with the four layouts,
-   design tokens from `docs/design/tokens.json`, light/dark, zh-TW and en catalogs.
-5. **Test layout**: fast default suite per package, tags for slow/device/tier-3,
-   safety regressions in the default suite, CI jobs updated.
+1. **Workspace layout.**
+   - Root `pubspec.yaml` declares a pub workspace (Dart ≥ 3.6) with the members
+     `apps/android`, `apps/app`, `packages/pirc_render`, `packages/pirc_render_document`
+     (added in step 2), `packages/pirc_client` and `packages/pirc_ui`. Every member has
+     `resolution: workspace`; one `pubspec.lock` at the root replaces
+     `apps/android/pubspec.lock`, so all members share the old app's pinned versions
+     (`csslib`, `flutter_math_fork`, `flutter_svg`, …).
+   - `apps/app`: `flutter create --platforms android,web`, package `pirc_app`.
+     Gradle product flavors `standard` (`dev.pirc.mobile`) and `tailscale`
+     (`dev.pirc.mobile.tailscale`, through `applicationIdSuffix`), dimension
+     `network`. Dart reads `bool.fromEnvironment('PIRC_TAILSCALE')`; a startup check
+     refuses a build whose define does not match the flavor (the flavor is passed to
+     Dart through `appFlavor`). The old app stays `dev.pirc.mobile.preview`, so both
+     install side by side.
+   - Packages start empty with a library file, `analysis_options.yaml` and one test.
+     Done when: `flutter pub get` at the root resolves; `flutter analyze` passes for
+     `apps/android` and `apps/app`; `flutter build apk --debug --flavor standard
+--dart-define=PIRC_TAILSCALE=false` and `flutter build web` succeed for `apps/app`.
+2. **Rendering package** (inventory and order in
+   [client.md](client.md#rendering)). Every sub-step keeps `apps/android` analyzing:
+   1. _Break the cycle inside `apps/android`._ `rendering/` imports six `live/` files
+      (`document_background_image`, `remote_content_gate`, `html_media`,
+      `html_file_picker`, `document_object_urls`, `document_navigation_state`). Add a
+      `RenderHost` (inherited widget) in `rendering/render_host.dart` with interfaces
+      for the image loader and held-image policy, media factory, file picker, object
+      URLs, background images and the document scope; `live/` implements them and the
+      old app installs its implementation above `MaterialApp`. Gateway-free widgets
+      among those files (the held-image gate, media boxes) move into `rendering/`.
+   2. _Inject localization and theme._ `rendering/render_l10n.dart` gives the package
+      its own `tr(source, [values])` with the same signature, which calls an
+      injectable `RenderLocalizations` delegate (default: English with parameter
+      substitution); the 82 files change only their import. The old app installs
+      a delegate backed by `AppI18n` in `main()` and in `test/flutter_test_config.dart`.
+      The seven `PircColors` users read a `RenderColors` `ThemeExtension` instead.
+   3. _Move._ `git mv apps/android/lib/rendering packages/pirc_render/lib/src`; the
+      library `package:pirc_render/pirc_render.dart` exports the chat surface (Markdown,
+      code, math, Mermaid, static HTML and forms). Imports in `lib/`, `test/`,
+      `integration_test/` and `tool/` are rewritten in the same commit. The d3-sankey
+      licence asset that `licenses.dart` registers moves with the code and is read as
+      `packages/pirc_render/assets/…`. Renderer tests that import no `live/` code move to
+      `packages/pirc_render/test`.
+   4. _Tier 3 behind interfaces._ Script hooks, Canvas, computed-style export and the
+      dialog top layer move out of `native_html.dart` into
+      `packages/pirc_render_document`, which depends on `pirc_render` and plugs in
+      through a `DocumentRuntime` interface (null for chat). The `live/document_*`
+      files and their Kotlin counterparts stay in `apps/android`: they depend on the
+      old Gateway client and are rebuilt on `pirc_client` in M8. A default-suite test
+      walks the transitive imports of `package:pirc_render/pirc_render.dart` and fails
+      if a tier-3 file is reachable.
+   5. _Web compile._ Replace `dart:io` in `native_raster_images.dart` with a
+      conditional import, and the 64-bit `ByteData` accessors in
+      `mermaid/mindmap_cose.dart` with two 32-bit reads. Pin `flutter_math_fork` to an
+      exact version, with a comment that 42 imports use its internals.
+      Done when: `pirc_render` analyzes with no `apps/android` import; the import-graph
+      test passes; the moved fast tests pass; `apps/android` analyzes.
+3. **Client package** (`pirc_client`, pure Dart so `dart test` runs it).
+   - API models for the capability document, session snapshot, events, command
+     results and errors, written against the Gateway routes on `main` (M2.1–M2.4),
+     not against the old clients.
+   - Timeline reducer ported from `core/timeline/{Timeline,Events,PiMessages}.kt`,
+     with the fixture harness from `TimelineFixturesTest.kt`; every file in
+     `fixtures/timeline/` must match its `expected` projection.
+   - `Transport` interface with an `io` adapter (`dart:io` `HttpClient` with redirects
+     off, `Authorization: Bearer`, `dart:io` `WebSocket` with headers) and a `web`
+     adapter (`BrowserClient` with credentials, browser `WebSocket`), chosen by
+     conditional import. Every request sends `X-Pirc-Client: pirc-app/<apiVersion>`;
+     every non-GET sends `X-Pirc-Request: 1`; 426 maps to `ClientUpgradeRequired`,
+     401 to `PairingRequired`. The token store is an injected interface.
+   - Event stream: cursor resume, backoff `min(20 s, 750 ms·2^n)` with jitter, early
+     retry when connectivity returns or the page becomes visible, fatal close codes
+     4400/4401/4403/4404.
+   - Commands carry a client-generated command ID and `expectedBinding`; a request
+     whose outcome is unknown (timeout, dropped connection after send) is marked
+     uncertain and never re-sent through another path (N8). First-send is the only
+     creation path. `GET /api/capabilities` is read on connect.
+     Done when: fixture, transport (fake server), reconnect and command tests pass
+     with `dart test`; the web adapter compiles (`dart analyze` and a
+     `dart compile js` of a small entry point).
+4. **State and app shell** (`pirc_ui`, `apps/app`).
+   - `pirc_ui`: `tool/generate_tokens.dart` turns `docs/design/tokens.json` into
+     `lib/src/tokens.g.dart`; a default-suite test fails when the generated file is
+     stale. `PircTheme` builds light and dark `ThemeData` with token
+     `ThemeExtension`s. `AdaptiveScaffold` picks one of the four layouts by width
+     (≥ 1200, 900–1199, 600–899, < 600) with the rail, list, content and right-pane
+     sizes from [client.md](client.md#design-system-and-layouts).
+   - `apps/app`: Riverpod (`flutter_riverpod`, no code generation), `go_router` with
+     the four tabs (Chat, Work, Activity, Calendar) and Settings as placeholders, en
+     and zh-TW catalogs (ARB and `flutter gen-l10n`), a language setting, and the
+     `PIRC_TAILSCALE`/flavor check.
+     Done when: widget tests show each layout at 375, 700, 1000 and 1300 wide, and
+     switching layout keeps the selected tab and route; light and dark build.
+5. **Test layout and CI.**
+   - `dart_test.yaml` in each package declares the tags `tier3`, `node`, `fonts`
+     and `device`; the default run excludes all four. Renderer tests that need
+     Arial/Menlo, Node or the script runtime are tagged.
+   - Safety regressions (credential attachment and redirects, opaque origins,
+     remote-content gating, content containment, request shapes) are untagged.
+   - New workflow `.github/workflows/client.yml`: `flutter analyze` and the default
+     tests for the workspace members, and the `standard` debug APK and Web build of
+     `apps/app`. `android.yml` adds `packages/**` and `pubspec.*` to its paths and
+     keeps building the old app.
+     Done when: the default suites pass locally and the workflow file is valid.
 
 ---
 
