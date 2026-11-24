@@ -129,10 +129,13 @@ and not patched in the meantime.
      few fail-closed tests that used downgrade helpers to drop the table directly.
    - `docs/deploy/upgrades.md`: pirc 2 needs fresh state directories.
      Deletes: about 3,000 lines.
-6. **Remove the legacy observational-memory archive** in
-   `crates/pirc-agent/src/features/memory/` (~3,700 lines) and
-   `docs/architecture/legacy-observational-memory.md`, keeping what the current
-   handoff memory imports.
+6. **Legacy observational-memory archive: moved to M4.** The module
+   `crates/pirc-agent/src/features/memory/` (~3,100 lines) is described as a
+   read-only archive, but its workspace ledger, panel and serializer are used by
+   the live workspace memory, memory mirror, runner and PTC
+   (`crates/pirc-node/src/workspace_memory.rs`, `memory_mirror.rs`,
+   `runner/`, `panels/`). Separating them is a memory redesign, done with the
+   per-pot memory in M4 step 10.
 7. **Security defaults without a transition.**
    - The Gateway refuses to start without `PIRC_PROXY_SECRET` unless
      `PIRC_PROXY_SECRET_REQUIRED=false` is set; development scripts and
@@ -194,7 +197,10 @@ Specification: [pots.md](pots.md). Steps (each a pushable slice):
     claim semantics (the chat node stays as the pot host), `SOUL.md`/`CHAT.md`
     routes, chat projects that only served assistant chats, the model-free pots
     tracker (gateway `src/pots`, node `pots.rs` ledger once replaced), and the
-    assistant tools that pot tools replace.
+    assistant tools that pot tools replace. Split the session-level legacy
+    observational memory out of `crates/pirc-agent/src/features/memory/` (moved
+    here from M2.6): keep what workspace memory and the per-pot memory use, delete
+    the read-only archive and `docs/architecture/legacy-observational-memory.md`.
     Deletes: an estimated 10–15k lines including tests.
 
 ---
