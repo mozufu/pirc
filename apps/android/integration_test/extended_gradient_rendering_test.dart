@@ -1,4 +1,4 @@
-import 'package:pirc_mobile/live/remote_content_gate.dart';
+import 'package:pirc_mobile/rendering/remote_content_gate.dart';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';

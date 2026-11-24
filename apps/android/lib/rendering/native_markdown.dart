@@ -14,7 +14,7 @@ import 'native_inline_math.dart';
 import 'native_math_paragraph.dart';
 import 'native_equation_numbers.dart';
 import 'package:markdown/markdown.dart' as md;
-import '../theme.dart';
+import 'render_theme.dart';
 import 'code_block.dart';
 import 'mermaid/native_mermaid.dart';
 import 'markdown_syntax.dart';
@@ -24,7 +24,7 @@ import 'markdown_spacing.dart';
 import 'markdown_cursor.dart';
 import 'markdown_selection.dart';
 import 'html_syntax.dart';
-import '../live/remote_content_gate.dart' show nativeHeldMarkdownImage;
+import 'remote_content_gate.dart' show nativeHeldMarkdownImage;
 
 /// Flutter widgets only; no web view and no HTML/JS execution. All unsupported
 /// rich-content cases remain visible and tracked in PARITY.md.
@@ -136,7 +136,7 @@ class _NativeMarkdownState extends State<NativeMarkdown> {
     bool first,
     bool last,
   ) {
-    final colors = Theme.of(context).extension<PircColors>()!;
+    final colors = Theme.of(context).extension<RenderColors>()!;
     final phone = MediaQuery.sizeOf(context).width <= 650;
     final size = fontSize ?? 15.0;
     final em = MediaQuery.textScalerOf(context).scale(size);
@@ -335,7 +335,7 @@ class _InlineCodeBuilder extends MarkdownElementBuilder {
     TextStyle? preferredStyle,
     TextStyle? parentStyle,
   ) {
-    final colors = Theme.of(context).extension<PircColors>()!;
+    final colors = Theme.of(context).extension<RenderColors>()!;
     final font = (parentStyle?.fontSize ?? size) * .87;
     final href = element.attributes['pirc-href'];
     return DecoratedBox(
@@ -393,7 +393,7 @@ class _MathBuilder extends MarkdownElementBuilder {
     final fontSize = parentStyle?.fontSize ?? size;
     final height = parentStyle?.height ?? lineHeight;
     registerNativeTexExtensions();
-    final colors = Theme.of(context).extension<PircColors>()!;
+    final colors = Theme.of(context).extension<RenderColors>()!;
     return NativeMarkdownMath(
       bodyStyle: parentStyle,
       bodyFontSize: fontSize,
@@ -512,7 +512,7 @@ class _TableBuilder extends MarkdownElementBuilder {
     TextStyle? parentStyle,
   ) {
     final table = element as NativeTableElement;
-    final colors = Theme.of(context).extension<PircColors>()!;
+    final colors = Theme.of(context).extension<RenderColors>()!;
     return LayoutBuilder(
       builder: (context, constraints) => Container(
         key: const ValueKey('native-markdown-table'),

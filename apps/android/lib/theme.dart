@@ -2,21 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class PircColors extends ThemeExtension<PircColors> {
-  const PircColors(this.values);
-  final Map<String, Color> values;
-  Color operator [](String key) => values[key]!;
-  @override
-  PircColors copyWith({Map<String, Color>? values}) =>
-      PircColors(values ?? this.values);
-  @override
-  PircColors lerp(covariant PircColors? other, double t) => other == null
-      ? this
-      : PircColors({
-          for (final key in values.keys)
-            key: Color.lerp(values[key], other.values[key], t)!,
-        });
-}
+import 'rendering/render_theme.dart';
+
+export 'rendering/render_theme.dart' show RenderColors;
+
+// The renderer owns the color extension; the app keeps its name.
+typedef PircColors = RenderColors;
 
 class PircTheme {
   PircTheme(this.tokens);

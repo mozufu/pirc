@@ -1,8 +1,8 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:markdown/markdown.dart' as md;
-import '../theme.dart';
+import 'render_theme.dart';
 import 'markdown_syntax.dart';
 
 /// Append a widget to the parsed last block, never to the Markdown source.
@@ -99,7 +99,7 @@ class NativeCursorBuilder extends MarkdownElementBuilder {
                   shape: BoxShape.circle,
                   color: Theme.of(
                     context,
-                  ).extension<PircColors>()!['accent.default'],
+                  ).extension<RenderColors>()!['accent.default'],
                 ),
               ),
             ),

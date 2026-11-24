@@ -1,6 +1,6 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 import 'package:flutter/material.dart';
-import '../../theme.dart';
+import '../render_theme.dart';
 import 'flowchart.dart';
 import 'requirement_parser.dart';
 import 'requirement_rendering.dart';
@@ -61,8 +61,8 @@ class NativeMermaid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
-    final colors = Theme.of(context).extension<PircColors>()!;
+    RenderL10n.watch(context);
+    final colors = Theme.of(context).extension<RenderColors>()!;
     final dark = Theme.of(context).brightness == Brightness.dark;
     Widget? figure;
     String? error;
@@ -314,7 +314,7 @@ class _MermaidSvgLineBox extends StatelessWidget {
   final double fontSize, lineHeight;
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     final scaler = MediaQuery.textScalerOf(context);
     final text = TextPainter(
       text: TextSpan(

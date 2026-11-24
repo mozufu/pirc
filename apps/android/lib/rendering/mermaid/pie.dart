@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 import 'dart:math' as math;
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -196,7 +196,7 @@ class NativeMermaidPie extends StatelessWidget {
   final bool dark;
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     final font = DefaultTextStyle.of(context).style.fontFamily;
     final painter = MermaidPiePainter(diagram, dark, font);
     return Semantics(

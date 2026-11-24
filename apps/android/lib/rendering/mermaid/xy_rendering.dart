@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -1186,7 +1186,7 @@ class NativeMermaidXYChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     final fontFamily = Theme.of(context).textTheme.bodyMedium?.fontFamily;
     return Semantics(
       image: true,

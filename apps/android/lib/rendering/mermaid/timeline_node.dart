@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 // Timeline node text wrapping and classic node paths ported from Mermaid
 // 11.17.2 (MIT), rendering-elements/timeline-svgDraw.ts. See
 // MERMAID_MIT_LICENSE.txt for the upstream license notice.

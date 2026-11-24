@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 // Mermaid 11.17.2 classic timeline layout port. Upstream MIT notice is in
 // MERMAID_MIT_LICENSE.txt. Paths and positions derive from the live model and
 // native text metrics; product code never reads reference fixtures or SVGs.
@@ -489,7 +489,7 @@ class NativeMermaidTimeline extends StatelessWidget {
   final bool dark;
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         final typography =

@@ -1,4 +1,4 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 import 'package:flutter/widgets.dart';
 import 'package:html/dom.dart' as dom;
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
@@ -351,7 +351,7 @@ class _NativeHtmlDetailsState extends State<_NativeHtmlDetails> {
 
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     final activateAction = _NativeDetailsActivateAction(
       focusNode: _focusNode,
       onActivate: _toggle,
@@ -425,7 +425,7 @@ class _NativeDetailsMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     final scope = context
         .dependOnInheritedWidgetOfExactType<_NativeDetailsScope>();
     final style = tree.inheritanceResolvers.resolve(context).prepareTextStyle();

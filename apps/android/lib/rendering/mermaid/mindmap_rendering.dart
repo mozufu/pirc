@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 // Shape geometry ported from Mermaid 11.17.2 (MIT), classic mindmap renderer.
 // Source: rendering-elements/shapes/{defaultMindmapNode,circle,squareRect,
 // roundedRect,cloud,bang,hexagon}.ts. Layout is computed from real labels;
@@ -572,7 +572,7 @@ class NativeMermaidMindmap extends StatelessWidget {
   final bool dark;
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         final layout = layoutNativeMermaidMindmap(

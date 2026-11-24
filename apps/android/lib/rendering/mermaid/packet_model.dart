@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 
 /// One authored field in a Mermaid `packet` or `packet-beta` diagram.
 ///

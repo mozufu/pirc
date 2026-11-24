@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -585,7 +585,7 @@ class NativeMermaidArchitecture extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     final summary = [
       if (diagram.title.isNotEmpty) diagram.title,
       for (final group in diagram.groups)

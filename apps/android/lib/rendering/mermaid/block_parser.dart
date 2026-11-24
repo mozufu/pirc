@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 import 'block_model.dart';
 
 /// Parses a documented subset of pinned Mermaid 11.17.2 block-beta syntax.

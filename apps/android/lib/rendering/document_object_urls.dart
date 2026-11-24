@@ -1,11 +1,9 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:html/parser.dart' as html;
-
-import 'gateway.dart';
 
 /// Computes the referrer for a navigation to a same-origin blob URL.
 ///
@@ -105,7 +103,10 @@ class NativeDocumentBlob {
   final String url, mimeType;
   final Uint8List _bytes;
   Uint8List get bytes => Uint8List.fromList(_bytes);
-  factory NativeDocumentBlob.fromBridge(String requestedUrl, Json value) {
+  factory NativeDocumentBlob.fromBridge(
+    String requestedUrl,
+    Map<String, dynamic> value,
+  ) {
     final expected = requestedUrl.split('#').first;
     final encoded = value['bytesBase64'];
     final size = value['size'];
@@ -140,7 +141,7 @@ class NativeDocumentObjectUrlBinding {
   });
   final Object owner;
   final bool Function() isCurrent;
-  final Future<Json> Function(String) readBytes;
+  final Future<Map<String, dynamic>> Function(String) readBytes;
   bool get current => isCurrent();
   Future<NativeDocumentBlob> read(String url) async {
     if (!current || !url.startsWith('blob:')) {

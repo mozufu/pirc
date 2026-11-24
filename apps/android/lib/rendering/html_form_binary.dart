@@ -1,4 +1,4 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';

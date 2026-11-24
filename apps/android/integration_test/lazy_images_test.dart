@@ -1,5 +1,5 @@
 // Android scroll/visibility acceptance; in-memory image Gateway, real Flutter SVG.
-import 'package:pirc_mobile/live/remote_content_gate.dart';
+import 'package:pirc_mobile/rendering/remote_content_gate.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';

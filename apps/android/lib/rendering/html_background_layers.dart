@@ -1,7 +1,7 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/foundation.dart';
-import '../live/document_background_image.dart';
+import 'document_background_image.dart';
 import 'html_background_gradient.dart';
 import 'background_image_position.dart';
 import 'html_image_background_decoration.dart';

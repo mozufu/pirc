@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 import 'architecture_model.dart';
 
 /// Parses the native, intentionally bounded subset of Mermaid 11.17.2

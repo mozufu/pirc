@@ -14,7 +14,7 @@ import '../rendering/document_html_image.dart';
 import 'gateway.dart';
 import 'document_script_resources.dart';
 import 'document_script_images.dart';
-import 'document_object_urls.dart';
+import '../rendering/document_object_urls.dart';
 import 'document_style_loading.dart';
 import 'document_dynamic_styles.dart';
 import 'document_environment.dart';

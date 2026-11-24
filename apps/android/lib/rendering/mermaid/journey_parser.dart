@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 import 'journey_model.dart';
 
 /// Parses the bounded Mermaid 11.17.2 user-journey grammar used by the native

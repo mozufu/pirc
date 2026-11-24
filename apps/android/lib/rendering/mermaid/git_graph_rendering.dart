@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 // Native, bounded Mermaid 11.17.2 gitGraph renderer.
 // Upstream source is MIT licensed; see MERMAID_MIT_LICENSE.txt.
 import 'dart:math' as math;
@@ -499,7 +499,7 @@ class NativeMermaidGitGraph extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     final layout = layoutNativeMermaidGitGraph(
       diagram,
       dark: dark,

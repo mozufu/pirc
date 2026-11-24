@@ -1,4 +1,4 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 import 'dart:convert';
 import 'package:html/parser.dart' as html;
 import 'package:html/dom.dart' as dom;

@@ -1,5 +1,5 @@
 // Static AVIF Chrome pixel oracle; Android 12+ native decode, Flutter UI.
-import 'package:pirc_mobile/live/remote_content_gate.dart';
+import 'package:pirc_mobile/rendering/remote_content_gate.dart';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter_test/flutter_test.dart';

@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 // D3 Sankey breadth/relaxation logic adapted from d3-sankey 0.12.3.
 // Copyright 2015 Mike Bostock; BSD-3-Clause, see D3_SANKEY_LICENSE.txt.
 import 'dart:math' as math;

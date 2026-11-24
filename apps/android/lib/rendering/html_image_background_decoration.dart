@@ -1,10 +1,10 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/painting.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:xml/xml.dart';
-import '../live/document_background_image.dart';
+import 'document_background_image.dart';
 import 'svg_background_dimensions.dart';
 import 'background_image_size.dart';
 import 'background_image_position.dart';

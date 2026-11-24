@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -819,7 +819,7 @@ class NativeMermaidSequence extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     final diagram = parseNativeMermaidSequence(source);
     final layout = layoutNativeMermaidSequence(
       diagram,

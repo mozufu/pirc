@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 import 'c4_model.dart';
 
 /// Parses Mermaid 11.17.2 C4 diagrams into a Flutter-independent model.

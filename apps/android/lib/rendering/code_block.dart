@@ -1,4 +1,4 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 import 'dart:async';
 import 'code_tabs.dart';
 import 'code_lines.dart';
@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:re_highlight/languages/all.dart';
 import 'package:re_highlight/re_highlight.dart';
-import '../theme.dart';
+import 'render_theme.dart';
 import 'markdown_selection.dart';
 
 final _highlight = Highlight()..registerLanguages(_nativeWebCommonLanguages());
@@ -196,7 +196,7 @@ const _webCommonLanguageAliases = <String, String>{
 TextSpan highlightCode(
   String code,
   String language,
-  PircColors colors, {
+  RenderColors colors, {
   TextStyle? baseStyle,
 }) => _highlightCode(
   code,
@@ -211,14 +211,14 @@ TextSpan highlightCode(
 TextSpan highlightCodeBlock(
   String code,
   String language,
-  PircColors colors, {
+  RenderColors colors, {
   TextStyle? baseStyle,
 }) => _highlightCode(code, language, colors, baseStyle: baseStyle);
 
 TextSpan _highlightCode(
   String code,
   String language,
-  PircColors colors, {
+  RenderColors colors, {
   TextStyle? baseStyle,
   int? maxLength,
 }) {
@@ -267,7 +267,7 @@ class _WebScopeRenderer implements HighlightRenderer {
   _WebScopeRenderer(this.base, this.colors);
 
   final TextStyle base;
-  final PircColors colors;
+  final RenderColors colors;
   final List<String> _scopes = [];
   final List<InlineSpan> _children = [];
 
@@ -384,7 +384,7 @@ class _NativeCodeBlockState extends State<NativeCodeBlock> {
   int sourceGeneration = 0;
   final copyTimers = <Timer>{};
   String? lastSource, lastLanguage;
-  PircColors? lastColors;
+  RenderColors? lastColors;
   TextSpan? span;
   @override
   void didUpdateWidget(NativeCodeBlock oldWidget) {
@@ -425,8 +425,8 @@ class _NativeCodeBlockState extends State<NativeCodeBlock> {
 
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
-    final colors = Theme.of(context).extension<PircColors>()!;
+    RenderL10n.watch(context);
+    final colors = Theme.of(context).extension<RenderColors>()!;
     if (lastSource != widget.source ||
         lastLanguage != widget.language ||
         lastColors != colors) {

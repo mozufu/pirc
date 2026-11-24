@@ -1,5 +1,5 @@
 import 'package:html/dom.dart' as dom;
-import '../theme.dart';
+import 'render_theme.dart';
 
 // Selectors and cascade order from the pinned web's markdown.css. Keep class
 // specificity: e.g. .hljs-variable.constant_ wins over the later .hljs-variable.
@@ -71,7 +71,7 @@ bool _matches(dom.Element node, String selector) {
 /// styles. This does not execute code or add highlighting the web didn't emit.
 Map<String, String> nativeHtmlHighlightStyles(
   dom.Element element,
-  PircColors colors,
+  RenderColors colors,
 ) {
   final styles = <String, String>{};
   var specificity = 0;

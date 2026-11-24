@@ -1,4 +1,5 @@
-import 'package:pirc_mobile/live/remote_content_gate.dart';
+import 'package:pirc_mobile/live/render_host_adapter.dart';
+import 'package:pirc_mobile/rendering/remote_content_gate.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -6,7 +7,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/live/document_background_image.dart';
+import 'package:pirc_mobile/rendering/document_background_image.dart';
 import 'package:pirc_mobile/live/document_navigation_state.dart';
 import 'package:pirc_mobile/live/gateway.dart';
 import 'package:pirc_mobile/live/common.dart';
@@ -224,7 +225,7 @@ void main() {
     NativeDocumentBackgroundImage key(Object account, Object owner) =>
         NativeDocumentBackgroundImage(
           source: Uri.parse('/a.jpg'),
-          gateway: g,
+          fetcher: gatewayImageFetcher(g),
           accountIdentity: account,
           owner: owner,
           isCurrent: () => true,
@@ -241,7 +242,7 @@ void main() {
       g.handler = (_, _) => pending.future;
       final provider = NativeDocumentBackgroundImage(
         source: Uri.parse('/a.jpg'),
-        gateway: g,
+        fetcher: gatewayImageFetcher(g),
         accountIdentity: 'one',
         owner: g,
         isCurrent: () => valid,

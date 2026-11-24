@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 import 'requirement_model.dart';
 
 /// Parses the Mermaid 11.17.2 requirementDiagram grammar into its database

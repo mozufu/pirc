@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'gantt_model.dart';
@@ -318,7 +318,7 @@ class NativeMermaidGantt extends StatelessWidget {
   final bool dark;
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     return LayoutBuilder(
       builder: (context, constraints) {
         final family = Theme.of(context).textTheme.bodyMedium?.fontFamily;

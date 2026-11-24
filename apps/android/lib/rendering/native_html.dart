@@ -1,5 +1,5 @@
-import '../l10n/app_i18n.dart';
-import '../live/document_object_urls.dart';
+import 'render_l10n.dart';
+import 'document_object_urls.dart';
 import 'package:csslib/visitor.dart' as css;
 import 'package:csslib/parser.dart' as css_parser;
 import 'dart:convert';
@@ -32,17 +32,15 @@ import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html;
 import 'package:markdown/markdown.dart' as md;
-import '../theme.dart';
-import '../live/document_navigation_state.dart';
-import '../live/document_background_image.dart';
-import '../live/html_media.dart';
-import '../live/remote_content_gate.dart';
+import 'render_theme.dart';
+import 'render_host.dart';
+import 'document_background_image.dart';
+import 'remote_content_gate.dart';
 import 'html_media_spec.dart';
 import 'html_background_gradient.dart';
 import 'html_gradient_decoration.dart';
 import 'html_image_background_decoration.dart';
 import 'html_background_layers.dart';
-import '../live/html_file_picker.dart';
 import 'html_date.dart';
 import 'html_file.dart';
 import 'html_highlight_styles.dart';
@@ -390,7 +388,7 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
   Set<String> _scriptFocusEchoControlIds = const {};
   final Map<String, FocusNode> _scriptFocusableNodes = {};
   final Set<FocusNode> _retiredScriptFocusableNodes = {};
-  NativeDocumentScope? _nativeDocumentScope;
+  RenderDocumentScope? _nativeDocumentScope;
   final _localScriptFileSelections = NativeHtmlScriptFileSelections();
   NativeHtmlScriptFileSelections get _scriptFileSelections =>
       widget.scriptFileSelections ?? _localScriptFileSelections;
@@ -494,7 +492,7 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _nativeDocumentScope = NativeDocumentScope.maybeOf(context);
+    _nativeDocumentScope = RenderHost.of(context).documentScope(context);
     _scheduleScriptFocusActions();
   }
 
@@ -1919,8 +1917,10 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
   ) async {
     final injected = widget.filePicker;
     if (injected != null) return injected(request);
-    final scope = NativeDocumentScope.maybeOf(context);
-    if (scope == null) {
+    final host = RenderHost.of(context);
+    final scope = host.documentScope(context);
+    final pickerFor = host.filePickerFor;
+    if (scope == null || pickerFor == null) {
       throw UnsupportedError(
         tr("File selection is unavailable in this document."),
       );
@@ -1932,8 +1932,8 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
     final selection = windows.selectionRevision;
     final retained = widget.retainedControls;
     final scriptCurrent = widget.scriptFilePickerIsCurrent;
-    return createNativeHtmlFilePicker(
-      windows.gateway,
+    return pickerFor(
+      scope,
       isCurrent: () =>
           (retained == null
               ? (scriptCurrent?.call() ?? mounted)
@@ -2212,14 +2212,14 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
 
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     _elementScroll.retainIds(widget.layoutKnownIds);
-    final colors = Theme.of(context).extension<PircColors>()!;
+    final colors = Theme.of(context).extension<RenderColors>()!;
     final imageViewport = widget.imageViewport ?? MediaQuery.sizeOf(context);
     final imageDpr = MediaQuery.devicePixelRatioOf(context);
     final imageDark =
         widget.imageDark ?? Theme.of(context).brightness == Brightness.dark;
-    final scope = NativeDocumentScope.maybeOf(context);
+    final scope = RenderHost.of(context).documentScope(context);
     final objectUrls = NativeDocumentObjectUrlScope.maybeOf(context)?.binding;
     final account = scope?.accountIdentity;
     // CSS background images have no tap target to hold them behind, so held
@@ -2244,7 +2244,7 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
       return NativeDocumentBackgroundImage(
         source: uri,
         objectUrls: objectUrls,
-        gateway: scope?.windows.gateway,
+        fetcher: scope?.windows.imageFetcher,
         baseUrl: backgroundBase,
         documentUrl: scope?.documentUrl,
         svgCache: _backgroundSvgCache,
@@ -2286,13 +2286,13 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
       if (widget.mediaBuilder != null) {
         return widget.mediaBuilder!(spec, styles);
       }
-      if (scope == null) return null;
-      return NativeHtmlMedia(
-        gateway: scope.windows.gateway,
-        spec: spec,
-        styles: styles,
+      final media = RenderHost.of(context).mediaBuilder;
+      if (scope == null || media == null) return null;
+      return media(
+        scope,
+        spec,
+        styles,
         baseUrl: backgroundBase,
-        scope: scope,
         accountIdentity: account,
       );
     }
@@ -5599,7 +5599,7 @@ class _NativeHtmlFactory extends WidgetFactory {
                       control: styledToggle,
                       accent: Theme.of(
                         context,
-                      ).extension<PircColors>()!['accent.default'],
+                      ).extension<RenderColors>()!['accent.default'],
                       boxStyle: boxStyle,
                     )
                   : styledTextField != null
@@ -5736,7 +5736,7 @@ class _NativeHtmlFactory extends WidgetFactory {
                     border: Border.all(
                       color: Theme.of(
                         context,
-                      ).extension<PircColors>()!['web.line'],
+                      ).extension<RenderColors>()!['web.line'],
                     ),
                   ),
                   child: child,

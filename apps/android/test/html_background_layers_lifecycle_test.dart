@@ -1,8 +1,9 @@
+import 'package:pirc_mobile/live/render_host_adapter.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/live/document_background_image.dart';
+import 'package:pirc_mobile/rendering/document_background_image.dart';
 import 'package:pirc_mobile/rendering/html_background_layers.dart';
 import 'live_test.dart' show FakeGateway;
 import 'svg_background_lifecycle_test.dart' show host, color;
@@ -25,7 +26,7 @@ void main() {
             source: Uri.parse('tile-$index.svg'),
             accountIdentity: 'a',
             owner: owner,
-            gateway: gateway,
+            fetcher: gatewayImageFetcher(gateway),
             svgCache: cache,
             isCurrent: () => true,
           );
@@ -68,7 +69,7 @@ void main() {
       source: Uri.parse('same.svg'),
       accountIdentity: 'a',
       owner: owner,
-      gateway: gateway,
+      fetcher: gatewayImageFetcher(gateway),
       svgCache: cache,
       isCurrent: () => true,
     );
@@ -127,7 +128,7 @@ void main() {
           null,
           NativeDocumentBackgroundImage(
             source: Uri.parse('relative.svg'),
-            gateway: gateway,
+            fetcher: gatewayImageFetcher(gateway),
             baseUrl: 'https://gateway.example/docs/',
             svgCache: cache,
             accountIdentity: scope,

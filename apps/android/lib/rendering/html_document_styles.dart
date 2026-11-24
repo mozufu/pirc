@@ -1,4 +1,4 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 import 'document_pointer_style.dart';
 import 'dart:collection';
 

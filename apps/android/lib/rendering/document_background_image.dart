@@ -1,12 +1,13 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
-import 'gateway.dart';
 import 'document_object_urls.dart';
+import 'render_host.dart';
 
-/// CSS backgrounds use the same authenticated transport as Markdown images.
+/// CSS backgrounds use the same authenticated transport as Markdown images
+/// (the host's [RenderImageFetcher]).
 /// The cache key includes account and document ownership so an account change
 /// cannot reuse a decoded image belonging to the previous connection.
 class NativeDocumentBackgroundImage
@@ -16,7 +17,7 @@ class NativeDocumentBackgroundImage
     required this.accountIdentity,
     required this.owner,
     required this.isCurrent,
-    this.gateway,
+    this.fetcher,
     this.objectUrls,
     this.baseUrl,
     this.documentUrl,
@@ -25,7 +26,7 @@ class NativeDocumentBackgroundImage
   final Uri source;
   final Object accountIdentity, owner;
   final bool Function() isCurrent;
-  final Gateway? gateway;
+  final RenderImageFetcher? fetcher;
   final NativeDocumentObjectUrlBinding? objectUrls;
   final String? baseUrl, documentUrl;
   final NativeSvgBackgroundCache? svgCache;
@@ -71,18 +72,16 @@ class NativeDocumentBackgroundImage
         bytes = data.contentAsBytes();
         mime = data.mimeType;
       } else {
-        if (!['', 'http', 'https'].contains(source.scheme) || gateway == null) {
+        if (!['', 'http', 'https'].contains(source.scheme) || fetcher == null) {
           throw UnsupportedError(tr("Unsupported background URL."));
         }
-        final result = obj(
-          await gateway!.call('image', {
-            'source': source.toString(),
-            if (baseUrl != null) 'baseUrl': baseUrl,
-            if (documentUrl != null) 'documentUrl': documentUrl,
-          }),
+        final result = await fetcher!.fetchImage(
+          source,
+          baseUrl: baseUrl,
+          documentUrl: documentUrl,
         );
-        bytes = result['bytes'] as Uint8List;
-        mime = '${result['mimeType']}';
+        bytes = result.bytes;
+        mime = result.mimeType;
       }
       if (!isCurrent()) throw StateError(tr("Background connection changed."));
       if (bytes.length > maxBytes) {
@@ -121,7 +120,7 @@ class NativeDocumentBackgroundImage
   bool operator ==(Object other) =>
       other is NativeDocumentBackgroundImage &&
       source == other.source &&
-      identical(gateway, other.gateway) &&
+      identical(fetcher, other.fetcher) &&
       baseUrl == other.baseUrl &&
       documentUrl == other.documentUrl &&
       accountIdentity == other.accountIdentity &&
@@ -132,7 +131,7 @@ class NativeDocumentBackgroundImage
   @override
   int get hashCode => Object.hash(
     source,
-    gateway,
+    fetcher,
     baseUrl,
     documentUrl,
     accountIdentity,

@@ -1,4 +1,6 @@
 import '../l10n/app_i18n.dart';
+import '../rendering/render_host.dart';
+import 'render_host_adapter.dart' show gatewayImageFetcher;
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
@@ -26,9 +28,10 @@ import 'document_response_cache.dart';
 import 'document_referrer.dart';
 import 'document_origin.dart';
 import 'document_download.dart';
-import 'document_object_urls.dart';
+import '../rendering/document_object_urls.dart';
 
-class NativeDocumentScope extends InheritedWidget {
+class NativeDocumentScope extends InheritedWidget
+    implements RenderDocumentScope {
   const NativeDocumentScope({
     super.key,
     required super.child,
@@ -37,10 +40,14 @@ class NativeDocumentScope extends InheritedWidget {
     this.window,
     this.sourceIdentity,
   });
+  @override
   final NativeDocumentWindows windows;
+  @override
   final String? documentUrl;
+  @override
   final NativeDocumentWindow? window;
   final Object? sourceIdentity;
+  @override
   Object get accountIdentity => sourceIdentity ?? windows.accountIdentity;
   static NativeDocumentScope? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<NativeDocumentScope>();
@@ -161,7 +168,7 @@ Map<String, Object?> _snapshotJsonStateGraph(Map<String, Object?> graph) {
   return copied;
 }
 
-class NativeFetchedDocument {
+class NativeFetchedDocument implements RenderFetchedDocument {
   NativeFetchedDocument({
     required this.id,
     required this.url,
@@ -185,7 +192,9 @@ class NativeFetchedDocument {
     this.pairedOrigin = false,
   });
   final int id, status;
-  final String url, mimeType;
+  @override
+  final String url;
+  final String mimeType;
   /// Set by the native transport from the final response URL: the bytes were
   /// served by the paired Gateway origin. Such a document is shown as inert
   /// content: no script environment, no author stylesheets, no paired-origin
@@ -227,6 +236,7 @@ class NativeFetchedDocument {
   late final elementScroll = NativeDocumentElementScrollController(
     documentOwner: this,
   );
+  @override
   String get effectiveBase {
     if (resolvedBase != null) return resolvedBase!;
     final location = historyApiLocation ?? url;
@@ -293,7 +303,8 @@ enum NativeDocumentLoadResult { committed, retained, appRoute, failed, stale }
 
 /// One native browsing context. History documents stay mounted by the view so
 /// controls and scroll survive back/forward without automatically replaying POST.
-class NativeDocumentWindow extends ChangeNotifier {
+class NativeDocumentWindow extends ChangeNotifier
+    implements RenderDocumentWindow {
   NativeDocumentWindow(
     this.windows, {
     required this.id,
@@ -398,7 +409,11 @@ class NativeDocumentWindow extends ChangeNotifier {
   bool get independentApp => !canReturnToSource && windows.appBuilder != null;
   Object? get appNavigation =>
       appNavigationIdentity?.call() ?? windows.appNavigationIdentity?.call();
-  bool loading = false, disposed = false, closing = false;
+  bool loading = false;
+  @override
+  bool disposed = false;
+  @override
+  bool closing = false;
   bool historyPostResubmissionRequired = false;
   String? error;
   NativeDocumentHistoryItem? _historyRetryEntry;
@@ -409,6 +424,7 @@ class NativeDocumentWindow extends ChangeNotifier {
   String? _failedOrigin;
   NativeAppDocumentRoute? pendingAppRoute;
   NativeDocumentHistoryItem? get current => index < 0 ? null : history[index];
+  @override
   NativeFetchedDocument? get currentDocument => current?.document;
   NativeAppDocumentRoute? get currentAppRoute => current?.appRoute;
   int get scriptHistoryLength => history.length + (canReturnToSource ? 1 : 0);
@@ -1475,7 +1491,8 @@ class NativeDocumentWindow extends ChangeNotifier {
 
 /// Native windows are scoped to the original App connection. Pair/account
 /// changes invalidate cached documents and in-flight replies before publication.
-class NativeDocumentWindows extends ChangeNotifier {
+class NativeDocumentWindows extends ChangeNotifier
+    implements RenderDocumentWindows {
   NativeDocumentWindows(
     this.gateway, {
     this.owner,
@@ -1492,6 +1509,8 @@ class NativeDocumentWindows extends ChangeNotifier {
     owner?.addListener(_observe);
   }
   final Gateway gateway;
+  @override
+  RenderImageFetcher get imageFetcher => gatewayImageFetcher(gateway);
   Future<void> _scriptStarts = Future.value();
 
   /// Keep the four-isolate Android budget while allowing ordinary browsing
@@ -1649,12 +1668,15 @@ class NativeDocumentWindows extends ChangeNotifier {
   final String _storageNamespace =
       'window-${List.generate(4, (_) => Random.secure().nextInt(1 << 32).toRadixString(16)).join()}';
   int _nextWindow = 0, _connectionEpoch = 0;
+  @override
   int selectionRevision = 0;
   late Object _identity;
+  @override
   bool disposed = false;
   bool presented = false;
   String? connectionError;
   String? _anonymousStamp, _anonymousOrigin;
+  @override
   Object get accountIdentity => _readIdentity();
   Object _readIdentity() => owner == null
       ? _connectionEpoch
@@ -1665,6 +1687,7 @@ class NativeDocumentWindows extends ChangeNotifier {
           owner!.pairingStamp,
           _connectionEpoch,
         );
+  @override
   NativeDocumentWindow? get active =>
       windows.where((e) => e.id == activeId).firstOrNull;
 

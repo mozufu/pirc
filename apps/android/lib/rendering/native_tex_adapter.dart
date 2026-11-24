@@ -1,4 +1,4 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart'
     show
@@ -206,7 +206,7 @@ class NativeMathTex extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     final resolved = resolve(context);
     final math = resolved.math;
     final tags = resolved.tags;

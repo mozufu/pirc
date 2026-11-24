@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 import 'package:flutter/material.dart';
 
 enum NativeMermaidXYAxisType { linear, band }

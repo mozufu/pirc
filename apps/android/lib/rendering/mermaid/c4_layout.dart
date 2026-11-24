@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 import 'dart:math' as math;
 import 'package:flutter/painting.dart';
 import 'package:html/parser.dart' as html;

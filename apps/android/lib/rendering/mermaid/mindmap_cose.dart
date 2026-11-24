@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 // Port of the flat-forest CoSE-Bilkent path from cose-base 1.0.3 and
 // layout-base 1.0.2 (MIT; Copyright (c) 2019-present iVis@Bilkent).
 //

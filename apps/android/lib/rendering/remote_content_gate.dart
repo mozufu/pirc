@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
-import '../l10n/app_i18n.dart';
-import '../theme.dart';
+import 'render_l10n.dart';
+import 'render_theme.dart';
 
 /// Whether remote images and media in a subtree load only after the user taps.
 ///
@@ -94,7 +94,7 @@ class _NativeRemoteContentGateState extends State<NativeRemoteContentGate> {
 
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     if (_activated || !NativeRemoteContentPolicy.holdsRemoteContent(context)) {
       return widget.builder(context);
     }
@@ -134,13 +134,16 @@ class NativeRemoteContentPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     final theme = Theme.of(context);
-    final colors = theme.extension<PircColors>();
+    final colors = theme.extension<RenderColors>();
     Color token(String name, Color fallback) =>
         colors?.values[name] ?? fallback;
     final primary = token('text.primary', theme.colorScheme.onSurface);
-    final secondary = token('text.secondary', theme.colorScheme.onSurfaceVariant);
+    final secondary = token(
+      'text.secondary',
+      theme.colorScheme.onSurfaceVariant,
+    );
     final border = token('border.default', theme.dividerColor);
     final origin = nativeRemoteContentOrigin(source);
     final label = kind == NativeRemoteContentKind.image

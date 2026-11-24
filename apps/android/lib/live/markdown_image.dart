@@ -10,9 +10,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../rendering/native_raster_images.dart';
 import 'gateway.dart';
-import 'document_object_urls.dart';
+import '../rendering/document_object_urls.dart';
 import 'document_navigation_state.dart';
-import 'remote_content_gate.dart';
+import '../rendering/remote_content_gate.dart';
 
 /// Markdown images follow the gateway page URL, not the workspace file base.
 ///

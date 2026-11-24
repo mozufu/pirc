@@ -1,4 +1,4 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 import 'package:flutter/foundation.dart';
 
 /// Image loading state from the current script snapshot, separate from authored

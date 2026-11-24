@@ -1,4 +1,4 @@
-import 'package:pirc_mobile/live/remote_content_gate.dart';
+import 'package:pirc_mobile/rendering/remote_content_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';

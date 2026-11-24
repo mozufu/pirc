@@ -8,10 +8,10 @@ import '../rendering/html_media_box.dart';
 import '../rendering/html_inline_intrinsic_overflow.dart';
 import 'gateway.dart';
 import 'document_navigation_state.dart';
-import 'document_object_urls.dart';
+import '../rendering/document_object_urls.dart';
 import 'document_download.dart';
 import 'markdown_image.dart';
-import 'remote_content_gate.dart';
+import '../rendering/remote_content_gate.dart';
 import 'common.dart' show guarded;
 
 String htmlMediaSignature(NativeHtmlMediaSpec spec) =>

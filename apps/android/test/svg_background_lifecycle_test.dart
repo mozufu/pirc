@@ -1,9 +1,10 @@
+import 'package:pirc_mobile/live/render_host_adapter.dart';
 import 'dart:convert';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_mobile/live/document_background_image.dart';
+import 'package:pirc_mobile/rendering/document_background_image.dart';
 import 'package:pirc_mobile/rendering/html_image_background_decoration.dart';
 import 'live_test.dart' show FakeGateway;
 
@@ -64,7 +65,7 @@ void main() {
       };
       final image = NativeDocumentBackgroundImage(
         source: Uri.parse('relative.svg'),
-        gateway: g,
+        fetcher: gatewayImageFetcher(g),
         baseUrl: 'https://gateway.example/docs/',
         accountIdentity: 'a',
         owner: 'document',
@@ -106,7 +107,7 @@ void main() {
       };
       final image = NativeDocumentBackgroundImage(
         source: Uri.parse('/resize.svg'),
-        gateway: g,
+        fetcher: gatewayImageFetcher(g),
         accountIdentity: 'a',
         owner: 'document',
         isCurrent: () => true,

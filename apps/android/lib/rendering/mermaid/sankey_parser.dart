@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 import 'sankey_model.dart';
 
 /// Parses the CSV subset accepted by the pinned Mermaid Sankey parser.

@@ -1,4 +1,4 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 // ignore_for_file: implementation_imports
 
 import 'package:flutter_math_fork/src/ast/nodes/space.dart';

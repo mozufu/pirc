@@ -1,4 +1,4 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -8,7 +8,7 @@ import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html;
 
-import '../theme.dart';
+import 'render_theme.dart';
 
 enum NativeHtmlButtonType { button, reset, submit }
 
@@ -422,7 +422,7 @@ class _NativeHtmlButtonWidgetState extends State<NativeHtmlButtonWidget> {
 
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     return ListenableBuilder(
       listenable: widget.state,
       builder: (context, _) {
@@ -476,7 +476,7 @@ class _NativeHtmlButtonWidgetState extends State<NativeHtmlButtonWidget> {
                   foregroundPainter: _ButtonFramePainter(
                     color: Theme.of(
                       context,
-                    ).extension<PircColors>()!['accent.default'],
+                    ).extension<RenderColors>()!['accent.default'],
                     focused: highlightFocus,
                     nativeAppearance: widget.button.nativeAppearance,
                     dark: Theme.of(context).brightness == Brightness.dark,
@@ -558,7 +558,7 @@ class NativeHtmlButtonContent extends StatelessWidget {
   final Widget child;
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     return ListenableBuilder(
       listenable: state,
       builder: (context, _) {

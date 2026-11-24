@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 
 /// A point or class style understood by Mermaid 11.17.2 quadrant charts.
 ///

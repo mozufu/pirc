@@ -1,4 +1,4 @@
-import '../../l10n/app_i18n.dart';
+import '../render_l10n.dart';
 import 'kanban_model.dart';
 
 /// Parses the Kanban subset backed by Mermaid 11.17.2's `kanbanDb`.

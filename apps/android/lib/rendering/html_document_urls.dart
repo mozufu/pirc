@@ -1,4 +1,4 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 import 'dart:convert';
 
 /// Resolves an HTTP(S) document reference against an absolute HTTP(S) base.

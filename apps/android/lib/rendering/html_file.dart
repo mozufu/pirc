@@ -1,4 +1,4 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -852,7 +852,7 @@ class NativeHtmlFileInputWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    AppI18n.watch(context);
+    RenderL10n.watch(context);
     if (!control.visible) return const SizedBox.shrink();
     final enabled = !control.disabled;
     final dark = Theme.of(context).brightness == Brightness.dark;

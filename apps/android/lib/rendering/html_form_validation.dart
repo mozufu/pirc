@@ -1,4 +1,4 @@
-import '../l10n/app_i18n.dart';
+import 'render_l10n.dart';
 import 'html_date_validation.dart';
 
 /// Pure HTML constraint validation for supported form controls.
