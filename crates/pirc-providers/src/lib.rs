@@ -19,7 +19,9 @@ mod js;
 mod models_file;
 mod stream;
 
-pub use catalog::{CatalogModel, catalog_models, catalog_providers, catalog_version};
+pub use catalog::{
+    CatalogModel, ModelCost, catalog_models, catalog_price, catalog_providers, catalog_version,
+};
 pub use errors::safe_inference_error;
 pub use inference::{Inference, Resolve, Resolved};
 pub use models_file::{ModelsFile, expand_home, list_models, load_models_file, public_models};

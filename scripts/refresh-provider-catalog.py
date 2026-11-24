@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 
 ROOT = Path(__file__).resolve().parent.parent
 FIELDS = ("id", "name", "api", "provider", "baseUrl", "reasoning", "input",
-          "contextWindow", "maxTokens", "headers", "compat", "thinkingLevelMap")
+          "contextWindow", "maxTokens", "headers", "compat", "thinkingLevelMap", "cost")
 APIS = {"anthropic-messages", "openai-completions", "openai-responses", "openai-codex-responses"}
 
 def fetch(url):
@@ -21,8 +21,9 @@ def fetch(url):
         raise ValueError("Public catalog exceeded the download limit")
     return data
 
-def refresh():
-    metadata_url = "https://registry.npmjs.org/@earendil-works%2fpi-ai/latest"
+def refresh(version="latest"):
+    """Pin `version` (a published pi-ai version, or "latest")."""
+    metadata_url = f"https://registry.npmjs.org/@earendil-works%2fpi-ai/{version}"
     metadata = json.loads(fetch(metadata_url))
     url = metadata["dist"]["tarball"]
     parsed = urlparse(url)
@@ -65,4 +66,5 @@ def refresh():
     print(f"Updated {len(providers)} provider catalogs from {pin['package']} {pin['version']}")
 
 if __name__ == "__main__":
-    refresh()
+    import sys
+    refresh(sys.argv[1] if len(sys.argv) > 1 else "latest")

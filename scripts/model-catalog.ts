@@ -3,8 +3,9 @@
  * generated from the pinned pi-ai package's catalog (docs/development/historical-records.md).
  *
  * Only providers whose every model uses a wire API the gateway implements are
- * kept (the others could be neither presets nor OAuth catalogs), and `cost`
- * is dropped (the gateway reports zero cost). OpenCode uses a separate pinned
+ * kept (the others could be neither presets nor OAuth catalogs). `cost` (US
+ * dollars per million tokens) is kept for the usage ledger; the pinned pi-ai
+ * version is the pricing revision. OpenCode uses a separate pinned
  * live-catalog snapshot; --refresh-opencode explicitly refreshes it. Base URLs
  * moved since the pinned release are rewritten through BASE_URL_MOVES.
  *
@@ -53,6 +54,15 @@ function moveBaseUrl(provider: string, model: Record<string, unknown>): Record<s
   return move && model.baseUrl === move[0] ? { ...model, baseUrl: move[1] } : model;
 }
 
+/** A catalog price, or nothing when the source has none. */
+function price(cost: unknown): { cost: Record<string, number> } | undefined {
+  if (!cost || typeof cost !== 'object') return undefined;
+  const value = cost as Record<string, unknown>;
+  const keys = ['input', 'output', 'cacheRead', 'cacheWrite'];
+  if (!keys.every((key) => typeof value[key] === 'number' && value[key] >= 0)) return undefined;
+  return { cost: Object.fromEntries(keys.map((key) => [key, value[key] as number])) };
+}
+
 export function snapshot(
   version: string,
   providers: readonly string[],
@@ -65,7 +75,8 @@ export function snapshot(
     const entries = openCode[provider] ?? models(provider);
     const legacy = new Map(models(provider).map((model) => [String(model.id), model]));
     if (!entries.length || !entries.every((model) => SUPPORTED_APIS.has(model.api))) continue;
-    kept[provider] = entries.map(({ cost: _cost, ...model }) => {
+    kept[provider] = entries.map(({ cost, ...rest }) => {
+      const model: Record<string, unknown> = { ...rest, ...(price(cost) ?? {}) };
       const old = legacy.get(String(model.id));
       if (openCode[provider] && old?.api === model.api) {
         // Retain pi-ai's tested wire compatibility, without retaining stale limits.
