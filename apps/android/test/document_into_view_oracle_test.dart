@@ -6,7 +6,7 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart' as fm;
 import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html;
 import 'package:pirc_render/src/document_absolute_position.dart';
-import 'package:pirc_render/src/document_computed_styles.dart';
+import 'package:pirc_render_document/src/document_computed_styles.dart';
 import 'package:pirc_render/src/document_element_scroll.dart';
 import 'package:pirc_render/src/document_layout.dart';
 import 'package:pirc_render/src/document_layout_visibility.dart';

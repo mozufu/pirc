@@ -45,8 +45,7 @@ void main() {
       renderEnglishMessages.keys.toSet(),
     );
     List<String> args(String value) =>
-        RegExp(r'\{\d+\}').allMatches(value).map((m) => m[0]!).toList()
-          ..sort();
+        RegExp(r'\{\d+\}').allMatches(value).map((m) => m[0]!).toList()..sort();
     for (final entry in renderEnglishMessages.entries) {
       expect(args(entry.value), args(entry.key), reason: entry.key);
       expect(

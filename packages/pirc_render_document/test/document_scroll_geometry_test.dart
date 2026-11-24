@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show OverflowBoxFit;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:html/parser.dart' as html;
-import 'package:pirc_render/src/document_computed_styles.dart';
+import 'package:pirc_render_document/src/document_computed_styles.dart';
 import 'package:pirc_render/src/document_element_scroll.dart';
 import 'package:pirc_render/src/document_layout.dart';
 

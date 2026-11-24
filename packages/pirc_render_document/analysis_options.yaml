@@ -1,0 +1,6 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # This package extends pirc_render's engine and uses its internals.
+    implementation_imports: false

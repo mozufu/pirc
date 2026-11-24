@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:html/dom.dart' as dom;
-import 'document_computed_styles.dart';
+import 'document_computed_style_spec.dart';
 
 /// DOM identity/cascade metadata; geometry always comes from completed layout.
 class NativeDocumentScrollAnchorNode {

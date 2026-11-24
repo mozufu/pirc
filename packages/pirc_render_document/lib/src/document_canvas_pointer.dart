@@ -1,4 +1,4 @@
-import 'render_l10n.dart';
+import 'package:pirc_render/src/render_l10n.dart';
 import 'dart:async';
 import 'dart:math' as math;
 

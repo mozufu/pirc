@@ -2,7 +2,7 @@ import 'dart:ui' show Size, TextDirection;
 import 'document_absolute_position.dart';
 import 'document_transform.dart';
 import 'document_relative_position.dart';
-import 'document_computed_styles.dart';
+import 'document_computed_style_spec.dart';
 import 'package:html/dom.dart' as dom;
 
 /// A zero-size block marker preserves static position only in block-only flow.

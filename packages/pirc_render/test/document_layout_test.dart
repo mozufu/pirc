@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_render/src/document_computed_styles.dart';
+import 'package:pirc_render/src/document_computed_style_spec.dart';
 import 'package:pirc_render/src/document_layout.dart';
 
 void main() {

@@ -13,11 +13,11 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'svg_dimensions.dart';
-import 'document_canvas.dart';
+import 'document_canvas_layout.dart';
 import 'document_html_image.dart';
 import 'document_layout.dart';
 import 'document_fragment.dart';
-import 'document_computed_styles.dart';
+import 'document_computed_style_spec.dart';
 import 'document_offsets.dart';
 import 'document_relative_position.dart';
 import 'document_transform.dart';
@@ -26,7 +26,6 @@ import 'document_pointer_events.dart';
 import 'document_pointer_style.dart';
 import 'document_margin_collapse.dart';
 import 'document_element_scroll.dart';
-import 'document_canvas_pointer.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_widget_from_html_core/flutter_widget_from_html_core.dart';
 import 'package:html/dom.dart' as dom;
@@ -65,7 +64,6 @@ import 'html_inline_intrinsic_overflow.dart';
 import 'html_forms.dart';
 import 'html_form_feedback.dart';
 import 'html_form_submission.dart';
-import 'html_script_submission.dart';
 import 'html_history_controls.dart';
 import 'html_document_controls.dart';
 import 'html_policy.dart';
@@ -292,7 +290,7 @@ class NativeHtmlDocument extends StatefulWidget {
   /// Static presentation updates retain live values; script snapshots stay authoritative.
   final bool preserveControlValues;
   final NativeHtmlDocumentControls? retainedControls;
-  final Map<String, NativeDocumentCanvasSnapshot> canvases;
+  final Map<String, RenderCanvasSnapshot> canvases;
   final Map<String, ui.Image> canvasImages;
   final Map<String, Uint8List> vectorImageSources;
   final Map<String, NativeDocumentHtmlImage> htmlImages;
@@ -1560,7 +1558,13 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
           }
           if (action['kind'] != 'submit') continue;
           try {
-            final request = decodeScriptFormSubmission(
+            final runtime = RenderHost.of(context).documentRuntime;
+            if (runtime == null) {
+              throw StateError(
+                tr("Form navigation is unavailable in this document."),
+              );
+            }
+            final request = runtime.decodeScriptFormSubmission(
               action,
               resolveFile: (id, version, index) {
                 final selection =
@@ -1714,8 +1718,11 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
     final callback = widget.onScriptDetailedEvent;
     final owner = widget.scriptDocument;
     final id = element.attributes['data-pirc-script-id'];
-    if (callback == null || owner == null || id == null) return child;
-    return NativeDocumentCanvasPointer(
+    final runtime = RenderHost.of(context).documentRuntime;
+    if (callback == null || owner == null || id == null || runtime == null) {
+      return child;
+    }
+    return runtime.canvasPointerSurface(
       key: _canvasPointerKeys.putIfAbsent(id, () => GlobalKey()),
       documentIdentity: owner,
       elementId: id,
@@ -3022,7 +3029,7 @@ class _NativeHtmlFactory extends WidgetFactory {
   final _geometryOwnSizing = Expando<bool>();
   final _imageDensities = Expando<double>();
   final Widget? Function(dom.Element) mediaWidgets;
-  final Map<String, NativeDocumentCanvasSnapshot> Function() canvases;
+  final Map<String, RenderCanvasSnapshot> Function() canvases;
   final Map<String, ui.Image> Function() canvasImages;
   final Widget Function(dom.Element, Widget, bool) canvasPointerSurface;
   final bool Function() canvasPointerEnabled;
@@ -5384,32 +5391,39 @@ class _NativeHtmlFactory extends WidgetFactory {
       final width = snapshot?.width ?? dimension('width', 300);
       final height = snapshot?.height ?? dimension('height', 150);
       final Widget canvas;
-      if (width > NativeDocumentCanvasSnapshot.maxDimension ||
-          height > NativeDocumentCanvasSnapshot.maxDimension ||
-          width * height > NativeDocumentCanvasSnapshot.maxPixels) {
+      if (width > NativeCanvasLimits.maxDimension ||
+          height > NativeCanvasLimits.maxDimension ||
+          width * height > NativeCanvasLimits.maxPixels) {
         canvas = Text(tr("畫布尺寸超過目前原生渲染上限。"));
       } else {
         canvas = canvasPointerSurface(
           element,
           Builder(
-            builder: (context) => NativeDocumentCanvas(
-              images: canvasImages(),
-              cssWidthSpecified:
+            builder: (context) {
+              final cssWidthSpecified =
                   tree.getStyle('width') != null &&
-                  tree.getStyle('width')!.term != 'auto',
-              cssHeightSpecified:
+                  tree.getStyle('width')!.term != 'auto';
+              final cssHeightSpecified =
                   tree.getStyle('height') != null &&
-                  tree.getStyle('height')!.term != 'auto',
-              snapshot:
-                  snapshot ??
-                  NativeDocumentCanvasSnapshot.fromJson({
-                    'id': 'static-canvas',
-                    'width': width,
-                    'height': height,
-                    'revision': 0,
-                    'commands': const [],
-                  }),
-            ),
+                  tree.getStyle('height')!.term != 'auto';
+              final runtime = RenderHost.of(context).documentRuntime;
+              if (runtime == null) {
+                return NativeBlankCanvas(
+                  width: width.toDouble(),
+                  height: height.toDouble(),
+                  cssWidthSpecified: cssWidthSpecified,
+                  cssHeightSpecified: cssHeightSpecified,
+                );
+              }
+              return runtime.buildCanvas(
+                snapshot: snapshot,
+                width: width.toDouble(),
+                height: height.toDouble(),
+                cssWidthSpecified: cssWidthSpecified,
+                cssHeightSpecified: cssHeightSpecified,
+                images: canvasImages(),
+              );
+            },
           ),
           tree.getStyle('touch-action')?.term == 'none',
         );

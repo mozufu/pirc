@@ -9,7 +9,7 @@ import 'package:flutter/widgets.dart'
     show WidgetsBinding, WidgetsBindingObserver, AppLifecycleState;
 import 'package:html/parser.dart' as html;
 import 'package:pirc_render/src/html_document_content.dart';
-import 'package:pirc_render/src/document_canvas.dart';
+import 'package:pirc_render_document/src/document_canvas.dart';
 import 'package:pirc_render/src/document_html_image.dart';
 import 'gateway.dart';
 import 'document_script_resources.dart';

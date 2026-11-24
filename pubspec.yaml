@@ -9,4 +9,5 @@ workspace:
   - apps/app
   - packages/pirc_client
   - packages/pirc_render
+  - packages/pirc_render_document
   - packages/pirc_ui

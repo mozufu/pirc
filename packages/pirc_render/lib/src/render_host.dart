@@ -2,7 +2,11 @@ import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 
+import 'dart:ui' as ui;
+
+import 'document_canvas_layout.dart';
 import 'html_file.dart';
+import 'html_form_submission.dart';
 import 'html_media_spec.dart';
 
 /// Services the renderer needs from the app that hosts it.
@@ -18,6 +22,7 @@ class RenderHost {
     this.documentScopeOf,
     this.mediaBuilder,
     this.filePickerFor,
+    this.documentRuntime,
   });
 
   /// The fetched document that [context] belongs to, if any. Implementations
@@ -34,6 +39,10 @@ class RenderHost {
     bool Function()? isCurrent,
   })?
   filePickerFor;
+
+  /// Script-driven document features (tier 3). Chat content has none: its
+  /// canvases stay blank and script form submissions are refused.
+  final DocumentRuntime? documentRuntime;
 
   /// The host used where no [RenderHostScope] is in the tree.
   static RenderHost fallback = const RenderHost();
@@ -117,4 +126,44 @@ class RenderFetchedImage {
   const RenderFetchedImage(this.bytes, this.mimeType);
   final Uint8List bytes;
   final String mimeType;
+}
+
+/// The script runtime side of fetched documents (tier 3 in plans/client.md):
+/// Canvas drawing and pointer input, and form submissions made by scripts.
+///
+/// Implemented by `pirc_render_document`; this package only calls it.
+abstract interface class DocumentRuntime {
+  /// Paints [snapshot] (or a blank bitmap of [width] × [height]).
+  Widget buildCanvas({
+    required RenderCanvasSnapshot? snapshot,
+    required double width,
+    required double height,
+    required bool cssWidthSpecified,
+    required bool cssHeightSpecified,
+    required Map<String, ui.Image> images,
+  });
+
+  /// Sends pointer input on [child] to the script of [documentIdentity].
+  Widget canvasPointerSurface({
+    Key? key,
+    required Widget child,
+    required Object documentIdentity,
+    required String elementId,
+    required bool touchActionNone,
+    Offset Function()? viewportOrigin,
+    required Future<bool> Function(String type, Map<String, dynamic> data)
+    onEvent,
+    VoidCallback? Function(Map<String, dynamic> data)? onTouchClickQueued,
+  });
+
+  /// Decodes a form submission requested by a document script.
+  NativeHtmlFormSubmission decodeScriptFormSubmission(
+    Map<String, dynamic> action, {
+    required NativeHtmlFile? Function(
+      String controlId,
+      String resetVersion,
+      int index,
+    )
+    resolveFile,
+  });
 }

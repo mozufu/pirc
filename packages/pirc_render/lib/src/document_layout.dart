@@ -3,7 +3,7 @@ import 'dart:collection';
 import 'dart:convert';
 import 'document_canvas_sizing.dart';
 import 'document_offsets.dart';
-import 'document_computed_styles.dart';
+import 'document_computed_style_spec.dart';
 import 'html_document_box.dart';
 import 'document_element_scroll.dart';
 import 'document_scroll_anchor_state.dart';

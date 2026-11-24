@@ -5,7 +5,7 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart' as md;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_render/src/html_file.dart';
 import 'package:pirc_render/src/html_form_submission.dart';
-import 'package:pirc_render/src/html_script_submission.dart';
+import 'package:pirc_render_document/src/html_script_submission.dart';
 import 'package:pirc_render/src/html_syntax.dart';
 import 'package:pirc_render/src/native_html.dart';
 import 'live_test.dart' show theme;

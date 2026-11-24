@@ -19,7 +19,7 @@ import 'package:pirc_render/src/document_fragment.dart';
 import 'package:pirc_render/src/document_reveal.dart';
 import 'package:pirc_render/src/document_scroll_anchor.dart';
 import 'package:pirc_render/src/document_touch_boundary.dart';
-import 'package:pirc_render/src/document_computed_styles.dart';
+import 'package:pirc_render_document/src/document_computed_styles.dart';
 import 'package:pirc_render/src/document_offsets.dart';
 import 'package:pirc_render/src/document_margin_collapse.dart';
 import 'package:pirc_render/src/document_layout_visibility.dart';

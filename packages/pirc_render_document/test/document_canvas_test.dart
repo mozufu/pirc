@@ -3,7 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/rendering.dart';
-import 'package:pirc_render/src/document_canvas.dart';
+import 'package:pirc_render_document/src/document_canvas.dart';
 
 void main() {
   testWidgets('Canvas updates pixels without repainting its static parent', (

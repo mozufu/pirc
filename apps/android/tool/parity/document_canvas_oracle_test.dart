@@ -5,7 +5,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_render/src/document_canvas.dart';
+import 'package:pirc_render_document/src/document_canvas.dart';
 
 void main() {
   final reportFile = File(

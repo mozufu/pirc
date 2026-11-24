@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_render/src/document_canvas_pointer.dart';
+import 'package:pirc_render_document/src/document_canvas_pointer.dart';
 
 typedef _ReceivedEvent = (String, Map<String, dynamic>);
 

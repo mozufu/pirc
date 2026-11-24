@@ -1,9 +1,9 @@
-import 'render_l10n.dart';
+import 'package:pirc_render/src/render_l10n.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'html_file.dart';
-import 'html_form_submission.dart';
+import 'package:pirc_render/src/html_file.dart';
+import 'package:pirc_render/src/html_form_submission.dart';
 
 const _maxInlineFileBytes = 2 * 1024 * 1024;
 final _base64Pattern = RegExp(

@@ -11,7 +11,7 @@ import 'package:pirc_render/src/document_layout.dart';
 import 'package:pirc_render/src/document_scroll_anchor.dart';
 import 'package:pirc_render/src/document_element_scroll.dart';
 import 'package:pirc_render/src/document_margin_collapse.dart';
-import 'package:pirc_render/src/document_computed_styles.dart';
+import 'package:pirc_render_document/src/document_computed_styles.dart';
 import 'package:pirc_render/src/html_document_styles.dart';
 import 'package:pirc_render/src/native_html.dart';
 import 'package:pirc_render/src/html_syntax.dart';

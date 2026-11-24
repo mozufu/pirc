@@ -4,7 +4,7 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_mobile/live/document_scripts.dart';
 import 'package:pirc_mobile/live/gateway.dart';
-import 'package:pirc_render/src/document_canvas.dart';
+import 'package:pirc_render_document/src/document_canvas.dart';
 import 'package:pirc_render/src/native_html.dart';
 import 'package:pirc_render/src/html_syntax.dart';
 import 'live_test.dart' show theme;
