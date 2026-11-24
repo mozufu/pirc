@@ -209,7 +209,7 @@ async fn node_chat() {
             "create a chat project: 201, display name trimmed, no path",
             "POST",
             "/api/workspaces",
-            Some(json!({ "nodeId": NODE_ID, "kind": "chat", "displayName": "  Trip  " })),
+            Some(json!({ "nodeId": NODE_ID, "mode": "chat", "displayName": "  Trip  " })),
         )
         .await;
     let project = created["workspace"]["id"].as_str().unwrap().to_owned();
@@ -218,7 +218,7 @@ async fn node_chat() {
         "a second project with the same name: names need not be unique",
         "POST",
         "/api/workspaces",
-        Some(json!({ "nodeId": NODE_ID, "kind": "chat", "displayName": "Trip" })),
+        Some(json!({ "nodeId": NODE_ID, "mode": "chat", "displayName": "Trip" })),
     )
     .await;
     for (step, name) in [
@@ -229,7 +229,7 @@ async fn node_chat() {
             step,
             "POST",
             "/api/workspaces",
-            Some(json!({ "nodeId": NODE_ID, "kind": "chat", "displayName": name })),
+            Some(json!({ "nodeId": NODE_ID, "mode": "chat", "displayName": name })),
         )
         .await;
     }
@@ -237,7 +237,7 @@ async fn node_chat() {
         "a display name of exactly 200 characters: 201",
         "POST",
         "/api/workspaces",
-        Some(json!({ "nodeId": NODE_ID, "kind": "chat", "displayName": "y".repeat(200) })),
+        Some(json!({ "nodeId": NODE_ID, "mode": "chat", "displayName": "y".repeat(200) })),
     )
     .await;
     r.send(
@@ -756,7 +756,7 @@ async fn node_chat_startup() {
         .request(
             "request-1",
             json!({ "method": "POST", "url": "/api/workspaces", "user": USER,
-                "payload": { "kind": "chat", "displayName": "Trip" } }),
+                "payload": { "mode": "chat", "displayName": "Trip" } }),
         )
         .await;
     let mut masked = ids.value(&created["data"]);
@@ -877,7 +877,7 @@ async fn node_chat_project_files() {
             "create a chat project",
             "POST",
             "/api/workspaces",
-            Some(json!({ "nodeId": NODE_ID, "kind": "chat", "displayName": "Trip" })),
+            Some(json!({ "nodeId": NODE_ID, "mode": "chat", "displayName": "Trip" })),
         )
         .await;
     let project = created["workspace"]["id"].as_str().unwrap().to_owned();
