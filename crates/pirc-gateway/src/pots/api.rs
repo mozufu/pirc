@@ -122,6 +122,9 @@ async fn transition(
     let Revision { revision } = body.0.parse()?;
     let pot = store::set_state(&mut app.db.lock(), &identity.user, id, revision, to)?;
     app.pots_changed(&identity.user);
+    if pot.state == PotState::Active {
+        super::runtime::kick(app, &identity.user, id);
+    }
     Ok(ok(pot))
 }
 

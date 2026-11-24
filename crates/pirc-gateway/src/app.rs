@@ -278,6 +278,12 @@ pub fn test_modes() -> pirc_config::modes::ModeCatalog {
     ] {
         catalog.modes.insert(mode.id.clone(), mode);
     }
+    let (_, pot) = pirc_config::modes::DEFAULT_MODE_FILES
+        .iter()
+        .find(|(file, _)| *file == "pot.md")
+        .expect("the pot mode ships");
+    let pot = pirc_config::modes::parse_mode("pot", pot).expect("the pot mode parses");
+    catalog.modes.insert(pot.id.clone(), pot);
     catalog
 }
 

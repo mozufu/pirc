@@ -185,7 +185,7 @@ fn failed_catalog_install_rolls_back_versions_generation_and_membership() {
         .projects = false;
     assert!(install_catalog(&conn, &catalog).is_err());
     assert_eq!(serde_json::to_value(view(&conn, &id)).unwrap(), before);
-    assert_eq!(count(&conn, "mode_policy_versions"), 2);
+    assert_eq!(count(&conn, "mode_policy_versions"), 3);
 }
 
 #[test]

@@ -473,3 +473,277 @@ fn the_context_is_the_asking_sessions_pot_only() {
     );
     assert_ne!(context["pot"]["id"], other.id.as_str());
 }
+
+mod runtime {
+    use super::super::runtime::{self, NewWake, Source};
+    use crate::db::Store;
+    use crate::nodes::ConnectedNode;
+    use crate::test_support::app_with_models;
+    use crate::util::now_ms;
+    use pirc_protocol::{HttpMethod, ModeId, NodeHttpRequest, NodeHttpResponse};
+    use serde_json::{Value, json};
+    use std::sync::{Arc, Mutex};
+
+    /// What the fake chat node's session shows.
+    #[derive(Clone, Copy, PartialEq)]
+    enum Stage {
+        Running,
+        Answered,
+    }
+
+    struct Fake {
+        requests: Mutex<Vec<NodeHttpRequest>>,
+        stage: Mutex<Stage>,
+        refuse_delivery: Mutex<bool>,
+        delivered: Mutex<Option<Value>>,
+    }
+
+    fn chat_node() -> ConnectedNode {
+        ConnectedNode {
+            id: "chat".into(),
+            role: pirc_protocol::NodeRole::Chat,
+            modes: vec![ModeId::new("pot").unwrap()],
+            workspaces: vec![pirc_protocol::RegisteredWorkspace {
+                checkpoint_private: false,
+                id: "pots".into(),
+                display_name: "Pots".into(),
+                mode: ModeId::new("pot").unwrap(),
+                roles: None,
+                repo: None,
+            }],
+            connected_at: now_ms(),
+            last_seen_at: now_ms(),
+            added: Default::default(),
+        }
+    }
+
+    fn respond(fake: &Fake, request: &NodeHttpRequest) -> NodeHttpResponse {
+        let ok = |status, body: Value| NodeHttpResponse {
+            status,
+            body: Some(body),
+        };
+        match (request.method, request.url.as_str()) {
+            (HttpMethod::Post, "/api/session-creations/internal") => {
+                ok(201, json!({ "session": { "id": "remote-pot" } }))
+            }
+            (HttpMethod::Patch, "/api/sessions/remote-pot") => ok(200, json!({})),
+            (HttpMethod::Post, "/api/sessions/remote-pot/deliver") => {
+                if *fake.refuse_delivery.lock().unwrap() {
+                    return ok(503, json!({ "error": { "message": "busy" } }));
+                }
+                *fake.delivered.lock().unwrap() = request.payload.clone();
+                ok(202, json!({ "delivered": true }))
+            }
+            (HttpMethod::Get, "/api/sessions/remote-pot/snapshot") => {
+                let mut history = Vec::new();
+                if let Some(message) = fake.delivered.lock().unwrap().clone() {
+                    history.push(json!({ "role": "custom", "customType": "pot-wake",
+                        "content": message["content"], "details": message["details"] }));
+                }
+                let running = *fake.stage.lock().unwrap() == Stage::Running;
+                if !running {
+                    history.push(json!({ "role": "assistant",
+                        "content": [{ "type": "text", "text": "Done: all green." }] }));
+                }
+                ok(
+                    200,
+                    json!({ "history": history, "interactions": [],
+                    "run": { "status": if running { "running" } else { "succeeded" }, "createdAt": 1 } }),
+                )
+            }
+            _ => panic!(
+                "unexpected Node request {:?} {}",
+                request.method, request.url
+            ),
+        }
+    }
+
+    fn setup() -> (crate::app::AppState, tempfile::TempDir, Arc<Fake>, String) {
+        let (app, dir) = app_with_models(json!({}));
+        {
+            let db = app.db.lock();
+            db.sync_remote_workspaces(
+                "chat",
+                &[("pots".into(), "Pots".into(), ModeId::new("pot").unwrap())],
+            )
+            .unwrap();
+            db.claim_assistant_node("chat").unwrap();
+        }
+        let fake = Arc::new(Fake {
+            requests: Mutex::new(Vec::new()),
+            stage: Mutex::new(Stage::Running),
+            refuse_delivery: Mutex::new(false),
+            delivered: Mutex::new(None),
+        });
+        let handler = fake.clone();
+        app.nodes.set_test_node(chat_node(), move |request| {
+            handler.requests.lock().unwrap().push(request.clone());
+            Ok(respond(&handler, &request))
+        });
+        let mut input = super::input("Tester");
+        input.permissions.work_locations.clear();
+        input.models.work_models.clear();
+        input.permissions.reach = super::Reach::Observe;
+        let pot = super::create(&mut app.db.lock(), "alice", input).unwrap();
+        (app, dir, fake, pot.id)
+    }
+
+    fn wake(app: &crate::app::AppState, pot: &str, text: &str) -> String {
+        runtime::enqueue(
+            &app.db.lock(),
+            "alice",
+            pot,
+            NewWake {
+                source: Source::User,
+                thread_id: Some("thread-1"),
+                causal_root: None,
+                content: text,
+                details: json!({ "from": "user" }),
+            },
+        )
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn a_wake_is_delivered_once_and_its_answer_becomes_the_reply() {
+        let (app, _dir, fake, pot) = setup();
+        let first = wake(&app, &pot, "How did the nightly go?");
+        let second = wake(&app, &pot, "And the flaky one?");
+        runtime::check(&app, "alice", &pot).await.unwrap();
+        // The pot's session was allocated in the pots workspace and remembered.
+        let pot_row = super::read(&app.db.lock(), "alice", &pot).unwrap();
+        let session = pot_row
+            .session_id
+            .clone()
+            .unwrap_or_else(|| panic!("{:?}", runtime::wake(&app.db.lock(), &first)));
+        assert_eq!(
+            app.db.lock().get_session(&session).unwrap().workspace_id,
+            "chat:pots"
+        );
+        let delivered = fake.delivered.lock().unwrap().clone().unwrap();
+        assert_eq!(delivered["customType"], "pot-wake");
+        assert_eq!(delivered["content"], "How did the nightly go?");
+        assert_eq!(delivered["details"]["wakeId"], first.as_str());
+        assert_eq!(delivered["details"]["source"], "user");
+        assert_eq!(
+            runtime::wake(&app.db.lock(), &first).unwrap().state,
+            "delivered"
+        );
+        // One at a time: the second waits while the first runs.
+        runtime::check(&app, "alice", &pot).await.unwrap();
+        assert_eq!(
+            runtime::wake(&app.db.lock(), &second).unwrap().state,
+            "queued"
+        );
+
+        *fake.stage.lock().unwrap() = Stage::Answered;
+        runtime::check(&app, "alice", &pot).await.unwrap();
+        let done = runtime::wake(&app.db.lock(), &first).unwrap();
+        assert_eq!(
+            (done.state.as_str(), done.reply.as_deref()),
+            ("settled", Some("Done: all green."))
+        );
+        // The next wake goes out right after, into the same session.
+        assert_eq!(
+            runtime::wake(&app.db.lock(), &second).unwrap().state,
+            "delivered"
+        );
+        let creations = fake
+            .requests
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|r| r.url == "/api/session-creations/internal")
+            .count();
+        assert_eq!(creations, 1);
+        assert_eq!(
+            super::read(&app.db.lock(), "alice", &pot)
+                .unwrap()
+                .session_id,
+            Some(session)
+        );
+    }
+
+    #[tokio::test]
+    async fn a_paused_pot_gets_nothing_and_refused_sends_are_retried_then_failed() {
+        let (app, _dir, fake, pot) = setup();
+        let id = wake(&app, &pot, "Hello");
+        super::set_state(
+            &mut app.db.lock(),
+            "alice",
+            &pot,
+            1,
+            super::PotState::Paused,
+        )
+        .unwrap();
+        runtime::check(&app, "alice", &pot).await.unwrap();
+        assert_eq!(runtime::wake(&app.db.lock(), &id).unwrap().state, "queued");
+        assert!(fake.requests.lock().unwrap().is_empty());
+
+        super::set_state(
+            &mut app.db.lock(),
+            "alice",
+            &pot,
+            2,
+            super::PotState::Active,
+        )
+        .unwrap();
+        *fake.refuse_delivery.lock().unwrap() = true;
+        for attempt in 1..=3 {
+            runtime::check(&app, "alice", &pot).await.unwrap();
+            let state = runtime::wake(&app.db.lock(), &id).unwrap();
+            assert_eq!(state.attempts, attempt);
+            assert_eq!(state.state, if attempt < 3 { "queued" } else { "failed" });
+        }
+        assert!(fake.delivered.lock().unwrap().is_none());
+    }
+
+    #[tokio::test]
+    async fn without_a_chat_node_the_wake_waits_without_using_an_attempt() {
+        let (app, _dir, _fake, pot) = setup();
+        app.db.lock().release_assistant_node("chat").unwrap();
+        let id = wake(&app, &pot, "Hello");
+        runtime::check(&app, "alice", &pot).await.unwrap();
+        let state = runtime::wake(&app.db.lock(), &id).unwrap();
+        assert_eq!((state.state.as_str(), state.attempts), ("queued", 0));
+        assert!(state.error.unwrap().contains("no chat node"));
+    }
+
+    #[tokio::test]
+    async fn an_unconfirmed_delivery_is_never_sent_again() {
+        let (app, _dir, fake, pot) = setup();
+        let id = wake(&app, &pot, "Hello");
+        // As after a crash between claim and send: in flight, never seen.
+        runtime::check(&app, "alice", &pot).await.unwrap();
+        *fake.delivered.lock().unwrap() = None;
+        app.db
+            .lock()
+            .execute(
+                "UPDATE pot_wakes SET delivered_at=?2 WHERE id=?1",
+                rusqlite::params![id, now_ms() - 11 * 60_000],
+            )
+            .unwrap();
+        let sends_before = fake
+            .requests
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|r| r.url.ends_with("/deliver"))
+            .count();
+        runtime::check(&app, "alice", &pot).await.unwrap();
+        let state = runtime::wake(&app.db.lock(), &id).unwrap();
+        assert_eq!(state.state, "failed");
+        assert_eq!(
+            state.error.as_deref(),
+            Some("Delivery could not be confirmed")
+        );
+        let sends_after = fake
+            .requests
+            .lock()
+            .unwrap()
+            .iter()
+            .filter(|r| r.url.ends_with("/deliver"))
+            .count();
+        assert_eq!(sends_after, sends_before);
+    }
+}

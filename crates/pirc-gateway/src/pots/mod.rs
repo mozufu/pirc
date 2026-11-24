@@ -2,6 +2,7 @@
 
 pub mod api;
 pub mod ops;
+pub mod runtime;
 pub mod store;
 
 #[cfg(test)]

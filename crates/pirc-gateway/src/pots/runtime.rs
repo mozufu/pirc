@@ -1,0 +1,377 @@
+//! A pot's runtime (plans/pots.md, Runtime): each pot has one persistent session
+//! in the chat node's `pots` workspace, allocated on first need. Wakes wait in
+//! `pot_wakes` and are delivered one at a time as `pot-wake` messages; when the
+//! run that took a wake is over, its last answer is the wake's reply.
+//!
+//! Delivery is at most once. A wake is claimed (`delivering`) before the
+//! request leaves; one whose delivery outcome is unknown is never re-sent, and
+//! is failed if the session never shows it.
+
+use std::time::Duration;
+
+use rusqlite::{Connection, OptionalExtension, params};
+use serde_json::{Value, json};
+
+use super::store::{self, PotState};
+use crate::app::AppState;
+use crate::db::{Session, Store};
+use crate::dispatch::{Progress, deliver, read_progress, start_session};
+use crate::error::{ApiError, ApiResult};
+use crate::util::{new_id, now_ms};
+
+/// Delivery attempts before a wake is failed (each only after a refused send).
+const MAX_ATTEMPTS: i64 = 3;
+/// A delivered wake the session never shows is failed after this long.
+const UNSEEN_LIMIT_MS: i64 = 10 * 60_000;
+/// How often every pot with pending wakes is looked at again.
+const SWEEP: Duration = Duration::from_secs(30);
+
+/// Where a wake came from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Source {
+    User,
+    Group,
+    Dm,
+    Event,
+    Approval,
+    Handover,
+    Reminder,
+    Review,
+    Budget,
+}
+
+impl Source {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::User => "user",
+            Self::Group => "group",
+            Self::Dm => "dm",
+            Self::Event => "event",
+            Self::Approval => "approval",
+            Self::Handover => "handover",
+            Self::Reminder => "reminder",
+            Self::Review => "review",
+            Self::Budget => "budget",
+        }
+    }
+}
+
+/// A wake to queue.
+pub struct NewWake<'a> {
+    pub source: Source,
+    pub thread_id: Option<&'a str>,
+    pub causal_root: Option<&'a str>,
+    pub content: &'a str,
+    pub details: Value,
+}
+
+/// Queue a wake for the owner's pot; it is delivered by [`kick`] or the sweep.
+pub fn enqueue(conn: &Connection, owner: &str, pot_id: &str, wake: NewWake) -> ApiResult<String> {
+    store::read(conn, owner, pot_id)?;
+    let id = new_id("wake");
+    conn.execute(
+        "INSERT INTO pot_wakes(id,pot_id,owner_user,source,thread_id,causal_root,content,details_json,created_at)
+         VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+        params![
+            id,
+            pot_id,
+            owner,
+            wake.source.as_str(),
+            wake.thread_id,
+            wake.causal_root,
+            wake.content,
+            wake.details.to_string(),
+            now_ms(),
+        ],
+    )?;
+    Ok(id)
+}
+
+/// A pot wake's state, for tests and status views.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Wake {
+    pub id: String,
+    pub state: String,
+    pub attempts: i64,
+    pub reply: Option<String>,
+    pub error: Option<String>,
+}
+
+pub fn wake(conn: &Connection, id: &str) -> ApiResult<Wake> {
+    conn.query_row(
+        "SELECT id,state,attempts,reply,error FROM pot_wakes WHERE id=?1",
+        [id],
+        |r| {
+            Ok(Wake {
+                id: r.get(0)?,
+                state: r.get(1)?,
+                attempts: r.get(2)?,
+                reply: r.get(3)?,
+                error: r.get(4)?,
+            })
+        },
+    )
+    .optional()?
+    .ok_or_else(|| ApiError::not_found("Wake not found"))
+}
+
+/// The pot's own session, allocated in the chat node's `pots` workspace when it
+/// has none (or its session is gone).
+async fn ensure_session(app: &AppState, owner: &str, pot_id: &str) -> Result<Session, String> {
+    let (name, existing) = {
+        let conn = app.db.lock();
+        let pot = store::read(&conn, owner, pot_id).map_err(|e| e.message)?;
+        let existing = pot
+            .session_id
+            .as_deref()
+            .and_then(|id| conn.get_session(id).ok());
+        (pot.input.profile.name, existing)
+    };
+    if let Some(session) = existing {
+        return Ok(session);
+    }
+    let node = app
+        .db
+        .lock()
+        .assistant_node()
+        .map_err(|e| e.message)?
+        .ok_or("no chat node hosts pots")?;
+    let workspace = app
+        .db
+        .lock()
+        .get_workspace(&format!("{node}:{}", pirc_config::POTS_WORKSPACE_ID))
+        .map_err(|_| "the chat node has no pots workspace".to_owned())?;
+    let session = start_session(app, &workspace, owner, &name)
+        .await
+        .map_err(|failure| failure.0)?;
+    app.db
+        .lock()
+        .execute(
+            "UPDATE pot_runtime SET session_id=?1 WHERE pot_id=?2",
+            params![session.id, pot_id],
+        )
+        .map_err(|e| e.to_string())?;
+    Ok(session)
+}
+
+/// Claim the pot's next queued wake, unless one is in flight or the pot is
+/// not active. The partial unique index makes a second claim fail.
+fn claim(
+    conn: &Connection,
+    owner: &str,
+    pot_id: &str,
+) -> ApiResult<Option<(String, String, Value)>> {
+    let pot = store::read(conn, owner, pot_id)?;
+    if pot.state != PotState::Active {
+        return Ok(None);
+    }
+    let next: Option<(String, String, String, String)> = conn
+        .query_row(
+            "SELECT id,source,content,details_json FROM pot_wakes
+             WHERE pot_id=?1 AND state='queued' ORDER BY created_at, rowid LIMIT 1",
+            [pot_id],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+        )
+        .optional()?;
+    let Some((id, source, content, details)) = next else {
+        return Ok(None);
+    };
+    let claimed = conn.execute(
+        "UPDATE pot_wakes SET state='delivering' WHERE id=?1 AND state='queued'
+         AND NOT EXISTS(SELECT 1 FROM pot_wakes WHERE pot_id=?2 AND state IN ('delivering','delivered'))",
+        params![id, pot_id],
+    );
+    match claimed {
+        Ok(1) => {}
+        Ok(_) => return Ok(None),
+        Err(rusqlite::Error::SqliteFailure(failure, _))
+            if failure.code == rusqlite::ErrorCode::ConstraintViolation =>
+        {
+            return Ok(None);
+        }
+        Err(error) => return Err(error.into()),
+    }
+    let mut details: Value = serde_json::from_str(&details).unwrap_or_else(|_| json!({}));
+    details["wakeId"] = json!(id);
+    details["source"] = json!(source);
+    Ok(Some((id, content, details)))
+}
+
+/// Deliver the pot's next wake if nothing is in flight.
+pub async fn pump(app: &AppState, owner: &str, pot_id: &str) -> ApiResult<()> {
+    let Some((id, content, details)) = claim(&app.db.lock(), owner, pot_id)? else {
+        return Ok(());
+    };
+    let session = match ensure_session(app, owner, pot_id).await {
+        Ok(session) => session,
+        Err(reason) => {
+            // Nothing left: the wake waits for the chat node, attempts unchanged.
+            app.db.lock().execute(
+                "UPDATE pot_wakes SET state='queued',error=?2 WHERE id=?1",
+                params![id, reason],
+            )?;
+            return Ok(());
+        }
+    };
+    let message = json!({ "customType": "pot-wake", "content": content, "details": details });
+    let sent = deliver(app, &session, owner, message).await;
+    let conn = app.db.lock();
+    match sent {
+        Ok(()) => {
+            conn.execute(
+                "UPDATE pot_wakes SET state='delivered',delivered_at=?2,error=NULL WHERE id=?1",
+                params![id, now_ms()],
+            )?;
+        }
+        Err(failure) => {
+            // The Node refused or could not be asked: the message did not run.
+            conn.execute(
+                "UPDATE pot_wakes SET attempts=attempts+1,error=?2,
+                  state=CASE WHEN attempts+1>=?3 THEN 'failed' ELSE 'queued' END WHERE id=?1",
+                params![id, failure.0, MAX_ATTEMPTS],
+            )?;
+        }
+    }
+    Ok(())
+}
+
+/// Follow the pot's delivered wake; when its run is over, keep the answer and
+/// move on to the next wake.
+pub async fn check(app: &AppState, owner: &str, pot_id: &str) -> ApiResult<()> {
+    let found: Option<(String, i64, Option<String>)> = {
+        let conn = app.db.lock();
+        conn.query_row(
+            "SELECT w.id, COALESCE(w.delivered_at,w.created_at), r.session_id FROM pot_wakes w
+             JOIN pot_runtime r ON r.pot_id=w.pot_id
+             WHERE w.pot_id=?1 AND w.state IN ('delivering','delivered')",
+            [pot_id],
+            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+        )
+        .optional()?
+    };
+    let Some((id, delivered_at, Some(session_id))) = found else {
+        return pump(app, owner, pot_id).await;
+    };
+    let session = app.db.lock().get_session(&session_id)?;
+    let progress = read_progress(app, &session, owner, delivered_at, |message| {
+        message
+            .get("details")
+            .and_then(|details| details.get("wakeId"))
+            .and_then(Value::as_str)
+            == Some(id.as_str())
+    })
+    .await
+    .map_err(|failure| ApiError::new(503, "node_unavailable", failure.0))?;
+    let settled = {
+        let conn = app.db.lock();
+        match progress {
+            Progress::Over {
+                answer,
+                failure_reason,
+                ..
+            } => {
+                conn.execute(
+                    "UPDATE pot_wakes SET state='settled',settled_at=?2,reply=?3,error=?4 WHERE id=?1",
+                    params![id, now_ms(), answer, failure_reason],
+                )?;
+                true
+            }
+            Progress::Dropped => {
+                conn.execute(
+                    "UPDATE pot_wakes SET state='failed',settled_at=?2,error='The pot stopped before it took the message' WHERE id=?1",
+                    params![id, now_ms()],
+                )?;
+                true
+            }
+            // Never seen in the session: the delivery outcome is unknown. It is
+            // not re-sent; after a while it is given up.
+            Progress::Queued if now_ms() - delivered_at > UNSEEN_LIMIT_MS => {
+                conn.execute(
+                    "UPDATE pot_wakes SET state='failed',settled_at=?2,error='Delivery could not be confirmed' WHERE id=?1",
+                    params![id, now_ms()],
+                )?;
+                true
+            }
+            Progress::Queued | Progress::Working | Progress::Waiting(_) | Progress::Unknown => {
+                false
+            }
+        }
+    };
+    if settled {
+        app.pots_changed(owner);
+        pump(app, owner, pot_id).await?;
+    }
+    Ok(())
+}
+
+/// Look at the pot again soon, without waiting for the sweep.
+pub fn kick(app: &AppState, owner: &str, pot_id: &str) {
+    let (app, owner, pot_id) = (app.clone(), owner.to_owned(), pot_id.to_owned());
+    tokio::spawn(async move {
+        if let Err(error) = check(&app, &owner, &pot_id).await {
+            crate::log::warn(&format!("pot {pot_id}: {}", error.message));
+        }
+    });
+}
+
+/// The pot whose own session `session_id` is, if any.
+pub fn pot_of(conn: &Connection, session_id: &str) -> Option<(String, String)> {
+    conn.query_row(
+        "SELECT p.owner_user, p.id FROM pot_runtime r JOIN pots p ON p.id=r.pot_id WHERE r.session_id=?1",
+        [session_id],
+        |r| Ok((r.get(0)?, r.get(1)?)),
+    )
+    .optional()
+    .ok()
+    .flatten()
+}
+
+/// Every pot with wakes not yet settled.
+fn pending(conn: &Connection) -> rusqlite::Result<Vec<(String, String)>> {
+    conn.prepare(
+        "SELECT DISTINCT owner_user, pot_id FROM pot_wakes WHERE state IN ('queued','delivering','delivered')",
+    )?
+    .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?
+    .collect()
+}
+
+/// Keeps the event subscription alive for the Gateway's lifetime.
+struct Runtime {
+    _events: std::sync::Mutex<Option<crate::events::Subscription>>,
+}
+
+/// Follow pot sessions' events, and sweep for pots after a restart or a
+/// missed event.
+pub fn start(app: &AppState) {
+    // Listeners run under the hub's lock: only hand the session on.
+    let (sender, mut sessions) = tokio::sync::mpsc::unbounded_channel::<String>();
+    let subscription = app.events.subscribe_all(std::sync::Arc::new(move |event| {
+        if crate::dispatch::is_watched_event(event) {
+            let _ = sender.send(event.session_id.clone());
+        }
+    }));
+    app.slots.set(std::sync::Arc::new(Runtime {
+        _events: std::sync::Mutex::new(Some(subscription)),
+    }));
+    let follower = app.clone();
+    tokio::spawn(async move {
+        while let Some(session_id) = sessions.recv().await {
+            let found = pot_of(&follower.db.lock(), &session_id);
+            if let Some((owner, pot_id)) = found {
+                kick(&follower, &owner, &pot_id);
+            }
+        }
+    });
+    let app = app.clone();
+    tokio::spawn(async move {
+        loop {
+            let pots = pending(&app.db.lock()).unwrap_or_default();
+            for (owner, pot_id) in pots {
+                if let Err(error) = check(&app, &owner, &pot_id).await {
+                    crate::log::warn(&format!("pot {pot_id}: {}", error.message));
+                }
+            }
+            tokio::time::sleep(SWEEP).await;
+        }
+    });
+}

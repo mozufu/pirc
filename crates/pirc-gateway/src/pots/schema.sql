@@ -98,3 +98,24 @@ CREATE TABLE pot_settings (
  handback_cooldown_s INTEGER NOT NULL DEFAULT 3600 CHECK(handback_cooldown_s BETWEEN 0 AND 604800),
  revision INTEGER NOT NULL DEFAULT 1
 );
+-- Messages and events waiting for a pot, delivered into its session one at a
+-- time (plans/pots.md, Runtime). At most one wake per pot is in flight.
+CREATE TABLE pot_wakes (
+ id TEXT PRIMARY KEY,
+ pot_id TEXT NOT NULL REFERENCES pots(id) ON DELETE CASCADE,
+ owner_user TEXT NOT NULL,
+ source TEXT NOT NULL CHECK(source IN ('user','group','dm','event','approval','handover','reminder','review','budget')),
+ thread_id TEXT,
+ causal_root TEXT,
+ content TEXT NOT NULL CHECK(length(content) BETWEEN 1 AND 100000),
+ details_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(details_json)),
+ state TEXT NOT NULL DEFAULT 'queued' CHECK(state IN ('queued','delivering','delivered','settled','failed')),
+ attempts INTEGER NOT NULL DEFAULT 0,
+ delivered_at INTEGER,
+ settled_at INTEGER,
+ reply TEXT,
+ error TEXT,
+ created_at INTEGER NOT NULL
+);
+CREATE INDEX pot_wakes_pending ON pot_wakes(pot_id, state, created_at);
+CREATE UNIQUE INDEX pot_wakes_in_flight ON pot_wakes(pot_id) WHERE state IN ('delivering','delivered');

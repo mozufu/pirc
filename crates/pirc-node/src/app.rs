@@ -1274,6 +1274,7 @@ fn delivery(body: &Value) -> ApiResult<Delivery> {
         "assistant-delegation",
         "assistant-delegation-update",
         "scheduled-run",
+        "pot-wake",
     ]
     .contains(&delivery.custom_type.as_str())
         && (1..=100_000).contains(&length(&delivery.content))
