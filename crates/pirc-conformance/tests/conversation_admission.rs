@@ -270,7 +270,18 @@ async fn stop_before_first_send_prevents_late_dispatch_but_permits_an_explicit_n
     cluster
         .llm
         .push([Reply::Text("Only the new message".into())]);
-    ok(api.send("POST",&format!("/api/sessions/{session}/commands"),&headers,Some(json!({"commandId":"new-explicit-message","clientId":"native","generation":generation,"payload":{"type":"prompt","message":"A deliberate replacement"}}))).await,202);
+    let binding = ok(
+        api.send(
+            "GET",
+            &format!("/api/sessions/{session}/environment"),
+            &headers,
+            None,
+        )
+        .await,
+        200,
+    )["binding"]
+        .clone();
+    ok(api.send("POST",&format!("/api/sessions/{session}/commands"),&headers,Some(json!({"commandId":"new-explicit-message","clientId":"native","generation":generation,"expectedBinding":binding,"payload":{"type":"prompt","message":"A deliberate replacement"}}))).await,202);
     wait_calls(&cluster, 1).await;
     assert!(
         !cluster.llm.requests()[0]["messages"]

@@ -15,11 +15,13 @@ import path from 'node:path';
 export type Tally = { passed: number; failed: number; ignored: number; suites: number };
 
 /**
- * Fewer passes than this means the suite did not run (a few hundred tests run
- * against the executables, about 280 pass today). Lower it only when tests are
- * removed on purpose.
+ * Fewer passes than this means the suite did not run. Lower it only when tests are
+ * removed on purpose. pirc 2 set aside about 90 tests that create sessions through
+ * the removed `POST /api/sessions` (each is a declared `#[ignore]`), leaving about
+ * 190 passes; raise this back above 250 when they are rewritten on first-send
+ * (plans/roadmap.md M2.9).
  */
-export const MIN_PASSED = 250;
+export const MIN_PASSED = 185;
 
 /** The sum of every `test result:` line of a `cargo test` output. */
 export function tally(output: string): Tally {

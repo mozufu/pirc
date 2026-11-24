@@ -254,7 +254,18 @@ async fn unmapped_stop_survives_offline_takeover_restart_and_allows_only_explici
     cluster
         .llm
         .push([Reply::Text("Only deliberate new work".into())]);
-    ok(api.send("POST",&format!("/api/sessions/{session}/commands"),&first,Some(json!({"commandId":"new-after-stop","clientId":"phone","generation":node_control["lease"]["generation"],"payload":{"type":"prompt","message":"A deliberate new message"}}))).await,202);
+    let binding = ok(
+        api.send(
+            "GET",
+            &format!("/api/sessions/{session}/environment"),
+            &first,
+            None,
+        )
+        .await,
+        200,
+    )["binding"]
+        .clone();
+    ok(api.send("POST",&format!("/api/sessions/{session}/commands"),&first,Some(json!({"commandId":"new-after-stop","clientId":"phone","generation":node_control["lease"]["generation"],"expectedBinding":binding,"payload":{"type":"prompt","message":"A deliberate new message"}}))).await,202);
     let until = Instant::now() + Duration::from_secs(10);
     while cluster.llm.requests().is_empty() {
         assert!(Instant::now() < until, "new work was not admitted");
