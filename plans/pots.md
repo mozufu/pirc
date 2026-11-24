@@ -194,7 +194,7 @@ Layers (P10):
   every concurrent child of the root. Reconcile once with actual usage; keep unknown
   charges; refund only proven unused reservations. Price changes do not raise an
   accepted cap. If a model cannot be bounded in money (no price), money caps cannot
-  admit it unless the user enabled API-equivalent accounting (Q7); token caps always
+  admit it unless the user enabled API-equivalent accounting (P20); token caps always
   apply.
 - **Exhaustion**: per pot, the pot stops model wakes and asks the user; owner-wide,
   `on_exhausted` decides (`pause_all` or `ask`).

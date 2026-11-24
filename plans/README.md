@@ -101,15 +101,15 @@ are superseded by P1, P4, P17 and P11.
 | P17 | Transport is chosen by the implementer for resource use and speed. Choice: Dart owns networking; Kotlin keeps only what needs Android, plus a slim background client (rationale in [client.md](client.md#transport)). Supersedes N5.                                                                                  |
 | P18 | Autonomous spending is charged to the pot's budget; when it runs out the pot stops and notifies the user; it never raises its own limits. A pot can read its own budget to plan, and can ask the user for more through a decision card and notification; only the user's approval raises it.                          |
 | P19 | Pots need a loop guard: high-volume collaboration is fine while it makes progress; ineffective cycles (for example A hands work to B and B immediately hands it back) are detected and stopped. See [pots.md](pots.md#loop-guard).                                                                                    |
+| P20 | Money caps count API-billed usage; subscription usage counts toward them, at the API-equivalent price, only when the user turns on "show API-equivalent price". Token caps count all usage (was Q7).                                                                                                                  |
 
 ## Pending owner decisions
 
 Each has a default the plans use until the owner decides.
 
-| ID  | Question                             | Default used in the plans                                                                                                                              | Blocks |
-| --- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
-| Q7  | Money caps and subscription usage    | Token caps count all usage; money caps count API-billed usage, plus subscription usage at API-equivalent price only when the user turns that option on | M3, M4 |
-| Q8  | Script-bearing agent HTML on desktop | Like Web: an isolated web view with a non-persistent data store and no app bridge; tiers 1–2 use the Dart engine                                       | M9     |
+| ID  | Question                             | Default used in the plans                                                                                        | Blocks |
+| --- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------- | ------ |
+| Q8  | Script-bearing agent HTML on desktop | Like Web: an isolated web view with a non-persistent data store and no app bridge; tiers 1–2 use the Dart engine | M9     |
 
 ## Working rules
 

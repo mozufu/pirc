@@ -55,7 +55,7 @@ Used by pots (and later any capped actor):
 3. On completion, replace the reservation with the actual row; keep unknown charges;
    refund only the proven unused part.
 4. Money caps admit unpriced or subscription usage only through API-equivalent
-   accounting when the user enabled it (Q7); token caps count all usage.
+   accounting when the user enabled it (P20); token caps count all usage.
 
 ## Views and API
 
