@@ -136,10 +136,8 @@ pub(super) async fn retry(
     State(app): State<AppState>,
     Extension(identity): Extension<Identity>,
     Path(op): Path<String>,
-    headers: axum::http::HeaderMap,
     ReqBody(body): ReqBody,
 ) -> ApiResult<axum::Json<Value>> {
-    client::require(&headers)?;
     if !valid_id(&op) {
         return Err(ApiError::invalid_input());
     }

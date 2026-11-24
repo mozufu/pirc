@@ -4,7 +4,8 @@
 mod acceptance;
 mod attachments;
 mod cancellation;
-mod client;
+/// Days a staged attachment of an unaccepted submission is kept.
+pub const ATTACHMENT_RETENTION_DAYS: u32 = 7;
 mod dispatch;
 mod pre_stop;
 pub(crate) use acceptance::require_initial_submission_complete;
@@ -284,10 +285,6 @@ pub fn router() -> Router<AppState> {
         .merge(acceptance::routes())
         .merge(dispatch::routes())
         .merge(pre_stop::routes())
-        .route(
-            "/api/conversation-submissions/capabilities",
-            get(capabilities),
-        )
         .route("/api/conversation-submissions/prepare", post(prepare))
         .route(
             "/api/conversation-submissions/session/{id}",
@@ -298,12 +295,7 @@ pub fn router() -> Router<AppState> {
             get(status).delete(discard),
         )
 }
-async fn capabilities(
-    Extension(identity): Extension<Identity>,
-    headers: axum::http::HeaderMap,
-) -> axum::Json<Value> {
-    axum::Json(client::capabilities(&identity, &headers))
-}
+
 async fn pending_for_session(
     State(app): State<AppState>,
     Extension(identity): Extension<Identity>,
@@ -320,10 +312,8 @@ async fn pending_for_session(
 async fn prepare(
     State(app): State<AppState>,
     Extension(identity): Extension<Identity>,
-    headers: axum::http::HeaderMap,
     ReqBody(body): ReqBody,
 ) -> ApiResult<axum::Json<Value>> {
-    client::require(&headers)?;
     let input: Input = body.parse()?;
     if input
         .expected_owner

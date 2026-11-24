@@ -9,6 +9,7 @@ mod app;
 mod auth;
 mod backends;
 mod calendar;
+mod capabilities;
 mod checkpoints;
 mod conversation_bindings;
 mod conversation_submissions;

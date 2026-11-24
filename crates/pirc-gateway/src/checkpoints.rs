@@ -683,6 +683,7 @@ mod tests {
         body: Option<Value>,
     ) -> Response {
         let mut request = Request::builder()
+            .header(crate::capabilities::HEADER, "test/2")
             .method(method)
             .uri(path)
             .header("host", "a.example")

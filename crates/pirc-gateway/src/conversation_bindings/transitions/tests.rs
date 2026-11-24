@@ -319,6 +319,7 @@ pub(super) async fn http(
 ) -> (u16, Value) {
     use tower::ServiceExt;
     let mut req = axum::http::Request::builder()
+        .header(crate::capabilities::HEADER, "test/2")
         .uri(path)
         .method(if payload.is_some() { "POST" } else { "GET" })
         .header("host", "a.example")

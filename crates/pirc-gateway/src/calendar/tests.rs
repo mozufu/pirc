@@ -911,6 +911,7 @@ async fn authenticated_http_contract_works_for_web_and_paired_app() {
             .header("host", "a.example")
             .header("origin", "https://a.example")
             .header("x-pirc-user", user)
+            .header(crate::capabilities::HEADER, "test/2")
     };
     let created = web(reqwest::Method::POST, "/api/calendar/events", "alice")
         .header("content-type", "application/json")
@@ -926,6 +927,7 @@ async fn authenticated_http_contract_works_for_web_and_paired_app() {
     let phone = client
         .get(format!("{endpoint}{resource}"))
         .header("host", "a.example")
+        .header(crate::capabilities::HEADER, "test/2")
         .bearer_auth(&token)
         .send()
         .await
@@ -962,6 +964,7 @@ async fn authenticated_http_contract_works_for_web_and_paired_app() {
     let stale = client
         .patch(format!("{endpoint}{resource}"))
         .header("host", "a.example")
+        .header(crate::capabilities::HEADER, "test/2")
         .bearer_auth(&token)
         .header("content-type", "application/json")
         .body(json!({"revision":1,"event":spec()}).to_string())
@@ -973,6 +976,7 @@ async fn authenticated_http_contract_works_for_web_and_paired_app() {
         .delete(format!("{endpoint}{resource}"))
         .header("host", "a.example")
         .header("x-pirc-user", "alice")
+        .header(crate::capabilities::HEADER, "test/2")
         .header("origin", "https://evil.example")
         .header("content-type", "application/json")
         .body(json!({"revision":2}).to_string())

@@ -372,9 +372,7 @@ async fn accept(
     State(app): State<AppState>,
     Extension(identity): Extension<Identity>,
     Path(op): Path<String>,
-    headers: axum::http::HeaderMap,
 ) -> ApiResult<(axum::http::StatusCode, axum::Json<Value>)> {
-    client::require(&headers)?;
     if !valid_id(&op) {
         return Err(ApiError::invalid_input());
     }
@@ -593,9 +591,7 @@ async fn materialize(
     State(app): State<AppState>,
     Extension(identity): Extension<Identity>,
     Path(op): Path<String>,
-    headers: axum::http::HeaderMap,
 ) -> ApiResult<axum::Json<Value>> {
-    client::require(&headers)?;
     if !valid_id(&op) {
         return Err(ApiError::invalid_input());
     }

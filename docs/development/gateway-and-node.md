@@ -128,7 +128,8 @@ A disconnected node makes its sessions answer `503` and stops new commands. A co
 
 Every session route is answered by the node that owns the session; the gateway checks ownership and the control lease first.
 
-- `GET /api/health`
+- `GET /api/health` (liveness only)
+- `GET /api/capabilities`: the client API version, the server version, the signed-in account and each feature as `{ supported, enabled, version }` (see [Client version](#client-version))
 - `GET /api/workspaces`
 - `GET /api/sessions`. Sessions are created only by sending a first message (`/api/conversation-submissions/*`); the Gateway's own schedule and delegation sessions use the Node-only `POST /api/session-creations/internal`. A new session starts as `New session` (`nameSource: "auto"`), and the agent's generated title replaces it, reported as a `session_renamed` event.
 - `PATCH /api/sessions/:id` takes any of `{ "name", "pinned", "settled" }`. A `name` renames the session and marks the name as user-chosen, so generated titles no longer replace it. `pinned` and `settled` are booleans that organize the sidebar (sessions report them as `pinnedAt` / `settledAt` timestamps, or `null`); only the gateway stores them, and they do not change the session's activity time.
@@ -148,6 +149,10 @@ Every session route is answered by the node that owns the session; the gateway c
 - Terminals (run on the session's node; the stream is relayed over the node link): `GET|POST /api/sessions/:id/terminals`, `POST /api/sessions/:id/terminals/:terminalId/close`, and WebSocket `GET /api/sessions/:id/terminals/:terminalId/stream`, which replays recent output on connect. Creating, closing, typing and resizing require a live control lease. Terminal creation rechecks it at spawn; queued input and resizes recheck the original controller, connection and terminal environment at each actual PTY operation, including after backpressure. A takeover or accepted environment fence refuses the remaining input; closing drops the writer queue. Already-delivered input cannot be recalled.
 
 Mutations that affect the agent require `{clientId,generation}` from a live control lease. Commands additionally require a client-generated `commandId`. Reusing the ID with the same canonical payload returns the known command; using it with a different payload returns `409`.
+
+### Client version
+
+Every request to `/api/*` except `/api/health` and `/api/capabilities` names the client and the API version it speaks: the header `X-Pirc-Client: <app>/<version>`, sent exactly once (for example `web/2`). WebSocket upgrades, which browsers cannot give custom headers, may instead pass `?client=<app>/<version>`. The Gateway serves exactly one version (`API_VERSION` in `crates/pirc-gateway/src/capabilities.rs`); anything else is answered `426 client_upgrade_required` before routing, with a message asking the person to update or reload. Clients learn what is enabled from `GET /api/capabilities`, never from a version string.
 
 ### Request shape
 

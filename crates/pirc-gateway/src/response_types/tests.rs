@@ -15,6 +15,7 @@ async fn answer(router: Router, path: &str) -> Response {
     router
         .oneshot(
             Request::builder()
+                .header(crate::capabilities::HEADER, "test/2")
                 .uri(path)
                 .body(axum::body::Body::empty())
                 .unwrap(),
@@ -105,6 +106,7 @@ async fn replies_of_the_router_are_allowed_types_with_nosniff() {
     ];
     for (method, path, authenticated) in cases {
         let request = Request::builder()
+            .header(crate::capabilities::HEADER, "test/2")
             .method(method)
             .uri(path)
             .header("host", "a.example")
@@ -182,6 +184,7 @@ async fn a_node_cannot_make_the_gateway_relay_a_page() {
             },
         );
         let request = Request::builder()
+            .header(crate::capabilities::HEADER, "test/2")
             .uri(format!("/api/sessions/{session}/files"))
             .header("host", "a.example")
             .header("x-pirc-user", user)

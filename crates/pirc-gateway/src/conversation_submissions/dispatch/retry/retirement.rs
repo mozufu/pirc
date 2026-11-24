@@ -99,10 +99,8 @@ pub(in crate::conversation_submissions) async fn retire(
     State(app): State<AppState>,
     Extension(identity): Extension<Identity>,
     Path((op, id)): Path<(String, String)>,
-    headers: axum::http::HeaderMap,
     ReqBody(body): ReqBody,
 ) -> ApiResult<axum::Json<Value>> {
-    client::require(&headers)?;
     let input: Retire = body.parse()?;
     if !valid_id(&op) || !valid_id(&id) || !valid_id(&input.previous_command_id) {
         return Err(ApiError::invalid_input());

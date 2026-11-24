@@ -56,6 +56,7 @@ async fn call(
 ) -> axum::response::Response {
     use tower::ServiceExt;
     let mut request = axum::http::Request::builder()
+        .header(crate::capabilities::HEADER, "test/2")
         .method(method)
         .uri(path)
         .header("host", "a.example")

@@ -420,6 +420,7 @@ pub(super) async fn call(
 ) -> (u16, Value) {
     use tower::ServiceExt;
     let mut req = axum::http::Request::builder()
+        .header(crate::capabilities::HEADER, "test/2")
         .method(method)
         .uri(path)
         .header("host", "a.example")
@@ -725,7 +726,8 @@ fn concurrent_retry_cancellation_and_project_deletion_never_revive_content() {
 async fn account_fence_rejects_a_changed_cookie_before_preparing_any_content() {
     use tower::ServiceExt;
     let (app, _dir) = app();
-    let request=axum::http::Request::builder().method("POST").uri("/api/conversation-submissions/prepare")
+    let request=axum::http::Request::builder()
+            .header(crate::capabilities::HEADER, "test/2").method("POST").uri("/api/conversation-submissions/prepare")
         .header("host","a.example").header("origin","https://a.example").header("x-pirc-user","bob").header("x-pirc-account","alice").header("content-type","application/json")
         .extension(axum::extract::ConnectInfo("127.0.0.1:40000".parse::<std::net::SocketAddr>().unwrap()))
         .body(axum::body::Body::from(json!({"operationId":"old-account","submission":{"workspaceId":"node:repo","message":"private Alice text","attachments":[]}}).to_string())).unwrap();
@@ -787,7 +789,7 @@ mod admission {
     use super::*;
 
     const PREPARE: &str = "/api/conversation-submissions/prepare";
-    const CAPABILITIES: &str = "/api/conversation-submissions/capabilities";
+    const CAPABILITIES: &str = "/api/capabilities";
 
     fn no_files() -> Value {
         json!({"operationId":"draft-1","submission":{"workspaceId":"node:repo","message":"hello","attachments":[]}})
@@ -795,7 +797,7 @@ mod admission {
     async fn can_submit(app: &AppState) -> Value {
         call(app, "GET", CAPABILITIES, Some("alice"), None, None)
             .await
-            .1["canSubmit"]
+            .1["features"]["firstSend"]["enabled"]
             .clone()
     }
 

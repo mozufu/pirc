@@ -352,6 +352,7 @@ pub fn router(app: AppState) -> Router {
             get(sockets::browser_stream),
         )
         .route("/api/health", get(routes::health))
+        .route("/api/capabilities", get(crate::capabilities::get))
         .route("/api/nodes", get(routes::list_nodes))
         .route("/api/assistant/node", get(routes::assistant_node))
         .route(
@@ -694,6 +695,13 @@ async fn authenticate(
                     "The signed-in account changed. Reopen this operation in its original account.",
                 )
                 .into_response();
+            }
+            if let Err(error) = crate::capabilities::require(
+                request.headers(),
+                request.uri(),
+                is_websocket_upgrade(request.headers()),
+            ) {
+                return error.into_response();
             }
             request.extensions_mut().insert(identity);
             next.run(request).await

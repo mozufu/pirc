@@ -359,6 +359,7 @@ async fn raw_json_attachment_round_trips_through_paired_device_http() {
         ("alice", "application/octet-stream", bytes.as_slice(), 200),
     ] {
         let mut request = axum::http::Request::builder()
+            .header(crate::capabilities::HEADER, "test/2")
             .method("PUT")
             .uri("/api/conversation-submissions/draft-1/attachments/file-1")
             .header("host", "a.example")

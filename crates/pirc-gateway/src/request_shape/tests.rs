@@ -217,6 +217,7 @@ pub(crate) async fn send(
     probe: &Probe,
 ) -> (u16, Value) {
     let mut request = HttpRequest::builder()
+        .header(crate::capabilities::HEADER, "test/2")
         .method(method)
         .uri(path)
         .header("host", "a.example")
@@ -328,7 +329,10 @@ fn only_state_changing_methods_need_a_shape() {
 }
 
 async fn enforce_with(method: &str, probe: &Probe) -> Result<Vec<u8>, ApiError> {
-    let mut request = HttpRequest::builder().method(method).uri("/api/x");
+    let mut request = HttpRequest::builder()
+        .header(crate::capabilities::HEADER, "test/2")
+        .method(method)
+        .uri("/api/x");
     for (name, value) in &probe.headers {
         request = request.header(*name, value);
     }
@@ -389,6 +393,7 @@ async fn forged_shapes_are_refused_and_accepted_shapes_keep_their_body() {
 async fn json_declarations_are_checked_against_their_limit() {
     let big = format!("\"{}\"", "a".repeat(2000));
     let request = HttpRequest::builder()
+        .header(crate::capabilities::HEADER, "test/2")
         .method("POST")
         .uri("/api/x")
         .header("content-type", "application/json")
@@ -405,6 +410,7 @@ async fn identity_checks_run_before_the_shape_check() {
     let (app, _dir) = fixture();
     // No identity: still 401, not a hint about the shape.
     let request = HttpRequest::builder()
+        .header(crate::capabilities::HEADER, "test/2")
         .method("POST")
         .uri("/api/push/test")
         .header("host", "a.example")
@@ -422,6 +428,7 @@ async fn identity_checks_run_before_the_shape_check() {
     assert_eq!(response.status().as_u16(), 401);
     // A foreign origin is refused as before.
     let mut foreign = HttpRequest::builder()
+        .header(crate::capabilities::HEADER, "test/2")
         .method("POST")
         .uri("/api/push/test")
         .header("host", "a.example")

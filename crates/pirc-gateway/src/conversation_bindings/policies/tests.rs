@@ -423,6 +423,7 @@ async fn http(
 ) -> (u16, serde_json::Value) {
     use tower::ServiceExt;
     let mut req = axum::http::Request::builder()
+        .header(crate::capabilities::HEADER, "test/2")
         .uri(format!("/api/sessions/{id}/environment"))
         .header("host", "a.example")
         .extension(axum::extract::ConnectInfo(

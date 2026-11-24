@@ -32,10 +32,14 @@ pub use fake_push::{FakePush, PushSubscription};
 pub use normalize::{Normalizer, Transcript, mask_background_log_dir};
 
 /// Headers a trusted proxy adds to an authenticated browser request.
+/// The client API version the Gateway under test serves (`X-Pirc-Client`).
+pub const CLIENT: &str = "conformance/2";
+
 pub fn browser_headers() -> Vec<(&'static str, String)> {
     vec![
         ("host", HOST.to_owned()),
         ("origin", ORIGIN.to_owned()),
         ("x-pirc-user", USER.to_owned()),
+        ("x-pirc-client", CLIENT.to_owned()),
     ]
 }
