@@ -940,19 +940,21 @@ double _sign(double value) {
 
 BigInt _doubleToFixed(double value) {
   if (value == 0) return BigInt.zero;
+  // Read the IEEE 754 bits as two 32-bit halves: Web integers have no 64 bits.
   final bytes = ByteData(8)..setFloat64(0, value, Endian.big);
-  final bits = bytes.getUint64(0, Endian.big);
-  final negative = (bits >> 63) != 0;
-  final exponentBits = ((bits >> 52) & 0x7ff).toInt();
-  final fraction = bits & 0x000fffffffffffff;
+  final high = bytes.getUint32(0, Endian.big);
+  final low = bytes.getUint32(4, Endian.big);
+  final negative = (high >> 31) != 0;
+  final exponentBits = (high >> 20) & 0x7ff;
+  final fraction = (BigInt.from(high & 0xfffff) << 32) | BigInt.from(low);
   final significand = exponentBits == 0
       ? fraction
-      : fraction | 0x0010000000000000;
+      : fraction | (BigInt.one << 52);
   final exponent = exponentBits == 0 ? -1074 : exponentBits - 1023 - 52;
   final fixedShift = exponent + _trigFractionBits;
   final magnitude = fixedShift >= 0
-      ? BigInt.from(significand) << fixedShift
-      : _roundShiftRight(BigInt.from(significand), -fixedShift);
+      ? significand << fixedShift
+      : _roundShiftRight(significand, -fixedShift);
   return negative ? -magnitude : magnitude;
 }
 
@@ -993,8 +995,13 @@ double _fixedToDouble(BigInt value) {
 
   final exponentBits = exponent + 1023;
   final fraction = significand - (BigInt.one << 52);
-  final signBit = negative ? 0x8000000000000000 : 0;
-  final bits = signBit | (exponentBits << 52) | fraction.toInt();
-  final bytes = ByteData(8)..setUint64(0, bits, Endian.big);
+  final high =
+      (negative ? 0x80000000 : 0) |
+      (exponentBits << 20) |
+      (fraction >> 32).toInt();
+  final low = (fraction & BigInt.from(0xffffffff)).toInt();
+  final bytes = ByteData(8)
+    ..setUint32(0, high, Endian.big)
+    ..setUint32(4, low, Endian.big);
   return bytes.getFloat64(0, Endian.big);
 }

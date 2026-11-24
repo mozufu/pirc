@@ -157,12 +157,13 @@ class _BlinkDecimal {
   static const _precision = 18;
   static const _minExponent = -1023;
   static const _maxExponent = 1023;
-  static const _maxDoubleCoefficient = 17976931348623157;
+  // A string, not an int literal: Web integers hold only 53 bits.
+  static final _maxDoubleCoefficient = BigInt.parse('17976931348623157');
   static const _maxDoubleExponent = 292;
   static final one = _BlinkDecimal(BigInt.one, 0, false);
   static final zero = _BlinkDecimal(BigInt.zero, 0, false);
   static final _maxDouble = _BlinkDecimal(
-    BigInt.from(_maxDoubleCoefficient),
+    _maxDoubleCoefficient,
     _maxDoubleExponent,
     false,
   );
