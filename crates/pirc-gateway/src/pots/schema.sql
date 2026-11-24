@@ -119,3 +119,45 @@ CREATE TABLE pot_wakes (
 );
 CREATE INDEX pot_wakes_pending ON pot_wakes(pot_id, state, created_at);
 CREATE UNIQUE INDEX pot_wakes_in_flight ON pot_wakes(pot_id) WHERE state IN ('delivering','delivered');
+-- Conversations with and between pots (plans/pots.md, Threads and messaging).
+-- The user can read every thread; authors are set by the Gateway.
+CREATE TABLE threads (
+ id TEXT PRIMARY KEY,
+ owner_user TEXT NOT NULL,
+ kind TEXT NOT NULL CHECK(kind IN ('direct','group','pot_dm')),
+ name TEXT NOT NULL DEFAULT '' CHECK(length(name)<=60),
+ avatar_color INTEGER CHECK(avatar_color IS NULL OR avatar_color BETWEEN 1 AND 5),
+ host_pot_id TEXT REFERENCES pots(id) ON DELETE SET NULL,
+ project_id TEXT,
+ -- The direct thread's pot, or a pot DM's two pots in order.
+ pot_a TEXT REFERENCES pots(id) ON DELETE CASCADE,
+ pot_b TEXT REFERENCES pots(id) ON DELETE CASCADE,
+ last_seq INTEGER NOT NULL DEFAULT 0,
+ created_at INTEGER NOT NULL,
+ updated_at INTEGER NOT NULL,
+ CHECK(kind!='direct' OR (pot_a IS NOT NULL AND pot_b IS NULL)),
+ CHECK(kind!='pot_dm' OR (pot_a IS NOT NULL AND pot_b IS NOT NULL AND pot_a<pot_b)),
+ CHECK(kind!='group' OR (pot_a IS NULL AND pot_b IS NULL))
+);
+CREATE UNIQUE INDEX threads_direct ON threads(owner_user, pot_a) WHERE kind='direct';
+CREATE UNIQUE INDEX threads_pot_dm ON threads(owner_user, pot_a, pot_b) WHERE kind='pot_dm';
+CREATE INDEX threads_owner ON threads(owner_user, updated_at);
+CREATE TABLE thread_members (
+ thread_id TEXT NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+ pot_id TEXT NOT NULL REFERENCES pots(id) ON DELETE CASCADE,
+ PRIMARY KEY(thread_id, pot_id)
+);
+CREATE TABLE messages (
+ id TEXT PRIMARY KEY,
+ thread_id TEXT NOT NULL REFERENCES threads(id) ON DELETE CASCADE,
+ seq INTEGER NOT NULL,
+ author_kind TEXT NOT NULL CHECK(author_kind IN ('user','pot','system')),
+ author_id TEXT,
+ body TEXT NOT NULL CHECK(length(body) BETWEEN 1 AND 32768),
+ mentions_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(mentions_json)),
+ all_mention INTEGER NOT NULL DEFAULT 0 CHECK(all_mention IN (0,1)),
+ causal_root TEXT,
+ created_at INTEGER NOT NULL,
+ UNIQUE(thread_id, seq),
+ CHECK(all_mention=0 OR author_kind='user')
+);

@@ -281,6 +281,92 @@ mod http {
     }
 
     #[tokio::test]
+    async fn the_owner_talks_to_a_pot_and_its_groups_over_http() {
+        let (app, _dir) = app();
+        let mut ids = Vec::new();
+        for name in ["Tester", "Helper"] {
+            let mut pot = body();
+            pot["profile"]["name"] = json!(name);
+            let (status, created) =
+                call(&app, "POST", "/api/pots", Some("alice"), None, Some(pot)).await;
+            assert_eq!(status, 201, "{created}");
+            ids.push(created["pot"]["id"].as_str().unwrap().to_owned());
+        }
+        let (status, direct) = call(
+            &app,
+            "GET",
+            &format!("/api/pots/{}/thread", ids[0]),
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        assert_eq!(
+            (status, direct["thread"]["kind"].as_str()),
+            (200, Some("direct"))
+        );
+        let thread = direct["thread"]["id"].as_str().unwrap().to_owned();
+        let messages = format!("/api/threads/{thread}/messages");
+        let (status, posted) = call(
+            &app,
+            "POST",
+            &messages,
+            Some("alice"),
+            None,
+            Some(json!({ "body": "Hi" })),
+        )
+        .await;
+        assert_eq!(status, 201, "{posted}");
+        assert_eq!(posted["woken"], json!([ids[0]]));
+        let (_, page) = call(
+            &app,
+            "GET",
+            &format!("{messages}?before=99"),
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        assert_eq!(page["messages"][0]["body"], "Hi");
+        // Another owner sees no thread; unknown fields are refused.
+        assert_eq!(
+            call(&app, "GET", &messages, Some("bob"), None, None)
+                .await
+                .0,
+            404
+        );
+        assert_eq!(
+            call(
+                &app,
+                "POST",
+                &messages,
+                Some("alice"),
+                None,
+                Some(json!({ "body": "x", "as": "pot" }))
+            )
+            .await
+            .0,
+            400
+        );
+        let group = json!({ "name": "Pair", "hostPotId": ids[0], "memberPotIds": [ids[1]] });
+        let (status, created) = call(
+            &app,
+            "POST",
+            "/api/threads",
+            Some("alice"),
+            None,
+            Some(group),
+        )
+        .await;
+        assert_eq!(
+            (status, created["thread"]["kind"].as_str()),
+            (201, Some("group"))
+        );
+        let (_, listed) = call(&app, "GET", "/api/threads", Some("alice"), None, None).await;
+        assert_eq!(listed["threads"].as_array().unwrap().len(), 2);
+    }
+
+    #[tokio::test]
     async fn the_owner_creates_reads_updates_and_pauses_a_pot() {
         let (app, _dir) = app();
         let (status, created) =
@@ -745,5 +831,241 @@ mod runtime {
             .filter(|r| r.url.ends_with("/deliver"))
             .count();
         assert_eq!(sends_after, sends_before);
+    }
+}
+
+mod threads {
+    use super::super::threads::{self, GroupInput, Target};
+    use super::*;
+
+    fn pot(conn: &mut rusqlite::Connection, name: &str, send: DmRule, receive: DmRule) -> String {
+        let mut input = input(name);
+        input.permissions.dm.send = send;
+        input.permissions.dm.receive = receive;
+        create(conn, "alice", input).unwrap().id
+    }
+
+    fn queued(conn: &rusqlite::Connection, pot: &str) -> Vec<(String, String)> {
+        conn.prepare("SELECT source, content FROM pot_wakes WHERE pot_id=?1 ORDER BY rowid")
+            .unwrap()
+            .query_map([pot], |r| Ok((r.get(0)?, r.get(1)?)))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap()
+    }
+
+    #[test]
+    fn a_direct_thread_wakes_its_pot_and_the_reply_is_posted_back() {
+        let db = db();
+        let mut conn = db.lock();
+        let tester = pot(&mut conn, "Tester", DmRule::All, DmRule::All);
+        let thread = threads::direct(&conn, "alice", &tester).unwrap();
+        assert_eq!(
+            threads::direct(&conn, "alice", &tester).unwrap().id,
+            thread.id
+        );
+        assert_eq!(
+            threads::direct(&conn, "bob", &tester).unwrap_err().status,
+            404
+        );
+        let (message, woken) =
+            threads::post_user(&conn, "alice", &thread.id, "How did it go?", vec![], false)
+                .unwrap();
+        assert_eq!((message.seq, message.author_kind.as_str()), (1, "user"));
+        assert_eq!(woken, vec![tester.clone()]);
+        let wakes = queued(&conn, &tester);
+        assert_eq!(wakes[0].0, "user");
+        assert!(wakes[0].1.ends_with("How did it go?"), "{}", wakes[0].1);
+        // @all is for groups; mentions must be members.
+        assert_eq!(
+            threads::post_user(&conn, "alice", &thread.id, "x", vec![], true)
+                .unwrap_err()
+                .status,
+            400
+        );
+        // The settled wake's answer becomes the pot's message.
+        conn.execute(
+            "UPDATE pot_wakes SET state='settled', reply='All green.' WHERE pot_id=?1",
+            [&tester],
+        )
+        .unwrap();
+        let wake: String = conn
+            .query_row("SELECT id FROM pot_wakes WHERE pot_id=?1", [&tester], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        let reply = threads::post_reply(&conn, &wake).unwrap().unwrap();
+        assert_eq!(
+            (reply.seq, reply.author_id.as_deref()),
+            (2, Some(tester.as_str()))
+        );
+        let page = threads::messages(&conn, "alice", &thread.id, None).unwrap();
+        assert_eq!(
+            page.iter().map(|m| m.body.as_str()).collect::<Vec<_>>(),
+            ["How did it go?", "All green."]
+        );
+        assert_eq!(
+            threads::messages(&conn, "alice", &thread.id, Some(2))
+                .unwrap()
+                .len(),
+            1
+        );
+        assert_eq!(
+            threads::messages(&conn, "bob", &thread.id, None)
+                .unwrap_err()
+                .status,
+            404
+        );
+    }
+
+    #[test]
+    fn a_group_wakes_the_host_mentions_or_everyone() {
+        let db = db();
+        let mut conn = db.lock();
+        let host = pot(&mut conn, "Host", DmRule::All, DmRule::All);
+        let member = pot(&mut conn, "Member", DmRule::All, DmRule::All);
+        let third = pot(&mut conn, "Third", DmRule::All, DmRule::Off);
+        let group = threads::create_group(
+            &conn,
+            "alice",
+            GroupInput {
+                name: "Release".into(),
+                avatar_color: Some(3),
+                host_pot_id: host.clone(),
+                member_pot_ids: vec![member.clone(), third.clone()],
+                project_id: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(group.pots.len(), 3);
+        let post = |body: &str, mentions: Vec<String>, all: bool| {
+            let mut woken = threads::post_user(&conn, "alice", &group.id, body, mentions, all)
+                .unwrap()
+                .1;
+            woken.sort();
+            woken
+        };
+        assert_eq!(post("Status?", vec![], false), vec![host.clone()]);
+        assert_eq!(
+            post("@Member go", vec![member.clone()], false),
+            vec![member.clone()]
+        );
+        let mut all = vec![host.clone(), member.clone(), third.clone()];
+        all.sort();
+        assert_eq!(post("Everyone", vec![], true), all);
+        assert_eq!(queued(&conn, &host)[0].0, "group");
+        // Outsiders cannot be mentioned; a group needs two pots.
+        let outsider = pot(&mut conn, "Outsider", DmRule::All, DmRule::All);
+        assert_eq!(
+            threads::post_user(
+                &conn,
+                "alice",
+                &group.id,
+                "x",
+                vec![outsider.clone()],
+                false
+            )
+            .unwrap_err()
+            .status,
+            400
+        );
+        let lonely = GroupInput {
+            name: "Solo".into(),
+            avatar_color: None,
+            host_pot_id: host.clone(),
+            member_pot_ids: vec![host.clone()],
+            project_id: None,
+        };
+        assert_eq!(
+            threads::create_group(&conn, "alice", lonely)
+                .unwrap_err()
+                .status,
+            400
+        );
+
+        // A pot's mention wakes only members its and their DM rules allow,
+        // and a pot can never address everyone.
+        let (_, woken) = threads::post_pot(
+            &conn,
+            "alice",
+            &host,
+            Target::Thread(&group.id),
+            "Third, Member: look",
+            vec![member.clone(), third.clone()],
+            None,
+        )
+        .unwrap();
+        assert_eq!(woken, vec![member.clone()]);
+        let (_, woken) = threads::post_pot(
+            &conn,
+            "alice",
+            &host,
+            Target::Thread(&group.id),
+            "Noted",
+            vec![],
+            None,
+        )
+        .unwrap();
+        assert!(woken.is_empty());
+        assert_eq!(
+            threads::post_pot(
+                &conn,
+                "alice",
+                &outsider,
+                Target::Thread(&group.id),
+                "Hi",
+                vec![],
+                None
+            )
+            .unwrap_err()
+            .code,
+            "not_a_member"
+        );
+    }
+
+    #[test]
+    fn pot_messages_follow_both_pots_rules_and_are_read_only_to_the_user() {
+        let db = db();
+        let mut conn = db.lock();
+        let talker = pot(&mut conn, "Talker", DmRule::All, DmRule::All);
+        let open = pot(&mut conn, "Open", DmRule::All, DmRule::All);
+        let closed = pot(&mut conn, "Closed", DmRule::All, DmRule::Off);
+        let quiet = pot(&mut conn, "Quiet", DmRule::Off, DmRule::All);
+        let send = |from: &str, to: &str| {
+            threads::post_pot(
+                &conn,
+                "alice",
+                from,
+                Target::Pot(to),
+                "Ping",
+                vec![],
+                Some("root-1"),
+            )
+        };
+        let (message, woken) = send(&talker, &open).unwrap();
+        assert_eq!(woken, vec![open.clone()]);
+        assert_eq!(queued(&conn, &open)[0].0, "dm");
+        // The DM thread is the same both ways, and the user cannot post in it.
+        let (back, _) = send(&open, &talker).unwrap();
+        assert_eq!(back.thread_id, message.thread_id);
+        assert_eq!(
+            threads::post_user(&conn, "alice", &message.thread_id, "x", vec![], false)
+                .unwrap_err()
+                .code,
+            "read_only"
+        );
+        assert_eq!(send(&talker, &closed).unwrap_err().code, "dm_refused");
+        assert_eq!(send(&quiet, &open).unwrap_err().code, "dm_refused");
+        assert_eq!(send(&talker, &talker).unwrap_err().status, 400);
+        // Selected rules name the pots.
+        let mut picky = input("Picky");
+        picky.permissions.dm.receive = DmRule::Selected;
+        picky.permissions.dm.receive_from = vec![open.clone()];
+        let picky = create(&mut conn, "alice", picky).unwrap().id;
+        assert!(threads::dm_allowed(&conn, "alice", &open, &picky).unwrap());
+        assert!(!threads::dm_allowed(&conn, "alice", &talker, &picky).unwrap());
+        // Every thread is listed for the user.
+        assert_eq!(threads::list(&conn, "alice").unwrap().len(), 1);
+        assert!(threads::list(&conn, "bob").unwrap().is_empty());
     }
 }

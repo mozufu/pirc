@@ -4,6 +4,7 @@ pub mod api;
 pub mod ops;
 pub mod runtime;
 pub mod store;
+pub mod threads;
 
 #[cfg(test)]
 mod tests;

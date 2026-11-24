@@ -32,12 +32,6 @@ pub enum Source {
     User,
     Group,
     Dm,
-    Event,
-    Approval,
-    Handover,
-    Reminder,
-    Review,
-    Budget,
 }
 
 impl Source {
@@ -46,12 +40,6 @@ impl Source {
             Self::User => "user",
             Self::Group => "group",
             Self::Dm => "dm",
-            Self::Event => "event",
-            Self::Approval => "approval",
-            Self::Handover => "handover",
-            Self::Reminder => "reminder",
-            Self::Review => "review",
-            Self::Budget => "budget",
         }
     }
 }
@@ -87,7 +75,8 @@ pub fn enqueue(conn: &Connection, owner: &str, pot_id: &str, wake: NewWake) -> A
     Ok(id)
 }
 
-/// A pot wake's state, for tests and status views.
+/// A pot wake's state.
+#[cfg(test)]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Wake {
     pub id: String,
@@ -97,6 +86,7 @@ pub struct Wake {
     pub error: Option<String>,
 }
 
+#[cfg(test)]
 pub fn wake(conn: &Connection, id: &str) -> ApiResult<Wake> {
     conn.query_row(
         "SELECT id,state,attempts,reply,error FROM pot_wakes WHERE id=?1",
@@ -274,6 +264,9 @@ pub async fn check(app: &AppState, owner: &str, pot_id: &str) -> ApiResult<()> {
                     "UPDATE pot_wakes SET state='settled',settled_at=?2,reply=?3,error=?4 WHERE id=?1",
                     params![id, now_ms(), answer, failure_reason],
                 )?;
+                if super::threads::post_reply(&conn, &id)?.is_some() {
+                    app.threads_changed(owner);
+                }
                 true
             }
             Progress::Dropped => {

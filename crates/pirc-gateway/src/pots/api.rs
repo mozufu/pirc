@@ -9,6 +9,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use super::store::{self, Pot, PotInput, PotPatch, PotState, Settings};
+use super::threads;
 use crate::app::{AppState, ReqBody};
 use crate::auth::Identity;
 use crate::error::{ApiError, ApiResult};
@@ -22,6 +23,13 @@ pub fn routes() -> Router<AppState> {
         .route("/api/pots/{id}/resume", post(resume))
         .route("/api/pots/{id}/archive", post(archive))
         .route("/api/pots/{id}/restore", post(restore))
+        .route("/api/pots/{id}/thread", get(direct_thread))
+        .route("/api/threads", get(list_threads).post(create_group))
+        .route("/api/threads/{id}", get(read_thread))
+        .route(
+            "/api/threads/{id}/messages",
+            get(list_messages).post(post_message),
+        )
 }
 
 /// Models must be ones the Gateway serves; locations workspaces the owner sees.
@@ -188,4 +196,95 @@ async fn update_settings(
     let settings = store::update_settings(&mut app.db.lock(), &identity.user, next)?;
     app.pots_changed(&identity.user);
     Ok(axum::Json(json!({ "settings": settings })))
+}
+
+async fn direct_thread(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+) -> ApiResult<axum::Json<Value>> {
+    let thread = threads::direct(&app.db.lock(), &identity.user, &id)?;
+    Ok(axum::Json(json!({ "thread": thread })))
+}
+
+async fn list_threads(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+) -> ApiResult<axum::Json<Value>> {
+    let threads = threads::list(&app.db.lock(), &identity.user)?;
+    Ok(axum::Json(json!({ "threads": threads })))
+}
+
+async fn create_group(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    ReqBody(body): ReqBody,
+) -> ApiResult<(axum::http::StatusCode, axum::Json<Value>)> {
+    let input: threads::GroupInput = body.parse()?;
+    let thread = threads::create_group(&app.db.lock(), &identity.user, input)?;
+    app.threads_changed(&identity.user);
+    Ok((
+        axum::http::StatusCode::CREATED,
+        axum::Json(json!({ "thread": thread })),
+    ))
+}
+
+async fn read_thread(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+) -> ApiResult<axum::Json<Value>> {
+    let thread = threads::get(&app.db.lock(), &identity.user, &id)?;
+    Ok(axum::Json(json!({ "thread": thread })))
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Page {
+    before: Option<i64>,
+}
+
+async fn list_messages(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+    axum::extract::Query(page): axum::extract::Query<Page>,
+) -> ApiResult<axum::Json<Value>> {
+    let messages = threads::messages(&app.db.lock(), &identity.user, &id, page.before)?;
+    Ok(axum::Json(json!({ "messages": messages })))
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct NewMessage {
+    body: String,
+    #[serde(default)]
+    mentions: Vec<String>,
+    #[serde(default)]
+    all: bool,
+}
+
+async fn post_message(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+    ReqBody(body): ReqBody,
+) -> ApiResult<(axum::http::StatusCode, axum::Json<Value>)> {
+    let input: NewMessage = body.parse()?;
+    let (message, woken) = threads::post_user(
+        &app.db.lock(),
+        &identity.user,
+        &id,
+        &input.body,
+        input.mentions,
+        input.all,
+    )?;
+    for pot in &woken {
+        super::runtime::kick(&app, &identity.user, pot);
+    }
+    app.threads_changed(&identity.user);
+    Ok((
+        axum::http::StatusCode::CREATED,
+        axum::Json(json!({ "message": message, "woken": woken })),
+    ))
 }

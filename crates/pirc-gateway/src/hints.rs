@@ -79,6 +79,8 @@ pub struct Hints {
     pub sessions: Arc<Listeners<String>>,
     /// The owner's pots changed (`pots=1`).
     pub pots: Arc<Listeners<String>>,
+    /// The owner's threads or their messages changed (`threads=1`).
+    pub threads: Arc<Listeners<String>>,
 }
 
 impl Hints {
@@ -89,6 +91,7 @@ impl Hints {
             schedules: Listeners::new(),
             sessions: Listeners::new(),
             pots: Listeners::new(),
+            threads: Listeners::new(),
         }
     }
 }

@@ -44,6 +44,10 @@ impl App {
         self.hints.pots.notify(&user.to_owned());
     }
 
+    pub fn threads_changed(&self, user: &str) {
+        self.hints.threads.notify(&user.to_owned());
+    }
+
     pub fn schedules_changed(&self, user: &str) {
         self.hints.schedules.notify(&user.to_owned());
     }

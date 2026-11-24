@@ -15,7 +15,7 @@ acceptance, activation.
 | [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)         |
 | [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11   |
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
-| [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–2 done                                              |
+| [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–4 done                                              |
 | [M5 Client foundation](#m5-client-foundation)                 | complete | in progress |            | steps detailed                                              |
 | [M6 Work and settings screens](#m6-work-and-settings-screens) | outline  |             |            |                                                             |
 | [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |
@@ -191,8 +191,9 @@ that a session can only act as itself.
    - Node: a `pot` mode (`crates/pirc-config/src/modes/pot.md`) and a `pots`
      workspace on the chat node whose sessions each get a private directory, like
      today's chat workspace. The chat mode stays until step 10.
-   - Gateway: creating a pot allocates its session through the internal creation
-     entry (M2.1); deleting it deletes the session.
+   - Gateway: a pot's session is allocated through the internal creation entry
+     (M2.1) when its first wake is delivered (or again if the session is gone);
+     deleting a pot deletes the session (step 10).
    - Prompt: the agent asks `pot.context` (new agent operation) at start and per
      wake; the Gateway returns the personality, intro, work description,
      responsibilities, a permission summary and the user's display name. Pot ID comes

@@ -12,6 +12,19 @@ use crate::error::{ApiError, ApiResult};
 
 pub enum Op {
     Context,
+    Send(Send),
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Send {
+    /// Another pot to message directly, or
+    to_pot: Option<String>,
+    /// a thread this pot belongs to.
+    thread_id: Option<String>,
+    body: String,
+    #[serde(default)]
+    mentions: Vec<String>,
 }
 
 /// `None`: not a pot operation; `Some(Err)`: invalid arguments.
@@ -21,6 +34,13 @@ pub fn parse_op(op: &str, args: &Value) -> Option<Result<Op, ()>> {
             args.as_object()
                 .filter(|a| a.is_empty())
                 .map(|_| Op::Context)
+                .ok_or(()),
+        ),
+        "pot.message.send" => Some(
+            serde_json::from_value::<Send>(args.clone())
+                .ok()
+                .filter(|send| send.to_pot.is_some() != send.thread_id.is_some())
+                .map(Op::Send)
                 .ok_or(()),
         ),
         _ => None,
@@ -112,5 +132,30 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
     }
     match op {
         Op::Context => self::context(&app.db.lock(), &context.user, &context.session.id),
+        Op::Send(send) => {
+            let (message, woken) = {
+                let conn = app.db.lock();
+                let pot = pot_of_session(&conn, &context.user, &context.session.id)?;
+                let target = match (&send.to_pot, &send.thread_id) {
+                    (Some(to), _) => super::threads::Target::Pot(to),
+                    (_, Some(thread)) => super::threads::Target::Thread(thread),
+                    _ => unreachable!("parse requires exactly one target"),
+                };
+                super::threads::post_pot(
+                    &conn,
+                    &context.user,
+                    &pot.id,
+                    target,
+                    &send.body,
+                    send.mentions,
+                    None,
+                )?
+            };
+            for pot in &woken {
+                super::runtime::kick(app, &context.user, pot);
+            }
+            app.threads_changed(&context.user);
+            Ok(json!({ "message": message, "woken": woken }))
+        }
     }
 }
