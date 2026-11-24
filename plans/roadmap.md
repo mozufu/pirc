@@ -141,6 +141,16 @@ and not patched in the meantime.
      shows its lifetime.
 8. **Old-client code that only served deleted paths** is not edited; `apps/web` and
    `apps/android` are deleted wholesale in M8/M9.
+9. **Conformance and CI repair.** The conformance suite runs only on Linux, so it is
+   verified through the Check workflow (`gh workflow run check.yml --ref <branch>`).
+   - About 45 conformance files create sessions with the removed
+     `POST /api/sessions`. Add one harness helper that starts a conversation through
+     first-send (prepare, accept, materialize, dispatch, wait for the run) and use it
+     everywhere; snapshots that recorded the old route are re-recorded.
+   - Fix the failures that predate the rewrite: `pirc-node` Linux sandbox tests do not
+     compile (private `pty` module, a macro syntax error), and the Nix hash job fails.
+   Done when: the Check workflow is green on `main`, or every remaining failure is
+   listed here with its cause.
 
 ## M3 Usage ledger
 
