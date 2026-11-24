@@ -23,6 +23,7 @@ let
       ) ../apps/web/src)
       ../apps/web/public
       ../apps/web/csp-policy.ts
+      ../apps/web/sw-build-id.ts
       ../apps/web/package.json
       ../apps/web/index.html
       ../apps/web/tsconfig.json
