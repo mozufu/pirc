@@ -149,8 +149,8 @@ and not patched in the meantime.
      everywhere; snapshots that recorded the old route are re-recorded.
    - Fix the failures that predate the rewrite: `pirc-node` Linux sandbox tests do not
      compile (private `pty` module, a macro syntax error), and the Nix hash job fails.
-   Done when: the Check workflow is green on `main`, or every remaining failure is
-   listed here with its cause.
+     Done when: the Check workflow is green on `main`, or every remaining failure is
+     listed here with its cause.
 
 ## M3 Usage ledger
 
