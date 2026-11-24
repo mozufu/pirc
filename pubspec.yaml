@@ -1,0 +1,12 @@
+# Dart pub workspace for the Flutter client (plans/client.md). One lock file at
+# the root resolves every member together.
+name: pirc_workspace
+publish_to: none
+environment:
+  sdk: ^3.12.2
+workspace:
+  - apps/android
+  - apps/app
+  - packages/pirc_client
+  - packages/pirc_render
+  - packages/pirc_ui

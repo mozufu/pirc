@@ -66,6 +66,7 @@
                 supportedTargetFlutterPlatforms = [
                   "universal"
                   "android"
+                  "web"
                 ];
               })
             ])

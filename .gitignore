@@ -33,3 +33,7 @@ DEPLOY.md
 # insta: snapshots awaiting review
 *.snap.new
 *.pending-snap
+
+# Dart pub workspace (root pubspec.yaml)
+/.dart_tool/
+/build/
