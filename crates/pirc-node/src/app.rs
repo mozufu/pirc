@@ -27,9 +27,9 @@
 //! node halves of `relay.integration.test.ts`.
 
 use std::collections::HashMap;
-use std::fs::{DirBuilder, OpenOptions};
+use std::fs::OpenOptions;
 use std::io::Write;
-use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
+use std::os::unix::fs::OpenOptionsExt;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -69,7 +69,6 @@ pub fn routes(config: &NodeConfig) -> Vec<Route> {
         delete("/api/workspaces/:id/files", remove_project_file),
         get("/api/workspaces/:id/project-config", project_config),
         post("/api/workspaces/:id/project-trust", project_trust),
-        post("/api/sessions", create_session),
         get(
             "/api/execution-fences/capabilities",
             crate::execution_fences::capabilities,
@@ -121,6 +120,10 @@ pub fn routes(config: &NodeConfig) -> Vec<Route> {
             crate::grants::revoke,
         ),
         post("/api/session-creations", crate::session_creation::prepare),
+        post(
+            "/api/session-creations/internal",
+            crate::session_creation::internal,
+        ),
         get(
             "/api/session-creations/capabilities",
             crate::session_creation::capabilities,
@@ -816,29 +819,6 @@ async fn write_prompt(node: Node, request: Request) -> ApiResult<Response> {
 }
 
 // ---------- sessions ----------
-
-async fn create_session(node: Node, request: Request) -> ApiResult<Response> {
-    let map = object(request.json())?;
-    let workspace_id = string(map, "workspaceId", false, 1, usize::MAX)?;
-    crate::checkpoints::continuation::require_workspace_owner(
-        &node.db.lock(),
-        &workspace_id,
-        &request.user,
-    )?;
-    let workspace = node.db.lock().get_workspace(&workspace_id)?;
-    node.workspace_mode(&workspace)?;
-    let storage = node.config.sessions_dir.join(prefix_uuid("pi"));
-    DirBuilder::new()
-        .recursive(true)
-        .mode(0o700)
-        .create(&storage)
-        .map_err(|error| io_failure("creating", &storage, error))?;
-    let session =
-        node.db
-            .lock()
-            .create_session(&workspace.id, &storage.to_string_lossy(), &request.user)?;
-    created(json!({ "session": session }))
-}
 
 type Deletion = Shared<BoxFuture<'static, ApiResult<()>>>;
 

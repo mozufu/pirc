@@ -144,7 +144,7 @@ pub async fn start_session(
         &node_id,
         user,
         HttpMethod::Post,
-        "/api/sessions".into(),
+        "/api/session-creations/internal".into(),
         Some(json!({ "workspaceId": local })),
     )
     .await?;

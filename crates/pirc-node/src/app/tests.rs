@@ -302,9 +302,12 @@ async fn restore_existing_workspace_preserves_identity_history_and_files() {
     assert_eq!(first.status, 201);
     let original = first.body.unwrap()["workspace"].clone();
     let id = original["id"].as_str().unwrap();
-    let response = create_session(node.clone(), request(None, json!({ "workspaceId": id })))
-        .await
-        .unwrap();
+    let response = crate::session_creation::internal(
+        node.clone(),
+        request(None, json!({ "workspaceId": id })),
+    )
+    .await
+    .unwrap();
     let session_id = response.body.unwrap()["session"]["id"]
         .as_str()
         .unwrap()
@@ -558,7 +561,7 @@ async fn custom_modes_create_by_workdir_and_unavailable_sessions_are_read_only()
         Path::new(workspace["canonicalPath"].as_str().unwrap())
             .starts_with(root.join("state/chat"))
     );
-    let response = create_session(
+    let response = crate::session_creation::internal(
         node.clone(),
         request(None, json!({ "workspaceId": workspace_id })),
     )
@@ -591,7 +594,7 @@ async fn custom_modes_create_by_workdir_and_unavailable_sessions_are_read_only()
         .unwrap()
         .to_owned();
     assert_eq!(
-        create_session(
+        crate::session_creation::internal(
             node.clone(),
             request(None, json!({ "workspaceId": workspace_id }))
         )
@@ -613,7 +616,7 @@ async fn custom_modes_create_by_workdir_and_unavailable_sessions_are_read_only()
     // Conversely a saved repository must never become a full assistant
     // root merely because its mode file now uses per-session workdirs.
     assert_eq!(
-        create_session(
+        crate::session_creation::internal(
             node.clone(),
             request(None, json!({ "workspaceId": repository_id }))
         )
@@ -631,7 +634,7 @@ async fn custom_modes_create_by_workdir_and_unavailable_sessions_are_read_only()
     );
     node.replace_modes(Vec::new()).await;
     assert_eq!(
-        create_session(
+        crate::session_creation::internal(
             node.clone(),
             request(None, json!({ "workspaceId": workspace_id }))
         )
@@ -916,20 +919,20 @@ async fn session_creation_routes_are_durable_strict_and_read_only_on_lookup() {
     forbidden.user = "not-allowed".into();
     assert_eq!(router.handle(&node, forbidden).await.status, 403);
 
-    // The additive route does not change legacy callers (schedules/delegations).
-    let legacy = router
+    // The Gateway's own empty sessions (schedules, delegations) are separate.
+    let internal = router
         .handle(
             &node,
             wire(
                 HttpMethod::Post,
-                "/api/sessions",
+                "/api/session-creations/internal",
                 Some(json!({"workspaceId":"repo"})),
             ),
         )
         .await;
-    assert_eq!(legacy.status, 201);
+    assert_eq!(internal.status, 201);
     assert_ne!(
-        legacy.body.unwrap()["session"]["id"],
+        internal.body.unwrap()["session"]["id"],
         first_body["creation"]["sessionId"]
     );
 

@@ -255,6 +255,39 @@ pub(crate) async fn prepare(node: Node, request: Request) -> ApiResult<Response>
     Ok(Response::json(json!({ "creation": row })))
 }
 
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct InternalInput {
+    workspace_id: String,
+}
+
+/// An empty session the Gateway itself starts (delegations, schedule runs),
+/// with no first-message admission: the Gateway delivers its own message next.
+pub(crate) async fn internal(node: Node, request: Request) -> ApiResult<Response> {
+    let input: InternalInput = request.parse_body()?;
+    if input.workspace_id.is_empty() {
+        return Err(ApiError::invalid_input());
+    }
+    crate::checkpoints::continuation::require_workspace_owner(
+        &node.db.lock(),
+        &input.workspace_id,
+        &request.user,
+    )?;
+    let workspace = node.db.lock().get_workspace(&input.workspace_id)?;
+    node.workspace_mode(&workspace)?;
+    let storage = node.config.sessions_dir.join(prefix_uuid("pi"));
+    DirBuilder::new()
+        .recursive(true)
+        .mode(0o700)
+        .create(&storage)
+        .map_err(|_| storage_error())?;
+    let session =
+        node.db
+            .lock()
+            .create_session(&workspace.id, &storage.to_string_lossy(), &request.user)?;
+    Ok(Response::status(201, json!({ "session": session })))
+}
+
 pub(crate) async fn capabilities(node: Node, _request: Request) -> ApiResult<Response> {
     Ok(Response::json(
         json!({"version":1,"canAllocate":true,"canTransferAttachments":true,"attachmentMimeInQuery":true,"canAdmitFirstMessage":true,"canReadFirstMessageReceipt":true,"canReadCommandReceipts":true,"canCancelCreation":true,"canStopBeforeAllocation":true,"canRetryInitialAdmission":true,"canVoidInitialAdmission":true,"maxUploadBytes":node.config.upload_max_bytes,"maxAttachments":16}),

@@ -398,10 +398,7 @@ pub fn router(app: AppState) -> Router {
             "/api/workspaces/{workspace_id}/project-trust",
             post(routes::project_trust),
         )
-        .route(
-            "/api/sessions",
-            get(routes::list_sessions).post(routes::create_session),
-        )
+        .route("/api/sessions", get(routes::list_sessions))
         .route(
             "/api/sessions/{id}",
             delete(routes::delete_session).patch(routes::update_session),

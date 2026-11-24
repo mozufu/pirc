@@ -1035,16 +1035,6 @@ mod tests {
                 .all(|workspace| workspace["id"] != "orphan-recovery")
         );
 
-        let unclaimed_session = call(
-            &router,
-            Method::POST,
-            "/api/sessions",
-            Some("alice"),
-            None,
-            Some(json!({ "workspaceId": "work:orphan-recovery" })),
-        )
-        .await;
-        assert_eq!(unclaimed_session.status().as_u16(), 404);
         assert_eq!(node_requests.lock().unwrap().len(), 7);
 
         let alice_workspaces = call(

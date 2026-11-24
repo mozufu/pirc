@@ -881,59 +881,6 @@ pub async fn list_sessions(
     Ok(ok(json!({ "sessions": sessions })))
 }
 
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct CreateSession {
-    workspace_id: String,
-}
-
-pub async fn create_session(
-    State(app): State<AppState>,
-    Extension(identity): Extension<Identity>,
-    ReqBody(body): ReqBody,
-) -> Handled {
-    let CreateSession { workspace_id } = body.parse()?;
-    length_within(&workspace_id, 1, usize::MAX)?;
-    require_workspace_visible(&app, &identity, &workspace_id)?;
-    let workspace = app.db.lock().get_workspace(&workspace_id)?;
-    app.require_mode(&workspace)?;
-    let node_id = workspace.host_id.clone();
-    let online = app.nodes.get(&node_id).is_some_and(|node| {
-        node.workspaces
-            .iter()
-            .any(|w| format!("{node_id}:{}", w.id) == workspace.id)
-    });
-    if !online {
-        return Err(ApiError::new(503, "node_offline", "Node or workspace is offline").into());
-    }
-    let local = workspace.id[node_id.len() + 1..].to_owned();
-    let remote = expect_ok(
-        &app,
-        &node_id,
-        &identity,
-        HttpMethod::Post,
-        "/api/sessions".into(),
-        Some(json!({ "workspaceId": local })),
-    )
-    .await?;
-    let remote_id = match &remote["session"]["id"] {
-        Value::String(id) => id.clone(),
-        Value::Number(id) => id.to_string(),
-        _ => {
-            crate::log::error("node answered a session without an id");
-            return Err(ApiError::internal().into());
-        }
-    };
-    let session = app.db.lock().create_session(
-        &workspace.id,
-        &format!("node://{node_id}/{remote_id}"),
-        &node_id,
-        &remote_id,
-        &identity.user,
-    )?;
-    Ok(created(json!({ "session": session })))
-}
-
 pub async fn delete_session(
     State(app): State<AppState>,
     Extension(identity): Extension<Identity>,

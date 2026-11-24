@@ -130,7 +130,7 @@ Every session route is answered by the node that owns the session; the gateway c
 
 - `GET /api/health`
 - `GET /api/workspaces`
-- `GET|POST /api/sessions`. Create takes only `{ "workspaceId" }`; sessions cannot be named at creation. A new session starts as `New session` (`nameSource: "auto"`), and the agent's generated title replaces it, reported as a `session_renamed` event.
+- `GET /api/sessions`. Sessions are created only by sending a first message (`/api/conversation-submissions/*`); the Gateway's own schedule and delegation sessions use the Node-only `POST /api/session-creations/internal`. A new session starts as `New session` (`nameSource: "auto"`), and the agent's generated title replaces it, reported as a `session_renamed` event.
 - `PATCH /api/sessions/:id` takes any of `{ "name", "pinned", "settled" }`. A `name` renames the session and marks the name as user-chosen, so generated titles no longer replace it. `pinned` and `settled` are booleans that organize the sidebar (sessions report them as `pinnedAt` / `settledAt` timestamps, or `null`); only the gateway stores them, and they do not change the session's activity time.
 - `GET /api/sessions/:id/snapshot`
 - `POST /api/sessions/:id/commands`
