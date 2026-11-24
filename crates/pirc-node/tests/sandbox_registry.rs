@@ -152,6 +152,7 @@ async fn isolates_registered_nodes_gateway_and_tmp_without_breaking_own_state() 
                 r#"{"coding":"0123456789abcdef0123456789abcdef"}"#,
             ),
             ("PIRC_TRUSTED_PROXIES", "127.0.0.1"),
+            ("PIRC_PROXY_SECRET_REQUIRED", "false"),
             ("PIRC_ALLOWED_USERS", "test-user"),
             ("PIRC_ALLOWED_ORIGINS", "https://pirc.example"),
             ("PIRC_ALLOWED_HOSTS", "pirc.example"),
