@@ -267,5 +267,166 @@ artifacts: both the `standard` and the `tailscale` APK.
 
 ## Carried-over items
 
-Filled by M1.2: open acceptance gaps and accepted limitations from the retired plans
-that still apply to pirc 2.
+Open acceptance gaps, accepted limitations and watch items from the retired plans that
+still apply to pirc 2. Gaps in the backend contracts (native Linux, transitions,
+bindings, folders, checkpoints) are listed in
+[contracts](../docs/architecture/contracts.md#open-acceptance-gaps). "Old README"
+means `git show 162c113b:plans/README.md`; other sources are files in `plans/` as of
+that commit.
+
+**Acceptance and validation**
+
+- **M8** Physical Android acceptance with a real account: pairing,
+  streaming/cancel/reconnect, panels, management consent, simultaneous Web/App
+  confirmations; keyboard and CJK IME, safe areas, rotation, background, low memory,
+  OEM notifications and permissions, terminal HTTPS asset origin, release build.
+  (mobile.md § Remaining work; old README § Manual validation)
+- **M8** On a device: full multi-line approval bodies and labels, PTC approval
+  declines and rendering, browser takeover (tap mapping, IME, drag scrolling), WebM
+  playback. (old README § Existing work 1, § Manual validation)
+- **M8** Calendar reminders and background behavior on a physical Android device.
+  (calendar.md § Implementation record)
+- **M8/M9** Real remote push delivery (UnifiedPush and Web Push) is unverified; the
+  owner declined third-party relay testing, so it is not run without authorization.
+  (mobile.md, calendar.md, release-0.9.3.md)
+- **M8** Pairing credential lifetime: rotation before the 30-day expiry versus
+  re-pairing, with a near-expiry warning (A7); decided by pairing v2. (old README
+  § Existing work 3; mobile.md § Distribution decisions)
+- **M6** Decide whether the native Context inspector is built (work panels include
+  context). (old README § Existing work 3)
+- **M6** Read-only Settings → Modes page listing each mode, its source file and its
+  validation warnings, which today are only logged. (modes.md § Phase 3)
+- **M9** Browser acceptance of the approval-mode picker and warning, and of project
+  deletion including recovery after a real Node disconnect; installed-PWA Web Push on
+  a real iPhone; iOS Safari keyboard and safe areas. (old README § Manual validation)
+- **M9/M11** macOS builds are unsigned and not notarized. (old README § Manual
+  validation)
+- **M11** Linux/NixOS: a full agent session with browser on a non-container x86_64
+  host at native speed, boot-time tmpfiles, bubblewrap and `/proc` privacy cases (run
+  only in Linux CI) and Nix build validation (previously waived). (old README § Manual
+  validation; release-0.9.3.md § Remaining release gates)
+- **M11** Not covered by macOS end-to-end checks: TLS, a real identity provider,
+  phone pairing, push, terminals; TLS fixtures do not verify OS CA updates or
+  curl/Git trust stores. (old README § Manual validation; release-0.9.3.md)
+- **M11** PTC with real providers: Anthropic direct calls with `null`/extra
+  arguments, a real model reading agent-data fences; real-provider smoke tests and
+  polyglot evaluation were waived, not passed. (old README § Manual validation,
+  § Accepted limitations)
+- **M11** Release procedure: Check and Android workflows pass on the exact `main`
+  commit before the tag; verify draft assets, checksums and the Android signing
+  identity. Distribution (sideload, F-Droid or Play) and production signing are still
+  to decide. (release-0.9.3.md; mobile.md § Distribution decisions)
+- **M11** Modes guide screenshots. (modes.md § Phase 3)
+- **Watch** The one-off `node_link_side_runs` CI timeout, if it recurs. (old README
+  § Manual validation)
+- **Open, no milestone** On macOS a Node state directory path longer than about 76
+  bytes makes the inference socket path exceed the platform limit; the Node exits at
+  startup with a clear error. (unified-completion-contracts.md § C0)
+
+**Renderer limitations** (M5 `pirc_render`; tiers 2–3 are frozen, only safety, crash,
+resource and isolation fixes; mobile.md § Remaining work, § Deferred presentation and
+compatibility boundaries)
+
+- `alert`/`confirm`/`prompt` stay explicit unsupported APIs.
+- Dialogs: Tab cycling in a single-control dialog and focus after light dismissal
+  differ from Chromium; `TouchEvent` objects are absent; default static positioning
+  covers block flow only.
+- SVG is painted as one image, without per-shape pointer targets.
+- Outside the covered layout subset: floats, sticky, zoom, multicolumn, table
+  offsets, fragmented inline geometry, 3D/perspective transforms, `calc()` and
+  logical insets, RTL, scroll snap, root horizontal scrolling. A DOM write followed by
+  a geometry read without a matching native frame fails explicitly.
+- `getComputedStyle()` covers a supplied subset; generic font names and default text
+  heights differ from Chromium; two root-height fixtures keep 8 and 17 px of extra
+  scroll space.
+- Arbitrary sites and frameworks, full browser APIs, third-party cookie policies and
+  uncommon HTML5 tree-builder recovery are not guaranteed.
+
+**Accepted limitations** (old README § Accepted limitations unless noted)
+
+- Security limits accepted in
+  [security decisions](../docs/architecture/security-decisions.md) stay and are not
+  reopened without a new decision; lasting domain allows belong in
+  `sandbox.network.allowedDomains`.
+- Repository keys preserve path case; `.git` symlinks and absolute `gitdir:` and
+  `commondir` are followed; only the normalized key leaves the Node.
+- Project deletion applies automatic forget/rollback entries as they stand at
+  confirmation; only entries needing a decision are revision-checked; rollback may
+  leave memory over budget.
+- Teammates and subagents have no browser; the screenshot action log is memory-only
+  and lost on Node restart.
+- PTC: write-lease coverage of shell writes is partial, plain bash output is
+  unlabelled, guests inherit the agent's sandbox rights, operations ignoring abort may
+  outlive the grace period, and long waits can fill all slots.
+- Oversized work interactions stop memory extraction with a visible budget error;
+  nothing is truncated into coverage. Model summaries and extraction need separate
+  quality evaluation. (memory-handoff.md § Acceptance gates)
+
+**Watch, do not build yet** (each needs the owner's go-ahead)
+
+- Memory consolidation, only if `memory_full` becomes frequent at 8,000 characters;
+  consolidated text never gains `user` origin. (old README § Watch)
+- Moving conversations between projects: revisit only if the workflow becomes
+  painful. (old README § Watch)
+- Memory search quality: an evaluation set, then FTS5 + BM25 with CJK bigrams, then
+  optional hybrid search through a Gateway-side embeddings endpoint (the embeddings
+  source is undecided; a hosted endpoint receives note text). A vector index only past
+  about 50,000 rows per user or 50 ms p95, with a stable `sqlite-vec` that needs no
+  `unsafe`. (memory-search.md; old README § Existing work 5)
+- GPU in the sandbox: an opt-in Node setting (two Metal rules on macOS, exact device
+  binds on Linux, a NixOS device policy). It changes a security boundary and needs a
+  recorded decision; open questions: a missing device starts without GPU or refuses,
+  and whether to ship `shaderCache`. (sandbox-gpu.md)
+- Auto-mode precision: reassess with `scripts/approval-stats.ts` first; then "allow
+  again in this session" for the exact action text, soft versus hard danger
+  categories, and recording the decision source. (delegation-autonomy.md § Phase 3)
+- Classify `browser_click`/`browser_type` on non-localhost origins for network
+  provenance. (old README § Existing work 2)
+- Project-scoped memory, if reopened: opt-in, scope from the trusted session (never
+  agent arguments), proposals bound to a scope generation, not retroactive; it
+  isolates projects from each other, not from operators, providers or backups. (old
+  README § Project-only memory (B))
+- Library extraction: API stabilization, feature-matrix builds, minimal local and
+  `Send` consumers and an event-order proof; no crates.io publication without an
+  owner decision. (library-extraction.md; [reusable LLM](../docs/architecture/reusable-llm.md))
+- Calendar: external sync, invitations, shared calendars, OS integration and
+  phone-local offline alarms are out of scope. (calendar.md § Goal and scope)
+
+**Dropped**
+
+- USER-proposal confirmation checks on Android: USER proposals belong to the removed
+  assistant (P3). (old README § Existing work 1)
+- Observational-memory provenance tagging of page results: the legacy OM archive is
+  removed (M2.6). (old README § Existing work 2)
+- Fixed Chat/Work tabs derived from `assistant`, retiring `kind` (deleted in M2.3) and
+  the Android scratch-mode parity capture: tabs follow P1 and the old Android client is
+  deleted (M8). (old README § Existing work 4; modes.md § Phase 3)
+- Per-chat `delegation_approval`, relayed delegation approvals and Stop checks:
+  assistant delegation is replaced by pot work dispatch (P3, pots.md).
+  (delegation-autonomy.md; old README § Existing work 7)
+- "Publication requires an explicit request" notes: publication resumes (P11). (old
+  README § Existing work 8–9; calendar.md)
+- Migrating global USER/MEMORY into project scopes: no data is kept (P5) and pot
+  memory is per pot (P8). (old README § Project-only memory (B))
+- "Deploy Gateway and Nodes together for the changed deliver body": an old release
+  note. (old README § Manual validation)
+- Pre-schema-1004 chat deletions, TypeScript protocol incompatibility, TypeScript PTC
+  baseline comparison and "never delete old state": no old data or TypeScript
+  components (P5; M2.5 refuses old state directories). (old README § Accepted
+  limitations)
+- A second chat node with its own `chats` workspace, and `workspace.read` for chats:
+  the chat node becomes the pot host and pots read workspaces through scoped tools
+  (P3, M4). (old README § Watch)
+- Activation and cold cutover of existing repository ledgers, TypeScript cutover
+  markers, and the Chat-owned personal MEMORY block: no deployed data (P5); pots
+  replace the assistant chat (P3, P8). (old README § Memory integration;
+  memory-handoff.md)
+- Reserved migration numbers in memory-search.md: fresh schema baseline (P5).
+- Flutter Web as an "evaluation option" and Chromium-parity growth (dialog
+  positioning beyond block flow, invoker scheduling, wider framework coverage):
+  decided by P4 and frozen by N1. (mobile.md)
+- 0.9.3-specific tag and asset checks: superseded by M11. (release-0.9.3.md)
+- Library stages for pots, App connection security and optional Flutter Web
+  migration: replaced by pots.md, P16 and P4. (library-extraction.md)
+- Chat default mode and forbidden combinations involving `assistant: full`: chat
+  mode is removed (M4.10). (modes.md)
