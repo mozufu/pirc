@@ -38,6 +38,10 @@ pub enum RequestPurpose {
 }
 
 impl RequestPurpose {
+    pub fn is_turn(&self) -> bool {
+        *self == Self::Turn
+    }
+
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Turn => "turn",
@@ -55,7 +59,8 @@ impl RequestPurpose {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct InferenceRequest {
     /// Why the agent makes this request; informational, for usage breakdowns.
-    #[serde(default)]
+    /// An ordinary turn is not written, so turn requests keep their old shape.
+    #[serde(default, skip_serializing_if = "RequestPurpose::is_turn")]
     pub purpose: RequestPurpose,
     pub provider_name: String,
     pub model_id: String,
