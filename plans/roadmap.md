@@ -15,7 +15,7 @@ acceptance, activation.
 | [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)         |
 | [M2 Backend baseline](#m2-backend-baseline)                   | complete | in progress |            | steps 1–5 and 7 done; 6 moved to M4                         |
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
-| [M4 Pots backend](#m4-pots-backend)                           | complete |             |            | Q6                                                          |
+| [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–2 done                                              |
 | [M5 Client foundation](#m5-client-foundation)                 | complete | in progress |            | steps detailed                                              |
 | [M6 Work and settings screens](#m6-work-and-settings-screens) | outline  |             |            |                                                             |
 | [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |
@@ -193,8 +193,9 @@ that a session can only act as itself.
    `pot-*` custom message types.
    Done when: workspace builds, gateway and node unit tests pass, no `pots_` table
    remains.
-1. **Schema and store.** `pots/schema.sql` with the tables of
-   [pots.md](pots.md#data-model) (real columns, revisions, finite defaults), and
+1. **Schema and store.** `pots/schema.sql` with the pot tables of
+   [pots.md](pots.md#data-model) (threads, activity, approvals, handovers and the
+   de-duplication tables arrive with the steps that use them) (real columns, revisions, finite defaults), and
    `pots/store.rs` with typed rows and transactional create/read/update by section
    (`profile`, `work`, `permissions`, `models`), pause/resume, owner-wide settings.
    Limits: 32 pots per owner, 200 threads, message bodies 32 KiB.

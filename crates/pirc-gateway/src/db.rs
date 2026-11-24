@@ -40,7 +40,7 @@ pub(crate) use sql_text_enum;
 /// `PRAGMA user_version` of the pirc 2 schema. Databases from earlier
 /// releases (any other version) are refused, never migrated: pirc 2 starts
 /// from fresh state.
-pub const SCHEMA_VERSION: i64 = 1102;
+pub const SCHEMA_VERSION: i64 = 1103;
 const SCHEMA: &str = concat!(
     include_str!("schema.sql"),
     include_str!("calendar/schema.sql"),
@@ -65,7 +65,8 @@ const SCHEMA: &str = concat!(
     include_str!("conversation_bindings/transitions/cancellation.sql"),
     include_str!("conversation_submissions/recovery.sql"),
     include_str!("conversation_bindings/transitions/void.sql"),
-    include_str!("usage/schema.sql")
+    include_str!("usage/schema.sql"),
+    include_str!("pots/schema.sql")
 );
 /// Placeholder name of a new session until the agent's title replaces it.
 pub const PLACEHOLDER_SESSION_NAME: &str = "New session";

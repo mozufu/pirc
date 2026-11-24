@@ -40,6 +40,10 @@ impl App {
         }
     }
 
+    pub fn pots_changed(&self, user: &str) {
+        self.hints.pots.notify(&user.to_owned());
+    }
+
     pub fn schedules_changed(&self, user: &str) {
         self.hints.schedules.notify(&user.to_owned());
     }

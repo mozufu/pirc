@@ -28,6 +28,7 @@ mod memory;
 mod memory_records;
 mod node_events;
 mod nodes;
+mod pots;
 mod project_deletion;
 mod project_links;
 mod push;
@@ -37,6 +38,8 @@ mod routes;
 mod schedules;
 mod slots;
 mod sockets;
+#[cfg(test)]
+mod test_support;
 mod upload_references;
 mod usage;
 mod util;

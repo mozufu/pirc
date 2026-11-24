@@ -83,6 +83,11 @@ pub fn document(app: &AppState, identity: &Identity) -> Value {
                 "version": 2,
                 "attachmentRetentionDays": crate::conversation_submissions::ATTACHMENT_RETENTION_DAYS,
             },
+            "pots": {
+                "supported": true,
+                "enabled": true,
+                "version": 1,
+            },
             "environmentSwitching": {
                 "supported": true,
                 "enabled": app.config.environment_switching,

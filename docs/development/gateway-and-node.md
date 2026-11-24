@@ -130,6 +130,8 @@ Every session route is answered by the node that owns the session; the gateway c
 
 - `GET /api/health` (liveness only)
 - `GET /api/capabilities`: the client API version, the server version, the signed-in account and each feature as `{ supported, enabled, version }` (see [Client version](#client-version))
+- `GET|POST /api/pots`, `GET|PATCH /api/pots/:id`, `POST /api/pots/:id/{pause,resume,archive,restore}` (each with `{ revision }`), `GET|PATCH /api/pots/settings`: named pots and the owner's pot limits ([plans/pots.md](../../plans/pots.md)); `/api/events?…&pots=1` adds `pots_changed` hints
+- `GET /api/usage?from&to[&tz]`: the owner's usage ledger by day, model, actor and purpose
 - `GET /api/workspaces`
 - `GET /api/sessions`. Sessions are created only by sending a first message (`/api/conversation-submissions/*`); the Gateway's own schedule and delegation sessions use the Node-only `POST /api/session-creations/internal`. A new session starts as `New session` (`nameSource: "auto"`), and the agent's generated title replaces it, reported as a `session_renamed` event.
 - `PATCH /api/sessions/:id` takes any of `{ "name", "pinned", "settled" }`. A `name` renames the session and marks the name as user-chosen, so generated titles no longer replace it. `pinned` and `settled` are booleans that organize the sidebar (sessions report them as `pinnedAt` / `settledAt` timestamps, or `null`); only the gateway stores them, and they do not change the session's activity time.

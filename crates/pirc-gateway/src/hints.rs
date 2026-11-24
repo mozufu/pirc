@@ -77,6 +77,8 @@ pub struct Hints {
     pub memory: Arc<Listeners<String>>,
     pub schedules: Arc<Listeners<String>>,
     pub sessions: Arc<Listeners<String>>,
+    /// The owner's pots changed (`pots=1`).
+    pub pots: Arc<Listeners<String>>,
 }
 
 impl Hints {
@@ -86,6 +88,7 @@ impl Hints {
             memory: Listeners::new(),
             schedules: Listeners::new(),
             sessions: Listeners::new(),
+            pots: Listeners::new(),
         }
     }
 }
