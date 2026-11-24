@@ -39,6 +39,7 @@ mod schedules;
 mod slots;
 mod sockets;
 mod upload_references;
+mod usage;
 mod util;
 mod web_search;
 mod workspace_removal;

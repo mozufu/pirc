@@ -823,6 +823,7 @@ async fn stream_response(
     let start = NodeMessage::ModelStart {
         request_id: request_id.clone(),
         request,
+        session: scope.identity.session.clone(),
     };
     let admitted = relay.authorized(&scope, &mut || {
         relay.lock().pending.insert(

@@ -22,6 +22,10 @@ pub enum NodeMessage {
     ModelStart {
         request_id: String,
         request: InferenceRequest,
+        /// The Node session whose runner capability admitted the request. The
+        /// Gateway attributes usage by this, never by `request.session_id`,
+        /// which the agent chooses.
+        session: String,
     },
     ModelCancel {
         request_id: String,

@@ -868,7 +868,12 @@ fn within_limits(message: &NodeMessage) -> bool {
         NodeMessage::ModelStart {
             request_id,
             request,
-        } => (1..=100).contains(&chars(request_id)) && valid_inference_request(request),
+            session,
+        } => {
+            (1..=100).contains(&chars(request_id))
+                && (1..=200).contains(&chars(session))
+                && valid_inference_request(request)
+        }
         NodeMessage::ModelCancel { request_id } => (1..=100).contains(&chars(request_id)),
         NodeMessage::Activity { sessions } => {
             sessions.len() <= 10_000 && sessions.iter().all(|item| chars(&item.id) <= 200)
@@ -1130,7 +1135,8 @@ impl LinkSession {
             NodeMessage::ModelStart {
                 request_id,
                 request,
-            } => start_inference(app, node_id, &self.link, request_id, request),
+                session,
+            } => start_inference(app, node_id, &self.link, request_id, request, session),
             NodeMessage::ModelCancel { request_id } => {
                 app.nodes.cancel_inference(node_id, &request_id);
             }
@@ -1365,6 +1371,7 @@ fn start_inference(
     link: &Arc<Link>,
     request_id: String,
     request: InferenceRequest,
+    node_session: String,
 ) {
     let key = (node_id.to_owned(), request_id.clone());
     let mut state = app.nodes.lock();
@@ -1427,6 +1434,14 @@ fn start_inference(
                 biased;
                 _ = stopped => finish(model_error("limit_exceeded")),
                 message = run => {
+                    crate::usage::record(
+                        &app,
+                        &key.0,
+                        &node_session,
+                        &request.provider_name,
+                        &request.model_id,
+                        &message,
+                    );
                     if message.stop_reason == pirc_protocol::StopReason::Error {
                         // Already a fixed classification (status included
                         // when known), never an upstream body.

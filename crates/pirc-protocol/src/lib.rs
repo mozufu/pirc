@@ -39,7 +39,7 @@ use serde_json::Value;
 
 /// Both sides must speak the same version; the gateway closes a node that
 /// registers with another one with [`PROTOCOL_MISMATCH_CLOSE`].
-pub const NODE_PROTOCOL_VERSION: u32 = 15;
+pub const NODE_PROTOCOL_VERSION: u32 = 16;
 /// Close code for a node that speaks another protocol version.
 pub const PROTOCOL_MISMATCH_CLOSE: u16 = 4426;
 
