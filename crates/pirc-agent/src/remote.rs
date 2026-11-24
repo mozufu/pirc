@@ -161,6 +161,7 @@ pub async fn fetch_remote_models(config: &InferenceConfig) -> Result<Models, Str
 /// options, endpoints or credentials.
 pub fn inference_request(request: &StreamRequest) -> InferenceRequest {
     InferenceRequest {
+        purpose: request.purpose,
         provider_name: request.provider_name.clone(),
         model_id: request.model.id.clone(),
         system_prompt: request.system_prompt.clone(),

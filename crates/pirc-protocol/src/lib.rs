@@ -20,8 +20,8 @@ mod socket_path;
 pub use inference::{
     AssistantContent, AssistantDelta, AssistantMessage, INFERENCE_BUFFER_MAX_BYTES,
     INFERENCE_MAX_REQUESTS, INFERENCE_REQUEST_MAX_BYTES, INFERENCE_STREAM_MAX_BYTES,
-    INFERENCE_TIMEOUT_MS, InferenceErrorCode, InferenceRequest, Message, StopReason, ToolChoice,
-    ToolSpec, Usage, UserBlock, UserContent,
+    INFERENCE_TIMEOUT_MS, InferenceErrorCode, InferenceRequest, Message, RequestPurpose,
+    StopReason, ToolChoice, ToolSpec, Usage, UserBlock, UserContent,
 };
 pub use link::{
     GatewayMessage, HttpMethod, NodeHttpRequest, NodeHttpResponse, NodeMessage, NodeRole,

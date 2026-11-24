@@ -1438,8 +1438,7 @@ fn start_inference(
                         &app,
                         &key.0,
                         &node_session,
-                        &request.provider_name,
-                        &request.model_id,
+                        &request,
                         &message,
                     );
                     if message.stop_reason == pirc_protocol::StopReason::Error {

@@ -480,6 +480,7 @@ impl Workspace {
                 Duration::from_secs(60),
                 stream.stream(
                     StreamRequest {
+                        purpose: pirc_protocol::RequestPurpose::Memory,
                         provider_name: resolved.provider_name,
                         provider: resolved.provider,
                         model: resolved.model,

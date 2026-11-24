@@ -2619,6 +2619,7 @@ impl Agent {
                 ThinkingLevel::Off
             };
             let request = StreamRequest {
+                purpose: pirc_protocol::RequestPurpose::Turn,
                 provider_name: resolved.provider_name.clone(),
                 provider: resolved.provider.clone(),
                 model: resolved.model.clone(),

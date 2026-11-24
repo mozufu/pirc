@@ -276,6 +276,7 @@ async fn build_snapshot(
         }
         let call = crate::signal::AbortController::child_of(signal);
         let request = StreamRequest {
+            purpose: pirc_protocol::RequestPurpose::Compaction,
             provider_name: resolved.provider_name.clone(),
             provider: resolved.provider.clone(),
             model: resolved.model.clone(),

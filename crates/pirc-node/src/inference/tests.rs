@@ -25,6 +25,7 @@ fn request(signal: pirc_agent::signal::AbortSignal) -> StreamRequest {
     let models = models();
     let provider = models.providers["test"].clone();
     StreamRequest {
+        purpose: Default::default(),
         provider_name: "test".into(),
         model: provider.models[0].clone(),
         provider,

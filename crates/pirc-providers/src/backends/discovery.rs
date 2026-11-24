@@ -512,6 +512,7 @@ pub async fn test_connection(inference: &Inference, resolved: Resolved) -> Conne
     let started = Instant::now();
     let model_id = resolved.model.id.clone();
     let request = InferenceRequest {
+        purpose: Default::default(),
         provider_name: "connection-test".to_owned(),
         model_id: model_id.clone(),
         system_prompt: "This is a connection test. Reply with OK.".to_owned(),

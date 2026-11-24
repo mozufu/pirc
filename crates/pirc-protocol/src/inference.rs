@@ -24,10 +24,39 @@ pub const INFERENCE_MAX_REQUESTS: usize = 32;
 /// How long one request may run.
 pub const INFERENCE_TIMEOUT_MS: u64 = 10 * 60_000;
 
+/// What a model request is for. The default is an ordinary agent turn.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RequestPurpose {
+    #[default]
+    Turn,
+    Title,
+    Classifier,
+    Compaction,
+    Memory,
+    Recap,
+}
+
+impl RequestPurpose {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Turn => "turn",
+            Self::Title => "title",
+            Self::Classifier => "classifier",
+            Self::Compaction => "compaction",
+            Self::Memory => "memory",
+            Self::Recap => "recap",
+        }
+    }
+}
+
 /// One model request, as an agent's node forwards it (`model_start`).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct InferenceRequest {
+    /// Why the agent makes this request; informational, for usage breakdowns.
+    #[serde(default)]
+    pub purpose: RequestPurpose,
     pub provider_name: String,
     pub model_id: String,
     pub system_prompt: String,

@@ -453,6 +453,7 @@ pub async fn classify_with_model(
         // `AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)])`.
         let deadline = AbortController::child_of(signal);
         let request = StreamRequest {
+            purpose: pirc_protocol::RequestPurpose::Classifier,
             provider_name,
             provider,
             max_tokens: Some(model.max_tokens.min(cap)),

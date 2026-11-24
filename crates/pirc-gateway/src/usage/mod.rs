@@ -162,10 +162,10 @@ pub fn record(
     app: &AppState,
     node_id: &str,
     node_session: &str,
-    provider: &str,
-    model: &str,
+    request: &pirc_protocol::InferenceRequest,
     message: &AssistantMessage,
 ) {
+    let (provider, model) = (request.provider_name.as_str(), request.model_id.as_str());
     let pricing = pricing(app, provider, model);
     let usage = &message.usage;
     let outcome = match message.stop_reason {
@@ -178,8 +178,8 @@ pub fn record(
         db.execute(
             "INSERT INTO usage_events(at,owner_user,session_id,node_id,node_session,actor_kind,actor_id,
               provider,model,auth_kind,plan,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,
-              cost_micros,api_equiv_micros,pricing_revision,outcome)
-             VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19)",
+              cost_micros,api_equiv_micros,pricing_revision,outcome,purpose)
+             VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20)",
             params![
                 now_ms(),
                 who.owner,
@@ -200,6 +200,7 @@ pub fn record(
                 pricing.api_equivalent.map(|price| micros(usage, &price)),
                 catalog_version(),
                 outcome,
+                request.purpose.as_str(),
             ],
         )
     });

@@ -170,7 +170,7 @@ fn attribution_uses_the_gateway_session_and_its_origin() {
     assert_eq!((who.owner, who.actor_kind), (None, "system"));
 }
 
-/// auth_kind, plan, cost, API-equivalent, outcome, actor kind.
+/// auth_kind, plan, cost, API-equivalent, outcome, actor kind/purpose.
 type Row = (
     String,
     Option<String>,
@@ -192,28 +192,30 @@ fn every_finished_request_is_recorded_once_with_its_price() {
         "stopReason": "stop", "timestamp": 1
     }))
     .unwrap();
-    record(
-        &app,
-        "node",
-        "remote",
-        "oauth:anthropic",
-        "claude-fable-5",
-        &message,
-    );
+    use pirc_protocol::RequestPurpose;
+    let request = |provider: &str, purpose| pirc_protocol::InferenceRequest {
+        purpose,
+        provider_name: provider.into(),
+        model_id: "claude-fable-5".into(),
+        system_prompt: String::new(),
+        messages: Vec::new(),
+        tools: Vec::new(),
+        thinking: pirc_protocol::ThinkingLevel::Off,
+        // The agent's own label; attribution uses the Node session instead.
+        session_id: "agent-chosen".into(),
+        max_tokens: None,
+        tool_choice: None,
+    };
+    let turn = request("oauth:anthropic", RequestPurpose::Turn);
+    record(&app, "node", "remote", &turn, &message);
     message.stop_reason = StopReason::Error;
-    record(
-        &app,
-        "node",
-        "remote",
-        "work-anthropic",
-        "claude-fable-5",
-        &message,
-    );
+    let title = request("work-anthropic", RequestPurpose::Title);
+    record(&app, "node", "remote", &title, &message);
 
     let db = app.db.lock();
     let rows: Vec<Row> = db
         .prepare(
-            "SELECT auth_kind,plan,cost_micros,api_equiv_micros,outcome,actor_kind
+            "SELECT auth_kind,plan,cost_micros,api_equiv_micros,outcome,actor_kind||'/'||purpose
              FROM usage_events ORDER BY id",
         )
         .unwrap()
@@ -241,7 +243,7 @@ fn every_finished_request_is_recorded_once_with_its_price() {
                 None,
                 Some(price),
                 "ok".into(),
-                "user".into()
+                "user/turn".into()
             ),
             (
                 "api_key".into(),
@@ -249,7 +251,7 @@ fn every_finished_request_is_recorded_once_with_its_price() {
                 Some(price),
                 Some(price),
                 "error".into(),
-                "user".into()
+                "user/title".into()
             ),
         ]
     );

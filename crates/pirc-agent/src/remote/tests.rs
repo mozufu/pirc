@@ -147,6 +147,7 @@ fn request(signal: AbortSignal) -> StreamRequest {
     let models = models();
     let provider = models.providers["test"].clone();
     StreamRequest {
+        purpose: Default::default(),
         provider_name: "test".to_owned(),
         model: provider.models[0].clone(),
         provider,
@@ -257,7 +258,7 @@ async fn authenticates_projects_requests_and_keeps_replay_metadata() {
     }
     assert_eq!(
         sent,
-        r#"{"providerName":"test","modelId":"model","systemPrompt":"system","messages":[{"role":"user","content":"hello","timestamp":1}],"tools":[],"thinking":"off","sessionId":"session"}"#
+        r#"{"purpose":"turn","providerName":"test","modelId":"model","systemPrompt":"system","messages":[{"role":"user","content":"hello","timestamp":1}],"tools":[],"thinking":"off","sessionId":"session"}"#
     );
 
     let wrong = InferenceConfig {

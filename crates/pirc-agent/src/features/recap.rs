@@ -365,6 +365,7 @@ impl RecapFeature {
             "currentContext": js::head16(&context, CONTEXT_LIMIT), "evidence": evidence });
         let max_tokens = resolved.model.max_tokens.min(4096);
         let request = StreamRequest {
+            purpose: pirc_protocol::RequestPurpose::Recap,
             provider_name: resolved.provider_name,
             provider: resolved.provider,
             model: resolved.model,

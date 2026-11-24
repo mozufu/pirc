@@ -10,6 +10,7 @@ use crate::LocalBoxFuture;
 use crate::signal::AbortSignal;
 
 pub struct StreamRequest {
+    pub purpose: pirc_protocol::RequestPurpose,
     pub provider_name: String,
     pub provider: Provider,
     pub model: Model,

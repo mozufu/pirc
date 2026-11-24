@@ -263,6 +263,7 @@ pub async fn generate_title(agent: &Agent, message: &str, signal: AbortSignal) -
         .unwrap_or_default()
         .to_owned();
     let request = StreamRequest {
+        purpose: pirc_protocol::RequestPurpose::Title,
         max_tokens: Some(resolved.model.max_tokens.min(MAX_TOKENS)),
         provider_name: resolved.provider_name,
         provider: resolved.provider,
