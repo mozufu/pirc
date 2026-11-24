@@ -52,9 +52,10 @@ not JSON blobs. Names are indicative.
 | `pot_activity`           | `id`, `pot_id`, `at`, `kind`, `counterpart_kind`, `counterpart_id`, `summary`, `refs` (thread, message, session, approval, handover), `causal_root`                                                                                      |
 | `causal_roots`           | `id`, `origin` (user message, observed event, autonomy review, schedule), `depth_limit`, `fanout_limit`, `budget_micros`, `budget_tokens`, `spent_*`, `reserved_*`, `state`                                                              |
 | `model_approvals`        | `id`, `pot_id`, `work_session_id` or pending work, `provider`, `model`, `thinking`, `reason`, `estimate_micros`, `remaining_micros`, `state` (`pending`/`allowed_once`/`denied`), `deny_reason`                                          |
+| `budget_requests`        | `id`, `pot_id`, `amount_micros` or `tokens`, `window`, `reason`, `state` (`open`/`approved`/`denied`), `approved_amount`                                                                                                                 |
 | `pot_handovers`          | `id`, `from_pot_id`, `to_kind`/`to_id` (pot or user), `proposed_by` (`user`/`pot`), `state` (`proposed`/`confirmed`/`applied`/`rejected`), `revision`                                                                                    |
 | `pot_handover_items`     | `handover_id`, `item_kind` (responsibility, follow-up, coordinated work, group host), `item_ref`, `fit` (`ok`/`narrowed`/`stop`), `target`                                                                                               |
-| `pot_settings`           | owner-wide: `cap_money_month_micros`, `cap_tokens_day`, `on_exhausted` (`pause_all`/`ask`), `activity_retention_days`                                                                                                                    |
+| `pot_settings`           | owner-wide: `cap_money_month_micros`, `cap_tokens_day`, `on_exhausted` (`pause_all`/`ask`), `activity_retention_days`, loop-guard thresholds                                                                                             |
 | `obs_events` (L0)        | `id`, `owner_user`, `source_kind`, `source_ref`, `condition_key`, `occurrence_key`, `source_revision`; unique on (owner, source, condition, occurrence); no content                                                                      |
 | `obs_observations` (L1)  | `id`, `pot_id`, `event_id`, `note`, `evidence_refs`, `created_at`; unique on (pot, event)                                                                                                                                                |
 | `obs_notifications` (L2) | `id`, `owner_user`, `event_id`, `issuer_pot_id` (lead or null for merged), `observation_ids`, `state`; unique on (owner, event)                                                                                                          |
@@ -117,10 +118,11 @@ the target. Both are checked when the request is made and again when the work st
 - **Deadline-driven work** (example: "finish X by 11/30, here is the project folder"):
   the user grants a work location; the pot plans with reminders, opens or continues
   work sessions within its locations and concurrency, and reports in its thread.
-- **Spending** (Q6 default): every autonomous wake and everything it causes is charged
+- **Spending** (P18): every autonomous wake and everything it causes is charged
   to the pot and to its causal root. When the pot's budget is exhausted, it stops
   taking wakes that need a model, posts a decision card in its thread and notifies the
-  user. It never raises its own limits.
+  user. It never raises its own limits; it can check its budget and ask for more
+  (see [Budgets](#budgets-and-the-causal-root)).
 
 ## Threads and messaging
 
@@ -196,6 +198,46 @@ Layers (P10):
   apply.
 - **Exhaustion**: per pot, the pot stops model wakes and asks the user; owner-wide,
   `on_exhausted` decides (`pause_all` or `ask`).
+- **Planning with the budget** (P18): `budget_status` returns the pot's remaining
+  money and tokens for the current windows, its reservations, the owner-wide
+  remainder and the current root's remainder. `budget_request(amount, window,
+reason)` posts a decision card in the pot's direct thread and sends a notification;
+  the user can approve (raising that pot's cap for the stated window), approve a
+  different amount, or deny. Only one request per pot can be open; a denied request
+  cannot be repeated for the same window without new user input. A request reserves
+  nothing and costs only its own wake.
+
+## Loop guard
+
+High-volume collaboration is allowed while it makes progress (P19). The guard stops
+ineffective cycles; it does not cap productive work beyond the budgets.
+
+**Progress** is a backend-observed effect, never a model claim: a work session's run
+completes, a task or todo changes state, files change in a work location, a
+user-visible message lands in a direct or group thread the user reads, a decision is
+answered, a handover is applied, an observation records new evidence.
+
+Rules, each with configurable thresholds in `pot_settings` and conservative defaults:
+
+1. **Ping-pong handovers.** An item handed back to its previous holder within the
+   cooldown (default 1 hour) is refused unless the user confirms. A→B→C→A cycles of
+   the same item are detected by its handover history, not by timing alone.
+2. **Same purpose repeated.** A wake whose structured purpose (target, action class,
+   source event) matches a recent wake in the same root with no progress in between
+   counts as a repeat. Wording does not matter.
+3. **No-progress streak.** Per causal root and per pot pair, count wakes and messages
+   since the last progress. Past the threshold (default 12 wakes or 30 messages), the
+   root is suspended: no more wakes are delivered for it.
+4. **Rate ceilings.** Per pot pair, messages per minute and per hour; per root, wakes
+   per minute. Exceeding a ceiling delays delivery (backpressure) before it suspends.
+5. **Suspension is visible.** A suspended root posts one summary card to the user (who
+   was talking, how many exchanges, the last progress, the repeated purpose) with
+   resume, stop the root, or pause the pots involved. It is logged as activity. A pot
+   cannot lift a suspension.
+
+Tests cover: an A→B→A handover refused; a two-pot DM exchange without progress
+suspended at the threshold; a long exchange with progress every few turns not
+suspended; a suspended root waking nothing until the user resumes it.
 
 ## Handover, pause, archive, delete
 
@@ -227,7 +269,8 @@ Layers (P10):
 ## Tools (pot mode)
 
 `message_send`, `decision_request`, `work_open`, `work_send`, `work_status`,
-`handover_propose`, `remind_me`, `set_autonomy`, `set_thinking`, `memory_note`,
+`handover_propose`, `remind_me`, `set_autonomy`, `set_thinking`, `budget_status`,
+`budget_request`, `memory_note`,
 `memory_search`, `observe_note` (L1), `suggest` (to the user), plus the read-only
 workspace tools allowed by its scopes and `web_search`/`web_fetch` when enabled.
 `delegate`, `delegation_status` and `memory_propose_user` from the assistant are

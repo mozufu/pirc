@@ -9,20 +9,20 @@ acceptance, activation.
 
 ## Status
 
-| Milestone                                                     | Design   | Code        | Acceptance | Notes                               |
-| ------------------------------------------------------------- | -------- | ----------- | ---------- | ----------------------------------- |
-| [M0 Unify the working tree](#m0-unify-the-working-tree)       | complete | complete    | n/a        | `e1a08db9`, `162c113b`              |
-| [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            |                                     |
-| [M2 Backend baseline](#m2-backend-baseline)                   | complete |             |            | Q1 decides the order of 2.4 and 2.5 |
-| [M3 Usage ledger](#m3-usage-ledger)                           | complete |             |            | Q7                                  |
-| [M4 Pots backend](#m4-pots-backend)                           | complete |             |            | Q6                                  |
-| [M5 Client foundation](#m5-client-foundation)                 | complete |             |            | Q3, Q5                              |
-| [M6 Work and settings screens](#m6-work-and-settings-screens) | outline  |             |            |                                     |
-| [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                     |
-| [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                     |
-| [M9 Web cutover](#m9-web-cutover)                             | outline  |             |            | Q2, Q3                              |
-| [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            | Q4                                  |
-| [M11 Release](#m11-release)                                   | outline  |             |            |                                     |
+| Milestone                                                     | Design   | Code        | Acceptance | Notes                  |
+| ------------------------------------------------------------- | -------- | ----------- | ---------- | ---------------------- |
+| [M0 Unify the working tree](#m0-unify-the-working-tree)       | complete | complete    | n/a        | `e1a08db9`, `162c113b` |
+| [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            |                        |
+| [M2 Backend baseline](#m2-backend-baseline)                   | complete |             |            |                        |
+| [M3 Usage ledger](#m3-usage-ledger)                           | complete |             |            | Q7                     |
+| [M4 Pots backend](#m4-pots-backend)                           | complete |             |            | Q6                     |
+| [M5 Client foundation](#m5-client-foundation)                 | complete |             |            |                        |
+| [M6 Work and settings screens](#m6-work-and-settings-screens) | outline  |             |            |                        |
+| [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                        |
+| [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                        |
+| [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                     |
+| [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                        |
+| [M11 Release](#m11-release)                                   | outline  |             |            |                        |
 
 "Outline" milestones get their detailed steps written (rule P12) before they start,
 using what the earlier milestones produced.
@@ -85,72 +85,62 @@ a current instruction.
 
 ## M2 Backend baseline
 
-Goal: the backend only speaks the new flows, has one capability document, and starts
-from a fresh schema. `main` keeps working with today's clients until step 2.5.
+Goal: the backend speaks only the new flows, reports one capability document and
+starts from a fresh schema. Old clients may break (P13); they are replaced in M6–M9
+and not patched in the meantime.
 
-1. **First-send on by default.** Make `PIRC_FIRST_SEND` default to on, so both existing
-   clients (which already follow `canSubmit`) create sessions through first-send.
-   - Verify by reading `apps/web/src/lib/app.svelte.ts` and
-     `apps/android/lib/live/gateway.dart`/`first_send.dart` that, with `canSubmit`
-     true, neither client calls `POST /api/sessions` anywhere (drafts, chats, project
-     chats, scheduled-session opening).
-   - Update `docs/deploy` and `.env.example`.
-     Done when: gateway tests for the capability default pass; a local run creates a
-     session from the Web client through first-send.
-2. **Move internal callers to the creation service.** `dispatch::start_session`
-   (`crates/pirc-gateway/src/dispatch.rs`) is used by delegations and schedule runs and
-   calls the Node's legacy `POST /api/sessions`. Give the Node's `session_creation`
-   module an internal creation entry (no client draft, no first-message admission;
-   the caller delivers its message with the existing `deliver`) and switch
-   `start_session` to it. Pots dispatch keeps its own path until M4 replaces it.
-   Done when: delegation and schedule tests pass against the new path.
-3. **Delete legacy creation and unversioned paths.**
-   - Gateway: `POST /api/sessions` (`routes::create_session`), the unversioned branch
-     of `routes::command` (every command carries `expectedBinding`; confirm both
-     current clients send it, and add it where missing first), the `PIRC_FIRST_SEND`
-     gate and the `x-pirc-first-send-contract` header (replaced by 2.4).
-   - Node: `POST /api/sessions`, `PIRC_LEGACY_HOST_TERMINALS` and the unreviewed
-     host-shell path, the legacy workspace `kind` field (Gateway and Node).
-   - Web and Android: the `canSubmit == false` fallbacks and `createSession` calls.
-     Deletes: roughly 300–600 production lines plus their tests and fallbacks.
+1. **Delete legacy creation and the first-send gate.**
+   - Gateway: `POST /api/sessions` (`routes::create_session`), the `PIRC_FIRST_SEND`
+     setting (`pirc-config` `first_send`), `client::require_enabled`/`disabled()`,
+     `canSubmit`'s rollout term; first-send is always enabled.
+   - Node: `POST /api/sessions` (`app.rs` `create_session`) once its callers moved.
+   - Move `dispatch::start_session` (`crates/pirc-gateway/src/dispatch.rs`, used by
+     delegations and schedule runs) to an internal entry of the Node's
+     `session_creation` module: no client draft, no first-message admission; the
+     caller then delivers its message with the existing `deliver`. Pots dispatch keeps
+     its own path until M4 replaces it.
+     Done when: gateway and node unit tests for creation, delegations and schedules pass.
+2. **Delete the unversioned command branch.** Every command carries
+   `expectedBinding`; `routes::command`'s legacy relay branch and its tests go.
+3. **Delete other legacy switches.** `PIRC_LEGACY_HOST_TERMINALS` and the unreviewed
+   host-shell path; the legacy workspace `kind` field (Gateway `routes.rs`, Node
+   `app.rs`); the optional form of `x-pirc-account` (required where it is checked).
 4. **One capability document.** `GET /api/capabilities` returns
    `{ apiVersion, server, features: { <name>: { supported, enabled, version } } }`.
-   Clients send `X-Pirc-Client: <app>/<apiVersion>`; a client whose `apiVersion` the
-   Gateway does not accept gets `426 client_upgrade_required` with a human-readable
-   message (like the existing `request_shape_required` handling). Environment
-   switching keeps its server-enforced `PIRC_ENVIRONMENT_SWITCHING` gate, now reported
-   here. `/api/health` keeps only liveness.
-   Done when: both current clients read it; gates are reported in one place.
-5. **Fresh schema baseline** (breaking for deployments, not for clients).
-   - Before deleting the chain, add a temporary test that builds a database through
-     the old chain and compares the normalized `sqlite_schema` with the new baseline.
-     Remove the test in the same step once it passes.
-   - Gateway: one `schema.sql` set with final `CREATE` statements (rewrite the
-     rename/recreate SQL such as `conversation_bindings/transitions/installation.sql`
-     and the `ALTER`s in `attachments.sql`, `calendar/schema.sql`). New version
-     `1100`. Node: same, version `2100`. The checkpoint journal keeps its own version.
-   - Any other `user_version` is refused at startup with: "This state directory was
-     created by an earlier pirc. pirc 2 cannot read it; move or delete `<dir>`."
-   - Delete `MIGRATIONS`, `migrate()`, the fence-only steps, the TypeScript-era
-     detection, the `remove_*.sql`/`test_remove_*.sql` files and the migration tests.
-     Rewrite the few fail-closed tests that used a downgrade helper so they drop the
-     table directly.
-   - Docs: `docs/deploy/upgrades.md` states that pirc 2 needs fresh state directories.
-     Deletes: about 3,000 lines (SQL, migration code, tests).
+   Clients send `X-Pirc-Client: <app>/<apiVersion>`; an unaccepted `apiVersion` gets
+   `426 client_upgrade_required` with a readable message. This replaces
+   `GET /api/conversation-submissions/capabilities` and the
+   `x-pirc-first-send-contract` header. Environment switching keeps its
+   server-enforced `PIRC_ENVIRONMENT_SWITCHING` gate, reported here. `/api/health`
+   keeps only liveness.
+5. **Fresh schema baseline.**
+   - Before deleting the chain, a temporary test builds a database through the old
+     chain and compares the normalized `sqlite_schema` with the new baseline; it is
+     removed once it passes.
+   - Gateway: final `CREATE` statements only (rewrite the rename/recreate SQL such as
+     `conversation_bindings/transitions/installation.sql` and the `ALTER`s in
+     `attachments.sql` and `calendar/schema.sql`); version `1100`. Node: same,
+     version `2100`. The checkpoint journal keeps its own version.
+   - Any other `user_version` is refused at startup: "This state directory was created
+     by an earlier pirc. pirc 2 cannot read it; move or delete `<dir>`."
+   - Delete `MIGRATIONS`, `migrate()`, fence-only steps, TypeScript-era detection,
+     the `remove_*.sql`/`test_remove_*.sql` files and the migration tests; rewrite the
+     few fail-closed tests that used downgrade helpers to drop the table directly.
+   - `docs/deploy/upgrades.md`: pirc 2 needs fresh state directories.
+     Deletes: about 3,000 lines.
 6. **Remove the legacy observational-memory archive** in
-   `crates/pirc-agent/src/features/memory/` (read-only compatibility archive, ~3,700
-   lines) and its docs (`docs/architecture/legacy-observational-memory.md`), keeping
-   whatever the current handoff memory imports from it.
-7. **Security defaults that no longer need a transition** (no compatibility to keep):
+   `crates/pirc-agent/src/features/memory/` (~3,700 lines) and
+   `docs/architecture/legacy-observational-memory.md`, keeping what the current
+   handoff memory imports.
+7. **Security defaults without a transition.**
    - The Gateway refuses to start without `PIRC_PROXY_SECRET` unless
-     `PIRC_PROXY_SECRET_REQUIRED=false` is set explicitly; the development scripts and
-     `.env.example` set that explicitly, documented as development-only.
-   - Management grants become separate capabilities `devices:read`,
-     `devices:revoke` and `devices:pair`, each with its own confirmation text; pairing
-     a new long-lived device says so and shows the lifetime.
-     Done when: gateway tests cover both; docs and the Nix module are updated.
-
----
+     `PIRC_PROXY_SECRET_REQUIRED=false` is set; development scripts and
+     `.env.example` set it explicitly, documented as development-only.
+   - Management grants become `devices:read`, `devices:revoke` and `devices:pair`,
+     each with its own confirmation text; pairing says it adds a long-lived device and
+     shows its lifetime.
+8. **Old-client code that only served deleted paths** is not edited; `apps/web` and
+   `apps/android` are deleted wholesale in M8/M9.
 
 ## M3 Usage ledger
 
@@ -243,20 +233,23 @@ code shown on approval, credential rotation that extends idle life but not grant
 message content gets an opaque origin in the native engine; delete the old
 `apps/android` UI and the bridge methods it alone used; application ID kept.
 
-## M9 Web cutover
+## M9 Web and macOS cutover
 
 Outline: Flutter Web build (self-hosted CanvasKit and fonts, CSP with
 `'wasm-unsafe-eval'`, no inline scripts, hand-written service worker with build ID,
 Web Push, cache headers); agent HTML in a sandboxed opaque-origin iframe (Q3);
 web-only screens (management approval, pairing QR); Nix packaging and nginx headers;
-delete `apps/web`.
+delete `apps/web`. macOS desktop target: Keychain credentials, pairing, isolated
+web view for script-bearing documents (Q8), notifications while running.
 
 ## M10 Embedded Tailscale
 
-Spike first (Q4): an Android build flavor embedding a userspace tailnet node
-(`tsnet` through libtailscale or gomobile) that exposes a loopback proxy used by the
-one Dart HTTP client and by the Kotlin background client; sign-in flow; behavior with
-the system VPN off and in the background; battery cost. The Web cannot embed it.
+Spike first, then build (P16, [client.md](client.md#embedded-tailscale-m10)): an
+Android build flavor embedding a userspace tailnet node on the official Tailscale
+service, exposing a loopback proxy used by the Dart HTTP client and the Kotlin
+background client, with in-app sign-in through Tailscale's login page. The spike
+measures binary size, idle battery use, start-up time from a push and coexistence
+with the system Tailscale app.
 
 ## M11 Release
 

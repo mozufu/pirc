@@ -12,7 +12,7 @@ re-checked.
 
 ```
 pubspec.yaml                 Dart pub workspace (Dart ≥ 3.6)
-apps/app/                    the Flutter application (android/, web/, lib/)
+apps/app/                    the Flutter application (android/, web/, macos/, lib/)
 packages/pirc_client/        API models, transport, timeline reducer, repositories
 packages/pirc_ui/            design tokens, theme, shared components, adaptive scaffold
 packages/pirc_render/        chat content: Markdown, code, math, tables, images, HTML (static and forms), Mermaid
@@ -26,13 +26,27 @@ one in place.
 
 ## Transport
 
-**Decision (Q5 default):** networking moves to Dart; Kotlin keeps only what needs
-Android. Reasons: the Web build needs a Dart transport anyway; one implementation of
-reconnect, cursors, command identities and the reducer is easier to keep correct
-than three (TypeScript, Kotlin, Dart); embedded Tailscale (M10) then has one place to
-plug in a proxy.
+**Decision (P17):** networking moves to Dart; Kotlin keeps only what needs Android.
+Reasons:
 
-`pirc_client` defines a `Transport` with two adapters:
+- **Speed.** Today every request and event crosses the method channel twice as
+  serialized maps, and Kotlin re-emits the whole reduced session snapshot to Dart up
+  to every 32 ms (`GatewayRuntime.kt` `startSessionWatch`). With the reducer in Dart,
+  events are applied in place and only changed widgets rebuild.
+- **Resources.** The costly part on a phone is background work. Push receipt and the
+  quick-reply overlay keep running in Kotlin without starting the Flutter engine, so
+  moving foreground networking to Dart does not add background cost.
+- **One implementation.** The Web and desktop builds need a Dart transport anyway;
+  reconnect, cursors, command identities and the reducer are kept correct once
+  instead of three times (TypeScript, Kotlin, Dart). Embedded Tailscale (M10) then
+  has one place to plug in a proxy.
+- **Escape hatch.** HTTP goes through the `package:http` `Client` interface. If
+  measurements show `dart:io`'s HTTP/1.1 client is a bottleneck on Android, swap in an
+  OkHttp- or Cronet-backed `Client` (`ok_http`, `cronet_http`) without touching callers.
+
+`pirc_client` defines a `Transport` with two adapters. The macOS desktop build uses
+the Android (`dart:io`) adapter with a device token kept in the macOS Keychain; it
+pairs like a phone.
 
 | Concern                 | Android adapter                                                                                       | Web adapter                                                                      |
 | ----------------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
@@ -117,6 +131,31 @@ documents and script-bearing HTML are shown by the browser in a sandboxed iframe
 (`sandbox` without `allow-same-origin`, so the content has an opaque origin and no
 access to the app's cookies, storage or API). The 7.2 MB Canvas-text WebAssembly and
 the script runtime bundle are not shipped to Web.
+
+**Desktop** (P14, Q8 default): macOS uses `pirc_render` for tiers 1 and 2. Script-bearing
+documents open in an isolated web view (non-persistent data store, no JavaScript
+bridge to the app, no app credentials), the desktop counterpart of the Web iframe.
+Desktop has no background push; notifications are shown while the app runs.
+
+## Embedded Tailscale (M10)
+
+Android first (P16). The deployment is reachable only inside the tailnet (Gateway,
+nginx and Authelia), on the official Tailscale service.
+
+- A build flavor links a userspace tailnet node (`tsnet` through libtailscale or a
+  gomobile binding). It does not use Android's `VpnService`, so it works while the
+  system Tailscale app is off and does not take the device's single VPN slot.
+- The node exposes a loopback HTTP CONNECT proxy. The Dart `HttpClient` (via
+  `findProxy`) and the Kotlin background client (OkHttp `proxy`) both use it; nothing
+  else in the app needs to change.
+- Sign-in: the app starts the node, shows Tailscale's login URL in an in-app browser
+  tab, and stores the node state (its keys) in app-private storage encrypted with a
+  Keystore key. The phone becomes its own device in the tailnet; tailnet ACLs apply.
+- Background: the node runs while the app process runs. Push still arrives through
+  UnifiedPush (outside the tailnet); handling a push that needs the Gateway starts the
+  node first, with a timeout, before the background client calls it.
+- Spike questions: binary size, battery use with the node idle, start-up time from a
+  push, behavior when both the system Tailscale and the embedded node are on.
 
 ## Web build (M9)
 

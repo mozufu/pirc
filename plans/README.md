@@ -89,22 +89,28 @@ Decisions are dated. A later decision names what it supersedes.
 
 N2 (rewrite limited to the existing Android UI), N4 (front-end technology evaluated
 separately), N5 (Kotlin keeps all transport) and follow-up (h) (publication paused)
-are superseded by P1, P4, [client.md](client.md#transport) and P11.
+are superseded by P1, P4, P17 and P11.
+
+### 2026-11-24 follow-ups (owner answers)
+
+| ID  | Decision                                                                                                                                                                                                                                                                                     |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P13 | `main` does not need to stay usable during the rewrite. Old clients may break; CI may be red between steps and is repaired later. Steps are ordered for development efficiency.                                                                                                              |
+| P14 | Native desktop builds are wanted besides the browser. Near-term development and testing cover **macOS** only; Linux and Windows come later. The Svelte app gets no new work and is deleted at the Flutter Web cutover.                                                                       |
+| P15 | Agent HTML: the native engine on Android; on Web the browser shows script-bearing documents in a sandboxed iframe with an opaque origin. The platforms may render such documents differently.                                                                                                |
+| P16 | Embedded Tailscale (Android first): official Tailscale service; the deployment is Gateway + nginx + Authelia reachable only inside the tailnet; the app signs in through the Tailscale login page inside the app. Flutter Web does not embed Tailscale.                                      |
+| P17 | Transport is chosen by the implementer for resource use and speed. Choice: Dart owns networking; Kotlin keeps only what needs Android, plus a slim background client (rationale in [client.md](client.md#transport)). Supersedes N5.                                                         |
+| P18 | Autonomous spending is charged to the pot's budget; when it runs out the pot stops and notifies the user; it never raises its own limits. A pot can read its own budget to plan, and can ask the user for more through a decision card and notification; only the user's approval raises it. |
+| P19 | Pots need a loop guard: high-volume collaboration is fine while it makes progress; ineffective cycles (for example A hands work to B and B immediately hands it back) are detected and stopped. See [pots.md](pots.md#loop-guard).                                                           |
 
 ## Pending owner decisions
 
-Each has a default the plans use until the owner decides. A milestone that depends
-on one does not start its dependent step before the decision.
+Each has a default the plans use until the owner decides.
 
-| ID  | Question                                                                                             | Default used in the plans                                                                                                                              | Blocks   |
-| --- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
-| Q1  | Must `main` stay usable day to day during the rewrite?                                               | Yes: steps are ordered so existing clients keep working until their replacement ships                                                                  | M2 order |
-| Q2  | Desktop: browser only, or also native desktop builds?                                                | Browser only (Flutter Web served like the current web app)                                                                                             | M9       |
-| Q3  | Agent HTML on Web: the native engine, or the browser itself in a sandboxed iframe?                   | Sandboxed iframe with an opaque origin on Web; native engine on Android                                                                                | M5, M9   |
-| Q4  | Embedded Tailscale: Tailscale or Headscale; sign-in by login URL or auth key; current proxy topology | Undecided; M10 starts with a feasibility spike                                                                                                         | M10      |
-| Q5  | Transport: move networking to Dart and keep Kotlin only for what needs Android?                      | Yes (see [client.md](client.md#transport)); a slim Kotlin client stays for push and the overlay                                                        | M5       |
-| Q6  | Autonomous spending                                                                                  | Every autonomous action is charged to the pot's budget; when it runs out the pot stops and notifies the user; budgets never raise themselves           | M4       |
-| Q7  | Money caps and subscription usage                                                                    | Token caps count all usage; money caps count API-billed usage, plus subscription usage at API-equivalent price only when the user turns that option on | M3, M4   |
+| ID  | Question                             | Default used in the plans                                                                                                                              | Blocks |
+| --- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| Q7  | Money caps and subscription usage    | Token caps count all usage; money caps count API-billed usage, plus subscription usage at API-equivalent price only when the user turns that option on | M3, M4 |
+| Q8  | Script-bearing agent HTML on desktop | Like Web: an isolated web view with a non-persistent data store and no app bridge; tiers 1–2 use the Dart engine                                       | M9     |
 
 ## Working rules
 
