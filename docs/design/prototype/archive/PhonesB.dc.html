@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>B 手機關鍵畫面</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-b.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;600&amp;family=Noto+Sans+TC:wght@400;500;600;700&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 2700px; height: 1004px; box-sizing: border-box; padding: 40px; background: #DDE3EB; display: flex; gap: 56px; font-family: 'IBM Plex Sans', 'Noto Sans TC', sans-serif; color: #111827">
+  <sc-for list="{{screens}}" as="sc" hint-placeholder-count="6">
+    <div style="width: 390px; display: flex; flex-direction: column; gap: 16px">
+      <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px">
+        <div style="font-size: 20px; line-height: 28px; font-weight: 700">{{sc.title}}</div>
+        <div style="font-size: 14px; line-height: 20px; color: #3F4A5A">{{sc.sub}}</div>
+      </div>
+      <div style="width: 390px; height: 844px; border-radius: 36px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 12px 40px rgba(17,24,39,.16)">
+        <dc-import name="PhoneB" start="{{sc.start}}" kb="{{sc.kb}}" hint-size="390px,844px"></dc-import>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2700,"height":1004}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      screens: [
+        { title: '1 · Chat 首頁', sub: '底部四分頁＋常駐監督列（待處理／執行中／下一件）', start: 'chat', kb: false },
+        { title: '2 · Work', sub: '待處理卡片可直接操作 · 執行中顯示目前步驟與寫入權', start: 'work', kb: false },
+        { title: '3 · 執行中對話（鍵盤開啟）', sub: '頂部進度條常駐；問題固定在輸入框上方，鍵盤開時收成一列', start: 'session', kb: true },
+        { title: '4a · 聊天中的成果卡', sub: '卡片內直接預覽前 3 列表格', start: 'thread', kb: false },
+        { title: '4b · 全螢幕成果', sub: '內容／來源／版本分頁；底部固定返回', start: 'reader', kb: false },
+        { title: '5 · 通知點開（模擬）', sub: '確認最新狀態後，問題直接展開並註明「來自通知」', start: 'push', kb: false }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

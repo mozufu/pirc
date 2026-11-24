@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>E 平板版型總覽</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-c.css">
+<link rel="stylesheet" href="./pirc-d.css">
+<link rel="stylesheet" href="./pirc-e.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 2184px; height: 3640px; box-sizing: border-box; padding: 40px; background: #EEF0F3; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; font-family: -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif; color: #0F1115">
+  <sc-for list="{{frames}}" as="f" hint-placeholder-count="8">
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end"><div style="font-size: 19px; line-height: 26px; font-weight: 600">{{f.title}}</div><div style="font-size: 13.5px; line-height: 19px; color: #61666B">{{f.sub}}</div></div>
+      <div style="width: 1024px; height: 768px; border-radius: 24px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,.12), 0 16px 48px rgba(15,17,21,.10)"><dc-import name="TabletE" layout="{{f.layout}}" dark="{{f.dark}}" hint-size="1024px,768px"></dc-import></div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2184,"height":3640}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      frames: [
+        { title: '① 1024 · 聊天＋和小管家的對話', sub: '左側分頁列；最上面 ☰ 打開側欄與設定', layout: 'chat', dark: false },
+        { title: '② 1024 · 工作＋pots 協調中的工作', sub: '工作依專案分組；右邊是 session（沿用 D）', layout: 'works', dark: false },
+        { title: '③ 1024 · 動態＋測試員的視角', sub: '點一筆動態，右邊直接打開它當下的對話', layout: 'log', dark: false },
+        { title: '④ 1024 · 封存或刪除＋交接', sub: '展開一項看需要的權限；接手者不夠時標出', layout: 'retire', dark: false },
+        { title: '⑤ 1024 · 側欄', sub: '只有主機；底部是設定按鈕與亮暗切換', layout: 'drawer', dark: false },
+        { title: '⑥ 1024 · 設定（深色）', sub: '側欄底部的設定按鈕打開，右欄顯示', layout: 'settings', dark: true },
+        { title: '⑦ 1024 · 使用者與用量', sub: '分頁列最下面的頭像打開；寬螢幕顯示 30 週', layout: 'me', dark: false },
+        { title: '⑧ 1024 · 使用者與用量（深色）', sub: '', layout: 'me', dark: true }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

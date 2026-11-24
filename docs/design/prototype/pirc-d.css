@@ -1,0 +1,203 @@
+/*
+ * pirc · 方向 D — unified conversations. Additions on top of pirc-c.css (load after it).
+ * Only components introduced or changed by the architecture reset live here.
+ */
+
+/* implementation-status markers (design annotation only; toggled by the `marks` tweak) */
+.tag-wip{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;border:1px dashed #B0782A;color:#7D4F1B;font-size:11px;font-weight:600;background:rgba(208,144,51,.10);white-space:nowrap;flex:none}
+.pc.dark .tag-wip{color:#E7B369;border-color:#C9944A}
+
+/* ── sidebar (unified) ── */
+.d-pots{width:100%;min-height:56px;display:flex;align-items:center;gap:12px;padding:8px 12px;border:0;border-radius:var(--radius-md);background:var(--fill-hover,var(--bg-hover));text-align:left}
+.d-pots-ic{width:32px;height:32px;border-radius:10px;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:13px;flex:none}
+.d-proj{width:100%;min-height:44px;display:flex;align-items:center;gap:10px;padding:6px 12px;border:0;border-radius:10px;background:transparent;text-align:left}
+.d-proj:hover{background:var(--bg-hover)}
+.d-sub{padding-left:28px}
+.d-count{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--bg-hover-strong);color:var(--text-2);font-size:11.5px;font-weight:600;display:grid;place-items:center}
+.d-count.attn{background:var(--warning-soft);color:var(--warning-ink)}
+
+/* ── conversation header: environment line ── */
+.d-env{display:inline-flex;align-items:center;gap:5px;max-width:100%;border:0;background:transparent;padding:0;font-size:12px;line-height:16px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.d-env .state-dot{width:6px;height:6px}
+
+/* ── banners under the top bar (transition / connection / control) ── */
+.d-banner{flex:none;margin:0 12px 8px;border-radius:var(--radius-md);padding:10px 12px;display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:20px;background:var(--bg-subtle);color:var(--text-2)}
+.d-banner b{color:var(--ink);font-weight:600}
+.d-banner.warn{background:var(--warning-soft);color:var(--warning-ink)}
+.d-banner.warn b{color:var(--warning-ink)}
+.d-banner.info{background:var(--accent-soft);color:var(--accent-ink)}
+.d-banner.info b{color:var(--accent-ink)}
+.d-banner.danger{background:var(--danger-soft);color:var(--danger)}
+.d-banner.danger b{color:var(--danger)}
+.d-banner .c-btn{flex:none}
+.d-steps{display:flex;gap:4px;margin-top:6px}
+.d-steps i{flex:1;height:4px;border-radius:2px;background:var(--line-dark)}
+.d-steps i.done{background:currentColor}
+.d-steps i.now{background:currentColor;opacity:.45}
+
+/* ── task strip (one chip per tracked task in this conversation) ── */
+.d-tasks{flex:none;display:flex;gap:8px;padding:0 12px 8px;overflow-x:auto;scrollbar-width:none}
+.d-task{flex:none;max-width:250px;min-height:48px;border:0;border-radius:var(--radius-md);background:var(--bg-subtle);padding:7px 12px;display:flex;flex-direction:column;justify-content:center;gap:1px;text-align:left}
+.d-task b{font-size:13.5px;line-height:19px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.d-task span{font-size:12px;line-height:16px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.d-task.on{background:var(--bg-layer);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.d-task.wait span{color:var(--warning-ink)}
+.d-tl{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:18px;padding:0 5px;border-radius:5px;background:var(--ink);color:var(--bg);font-size:11px;font-weight:700;font-family:var(--mono)}
+
+/* task attribution tag inside the timeline */
+.d-tag{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;background:var(--bg-hover);color:var(--text-2);font-size:12px;font-weight:500;white-space:nowrap}
+.d-tag .d-tl{height:16px;min-width:16px;font-size:10px}
+.d-from-pots{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:999px;background:var(--ink);color:var(--bg);font-size:12px;font-weight:600}
+
+/* compact activity line for a task update (one per update, details collapsed) */
+.d-act{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 12px;border-radius:var(--radius-md);background:var(--bg-subtle);font-size:13.5px;line-height:19px;color:var(--text-2)}
+.d-act b{color:var(--ink);font-weight:500}
+.d-act .grow{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* task created card */
+.d-taskcard{border-radius:var(--radius-lg);background:var(--bg-layer);box-shadow:var(--shadow-card);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.d-taskcard .t{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600}
+.d-kv{display:flex;flex-wrap:wrap;gap:6px}
+.d-kv span{font-size:12.5px;line-height:18px;padding:3px 8px;border-radius:6px;background:var(--bg-hover);color:var(--text-2)}
+
+/* environment change notice inside the timeline (trusted runtime event) */
+.d-sys{align-self:stretch;border-radius:var(--radius-md);border:1px dashed var(--line-strong);padding:10px 12px;font-size:13.5px;line-height:20px;color:var(--text-2);display:flex;gap:10px}
+.d-sys b{color:var(--ink);font-weight:600}
+
+/* composer target */
+.d-target{height:30px;border:0;border-radius:999px;background:var(--bg-hover);color:var(--text-2);font-size:12.5px;padding:0 10px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+.d-target b{color:var(--ink);font-weight:500}
+.d-targetrow{display:flex;align-items:center;gap:6px;padding:10px 14px 0}
+
+/* ── mounts / effective access ── */
+.d-mount{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 16px;position:relative}
+.d-mount + .d-mount::before{content:"";position:absolute;top:0;left:16px;right:0;height:1px;background:var(--line)}
+.d-perm{height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:600;display:inline-flex;align-items:center;flex:none}
+.d-perm.rw{background:var(--accent-soft);color:var(--accent-ink)}
+.d-perm.ro{background:var(--bg-hover-strong);color:var(--text-2)}
+.d-perm.no{background:var(--danger-soft);color:var(--danger)}
+.d-access{display:flex;align-items:center;gap:10px;min-height:40px;font-size:14px}
+.d-access .st{margin-left:auto;font-size:12.5px;white-space:nowrap}
+.d-radio{width:100%;min-height:56px;border:0;background:transparent;display:flex;align-items:center;gap:12px;padding:8px 16px;text-align:left;position:relative}
+.d-radio + .d-radio::before{content:"";position:absolute;top:0;left:16px;right:0;height:1px;background:var(--line)}
+.d-radio .c-mark-r{margin-top:0}
+.d-radio.on .c-mark-r{border:5px solid var(--accent)}
+
+/* ── previews (switch / leave / delete) ── */
+.d-prev{display:flex;flex-direction:column;gap:2px}
+.d-prev-h{font-size:12.5px;font-weight:600;letter-spacing:.04em;color:var(--muted);padding:14px 16px 6px}
+.d-pi{display:flex;gap:10px;align-items:flex-start;padding:8px 16px;font-size:14px;line-height:20px}
+.d-pi .ic{width:22px;height:22px;border-radius:6px;display:grid;place-items:center;flex:none;font-size:12px;font-weight:700}
+.d-pi .ic.stop{background:var(--danger-soft);color:var(--danger)}
+.d-pi .ic.keep{background:var(--bg-hover-strong);color:var(--text-2)}
+.d-pi .ic.del{background:var(--danger-soft);color:var(--danger)}
+.d-pi .ic.move{background:var(--accent-soft);color:var(--accent-ink)}
+.d-pi small{display:block;font-size:12.5px;color:var(--muted);line-height:18px}
+
+/* ── file references ── */
+.d-ref{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-md);background:var(--bg-subtle);font-size:14px}
+.d-ref .k{font-size:11.5px;font-weight:600;color:var(--muted)}
+.d-ref.off{opacity:.75}
+.d-ref.off .k{color:var(--warning-ink)}
+
+/* ── pots ── */
+.d-pstat{margin:4px 16px 0;border-radius:var(--radius-lg);background:var(--bg-subtle);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.d-pstat-row{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.d-meter{flex:1;height:6px;border-radius:3px;background:var(--line-dark);overflow:hidden}
+.d-meter i{display:block;height:100%;background:var(--ink);border-radius:3px}
+.d-sugg{margin:0 16px;border-radius:var(--radius-lg);background:var(--bg-layer);box-shadow:var(--shadow-card);padding:14px;display:flex;flex-direction:column;gap:8px}
+.d-why{font-size:13.5px;line-height:20px;color:var(--text-2);padding:8px 10px;border-radius:var(--radius-sm);background:var(--bg-subtle)}
+.d-why b{color:var(--ink);font-weight:500}
+.d-acts{display:flex;gap:6px;flex-wrap:wrap}
+.d-resp{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;position:relative}
+.d-resp + .d-resp::before{content:"";position:absolute;top:0;left:16px;right:0;height:1px;background:var(--line)}
+.d-ctrl{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.d-ctrl span{height:26px;padding:0 9px;border-radius:999px;font-size:12px;display:inline-flex;align-items:center;gap:5px;background:var(--bg-hover);color:var(--text-2)}
+.d-reserved{flex:none;margin:0 12px 8px;border-radius:var(--radius-md);background:var(--ink);color:var(--bg);padding:10px 12px;display:flex;align-items:center;gap:10px;font-size:13.5px;line-height:19px}
+.d-reserved .c-btn{background:var(--bg);color:var(--ink);min-height:36px;padding:0 14px;font-size:14px}
+
+/* ── project page ── */
+.d-phead{padding:4px 16px 12px;display:flex;flex-direction:column;gap:4px}
+.d-phead h1{margin:0;font-size:24px;line-height:32px;font-weight:600}
+.d-board{display:flex;gap:10px;padding:10px 16px;position:relative}
+.d-board + .d-board::before{content:"";position:absolute;top:0;left:16px;right:0;height:1px;background:var(--line)}
+.d-av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;flex:none;background:var(--bg-hover-strong);color:var(--text-2)}
+.d-av.agent{background:var(--accent-soft);color:var(--accent-ink)}
+.d-av.pots{background:var(--ink);color:var(--bg)}
+.d-note{margin:0 16px;border-radius:var(--radius-md);background:var(--bg-subtle);padding:12px 14px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:21px}
+
+/* ── task detail ── */
+.d-hero{padding:6px 16px 4px;display:flex;flex-direction:column;gap:6px}
+.d-hero h1{margin:0;font-size:22px;line-height:30px;font-weight:600}
+.d-ms{display:flex;flex-direction:column;gap:0;margin:0 16px;border-radius:var(--radius-md);background:var(--bg-subtle);overflow:hidden}
+.d-ms-i{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;font-size:14px;line-height:20px;position:relative}
+.d-ms-i + .d-ms-i::before{content:"";position:absolute;top:0;left:38px;right:0;height:1px;background:var(--line)}
+.d-ms-i small{display:block;font-size:12.5px;color:var(--muted)}
+.d-wait{margin:0 16px;border-radius:var(--radius-md);background:var(--warning-soft);color:var(--warning-ink);padding:10px 12px;font-size:13.5px;line-height:20px}
+.d-wait b{font-weight:600}
+
+/* ── connection / status board ── */
+.d-chip{height:26px;padding:0 9px;border-radius:999px;font-size:12.5px;font-weight:500;display:inline-flex;align-items:center;gap:6px;background:var(--bg-hover);color:var(--text-2);white-space:nowrap}
+.d-chip.run{color:var(--accent-hover)} .d-chip.wait{background:var(--warning-soft);color:var(--warning-ink)} .d-chip.ok{color:var(--success-ink)} .d-chip.fail{background:var(--danger-soft);color:var(--danger)} .d-chip.review{background:var(--accent-soft);color:var(--accent-ink)}
+.pc.dark .d-chip.run{color:var(--accent-ink)}
+
+/* ════════ Calendar (D21–D30) — existing feature, restyled; only the Agent-task target changes with the architecture ════════ */
+.k-head{flex:none;display:flex;align-items:center;gap:4px;padding:0 8px 6px 16px}
+.k-head b{flex:1;font-size:20px;line-height:28px;font-weight:600}
+.k-views{margin:0 16px 8px}
+.k-dow{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:0 8px;font-size:12px;color:var(--muted);text-align:center;height:24px;align-items:center}
+.k-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));padding:0 8px;gap:2px}
+.k-day{min-height:58px;border:0;border-radius:10px;background:transparent;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px 0 4px;color:var(--ink)}
+.k-day .n{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:14px}
+.k-day.out{color:var(--faint)}
+.k-day.today .n{background:var(--ink);color:var(--bg);font-weight:600}
+.k-day.sel{background:var(--bg-hover)}
+.k-marks{display:flex;gap:3px;height:6px;align-items:center}
+.k-dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.k-dia{width:6px;height:6px;background:var(--ink);transform:rotate(45deg);border-radius:1px}
+.k-dia.miss{background:var(--warning)}
+.k-allday{width:calc(100% - 6px);height:4px;border-radius:2px;background:var(--accent);opacity:.55}
+.k-agenda-h{display:flex;align-items:baseline;gap:8px;padding:16px 16px 6px}
+.k-agenda-h b{font-size:16px;font-weight:600}
+.k-item{width:100%;min-height:56px;border:0;background:transparent;display:flex;align-items:flex-start;gap:12px;padding:8px 16px;text-align:left}
+.k-item:hover{background:var(--bg-hover)}
+.k-time{width:52px;flex:none;font-size:13px;line-height:21px;color:var(--text-2);font-variant-numeric:tabular-nums}
+.k-shape{width:16px;flex:none;display:grid;place-items:center;height:21px}
+.k-legend{display:flex;gap:14px;padding:4px 16px 0;font-size:12px;color:var(--muted);align-items:center}
+.k-legend span{display:inline-flex;align-items:center;gap:6px}
+/* day / week timeline */
+.k-tl{position:relative;margin:0 12px 0 0}
+.k-hr{height:56px;display:flex;align-items:flex-start;gap:8px;position:relative}
+.k-hr span{width:44px;flex:none;text-align:right;font-size:11.5px;color:var(--muted);transform:translateY(-7px);font-variant-numeric:tabular-nums}
+.k-hr::after{content:"";position:absolute;left:52px;right:0;top:0;height:1px;background:var(--line)}
+.k-ev{position:absolute;border-radius:8px;background:var(--accent-soft);color:var(--accent-ink);padding:6px 8px;font-size:13px;line-height:18px;overflow:hidden;border:0;text-align:left}
+.k-ev b{display:block;font-weight:600}
+.k-ev.draft{box-shadow:0 0 0 2px var(--accent);background:var(--bg-layer)}
+.k-task{position:absolute;display:flex;align-items:center;gap:6px;height:24px;font-size:12.5px;color:var(--ink);font-weight:500;border:0;background:transparent;padding:0}
+.k-task::before{content:"";position:absolute;left:12px;right:0;top:11.5px;height:1px;background:var(--line-strong)}
+.k-task .k-dia{width:9px;height:9px;flex:none;position:relative}
+.k-task span{position:relative;background:var(--bg);padding:0 6px;border-radius:6px}
+.k-task.miss span{color:var(--warning-ink)}
+.k-now{position:absolute;left:48px;right:0;height:2px;background:var(--danger)}
+.k-now::before{content:"";position:absolute;left:-4px;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--danger)}
+.k-wk{display:grid;grid-template-columns:44px repeat(7,minmax(0,1fr));font-size:12px;color:var(--muted);text-align:center}
+.k-wk .t{font-weight:600;color:var(--ink);font-size:14px}
+.k-wk .today .t{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--bg)}
+.k-wgrid{position:relative;display:grid;grid-template-columns:44px repeat(7,minmax(0,1fr))}
+.k-wcol{position:relative;border-left:1px solid var(--line)}
+.k-wh{height:44px;border-top:1px solid var(--line);font-size:11px;color:var(--muted);text-align:right;padding-right:6px;transform:translateY(-1px)}
+.k-wev{position:absolute;left:2px;right:2px;border-radius:6px;background:var(--accent-soft);color:var(--accent-ink);font-size:11px;line-height:14px;padding:3px 4px;overflow:hidden}
+.k-wtask{position:absolute;left:2px;right:2px;height:14px;display:flex;align-items:center;gap:3px;font-size:10.5px;color:var(--ink);overflow:hidden;white-space:nowrap}
+.k-wtask .k-dia{width:6px;height:6px;flex:none}
+.k-wall{grid-column:2 / span 7;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;padding:4px 0}
+.k-wall i{font-style:normal;height:20px;border-radius:5px;background:var(--accent);color:#fff;font-size:11px;line-height:20px;padding:0 6px;white-space:nowrap;overflow:hidden}
+/* proposal card (agent-proposed calendar change) */
+.k-diff{display:grid;grid-template-columns:52px minmax(0,1fr);gap:4px 10px;font-size:14px;line-height:21px}
+.k-diff .l{color:var(--muted);font-size:12.5px}
+.k-diff s{color:var(--muted)}
+.k-warn{color:var(--warning-ink)}
+/* drawer pushes the page aside instead of covering it, so no top-bar icon peeks out half-cut at the drawer edge */
+.c-phone :is(.c-top,.c-scroll,.c-wrap,.d-tasks,.k-head,.k-views,.k-wk):not(.c-drawer *){transition:transform .25s cubic-bezier(.2,0,0,1)}
+.c-phone.d-push :is(.c-top,.c-scroll,.c-wrap,.d-tasks,.k-head,.k-views,.k-wk):not(.c-drawer *){transform:translateX(318px)}
+.c-phone.d-push > .d-banner{transform:translateX(318px)}
+@media (prefers-reduced-motion: reduce){.c-phone :is(.c-top,.c-scroll,.c-wrap,.d-tasks,.k-head,.k-views,.k-wk){transition:none}}

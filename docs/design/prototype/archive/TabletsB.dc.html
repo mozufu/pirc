@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>B 平板與縮小轉換</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-b.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;600&amp;family=Noto+Sans+TC:wght@400;500;600;700&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 2184px; height: 2088px; box-sizing: border-box; padding: 40px; background: #DDE3EB; display: flex; flex-direction: column; gap: 56px; font-family: 'IBM Plex Sans', 'Noto Sans TC', sans-serif; color: #111827">
+  <div style="display: flex; gap: 56px">
+    <sc-for list="{{row1}}" as="f" hint-placeholder-count="2">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end"><div style="font-size: 20px; line-height: 28px; font-weight: 700">{{f.title}}</div><div style="font-size: 14px; line-height: 20px; color: #3F4A5A">{{f.sub}}</div></div>
+        <div style="{{f.frame}}"><dc-import name="TabletB" layout="{{f.layout}}" result="{{f.result}}" hint-size="1024px,768px"></dc-import></div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display: flex; gap: 56px; align-items: flex-start">
+    <sc-for list="{{row2}}" as="f" hint-placeholder-count="3">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end"><div style="font-size: 20px; line-height: 28px; font-weight: 700">{{f.title}}</div><div style="font-size: 14px; line-height: 20px; color: #3F4A5A">{{f.sub}}</div></div>
+        <div style="{{f.frame}}"><dc-import name="TabletB" layout="{{f.layout}}" result="{{f.result}}" hint-size="768px,1024px"></dc-import></div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2184,"height":2088}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const frame = (w, h) => 'width: ' + w + 'px; height: ' + h + 'px; border-radius: 24px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 12px 40px rgba(17,24,39,.16)';
+    return {
+      row1: [
+        { title: '① 1024 橫向 · 四區並存', sub: '分頁列 72｜列表＋監督 272｜對話 364｜檢視 316', layout: 'wide', result: true, frame: frame(1024, 768) },
+        { title: '② 1024 橫向 · 關閉檢視', sub: '對話擴到 680，卡片改顯示表格預覽', layout: 'wide', result: false, frame: frame(1024, 768) }
+      ],
+      row2: [
+        { title: '③ 768 直向', sub: '列表保留；檢視面板改為右側覆蓋層 440', layout: 'portrait', result: true, frame: frame(768, 1024) },
+        { title: '④ 分割視窗 507 · 對話', sub: '回到手機結構；監督計數移到標題列', layout: 'split', result: false, frame: frame(507, 768) },
+        { title: '⑤ 分割視窗 507 · 檢視', sub: '檢視面板整頁，返回回到原卡片與草稿', layout: 'split', result: true, frame: frame(507, 768) }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

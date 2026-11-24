@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>E 平板直向總覽</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-c.css">
+<link rel="stylesheet" href="./pirc-d.css">
+<link rel="stylesheet" href="./pirc-e.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 3584px; height: 1354px; box-sizing: border-box; padding: 40px; background: #EEF0F3; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 56px; font-family: -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif; color: #0F1115">
+  <sc-for list="{{frames}}" as="f" hint-placeholder-count="4">
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end"><div style="font-size: 19px; line-height: 26px; font-weight: 600">{{f.title}}</div><div style="font-size: 13.5px; line-height: 19px; color: #61666B">{{f.sub}}</div></div>
+      <div style="width: 834px; height: 1194px; border-radius: 24px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,.12), 0 16px 48px rgba(15,17,21,.10)"><dc-import name="TabletPE" layout="{{f.layout}}" dark="{{f.dark}}" hint-size="834px,1194px"></dc-import></div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3584,"height":1354}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      frames: [
+        { title: '① 834 直向 · 列表', sub: '分頁列＋一個窗格：先看列表', layout: 'list', dark: false },
+        { title: '② 834 直向 · 對話', sub: '點進去後整個窗格換成對話，← 回列表', layout: 'chat', dark: false },
+        { title: '③ 834 直向 · 群組資訊', sub: '右側滑出（440），點外面關閉', layout: 'groupInfo', dark: false },
+        { title: '④ 834 直向 · 深色', sub: '', layout: 'chat', dark: true }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

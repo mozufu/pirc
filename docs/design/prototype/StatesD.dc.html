@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>D 狀態與元件</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-c.css">
+<link rel="stylesheet" href="./pirc-d.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="pc" style="width: 1840px; height: 1240px; box-sizing: border-box; padding: 48px; background: #EEF0F3; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 40px; align-items: start">
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <div style="font-size: 19px; font-weight: 600">任務狀態</div>
+    <div class="c-meta" style="font-size: 13.5px; line-height: 20px">同一份任務紀錄；文字＋符號，不只靠顏色。進度用真實步驟數。</div>
+    <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start">
+      <span class="d-chip">○ 提議中</span>
+      <span class="d-chip">○ 已就緒</span>
+      <span class="d-chip">… 排隊中 · 資源不足</span>
+      <span class="d-chip run"><span class="state-dot ongoing"></span>執行中 · 3 / 5</span>
+      <span class="d-chip wait">◆ 等你回答</span>
+      <span class="d-chip wait">◷ 等資源 · A 持有 src/login</span>
+      <span class="d-chip wait">⧗ 等前置任務 B</span>
+      <span class="d-chip review">◎ 待你驗收</span>
+      <span class="d-chip ok">✓ 已完成</span>
+      <span class="d-chip">… 停止中 · 等主機確認</span>
+      <span class="d-chip">■ 已停止</span>
+      <span class="d-chip fail">✕ 失敗</span>
+      <span class="d-chip">? 不確定是否完成 · 檢查狀態</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <div style="font-size: 19px; font-weight: 600">連線與控制（要分開說）</div>
+    <div class="d-banner danger" style="margin: 0"><span style="flex: 1"><b>連不到 Gateway</b><br>顯示的是快取內容，可能不是最新。草稿會保留。</span><button class="c-btn small">重試</button></div>
+    <div class="d-banner warn" style="margin: 0"><span style="flex: 1"><b>Laptop 離線</b><br>對話可以讀；這個工作區的新工作要等它上線。</span></div>
+    <div class="d-banner warn" style="margin: 0"><span style="flex: 1"><b>登入已過期</b><br>重新驗證這台裝置後才能送出。</span><button class="c-btn small">重新驗證</button></div>
+    <div class="d-banner" style="margin: 0"><span style="flex: 1"><b>工作區不可用</b><br>CI-runner 不支援所需的沙盒。</span><button class="c-btn small">改選主機…</button></div>
+    <div class="d-banner" style="margin: 0"><span style="flex: 1"><b>由 MacBook 控制中</b><br>你在檢視；要下指令請取得控制權。</span><button class="c-btn small">取得控制權</button></div>
+    <div class="d-reserved" style="margin: 0"><span style="flex: 1">由 <b>pots</b> 協調中。可以回答問題或停止。</span><button class="c-btn">接管</button></div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <div style="font-size: 19px; font-weight: 600">歸屬與第一次送出</div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap"><span class="d-from-pots">From pots</span><span class="d-tag">回答 · 關於 <span class="d-tl">A</span></span><span class="d-tag">問題 · 關於 <span class="d-tl">B</span></span></div>
+    <div class="c-meta" style="font-size: 13.5px; line-height: 20px">「From pots」由後端給予，不能靠訊息文字冒充。</div>
+    <div style="height: 4px"></div>
+    <div class="d-act"><span class="c-st mute">◌</span><span class="grow">草稿 · 只在這台裝置</span></div>
+    <div class="d-act"><svg class="c-spin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 3a9 9 0 0 1 9 9"/></svg><span class="grow">送出中 · 建立對話</span></div>
+    <div class="d-act" style="background: var(--warning-soft); color: var(--warning-ink)"><span>?</span><span class="grow">不確定是否送達</span><button class="c-btn small">檢查狀態</button></div>
+    <div class="d-act" style="background: var(--danger-soft); color: var(--danger)"><span>✕</span><span class="grow">被拒絕：Node 不支援</span><button class="c-btn small">再送一次…</button></div>
+    <div class="c-meta" style="font-size: 13.5px; line-height: 20px">「檢查狀態」不會重送；「再送一次」是另一個明確動作。〔已實作，尚未啟用〕</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <div style="font-size: 19px; font-weight: 600">檔案：已保存 vs 即時參照</div>
+    <div class="d-ref"><span class="c-row-main"><span class="k">已保存的附件</span><span class="c-row-t" style="font-size: 14px">login-bug.png</span></span></div>
+    <div class="d-ref"><span class="c-row-main"><span class="k">專案檔案 · 目前版本</span><span class="c-row-t c-mono" style="font-size: 13px">src/login.svelte</span><span class="c-row-s">Laptop · 10:42 讀取</span></span></div>
+    <div class="d-ref off"><span class="c-row-main"><span class="k">無法開啟 · 沒有權限</span><span class="c-row-t c-mono" style="font-size: 13px">src/login.svelte</span><span class="c-row-s">你已離開專案</span></span></div>
+    <div class="d-ref off"><span class="c-row-main"><span class="k">主機離線</span><span class="c-row-t c-mono" style="font-size: 13px">reports/nightly.xml</span><span class="c-row-s">顯示的是 08:44 的快取</span></span></div>
+    <div class="d-ref off"><span class="c-row-main"><span class="k">檔案已不存在</span><span class="c-row-t c-mono" style="font-size: 13px">docs/old.md</span></span></div>
+    <div style="font-size: 19px; font-weight: 600; margin-top: 12px">掛載權限</div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap"><span class="d-perm rw">讀寫</span><span class="d-perm ro">唯讀</span><span class="d-perm no">已封鎖</span></div>
+    <div class="c-meta" style="font-size: 13.5px; line-height: 20px">每個掛載都標示來源：來自專案／這個對話另外授權。新增掛載預設唯讀。</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1840,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

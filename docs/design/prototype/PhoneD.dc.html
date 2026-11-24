@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>D 手機原型</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-c.css">
+<link rel="stylesheet" href="./pirc-d.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{rootCls}}" style="width: 390px; height: 844px">
+
+<!-- ════════ HOME：新對話草稿（取代「在哪裡開始」） ════════ -->
+<sc-if value="{{is.home}}" hint-placeholder-val="{{ false }}">
+<div class="c-safe-top"></div>
+<div class="c-top">
+  <button class="c-ib" aria-label="開啟側欄" onClick="{{openDrawer}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button>
+  <div class="c-title"><b>新對話</b><small>還沒送出 · 草稿只在這台裝置</small></div>
+  <button class="c-ib" aria-label="需要你處理 2 件" onClick="{{demo}}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="c-badge">2</span></button>
+</div>
+<div class="c-scroll">
+  <div class="c-hero"><span class="c-mark">π</span><h1>今天想處理什麼？</h1><span class="c-meta" style="max-width: 280px">聊天、研究或直接動手做都在同一個對話裡。下方是這個對話會用的工作區。</span></div>
+</div>
+<div class="c-wrap">
+  <div class="c-composer">
+    <div class="d-targetrow">
+      <button class="d-target" onClick="{{openBind}}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9L9.6 3.9A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg><b>pirc 行動版</b></button>
+      <button class="d-target" onClick="{{openBind}}"><span class="state-dot done" style="width: 6px; height: 6px"></span><b>Laptop</b> · ~/pirc · +1</button>
+    </div>
+    <button class="c-ta ph" onClick="{{demo}}">問點什麼，或交代一件事…</button>
+    <div class="c-tools">
+      <button class="c-tb" aria-label="附件" onClick="{{demo}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button class="c-sel" onClick="{{demo}}">預設模型 · 中<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg></button>
+      <span style="flex: 1"></span>
+      <button class="c-send off" aria-label="送出" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7M12 19V5"/></svg></button>
+    </div>
+  </div>
+</div>
+<div class="c-safe-bot"></div>
+</sc-if>
+
+<!-- ════════ CONV：同一個對話裡討論＋多個任務 ════════ -->
+<sc-if value="{{is.conv}}" hint-placeholder-val="{{ true }}">
+<div class="c-safe-top"></div>
+<div class="c-top">
+  <button class="c-ib" aria-label="開啟側欄" onClick="{{openDrawer}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button>
+  <div class="c-title"><b>修復登入頁鍵盤遮住送出鈕</b><button class="d-env" onClick="{{openEnv}}" aria-label="工作區：{{envText}}"><span class="{{envDot}}"></span>{{envText}}<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="m6 9 6 6 6-6"/></svg></button></div>
+  <button class="c-ib" aria-label="需要你處理 2 件" onClick="{{demo}}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="c-badge">2</span></button>
+  <button class="c-ib" aria-label="工作面板" onClick="{{demo}}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></svg></button>
+</div>
+<sc-if value="{{trApplying}}" hint-placeholder-val="{{ false }}">
+  <div class="d-banner info"><svg class="c-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" style="margin-top: 2px"><path d="M12 3a9 9 0 0 1 9 9"/></svg><div style="flex: 1"><b>正在套用工作區變更</b><div>撤銷 Laptop 的舊權限中，完成後才會在 CI-runner 開始。期間可以閱讀，草稿會保留。</div><div class="d-steps"><i class="done"></i><i class="now"></i><i></i></div><div class="c-meta" style="color: inherit; opacity: .8; padding-top: 4px">停止舊工作 ✓ · 撤銷舊權限 · 準備新工作區</div></div></div>
+</sc-if>
+<sc-if value="{{trBlocked}}" hint-placeholder-val="{{ false }}">
+  <div class="d-banner warn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-top: 2px"><path d="m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3M12 9v4M12 17h.01"/></svg><div style="flex: 1"><b>等待 Laptop 確認</b><div>Laptop 目前離線，無法確認舊工作已停止。確認前不會在 CI-runner 開始新工作，也不會恢復舊權限。</div><div style="display: flex; gap: 6px; padding-top: 8px"><button class="c-btn small" onClick="{{demo}}">改選主機…</button><button class="c-btn small ghost" onClick="{{demo}}">詳細狀態</button></div></div></div>
+</sc-if>
+<div class="d-tasks" role="list" aria-label="這個對話的任務">
+  <button class="{{taskACls}}" role="listitem" onClick="{{openTask}}"><b><span class="d-tl">A</span>修復鍵盤遮擋</b><span>{{taskASub}}</span></button>
+  <button class="d-task wait" role="listitem" onClick="{{demo}}"><b><span class="d-tl">B</span>更新元件文件</b><span>{{taskBSub}}</span></button>
+</div>
+<div class="c-scroll" style="display: flex; flex-direction: column-reverse">
+<div class="c-thread">
+  <div class="c-user">登入頁在小螢幕上，鍵盤會蓋住送出鈕。先看看原因？</div>
+  <div class="c-asst"><p>LoginScreen 用固定高度排版，沒有讀取鍵盤高度（viewInsets），所以鍵盤出現時送出鈕被推到可視範圍外。可以改成依鍵盤高度捲動。</p></div>
+  <div class="c-user">好，照這個方向改，順便更新元件文件。</div>
+  <div class="d-taskcard">
+    <div class="t"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4M3 7l2 2 4-4M13 6h8M13 12h8M13 18h8"/></svg>已建立 2 個任務</div>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <div class="d-kv"><span class="d-tl" style="padding: 0 6px; background: var(--ink); color: var(--bg)">A</span><span>修復鍵盤遮擋</span><span>讀寫 ~/pirc</span></div>
+      <div class="d-kv"><span class="d-tl" style="padding: 0 6px; background: var(--ink); color: var(--bg)">B</span><span>更新元件文件</span><span>讀寫 ~/pirc</span></div>
+    </div>
+    <span class="c-meta">兩個任務都在 Laptop · ~/pirc 執行，依專案的核准設定。</span>
+  </div>
+  <button class="d-act" style="border: 0; text-align: left" onClick="{{openTask}}"><span class="d-tl">A</span><span class="grow"><b>編輯 LoginScreen.kt、login_test.dart</b> · 3 個工具步驟</span><span class="{{taskAStCls}}">{{taskASt}}</span></button>
+  <div class="d-act"><span class="d-tl">B</span><span class="grow" style="color: var(--warning-ink)">等待寫入：任務 A 正在寫 apps/web/src/login</span></div>
+  <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px"><span class="d-tag">問題 · 關於 <span class="d-tl">A</span></span><div class="c-user" style="max-width: 100%">為什麼要改 viewInsets，不能直接加 padding 嗎？</div></div>
+  <div class="c-asst"><span class="d-tag" style="margin-bottom: 6px">回答 · 關於 <span class="d-tl">A</span> · A 仍在執行</span><p>固定 padding 在不同鍵盤高度和候選列下會失準；viewInsets 是系統回報的實際高度，旋轉或分割視窗時也會更新。</p></div>
+  <sc-if value="{{trOn}}" hint-placeholder-val="{{ false }}">
+    <div class="d-sys"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M21 3l-7 7M8 21H3v-5M3 21l7-7"/></svg><div><b>你把工作區從 Laptop 換到 CI-runner。</b>任務 A 的 <code class="c-code">flutter test</code> 被中斷，部分檔案可能已改動。任務 B 等新工作區準備好，不會自動改目標。</div></div>
+  </sc-if>
+</div>
+</div>
+<div class="c-wrap">
+  <div class="c-composer">
+    <div class="d-targetrow"><span class="c-meta">傳給</span><button class="d-target" onClick="{{openRoute}}" disabled="{{trOn}}"><b>{{routeLabel}}</b><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="m6 9 6 6 6-6"/></svg></button></div>
+    <button class="c-ta ph" onClick="{{demo}}">{{convPh}}</button>
+    <div class="c-tools">
+      <button class="c-tb" aria-label="附件" onClick="{{demo}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+      <button class="c-sel" onClick="{{demo}}">預設模型 · 中<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m6 9 6 6 6-6"/></svg></button>
+      <span style="flex: 1"></span>
+      <button class="c-send off" aria-label="送出" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7M12 19V5"/></svg></button>
+    </div>
+  </div>
+</div>
+<div class="c-safe-bot"></div>
+</sc-if>
+
+<!-- ════════ TASK：任務詳情 ════════ -->
+<sc-if value="{{is.task}}" hint-placeholder-val="{{ false }}">
+<div class="c-safe-top"></div>
+<div class="c-top">
+  <button class="c-ib" aria-label="返回對話" onClick="{{goConv}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>
+  <div class="c-title"><b>任務 A</b><small>修復登入頁鍵盤遮住送出鈕</small></div>
+  <button class="c-ib" aria-label="更多" onClick="{{demo}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>
+</div>
+<div class="c-scroll">
+  <div class="d-hero">
+    <div style="display: flex; gap: 6px; flex-wrap: wrap"><span class="d-chip run"><span class="state-dot ongoing"></span>執行中</span><span class="d-chip">來自你在此對話的要求 · 10:12</span><sc-if value="{{marks}}" hint-placeholder-val="{{ true }}"><span class="tag-new">規劃</span></sc-if></div>
+    <h1>修復鍵盤遮擋</h1>
+    <span class="c-meta" style="font-size: 13.5px">Laptop · ~/pirc · 讀寫 · 依專案核准設定</span>
+  </div>
+  <div class="c-sec">進度 <span class="n">2/5</span><span style="flex: 1"></span><span style="font-weight: 500">依實際步驟，不估百分比</span></div>
+  <div class="d-ms">
+    <div class="d-ms-i"><span class="c-st ok" style="width: 16px">✓</span><span>找出原因<small>固定高度排版，沒有讀取鍵盤高度</small></span></div>
+    <div class="d-ms-i"><span class="c-st ok" style="width: 16px">✓</span><span>改用 viewInsets 調整版面</span></div>
+    <div class="d-ms-i"><span class="c-st run" style="width: 16px">◐</span><span>更新 widget 測試<small>login_test.dart · 2 / 4 通過</small></span></div>
+    <div class="d-ms-i"><span class="c-st mute" style="width: 16px">○</span><span>執行完整測試</span></div>
+    <div class="d-ms-i"><span class="c-st mute" style="width: 16px">○</span><span>等你驗收<small>你要求完成後先給你看</small></span></div>
+  </div>
+  <div class="c-sec">子工作 <span class="n">1</span></div>
+  <div class="c-row"><span class="state-dot done"></span><span class="c-row-main"><span class="c-row-t">子 agent · 檢查其他表單頁</span><span class="c-row-s">沒有其他頁面有同樣問題 · 10:20 完成</span></span></div>
+  <div class="c-sec">產出</div>
+  <button class="c-row" onClick="{{demo}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span class="c-row-main"><span class="c-row-t">3 個檔案變更</span><span class="c-row-s">LoginScreen.kt、login_test.dart、keyboard.md</span></span><span class="c-add">+42</span><span class="c-del">−18</span></button>
+  <div class="c-sec">被它擋住的工作</div>
+  <div class="d-wait"><b>任務 B 在等 A 寫完</b> apps/web/src/login。A 完成或停止時，B 會重新讀取檔案再繼續。</div>
+  <div style="height: 16px"></div>
+</div>
+<div style="flex: none; display: flex; gap: 8px; padding: 10px 16px 8px; border-top: 1px solid var(--line)">
+  <button class="c-btn" style="flex: 1" onClick="{{demo}}">暫停</button>
+  <button class="c-btn danger" style="flex: 1" onClick="{{stopTask}}">停止任務…</button>
+  <button class="c-btn dark" style="flex: 1" disabled>驗收</button>
+</div>
+<div class="c-meta" style="padding: 0 16px 6px; text-align: center">停止只結束 A 和它的子工作；已寫入的檔案不會還原。</div>
+<div class="c-safe-bot"></div>
+</sc-if>
+
+<!-- ════════ POTS：助理入口 ════════ -->
+<sc-if value="{{is.pots}}" hint-placeholder-val="{{ false }}">
+<div class="c-safe-top"></div>
+<div class="c-top">
+  <button class="c-ib" aria-label="開啟側欄" onClick="{{openDrawer}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button>
+  <div class="c-title"><b>pots</b><small>個人助理 · 只在你授權的範圍內行動</small></div>
+  <button class="c-ib" aria-label="職責與權限設定" onClick="{{demo}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button>
+</div>
+<div class="c-scroll">
+  <div class="d-pstat">
+    <div class="d-pstat-row"><span class="state-dot ongoing"></span><b style="font-weight: 500">觀察中</b><span class="c-meta">· 2 個職責 · 只看進度</span></div>
+    <div class="d-pstat-row"><span class="state-dot wait"></span><b style="font-weight: 500">協調已暫停</b><span style="flex: 1"></span><button class="c-btn small" onClick="{{demo}}">恢復協調…</button></div>
+    <div class="d-pstat-row"><span class="c-meta" style="width: 64px">派工額度</span><span class="d-meter"><i style="width: 30%"></i></span><span class="c-meta">3 / 10</span></div>
+    <div class="d-pstat-row"><span class="c-meta" style="width: 64px">同時執行</span><span class="d-meter"><i style="width: 50%"></i></span><span class="c-meta">1 / 2</span></div>
+  </div>
+  <div class="c-sec attn">需要你決定 <span class="n">1</span></div>
+  <div class="c-row" style="align-items: flex-start"><span class="state-dot wait" style="margin-top: 8px"></span><span class="c-row-main"><span class="c-row-t" style="font-weight: 500">檢查 nightly test 在問你問題</span><span class="c-row-s">由 pots 執行 · CI-runner / pirc · 14 分後過期</span></span><button class="c-btn small primary" onClick="{{goPotsConv}}">前往回答</button></div>
+  <div class="c-sec">建議 <span class="n">2</span><span style="flex: 1"></span><span style="font-weight: 500">讀過不等於接受</span></div>
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div class="d-sugg">
+      <div style="display: flex; align-items: center; gap: 8px"><span class="c-row-t" style="flex: 1; font-weight: 600">週末出遊預算估算需要你的輸入</span><span class="c-meta">12 分</span></div>
+      <div class="d-why"><b>為什麼：</b>對話在等你回答「人數要算 4 人還是 5 人？」· 來源事件 10:31</div>
+      <div class="d-acts"><button class="c-btn small" onClick="{{demo}}">查看來源</button><button class="c-btn small" onClick="{{demo}}">只追蹤</button><button class="c-btn small ghost" onClick="{{demo}}">1 小時後</button><button class="c-btn small ghost" onClick="{{demo}}">略過</button></div>
+    </div>
+    <div class="d-sugg">
+      <div style="display: flex; align-items: center; gap: 8px"><span class="c-row-t" style="flex: 1; font-weight: 600">「整理 API 文件」卡在寫入等待 40 分鐘</span><sc-if value="{{marks}}" hint-placeholder-val="{{ true }}"><span class="tag-new">規劃</span></sc-if></div>
+      <div class="d-why"><b>為什麼：</b>寫入被「修復登入頁…」的任務 A 持有 · 08:40 起<br><b>建議：</b>等 A 完成後重新產生，或改用獨立 worktree</div>
+      <div class="d-acts"><button class="c-btn small dark" onClick="{{openPotsStart}}">開始…</button><button class="c-btn small" onClick="{{demo}}">只追蹤</button><button class="c-btn small ghost" onClick="{{demo}}">略過</button></div>
+    </div>
+  </div>
+  <div class="c-sec">追蹤中的任務</div>
+  <button class="c-row" onClick="{{goPotsConv}}"><span class="state-dot wait"></span><span class="c-row-main"><span class="c-row-t">檢查 nightly test</span><span class="c-row-s">等待你的輸入 · pots 執行中的對話</span></span></button>
+  <button class="c-row" onClick="{{demo}}"><span class="state-dot done"></span><span class="c-row-main"><span class="c-row-t">整理排程報告</span><span class="c-row-s">執行完成 · 完成不代表你已驗收</span></span></button>
+  <div class="c-sec">職責</div>
+  <div class="d-resp"><span class="c-row-main"><span class="c-row-t" style="font-weight: 500">留意 pirc 行動版卡住的工作</span><span class="c-row-s">觀察 2 個工作區的進度事件 · 不讀對話內容與檔案</span><span class="d-ctrl"><span><span class="state-dot ongoing"></span>觀察中</span><span>協調暫停</span><span>已用 12 / 100 件</span></span></span></div>
+  <div style="height: 12px"></div>
+</div>
+<div class="c-wrap">
+  <div class="c-composer">
+    <button class="c-ta ph" onClick="{{demo}}">問 pots，或交代一件事…</button>
+    <div class="c-tools"><span style="flex: 1"></span><button class="c-send off" aria-label="送出" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7M12 19V5"/></svg></button></div>
+  </div>
+</div>
+<div class="c-safe-bot"></div>
+</sc-if>
+
+<!-- ════════ POTS CONV：pots 協調中的對話 ════════ -->
+<sc-if value="{{is.potsConv}}" hint-placeholder-val="{{ false }}">
+<div class="c-safe-top"></div>
+<div class="c-top">
+  <button class="c-ib" aria-label="返回 pots" onClick="{{goPots}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>
+  <div class="c-title"><b>檢查 nightly test</b><span class="d-env"><span class="state-dot done"></span>CI-runner · ~/pirc</span></div>
+  <button class="c-ib" aria-label="工作面板" onClick="{{demo}}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></svg></button>
+</div>
+<sc-if value="{{notTaken}}" hint-placeholder-val="{{ true }}">
+  <div class="d-reserved"><span style="flex: 1">由 <b>pots</b> 協調中。你可以回答它的問題或停止；要直接下指令請先接管。</span><button class="c-btn" onClick="{{takeOver}}">接管</button></div>
+</sc-if>
+<sc-if value="{{taken}}" hint-placeholder-val="{{ false }}">
+  <div class="d-banner"><span style="flex: 1"><b>你已接管。</b>pots 不會再送指令到這裡；已在執行的工作會繼續，要停請用停止鍵。</span></div>
+</sc-if>
+<div class="c-scroll" style="display: flex; flex-direction: column-reverse">
+<div class="c-thread">
+  <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px"><span class="d-from-pots">From pots</span><div class="c-user" style="max-width: 100%">執行 nightly 測試，失敗的話先分析原因，不要修改程式。</div><span class="c-meta">依你 08:38 授權的指示 · 職責：留意 CI · 不是你直接傳的訊息</span></div>
+  <div class="c-asst"><p>3 個失敗都在 <code class="c-code">sync/reconnect.test.ts</code>，都是 2 秒等待逾時。</p></div>
+  <section class="c-int"><header><span class="c-int-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg></span><div style="flex: 1"><h3>是否只重新執行失敗案例？</h3><p>pots 協調中也可以直接回答這個問題。</p></div></header>
+    <div style="display: flex; flex-direction: column; gap: 6px"><button class="c-opt on"><span class="c-mark-r"></span><span>只重跑失敗的 3 個案例</span></button><button class="c-opt"><span class="c-mark-r"></span><span>全部重跑</span></button></div>
+    <div style="display: flex; align-items: center; gap: 8px"><span class="c-expire">14 分後過期</span><span style="flex: 1"></span><button class="c-btn primary small" onClick="{{demo}}">送出</button></div>
+  </section>
+</div>
+</div>
+<div class="c-wrap">
+  <div class="c-composer">
+    <button class="c-ta ph" onClick="{{demo}}">{{potsConvPh}}</button>
+    <div class="c-tools"><span style="flex: 1"></span><button class="c-stop2" aria-label="停止這個執行" onClick="{{demo}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="5" y="5" width="14" height="14" rx="2"/></svg></button><button class="c-send off" aria-label="送出" disabled="{{notTaken}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7M12 19V5"/></svg></button></div>
+  </div>
+</div>
+<div class="c-safe-bot"></div>
+</sc-if>
+
+<!-- ════════ PROJECT：專案頁 ════════ -->
+<sc-if value="{{is.project}}" hint-placeholder-val="{{ false }}">
+<div class="c-safe-top"></div>
+<div class="c-top">
+  <button class="c-ib" aria-label="開啟側欄" onClick="{{openDrawer}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button>
+  <div class="c-title"><b>專案</b></div>
+  <button class="c-ib" aria-label="專案選項：封存、刪除" onClick="{{openDelete}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>
+</div>
+<div class="d-phead"><h1>pirc 行動版</h1><span class="c-meta" style="font-size: 13.5px">3 個對話 · 2 個執行中的任務 · Laptop</span></div>
+<div class="c-seg" style="margin: 0 16px 6px" role="tablist">
+  <sc-for list="{{projTabs}}" as="t" hint-placeholder-count="5"><button class="{{t.cls}}" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for>
+</div>
+<div class="c-scroll">
+  <sc-if value="{{pt.conv}}" hint-placeholder-val="{{ false }}">
+    <button class="c-row" onClick="{{goConv}}"><span class="state-dot ongoing"></span><span class="c-row-main"><span class="c-row-t">修復登入頁鍵盤遮住送出鈕</span><span class="c-row-s">2 個任務 · 1 個等待寫入</span></span></button>
+    <button class="c-row" onClick="{{demo}}"><span class="state-dot idle"></span><span class="c-row-main"><span class="c-row-t">Flutter 與 Compose 平板適配</span><span class="c-row-s">成果：比較表</span></span></button>
+    <button class="c-row" onClick="{{demo}}"><span class="state-dot idle"></span><span class="c-row-main"><span class="c-row-t">介面改版方案</span><span class="c-row-s">成果 v2</span></span></button>
+    <div style="padding: 12px 16px"><button class="c-btn small" onClick="{{goHome}}">在這個專案新對話</button></div>
+  </sc-if>
+  <sc-if value="{{pt.res}}" hint-placeholder-val="{{ true }}">
+    <div class="c-gl" style="padding-left: 32px">共用資源 · 套用到所有成員對話</div>
+    <div class="c-group">
+      <div class="d-mount"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9L9.6 3.9A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg><span class="c-row-main"><span class="c-row-t">主要資料夾</span><span class="c-row-s c-mono">Laptop:~/pirc</span></span><span class="d-perm rw">讀寫</span></div>
+      <div class="d-mount"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9L9.6 3.9A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg><span class="c-row-main"><span class="c-row-t">docs</span><span class="c-row-s c-mono">Laptop:~/pirc-docs</span></span><span class="d-perm ro">唯讀</span></div>
+    </div>
+    <div class="c-gn">變更或移除資源時，會先列出受影響的對話和執行中的任務，確認後才撤銷。</div>
+    <div style="padding: 10px 32px 0"><button class="c-btn small" onClick="{{demo}}">變更資源…</button></div>
+    <div class="c-gl" style="padding-left: 32px">核准與協作</div>
+    <div class="c-group">
+      <div class="c-grow"><span class="c-row-main"><span class="c-row-t">核准方式</span><span class="c-row-s">自動 · 刪檔與推送仍會問你</span></span></div>
+      <div class="c-grow"><span class="c-row-main"><span class="c-row-t">委派</span><span class="c-row-s">每次問我</span></span></div>
+    </div>
+  </sc-if>
+  <sc-if value="{{pt.rules}}" hint-placeholder-val="{{ false }}">
+    <div class="c-gl" style="padding-left: 32px">規則 · rev 7 · 只有你能改</div>
+    <div class="d-note"><span>回覆用繁體中文。改 Android 程式前先跑 <code class="c-code">flutter analyze</code>。不要修改 <span class="c-mono">docs/legacy</span>。</span><span class="c-meta">更新於 10/28 · 下一個安全的回合邊界才套用到執行中的對話</span></div>
+    <div class="c-gl" style="padding-left: 32px">agent 提出的修改 <span class="tag-new" style="margin-left: 6px">規劃</span></div>
+    <div class="c-row" style="align-items: flex-start"><span class="d-av agent">A</span><span class="c-row-main"><span class="c-row-t" style="white-space: normal">新增：「改 UI 時同時更新 widget 測試」</span><span class="c-row-s">任務 A 提出 · 10:24</span></span><button class="c-btn small" onClick="{{demo}}">檢視</button></div>
+  </sc-if>
+  <sc-if value="{{pt.notes}}" hint-placeholder-val="{{ false }}">
+    <div class="c-gl" style="padding-left: 32px">共用筆記 · 有版本、有作者 <span class="tag-new" style="margin-left: 6px">規劃</span></div>
+    <div class="d-note"><b style="font-weight: 600">API 文件位置</b><span>產生的 API 文件放在 <span class="c-mono">docs/api</span>，由 <span class="c-mono">pnpm docs</span> 產生，不要手改。</span><span class="c-meta">rev 3 · 任務 B 編輯 · 你核准過的來源</span></div>
+    <div style="height: 8px"></div>
+    <div class="d-note"><b style="font-weight: 600">鍵盤處理慣例</b><span>表單頁一律用 viewInsets，不用固定 padding。</span><span class="c-meta">rev 1 · 你</span></div>
+  </sc-if>
+  <sc-if value="{{pt.board}}" hint-placeholder-val="{{ false }}">
+    <div class="c-gl" style="padding-left: 32px">看板 · 訊息不會授予任何權限 <span class="tag-new" style="margin-left: 6px">規劃</span></div>
+    <div class="d-board"><span class="d-av agent">A</span><span class="c-row-main"><span class="c-row-t" style="white-space: normal">我在改 apps/web/src/login，約 10 分鐘</span><span class="c-row-s">任務 A · 修復登入頁… · 10:21</span></span></div>
+    <div class="d-board"><span class="d-av agent">B</span><span class="c-row-main"><span class="c-row-t" style="white-space: normal">等 A 寫完 login 再更新元件文件；先整理其他章節</span><span class="c-row-s">任務 B · 10:22</span></span></div>
+    <div class="d-board"><span class="d-av pots">π</span><span class="c-row-main"><span class="c-row-t" style="white-space: normal">「整理 API 文件」已等待寫入 40 分鐘</span><span class="c-row-s">From pots · 10:40</span></span></div>
+    <div class="d-board"><span class="d-av">你</span><span class="c-row-main"><span class="c-row-t" style="white-space: normal">B 先不要動 docs/legacy</span><span class="c-row-s">你 · 10:41</span></span></div>
+    <div class="c-gn">寫入順序由主機的寫入鎖決定；看板上的「我在改」只是告知，不會鎖住檔案。</div>
+  </sc-if>
+  <div style="height: 16px"></div>
+</div>
+<div class="c-safe-bot"></div>
+</sc-if>
+
+<!-- ════════ LEFT：離開專案後的對話（已保存 vs 即時參照） ════════ -->
+<sc-if value="{{is.left}}" hint-placeholder-val="{{ false }}">
+<div class="c-safe-top"></div>
+<div class="c-top">
+  <button class="c-ib" aria-label="開啟側欄" onClick="{{openDrawer}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button>
+  <div class="c-title"><b>修復登入頁鍵盤遮住送出鈕</b><span class="d-env"><span class="state-dot done"></span>Laptop · 受管理的資料夾</span></div>
+  <button class="c-ib" aria-label="工作面板" onClick="{{demo}}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></svg></button>
+</div>
+<div class="d-banner"><span style="flex: 1"><b>已離開「pirc 行動版」。</b>專案的資料夾、規則、筆記與看板已移除；對話內容保留，之後仍會當作上下文。</span></div>
+<div class="c-scroll" style="display: flex; flex-direction: column-reverse">
+<div class="c-thread">
+  <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px"><div class="c-user">登入頁在小螢幕上，鍵盤會蓋住送出鈕。</div><div class="d-ref" style="max-width: 82%"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3-3-9 9"/></svg><span class="c-row-main"><span class="k">已保存的附件</span><span class="c-row-t" style="font-size: 14px">login-bug.png</span></span></div></div>
+  <div class="c-asst"><p>問題在這個檔案的固定高度排版：</p>
+    <div class="d-ref off"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg><span class="c-row-main"><span class="k">專案檔案 · 需要目前權限</span><span class="c-row-t c-mono" style="font-size: 13px">apps/web/src/login.svelte</span><span class="c-row-s">無法開啟：你已離開專案。對話裡保存的節錄仍在。</span></span></div>
+  </div>
+  <div class="d-sys"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><div><b>你讓這個對話離開了「pirc 行動版」。</b>任務 A 已中斷；之後的工作只能用受管理的資料夾。另外授權過的 <span class="c-mono">~/pirc/apps/web</span> 唯讀權限仍保留。</div></div>
+</div>
+</div>
+<div class="c-wrap">
+  <div class="c-composer">
+    <button class="c-ta ph" onClick="{{demo}}">繼續對話…</button>
+    <div class="c-tools"><button class="c-tb" aria-label="附件" onClick="{{demo}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><span style="flex: 1"></span><button class="c-send off" aria-label="送出" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7M12 19V5"/></svg></button></div>
+  </div>
+</div>
+<div class="c-safe-bot"></div>
+</sc-if>
+
+<!-- ════════ NOTIFSET：通知分類對齊 pots ════════ -->
+<sc-if value="{{is.notifset}}" hint-placeholder-val="{{ false }}">
+<div class="c-safe-top" style="background: var(--bg-grouped)"></div>
+<div class="c-top" style="background: var(--bg-grouped)">
+  <button class="c-ib" aria-label="返回設定" onClick="{{demo}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button>
+  <div class="c-title"><b>通知</b></div>
+  <span style="width: 44px; flex: none"></span>
+</div>
+<div class="c-scroll" style="background: var(--bg-grouped)">
+  <div class="c-gl">依重要性</div>
+  <div class="c-group">
+    <sc-for list="{{ncats}}" as="c" hint-placeholder-count="4">
+      <div class="c-grow" style="flex-direction: column; align-items: stretch; gap: 8px"><span class="c-row-main"><span class="c-row-t" style="display: flex; gap: 6px; align-items: center">{{c.label}}<sc-if value="{{c.plan}}" hint-placeholder-val="{{ false }}"><span class="tag-new">規劃</span></sc-if></span><span class="c-row-s" style="white-space: normal">{{c.sub}}</span></span>
+        <div class="c-seg" role="radiogroup" aria-label="{{c.label}}"><sc-for list="{{c.opts}}" as="o" hint-placeholder-count="3"><button class="{{o.cls}}" role="radio" aria-checked="{{o.on}}" onClick="{{o.pick}}">{{o.label}}</button></sc-for></div>
+      </div>
+    </sc-for>
+  </div>
+  <div class="c-gn">每則通知都對應一個保存好的項目；通知沒送到也不會遺失，打開 App 會同步。</div>
+  <div class="c-gl">摘要與安靜時間</div>
+  <div class="c-group">
+    <div class="c-grow"><span class="c-row-main"><span class="c-row-t" style="display: flex; gap: 6px; align-items: center">摘要時間<span class="tag-new">規劃</span></span><span class="c-row-s">每天 18:00（預設值待定）</span></span></div>
+    <div class="c-grow"><span class="c-row-main"><span class="c-row-t">勿擾時段</span><span class="c-row-s">23:00–07:30 · 「需要你決定」仍會通知</span></span><button class="c-switch" role="switch" aria-checked="true" aria-label="勿擾時段"></button></div>
+  </div>
+  <div class="c-gl">pots</div>
+  <div class="c-group">
+    <div class="c-grow"><span class="c-row-main"><span class="c-row-t">建議的提醒</span><span class="c-row-s">略過或稍後的建議會保持安靜，直到情況有實質變化</span></span><button class="c-switch" role="switch" aria-checked="true" aria-label="建議的提醒"></button></div>
+  </div>
+  <div style="height: 24px"></div>
+</div>
+</sc-if>
+
+<!-- ════════ CAL：行事曆（現有功能；只有 Agent 任務的執行目標因架構調整而改） ════════ -->
+<sc-if value="{{is.cal}}" hint-placeholder-val="{{ false }}">
+<div class="c-safe-top"></div>
+<div class="c-top">
+  <button class="c-ib" aria-label="開啟側欄" onClick="{{openDrawer}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button>
+  <div class="c-title"><b>行事曆</b><small>Asia/Taipei</small></div>
+  <button class="c-ib" aria-label="Agent 行事曆權限" onClick="{{openCalAccess}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/></svg></button>
+  <button class="c-ib" aria-label="新增行事曆項目" onClick="{{openEventNew}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+</div>
+<div class="k-head"><b>{{calTitle}}</b><button class="c-ib" aria-label="上一段" onClick="{{demo}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg></button><button class="c-ib" aria-label="下一段" onClick="{{demo}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></button><button class="c-btn small" onClick="{{calToday}}">今天</button></div>
+<div class="c-seg k-views" role="tablist" aria-label="檢視">
+  <sc-for list="{{calViews}}" as="t" hint-placeholder-count="4"><button class="{{t.cls}}" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for>
+</div>
+
+<sc-if value="{{cv.month}}" hint-placeholder-val="{{ true }}">
+<div class="c-scroll">
+  <div class="k-dow"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+  <div class="k-grid">
+    <sc-for list="{{days}}" as="d" hint-placeholder-count="35">
+      <button class="{{d.cls}}" aria-label="{{d.label}}" onClick="{{d.pick}}"><span class="n">{{d.n}}</span><span class="k-marks"><sc-if value="{{d.allday}}" hint-placeholder-val="{{ false }}"><span class="k-allday" style="width: 18px"></span></sc-if><sc-if value="{{d.ev}}" hint-placeholder-val="{{ false }}"><span class="k-dot"></span></sc-if><sc-if value="{{d.ev2}}" hint-placeholder-val="{{ false }}"><span class="k-dot"></span></sc-if><sc-if value="{{d.ag}}" hint-placeholder-val="{{ false }}"><span class="{{d.agCls}}"></span></sc-if></span></button>
+    </sc-for>
+  </div>
+  <div class="k-legend"><span><span class="k-dot"></span>個人事件</span><span><span class="k-allday" style="width: 14px; opacity: 1"></span>全天</span><span><span class="k-dia"></span>Agent 任務</span><span><span class="k-dia miss"></span>錯過</span></div>
+  <div class="k-agenda-h"><b>{{selTitle}}</b><span class="c-meta">{{selCount}}</span></div>
+  <sc-for list="{{agenda}}" as="a" hint-placeholder-count="3">
+    <button class="k-item" onClick="{{a.open}}"><span class="k-time">{{a.time}}</span><span class="k-shape"><span class="{{a.shape}}"></span></span><span class="c-row-main"><span class="c-row-t">{{a.title}}</span><span class="{{a.subCls}}">{{a.sub}}</span></span></button>
+  </sc-for>
+  <sc-if value="{{noAgenda}}" hint-placeholder-val="{{ false }}"><div class="c-meta" style="padding: 8px 16px">這天沒有項目。</div></sc-if>
+  <div style="height: 16px"></div>
+</div>
+</sc-if>
+
+<sc-if value="{{cv.week}}" hint-placeholder-val="{{ false }}">
+<div class="k-wk" style="padding: 0 8px 6px 0"><span></span><sc-for list="{{wdays}}" as="w" hint-placeholder-count="7"><span class="{{w.cls}}"><span style="display: block">{{w.dow}}</span><span class="t">{{w.n}}</span></span></sc-for></div>
+<div class="c-scroll">
+  <div class="k-wgrid" style="padding-right: 8px">
+    <div><sc-for list="{{whours}}" as="h" hint-placeholder-count="14"><div class="k-wh">{{h}}</div></sc-for></div>
+    <sc-for list="{{wdays}}" as="w" hint-placeholder-count="7">
+      <div class="k-wcol" style="height: 616px; background: repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px 44px)">
+        <sc-for list="{{w.items}}" as="i" hint-placeholder-count="2">
+          <sc-if value="{{i.task}}" hint-placeholder-val="{{ false }}"><div class="k-wtask" style="{{i.pos}}"><span class="{{i.dia}}"></span>{{i.t}}</div></sc-if>
+          <sc-if value="{{i.ev}}" hint-placeholder-val="{{ true }}"><div class="k-wev" style="{{i.pos}}">{{i.t}}</div></sc-if>
+        </sc-for>
+      </div>
+    </sc-for>
+    <div class="k-now" style="top: 147px; left: 44px"></div>
+  </div>
+  <div class="c-meta" style="padding: 12px 16px">長按事件可拖曳移動，放開後開啟草稿，按「儲存」才會變更。Agent 任務沒有長度，只標時間點。</div>
+</div>
+</sc-if>
+
+<sc-if value="{{cv.day}}" hint-placeholder-val="{{ false }}">
+<div class="c-scroll">
+  <div class="k-tl" style="padding-top: 10px">
+    <sc-for list="{{dhours}}" as="h" hint-placeholder-count="16"><div class="k-hr"><span>{{h}}</span></div></sc-for>
+    <button class="k-task miss" style="top: 54px; left: 52px; right: 8px" onClick="{{demo}}"><span class="k-dia miss"></span><span>08:00 每天早上檢查測試 · 錯過</span></button>
+    <button class="k-ev" style="top: 402px; left: 60px; right: 8px; height: 54px" onClick="{{openEvent}}"><b>牙醫</b>14:00–15:00 · 仁愛路</button>
+    <button class="k-ev" style="top: 710px; left: 60px; right: 8px; height: 82px" onClick="{{demo}}"><b>晚餐</b>19:30–21:00</button>
+    <div class="k-now" style="top: 252px"></div>
+  </div>
+  <div style="height: 16px"></div>
+</div>
+</sc-if>
+
+<sc-if value="{{cv.list}}" hint-placeholder-val="{{ false }}">
+<div class="c-scroll">
+  <sc-for list="{{listGroups}}" as="g" hint-placeholder-count="5">
+    <div class="k-agenda-h"><b>{{g.title}}</b><span class="c-meta">{{g.sub}}</span></div>
+    <sc-for list="{{g.items}}" as="a" hint-placeholder-count="2">
+      <button class="k-item" onClick="{{a.open}}"><span class="k-time">{{a.time}}</span><span class="k-shape"><span class="{{a.shape}}"></span></span><span class="c-row-main"><span class="c-row-t">{{a.title}}</span><span class="{{a.subCls}}">{{a.sub}}</span></span></button>
+    </sc-for>
+  </sc-for>
+  <div class="c-sec" style="padding-top: 24px">Agent 任務<span style="flex: 1"></span><button class="c-btn small" onClick="{{openAgent}}">＋ 新增</button></div>
+  <button class="c-row" onClick="{{openAgent}}"><span class="k-dia miss"></span><span class="c-row-main"><span class="c-row-t">每天早上檢查測試</span><span class="c-row-s">每個工作日 08:00 · pirc 行動版</span></span><span class="c-st wait">◷ 1 次錯過</span></button>
+  <button class="c-row" onClick="{{openAgent}}"><span class="k-dia"></span><span class="c-row-main"><span class="c-row-t">整理 API 文件週報</span><span class="c-row-s">每週一 09:00 · pirc 行動版</span></span></button>
+  <button class="c-row" onClick="{{openAgentBlocked}}"><span class="k-dia" style="background: var(--faint)"></span><span class="c-row-main"><span class="c-row-t">清理舊分支</span><span class="c-row-s" style="color: var(--warning-ink); white-space: normal">已暫停：執行目標已無法使用</span></span><sc-if value="{{marks}}" hint-placeholder-val="{{ true }}"><span class="tag-wip">開發中</span></sc-if></button>
+  <div style="height: 16px"></div>
+</div>
+</sc-if>
+<div class="c-safe-bot"></div>
+</sc-if>
+
+<!-- ════════ CAL PROPOSAL：agent 在對話中提出行事曆變更 ════════ -->
+<sc-if value="{{is.calProp}}" hint-placeholder-val="{{ false }}">
+<div class="c-safe-top"></div>
+<div class="c-top">
+  <button class="c-ib" aria-label="開啟側欄" onClick="{{openDrawer}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button>
+  <div class="c-title"><b>週末出遊預算估算</b><span class="d-env"><span class="state-dot done"></span>Laptop · 受管理的資料夾</span></div>
+  <button class="c-ib" aria-label="工作面板" onClick="{{demo}}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></svg></button>
+</div>
+<div class="c-scroll" style="display: flex; flex-direction: column-reverse">
+<div class="c-thread">
+  <div class="c-user">把 11/14 的旅行改成三天，前一天早上提醒我。</div>
+  <div class="c-asst"><p>我提出一個行事曆變更，確認後才會改：</p></div>
+  <sc-if value="{{propPending}}" hint-placeholder-val="{{ true }}">
+  <section class="c-int" aria-labelledby="kp-title">
+    <header><span class="c-int-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span><div style="flex: 1"><h3 id="kp-title">變更行事曆事件：旅行</h3><p>agent 提議 · 這還不是已儲存的事件</p></div></header>
+    <div class="k-diff">
+      <span class="l">日期</span><span><s>11/14（六）全天</s><br>11/14（六）– 11/16（一）全天</span>
+      <span class="l">提醒</span><span><s>無</s><br>前一天 09:00</span>
+      <span class="l">時區</span><span>Asia/Taipei</span>
+      <span class="l">範圍</span><span>整個事件（不重複）</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px"><span class="c-expire">30 分後過期</span><span style="flex: 1"></span><button class="c-btn ghost small" onClick="{{rejectProp}}">拒絕</button><button class="c-btn primary small" onClick="{{applyProp}}">套用</button></div>
+    <span class="c-meta">套用前會重新檢查目前版本與權限；兩台裝置同時按只會套用一次。</span>
+  </section>
+  </sc-if>
+  <sc-if value="{{propDone}}" hint-placeholder-val="{{ false }}"><div class="d-act"><span class="c-st ok">✓</span><span class="grow">已套用：旅行改為 11/14–11/16，前一天 09:00 提醒</span></div></sc-if>
+  <sc-if value="{{propRej}}" hint-placeholder-val="{{ false }}"><div class="d-act"><span class="c-st mute">✕</span><span class="grow">已拒絕：行事曆沒有變更</span></div></sc-if>
+</div>
+</div>
+<div class="c-wrap"><div class="c-composer"><button class="c-ta ph" onClick="{{demo}}">繼續對話…</button><div class="c-tools"><span style="flex: 1"></span><button class="c-send off" aria-label="送出" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7M12 19V5"/></svg></button></div></div></div>
+<div class="c-safe-bot"></div>
+</sc-if>
+
+<!-- ════════ overlays ════════ -->
+<sc-if value="{{ov.event}}" hint-placeholder-val="{{ false }}">
+  <button class="c-scrim" aria-label="關閉" onClick="{{closeOv}}"></button>
+  <div class="c-sheet" role="dialog" aria-label="個人事件">
+    <div class="c-grab"></div>
+    <div class="c-sheet-h"><b>{{eventTitle}}</b><button class="c-ib" aria-label="關閉" onClick="{{closeOv}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div class="c-seg" style="margin: 0 16px 10px" role="tablist"><button class="on" role="tab" aria-selected="true">個人事件</button><button role="tab" aria-selected="false" onClick="{{openAgent}}">Agent 任務</button></div>
+    <div class="c-group" style="background: var(--bg-subtle)">
+      <div class="c-grow"><span class="c-row-t" style="flex: 1; font-weight: 500">牙醫</span></div>
+      <div class="c-grow"><span class="c-row-t" style="flex: 1">全天</span><button class="c-switch" role="switch" aria-checked="false" aria-label="全天"></button></div>
+      <div class="c-grow"><span class="c-row-t" style="flex: 1">開始</span><span class="c-row-s" style="font-size: 15px">11/6（五）14:00</span></div>
+      <div class="c-grow"><span class="c-row-t" style="flex: 1">結束</span><span class="c-row-s" style="font-size: 15px">15:00</span></div>
+      <div class="c-grow"><span class="c-row-t" style="flex: 1">時區</span><span class="c-row-s" style="font-size: 15px">Asia/Taipei</span></div>
+    </div>
+    <div style="height: 10px"></div>
+    <div class="c-group" style="background: var(--bg-subtle)">
+      <div class="c-grow"><span class="c-row-t" style="flex: 1">重複</span><span class="c-row-s" style="font-size: 15px">不重複</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></div>
+      <div class="c-grow"><span class="c-row-t" style="flex: 1">提醒</span><span class="c-row-s" style="font-size: 15px">開始前 30 分鐘</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></div>
+      <div class="c-grow"><span class="c-row-t" style="flex: 1">地點</span><span class="c-row-s" style="font-size: 15px">仁愛路</span></div>
+    </div>
+    <div class="c-meta" style="padding: 10px 16px 0">個人事件不會啟動 agent。提醒由 Gateway 送出；這台裝置沒有推播時不會提醒。</div>
+    <div style="display: flex; gap: 8px; padding: 14px 16px 0"><button class="c-btn danger" style="flex: 1" onClick="{{demo}}">刪除</button><button class="c-btn dark" style="flex: 2" onClick="{{closeOv}}">儲存</button></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ov.scope}}" hint-placeholder-val="{{ false }}">
+  <button class="c-scrim" aria-label="取消" onClick="{{closeOv}}"></button>
+  <div class="c-sheet" role="dialog" aria-label="套用範圍">
+    <div class="c-grab"></div>
+    <div class="c-sheet-h"><b>「健身」是重複事件，要改哪些？</b></div>
+    <div role="radiogroup" aria-label="套用範圍">
+      <button class="d-radio on" role="radio" aria-checked="true"><span class="c-mark-r"></span><span class="c-row-main"><span class="c-row-t">只有這一次</span><span class="c-row-s">11/11（三）</span></span></button>
+      <button class="d-radio" role="radio" aria-checked="false" onClick="{{demo}}"><span class="c-mark-r"></span><span class="c-row-main"><span class="c-row-t">這一次和之後</span><span class="c-row-s">之前的保持不變</span></span></button>
+      <button class="d-radio" role="radio" aria-checked="false" onClick="{{demo}}"><span class="c-mark-r"></span><span class="c-row-main"><span class="c-row-t">整個系列</span><span class="c-row-s">改時間、時區或重複規則會清除個別改過的日期</span></span></button>
+    </div>
+    <div style="display: flex; gap: 8px; padding: 14px 16px 0"><button class="c-btn" style="flex: 1" onClick="{{closeOv}}">取消</button><button class="c-btn dark" style="flex: 1" onClick="{{closeOv}}">儲存</button></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ov.agent}}" hint-placeholder-val="{{ false }}">
+  <button class="c-scrim" aria-label="關閉" onClick="{{closeOv}}"></button>
+  <div class="c-sheet" role="dialog" aria-label="Agent 任務">
+    <div class="c-grab"></div>
+    <div class="c-sheet-h"><b>{{agentTitle}}</b><button class="c-ib" aria-label="關閉" onClick="{{closeOv}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <sc-if value="{{agentBlocked}}" hint-placeholder-val="{{ false }}">
+      <div class="d-banner warn" style="margin: 0 16px 10px"><span style="flex: 1"><b>執行目標已無法使用。</b>這個排程原本在「pirc 行動版」的 ~/pirc 執行，但那個對話已離開專案。已暫停，不會自動改到別的地方。</span></div>
+    </sc-if>
+    <sc-if value="{{agentMissed}}" hint-placeholder-val="{{ false }}">
+      <div class="d-banner warn" style="margin: 0 16px 10px"><span style="flex: 1"><b>今天 08:00 錯過。</b>Laptop 當時離線，不會自動補跑。</span><button class="c-btn small" onClick="{{skipMissed}}">略過</button><button class="c-btn small dark" onClick="{{runMissed}}">允許補跑</button></div>
+    </sc-if>
+    <div class="d-prev-h" style="padding-top: 4px">在哪裡執行 <sc-if value="{{marks}}" hint-placeholder-val="{{ true }}"><span class="tag-wip" style="margin-left: 6px">開發中</span></sc-if></div>
+    <button class="c-grow" style="border-top: 0" onClick="{{demo}}"><span class="c-row-main"><span class="c-row-t">{{agentTarget}}</span><span class="c-row-s">{{agentTargetSub}}</span></span><span class="c-btn small">{{agentTargetBtn}}</span></button>
+    <div class="d-prev-h">指示</div>
+    <div class="d-note" style="background: var(--bg-subtle)">{{agentPrompt}}</div>
+    <div class="d-prev-h">時間</div>
+    <div class="c-group" style="background: var(--bg-subtle)">
+      <div class="c-grow"><span class="c-row-t" style="flex: 1">重複</span><span class="c-row-s" style="font-size: 15px">{{agentWhen}}</span></div>
+      <div class="c-grow"><span class="c-row-t" style="flex: 1">模型</span><span class="c-row-s" style="font-size: 15px">預設模型 · 中</span></div>
+    </div>
+    <div class="d-prev-h">通知</div>
+    <div class="c-seg" style="margin: 0 16px" role="radiogroup"><button class="on" role="radio" aria-checked="true">每次</button><button role="radio" aria-checked="false">只有問題</button><button role="radio" aria-checked="false">不通知</button></div>
+    <div class="c-meta" style="padding: 10px 16px 0">錯過的時間（主機離線或 Gateway 休眠）不會自動補跑，會等你允許。上一次還在跑時，這次會略過。</div>
+    <div style="display: flex; gap: 8px; padding: 14px 16px 0"><button class="c-btn" style="flex: 1" onClick="{{demo}}">{{agentPauseLabel}}</button><button class="c-btn dark" style="flex: 2" onClick="{{closeOv}}">儲存</button></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ov.calAccess}}" hint-placeholder-val="{{ false }}">
+  <button class="c-scrim" aria-label="關閉" onClick="{{closeOv}}"></button>
+  <div class="c-sheet" role="dialog" aria-label="Agent 行事曆權限">
+    <div class="c-grab"></div>
+    <div class="c-sheet-h"><b>Agent 行事曆權限</b></div>
+    <div class="c-group" style="background: var(--bg-subtle)">
+      <div class="c-grow"><span class="c-row-main"><span class="c-row-t">允許讀取</span><span class="c-row-s" style="white-space: normal">agent 可以查詢某段時間和讀取個人事件</span></span><button class="c-switch" role="switch" aria-checked="{{calRead}}" aria-label="允許讀取" onClick="{{toggleCalRead}}"></button></div>
+      <div class="c-grow"><span class="c-row-main"><span class="c-row-t">允許提出變更</span><span class="c-row-s" style="white-space: normal">新增、修改、刪除都要在原對話由你確認；修改既有事件也需要讀取權限</span></span><button class="c-switch" role="switch" aria-checked="{{calPropose}}" aria-label="允許提出變更" onClick="{{toggleCalPropose}}"></button></div>
+    </div>
+    <div class="c-meta" style="padding: 10px 16px 0">兩項預設都關閉。排程能力、完整存取或專案設定都不會自動給予讀取私人事件的權限。pots 是否能觀察行事曆，另外在 pots 的職責範圍設定。</div>
+    <div style="padding: 14px 16px 0"><button class="c-btn dark" style="width: 100%" onClick="{{closeOv}}">完成</button></div>
+  </div>
+</sc-if>
+
+<!-- ════════ overlays ════════ -->
+<sc-if value="{{ov.drawer}}" hint-placeholder-val="{{ false }}">
+  <button class="c-scrim" aria-label="關閉側欄" onClick="{{closeOv}}"></button>
+  <nav class="c-drawer" aria-label="側欄">
+    <div class="c-safe-top"></div>
+    <div class="c-brand"><span class="c-mark sm">π</span>pirc<span style="flex: 1"></span><button class="c-ib" aria-label="搜尋對話與專案" onClick="{{demo}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button><button class="c-ib" aria-label="關閉側欄" onClick="{{closeOv}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button></div>
+    <div class="c-scroll" style="padding: 0 12px">
+      <button class="c-drow c-new" onClick="{{goHome}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a1 1 0 0 1 3 3L12.4 14.6a2 2 0 0 1-.85.5l-2.87.84a.5.5 0 0 1-.62-.62l.84-2.87a2 2 0 0 1 .5-.85z"/></svg><span class="c-row-t" style="flex: 1">新對話</span></button>
+      <button class="d-pots" onClick="{{goPots}}"><span class="d-pots-ic">π</span><span class="c-row-main"><span class="c-row-t" style="font-weight: 500">pots</span><span class="c-row-s">1 項待決定 · 2 個建議</span></span><span class="d-count attn">1</span></button>
+      <button class="c-drow" onClick="{{demo}}"><span style="width: 18px; display: grid; place-items: center"><span class="state-dot wait"></span></span><span class="c-row-main"><span class="c-row-t">需要你處理</span><span class="c-row-s">最急：檢查 nightly test · 14 分</span></span><span class="d-count attn">2</span></button>
+      <div class="c-sec" style="padding-left: 12px">專案<span style="flex: 1"></span><button class="c-ib" style="width: 32px; height: 32px" aria-label="新增專案" onClick="{{demo}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></div>
+      <button class="d-proj" onClick="{{goProject}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"/></svg><span class="c-row-t" style="flex: 1; font-weight: 500">pirc 行動版</span><span class="state-dot ongoing"></span></button>
+      <button class="c-drow d-sub sel" onClick="{{goConv}}"><span class="c-row-main"><span class="c-row-t">修復登入頁鍵盤遮住送出鈕</span><span class="c-row-s">2 個任務 · 1 個等待</span></span></button>
+      <button class="c-drow d-sub" onClick="{{demo}}"><span class="c-row-main"><span class="c-row-t">Flutter 與 Compose 平板適配</span></span></button>
+      <button class="c-drow d-sub" onClick="{{demo}}"><span class="c-row-main"><span class="c-row-t">介面改版方案</span></span></button>
+      <button class="d-proj" onClick="{{demo}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg><span class="c-row-t" style="flex: 1; font-weight: 500">旅行</span><span class="c-meta">2</span></button>
+      <div class="c-sec" style="padding-left: 12px">其他對話</div>
+      <button class="c-drow" onClick="{{goPotsConv}}"><span class="state-dot wait"></span><span class="c-row-main"><span class="c-row-t">檢查 nightly test</span><span class="c-row-s">From pots · 需要你回答</span></span></button>
+      <button class="c-drow" onClick="{{demo}}"><span class="state-dot idle"></span><span class="c-row-main"><span class="c-row-t">週末出遊預算估算</span></span></button>
+      <button class="c-drow" onClick="{{demo}}"><span class="c-row-main"><span class="c-row-s" style="font-size: 14px">已封存 · 3</span></span></button>
+    </div>
+    <div class="c-foot">
+      <button class="c-drow" onClick="{{goCal}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span class="c-row-t" style="flex: 1">行事曆</span><span class="c-st wait">1 錯過</span></button>
+      <button class="c-drow" onClick="{{goNotif}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg><span class="c-row-t" style="flex: 1">設定</span><span class="c-meta" style="display: flex; align-items: center; gap: 5px"><span class="state-dot done"></span>Gateway 已連線</span></button>
+    </div>
+  </nav>
+</sc-if>
+
+<sc-if value="{{ov.bind}}" hint-placeholder-val="{{ false }}">
+  <button class="c-scrim" aria-label="關閉" onClick="{{closeOv}}"></button>
+  <div class="c-sheet" role="dialog" aria-label="工作區設定">
+    <div class="c-grab"></div>
+    <div class="c-sheet-h"><b>工作區</b><sc-if value="{{marks}}" hint-placeholder-val="{{ true }}"><span class="tag-wip">開發中</span></sc-if><span style="width: 8px"></span></div>
+    <div class="c-meta" style="padding: 0 16px 4px">這些選擇先存在草稿；第一次送出時才建立對話和資料夾。</div>
+    <div class="d-prev-h">專案</div>
+    <button class="c-grow" style="border-top: 0" onClick="{{demo}}"><span class="c-row-main"><span class="c-row-t">pirc 行動版</span><span class="c-row-s">會帶入專案的資料夾與規則（rev 7）</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
+    <div class="d-prev-h">主機（Node）</div>
+    <div role="radiogroup" aria-label="主機">
+      <button class="d-radio on" role="radio" aria-checked="true"><span class="c-mark-r"></span><span class="c-row-main"><span class="c-row-t">Laptop</span><span class="c-row-s">在線 · 專案預設</span></span><span class="state-dot done"></span></button>
+      <button class="d-radio" role="radio" aria-checked="false" onClick="{{demo}}"><span class="c-mark-r"></span><span class="c-row-main"><span class="c-row-t">CI-runner</span><span class="c-row-s">在線</span></span><span class="state-dot done"></span></button>
+      <button class="d-radio" role="radio" aria-checked="false" disabled style="opacity: .5"><span class="c-mark-r"></span><span class="c-row-main"><span class="c-row-t">Server</span><span class="c-row-s">離線 · 上線後才能選</span></span><span class="state-dot idle"></span></button>
+    </div>
+    <div class="d-prev-h">主要資料夾</div>
+    <div role="radiogroup" aria-label="主要資料夾">
+      <button class="d-radio on" role="radio" aria-checked="true"><span class="c-mark-r"></span><span class="c-row-main"><span class="c-row-t c-mono" style="font-size: 14px">~/pirc</span><span class="c-row-s">來自專案 · 讀寫</span></span></button>
+      <button class="d-radio" role="radio" aria-checked="false" onClick="{{demo}}"><span class="c-mark-r"></span><span class="c-row-main"><span class="c-row-t">受管理的空資料夾</span><span class="c-row-s">一般聊天的預設；第一次送出時才建立</span></span></button>
+      <button class="d-radio" role="radio" aria-checked="false" onClick="{{demo}}"><span class="c-mark-r"></span><span class="c-row-main"><span class="c-row-t">選擇現有資料夾…</span></span></button>
+      <button class="d-radio" role="radio" aria-checked="false" onClick="{{demo}}"><span class="c-mark-r"></span><span class="c-row-main"><span class="c-row-t">建立新資料夾…</span><span class="c-row-s">只能建在允許的位置；會立刻建立</span></span></button>
+    </div>
+    <div class="d-prev-h">其他掛載</div>
+    <div class="d-mount"><span class="c-row-main"><span class="c-row-t">docs</span><span class="c-row-s c-mono">~/pirc-docs · 來自專案</span></span><span class="d-perm ro">唯讀</span></div>
+    <div style="padding: 4px 16px 0"><button class="c-btn small" onClick="{{demo}}">＋ 新增掛載（預設唯讀）</button></div>
+    <div class="d-prev-h">這個對話可以做的事</div>
+    <div style="padding: 0 16px">
+      <div class="d-access"><span class="c-st ok">✓</span>讀寫 ~/pirc<span class="st c-meta">依核准設定</span></div>
+      <div class="d-access"><span class="c-st ok">✓</span>讀取 docs<span class="st c-meta">唯讀</span></div>
+      <div class="d-access"><span class="c-st ok">✓</span>執行指令與背景工作<span class="st c-meta">在 Laptop</span></div>
+      <div class="d-access"><span class="c-st mute">—</span>瀏覽器<span class="st c-meta">未啟用</span></div>
+      <div class="d-access"><span class="c-st mute">—</span>個人記憶以外的歷史<span class="st c-meta">不包含</span></div>
+    </div>
+    <div style="padding: 14px 16px 0"><button class="c-btn dark" style="width: 100%" onClick="{{closeOv}}">完成</button></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ov.route}}" hint-placeholder-val="{{ false }}">
+  <button class="c-scrim" aria-label="關閉" onClick="{{closeOv}}"></button>
+  <div class="c-sheet" role="dialog" aria-label="傳給">
+    <div class="c-grab"></div>
+    <div class="c-sheet-h"><b>傳給</b></div>
+    <div role="radiogroup" aria-label="訊息目標">
+      <sc-for list="{{routes}}" as="r" hint-placeholder-count="5">
+        <button class="{{r.cls}}" role="radio" aria-checked="{{r.on}}" onClick="{{r.pick}}"><span class="c-mark-r"></span><span class="c-row-main"><span class="c-row-t">{{r.label}}</span><span class="c-row-s" style="white-space: normal">{{r.sub}}</span></span></button>
+      </sc-for>
+    </div>
+    <div class="c-meta" style="padding: 10px 16px 0">一般訊息不會停止工作。要停止請用任務上的「停止」。</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ov.env}}" hint-placeholder-val="{{ false }}">
+  <button class="c-scrim" aria-label="關閉" onClick="{{closeOv}}"></button>
+  <div class="c-sheet" role="dialog" aria-label="工作區">
+    <div class="c-grab"></div>
+    <div class="c-sheet-h"><b>工作區</b></div>
+    <div class="c-row" style="padding-top: 0"><span class="state-dot done"></span><span class="c-row-main"><span class="c-row-t" style="font-weight: 500">Laptop · 在線</span><span class="c-row-s">專案「pirc 行動版」· 版本 4</span></span></div>
+    <div class="d-prev-h">資料夾</div>
+    <div class="d-mount"><span class="c-row-main"><span class="c-row-t">主要 <span class="c-mono" style="font-size: 13px">~/pirc</span></span><span class="c-row-s">來自專案</span></span><span class="d-perm rw">讀寫</span></div>
+    <div class="d-mount"><span class="c-row-main"><span class="c-row-t">docs <span class="c-mono" style="font-size: 13px">~/pirc-docs</span></span><span class="c-row-s">來自專案</span></span><span class="d-perm ro">唯讀</span></div>
+    <div class="d-mount"><span class="c-row-main"><span class="c-row-t">web <span class="c-mono" style="font-size: 13px">~/pirc/apps/web</span></span><span class="c-row-s">這個對話另外授權</span></span><span class="d-perm ro">唯讀</span></div>
+    <div class="d-prev-h">現在的狀態</div>
+    <div style="padding: 0 16px">
+      <div class="d-access"><span class="c-st ok">✓</span>讀寫 ~/pirc<span class="st c-st ok">可用</span></div>
+      <div class="d-access"><span class="c-st fail">✕</span>寫入 docs<span class="st c-meta">唯讀資料夾</span></div>
+      <div class="d-access"><span class="c-st wait">◆</span>推送到 origin<span class="st c-st wait">等你核准</span></div>
+      <div class="d-access"><span class="c-st wait">◷</span>寫入 apps/web/src/login<span class="st c-st wait">等任務 A 寫完</span></div>
+    </div>
+    <div class="d-prev-h">變更 <sc-if value="{{marks}}" hint-placeholder-val="{{ true }}"><span class="tag-wip" style="margin-left: 6px">開發中</span></sc-if></div>
+    <button class="c-grow" style="border-top: 0" onClick="{{openSwitch}}"><span class="c-row-t" style="flex: 1">切換主機…</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
+    <button class="c-grow" onClick="{{demo}}"><span class="c-row-t" style="flex: 1">變更資料夾與掛載…</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
+    <button class="c-grow" onClick="{{demo}}"><span class="c-row-t" style="flex: 1">封鎖某個資料夾…</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></button>
+    <button class="c-grow" style="color: var(--danger)" onClick="{{openLeave}}"><span class="c-row-t" style="flex: 1">讓這個對話離開專案…</span></button>
+  </div>
+</sc-if>
+
+<sc-if value="{{ov.switch}}" hint-placeholder-val="{{ false }}">
+  <button class="c-scrim" aria-label="取消" onClick="{{closeOv}}"></button>
+  <div class="c-sheet" role="dialog" aria-label="切換主機">
+    <div class="c-grab"></div>
+    <div class="c-sheet-h"><b>切換到 CI-runner？</b></div>
+    <div class="c-meta" style="padding: 0 16px">對話和已完成的結果會保留。檔案、終端和瀏覽器登入不會搬過去。</div>
+    <div class="d-prev-h">確認後會中斷</div>
+    <div class="d-pi"><span class="ic stop">■</span><span>任務 A · 執行中<small>正在跑 flutter test；可能已改動部分檔案</small></span></div>
+    <div class="d-pi"><span class="ic stop">■</span><span>終端 1、瀏覽器分頁 1<small>在 Laptop 上關閉</small></span></div>
+    <div class="d-pi"><span class="ic keep">⏸</span><span>任務 B · 等待中<small>等新工作區準備好，不會自動改目標</small></span></div>
+    <div class="d-prev-h">留在 Laptop</div>
+    <div class="d-pi"><span class="ic keep">≡</span><span>3 個未提交的檔案變更</span></div>
+    <div class="d-pi"><span class="ic keep">≡</span><span>開發伺服器 :5173</span></div>
+    <div class="d-prev-h">CI-runner 上</div>
+    <div class="d-pi"><span class="ic move">→</span><span><span class="c-mono">~/pirc</span> 存在<small>不同主機的同名資料夾，內容可能不同</small></span></div>
+    <div class="d-pi"><span class="ic stop">?</span><span>找不到 docs 掛載<small>切換後需要重新選擇</small></span></div>
+    <div style="display: flex; gap: 8px; padding: 14px 16px 0"><button class="c-btn" style="flex: 1" onClick="{{closeOv}}">取消</button><button class="c-btn dark" style="flex: 1" onClick="{{confirmSwitch}}">確認切換</button></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ov.leave}}" hint-placeholder-val="{{ false }}">
+  <button class="c-scrim" aria-label="取消" onClick="{{closeOv}}"></button>
+  <div class="c-sheet" role="dialog" aria-label="離開專案">
+    <div class="c-grab"></div>
+    <div class="c-sheet-h"><b>讓這個對話離開「pirc 行動版」？</b></div>
+    <div class="d-prev-h">會移除</div>
+    <div class="d-pi"><span class="ic del">−</span><span>專案資料夾<small>~/pirc（讀寫）、docs（唯讀）</small></span></div>
+    <div class="d-pi"><span class="ic del">−</span><span>專案規則 rev 7、筆記與看板的存取</span></div>
+    <div class="d-prev-h">會中斷</div>
+    <div class="d-pi"><span class="ic stop">■</span><span>任務 A · 執行中<small>部分檔案可能已改動，不會還原</small></span></div>
+    <div class="d-prev-h">保留</div>
+    <div class="d-pi"><span class="ic keep">≡</span><span>對話內容與歷史<small>之後仍會當作上下文</small></span></div>
+    <div class="d-pi"><span class="ic keep">≡</span><span>已保存的附件 2 個</span></div>
+    <div class="d-pi"><span class="ic keep">!</span><span>你另外授權過的 <span class="c-mono">~/pirc/apps/web</span> 唯讀<small>不屬於專案，離開後仍有效；要移除請另外封鎖</small></span></div>
+    <div class="c-meta" style="padding: 8px 16px 0">對話裡的專案檔案連結，離開後需要重新取得權限才能打開。</div>
+    <div style="display: flex; gap: 8px; padding: 14px 16px 0"><button class="c-btn" style="flex: 1" onClick="{{closeOv}}">取消</button><button class="c-btn danger" style="flex: 1" onClick="{{confirmLeave}}">離開專案</button></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ov.delete}}" hint-placeholder-val="{{ false }}">
+  <button class="c-scrim" aria-label="取消" onClick="{{closeOv}}"></button>
+  <div class="c-sheet" role="dialog" aria-label="刪除專案">
+    <div class="c-grab"></div>
+    <div class="c-sheet-h"><b>刪除專案「pirc 行動版」？</b></div>
+    <div class="c-meta" style="padding: 0 16px">想保留某個對話，請先讓它離開專案再刪除。</div>
+    <div class="d-prev-h">會先停止</div>
+    <div class="d-pi"><span class="ic stop">■</span><span>任務 A、任務 B<small>在 Laptop 上；停止確認前會顯示「等待停止」</small></span></div>
+    <div class="d-prev-h">會刪除（專案擁有）</div>
+    <div class="d-pi"><span class="ic del">−</span><span>3 個對話與訊息</span></div>
+    <div class="d-pi"><span class="ic del">−</span><span>專案規則、筆記、看板</span></div>
+    <div class="d-pi"><span class="ic del">−</span><span>2 個專案排程與執行紀錄</span></div>
+    <div class="d-pi"><span class="ic del">−</span><span>在這些對話建立的記憶 4 則</span></div>
+    <div class="d-prev-h">不會刪除</div>
+    <div class="d-pi"><span class="ic keep">≡</span><span>掛載的資料夾與 Git 提交<small>~/pirc、~/pirc-docs</small></span></div>
+    <div class="d-pi"><span class="ic keep">≡</span><span>檢查點與已開啟的復原工作區</span></div>
+    <div class="d-pi"><span class="ic keep">≡</span><span>其他對話引用過的內容</span></div>
+    <div class="d-prev-h" style="color: var(--warning-ink)">需要你決定</div>
+    <div class="d-pi"><span class="ic keep">?</span><span>1 則記憶混合了專案和其他對話的內容<small>無法自動分開</small></span><button class="c-btn small" onClick="{{demo}}">決定…</button></div>
+    <div style="display: flex; gap: 8px; padding: 14px 16px 0"><button class="c-btn" style="flex: 1" onClick="{{closeOv}}">取消</button><button class="c-btn danger" style="flex: 1" onClick="{{demo}}">刪除…</button></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{ov.potsStart}}" hint-placeholder-val="{{ false }}">
+  <button class="c-scrim" aria-label="取消" onClick="{{closeOv}}"></button>
+  <div class="c-sheet" role="dialog" aria-label="開始任務">
+    <div class="c-grab"></div>
+    <div class="c-sheet-h"><b>開始：整理 API 文件</b></div>
+    <div class="c-row" style="padding-top: 0"><span class="c-row-main"><span class="c-row-s">來源</span><span class="c-row-t">pirc 行動版 › 整理 API 文件</span></span></div>
+    <div style="padding: 4px 16px 0"><label class="c-field-l" for="pots-ins">你授權的指示</label>
+      <div id="pots-ins" class="d-note" style="margin: 6px 0 0; background: var(--bg-subtle)">等「修復登入頁」的任務 A 完成後，重新產生 API 文件。只改 docs/api，不要動其他資料夾。</div></div>
+    <div class="d-prev-h">會發生的事</div>
+    <div class="d-pi"><span class="ic move">+</span><span>在同一個工作區建立新的執行對話<small>Laptop · ~/pirc · 依該工作區的核准設定</small></span></div>
+    <div class="d-pi"><span class="ic move">π</span><span>對方看到的是「From pots」<small>不會偽裝成你直接傳的訊息</small></span></div>
+    <div class="d-pi"><span class="ic keep">#</span><span>使用派工額度 1（剩 7）· 同時執行 1 / 2</span></div>
+    <div class="c-meta" style="padding: 8px 16px 0">開始後可以隨時接管或停止。停止的任務不會被自動重新開始。</div>
+    <div style="display: flex; gap: 8px; padding: 14px 16px 0"><button class="c-btn" style="flex: 1" onClick="{{closeOv}}">取消</button><button class="c-btn dark" style="flex: 1" onClick="{{startPots}}">開始</button></div>
+  </div>
+</sc-if>
+
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}"><div class="c-toast" role="status">{{toast}}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"start":{"editor":"enum","options":["drawer","home","bind","conv","route","task","env","switch","applying","blocked","pots","potsStart","potsConv","project","projectBoard","projectRules","leave","delete","left","notifset","calMonth","calWeek","calDay","calList","calEvent","calScope","calAgent","calRepair","calAccess","calProp"],"default":"conv"},"dark":{"editor":"boolean","default":false},"marks":{"editor":"boolean","default":true},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  toastMsg(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: null }), 2600);
+  }
+  go(screen, extra) {
+    this.setState(Object.assign({ screen: screen, overlay: null }, extra || {}));
+  }
+  renderVals() {
+    const s = this.state || {};
+    const p = this.props || {};
+    const truthy = (x) => x === true || x === 'true';
+    const inits = {
+      drawer: { screen: 'conv', overlay: 'drawer' }, home: { screen: 'home' }, bind: { screen: 'home', overlay: 'bind' },
+      conv: { screen: 'conv' }, route: { screen: 'conv', overlay: 'route' }, task: { screen: 'task' },
+      env: { screen: 'conv', overlay: 'env' }, switch: { screen: 'conv', overlay: 'switch' },
+      applying: { screen: 'conv', tr: 'applying' }, blocked: { screen: 'conv', tr: 'blocked' },
+      pots: { screen: 'pots' }, potsStart: { screen: 'pots', overlay: 'potsStart' }, potsConv: { screen: 'potsConv' },
+      project: { screen: 'project', projTab: 'res' }, projectBoard: { screen: 'project', projTab: 'board' }, projectRules: { screen: 'project', projTab: 'rules' },
+      leave: { screen: 'conv', overlay: 'leave' }, delete: { screen: 'project', overlay: 'delete', projTab: 'res' },
+      left: { screen: 'left' }, notifset: { screen: 'notifset' },
+      calMonth: { screen: 'cal', calView: 'month' }, calWeek: { screen: 'cal', calView: 'week' }, calDay: { screen: 'cal', calView: 'day' },
+      calList: { screen: 'cal', calView: 'list' }, calEvent: { screen: 'cal', calView: 'day', overlay: 'event' },
+      calScope: { screen: 'cal', calView: 'month', selDay: 11, overlay: 'scope' }, calAgent: { screen: 'cal', calView: 'list', overlay: 'agent' },
+      calRepair: { screen: 'cal', calView: 'list', overlay: 'agent', agentBlocked: true }, calAccess: { screen: 'cal', calView: 'month', overlay: 'calAccess' },
+      calProp: { screen: 'calProp' }
+    };
+    const init = inits[p.start || 'conv'] || inits.conv;
+    const v = (k, d) => (s[k] !== undefined ? s[k] : (init[k] !== undefined ? init[k] : d));
+    const screen = v('screen', 'conv');
+    const overlay = v('overlay', null);
+    const tr = v('tr', null);
+    const route = v('route', 'auto');
+    const projTab = v('projTab', 'res');
+    const taken = !!v('taken', false);
+    const dark = truthy(p.dark);
+    const marks = !(p.marks === false || p.marks === 'false');
+    const screens = ['home', 'conv', 'task', 'pots', 'potsConv', 'project', 'left', 'notifset', 'cal', 'calProp'];
+    const overlays = ['drawer', 'bind', 'route', 'env', 'switch', 'leave', 'delete', 'potsStart', 'event', 'scope', 'agent', 'calAccess'];
+    const is = {}; screens.forEach((k) => { is[k] = k === screen; });
+    const ov = {}; overlays.forEach((k) => { ov[k] = k === overlay; });
+    const routeDefs = [
+      ['auto', '自動判斷（建議）', 'pirc 依內容判斷是提問、修正還是新目標；判斷不出來會先問你'],
+      ['A', '任務 A · 修復鍵盤遮擋', '修正或補充 A 的做法；A 已完成的效果不會被撤回'],
+      ['B', '任務 B · 更新元件文件', '修正或補充 B'],
+      ['new', '新任務', '另開一個目標，不影響 A、B；資源不足時會先排隊並說明原因'],
+      ['ask', '只是問問題', '不改變任何任務']
+    ];
+    const routeLabel = (routeDefs.find((r) => r[0] === route) || routeDefs[0])[1].replace('（建議）', '');
+    const tabDefs = [['conv', '對話'], ['res', '資源'], ['rules', '規則'], ['notes', '筆記'], ['board', '看板']];
+    const pt = {}; tabDefs.forEach((t) => { pt[t[0]] = t[0] === projTab; });
+    const nsel = s.nsel || { decide: 'now', done: 'digest', progress: 'off', cal: 'now' };
+    const cat = (key, label, sub, plan, opts) => ({ label: label, sub: sub, plan: plan, opts: opts.map((o) => ({ label: o[1], on: nsel[key] === o[0] ? 'true' : 'false', cls: nsel[key] === o[0] ? 'on' : '', pick: () => this.setState({ nsel: Object.assign({}, nsel, { [key]: o[0] }) }) })) });
+    const three = [['now', '立即'], ['digest', '摘要'], ['off', '不通知']];
+
+    // ── 行事曆（2026 年 11 月；今天 11/6 週五）
+    const calView = v('calView', 'month');
+    const selDay = v('selDay', 6);
+    const propDone = !!v('propDone', false);
+    const propRej = !!v('propRej', false);
+    const agentBlocked = !!v('agentBlocked', false);
+    const calRead = v('calRead', true);
+    const calPropose = v('calPropose', true);
+    const TODAY = 6;
+    const DOW = ['日', '一', '二', '三', '四', '五', '六'];
+    const dow = (n) => DOW[(n - 1) % 7]; // 11/1 是週日
+    const wd = (n) => { const w = n % 7; return w >= 2 && w <= 6; }; // 一–五
+    const openAg = () => this.setState({ overlay: 'agent', agentBlocked: false });
+    const openEv = () => this.setState({ overlay: 'event', eventNew: false });
+    const openScope = () => this.setState({ overlay: 'scope' });
+    const trip = propDone ? [14, 15, 16] : [14];
+    const itemsFor = (n, withRuns) => {
+      const out = [];
+      if (n === 12) out.push({ time: '全天', shape: 'k-allday', title: '補休', sub: '個人事件', open: openEv });
+      if (trip.indexOf(n) >= 0) out.push({ time: '全天', shape: 'k-allday', title: '旅行', sub: propDone ? '11/14–11/16 · 前一天 09:00 提醒' : '個人事件', open: openEv });
+      if (wd(n) && (withRuns || n === TODAY)) {
+        const miss = n === TODAY;
+        out.push({ time: '08:00', shape: miss ? 'k-dia miss' : 'k-dia', title: '每天早上檢查測試', sub: miss ? '◷ 錯過：主機離線 · 點開允許補跑' : (n < TODAY ? '✓ 已完成 · pirc 行動版' : 'Agent 任務 · pirc 行動版'), warn: miss, open: openAg });
+      }
+      if (n % 7 === 2 && withRuns) out.push({ time: '09:00', shape: n < TODAY ? 'k-dia' : 'k-dia', title: '整理 API 文件週報', sub: n < TODAY ? '✓ 已完成 · pirc 行動版' : 'Agent 任務 · pirc 行動版', open: openAg });
+      if (n === TODAY) {
+        out.push({ time: '14:00', shape: 'k-dot', title: '牙醫', sub: '14:00–15:00 · 仁愛路 · 前 30 分鐘提醒', open: openEv });
+        out.push({ time: '19:30', shape: 'k-dot', title: '晚餐', sub: '19:30–21:00', open: openEv });
+      }
+      if (n % 7 === 4 && n <= 30) out.push({ time: '18:30', shape: 'k-dot', title: '健身', sub: '18:30–19:30 · 每週三重複', open: openScope });
+      if (n === 7) out.push({ time: '10:00', shape: 'k-dot', title: '看房', sub: '10:00–12:00 · 民生社區', open: openEv });
+      if (n === 20) out.push({ time: '17:00', shape: 'k-dot', title: '報告截止', sub: '17:00 · 前一天提醒', open: openEv });
+      return out.map((a) => Object.assign({ subCls: a.warn ? 'c-row-s k-warn' : 'c-row-s' }, a));
+    };
+    const days = [];
+    for (let i = 0; i < 35; i++) {
+      const n = i + 1; const out = n > 30; const dn = out ? n - 30 : n;
+      const it = out ? [] : itemsFor(n, true);
+      const evs = it.filter((a) => a.shape === 'k-dot').length;
+      const ag = it.some((a) => a.shape.indexOf('k-dia') === 0);
+      days.push({
+        n: dn, label: (out ? '12 月 ' : '11 月 ') + dn + ' 日，' + (it.length ? it.length + ' 項' : '沒有項目'),
+        cls: 'k-day' + (out ? ' out' : '') + (n === TODAY ? ' today' : '') + (!out && n === selDay && n !== TODAY ? ' sel' : ''),
+        allday: it.some((a) => a.shape === 'k-allday'), ev: evs >= 1, ev2: evs >= 2, ag: ag, agCls: n === TODAY ? 'k-dia miss' : 'k-dia',
+        pick: () => { if (!out) this.setState({ selDay: n }); }
+      });
+    }
+    const agenda = itemsFor(selDay, true);
+    const pos = (h, len) => 'top: ' + ((h - 8) * 44) + 'px; height: ' + (len * 44 - 2) + 'px';
+    const tpos = (h) => 'top: ' + ((h - 8) * 44 - 7) + 'px';
+    const wItems = (n) => {
+      const r = [];
+      if (wd(n)) r.push({ task: true, ev: false, pos: tpos(8), dia: n === TODAY ? 'k-dia miss' : 'k-dia', t: '測試' });
+      if (n % 7 === 2) r.push({ task: true, ev: false, pos: tpos(9), dia: 'k-dia', t: '週報' });
+      if (n === 4) r.push({ task: false, ev: true, pos: pos(18.5, 1), t: '健身' });
+      if (n === TODAY) { r.push({ task: false, ev: true, pos: pos(14, 1), t: '牙醫' }); r.push({ task: false, ev: true, pos: pos(19.5, 1.5), t: '晚餐' }); }
+      if (n === 7) r.push({ task: false, ev: true, pos: pos(10, 2), t: '看房' });
+      return r;
+    };
+    const wdays = [1, 2, 3, 4, 5, 6, 7].map((n) => ({ dow: DOW[n - 1], n: n, cls: n === TODAY ? 'today' : '', items: wItems(n) }));
+    const hrs = (a, b) => { const r = []; for (let h = a; h <= b; h++) r.push((h < 10 ? '0' : '') + h + ':00'); return r; };
+    const listDays = [6, 7, 11, 12, 14, 15, 16, 18, 20].filter((n) => itemsFor(n, false).length);
+    const listGroups = listDays.slice(0, 6).map((n) => ({ title: '11/' + n + '（' + dow(n) + '）' + (n === TODAY ? ' · 今天' : ''), sub: itemsFor(n, false).length + ' 項', items: itemsFor(n, false) }));
+    const viewDefs = [['month', '月'], ['week', '週'], ['day', '日'], ['list', '清單']];
+    const cv = {}; viewDefs.forEach((t) => { cv[t[0]] = t[0] === calView; });
+    const calTitles = { month: '2026 年 11 月', week: '11/1 – 11/7', day: '11 月 6 日（五）', list: '接下來' };
+    return {
+      rootCls: (dark ? 'pc c-phone dark' : 'pc c-phone') + (overlay === 'drawer' ? ' d-push' : ''),
+      marks: marks, is: is, ov: ov, pt: pt,
+      trOn: !!tr, trApplying: tr === 'applying', trBlocked: tr === 'blocked',
+      envText: tr ? 'CI-runner · 套用中' : 'Laptop · ~/pirc · +2',
+      envDot: tr === 'blocked' ? 'state-dot wait' : (tr ? 'state-dot ongoing' : 'state-dot done'),
+      taskACls: tr ? 'd-task' : 'd-task on',
+      taskASub: tr ? '■ 已中斷 · 部分檔案可能已改' : '◐ 執行中 · 步驟 3 / 5',
+      taskBSub: tr ? '⏸ 等新工作區準備好' : '◷ 等待寫入：A 持有 src/login',
+      taskASt: tr ? '■ 已中斷' : '◐ 執行中',
+      taskAStCls: tr ? 'c-st mute' : 'c-st run',
+      convPh: tr ? '套用中，暫時不能送出；草稿會保留' : '繼續對話，或指示某個任務…',
+      routeLabel: routeLabel,
+      routes: routeDefs.map((r) => ({ label: r[1], sub: r[2], on: r[0] === route ? 'true' : 'false', cls: r[0] === route ? 'd-radio on' : 'd-radio', pick: () => this.setState({ route: r[0], overlay: null }) })),
+      projTabs: tabDefs.map((t) => ({ label: t[1], on: t[0] === projTab ? 'true' : 'false', cls: t[0] === projTab ? 'on' : '', pick: () => this.setState({ projTab: t[0] }) })),
+      taken: taken, notTaken: !taken,
+      potsConvPh: taken ? '直接指示這個對話…' : '接管後才能輸入一般訊息',
+      ncats: [
+        cat('decide', '需要你決定', '問題、核准、阻塞、你標記為緊急的事', false, three),
+        cat('done', '完成與建議', '一般完成、pots 的非緊急建議', true, three),
+        cat('progress', '進度', '工具進度與沒變化的狀態，只更新任務', false, three),
+        cat('cal', '行事曆提醒', '個人事件的提醒', false, three)
+      ],
+      cv: cv, calTitle: calTitles[calView],
+      calViews: viewDefs.map((t) => ({ label: t[1], on: t[0] === calView ? 'true' : 'false', cls: t[0] === calView ? 'on' : '', pick: () => this.setState({ calView: t[0] }) })),
+      days: days, agenda: agenda, noAgenda: agenda.length === 0,
+      selTitle: '11 月 ' + selDay + ' 日（' + dow(selDay) + '）' + (selDay === TODAY ? ' · 今天' : ''),
+      selCount: agenda.length ? agenda.length + ' 項' : '',
+      wdays: wdays, whours: hrs(8, 21), dhours: hrs(7, 22), listGroups: listGroups,
+      calToday: () => this.setState({ selDay: TODAY }),
+      goCal: () => this.go('cal', { calView: 'month' }),
+      openEvent: openEv,
+      openEventNew: () => this.setState({ overlay: 'event', eventNew: true }),
+      eventTitle: v('eventNew', false) ? '新增項目' : '編輯事件',
+      openAgent: openAg,
+      openAgentBlocked: () => this.setState({ overlay: 'agent', agentBlocked: true }),
+      openCalAccess: () => this.setState({ overlay: 'calAccess' }),
+      agentBlocked: agentBlocked, agentMissed: !agentBlocked && !v('missedDone', false),
+      runMissed: () => { this.setState({ missedDone: true }); this.toastMsg('已開始補跑：會開一個新對話'); },
+      skipMissed: () => { this.setState({ missedDone: true }); this.toastMsg('已略過這次'); },
+      agentTitle: agentBlocked ? '清理舊分支' : '每天早上檢查測試',
+      agentTarget: agentBlocked ? '尚未選擇' : '專案「pirc 行動版」· Laptop · ~/pirc',
+      agentTargetSub: agentBlocked ? '原本：pirc 行動版 · Laptop · ~/pirc（已移除）' : '每次執行開一個新對話，沿用這個工作區與權限',
+      agentTargetBtn: agentBlocked ? '選擇' : '更改',
+      agentPrompt: agentBlocked ? '刪除已合併超過 30 天的本地分支；刪除前列出清單等我確認。' : '跑 pnpm test；失敗時整理原因並通知我。',
+      agentWhen: agentBlocked ? '每月 1 日 10:00' : '每個工作日 08:00',
+      agentPauseLabel: agentBlocked ? '刪除排程' : '暫停',
+      calRead: calRead ? 'true' : 'false', calPropose: calPropose ? 'true' : 'false',
+      toggleCalRead: () => this.setState({ calRead: !calRead }),
+      toggleCalPropose: () => this.setState({ calPropose: !calPropose }),
+      propPending: !propDone && !propRej, propDone: propDone, propRej: propRej,
+      applyProp: () => { this.setState({ propDone: true }); this.toastMsg('已重新檢查版本並套用'); },
+      rejectProp: () => this.setState({ propRej: true }),
+      goCalProp: () => this.go('calProp'),
+      hasToast: !!s.toast, toast: s.toast || '',
+      demo: () => this.toastMsg('原型示範：此入口保留，畫面沿用方向 C'),
+      openDrawer: () => this.setState({ overlay: 'drawer' }),
+      closeOv: () => this.setState({ overlay: null }),
+      openBind: () => this.setState({ overlay: 'bind' }),
+      openRoute: () => { if (!tr) this.setState({ overlay: 'route' }); },
+      openEnv: () => this.setState({ overlay: 'env' }),
+      openSwitch: () => this.setState({ overlay: 'switch' }),
+      openLeave: () => this.setState({ overlay: 'leave' }),
+      openDelete: () => this.setState({ overlay: 'delete' }),
+      openPotsStart: () => this.setState({ overlay: 'potsStart' }),
+      confirmSwitch: () => { this.go('conv', { tr: 'applying' }); setTimeout(() => this.setState({ tr: 'blocked' }), 2400); },
+      confirmLeave: () => this.go('left'),
+      startPots: () => { this.setState({ overlay: null }); this.toastMsg('已開始：新的執行對話標示為 From pots'); },
+      stopTask: () => this.toastMsg('停止中：等 Laptop 確認 A 與子工作都已停止'),
+      takeOver: () => { this.setState({ taken: true }); this.toastMsg('已接管：pots 對此任務的待送指令已作廢'); },
+      goHome: () => this.go('home'),
+      goConv: () => this.go('conv', { tr: null }),
+      openTask: () => this.go('task'),
+      goPots: () => this.go('pots'),
+      goPotsConv: () => this.go('potsConv'),
+      goProject: () => this.go('project', { projTab: 'conv' }),
+      goNotif: () => this.go('notifset')
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,493 @@
+{
+ "v": 3,
+ "attachments": {},
+ "boards": {
+  "Main.dc.html": {
+   "h": 1004,
+   "is_interactive": true,
+   "page": "r1",
+   "title": "A · 手機關鍵畫面",
+   "w": 2700,
+   "x": 0,
+   "y": 0
+  },
+  "NotifC.dc.html": {
+   "h": 1400,
+   "page": "c",
+   "title": "C · Android 大型互動通知",
+   "w": 1840,
+   "x": 0,
+   "y": 5084
+  },
+  "PhoneA.dc.html": {
+   "h": 844,
+   "is_interactive": true,
+   "page": "r1",
+   "title": "A · 可點擊原型（從這裡 Play）",
+   "w": 390,
+   "x": 2780,
+   "y": 160
+  },
+  "PhoneB.dc.html": {
+   "h": 844,
+   "is_interactive": true,
+   "page": "r1",
+   "title": "B · 可點擊原型（從這裡 Play）",
+   "w": 390,
+   "x": 2780,
+   "y": 4072
+  },
+  "PhoneC.dc.html": {
+   "h": 844,
+   "is_interactive": true,
+   "page": "c",
+   "title": "C · 可點擊原型（從這裡 Play）",
+   "w": 390,
+   "x": 3226,
+   "y": 120
+  },
+  "PhonesB.dc.html": {
+   "h": 1004,
+   "is_interactive": true,
+   "page": "r1",
+   "title": "B · 手機關鍵畫面",
+   "w": 2700,
+   "x": 0,
+   "y": 3912
+  },
+  "PhonesC.dc.html": {
+   "h": 4924,
+   "is_interactive": true,
+   "page": "c",
+   "title": "C · 手機畫面（30 張，含深色）",
+   "w": 3146,
+   "x": 0,
+   "y": 0
+  },
+  "TabletA.dc.html": {
+   "h": 768,
+   "is_interactive": true,
+   "page": "r1",
+   "title": "A · 平板可點擊元件",
+   "w": 1024,
+   "x": 2264,
+   "y": 1204
+  },
+  "TabletB.dc.html": {
+   "h": 768,
+   "is_interactive": true,
+   "page": "r1",
+   "title": "B · 平板可點擊元件",
+   "w": 1024,
+   "x": 2264,
+   "y": 5116
+  },
+  "TabletC.dc.html": {
+   "h": 768,
+   "is_interactive": true,
+   "page": "c",
+   "title": "C · 平板可點擊元件",
+   "w": 1024,
+   "x": 2264,
+   "y": 6724
+  },
+  "TabletsA.dc.html": {
+   "h": 2088,
+   "is_interactive": true,
+   "page": "r1",
+   "title": "A · 平板與縮小轉換",
+   "w": 2184,
+   "x": 0,
+   "y": 1124
+  },
+  "TabletsB.dc.html": {
+   "h": 2088,
+   "is_interactive": true,
+   "page": "r1",
+   "title": "B · 平板與縮小轉換",
+   "w": 2184,
+   "x": 0,
+   "y": 5036
+  },
+  "TabletsC.dc.html": {
+   "h": 3248,
+   "is_interactive": true,
+   "page": "c",
+   "title": "C · 平板與縮小轉換",
+   "w": 2184,
+   "x": 0,
+   "y": 6644
+  },
+  "ModelSheetsC.dc.html": {
+   "x": 3226,
+   "y": 1104,
+   "w": 1362,
+   "h": 700,
+   "title": "C · 模型面板三個選項（已選：選項 3）",
+   "is_interactive": true,
+   "page": "c"
+  },
+  "PhonesD.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 3146,
+   "h": 6168,
+   "title": "D · 手機畫面（只含架構調整影響的區域）",
+   "is_interactive": true,
+   "page": "d"
+  },
+  "PhoneD.dc.html": {
+   "x": 3226,
+   "y": 164,
+   "w": 390,
+   "h": 844,
+   "title": "D · 可點擊原型（從這裡 Play）",
+   "is_interactive": true,
+   "page": "d"
+  },
+  "StatesD.dc.html": {
+   "x": 3226,
+   "y": 1124,
+   "w": 1840,
+   "h": 1240,
+   "title": "D · 新狀態與元件",
+   "page": "d"
+  },
+  "TabletsD.dc.html": {
+   "x": 0,
+   "y": 6328,
+   "w": 2184,
+   "h": 2736,
+   "title": "D · 平板",
+   "is_interactive": true,
+   "page": "d"
+  },
+  "TabletD.dc.html": {
+   "x": 2264,
+   "y": 6448,
+   "w": 1024,
+   "h": 768,
+   "title": "D · 平板可點擊元件",
+   "is_interactive": true,
+   "page": "d"
+  },
+  "PhonesE.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 3146,
+   "h": 7192,
+   "title": "E · 手機畫面（分頁版）",
+   "is_interactive": true,
+   "page": "e"
+  },
+  "PhoneE.dc.html": {
+   "x": 3226,
+   "y": 164,
+   "w": 390,
+   "h": 844,
+   "title": "E · 可點擊原型（從這裡 Play）",
+   "is_interactive": true,
+   "page": "e"
+  },
+  "TabletsE.dc.html": {
+   "x": 0,
+   "y": 7352,
+   "w": 2184,
+   "h": 3640,
+   "title": "E · 平板",
+   "is_interactive": true,
+   "page": "e"
+  },
+  "TabletE.dc.html": {
+   "x": 2264,
+   "y": 7472,
+   "w": 1024,
+   "h": 768,
+   "title": "E · 平板可點擊元件",
+   "is_interactive": true,
+   "page": "e"
+  },
+  "DesktopsE.dc.html": {
+   "x": 0,
+   "y": 11152,
+   "w": 3016,
+   "h": 4168,
+   "title": "E · 電腦版",
+   "is_interactive": true,
+   "page": "e"
+  },
+  "DesktopE.dc.html": {
+   "x": 3096,
+   "y": 11272,
+   "w": 1440,
+   "h": 900,
+   "title": "E · 電腦版可點擊元件",
+   "is_interactive": true,
+   "page": "e"
+  },
+  "TabletsPE.dc.html": {
+   "x": 0,
+   "y": 15480,
+   "w": 3584,
+   "h": 1354,
+   "title": "E · 平板直向",
+   "is_interactive": true,
+   "page": "e"
+  },
+  "TabletPE.dc.html": {
+   "x": 3664,
+   "y": 15600,
+   "w": 834,
+   "h": 1194,
+   "title": "E · 平板直向可點擊元件",
+   "is_interactive": true,
+   "page": "e"
+  }
+ },
+ "createdOnFiles": {
+  "at": "2026-09-29T10:00:00Z",
+  "v": 1
+ },
+ "designSystems": [],
+ "launch": {
+  "view": "canvas",
+  "page": "e"
+ },
+ "notes": {
+  "a1": {
+   "fill": "teal",
+   "maxH": 700,
+   "page": "r1",
+   "text": "A · 四個關鍵問題\n\n待處理入口：每個畫面右上的琥珀色膠囊（鈴鐺＋數字），點開是底部 sheet；Work 頁最上方也列出相同項目。兩個入口的處理結果一致。\n\n聊天 ↔ 工作：主畫面頂部的「聊天／工作」切換，沒有底部分頁列；進入對話後，返回鍵回到你進來的空間。\n\n通知點開：先整頁顯示「重新連線並取得最新狀態」，確認問題仍有效、控制權在此裝置後，才進入對話並停在問題卡。如果已被其他裝置處理，會落在 Work 並標示「已由 iPad 處理」。\n\n成果返回：卡片「展開閱讀」→ 全螢幕。「返回聊天」會回到原本那張卡片（短暫高亮），草稿保留。",
+   "w": 460,
+   "x": 3260,
+   "y": 160
+  },
+  "a2": {
+   "fill": "green",
+   "maxH": 700,
+   "page": "r1",
+   "text": "A · 現有能力（原始碼可查）\n\n• inbox：等待回應的 session、錯過的排程、記憶提案\n• Needs you／Running／Recent，workspace 篩選\n• steer／follow-up／stop／queue；empty composer 時主按鈕是停止\n• 模型與 thinking level、附件\n• interaction：單選／複選／確認／輸入／editor，含過期\n• 控制權租約與 Take control\n• 寫入租約衝突＋前往持有者；沒有自動重試\n• goal／todo widget、run card（規則式標題）\n• web push、Android UnifiedPush",
+   "w": 420,
+   "x": 3760,
+   "y": 160
+  },
+  "a3": {
+   "fill": "purple",
+   "maxH": 700,
+   "page": "r1",
+   "text": "A · 新增提案（畫面上的紫色虛線「提案」標籤）\n\n• 成果卡、全螢幕閱讀、版本更新橫幅：需要 renderer 與成果資料契約\n• 搜尋成果內容（網頁已有搜尋 sessions）\n• 待處理 sheet 裡的「最近動態」：一般完成／失敗事件與歷史\n• 「已由 iPad 處理」：需要記錄處理者與處理時間\n• 平板並排、開啟成果時自動收合列表\n• iOS 原生推播、分享進 App\n\n鍵盤區是標示高度的示意區，不是畫出來的鍵盤。",
+   "w": 420,
+   "x": 4220,
+   "y": 160
+  },
+  "b1": {
+   "fill": "blue",
+   "maxH": 720,
+   "page": "r1",
+   "text": "B · 四個關鍵問題\n\n待處理入口有三層：① 底部「工作」分頁的數字徽章；② 聊天首頁的深色監督列（待處理數、執行中數、下一件）；③ Work 最上方的待處理卡片。錯過的排程可以直接在卡片上允許或略過；回答問題會先進入對話。\n\n聊天 ↔ 工作：底部四個分頁（聊天／工作／排程／設定），跟現有 web 與 Android 相同；平板改成左側分頁列。\n\n通知點開：整頁重新確認狀態 → 進入對話，固定在底部的問題直接展開，並標示「來自通知 · 已確認仍有效」。如果已被處理，會落在 Work 並顯示處理者。\n\n成果返回：卡片裡先預覽表格前 3 列；全螢幕底部固定「回到聊天的這則回覆」。平板上成果放在右側「檢視」面板，和來源、檔案共用。",
+   "w": 460,
+   "x": 3260,
+   "y": 4072
+  },
+  "b2": {
+   "fill": "green",
+   "maxH": 720,
+   "page": "r1",
+   "text": "B · 現有能力（原始碼可查）\n\n• 底部四分頁與工作徽章：MobileTabs.svelte、HomeScreen.kt\n• inbox 三類、Needs you／Running／Recent、workspace 篩選\n• 錯過排程的 Run／Dismiss 已可在列表上直接操作\n• steer／follow-up（送出時機切換）、stop、queue\n• interaction 與過期；控制權被占用時的 Take control\n• 寫入租約衝突＋前往持有者\n• goal／todo widget、run card、工具輸出與 diff\n• Files 在 Chat 也存在；Git／Terminal 只有 Work 有",
+   "w": 420,
+   "x": 3760,
+   "y": 4072
+  },
+  "b3": {
+   "fill": "purple",
+   "maxH": 720,
+   "page": "r1",
+   "text": "B · 新增提案\n\n• 監督列：前端彙整 inbox＋running；「下一件」的排序規則待定\n• 成果卡內的表格預覽、來源／版本分頁（需要 renderer 契約）\n• 平板「檢視」面板：把成果和 Files 等面板合在一起\n• 「最近動態」：一般完成／失敗事件\n• 「已由 iPad 處理」的處理者資訊\n• 搜尋成果內容、iOS 推播、分享進 App\n\n執行中卡片上的「12 秒前更新」需要 last-activity 資料；SessionSummary 已有 lastActivityAt。",
+   "w": 420,
+   "x": 4220,
+   "y": 4072
+  },
+  "c1": {
+   "fill": "blue",
+   "maxH": 760,
+   "page": "c",
+   "text": "C · 採用的決定\n\n• 風格：沿用網頁端 app.css 的圓角、陰影、Lucide 線條圖示與系統字體。主色從 #4176E6 改為較沉的 #4B6BA6（降飽和、加深），狀態色一起降飽和；送出鍵改成墨色，藍色只留給選取、連結與執行中。\n\n• 版型：ChatGPT／Claude 式。左上 ☰ 開側欄（就是網頁側欄：聊天／工作切換、新聊天、搜尋）；上方標題可選「在哪裡開始」（聊天或某個 workspace）；底部是大圓角輸入框。\n\n• 待處理入口：右上鈴鐺（數字）打開「待處理與最近動態」；首頁有提示橫幅；側欄頂部也有。依到期時間排序，沒有到期的依建立時間。\n\n• 通知上與卡片上的動作一律先重新確認狀態，再顯示確認 sheet，不直接送出。\n\n• 平板：開啟成果時收起側欄（第一輪 A 的做法）。\n\n• 成果更新：暫時呈現為「有新版本 → 切換」，仍待決定。",
+   "w": 460,
+   "x": 3706,
+   "y": 120
+  },
+  "c2": {
+   "fill": "green",
+   "maxH": 760,
+   "page": "c",
+   "text": "C · 現有 vs 提案\n\n現有（原始碼可查）：側欄的聊天／工作切換、新對話、搜尋 sessions；inbox 三類；Needs you／Running／Recent；steer／follow-up／stop／queue；composer dock（goal／todo／queue）；interaction 卡與過期；控制權與寫入租約；推播狀態、推送目標列表、測試推播；設定裡的配對、通知、記憶提案、解除配對。\n\n提案（紫色虛線標籤）：成果卡、閱讀頁與版本；最近動態；通知上的選項與按鈕；即時進度通知；完成／失敗通知類別；其他裝置處理後自動收回；勿擾時段；依 workspace 靜音；文字大小設定。\n\n純前端即可做到：「在哪裡開始」選單（createSession 已存在）、鎖定畫面顯示層級。\n\n新主色 #4B6BA6 配白字的對比約 5.3:1（原本 #4176E6 約 4.2:1）。若採用，網頁端建議同步更新。\n\n輸入框的模型與思考程度合併成一個按鈕；打開後是設定式兩列（模型、思考強度），各自點進去再選；可選的思考程度依模型而定（沿用現有 ModelOption.thinkingLevels）。\n\n工作面板（檔案、Git、終端、Tasks、記憶、瀏覽器）是現有能力，這次補上手機版型；聊天類 session 不顯示 Git 與終端，和網頁一致。\n\n新提案：下方快速回應視窗（顯示在其他 App 上層）。",
+   "w": 420,
+   "x": 4206,
+   "y": 120
+  },
+  "c3": {
+   "fill": "orange",
+   "maxH": 760,
+   "page": "c",
+   "text": "後端需求注記（列入設計交付清單）\n\n1. 處理紀錄：interaction 與錯過排程的處理者裝置、時間、結果；並推送「已處理」事件，讓其他裝置收回通知。\n\n2. 活動事件與歷史：session 開始、步驟、完成、失敗；可分頁查詢。\n\n3. 通知偏好：每個推送目標訂閱的類別、勿擾時段、workspace 靜音（由 server 過濾或 App 過濾，待定）。\n\n4. 推播 payload：interaction id、runnerEpoch、expiresAt，以及最多 3 個選項，供展開版面使用；點選後 App 仍要重新取得 snapshot。\n\n5. 即時進度：目前步驟文字與更新時間（需節流）。\n\n6. 成果：版本化內容、更新事件、可回溯到訊息 id。\n\n7. 若納入 iOS：APNs 推播。\n\n8. 下方快速回應視窗：主要是 App 端工作（需要使用者授予「顯示在其他應用程式上層」權限），但依賴第 1、4 項才能判斷是否仍有效。",
+   "w": 420,
+   "x": 4666,
+   "y": 120
+  },
+  "titleA": {
+   "kind": "title1",
+   "maxW": 3200,
+   "page": "r1",
+   "text": "A · 安靜的對話工作室",
+   "w": 240,
+   "x": 0,
+   "y": -300
+  },
+  "titleB": {
+   "kind": "title1",
+   "maxW": 3200,
+   "page": "r1",
+   "text": "B · 容易監督工作的助手",
+   "w": 240,
+   "x": 0,
+   "y": 3612
+  },
+  "titleC": {
+   "kind": "title1",
+   "maxW": 3600,
+   "page": "c",
+   "text": "C · 網頁風格 × 對話 App 版型",
+   "w": 240,
+   "x": 0,
+   "y": -300
+  },
+  "titleD": {
+   "kind": "title1",
+   "maxW": 3600,
+   "page": "d",
+   "text": "D · 統一對話：架構調整需要重畫的部分",
+   "x": 0,
+   "y": -300
+  },
+  "d1": {
+   "fill": "blue",
+   "maxH": 760,
+   "w": 460,
+   "x": 3706,
+   "y": 164,
+   "page": "d",
+   "text": "需要重畫（依 plans/unified-conversations.md 等）\n\n1. 導覽：拿掉聊天／工作切換。側欄改成 pots、需要你處理、專案（含成員對話）、其他對話。\n2. 新對話：「在哪裡開始」改成工作區設定：專案、主機、主要資料夾（受管理／現有／建立）、掛載與實際可做的事。草稿到第一次送出才建立。\n3. 對話：一個對話可有多個任務；頂部任務列、每個任務一行動態、側問標示所屬任務；輸入框可選訊息要傳給誰。\n4. 任務詳情：真實步驟、子工作、產出、資源等待、停止與驗收。\n5. 工作區：顯示來源與權限、可用／唯讀／等核准／等資源；切換主機與移除掛載先預覽，再顯示套用中／等待確認。\n6. pots：獨立入口；決定、建議、追蹤任務、職責、額度；From pots 標示與接管。\n7. 專案：資源、規則、筆記、看板；離開與刪除的預覽。\n8. 檔案：已保存附件與即時參照分開。\n9. 通知：依重要性立即／摘要／不通知。\n10. 行事曆：Agent 任務的執行目標改成「專案＋工作區」；目標被移除時暫停並要你重選，不會自動換地方（D27–D28、平板 ⑥）。"
+  },
+  "d2": {
+   "fill": "green",
+   "maxH": 760,
+   "w": 420,
+   "x": 4206,
+   "y": 164,
+   "page": "d",
+   "text": "沿用方向 C，不重畫\n\n• 視覺、tokens、字級、圓角、區隔原則\n• 輸入框、模型與思考面板、附件\n• 訊息、工具步驟卡、問題卡、成果卡與全螢幕閱讀\n• 工作面板（檔案、Git、終端、Tasks、記憶、瀏覽器）與全螢幕終端\n• 通知點開後先確認狀態、快速回應視窗、Android 通知樣式\n• 設定其他區塊\n• 行事曆的月／週／日／清單、個人事件、重複範圍（D21–D26 依 C 風格補畫）\n• 平板寬度規則：開右欄時收起側欄\n\n畫面上點到這些入口會顯示「沿用方向 C」。"
+  },
+  "d3": {
+   "fill": "orange",
+   "maxH": 760,
+   "w": 420,
+   "x": 4666,
+   "y": 164,
+   "page": "d",
+   "text": "實作狀態標示（tweak 可關）\n\n無標示：已有後端或已實作（pots 追蹤／開始／接管、專案指示與檔案、第一次送出的草稿與復原、行事曆）。\n\n橘色「開發中」：U2 綁定、U4 工作區切換與撤銷；後端還沒開放，畫面先定好流程。\n\n紫色「規劃」：U5 任務統一紀錄、共用筆記、看板、資源等待；U6 pots 內容分析與摘要通知。\n\n仍待決定：摘要時間、勿擾預設、pots 額度與並行數、看板保存期限、App 登入方式。"
+  },
+  "titleE": {
+   "kind": "title1",
+   "maxW": 3600,
+   "page": "e",
+   "text": "E · 聊天式 pots：聊天、工作、動態分開",
+   "x": 0,
+   "y": -300
+  },
+  "e1": {
+   "fill": "blue",
+   "maxH": 800,
+   "w": 460,
+   "x": 3706,
+   "y": 164,
+   "page": "e",
+   "text": "E · 採用的模型（第八版）\n\n• 底部分頁：聊天｜工作｜動態｜行事曆。左上 ☰ 打開側欄：主機狀態；底部是「設定」按鈕和亮暗切換。側欄打開時把頁面推開，不蓋在上面。\n• 側欄最下面是你的頭像與名字，打開「使用者與用量」：總覽數字、token 活動（每日熱度圖／每週／累計）、本月誰用了多少、用了哪些模型；可以改名字與頭像，分享時只產生圖表圖片。\n• 設定頁：帳號、AI（pots、模型供應商、預設模型、記憶）、通知與權限、一般（語言、外觀、文字大小、時區、打開 App 時、觸覺回饋）、資料、關於。\n• 設定 → pots：最上面是全部 pots 的合計上限（金額或 token）、用完時怎麼辦、動態保存天數；下面列出所有 pots，點一位打開它的設定。\n• 額度一律用金額或 token 計算，不用「幾個工作」；同時進行的工作數是另一個上限。\n• 新增 pots 四步：外觀與個性 → 工作內容 → 能做什麼（含私訊其他 pots：所有／選擇的／關閉，傳送與接收分開，預設開啟）→ 模型（主模型＋備援、思考程度與自動調整、開工作可用的模型）。\n• 模型「先問你」時的核准只有三個選項：拒絕、拒絕並說明原因、允許這一次。\n• 群組建立與設定都能改名稱和頭像（預設用成員頭像，可選顏色或上傳圖片）。\n• 交接只轉移事情，不轉移權限；封存／刪除前先逐項決定交給誰。\n• pots 頭像右下角只有兩種標記：三個點＝工作中（自己在跑或它協調的工作在跑），灰點＝無法工作（暫停、額度用完、主機或模型都不能用）；可以工作時不標。封存的 pots 不出現在列表。\n• 工作（session）不放頭像或資料夾圖示，列表直接是標題；誰在協調寫在「From …」。"
+  },
+  "e2": {
+   "fill": "orange",
+   "maxH": 800,
+   "w": 460,
+   "x": 4206,
+   "y": 164,
+   "page": "e",
+   "text": "需要的架構／後端變更\n\n目前 plans/pots/design.md 第一階段只有一個 pots 身分，「多個具名助理」列為之後再決定。這個方向需要：\n\n1. 多個 pots 身分：各自的個性、記憶、負責的事、授權、額度與暫停狀態。\n2. 群組：成員、主持、綁定專案；群組訊息的路由（主持／@ 某位／所有人）。\n3. pots 之間的私訊與交辦都是有紀錄的事件，使用者可以全部讀取；沒有隱藏頻道。\n4. 動態紀錄：私訊、交辦、送出指示、讀取、提議、狀態變更，可依 pots 篩選與分頁。\n5. 視角查詢：以某位 pots 為主體列出它的對話與它送進工作的訊息（唯讀）。\n6. 交接：負責的事、追蹤、協調中的工作、主持可以轉給另一位 pots 或你；記錄雙方；pots 提議的交接要使用者確認；接手時重新檢查權限。\n7. 封存（可恢復）與刪除（刪個性、記憶、設定）；先交接再撤銷權限，失敗不恢復舊權限。\n8. 工作的 From 記錄是哪一位 pots 與來源；個性只進提示詞，不參與授權。\n9. 每位 pots 的設定：簡介、工作說明、主模型與備援順序、思考程度與自動調整、開工作可用的供應商／模型清單（各自「直接用／先問你」）；核准是一次性的事件。\n10. 備援切換與自動調整思考程度都寫入動態（含原因）。"
+  },
+  "e3": {
+   "fill": "purple",
+   "maxH": 800,
+   "w": 420,
+   "x": 4706,
+   "y": 164,
+   "page": "e",
+   "text": "仍待決定\n\n• 交接時，使用者對原 pots 的同意（例如「等 A 完成再開始」）是否跟著轉移；目前畫的是跟著轉，開始前重新檢查接手者權限。\n• 封存後恢復時，交接出去的事要不要問是否拿回（目前不自動拿回）。\n• pots 之間能否不經主持直接互相交辦。\n• 每位 pots 的記憶是否互相隔離。\n• 群組和專案的關係。\n• 要不要保留 @所有人。\n• 動態保存多久。\n\n順帶修正：平板根元素和工作面板分頁共用 .c-tab，造成 C／D 平板圓角裁切與置中；已在 pirc-c.css 加 .pc.c-tab 修正。"
+  },
+  "e4": {
+   "fill": "blue",
+   "maxH": 800,
+   "w": 460,
+   "x": 3096,
+   "y": 12272,
+   "page": "e",
+   "text": "E · 尺寸規則\n\n依可用寬度選版型，不依裝置：\n• ≥ 1200（電腦）：分頁列 72＋列表 340＋中間內容；需要時開右欄 400（pots 派的工作、群組資訊、pots 資料）。右欄開著時中間仍可操作。對話與輸入框限寬 760、設定類頁面限寬 720，置中。\n• 900–1199（平板橫向）：分頁列＋列表 320＋內容；右欄改成取代內容。\n• < 900（平板直向）：分頁列＋一個窗格；點進對話整個換成對話，← 回列表；資訊類從右側滑出 440。\n• < 600（手機）：底部分頁列，單一畫面。\n側欄（主機、設定、亮暗、你）在電腦與平板都蓋住分頁列＋列表，不擋內容。\n切換版型時保留：目前對話、捲動位置、草稿、右欄內容。"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "PhoneA.dc.html",
+  "TabletsA.dc.html",
+  "TabletA.dc.html",
+  "PhonesB.dc.html",
+  "PhoneB.dc.html",
+  "TabletsB.dc.html",
+  "TabletB.dc.html",
+  "PhonesC.dc.html",
+  "PhoneC.dc.html",
+  "NotifC.dc.html",
+  "TabletsC.dc.html",
+  "TabletC.dc.html",
+  "ModelSheetsC.dc.html",
+  "PhonesD.dc.html",
+  "PhoneD.dc.html",
+  "StatesD.dc.html",
+  "TabletsD.dc.html",
+  "TabletD.dc.html",
+  "PhonesE.dc.html",
+  "PhoneE.dc.html",
+  "TabletsE.dc.html",
+  "TabletE.dc.html",
+  "DesktopsE.dc.html",
+  "DesktopE.dc.html",
+  "TabletsPE.dc.html",
+  "TabletPE.dc.html"
+ ],
+ "pages": [
+  {
+   "id": "e",
+   "name": "E · 聊天式 pots（提案）"
+  },
+  {
+   "id": "d",
+   "name": "D · 統一對話（架構調整）"
+  },
+  {
+   "id": "c",
+   "name": "C · 網頁風格（目前方向）"
+  },
+  {
+   "id": "r1",
+   "name": "第一輪 A／B"
+  }
+ ],
+ "title": "pirc 行動版 · 第一輪方向"
+}

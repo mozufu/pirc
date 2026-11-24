@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>A 手機原型</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-a.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&amp;family=Noto+Serif+TC:wght@600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="pa a-phone" style="width: 390px; height: 844px; font-family: 'Noto Sans TC', -apple-system, sans-serif; color: #1F1D1A">
+
+<!-- ═════════ 1 · Chat 首頁 ═════════ -->
+<sc-if value="{{isChat}}" hint-placeholder-val="{{ true }}">
+<div class="a-safe-top"></div>
+<div class="a-top">
+  <button class="a-ib" aria-label="更多：排程、設定、通知" onClick="{{openMenu}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
+  <div style="flex: 1; display: flex; justify-content: center">
+    <div class="a-seg" aria-label="切換空間">
+      <button class="on" aria-pressed="true" onClick="{{goChat}}">聊天</button>
+      <button aria-pressed="false" onClick="{{goWork}}">工作<span class="dot" aria-label="有待處理"></span></button>
+    </div>
+  </div>
+  <button class="a-pill" aria-label="待處理 {{pendingCount}} 件" onClick="{{openSheet}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16v-5a6 6 0 0112 0v5l2 2H4z"/><path d="M10 21h4"/></svg><span class="n">{{pendingCount}}</span></button>
+</div>
+<div class="a-scroll">
+  <div style="padding: 10px 20px 4px; display: flex; align-items: baseline; justify-content: space-between">
+    <h1 class="a-h1">聊天</h1>
+    <span class="a-meta">chat node · 已連線</span>
+  </div>
+  <div style="padding: 8px 20px 0; display: flex; gap: 8px; align-items: center">
+    <button class="a-chip" style="flex: 1; justify-content: flex-start; height: 44px; border-radius: 22px; color: #6B655A" onClick="{{demo}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.3-4.3"/></svg>搜尋聊天與成果</button>
+    <sc-if value="{{marks}}" hint-placeholder-val="{{ true }}"><span class="tag-new">提案</span></sc-if>
+  </div>
+  <div class="a-sec">專案</div>
+  <div style="display: flex; gap: 8px; padding: 2px 20px 4px; overflow: hidden">
+    <button class="a-chip" onClick="{{demo}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h7l2 2h9v10H3z"/></svg>pirc 行動版<span style="color: #6B655A">3</span></button>
+    <button class="a-chip" onClick="{{demo}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h7l2 2h9v10H3z"/></svg>旅行<span style="color: #6B655A">2</span></button>
+    <button class="a-chip" aria-label="新專案" onClick="{{demo}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+  </div>
+  <div class="a-sec">最近</div>
+  <button class="a-row" onClick="{{openThread}}">
+    <span class="a-row-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M10 5v14"/></svg></span>
+    <span class="a-row-main"><span class="a-row-t">幫我比較 Flutter 和 Compose 的平板適配方式</span><span class="a-row-s">成果：平板適配比較 · 4 個來源</span></span>
+    <span class="a-meta" style="padding-top: 3px">10:24</span>
+  </button>
+  <button class="a-row" onClick="{{demo}}">
+    <span class="a-row-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M14 3H6v18h12V7z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg></span>
+    <span class="a-row-main"><span class="a-row-t">介面改版方案</span><span class="a-row-s">成果已更新到 v2：新增平板版型一節</span></span>
+    <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding-top: 3px"><span class="a-meta">昨天</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B655A" stroke-width="2" stroke-linejoin="round" aria-label="已釘選"><path d="M9 4h6l-1 6 3 3H7l3-3z"/><path d="M12 13v7"/></svg></span>
+  </button>
+  <button class="a-row" onClick="{{demo}}">
+    <span class="a-row-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></span>
+    <span class="a-row-main"><span class="a-row-t">週末出遊預算估算</span><span class="a-row-s">估算面板：可調整人數與天數</span></span>
+    <span class="a-meta" style="padding-top: 3px">週日</span>
+  </button>
+  <div style="padding: 12px 20px 20px"><button class="a-btn ghost" style="min-height: 40px; font-size: 14px; font-weight: 500" onClick="{{demo}}">已完成的聊天 · 6</button></div>
+</div>
+<div class="a-composer">
+  <button class="a-composer-in ph" onClick="{{demo}}">開始新聊天…</button>
+  <div class="a-composer-bar">
+    <button class="a-ib" style="width: 44px; height: 44px" aria-label="附件" onClick="{{demo}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5l-8.2 8.2a5 5 0 01-7.1-7.1l8.5-8.5a3.3 3.3 0 014.7 4.7l-8.3 8.3a1.7 1.7 0 01-2.4-2.4l7.6-7.6"/></svg></button>
+    <button class="a-mode" onClick="{{demo}}">預設模型 · 思考：中<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></button>
+    <span style="flex: 1"></span>
+    <button class="a-send off" aria-label="送出" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 11l6-6 6 6"/></svg></button>
+  </div>
+</div>
+<div class="a-safe-bot"></div>
+</sc-if>
+
+<!-- ═════════ 2 · Work ═════════ -->
+<sc-if value="{{isWork}}" hint-placeholder-val="{{ false }}">
+<div class="a-safe-top"></div>
+<div class="a-top">
+  <button class="a-ib" aria-label="更多：排程、設定、通知" onClick="{{openMenu}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></button>
+  <div style="flex: 1; display: flex; justify-content: center">
+    <div class="a-seg" aria-label="切換空間">
+      <button aria-pressed="false" onClick="{{goChat}}">聊天</button>
+      <button class="on" aria-pressed="true" onClick="{{goWork}}">工作</button>
+    </div>
+  </div>
+  <button class="a-pill" aria-label="待處理 {{pendingCount}} 件" onClick="{{openSheet}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16v-5a6 6 0 0112 0v5l2 2H4z"/><path d="M10 21h4"/></svg><span class="n">{{pendingCount}}</span></button>
+</div>
+<div class="a-scroll">
+  <div style="padding: 10px 20px 4px; display: flex; align-items: center; justify-content: space-between">
+    <h1 class="a-h1">工作</h1>
+    <button class="a-chip" onClick="{{demo}}">全部 workspace<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></button>
+  </div>
+
+  <div class="a-sec" style="color: #8A4B08">待你回應 <span class="c">{{pendingCount}}</span></div>
+  <button class="a-row" onClick="{{openSessionFromWork}}">
+    <span class="a-row-ic" style="background: #F6E6CC; color: #8A4B08"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 114 2c-.9.6-1.5 1.1-1.5 2.2M12 17v.01"/></svg></span>
+    <span class="a-row-main"><span class="a-row-t">檢查 nightly test</span><span class="a-row-s">問題：是否只重新執行失敗案例？</span><span class="a-meta">CI-runner / pirc · 3 分鐘前 · 14 分後過期</span></span>
+    <svg style="margin-top: 10px" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B655A" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+  </button>
+  <div class="a-row" style="flex-wrap: wrap">
+    <span class="a-row-ic" style="background: #F6E6CC; color: #8A4B08"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span>
+    <span class="a-row-main"><span class="a-row-t">每天早上檢查測試</span><span class="a-row-s">排程 · 錯過 08:00（台北時間）的執行</span>
+      <sc-if value="{{mPending}}" hint-placeholder-val="{{ true }}"><span style="display: flex; gap: 8px; margin-top: 8px"><button class="a-btn" onClick="{{allowMissed}}">允許執行</button><button class="a-btn ghost" onClick="{{skipMissed}}">略過</button></span></sc-if>
+      <sc-if value="{{mSending}}" hint-placeholder-val="{{ false }}"><span class="a-st mute" style="margin-top: 8px">送出中… 等待 gateway 確認</span></sc-if>
+      <sc-if value="{{mAllowed}}" hint-placeholder-val="{{ false }}"><span class="a-st ok" style="margin-top: 8px">✓ 已允許 · 已排入執行</span></sc-if>
+      <sc-if value="{{mSkipped}}" hint-placeholder-val="{{ false }}"><span class="a-st mute" style="margin-top: 8px">— 已略過這次執行</span></sc-if>
+      <sc-if value="{{mElsewhere}}" hint-placeholder-val="{{ false }}"><span class="a-st mute" style="margin-top: 8px; padding: 6px 10px; background: #ECE7DD; border-radius: 10px">⟳ 已由 iPad 處理：08:12 略過。此通知已失效。</span></sc-if>
+    </span>
+  </div>
+
+  <div class="a-divider" style="margin-top: 6px"></div>
+  <div class="a-sec">執行中 <span class="c">2</span></div>
+  <button class="a-row" onClick="{{demo}}">
+    <span class="a-row-ic" style="background: #E2EBE5; color: #2E5B4E"><svg class="a-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 4a8 8 0 018 8"/></svg></span>
+    <span class="a-row-main"><span class="a-row-t">修復登入頁鍵盤遮住送出鈕</span><span class="a-row-s">步驟 2：編輯 LoginScreen.kt</span><span class="a-meta">Laptop / mobile-app · 6 分鐘 · 持有寫入權</span></span>
+  </button>
+  <div class="a-row" style="padding-top: 6px">
+    <span class="a-row-ic" style="background: #F5E1DC; color: #9E3426"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17.5v.01"/></svg></span>
+    <span class="a-row-main"><span class="a-row-t">整理 API 文件</span><span class="a-row-s" style="white-space: normal; color: #9E3426">寫入失敗：workspace 正由「修復登入頁…」寫入</span><span class="a-meta">Laptop / mobile-app · 不會自動重試</span>
+      <span style="margin-top: 8px"><button class="a-btn quiet" style="min-height: 40px; font-size: 14px" onClick="{{demo}}">前往持有寫入權的工作</button></span></span>
+  </div>
+
+  <div class="a-divider" style="margin-top: 6px"></div>
+  <div class="a-sec">最近</div>
+  <button class="a-row" style="min-height: 56px" onClick="{{demo}}"><span class="a-row-main"><span class="a-row-t" style="font-size: 15px">更新相依套件</span><span class="a-meta">Laptop / mobile-app</span></span><span class="a-st ok">✓ 完成 · 09:12</span></button>
+  <button class="a-row" style="min-height: 56px" onClick="{{demo}}"><span class="a-row-main"><span class="a-row-t" style="font-size: 15px">重構 session store</span><span class="a-meta">Server / gateway</span></span><span class="a-st fail">✕ 失敗 · 昨天</span></button>
+  <button class="a-row" style="min-height: 56px" onClick="{{demo}}"><span class="a-row-main"><span class="a-row-t" style="font-size: 15px">每天早上檢查測試</span><span class="a-meta">排程 · 近 3 次執行</span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B655A" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></button>
+  <div style="height: 80px"></div>
+</div>
+<button class="a-btn" style="position: absolute; right: 16px; bottom: 40px; min-height: 52px; border-radius: 26px; padding: 0 20px; box-shadow: 0 6px 18px rgba(30,64,55,.28)" onClick="{{demo}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>新工作</button>
+<div class="a-safe-bot"></div>
+</sc-if>
+
+<!-- ═════════ 3 · 執行中對話 ═════════ -->
+<sc-if value="{{isSession}}" hint-placeholder-val="{{ false }}">
+<div class="a-safe-top"></div>
+<div class="a-top">
+  <button class="a-ib" aria-label="返回{{backLabel}}" onClick="{{backFromSession}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <div class="a-top-title"><b>檢查 nightly test</b><small>CI-runner / pirc · {{sessionStatus}}</small></div>
+  <button class="a-ib" aria-label="工作面板：檔案、Git、終端…" onClick="{{demo}}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M14 4v16"/></svg></button>
+  <button class="a-pill" style="padding: 0 10px" aria-label="其他待處理 {{otherPending}} 件" onClick="{{openSheet}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16v-5a6 6 0 0112 0v5l2 2H4z"/><path d="M10 21h4"/></svg><span class="n">{{otherPending}}</span></button>
+</div>
+<div class="a-prog">
+  <button class="a-prog-head" aria-expanded="{{progOpen}}" onClick="{{toggleProg}}">
+    <span class="a-bar"><i class="d"></i><i class="d"></i><i class="{{bar3}}"></i></span>
+    <span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">目標：確認 nightly 能否合併 · <b>2/3</b></span>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+  <sc-if value="{{progOpen}}" hint-placeholder-val="{{ false }}">
+    <div style="padding: 0 14px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 20px">
+      <span class="a-st ok">✓ 執行 nightly 測試</span>
+      <span class="a-st ok">✓ 分析失敗原因</span>
+      <span class="{{step3Cls}}">{{step3Text}}</span>
+      <span class="a-meta" style="padding-top: 4px">暫停 / 繼續目標 · 位於工作面板 › Tasks</span>
+    </div>
+  </sc-if>
+</div>
+<div class="a-scroll" style="display: flex; flex-direction: column-reverse">
+<div class="a-thread">
+  <div class="a-user">檢查昨晚的 nightly test，失敗的話先分析原因。</div>
+  <div class="a-asst"><p>我先執行 nightly 測試並讀取報告。</p></div>
+  <div class="a-run">
+    <button class="a-run-head" aria-expanded="{{runOpen}}" onClick="{{toggleRun}}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10l3 2-3 2M12 15h5"/></svg>
+      <span style="flex: 1">已執行 2 個步驟 · <span style="color: #9E3426">1 個回報失敗</span></span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+    </button>
+    <sc-if value="{{runOpen}}" hint-placeholder-val="{{ false }}">
+      <div class="a-run-step"><span class="a-st fail" style="width: 18px">✕</span><span style="flex: 1; min-width: 0"><span class="a-mono">pnpm test:nightly</span><div class="a-run-out">212 passed · 3 failed
+sync/reconnect.test.ts (3)
+exit 1 · 2m 41s</div></span></div>
+      <div class="a-run-step"><span class="a-st ok" style="width: 18px">✓</span><span style="flex: 1">讀取 <span class="a-mono">reports/nightly.xml</span></span></div>
+    </sc-if>
+  </div>
+  <div class="a-asst"><p>3 個失敗都在 <code class="a-code">sync/reconnect.test.ts</code>，錯誤是等待逾時（目前 2 秒）；邏輯斷言本身都通過。</p></div>
+
+  <sc-if value="{{qOpen}}" hint-placeholder-val="{{ true }}">
+  <section class="a-q" aria-labelledby="qa-title">
+    <span class="a-q-kicker"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg>等待你回答 · 14 分鐘後過期</span>
+    <div class="a-q-title" id="qa-title">是否只重新執行失敗案例？</div>
+    <div class="a-meta" style="font-size: 14px; line-height: 21px; color: #57524A">只重跑約 4 分鐘；全部重跑約 38 分鐘，會占用 CI-runner。</div>
+    <div style="display: flex; flex-direction: column; gap: 8px" role="radiogroup" aria-labelledby="qa-title">
+      <sc-for list="{{options}}" as="o" hint-placeholder-count="3">
+        <button class="a-opt {{o.cls}}" role="radio" aria-checked="{{o.on}}" onClick="{{o.pick}}"><span class="a-radio"></span><span>{{o.label}}</span></button>
+      </sc-for>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center; padding-top: 4px">
+      <button class="a-btn" onClick="{{answer}}" disabled="{{qSending}}">{{answerLabel}}</button>
+      <button class="a-btn ghost" onClick="{{demo}}">取消問題</button>
+    </div>
+    <span class="a-meta">由此裝置控制 · 回答會送到 CI-runner 上的 agent</span>
+  </section>
+  </sc-if>
+  <sc-if value="{{qDone}}" hint-placeholder-val="{{ false }}">
+    <div style="border: 1px solid #E2DBCE; border-radius: 14px; padding: 12px 14px; background: #FFFDF8; font-size: 14.5px; line-height: 22px"><span class="a-st ok">✓ 已回答</span> 只重跑失敗的 3 個案例 · 08:52<div class="a-meta">agent 已繼續執行</div></div>
+  </sc-if>
+</div>
+</div>
+<div class="a-composer">
+  <button class="{{composerCls}}" onClick="{{toggleKb}}">{{composerText}}<sc-if value="{{kb}}" hint-placeholder-val="{{ true }}"><span class="a-caret"></span></sc-if></button>
+  <div class="a-composer-bar">
+    <button class="a-ib" style="width: 44px; height: 44px" aria-label="附件" onClick="{{demo}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5l-8.2 8.2a5 5 0 01-7.1-7.1l8.5-8.5a3.3 3.3 0 014.7 4.7l-8.3 8.3a1.7 1.7 0 01-2.4-2.4l7.6-7.6"/></svg></button>
+    <button class="a-mode" onClick="{{toggleMode}}" aria-label="送出時機：{{modeLabel}}">{{modeLabel}}<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 9l6 6 6-6"/></svg></button>
+    <span style="flex: 1"></span>
+    <sc-if value="{{kb}}" hint-placeholder-val="{{ true }}">
+      <button class="a-ib" style="width: 44px; height: 44px" aria-label="停止目前工作" onClick="{{stop}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="7" width="10" height="10" rx="2"/></svg></button>
+      <button class="a-send" aria-label="送出" onClick="{{sendDraft}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 11l6-6 6 6"/></svg></button>
+    </sc-if>
+    <sc-if value="{{noKb}}" hint-placeholder-val="{{ false }}">
+      <button class="a-send stop" aria-label="停止目前工作" onClick="{{stop}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
+    </sc-if>
+  </div>
+</div>
+<sc-if value="{{kb}}" hint-placeholder-val="{{ true }}"><div class="a-kb" aria-hidden="true"><b>系統鍵盤區域</b><span>示意高度 291 · 含候選列；實機由 OS 繪製</span></div></sc-if>
+<sc-if value="{{noKb}}" hint-placeholder-val="{{ false }}"><div class="a-safe-bot"></div></sc-if>
+</sc-if>
+
+<!-- ═════════ 4a · 聊天中的成果卡 ═════════ -->
+<sc-if value="{{isThread}}" hint-placeholder-val="{{ false }}">
+<div class="a-safe-top"></div>
+<div class="a-top">
+  <button class="a-ib" aria-label="返回聊天列表" onClick="{{goChat}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+  <div class="a-top-title"><b>Flutter 與 Compose 平板適配</b><small>聊天 · pirc 行動版</small></div>
+  <button class="a-pill" style="padding: 0 10px" aria-label="待處理 {{pendingCount}} 件" onClick="{{openSheet}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16v-5a6 6 0 0112 0v5l2 2H4z"/><path d="M10 21h4"/></svg><span class="n">{{pendingCount}}</span></button>
+</div>
+<div class="a-scroll">
+<div class="a-thread">
+  <div class="a-user">幫我比較 Flutter 和 Compose 的平板適配方式</div>
+  <div class="a-asst"><p>兩者都能依可用寬度切換版型；差別在於多窗格元件是否現成，以及能否共用 iOS。完整比較放在下方成果裡。</p></div>
+  <article class="{{cardCls}}" aria-label="成果：平板適配比較">
+    <div class="a-card-head"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M10 5v14"/></svg>比較表 · 完成 · v1<span style="flex: 1"></span><sc-if value="{{marks}}" hint-placeholder-val="{{ true }}"><span class="tag-new">提案</span></sc-if></div>
+    <div class="a-card-title">平板適配比較：Flutter 與 Compose</div>
+    <div class="a-card-sum">5 個面向 · 結論：要共用 iOS 選 Flutter；只做 Android 則 Compose 較省工。</div>
+    <div class="a-card-foot">
+      <span class="a-meta" style="flex: 1">4 個來源</span>
+      <button class="a-ib" style="width: 44px; height: 44px" aria-label="複製" onClick="{{demo}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/></svg></button>
+      <button class="a-ib" style="width: 44px; height: 44px" aria-label="分享" onClick="{{demo}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6"/></svg></button>
+      <button class="a-btn quiet" onClick="{{openReader}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/></svg>展開閱讀</button>
+    </div>
+  </article>
+  <div class="a-asst"><p>如果 iOS 也要一致，Flutter 的整體成本較低；只做 Android 的話，Compose 可以沿用現有程式與 <code class="a-code">ListDetailPaneScaffold</code>。</p></div>
+  <div style="display: flex; gap: 8px; flex-wrap: wrap">
+    <button class="a-chip" style="height: 32px; font-size: 13px" onClick="{{demo}}">docs.flutter.dev</button>
+    <button class="a-chip" style="height: 32px; font-size: 13px" onClick="{{demo}}">developer.android.com · 3</button>
+  </div>
+</div>
+</div>
+<div class="a-composer">
+  <button class="a-composer-in ph" onClick="{{demo}}">{{threadDraft}}</button>
+  <div class="a-composer-bar">
+    <button class="a-ib" style="width: 44px; height: 44px" aria-label="附件" onClick="{{demo}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5l-8.2 8.2a5 5 0 01-7.1-7.1l8.5-8.5a3.3 3.3 0 014.7 4.7l-8.3 8.3a1.7 1.7 0 01-2.4-2.4l7.6-7.6"/></svg></button>
+    <button class="a-mode" onClick="{{demo}}">預設模型 · 思考：中</button>
+    <span style="flex: 1"></span>
+    <button class="a-send off" aria-label="送出" disabled><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 11l6-6 6 6"/></svg></button>
+  </div>
+</div>
+<div class="a-safe-bot"></div>
+</sc-if>
+
+<!-- ═════════ 4b · 全螢幕成果閱讀 ═════════ -->
+<sc-if value="{{isReader}}" hint-placeholder-val="{{ false }}">
+<div class="a-safe-top" style="background: #FFFDF8"></div>
+<div class="a-top" style="background: #FFFDF8; border-bottom: 1px solid #E2DBCE">
+  <button class="a-chip" style="height: 44px; border: 0; background: #ECE7DD; color: #1F1D1A; font-weight: 500" onClick="{{closeReader}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>返回聊天</button>
+  <span style="flex: 1"></span>
+  <button class="a-ib" aria-label="複製全部" onClick="{{demo}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/></svg></button>
+  <button class="a-ib" aria-label="分享" onClick="{{demo}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6"/></svg></button>
+  <button class="a-ib" aria-label="更多：版本、匯出" onClick="{{demo}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg></button>
+</div>
+<div class="a-scroll" style="background: #FFFDF8">
+  <div class="a-banner"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12a8 8 0 0114-5.3M20 12a8 8 0 01-14 5.3M18 3v4h-4M6 21v-4h4"/></svg><span style="flex: 1">已有 v2（新增「折疊裝置」一列）。你的閱讀位置已保留。</span><button class="a-btn quiet" style="min-height: 36px; padding: 0 12px; font-size: 13px; background: #FFFFFF" onClick="{{demo}}">看變更</button></div>
+  <div class="a-reader">
+    <div class="a-meta" style="padding-top: 14px">比較表 · v1 · 10:24 · 來自此聊天的第 2 則回覆</div>
+    <h1 class="a-h1" style="font-size: 26px; line-height: 36px; margin: 6px 0 12px">平板適配比較：Flutter 與 Compose</h1>
+    <p>兩者都以「可用視窗寬度」而非裝置型號決定版型。差異主要在現成的多窗格元件，以及能否一次涵蓋 iOS。</p>
+    <div style="margin: 0 -22px; padding: 0 22px; overflow-x: auto">
+    <table class="a-tbl" style="min-width: 420px">
+      <thead><tr><th>面向</th><th>Flutter</th><th>Compose</th></tr></thead>
+      <tbody>
+        <tr><td>寬度判斷</td><td>LayoutBuilder、MediaQuery.sizeOf</td><td>WindowSizeClass</td></tr>
+        <tr><td>列表＋詳情</td><td>自行組合版型</td><td>ListDetailPaneScaffold</td></tr>
+        <tr><td>折疊／分割</td><td>MediaQuery 的 displayFeatures</td><td>Jetpack WindowManager</td></tr>
+        <tr><td>iOS</td><td>同一份程式</td><td>需另做</td></tr>
+        <tr><td>沿用現有程式</td><td>UI 需重寫</td><td>可沿用現有 Android</td></tr>
+      </tbody>
+    </table>
+    </div>
+    <div class="a-meta" style="padding-top: 6px">表格可左右捲動 · 長按儲存格可複製</div>
+    <h2>建議</h2>
+    <p>若 iOS 在一年內確定要做，選 Flutter，並把斷點規則寫成共用的版型元件；若只做 Android，Compose 的現成 adaptive 元件能更快交付。</p>
+    <h2>來源</h2>
+    <p style="font-size: 15px; line-height: 26px; color: #57524A">1 · Flutter：Adaptive and responsive design<br>2 · Android：Canonical layouts<br>3 · Android：Support different display sizes<br>4 · Android：Jetpack WindowManager</p>
+    <button class="a-btn ghost" style="width: 100%; margin-top: 8px" onClick="{{closeReader}}">回到聊天中的這則回覆</button>
+  </div>
+</div>
+<div class="a-safe-bot" style="background: #FFFDF8"></div>
+</sc-if>
+
+<!-- ═════════ 5 · 系統推播（模擬） ═════════ -->
+<sc-if value="{{isPush}}" hint-placeholder-val="{{ false }}">
+<div class="a-lock">
+  <div style="height: 120px"></div>
+  <div style="font-size: 13px; opacity: .8; padding: 0 4px">模擬：App 在背景時的系統推播</div>
+  <button class="a-notif" onClick="{{pushQuestion}}">
+    <span class="a-appic">π</span>
+    <span style="flex: 1; min-width: 0"><span style="display: flex; justify-content: space-between; font-size: 13px; color: #57524A"><span>pirc · 檢查 nightly test</span><span>現在</span></span><b style="display: block; font-size: 15px; line-height: 22px; margin-top: 2px">需要你回答</b><span style="font-size: 14px; line-height: 20px">是否只重新執行失敗案例？</span></span>
+  </button>
+  <button class="a-notif" onClick="{{pushMissed}}">
+    <span class="a-appic">π</span>
+    <span style="flex: 1; min-width: 0"><span style="display: flex; justify-content: space-between; font-size: 13px; color: #57524A"><span>pirc · 排程</span><span>41 分鐘前</span></span><b style="display: block; font-size: 15px; line-height: 22px; margin-top: 2px">錯過「每天早上檢查測試」</b><span style="font-size: 14px; line-height: 20px">08:00 的執行未開始，要現在執行嗎？</span></span>
+  </button>
+  <div style="flex: 1"></div>
+  <div style="font-size: 13px; line-height: 20px; opacity: .85; padding: 0 4px 40px">點第一則：重新連線並確認問題仍有效後，才顯示可操作的問題。<br>點第二則：示範這項已在 iPad 上處理過。</div>
+</div>
+</sc-if>
+
+<!-- ═════════ overlays ═════════ -->
+<sc-if value="{{loading}}" hint-placeholder-val="{{ false }}">
+  <div class="a-loading"><svg class="a-spin" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2E5B4E" stroke-width="2.2" stroke-linecap="round"><path d="M12 4a8 8 0 018 8"/></svg><b style="color: #1F1D1A">正在重新連線並取得最新狀態…</b><span class="a-meta">確認問題仍有效、控制權在此裝置</span></div>
+</sc-if>
+
+<sc-if value="{{sheet}}" hint-placeholder-val="{{ false }}">
+  <button class="a-scrim" aria-label="關閉待處理" onClick="{{closeSheet}}" style="border: 0"></button>
+  <div class="a-sheet" role="dialog" aria-label="待處理">
+    <div class="a-grab"></div>
+    <div style="display: flex; align-items: center; padding: 4px 8px 0 20px"><b style="flex: 1; font-size: 18px">待處理 {{pendingCount}}</b><button class="a-ib" aria-label="關閉" onClick="{{closeSheet}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <button class="a-row" onClick="{{openSessionFromSheet}}">
+      <span class="a-row-ic" style="background: #F6E6CC; color: #8A4B08">?</span>
+      <span class="a-row-main"><span class="a-row-t">檢查 nightly test</span><span class="a-row-s">是否只重新執行失敗案例？</span><span class="a-meta">工作 · CI-runner / pirc · 14 分後過期</span></span>
+    </button>
+    <div class="a-row">
+      <span class="a-row-ic" style="background: #F6E6CC; color: #8A4B08"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span>
+      <span class="a-row-main"><span class="a-row-t">每天早上檢查測試</span><span class="a-row-s">錯過 08:00（台北時間）</span>
+        <sc-if value="{{mPending}}" hint-placeholder-val="{{ true }}"><span style="display: flex; gap: 8px; margin-top: 8px"><button class="a-btn" onClick="{{allowMissed}}">允許執行</button><button class="a-btn ghost" onClick="{{skipMissed}}">略過</button></span></sc-if>
+        <sc-if value="{{mSending}}" hint-placeholder-val="{{ false }}"><span class="a-st mute" style="margin-top: 8px">送出中…</span></sc-if>
+        <sc-if value="{{mAllowed}}" hint-placeholder-val="{{ false }}"><span class="a-st ok" style="margin-top: 8px">✓ 已允許</span></sc-if>
+        <sc-if value="{{mSkipped}}" hint-placeholder-val="{{ false }}"><span class="a-st mute" style="margin-top: 8px">— 已略過</span></sc-if>
+        <sc-if value="{{mElsewhere}}" hint-placeholder-val="{{ false }}"><span class="a-st mute" style="margin-top: 8px">⟳ 已由 iPad 處理</span></sc-if>
+      </span>
+    </div>
+    <div class="a-divider"></div>
+    <div class="a-sec">最近動態<sc-if value="{{marks}}" hint-placeholder-val="{{ true }}"><span class="tag-new">提案</span></sc-if></div>
+    <div class="a-row" style="min-height: 52px; padding-top: 8px; padding-bottom: 8px"><span class="a-row-main"><span class="a-row-t" style="font-size: 15px">修復登入頁鍵盤遮住送出鈕</span><span class="a-meta">執行中 · 完成步驟 2</span></span><span class="a-meta">1 分</span></div>
+    <div class="a-row" style="min-height: 52px; padding-top: 8px; padding-bottom: 8px"><span class="a-row-main"><span class="a-row-t" style="font-size: 15px">重構 session store</span><span class="a-st fail">✕ 失敗</span></span><span class="a-meta">昨天</span></div>
+    <div class="a-meta" style="padding: 8px 20px 0">已讀不代表已處理：項目只會在回答、允許或略過後離開這裡。</div>
+  </div>
+</sc-if>
+
+<sc-if value="{{menu}}" hint-placeholder-val="{{ false }}">
+  <button class="a-scrim" aria-label="關閉選單" onClick="{{closeMenu}}" style="border: 0"></button>
+  <div class="a-sheet" role="dialog" aria-label="更多">
+    <div class="a-grab"></div>
+    <button class="a-row" style="min-height: 56px; align-items: center" onClick="{{demo}}"><span class="a-row-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></span><span class="a-row-main"><span class="a-row-t">排程</span></span><span class="a-meta">1 個錯過</span></button>
+    <button class="a-row" style="min-height: 56px; align-items: center" onClick="{{demo}}"><span class="a-row-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16v-5a6 6 0 0112 0v5l2 2H4z"/></svg></span><span class="a-row-main"><span class="a-row-t">通知設定</span></span><span class="a-meta">已啟用</span></button>
+    <button class="a-row" style="min-height: 56px; align-items: center" onClick="{{demo}}"><span class="a-row-ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/></svg></span><span class="a-row-main"><span class="a-row-t">設定</span><span class="a-row-s">gateway、記憶提案、解除配對</span></span></button>
+    <button class="a-row" style="min-height: 56px; align-items: center" onClick="{{goPush}}"><span class="a-row-ic">π</span><span class="a-row-main"><span class="a-row-t">示範：從系統通知進入</span></span></button>
+  </div>
+</sc-if>
+
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+  <div class="a-toast" role="status"><span style="flex: 1">{{toast}}</span></div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"start":{"editor":"enum","options":["chat","work","session","thread","reader","push"],"default":"chat"},"kb":{"editor":"boolean","default":false},"marks":{"editor":"boolean","default":true},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  toastMsg(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: null }), 2600);
+  }
+  go(screen, extra) {
+    this.setState(Object.assign({ screen: screen, sheet: false, menu: false }, extra || {}));
+  }
+  renderVals() {
+    const s = this.state || {};
+    const p = this.props || {};
+    const screen = s.screen || p.start || 'chat';
+    const kb = s.kb !== undefined ? s.kb : (p.kb === true || p.kb === 'true' || p.kb === '1');
+    const marks = !(p.marks === false || p.marks === 'false');
+    const q = s.q || 'pending';
+    const pick = s.pick === undefined ? 0 : s.pick;
+    const missed = s.missed || 'pending';
+    const mode = s.mode || 'steer';
+    const from = s.from || 'work';
+    const labels = ['只重跑失敗的 3 個案例', '全部重跑', '先不要重跑，只給我報告'];
+    const pendingCount = (q === 'answered' ? 0 : 1) + (missed === 'pending' || missed === 'sending' ? 1 : 0);
+    const setMissed = (v) => {
+      this.setState({ missed: 'sending' });
+      setTimeout(() => this.setState({ missed: v }), 900);
+    };
+    return {
+      marks: marks,
+      isChat: screen === 'chat', isWork: screen === 'work', isSession: screen === 'session',
+      isThread: screen === 'thread', isReader: screen === 'reader', isPush: screen === 'push',
+      kb: kb, noKb: !kb,
+      sheet: !!s.sheet, menu: !!s.menu, loading: !!s.loading,
+      hasToast: !!s.toast, toast: s.toast || '',
+      pendingCount: pendingCount,
+      otherPending: missed === 'pending' ? 1 : 0,
+      mPending: missed === 'pending', mSending: missed === 'sending', mAllowed: missed === 'allowed',
+      mSkipped: missed === 'skipped', mElsewhere: missed === 'elsewhere',
+      progOpen: !!s.progOpen, runOpen: s.runOpen === undefined ? false : s.runOpen,
+      bar3: q === 'answered' ? 'd' : 'w',
+      step3Cls: q === 'answered' ? 'a-st run' : 'a-st wait',
+      step3Text: q === 'answered' ? '◐ 重新執行失敗案例' : '◆ 重新執行 · 等待你回答',
+      sessionStatus: q === 'answered' ? '◐ 執行中' : '◆ 等待你回答',
+      backLabel: from === 'chat' ? '聊天' : '工作',
+      qOpen: q !== 'answered', qDone: q === 'answered', qSending: q === 'sending',
+      answerLabel: q === 'sending' ? '送出中…' : '送出答案',
+      options: labels.map((label, i) => ({
+        label: label, on: i === pick ? 'true' : 'false', cls: i === pick ? 'on' : '',
+        pick: () => this.setState({ pick: i })
+      })),
+      composerCls: kb ? 'a-composer-in' : 'a-composer-in ph',
+      composerText: kb ? '逾時改成 5 秒再跑' : (mode === 'steer' ? '引導目前的執行…' : '這輪結束後要做的事…'),
+      modeLabel: mode === 'steer' ? '引導目前執行' : '這輪結束後送出',
+      cardCls: s.flash ? 'a-card flash' : 'a-card',
+      threadDraft: s.flash ? '再補一列：鍵盤與 IME 處理' : '回覆…',
+      demo: () => this.toastMsg('原型示範：此入口保留，畫面於第二輪展開'),
+      goChat: () => this.go('chat'),
+      goWork: () => this.go('work'),
+      goPush: () => this.go('push'),
+      openMenu: () => this.setState({ menu: true }),
+      closeMenu: () => this.setState({ menu: false }),
+      openSheet: () => this.setState({ sheet: true }),
+      closeSheet: () => this.setState({ sheet: false }),
+      openThread: () => this.go('thread', { flash: false }),
+      openReader: () => this.go('reader'),
+      closeReader: () => { this.go('thread', { flash: true }); this.toastMsg('已回到你離開的位置 · 草稿保留'); },
+      openSessionFromWork: () => this.go('session', { from: 'work' }),
+      openSessionFromSheet: () => this.go('session', { from: screen === 'chat' || screen === 'thread' ? 'chat' : 'work' }),
+      backFromSession: () => this.go(from === 'chat' ? 'chat' : 'work', { kb: false }),
+      toggleProg: () => this.setState({ progOpen: !s.progOpen }),
+      toggleRun: () => this.setState({ runOpen: !s.runOpen }),
+      toggleKb: () => this.setState({ kb: !kb }),
+      toggleMode: () => this.setState({ mode: mode === 'steer' ? 'follow' : 'steer' }),
+      sendDraft: () => { this.setState({ kb: false }); this.toastMsg(mode === 'steer' ? '已送出引導：會在目前工具步驟完成後加入' : '已排入：這輪結束後送出'); },
+      stop: () => this.toastMsg('停止目前工作（不保證停止所有背景工作 / teammates）'),
+      answer: () => {
+        if (q !== 'pending') return;
+        this.setState({ q: 'sending' });
+        setTimeout(() => this.setState({ q: 'answered' }), 1000);
+      },
+      allowMissed: () => setMissed('allowed'),
+      skipMissed: () => setMissed('skipped'),
+      pushQuestion: () => {
+        this.setState({ loading: true });
+        setTimeout(() => this.setState({ loading: false, screen: 'session', from: 'work', q: 'pending', kb: false }), 1200);
+      },
+      pushMissed: () => {
+        this.setState({ loading: true });
+        setTimeout(() => this.setState({ loading: false, screen: 'work', missed: 'elsewhere' }), 1100);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

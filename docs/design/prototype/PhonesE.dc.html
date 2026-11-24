@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>E 手機畫面</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-c.css">
+<link rel="stylesheet" href="./pirc-d.css">
+<link rel="stylesheet" href="./pirc-e.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 3146px; height: 7192px; box-sizing: border-box; padding: 40px; background: #EEF0F3; display: flex; flex-direction: column; gap: 56px; font-family: -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif; color: #0F1115">
+  <sc-for list="{{rows}}" as="row" hint-placeholder-count="6">
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <div style="font-size: 24px; line-height: 32px; font-weight: 700">{{row.title}}</div>
+      <div style="display: flex; gap: 56px">
+        <sc-for list="{{row.items}}" as="sc" hint-placeholder-count="7">
+          <div style="width: 390px; display: flex; flex-direction: column; gap: 16px">
+            <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px">
+              <div style="font-size: 19px; line-height: 26px; font-weight: 600">{{sc.title}}</div>
+              <div style="font-size: 13.5px; line-height: 19px; color: #61666B">{{sc.sub}}</div>
+            </div>
+            <div style="width: 390px; height: 844px; border-radius: 36px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,.12), 0 16px 48px rgba(15,17,21,.10)">
+              <dc-import name="PhoneE" start="{{sc.start}}" dark="{{sc.dark}}" hint-size="390px,844px"></dc-import>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3146,"height":7192}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const it = (title, sub, start, dark) => ({ title: title, sub: sub, start: start, dark: !!dark });
+    return {
+      rows: [
+        { title: '分頁：聊天、工作、動態分開', items: [
+          it('E1 · 聊天', '頭像右下：三點＝工作中，灰點＝無法工作', 'chats'),
+          it('E2 · 工作', '依專案分組；沒有頭像，From 標出誰在協調', 'works'),
+          it('E3 · 工作 · 需要你', '回答、核准、驗收；處理完才離開', 'worksNeed'),
+          it('E4 · 工作 · pots 開的', '可以只看你自己開的，或只看 pots 開的', 'worksPots'),
+          it('E5 · 動態', 'pots 做的每件事：私訊、交辦、送出指示、讀取、調整思考程度', 'log'),
+          it('E6 · 新增', '新增 pots、建立群組', 'newMenu')
+        ] },
+        { title: 'pots：建立（四步）與對話', items: [
+          it('E7 · 新增 ① 外觀與個性', '頭像、名字、個性；個性不給權限', 'newPots1'),
+          it('E8 · 新增 ② 工作內容', '簡介、工作說明、負責的事', 'newPotsWork'),
+          it('E9 · 新增 ③ 能做什麼', '權限、私訊其他 pots、開工位置、額度（金額或 token）', 'newPots2'),
+          it('E10 · 新增 ④ 模型', '主模型＋備援、思考程度與自動調整、開工作可用的模型', 'newPots3'),
+          it('E11 · 和小管家的對話', '決定卡；它開的工作是一張卡', 'chat'),
+          it('E12 · pots 資料', '右上「設定」打開它的完整設定', 'profile'),
+          it('E13 · 暫停（只提示）', '哪些暫停、哪些照常；什麼都不移交', 'pause')
+        ] },
+        { title: '交接、封存／刪除與 pots 的視角', items: [
+          it('E14 · 交接（pots 提議）', '不必移除也能交接；pots 提議要你確認', 'handoverProposed'),
+          it('E15 · 封存或刪除', '每一項先選交給誰，再列出會失效與保留的', 'retire'),
+          it('E16 · 展開細節', '需要什麼權限；接手者不夠時標出', 'retireDetail'),
+          it('E17 · 交給誰', '每位候選者的權限是否足夠', 'pick'),
+          it('E18 · 測試員的視角', '它看到的聊天列表與它協調的工作', 'pov'),
+          it('E19 · 視角 · 對工作送出的訊息', '右邊是測試員送進工作的指示', 'povWork'),
+          it('E20 · 視角 · pots 之間的私訊', '交辦也記在私訊裡', 'povDm')
+        ] },
+        { title: '側欄與設定', items: [
+          it('E21 · 側欄', '只有主機；底部是設定按鈕和亮暗切換', 'drawer'),
+          it('E22 · 設定', 'AI、通知與權限、語言、外觀、文字大小、資料、關於', 'settings'),
+          it('E23 · 設定 · pots', '合計上限（金額／token）、動態保存；所有 pots', 'potsList'),
+          it('E24 · 小管家的設定', '建立時的四步都在這裡改，含私訊', 'potsEdit'),
+          it('E25 · 核准模型', '拒絕、拒絕並說明原因、允許這一次', 'modelOk'),
+          it('E26 · 拒絕並說明原因', '原因送回和小管家的對話', 'modelReason'),
+          it('E27 · 動態 · 研究員', '自動調整思考程度也記下原因', 'logResearcher')
+        ] },
+        { title: '使用者與用量（側欄最下面）', items: [
+          it('E28 · 使用者與用量', '總覽、token 活動、誰用了多少、用了哪些模型', 'me'),
+          it('E29 · token 活動 · 每週', '最近 12 週', 'meWeek'),
+          it('E30 · token 活動 · 累計', '從開始使用到現在', 'meTotal'),
+          it('E31 · 編輯個人資料', '頭像與名字；pots 會用這個名字稱呼你', 'editMe'),
+          it('E28 · 深色', '', 'me', true)
+        ] },
+        { title: '群組與 pots 開的工作', items: [
+          it('E32 · 建立群組', '頭像、名稱、成員、主持、綁定專案', 'newGroup'),
+          it('E33 · 群組對話', '主持接話並交給研究員；@ 誰就由誰回', 'group'),
+          it('E34 · @ 成員', '列出各自的權限與額度', 'mention'),
+          it('E35 · 群組資訊', '權限不合併', 'groupInfo'),
+          it('E36 · pots 開的工作', '沿用 D：From 測試員、接管', 'work2')
+        ] },
+        { title: '深色', items: [
+          it('E1 · 深色', '', 'chats', true),
+          it('E21 · 深色', '', 'drawer', true),
+          it('E5 · 深色', '', 'log', true),
+          it('E19 · 深色', '', 'povWork', true),
+          it('E16 · 深色', '', 'retireDetail', true),
+          it('E22 · 深色', '', 'settings', true)
+        ] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

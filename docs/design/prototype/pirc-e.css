@@ -1,0 +1,295 @@
+/* pirc · direction E — pots as contacts & groups. Loads after pirc-c.css and pirc-d.css. */
+
+/* avatar palette: identity only, never status. Desaturated to sit beside accent #4B6BA6 */
+.pc{--av1:#5A6E93;--av2:#4D8174;--av3:#A26A55;--av4:#7C6690;--av5:#7A7650;--av-ink:#fff}
+.pc.dark{--av1:#8EA3CC;--av2:#7FB3A5;--av3:#CF9A84;--av4:#AE98C3;--av5:#B3AE82;--av-ink:#141416}
+
+.c-phone.e-grouped,.e-grouped{background:var(--bg-grouped)}
+.e-grouped .c-wrap{background:var(--bg-grouped)}
+
+/* avatars */
+.e-av{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;flex:none;position:relative;background:var(--av1);color:var(--av-ink);font-size:18px;font-weight:600;line-height:1}
+.e-av.a1{background:var(--av1)} .e-av.a2{background:var(--av2)} .e-av.a3{background:var(--av3)} .e-av.a4{background:var(--av4)} .e-av.a5{background:var(--av5)}
+.e-av.me{background:var(--bg-hover-strong);color:var(--text-2)}
+.e-av.sm{width:28px;height:28px;font-size:12px}
+.e-av.md{width:36px;height:36px;font-size:14px}
+.e-av.lg{width:88px;height:88px;font-size:34px}
+.e-av.work{border-radius:14px;background:var(--bg-hover-strong);color:var(--text-2)}
+.e-av.work.md{border-radius:10px}
+.e-av .st{position:absolute;right:0;bottom:0;width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 2.5px var(--bg)}
+.e-grouped .e-av .st{box-shadow:0 0 0 2.5px var(--bg-grouped)}
+.e-av .st.ongoing{background:var(--accent)} .e-av .st.wait{background:var(--warning)} .e-av .st.off{background:var(--faint)}
+.e-avg{width:48px;height:48px;position:relative;flex:none}
+.e-avg .e-av{width:32px;height:32px;font-size:13px;position:absolute;box-shadow:0 0 0 2px var(--bg)}
+.e-avg .e-av:first-child{left:0;top:0}
+.e-avg .e-av:nth-child(2){right:0;bottom:0}
+.e-avg.sm{width:32px;height:32px}
+.e-avg.sm .e-av{width:22px;height:22px;font-size:10px}
+
+/* top bar title with avatar (chat header) */
+.e-head{display:flex;align-items:center;gap:8px;min-width:0;border:0;background:transparent;padding:0;text-align:left;flex:1}
+.e-head .tx{display:flex;flex-direction:column;min-width:0}
+.e-head b{font-size:16px;line-height:22px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.e-head small{font-size:12px;line-height:16px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-phone .c-top.e-top-l .c-ib:first-child{margin-right:0}
+
+/* search + filters */
+.e-search{flex:none;margin:2px 16px 8px;height:40px;border-radius:12px;background:var(--bg-hover);display:flex;align-items:center;gap:8px;padding:0 12px;color:var(--muted);font-size:15px;border:0;text-align:left}
+.e-filters{flex:none;display:flex;gap:6px;padding:0 16px 6px;overflow-x:auto;scrollbar-width:none}
+.e-f{height:34px;padding:0 14px;border-radius:999px;border:0;background:var(--bg-hover);font-size:14px;color:var(--text-2);display:inline-flex;gap:6px;align-items:center;white-space:nowrap;flex:none}
+.e-f.on{background:var(--ink);color:var(--bg);font-weight:500}
+.e-f .n{font-size:12px;font-weight:600;color:var(--warning-ink)}
+.e-f.on .n{color:inherit}
+
+/* chat list row */
+.e-row{width:100%;min-height:72px;display:flex;align-items:center;gap:12px;padding:8px 16px;border:0;background:transparent;text-align:left;position:relative}
+.e-row:hover{background:var(--bg-hover)}
+.e-row::before{content:"";position:absolute;top:0;left:76px;right:0;height:1px;background:var(--line)}
+.e-row.first::before{display:none}
+.e-row-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.e-row-top{display:flex;align-items:baseline;gap:6px;min-width:0}
+.e-row-top b{font-size:16px;line-height:22px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.e-row-top .role{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.e-row-top .tm{font-size:12px;color:var(--muted);flex:none;margin-left:auto;font-variant-numeric:tabular-nums}
+.e-row-sub{display:flex;align-items:center;gap:8px;min-width:0}
+.e-row-sub span.p{flex:1;min-width:0;font-size:14px;line-height:20px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.e-row-sub span.p.warn{color:var(--warning-ink)}
+.e-unread{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--ink);color:var(--bg);font-size:11.5px;font-weight:700;display:grid;place-items:center;flex:none}
+.e-unread.attn{background:var(--warning-soft);color:var(--warning-ink)}
+.e-kind{font-size:11px;font-weight:600;letter-spacing:.02em;color:var(--muted);flex:none}
+.e-projh{width:100%;display:flex;align-items:center;gap:8px;padding:16px 16px 4px;border:0;background:transparent;text-align:left;font-size:12.5px;font-weight:600;letter-spacing:.04em;color:var(--muted)}
+.e-projh .grow{flex:1}
+.e-addrow{width:100%;min-height:60px;display:flex;align-items:center;gap:12px;padding:8px 16px;border:0;background:transparent;text-align:left;font-size:15px;color:var(--ink)}
+.e-addrow .e-av{background:var(--bg-hover);color:var(--ink)}
+
+/* bubbles (pots conversations only — sessions keep the document-style thread) */
+.e-thread{padding:8px 16px 20px;display:flex;flex-direction:column;gap:10px}
+.e-day{align-self:center;font-size:12px;color:var(--muted);padding:4px 0}
+.e-msg{display:flex;gap:8px;align-items:flex-end;max-width:100%}
+.e-msg .e-av{margin-bottom:2px}
+.e-msg-col{display:flex;flex-direction:column;gap:4px;min-width:0;max-width:282px}
+.e-name{font-size:12px;line-height:16px;color:var(--muted);display:flex;align-items:center;gap:6px;padding-left:4px}
+.e-host{height:16px;padding:0 6px;border-radius:999px;background:var(--bg-hover-strong);color:var(--text-2);font-size:10.5px;font-weight:600;display:inline-flex;align-items:center}
+.e-bub{background:var(--bg-subtle);border-radius:18px 18px 18px 6px;padding:9px 13px;font-size:15px;line-height:22px;color:var(--ink);word-break:break-word}
+.e-bub small{display:block;font-size:12.5px;line-height:18px;color:var(--muted);padding-top:4px}
+.e-me{align-self:flex-end;max-width:82%;padding:9px 14px;border-radius:18px 18px 6px 18px;background:var(--bubble);font-size:15px;line-height:22px}
+.e-at{color:var(--accent-hover);font-weight:600}
+.pc.dark .e-at{color:var(--accent-ink)}
+.e-hand{align-self:center;max-width:92%;font-size:12.5px;line-height:18px;color:var(--text-2);background:var(--bg-hover);border-radius:999px;padding:5px 12px;display:inline-flex;gap:6px;align-items:center;text-align:center}
+.e-hand b{color:var(--ink);font-weight:600}
+.e-indent{margin-left:36px}
+
+/* work (session) card inside a pots conversation */
+.e-work{width:100%;border:0;border-radius:14px;background:var(--bg-layer);box-shadow:var(--shadow-card,var(--shadow-soft));padding:10px 12px;display:flex;gap:10px;align-items:center;text-align:left}
+.e-work .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.e-work .tx b{font-size:14.5px;line-height:20px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.e-work .tx span{font-size:12.5px;line-height:17px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* composer additions */
+.e-hint{font-size:12px;color:var(--muted);padding:0 4px 6px;display:flex;gap:6px;align-items:center}
+.e-pop{position:absolute;left:12px;right:12px;bottom:calc(100% - 2px);background:var(--bg-layer);border-radius:18px;box-shadow:var(--shadow-pop);padding:6px 0;z-index:3}
+.e-pop .e-row{min-height:56px}
+.e-pop .e-row::before{left:60px}
+.e-pop-h{font-size:12px;color:var(--muted);padding:8px 16px 4px}
+
+/* profile */
+.e-prof{display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 16px 8px;text-align:center}
+.e-prof h1{margin:10px 0 0;font-size:22px;line-height:30px;font-weight:600}
+.e-prof p{margin:0;font-size:14px;line-height:20px;color:var(--text-2)}
+.e-prof .chips{display:flex;gap:6px;padding-top:8px;flex-wrap:wrap;justify-content:center}
+.e-acts{display:flex;justify-content:center;gap:8px;padding:8px 16px 4px}
+.e-act{min-width:76px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12.5px;color:var(--text-2);border:0;background:transparent;padding:4px}
+.e-act i{width:48px;height:48px;border-radius:50%;background:var(--bg-layer);display:grid;place-items:center;color:var(--ink);font-style:normal}
+.e-soul{font-size:14px;line-height:21px;color:var(--text-2);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+
+/* create flow */
+.e-swatches{display:flex;gap:10px;justify-content:center;padding:12px 0 4px}
+.e-sw{width:32px;height:32px;border-radius:50%;border:0;padding:0;position:relative}
+.e-sw.on{box-shadow:0 0 0 2px var(--bg-grouped),0 0 0 4px var(--ink)}
+.e-sw.up{background:var(--bg-layer);color:var(--text-2);display:grid;place-items:center}
+.e-in{width:100%;min-height:52px;display:flex;align-items:center;gap:12px;padding:8px 16px;font-size:15.5px;color:var(--ink)}
+.e-in .l{width:72px;flex:none;font-size:14px;color:var(--muted)}
+.e-in .v{flex:1;min-width:0}
+.e-in .v.ph{color:var(--faint)}
+.e-ta{padding:12px 16px;font-size:15px;line-height:23px;color:var(--ink);min-height:96px}
+.e-steps{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums;padding:0 12px}
+.e-check{width:22px;height:22px;border-radius:50%;flex:none;box-shadow:inset 0 0 0 1.5px var(--line-strong);display:grid;place-items:center;color:var(--bg)}
+.e-check.on{background:var(--ink);box-shadow:none}
+.e-cta{flex:none;padding:10px 16px 4px;display:flex;gap:8px}
+.e-preview{margin:0 16px;padding:12px;border-radius:var(--radius-lg);background:var(--bg-layer);display:flex;gap:8px;align-items:flex-end}
+.e-preview .e-bub{background:var(--bg-subtle)}
+.e-row.sel{background:var(--bg-active)}
+.e-row.sel::before,.e-row.sel + .e-row::before{display:none}
+.c-side .e-search{background:var(--bg-hover-strong)}
+
+/* ── E rev 2: tabs, work list driver, activity log, pots point of view, handover ── */
+.e-tabs{flex:none;display:flex;padding:0 8px;background:var(--bg);box-shadow:inset 0 1px 0 var(--line)}
+.e-tab{flex:1;height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;background:transparent;font-size:11.5px;line-height:14px;color:var(--muted);font-weight:500}
+.e-tab.on{color:var(--accent-hover)}
+.pc.dark .e-tab.on{color:var(--accent-ink)}
+.e-tab .ic{position:relative;display:grid;place-items:center;height:24px}
+.e-tab .b{position:absolute;top:-4px;left:14px;min-width:16px;height:16px;border-radius:8px;background:var(--warning);color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;padding:0 4px;box-shadow:0 0 0 2px var(--bg)}
+
+/* who is driving a work conversation */
+.e-av .drv{position:absolute;right:-5px;bottom:-5px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:600;color:var(--av-ink);box-shadow:0 0 0 2px var(--bg)}
+.e-av .drv.a1{background:var(--av1)} .e-av .drv.a2{background:var(--av2)} .e-av .drv.a3{background:var(--av3)} .e-av .drv.a4{background:var(--av4)}
+.e-av .drv.me{background:var(--bg-hover-strong);color:var(--text-2)}
+
+/* activity log */
+.e-favs{flex:none;display:flex;gap:6px;padding:0 16px 8px;overflow-x:auto;scrollbar-width:none}
+.e-fav{flex:none;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px 0 4px;border-radius:999px;background:var(--bg-hover);border:0;font-size:14px;color:var(--text-2);white-space:nowrap}
+.e-fav.all{padding:0 14px}
+.e-fav.on{background:var(--ink);color:var(--bg);font-weight:500}
+.e-fav .e-av{width:28px;height:28px;font-size:12px}
+.e-log{width:100%;display:flex;gap:10px;padding:10px 16px;border:0;background:transparent;text-align:left;align-items:flex-start;position:relative}
+.e-log:hover{background:var(--bg-hover)}
+.e-log .e-av{margin-top:1px}
+.e-log-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.e-log-l1{display:flex;align-items:center;gap:6px;min-width:0;font-size:14px;line-height:20px}
+.e-log-l1 b{font-weight:600;flex:none}
+.e-log-l1 .to{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.e-log-l1 .tm{margin-left:auto;flex:none;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.e-log-q{font-size:13.5px;line-height:20px;color:var(--text-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.e-tag{flex:none;height:20px;padding:0 7px;border-radius:999px;background:var(--bg-hover);font-size:11.5px;font-weight:500;color:var(--text-2);display:inline-flex;align-items:center;white-space:nowrap}
+.e-tag.attn{background:var(--warning-soft);color:var(--warning-ink)}
+.e-tag.dm{background:var(--bg-hover-strong)}
+
+/* pots point of view (read-only simulation) */
+.e-pov{flex:none;margin:0 12px 8px;border-radius:var(--radius-md);padding:9px 12px;display:flex;gap:10px;align-items:center;font-size:13px;line-height:18px;color:var(--text-2);background:var(--bg-subtle)}
+.e-pov b{color:var(--ink);font-weight:600}
+.e-msg.r{flex-direction:row-reverse}
+.e-msg.r .e-msg-col{align-items:flex-end}
+.e-msg.r .e-bub{border-radius:18px 18px 6px 18px}
+.e-msg.r .e-name{padding:0 4px 0 0}
+.e-ro{flex:none;margin:0 12px 8px;border-radius:var(--radius-panel);background:var(--bg-subtle);min-height:52px;display:flex;align-items:center;gap:10px;padding:6px 6px 6px 18px;font-size:14px;color:var(--text-2)}
+
+/* handover items */
+.e-hi{padding:10px 16px 12px;position:relative}
+.e-hi::before{content:"";position:absolute;top:0;left:16px;right:0;height:1px;background:var(--line)}
+.e-hi.first::before{display:none}
+.e-hi-main{width:100%;display:flex;align-items:flex-start;gap:8px;border:0;background:transparent;padding:0;text-align:left;font-size:15px;line-height:21px;color:var(--ink)}
+.e-hi-main b{flex:1;min-width:0;font-weight:500}
+.e-hi-main .e-tag{margin-top:1px}
+.e-hi-main svg{flex:none;margin-top:3px;color:var(--muted);transition:transform .15s}
+.e-hi-main.open svg{transform:rotate(180deg)}
+.e-hi-to{display:flex;align-items:center;gap:8px;padding-top:8px;min-height:36px}
+.e-hi-to .c-meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.e-to{flex:none;height:34px;border-radius:999px;background:var(--bg-hover);border:0;padding:0 10px 0 4px;display:inline-flex;gap:6px;align-items:center;font-size:13.5px;font-weight:500;color:var(--ink)}
+.e-to .e-av{width:26px;height:26px;font-size:11px}
+.e-to.none{padding-left:12px;color:var(--muted)}
+.e-hi-d{margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--bg-subtle);display:flex;flex-direction:column;gap:4px;font-size:13px;line-height:19px;color:var(--text-2)}
+.e-fit{font-size:13px;line-height:19px;padding-top:6px;display:flex;gap:6px;align-items:flex-start}
+.e-fit.ok{color:var(--success-ink)} .e-fit.warn{color:var(--warning-ink)} .e-fit.stop{color:var(--danger)} .e-fit.mute{color:var(--muted)}
+.e-fit i{font-style:normal;flex:none;width:14px}
+.e-rcpt{display:flex;gap:8px;padding:0 16px}
+.e-rcpt button{flex:1;border:0;border-radius:var(--radius-lg);background:var(--bg-layer);padding:12px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;font-size:14px;color:var(--ink)}
+.e-rcpt button small{font-size:12px;line-height:16px;color:var(--muted)}
+.e-rcpt button.on{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.pc .e-check{color:transparent}
+.pc .e-check.on{color:var(--bg)}
+/* tablet: tab rail + list pane + content pane */
+.e-rail{width:76px;flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0 8px;background:var(--bg-sidebar)}
+.e-rail .e-tab{flex:none;width:68px;height:62px;border-radius:14px}
+.e-rail .e-tab.on{background:var(--bg-active)}
+.e-lpane{width:320px;flex:none;display:flex;flex-direction:column;min-height:0;background:var(--bg-sidebar);border-right:1px solid var(--line)}
+.e-lpane .e-row::before{left:76px}
+.e-rpane{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;background:var(--bg);position:relative}
+.e-rpane.e-grouped{background:var(--bg-grouped)}
+.c-tab .c-top{position:relative}
+.e-rpane{padding-right:12px}
+.e-rpane .c-thread{padding-right:20px}
+
+/* ── E rev 3: settings drawer (push, so no icon of the page peeks out cut in half) ── */
+.e-scrim{z-index:1}
+.e-drawer{position:absolute;left:0;top:0;bottom:0;width:310px;z-index:2;background:var(--bg-sidebar);display:flex;flex-direction:column}
+.c-phone :is(.c-top,.e-search,.e-filters,.e-favs,.c-scroll,.c-wrap,.e-tabs,.e-cta):not(.e-drawer *){transition:transform .25s cubic-bezier(.2,0,0,1)}
+.c-phone.e-push :is(.c-top,.e-search,.e-filters,.e-favs,.c-scroll,.c-wrap,.e-tabs,.e-cta):not(.e-drawer *){transform:translateX(310px)}
+.c-tab .e-drawer{width:396px;box-shadow:12px 0 40px rgba(15,17,21,.16)}
+.e-dr-head{flex:none;height:56px;display:flex;align-items:center;gap:10px;padding:0 20px 0 24px}
+.e-dr-head b{font-size:17px;font-weight:600}
+.e-dr-me{margin:4px 0 2px;background:var(--bg-hover);min-height:60px}
+.e-dr-ic{width:22px;flex:none;display:grid;place-items:center;color:var(--text-2)}
+.c-toast{z-index:5}
+@media (prefers-reduced-motion: reduce){.c-phone :is(.c-top,.e-search,.e-filters,.e-favs,.c-scroll,.c-wrap,.e-tabs,.e-cta){transition:none}}
+/* model access: how a pots may use a model when it opens a work conversation */
+.e-mode{flex:none;height:32px;border:0;border-radius:999px;background:var(--bg-hover);padding:0 8px 0 12px;display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap}
+
+/* ── user profile & usage stats (from the bottom of the drawer) ── */
+.e-dr-user{min-height:60px}
+.e-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;margin:0 16px;border-radius:var(--radius-lg);overflow:hidden}
+.e-stat{background:var(--bg-layer);padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.e-stat b{font-size:20px;line-height:26px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.e-stat span{font-size:12.5px;line-height:17px;color:var(--muted)}
+.c-tab .e-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+.e-card{margin:0 16px;padding:14px;border-radius:var(--radius-lg);background:var(--bg-layer)}
+.e-card-h{display:flex;align-items:center;gap:8px;padding-bottom:12px}
+.e-card-h b{flex:1;font-size:15px;font-weight:600}
+.e-tt{border:0;background:transparent;height:32px;padding:0 6px;font-size:13.5px;color:var(--muted);font-weight:500}
+.e-tt.on{color:var(--ink);font-weight:600}
+.e-hm{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,auto);grid-auto-columns:minmax(0,1fr);gap:3px}
+.e-hm i{display:block;aspect-ratio:1;border-radius:3px;background:var(--bg-hover-strong)}
+.e-hm i.l1{background:color-mix(in srgb,var(--accent) 28%,var(--bg-layer))}
+.e-hm i.l2{background:color-mix(in srgb,var(--accent) 52%,var(--bg-layer))}
+.e-hm i.l3{background:color-mix(in srgb,var(--accent) 76%,var(--bg-layer))}
+.e-hm i.l4{background:var(--accent)}
+.e-hm i:hover{box-shadow:0 0 0 2px var(--ink)}
+.e-hm-x{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);padding-top:8px}
+.e-hm-legend{display:flex;align-items:center;gap:3px;font-size:11.5px;color:var(--muted);padding-top:8px;justify-content:flex-end}
+.e-hm-legend i{width:11px;height:11px;border-radius:3px;display:block}
+.e-wk{display:flex;align-items:flex-end;gap:4px;height:120px}
+.e-wk i{flex:1;border-radius:4px 4px 0 0;background:var(--accent);min-height:2px}
+.e-wk i.past{background:color-mix(in srgb,var(--accent) 52%,var(--bg-layer))}
+.e-cum{display:block;width:100%;height:120px}
+.e-br{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:6px 0}
+.e-br .nm{font-size:14px;line-height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.e-br .val{font-size:13px;color:var(--text-2);font-variant-numeric:tabular-nums;grid-row:1 / span 2;grid-column:3}
+.e-br .trk{grid-column:2;height:6px;border-radius:3px;background:var(--bg-hover)}
+.e-br .trk i{display:block;height:100%;border-radius:3px;background:var(--accent)}
+.e-br .e-av,.e-br .e-mic{grid-row:1 / span 2}
+.e-mic{width:28px;height:28px;border-radius:8px;background:var(--bg-hover-strong);color:var(--text-2);display:grid;place-items:center;font-size:11px;font-weight:600}
+
+/* ── rev 7: avatar status = only 「工作中」(three dots) or 「無法工作」(gray dot); available shows nothing ── */
+.e-av .st i{display:none}
+.e-av .st.work{width:auto;height:14px;padding:0 3px;border-radius:7px;right:-7px;bottom:-1px;background:var(--accent);display:flex;align-items:center;gap:2px}
+.e-av .st.work i{display:block;width:3.5px;height:3.5px;border-radius:50%;background:var(--on-accent);animation:e-dots 1.2s ease-in-out infinite}
+.e-av .st.work i:nth-child(2){animation-delay:.15s} .e-av .st.work i:nth-child(3){animation-delay:.3s}
+@keyframes e-dots{0%,60%,100%{opacity:.45}30%{opacity:1}}
+@media (prefers-reduced-motion: reduce){.e-av .st.work i{animation:none;opacity:1}}
+.e-av.md .st.work{height:12px;right:-6px}
+/* work conversations carry no avatar: text starts at the gutter */
+.e-row.noav{min-height:64px}
+.e-row.noav::before{left:16px}
+/* tab bar: room for badges inside the bar */
+.e-tabs{padding:6px 8px 0}
+.e-tab{height:56px}
+.e-tab .ic{height:26px}
+.e-tab .b{top:-3px}
+/* rev 7b: larger green "working" pill */
+.pc{--e-work:var(--success);--e-work-dot:#fff}
+.pc.dark{--e-work-dot:#0f2a1c}
+.e-av .st.work{height:20px;padding:0 5px;border-radius:10px;right:-9px;bottom:-3px;gap:3px;background:var(--e-work)}
+.e-av .st.work i{width:4.5px;height:4.5px;background:var(--e-work-dot)}
+.e-av.md .st.work{height:16px;padding:0 4px;border-radius:8px;right:-8px;bottom:-3px;gap:2.5px}
+.e-av.md .st.work i{width:3.5px;height:3.5px}
+.e-av .st.work{height:16px;padding:0 4px;border-radius:8px;right:-8px;bottom:-2px;gap:2.5px}
+.e-av .st.work i{width:4px;height:4px}
+.e-av.md .st.work{height:14px;padding:0 3.5px;border-radius:7px;right:-7px;bottom:-2px;gap:2px}
+.e-av.md .st.work i{width:3.5px;height:3.5px}
+
+/* ── desktop (1440) and tablet portrait (834) shells ── */
+.e-cpane{flex:1;min-width:0;display:flex;flex-direction:column;min-height:0;background:var(--bg);position:relative}
+.e-cpane.e-grouped,.e-spane.e-grouped{background:var(--bg-grouped)}
+.e-spane{width:400px;flex:none;display:flex;flex-direction:column;min-height:0;background:var(--bg);border-left:1px solid var(--line);position:relative}
+.e-desk .e-lpane{width:340px}
+.e-desk .e-drawer{width:412px}
+.e-desk .c-top,.e-port .c-top{height:64px;padding:0 12px}
+.e-cpane :is(.c-thread,.e-thread){max-width:760px;margin:0 auto;width:100%;box-sizing:border-box}
+.e-cpane .c-wrap{padding:0 24px 16px}
+.e-cpane .c-composer{max-width:760px;margin:0 auto;width:100%}
+.e-cpane .d-reserved,.e-cpane .e-pov,.e-cpane .e-ro{max-width:736px;margin-left:auto;margin-right:auto;width:calc(100% - 24px);box-sizing:border-box}
+.e-cpane.e-grouped .c-scroll{padding-inline:max(0px,calc((100% - 720px) / 2))}
+.e-cpane .e-cta{max-width:720px;margin:0 auto;width:100%;box-sizing:border-box}
+.e-cpane > .c-seg,.e-cpane > .c-gn{max-width:688px;align-self:center;width:calc(100% - 32px)}
+.e-port .e-lpane{flex:1;width:auto;border-right:0;background:var(--bg)}
+.e-port .e-spane{position:absolute;top:24px;right:0;bottom:0;width:440px;z-index:4;border-left:0;box-shadow:var(--shadow-pop)}
+.e-port > .c-scrim{z-index:3}

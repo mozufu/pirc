@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>A 平板與縮小轉換</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-a.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&amp;family=Noto+Serif+TC:wght@600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 2184px; height: 2088px; box-sizing: border-box; padding: 40px; background: #E9E4DA; display: flex; flex-direction: column; gap: 56px; font-family: 'Noto Sans TC', sans-serif; color: #1F1D1A">
+  <div style="display: flex; gap: 56px">
+    <sc-for list="{{row1}}" as="f" hint-placeholder-count="2">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end"><div style="font-size: 20px; line-height: 28px; font-weight: 700">{{f.title}}</div><div style="font-size: 14px; line-height: 20px; color: #57524A">{{f.sub}}</div></div>
+        <div style="{{f.frame}}"><dc-import name="TabletA" layout="{{f.layout}}" result="{{f.result}}" hint-size="1024px,768px"></dc-import></div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display: flex; gap: 56px; align-items: flex-start">
+    <sc-for list="{{row2}}" as="f" hint-placeholder-count="3">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end"><div style="font-size: 20px; line-height: 28px; font-weight: 700">{{f.title}}</div><div style="font-size: 14px; line-height: 20px; color: #57524A">{{f.sub}}</div></div>
+        <div style="{{f.frame}}"><dc-import name="TabletA" layout="{{f.layout}}" result="{{f.result}}" hint-size="768px,1024px"></dc-import></div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2184,"height":2088}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const frame = (w, h) => 'width: ' + w + 'px; height: ' + h + 'px; border-radius: 24px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 12px 40px rgba(40,30,10,.14)';
+    return {
+      row1: [
+        { title: '① 1024 橫向 · 成果開啟', sub: '列表自動收成側欄，換取對話 476 與成果 480 並排', layout: 'wide', result: true, frame: frame(1024, 768) },
+        { title: '② 1024 橫向 · 關閉成果', sub: '列表 300 回到原位；對話正文限寬 640', layout: 'wide', result: false, frame: frame(1024, 768) }
+      ],
+      row2: [
+        { title: '③ 768 直向', sub: '對話 400｜成果 368；列表改成抽屜', layout: 'portrait', result: true, frame: frame(768, 1024) },
+        { title: '④ 分割視窗 507 · 對話', sub: '單欄；草稿與捲動位置保留', layout: 'split', result: false, frame: frame(507, 768) },
+        { title: '⑤ 分割視窗 507 · 成果', sub: '成果變成整頁，「返回聊天」回到原卡片', layout: 'split', result: true, frame: frame(507, 768) }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

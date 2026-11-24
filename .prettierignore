@@ -37,3 +37,6 @@ fixtures/mobile-parity/
 # Public upstream model data and generated Flutter translations.
 scripts/catalog/providers.json
 apps/android/lib/l10n/catalogs.g.dart
+
+# Design handoff from Claude Design, kept exactly as delivered.
+docs/design/

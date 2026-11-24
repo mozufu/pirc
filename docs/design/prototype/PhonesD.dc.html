@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>D 手機畫面</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-c.css">
+<link rel="stylesheet" href="./pirc-d.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 3146px; height: 6168px; box-sizing: border-box; padding: 40px; background: #EEF0F3; display: flex; flex-direction: column; gap: 56px; font-family: -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif; color: #0F1115">
+  <sc-for list="{{rows}}" as="row" hint-placeholder-count="4">
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <div style="font-size: 24px; line-height: 32px; font-weight: 700">{{row.title}}</div>
+      <div style="display: flex; gap: 56px">
+        <sc-for list="{{row.items}}" as="sc" hint-placeholder-count="7">
+          <div style="width: 390px; display: flex; flex-direction: column; gap: 16px">
+            <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px">
+              <div style="font-size: 19px; line-height: 26px; font-weight: 600">{{sc.title}}</div>
+              <div style="font-size: 13.5px; line-height: 19px; color: #61666B">{{sc.sub}}</div>
+            </div>
+            <div style="width: 390px; height: 844px; border-radius: 36px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,.12), 0 16px 48px rgba(15,17,21,.10)">
+              <dc-import name="PhoneD" start="{{sc.start}}" dark="{{sc.dark}}" hint-size="390px,844px"></dc-import>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3146,"height":6168}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const it = (title, sub, start, dark) => ({ title: title, sub: sub, start: start, dark: !!dark });
+    return {
+      rows: [
+        { title: '導覽、新對話與專案', items: [
+          it('D1 · 統一側欄', '沒有聊天／工作切換；pots、需要你處理、專案、其他對話', 'drawer'),
+          it('D2 · 新對話草稿', '輸入框上方顯示這個對話的專案與工作區', 'home'),
+          it('D3 · 工作區設定', '主機、主要資料夾、掛載與實際可做的事；先存在草稿', 'bind'),
+          it('D4 · 專案 · 資源', '共用資料夾與權限；變更前會列出受影響的對話', 'project'),
+          it('D5 · 專案 · 規則', '只有你能改；agent 只能提出修改', 'projectRules'),
+          it('D6 · 專案 · 看板', '有作者的訊息；不會鎖檔案、不給權限', 'projectBoard')
+        ] },
+        { title: '對話、任務與工作區切換', items: [
+          it('D7 · 討論後直接開工', '任務列＋每個任務一行動態；側問標示屬於哪個任務', 'conv'),
+          it('D8 · 訊息要傳給誰', '自動判斷、指定任務、新任務或只是發問', 'route'),
+          it('D9 · 任務詳情', '真實步驟、子工作、產出、被擋住的工作；停止與驗收', 'task'),
+          it('D10 · 工作區面板', '資料夾來源與權限；可用／唯讀／等核准／等資源分開顯示', 'env'),
+          it('D11 · 切換主機前的預覽', '會中斷什麼、留在原主機什麼、新主機缺什麼', 'switch'),
+          it('D12 · 套用中', '先撤銷舊權限，才在新主機開始；對話裡記下這次變更', 'applying'),
+          it('D13 · 原主機離線', '停在等待確認，不會恢復舊權限，也不會先在新主機開工', 'blocked')
+        ] },
+        { title: 'pots、離開與刪除、通知', items: [
+          it('D14 · pots', '狀態與額度、需要你決定、建議、追蹤中的任務、職責', 'pots'),
+          it('D15 · pots 開始任務', '寫下你授權的指示；說清楚會發生什麼', 'potsStart'),
+          it('D16 · pots 協調中的對話', 'From pots 標示；接管前只能回答問題或停止', 'potsConv'),
+          it('D17 · 離開專案預覽', '移除、中斷、保留、仍有的獨立權限分開列', 'leave'),
+          it('D18 · 離開後的對話', '已保存的附件可開；專案檔案連結需要目前權限', 'left'),
+          it('D19 · 刪除專案預覽', '專案擁有 vs 只是引用；先停止再刪除', 'delete'),
+          it('D20 · 通知分類', '依重要性：立即／摘要／不通知', 'notifset')
+        ] },
+        { title: '行事曆（沿用現有功能）', items: [
+          it('D21 · 月', '個人事件是圓點、全天是長條、Agent 任務是菱形；錯過的標黃', 'calMonth'),
+          it('D22 · 週', '長按拖曳只開草稿，按儲存才變更；Agent 任務只標時間點', 'calWeek'),
+          it('D23 · 日', '時間軸與目前時間線；錯過的執行留在原位', 'calDay'),
+          it('D24 · 清單', '接下來的事件，下方是所有 Agent 任務', 'calList'),
+          it('D25 · 個人事件', '時區、全天、重複、最多 5 個提醒；不會啟動 agent', 'calEvent'),
+          it('D26 · 重複事件範圍', '只有這一次／這一次和之後／整個系列', 'calScope')
+        ] },
+        { title: '行事曆 · 因架構調整而改', items: [
+          it('D27 · Agent 任務', '執行目標改成專案＋工作區；錯過的要你允許才補跑', 'calAgent'),
+          it('D28 · 執行目標已失效', '目標被移除時暫停並要求重選，不會自動換地方', 'calRepair'),
+          it('D29 · Agent 行事曆權限', '讀取與提出變更分開，預設都關閉', 'calAccess'),
+          it('D30 · 對話中的變更提議', '確認前重新檢查版本；只套用一次', 'calProp')
+        ] },
+        { title: '深色', items: [
+          it('D7 · 深色', '', 'conv', true),
+          it('D14 · 深色', '', 'pots', true),
+          it('D1 · 深色', '', 'drawer', true),
+          it('D10 · 深色', '', 'env', true),
+          it('D21 · 深色', '', 'calMonth', true),
+          it('D22 · 深色', '', 'calWeek', true)
+        ] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

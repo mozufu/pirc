@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>D 平板版型</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-c.css">
+<link rel="stylesheet" href="./pirc-d.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="{{rootCls}}" style="width: 1024px; height: 768px; padding: 24px 0 12px; box-sizing: border-box">
+
+  <sc-if value="{{showSide}}" hint-placeholder-val="{{ true }}">
+  <nav class="c-side" aria-label="側欄">
+    <div class="c-brand"><span class="c-mark sm">π</span>pirc<span style="flex: 1"></span><button class="c-ib" aria-label="搜尋" onClick="{{noop}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button></div>
+    <div class="c-scroll" style="padding: 0 12px">
+      <button class="c-drow c-new" onClick="{{noop}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.4 2.6a1 1 0 0 1 3 3L12.4 14.6a2 2 0 0 1-.85.5l-2.87.84a.5.5 0 0 1-.62-.62l.84-2.87a2 2 0 0 1 .5-.85z"/></svg><span class="c-row-t" style="flex: 1">新對話</span></button>
+      <button class="{{potsRowCls}}" onClick="{{toPots}}"><span class="d-pots-ic">π</span><span class="c-row-main"><span class="c-row-t" style="font-weight: 500">pots</span><span class="c-row-s">1 項待決定 · 2 個建議</span></span><span class="d-count attn">1</span></button>
+      <button class="c-drow" onClick="{{noop}}"><span style="width: 18px; display: grid; place-items: center"><span class="state-dot wait"></span></span><span class="c-row-main"><span class="c-row-t">需要你處理</span></span><span class="d-count attn">2</span></button>
+      <div class="c-sec" style="padding-left: 12px">專案</div>
+      <button class="d-proj" onClick="{{noop}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m6 9 6 6 6-6"/></svg><span class="c-row-t" style="flex: 1; font-weight: 500">pirc 行動版</span><span class="state-dot ongoing"></span></button>
+      <button class="{{convRowCls}}" onClick="{{toConv}}"><span class="c-row-main"><span class="c-row-t">修復登入頁鍵盤遮住送出鈕</span><span class="c-row-s">2 個任務 · 1 個等待</span></span></button>
+      <button class="c-drow d-sub" onClick="{{noop}}"><span class="c-row-main"><span class="c-row-t">Flutter 與 Compose 平板適配</span></span></button>
+      <button class="d-proj" onClick="{{noop}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 18 6-6-6-6"/></svg><span class="c-row-t" style="flex: 1; font-weight: 500">旅行</span><span class="c-meta">2</span></button>
+      <div class="c-sec" style="padding-left: 12px">其他對話</div>
+      <button class="c-drow" onClick="{{noop}}"><span class="state-dot wait"></span><span class="c-row-main"><span class="c-row-t">檢查 nightly test</span><span class="c-row-s">From pots · 需要你回答</span></span></button>
+    </div>
+    <div class="c-foot"><button class="{{calRowCls}}" onClick="{{toCal}}"><span class="c-row-t" style="flex: 1">行事曆</span><span class="c-st wait">1 錯過</span></button><button class="c-drow" onClick="{{noop}}"><span class="c-row-t" style="flex: 1">設定</span><span class="c-meta" style="display: flex; align-items: center; gap: 5px"><span class="state-dot done"></span>已連線</span></button></div>
+  </nav>
+  </sc-if>
+
+  <sc-if value="{{isConv}}" hint-placeholder-val="{{ true }}">
+  <main class="c-pane" style="{{chatStyle}}">
+    <div class="c-top" style="height: 64px; padding-top: 4px">
+      <sc-if value="{{taskOpen}}" hint-placeholder-val="{{ false }}"><button class="c-ib" aria-label="開啟側欄" onClick="{{closeTask}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button></sc-if>
+      <div class="c-title" style="align-items: flex-start; padding-left: 10px"><b>修復登入頁鍵盤遮住送出鈕</b><span class="d-env"><span class="state-dot done"></span>pirc 行動版 · Laptop · ~/pirc · +2</span></div>
+      <button class="c-ib" aria-label="工作面板" onClick="{{noop}}"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/></svg></button>
+    </div>
+    <div class="d-tasks" style="padding: 0 16px 8px">
+      <button class="{{taskACls}}" onClick="{{openTask}}"><b><span class="d-tl">A</span>修復鍵盤遮擋</b><span>◐ 執行中 · 步驟 3 / 5</span></button>
+      <button class="d-task wait" onClick="{{noop}}"><b><span class="d-tl">B</span>更新元件文件</b><span>◷ 等待寫入：A 持有 src/login</span></button>
+    </div>
+    <div class="c-scroll" style="display: flex; flex-direction: column-reverse">
+      <div class="c-thread" style="max-width: 680px; margin: 0 auto; width: 100%; padding: 8px 24px 20px">
+        <div class="c-user">好，照這個方向改，順便更新元件文件。</div>
+        <div class="d-taskcard"><div class="t">已建立 2 個任務</div><div class="d-kv"><span>A 修復鍵盤遮擋</span><span>B 更新元件文件</span><span>Laptop · ~/pirc · 讀寫</span></div></div>
+        <button class="d-act" style="border: 0; text-align: left" onClick="{{openTask}}"><span class="d-tl">A</span><span class="grow"><b>編輯 LoginScreen.kt、login_test.dart</b> · 3 個工具步驟</span><span class="c-st run">◐ 執行中</span></button>
+        <div class="d-act"><span class="d-tl">B</span><span class="grow" style="color: var(--warning-ink)">等待寫入：任務 A 正在寫 apps/web/src/login</span></div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px"><span class="d-tag">問題 · 關於 <span class="d-tl">A</span></span><div class="c-user" style="max-width: 100%">為什麼要改 viewInsets，不能直接加 padding 嗎？</div></div>
+        <div class="c-asst"><span class="d-tag" style="margin-bottom: 6px">回答 · 關於 <span class="d-tl">A</span> · A 仍在執行</span><p>固定 padding 在不同鍵盤高度和候選列下會失準；viewInsets 是系統回報的實際高度。</p></div>
+      </div>
+    </div>
+    <div class="c-wrap" style="padding: 0 20px 12px">
+      <div class="c-composer" style="max-width: 720px; margin: 0 auto; width: 100%">
+        <div class="d-targetrow"><span class="c-meta">傳給</span><button class="d-target"><b>自動判斷</b></button></div>
+        <div class="c-ta ph">繼續對話，或指示某個任務…</div>
+        <div class="c-tools"><button class="c-tb" aria-label="附件"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button><button class="c-sel">預設模型 · 中</button><span style="flex: 1"></span><button class="c-send off" aria-label="送出" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7M12 19V5"/></svg></button></div>
+      </div>
+    </div>
+  </main>
+  </sc-if>
+
+  <sc-if value="{{taskOpen}}" hint-placeholder-val="{{ false }}">
+  <section class="c-pane c-pane-r" style="width: 544px; flex: none" aria-label="任務 A">
+    <div class="c-top" style="height: 64px; padding-top: 4px">
+      <button class="c-ib" aria-label="關閉任務" onClick="{{closeTask}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      <div class="c-title" style="align-items: flex-start"><b>任務 A · 修復鍵盤遮擋</b><small>來自你在此對話的要求 · 10:12</small></div>
+    </div>
+    <div class="c-scroll">
+      <div class="d-hero"><div style="display: flex; gap: 6px"><span class="d-chip run"><span class="state-dot ongoing"></span>執行中</span><span class="d-chip">Laptop · ~/pirc · 讀寫</span></div></div>
+      <div class="c-sec">進度 <span class="n">2/5</span></div>
+      <div class="d-ms">
+        <div class="d-ms-i"><span class="c-st ok" style="width: 16px">✓</span><span>找出原因</span></div>
+        <div class="d-ms-i"><span class="c-st ok" style="width: 16px">✓</span><span>改用 viewInsets 調整版面</span></div>
+        <div class="d-ms-i"><span class="c-st run" style="width: 16px">◐</span><span>更新 widget 測試<small>login_test.dart · 2 / 4 通過</small></span></div>
+        <div class="d-ms-i"><span class="c-st mute" style="width: 16px">○</span><span>執行完整測試</span></div>
+        <div class="d-ms-i"><span class="c-st mute" style="width: 16px">○</span><span>等你驗收</span></div>
+      </div>
+      <div class="c-sec">產出</div>
+      <div class="c-row"><span class="c-row-main"><span class="c-row-t">3 個檔案變更</span><span class="c-row-s">LoginScreen.kt、login_test.dart、keyboard.md</span></span><span class="c-add">+42</span><span class="c-del">−18</span></div>
+      <div class="c-sec">被它擋住的工作</div>
+      <div class="d-wait"><b>任務 B 在等 A 寫完</b> apps/web/src/login。</div>
+    </div>
+    <div style="flex: none; display: flex; gap: 8px; padding: 10px 16px 4px; border-top: 1px solid var(--line)"><button class="c-btn" style="flex: 1">暫停</button><button class="c-btn danger" style="flex: 1">停止任務…</button><button class="c-btn dark" style="flex: 1" disabled>驗收</button></div>
+  </section>
+  </sc-if>
+
+
+  <sc-if value="{{isCal}}" hint-placeholder-val="{{ false }}">
+  <main class="c-pane" style="{{chatStyle}}">
+    <div class="c-top" style="height: 64px; padding-top: 4px; gap: 8px">
+      <sc-if value="{{calAgent}}" hint-placeholder-val="{{ false }}"><button class="c-ib" aria-label="開啟側欄" onClick="{{toCal}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></button></sc-if>
+      <div class="c-title" style="align-items: flex-start; padding-left: 16px"><b>11/1 – 11/7</b><small>Asia/Taipei</small></div>
+      <div class="c-seg" style="{{segStyle}}" role="tablist" aria-label="檢視"><button role="tab" aria-selected="false">月</button><button class="on" role="tab" aria-selected="true">週</button><button role="tab" aria-selected="false">日</button><button role="tab" aria-selected="false">清單</button></div>
+      <button class="c-ib" aria-label="Agent 行事曆權限" onClick="{{noop}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.7 9a1 1 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/></svg></button>
+      <button class="c-ib" aria-label="新增行事曆項目" onClick="{{noop}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+    </div>
+    <div class="k-wk" style="grid-template-columns: 52px repeat(7, minmax(0, 1fr)); padding: 4px 16px 8px 0"><span></span><sc-for list="{{wdays}}" as="w" hint-placeholder-count="7"><span class="{{w.cls}}"><span style="display: block">{{w.dow}}</span><span class="t">{{w.n}}</span></span></sc-for></div>
+    <div class="c-scroll">
+      <div class="k-wgrid" style="grid-template-columns: 52px repeat(7, minmax(0, 1fr)); padding-right: 16px">
+        <div><sc-for list="{{whours}}" as="h" hint-placeholder-count="13"><div class="k-wh" style="height: 48px">{{h}}</div></sc-for></div>
+        <sc-for list="{{wdays}}" as="w" hint-placeholder-count="7">
+          <div class="k-wcol" style="height: 624px; background: repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px 48px)">
+            <sc-for list="{{w.items}}" as="i" hint-placeholder-count="2">
+              <sc-if value="{{i.task}}" hint-placeholder-val="{{ false }}"><button class="k-wtask" style="{{i.style}}" onClick="{{i.open}}"><span class="{{i.dia}}" style="{{i.diaStyle}}"></span>{{i.t}}</button></sc-if>
+              <sc-if value="{{i.ev}}" hint-placeholder-val="{{ true }}"><div class="k-wev" style="{{i.style}}">{{i.t}}</div></sc-if>
+            </sc-for>
+          </div>
+        </sc-for>
+        <div class="k-now" style="top: 161px; left: 52px"></div>
+      </div>
+      <div class="c-meta" style="padding: 12px 16px">個人事件是色塊；Agent 任務是時間點（菱形）。長按拖曳只開草稿，按「儲存」才會變更。</div>
+    </div>
+  </main>
+  </sc-if>
+
+  <sc-if value="{{calAgent}}" hint-placeholder-val="{{ false }}">
+  <section class="c-pane c-pane-r" style="width: 544px; flex: none" aria-label="Agent 任務">
+    <div class="c-top" style="height: 64px; padding-top: 4px">
+      <button class="c-ib" aria-label="關閉" onClick="{{toCal}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      <div class="c-title" style="align-items: flex-start"><b>清理舊分支</b><small>Agent 任務 · 每月 1 日 10:00</small></div>
+    </div>
+    <div class="c-scroll">
+      <div class="d-banner warn" style="margin: 4px 16px 4px"><span style="flex: 1"><b>已暫停：執行目標已無法使用。</b>原本在「pirc 行動版」· Laptop · ~/pirc 執行，那個工作區已從專案移除。不會自動改到別的地方，選好新目標後才會恢復。</span></div>
+      <div class="d-prev-h">選擇新的執行目標 <sc-if value="{{marks}}" hint-placeholder-val="{{ true }}"><span class="tag-wip" style="margin-left: 6px">開發中</span></sc-if></div>
+      <div role="radiogroup" aria-label="執行目標">
+        <sc-for list="{{targets}}" as="t" hint-placeholder-count="3">
+          <button class="{{t.cls}}" role="radio" aria-checked="{{t.on}}" onClick="{{t.pick}}"><span class="c-mark-r"></span><span class="c-row-main"><span class="c-row-t">{{t.title}}</span><span class="c-row-s" style="white-space: normal">{{t.sub}}</span></span></button>
+        </sc-for>
+      </div>
+      <div class="c-meta" style="padding: 6px 16px 0">每次執行都會開一個新對話，使用所選工作區的權限；不會繼承原本對話的核准。</div>
+      <div class="d-prev-h">指示</div>
+      <div class="d-note">刪除已合併超過 30 天的本地分支；刪除前列出清單等我確認。</div>
+      <div class="d-prev-h">執行紀錄</div>
+      <div class="c-row"><span class="c-st mute" style="width: 16px">⏸</span><span class="c-row-main"><span class="c-row-t">11/1 10:00</span><span class="c-row-s">沒有執行：執行目標已移除</span></span></div>
+      <div class="c-row"><span class="c-st ok" style="width: 16px">✓</span><span class="c-row-main"><span class="c-row-t">10/1 10:00</span><span class="c-row-s">完成 · 刪除 6 個分支</span></span><button class="c-btn small ghost">開啟對話</button></div>
+    </div>
+    <div style="flex: none; display: flex; gap: 8px; padding: 10px 16px 4px; border-top: 1px solid var(--line)"><button class="c-btn danger" style="flex: 1">刪除排程</button><sc-if value="{{noTarget}}" hint-placeholder-val="{{ true }}"><button class="c-btn dark" style="flex: 2" disabled>先選擇執行目標</button></sc-if><sc-if value="{{hasTarget}}" hint-placeholder-val="{{ false }}"><button class="c-btn dark" style="flex: 2" onClick="{{noop}}">儲存並恢復</button></sc-if></div>
+  </section>
+  </sc-if>
+
+  <sc-if value="{{isPots}}" hint-placeholder-val="{{ false }}">
+  <main class="c-pane" style="width: 744px; flex: none">
+    <div class="c-top" style="height: 64px; padding-top: 4px"><div class="c-title" style="align-items: flex-start; padding-left: 16px"><b>pots</b><small>個人助理 · 只在你授權的範圍內行動</small></div><button class="c-ib" aria-label="職責與權限" onClick="{{noop}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg></button></div>
+    <div class="c-scroll">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 8px; padding-bottom: 16px">
+        <div>
+          <div class="c-sec attn">需要你決定 <span class="n">1</span></div>
+          <div class="c-row" style="align-items: flex-start"><span class="state-dot wait" style="margin-top: 8px"></span><span class="c-row-main"><span class="c-row-t" style="font-weight: 500">檢查 nightly test 在問你問題</span><span class="c-row-s">由 pots 執行 · 14 分後過期</span></span><button class="c-btn small primary">前往回答</button></div>
+          <div class="c-sec">建議 <span class="n">2</span></div>
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <div class="d-sugg"><span class="c-row-t" style="font-weight: 600">週末出遊預算估算需要你的輸入</span><div class="d-why"><b>為什麼：</b>對話在等你回答人數 · 10:31</div><div class="d-acts"><button class="c-btn small">查看來源</button><button class="c-btn small">只追蹤</button><button class="c-btn small ghost">略過</button></div></div>
+            <div class="d-sugg"><span class="c-row-t" style="font-weight: 600">「整理 API 文件」卡在寫入等待 40 分鐘</span><div class="d-why"><b>為什麼：</b>寫入被任務 A 持有 · 08:40 起</div><div class="d-acts"><button class="c-btn small dark">開始…</button><button class="c-btn small">只追蹤</button><button class="c-btn small ghost">略過</button></div></div>
+          </div>
+        </div>
+        <div>
+          <div class="c-sec">狀態</div>
+          <div class="d-pstat" style="margin: 0 16px">
+            <div class="d-pstat-row"><span class="state-dot ongoing"></span>觀察中 · 2 個職責</div>
+            <div class="d-pstat-row"><span class="state-dot wait"></span>協調已暫停<span style="flex: 1"></span><button class="c-btn small">恢復協調…</button></div>
+            <div class="d-pstat-row"><span class="c-meta" style="width: 64px">派工額度</span><span class="d-meter"><i style="width: 30%"></i></span><span class="c-meta">3 / 10</span></div>
+          </div>
+          <div class="c-sec">追蹤中的任務</div>
+          <div class="c-row"><span class="state-dot wait"></span><span class="c-row-main"><span class="c-row-t">檢查 nightly test</span><span class="c-row-s">等待你的輸入</span></span></div>
+          <div class="c-row"><span class="state-dot done"></span><span class="c-row-main"><span class="c-row-t">整理排程報告</span><span class="c-row-s">執行完成 · 待你驗收</span></span></div>
+          <div class="c-sec">職責</div>
+          <div class="d-resp"><span class="c-row-main"><span class="c-row-t" style="font-weight: 500">留意 pirc 行動版卡住的工作</span><span class="c-row-s">只看進度事件 · 不讀內容</span><span class="d-ctrl"><span>觀察中</span><span>協調暫停</span><span>12 / 100 件</span></span></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="c-wrap" style="padding: 0 20px 12px"><div class="c-composer" style="max-width: 720px; margin: 0 auto; width: 100%"><div class="c-ta ph">問 pots，或交代一件事…</div><div class="c-tools"><span style="flex: 1"></span><button class="c-send off" aria-label="送出" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 7-7 7 7M12 19V5"/></svg></button></div></div></div>
+  </main>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"layout":{"editor":"enum","options":["conv","task","pots","cal","calAgent"],"default":"conv"},"dark":{"editor":"boolean","default":false},"$preview":{"width":1024,"height":768}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const p = this.props || {};
+    const layout = s.layout || p.layout || 'conv';
+    const dark = p.dark === true || p.dark === 'true';
+    const taskOpen = layout === 'task';
+    const isCal = layout === 'cal' || layout === 'calAgent';
+    const calAgent = layout === 'calAgent';
+    const tgt = s.tgt || null;
+    const targets = [
+      ['v2', '專案「pirc 行動版」· Laptop · ~/pirc-v2', '目前這個專案的主要工作區 · 讀寫'],
+      ['ci', '專案「pirc 行動版」· CI-runner · /srv/pirc', '只有讀取 · 刪除分支需要你另外核准'],
+      ['new', '新的工作區…', '選主機與資料夾，只給這個排程使用']
+    ];
+    const DOW = ['日', '一', '二', '三', '四', '五', '六'];
+    const H = 48;
+    const pos = (h, len) => 'top: ' + ((h - 8) * H) + 'px; height: ' + (len * H - 2) + 'px';
+    const tpos = (h) => 'top: ' + ((h - 8) * H - 9) + 'px';
+    const task = (h, t, dia, extra) => { const o = Object.assign({ task: true, ev: false, t: t, dia: dia, diaStyle: '', bg: 'var(--bg)', color: 'var(--ink)', open: () => {} }, extra || {}); o.style = tpos(h) + '; border: 0; background: ' + o.bg + '; border-radius: 4px; height: 18px; font-size: 11.5px; color: ' + o.color; return o; };
+    const ev = (h, len, t) => ({ task: false, ev: true, t: t, style: pos(h, len) + '; font-size: 12px; line-height: 16px; padding: 4px 6px' });
+    const wdays = [1, 2, 3, 4, 5, 6, 7].map((n) => {
+      const it = [];
+      const w = (n - 1) % 7;
+      if (n === 1) it.push(task(10, '清理舊分支 · 已暫停', 'k-dia', { diaStyle: 'background: var(--faint)', color: 'var(--warning-ink)', bg: calAgent ? 'var(--warning-soft)' : 'var(--bg)', open: () => this.setState({ layout: 'calAgent' }) }));
+      if (w >= 1 && w <= 5) it.push(task(8, n === 6 ? '檢查測試 · 錯過' : '檢查測試', n === 6 ? 'k-dia miss' : 'k-dia', n === 6 ? { color: 'var(--warning-ink)' } : {}));
+      if (w === 1) it.push(task(9, '週報', 'k-dia'));
+      if (n === 4) it.push(ev(18.5, 1, '健身'));
+      if (n === 6) { it.push(ev(14, 1, '牙醫 · 仁愛路')); it.push(ev(19.5, 1.5, '晚餐')); }
+      if (n === 7) it.push(ev(10, 2, '看房 · 民生社區'));
+      return { dow: DOW[n - 1], n: n, cls: n === 6 ? 'today' : '', items: it };
+    });
+    const hrs = []; for (let h = 8; h <= 20; h++) hrs.push((h < 10 ? '0' : '') + h + ':00');
+    return {
+      rootCls: dark ? 'pc c-tab dark' : 'pc c-tab',
+      showSide: !taskOpen && !calAgent,
+      isConv: layout === 'conv' || layout === 'task', isPots: layout === 'pots', taskOpen: taskOpen,
+      isCal: isCal, calAgent: calAgent, marks: true,
+      chatStyle: (taskOpen || calAgent) ? 'width: 480px; flex: none' : 'width: 744px; flex: none',
+      segStyle: calAgent ? 'width: 168px' : 'width: 220px',
+      calRowCls: isCal ? 'c-drow sel' : 'c-drow',
+      wdays: wdays, whours: hrs,
+      targets: targets.map((t) => ({ title: t[1], sub: t[2], on: t[0] === tgt ? 'true' : 'false', cls: t[0] === tgt ? 'd-radio on' : 'd-radio', pick: () => this.setState({ tgt: t[0] }) })),
+      noTarget: !tgt, hasTarget: !!tgt,
+      toCal: () => this.setState({ layout: 'cal' }),
+      taskACls: taskOpen ? 'd-task on' : 'd-task',
+      potsRowCls: layout === 'pots' ? 'd-pots' : 'd-pots',
+      convRowCls: layout === 'conv' ? 'c-drow d-sub sel' : 'c-drow d-sub',
+      noop: () => {},
+      openTask: () => this.setState({ layout: 'task' }),
+      closeTask: () => this.setState({ layout: 'conv' }),
+      toPots: () => this.setState({ layout: 'pots' }),
+      toConv: () => this.setState({ layout: 'conv' })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>C 手機畫面</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 3146px; height: 4924px; box-sizing: border-box; padding: 40px; background: #EEF0F3; display: flex; flex-direction: column; gap: 56px; font-family: -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif; color: #0F1115">
+  <sc-for list="{{rows}}" as="row" hint-placeholder-count="2">
+    <div style="display: flex; gap: 56px">
+      <sc-for list="{{row.items}}" as="sc" hint-placeholder-count="6">
+        <div style="width: 390px; display: flex; flex-direction: column; gap: 16px">
+          <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px">
+            <div style="font-size: 19px; line-height: 26px; font-weight: 600">{{sc.title}}</div>
+            <div style="font-size: 13.5px; line-height: 19px; color: #61666B">{{sc.sub}}</div>
+          </div>
+          <div style="width: 390px; height: 844px; border-radius: 36px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,.12), 0 4px 20px rgba(15,17,21,.06), 0 16px 48px rgba(15,17,21,.10)">
+            <dc-import name="PhoneC" start="{{sc.start}}" kb="{{sc.kb}}" dark="{{sc.dark}}" hint-size="390px,844px"></dc-import>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3146,"height":4924}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const it = (title, sub, start, kb, dark) => ({ title: title, sub: sub, start: start, kb: !!kb, dark: !!dark });
+    return {
+      rows: [
+        { items: [
+          it('1 · 首頁（新對話）', '上方切換在聊天或哪個 workspace 開始；鈴鐺是待處理', 'home'),
+          it('1b · 模型與思考', '輸入框只留一個入口，打開後再選', 'model'),
+          it('2 · 側欄 · 聊天', '沿用網頁側欄：聊天／工作切換、新聊天、搜尋', 'drawerChat'),
+          it('3 · 側欄 · 工作', '待你處理（依到期）· 執行中 · 最近', 'drawerWork'),
+          it('4 · 執行中對話（鍵盤開啟）', '目標／todo 在輸入框上方的 dock，問題卡留在最後', 'session', true),
+          it('5 · 成果卡', '網頁卡片樣式；一個主要動作「開啟」', 'thread'),
+          it('6 · 全螢幕成果', '左上 ✕ 回到原卡片；上方可回溯來源', 'reader')
+        ] },
+        { items: [
+          it('7 · 待處理與最近動態', '鈴鐺開啟；待處理依到期排序，下方是時間序動態', 'activity'),
+          it('8 · Android 大型互動通知', '選項直接在通知上；點了先開 App 確認', 'shade'),
+          it('9 · 從通知點選項後', '重新取得狀態 → 預選答案的確認', 'confirm'),
+          it('10 · 設定', '連線、通知、外觀、助手、此手機', 'settings'),
+          it('11 · 通知設定', '類別、樣式、鎖定畫面、勿擾、推送目標', 'notifset'),
+          it('12 · 深色', '網頁深色 tokens 直接套用', 'session', false, true)
+        ] },
+        { items: [
+          it('13 · 下方快速回應視窗', '顯示在其他 App 上層；狀態已確認才能送出', 'popupQ'),
+          it('14 · 快速回應 · 確認中', '錯過的排程：確認最新狀態時按鈕不可按', 'popupMissed'),
+          it('15 · 快速回應 · 已被處理', '別的裝置處理過就只顯示結果', 'popupHandled'),
+          it('16 · 工作面板 · Git', '對話頂部的狀態 chip 或右上面板鍵進入', 'panelGit'),
+          it('17 · 工作面板 · 檔案', '麵包屑導覽；標出有變更的資料夾', 'panelFiles'),
+          it('18 · 工作面板 · 終端列表', '和 Android 現有一樣：列表 → 點開終端', 'panelTerm')
+        ] },
+        { items: [
+          it('19 · 工作面板 · Tasks', '背景指令、teammates、任務板、訊息', 'panelTasks'),
+          it('20 · 工作面板 · 記憶', '狀態、最近觀察（含來源）、反思預設收合', 'panelMemory'),
+          it('21 · 工作面板 · 瀏覽器', '觀看 agent 操作、接管／歸還、操作紀錄', 'panelBrowser'),
+          it('22 · 全螢幕終端', '字元格終端；鍵盤直接輸入，上方額外按鍵', 'termFull', true),
+          it('23 · 全螢幕終端 · 收起鍵盤', '點畫面叫出鍵盤；列數自動重算', 'termFull')
+        ] },
+        { items: [
+          it('24 · 深色 · 首頁', '同一套語意 tokens，換值不換元件', 'home', false, true),
+          it('25 · 深色 · 側欄工作', '', 'drawerWork', false, true),
+          it('26 · 深色 · 成果卡', '卡片不用陰影，改靠底色', 'thread', false, true),
+          it('27 · 深色 · 模型與思考', '', 'model', false, true),
+          it('28 · 深色 · 快速回應視窗', '', 'popupQ', false, true),
+          it('29 · 深色 · Git', '', 'panelGit', false, true),
+          it('30 · 深色 · 通知設定', '', 'notifset', false, true)
+        ] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

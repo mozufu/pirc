@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>E 電腦版總覽</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-c.css">
+<link rel="stylesheet" href="./pirc-d.css">
+<link rel="stylesheet" href="./pirc-e.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 3016px; height: 4168px; box-sizing: border-box; padding: 40px; background: #EEF0F3; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 56px; font-family: -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif; color: #0F1115">
+  <sc-for list="{{frames}}" as="f" hint-placeholder-count="8">
+    <div style="display: flex; flex-direction: column; gap: 16px">
+      <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end"><div style="font-size: 19px; line-height: 26px; font-weight: 600">{{f.title}}</div><div style="font-size: 13.5px; line-height: 19px; color: #61666B">{{f.sub}}</div></div>
+      <div style="width: 1440px; height: 900px; border-radius: 12px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,.12), 0 16px 48px rgba(15,17,21,.10)"><dc-import name="DesktopE" layout="{{f.layout}}" dark="{{f.dark}}" hint-size="1440px,900px"></dc-import></div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3016,"height":4168}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      frames: [
+        { title: '① 1440 · 聊天', sub: '左側分頁列 72＋列表 340＋對話；對話限寬 760，置中', layout: 'chat', dark: false },
+        { title: '② 1440 · 對話＋右欄開著 pots 派的工作', sub: '點對話裡的工作卡，工作在右欄打開（400），不離開對話', layout: 'chatWork', dark: false },
+        { title: '③ 1440 · 群組＋群組資訊', sub: '資訊、pots 資料都在右欄', layout: 'group', dark: false },
+        { title: '④ 1440 · 工作分頁', sub: '工作在中間打開；From 標出誰在協調', layout: 'works', dark: false },
+        { title: '⑤ 1440 · 動態＋pots 之間的私訊', sub: '點一筆動態，中間打開它的視角', layout: 'log', dark: false },
+        { title: '⑥ 1440 · 使用者與用量', sub: '熱度圖顯示 40 週', layout: 'me', dark: false },
+        { title: '⑦ 1440 · 側欄', sub: '蓋住分頁列與列表（412），不擋對話', layout: 'drawer', dark: false },
+        { title: '⑧ 1440 · 深色', sub: '', layout: 'chatWork', dark: true }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

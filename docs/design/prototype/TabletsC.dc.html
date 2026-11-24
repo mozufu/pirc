@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>C 平板與縮小轉換</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 2184px; height: 3248px; box-sizing: border-box; padding: 40px; background: #EEF0F3; display: flex; flex-direction: column; gap: 56px; font-family: -apple-system, 'PingFang TC', 'Noto Sans TC', sans-serif; color: #0F1115">
+  <div style="display: flex; gap: 56px">
+    <sc-for list="{{row1}}" as="f" hint-placeholder-count="2">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end"><div style="font-size: 19px; line-height: 26px; font-weight: 600">{{f.title}}</div><div style="font-size: 13.5px; line-height: 19px; color: #61666B">{{f.sub}}</div></div>
+        <div style="{{f.frame}}"><dc-import name="TabletC" layout="{{f.layout}}" result="{{f.result}}" dark="{{f.dark}}" hint-size="1024px,768px"></dc-import></div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display: flex; gap: 56px; align-items: flex-start">
+    <sc-for list="{{row2}}" as="f" hint-placeholder-count="3">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end"><div style="font-size: 19px; line-height: 26px; font-weight: 600">{{f.title}}</div><div style="font-size: 13.5px; line-height: 19px; color: #61666B">{{f.sub}}</div></div>
+        <div style="{{f.frame}}"><dc-import name="TabletC" layout="{{f.layout}}" result="{{f.result}}" dark="{{f.dark}}" hint-size="768px,1024px"></dc-import></div>
+      </div>
+    </sc-for>
+  </div>
+  <div style="display: flex; gap: 56px; align-items: flex-start">
+    <sc-for list="{{row3}}" as="f" hint-placeholder-count="2">
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end"><div style="font-size: 19px; line-height: 26px; font-weight: 600">{{f.title}}</div><div style="font-size: 13.5px; line-height: 19px; color: #61666B">{{f.sub}}</div></div>
+        <div style="{{f.frame}}"><dc-import name="TabletC" layout="{{f.layout}}" result="{{f.result}}" dark="{{f.dark}}" pane="{{f.pane}}" hint-size="1024px,768px"></dc-import></div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2184,"height":3248}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const frame = (w, h) => 'width: ' + w + 'px; height: ' + h + 'px; border-radius: 24px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,.12), 0 16px 48px rgba(15,17,21,.10)';
+    return {
+      row1: [
+        { title: '① 1024 橫向 · 成果開啟', sub: '側欄收起，對話 480｜成果 544；☰ 可叫回側欄（覆蓋）', layout: 'wide', result: true, dark: false, frame: frame(1024, 768) },
+        { title: '② 1024 橫向 · 關閉成果', sub: '側欄 280 回來；正文限寬 680', layout: 'wide', result: false, dark: false, frame: frame(1024, 768) }
+      ],
+      row2: [
+        { title: '③ 768 直向 · 成果開啟', sub: '對話 384｜成果 384；側欄改成覆蓋式', layout: 'portrait', result: true, dark: false, frame: frame(768, 1024) },
+        { title: '④ 分割視窗 507 · 對話', sub: '單欄；草稿與捲動位置保留', layout: 'split', result: false, dark: false, frame: frame(507, 768) },
+        { title: '⑤ 分割視窗 507 · 成果', sub: '成果整頁；返回回到原卡片', layout: 'split', result: true, dark: true, frame: frame(507, 768) }
+      ],
+      row3: [
+        { title: '⑥ 1024 橫向 · 深色', sub: '網頁深色 tokens；分欄靠底色深淺區隔', layout: 'wide', result: true, dark: true, pane: 'result', frame: frame(1024, 768) },
+        { title: '⑦ 768 直向 · 右欄改放工作面板', sub: '工作面板和成果共用右欄；聊天只有 4 個分頁', layout: 'portrait', result: true, dark: false, pane: 'files', frame: frame(768, 1024) }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

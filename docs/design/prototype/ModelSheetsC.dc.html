@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>模型面板三個選項</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-c.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div class="pc" style="width: 1362px; height: 700px; box-sizing: border-box; padding: 40px; background: #EEF0F3; display: flex; gap: 56px">
+
+  <!-- V1 -->
+  <div style="width: 390px; display: flex; flex-direction: column; gap: 16px">
+    <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end"><div style="font-size: 19px; line-height: 26px; font-weight: 600">選項 1 · 清單＋分段（建議）</div><div style="font-size: 13.5px; line-height: 19px; color: #61666B">沿用網頁「聊天／工作」切換的分段元件</div></div>
+    <div class="ms-frame">
+      <div class="ms-dim"></div>
+      <div class="ms-sheet">
+        <div class="c-grab"></div>
+        <div class="ms-h">模型與思考</div>
+        <div role="radiogroup" aria-label="模型" style="padding: 0 8px">
+          <sc-for list="{{m1}}" as="m" hint-placeholder-count="3">
+            <button class="c-drow" role="radio" aria-checked="{{m.on}}" onClick="{{m.pick}}"><span class="c-row-main"><span class="c-row-t">{{m.name}}</span><span class="c-row-s">{{m.sub}}</span></span><sc-if value="{{m.sel}}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></sc-if></button>
+          </sc-for>
+        </div>
+        <div class="ms-l">思考強度</div>
+        <div class="c-seg" role="radiogroup" aria-label="思考強度" style="margin: 0 16px">
+          <sc-for list="{{t1}}" as="t" hint-placeholder-count="7"><button class="{{t.cls}}" role="radio" aria-checked="{{t.on}}" onClick="{{t.pick}}" style="font-size: 13px; padding: 0">{{t.label}}</button></sc-for>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V2 -->
+  <div style="width: 390px; display: flex; flex-direction: column; gap: 16px">
+    <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end"><div style="font-size: 19px; line-height: 26px; font-weight: 600">選項 2 · 單列模型＋步進滑桿</div><div style="font-size: 13.5px; line-height: 19px; color: #61666B">最矮；模型要再點一層才能換</div></div>
+    <div class="ms-frame">
+      <div class="ms-dim"></div>
+      <div class="ms-sheet">
+        <div class="c-grab"></div>
+        <div class="ms-h">模型與思考</div>
+        <button class="ms-field" onClick="{{cycleModel}}"><span class="c-field-l" style="flex: 1; text-align: left">模型</span><span class="c-row-t">{{m2name}}</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></button>
+        <div style="display: flex; align-items: baseline; padding: 18px 16px 10px"><span class="c-field-l" style="flex: 1">思考強度</span><span class="c-row-t" style="font-weight: 600">{{t2name}}</span></div>
+        <div class="ms-step">
+          <div class="ms-track"></div><div class="ms-track-fill" style="{{t2fill}}"></div>
+          <sc-for list="{{t2}}" as="t" hint-placeholder-count="7"><button class="{{t.cls}}" style="{{t.pos}}" aria-label="{{t.label}}" onClick="{{t.pick}}"></button></sc-for>
+        </div>
+        <div class="c-ticks" style="padding: 8px 16px 0"><span>關閉</span><span>最高</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- V3 -->
+  <div style="width: 390px; display: flex; flex-direction: column; gap: 16px">
+    <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end"><div style="font-size: 19px; line-height: 26px; font-weight: 600">選項 3 · 設定式兩列</div><div style="font-size: 13.5px; line-height: 19px; color: #61666B">和設定頁一致；每項點進去再選，多一步</div></div>
+    <div class="ms-frame">
+      <div class="ms-dim"></div>
+      <div class="ms-sheet">
+        <div class="c-grab"></div>
+        <div class="ms-h">模型與思考</div>
+        <div class="c-group" style="background: var(--bg-subtle)">
+          <button class="c-grow"><span class="c-row-t" style="flex: 1">模型</span><span class="c-row-s" style="font-size: 15px">預設模型</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></button>
+          <button class="c-grow"><span class="c-row-t" style="flex: 1">思考強度</span><span class="c-row-s" style="font-size: 15px">中</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m9 18 6-6-6-6"/></svg></button>
+        </div>
+        <div class="c-meta" style="padding: 10px 28px 0">點「思考強度」會推進一個由上到下的清單：關閉、最少、低、中、高、更高、最高。</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1362,"height":700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const models = [['預設模型', 'gateway 預設'], ['快速模型', '回覆較快 · 不支援思考'], ['長上下文模型', '適合讀大量檔案']];
+    const names = ['關閉', '最少', '低', '中', '高', '更高', '最高'];
+    const m = s.m === undefined ? 0 : s.m;
+    const t = s.t === undefined ? 3 : s.t;
+    const t2 = s.t2 === undefined ? 3 : s.t2;
+    const w = 326;
+    return {
+      m1: models.map((x, i) => ({ name: x[0], sub: x[1], sel: i === m, on: i === m ? 'true' : 'false', pick: () => this.setState({ m: i }) })),
+      t1: names.map((n, i) => ({ label: n, on: i === t ? 'true' : 'false', cls: i === t ? 'on' : '', pick: () => this.setState({ t: i }) })),
+      m2name: models[s.m2 || 0][0],
+      cycleModel: () => this.setState({ m2: ((s.m2 || 0) + 1) % 3 }),
+      t2name: names[t2],
+      t2fill: 'width: ' + Math.round(t2 / 6 * w) + 'px',
+      t2: names.map((n, i) => ({ label: n, cls: i === t2 ? 'ms-dot on' : (i < t2 ? 'ms-dot past' : 'ms-dot'), pos: 'left: ' + Math.round(i / 6 * w) + 'px', pick: () => this.setState({ t2: i }) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

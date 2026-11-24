@@ -7,6 +7,7 @@ Start with the [project README](../README.md) for the security model, requiremen
 | Configure or use an agent                  | [User guides](guides/README.md)                                             |
 | Deploy, upgrade or recover an installation | [Deployment guide](deploy/README.md)                                        |
 | Understand implementation boundaries       | [Architecture references](architecture/README.md)                           |
+| Build the new interface                    | [Design handoff (direction E)](design/README.md)                            |
 | Build a release                            | [Release policy](development/releasing.md) and [changelog](../CHANGELOG.md) |
 | Find work that remains                     | [Active plans and follow-ups](../plans/README.md)                           |
 | Retrieve an earlier design or evaluation   | [Historical records in Git](development/historical-records.md)              |

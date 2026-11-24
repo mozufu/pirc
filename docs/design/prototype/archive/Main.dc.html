@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<title>A 手機關鍵畫面</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./pirc-a.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;600;700&amp;family=Noto+Serif+TC:wght@600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 2700px; height: 1004px; box-sizing: border-box; padding: 40px; background: #E9E4DA; display: flex; gap: 56px; font-family: 'Noto Sans TC', sans-serif; color: #1F1D1A">
+  <sc-for list="{{screens}}" as="sc" hint-placeholder-count="6">
+    <div style="width: 390px; display: flex; flex-direction: column; gap: 16px">
+      <div style="height: 64px; display: flex; flex-direction: column; justify-content: flex-end; gap: 2px">
+        <div style="font-size: 20px; line-height: 28px; font-weight: 700">{{sc.title}}</div>
+        <div style="font-size: 14px; line-height: 20px; color: #57524A">{{sc.sub}}</div>
+      </div>
+      <div style="width: 390px; height: 844px; border-radius: 36px; overflow: hidden; box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 12px 40px rgba(40,30,10,.14)">
+        <dc-import name="PhoneA" start="{{sc.start}}" kb="{{sc.kb}}" hint-size="390px,844px"></dc-import>
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2700,"height":1004}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      screens: [
+        { title: '1 · Chat 首頁', sub: '頂部切換「聊天／工作」，待處理膠囊常駐右上', start: 'chat', kb: false },
+        { title: '2 · Work', sub: '待你回應 2 · 執行中 2 · 最近', start: 'work', kb: false },
+        { title: '3 · 執行中對話（鍵盤開啟）', sub: '進度收成一列，問題卡留在最後一則', start: 'session', kb: true },
+        { title: '4a · 聊天中的成果卡', sub: '摘要＋一個主要動作「展開閱讀」', start: 'thread', kb: false },
+        { title: '4b · 全螢幕成果閱讀', sub: '更新時保留位置；返回回到原卡片', start: 'reader', kb: false },
+        { title: '5 · 通知點開（模擬）', sub: '先重新取得狀態，再顯示可操作內容', start: 'push', kb: false }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
