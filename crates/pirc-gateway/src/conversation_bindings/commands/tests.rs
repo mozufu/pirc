@@ -538,6 +538,7 @@ fn probe_app() -> (crate::app::AppState, tempfile::TempDir) {
                 r#"{"node":"0123456789abcdef0123456789abcdef"}"#,
             ),
             ("PIRC_TRUSTED_PROXIES", "127.0.0.1"),
+            ("PIRC_PROXY_SECRET_REQUIRED", "false"),
             ("PIRC_ALLOWED_ORIGINS", "https://a.example"),
             ("PIRC_ALLOWED_HOSTS", "a.example"),
             ("PIRC_ALLOWED_USERS", "alice"),

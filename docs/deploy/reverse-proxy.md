@@ -14,7 +14,7 @@ The gateway has no login of its own. It trusts an identity header **only** from 
 Rules that hold for every route:
 
 - Always overwrite the identity header. A client-supplied `x-pirc-user` must never reach the gateway; on the device-token and node routes it must be removed. The gateway refuses a request carrying both a device token and an identity header (fail-closed), but that only protects you if the header is absent when it should be.
-- When the gateway has `PIRC_PROXY_SECRET`, add `x-pirc-proxy-secret: <secret>` to every `/api/` request, browser and device-token alike (see [below](#proxy-shared-secret)).
+- Add `x-pirc-proxy-secret: <secret>` (the gateway's `PIRC_PROXY_SECRET`) to every `/api/` request, browser and device-token alike (see [below](#proxy-shared-secret)).
 - Pass `Host` and `Origin` through unchanged; the gateway compares them exactly against `PIRC_ALLOWED_HOSTS` and `PIRC_ALLOWED_ORIGINS`.
 - Use TLS end to end from the client to the proxy. The proxy → gateway hop is plain HTTP on loopback or a private interface.
 - Do not expose the gateway or the proxy on the public Internet (no Tailscale Funnel). Forward auth is a second factor for a private network, not an Internet-facing login.
@@ -130,7 +130,7 @@ pirc.example.ts.net {
 
 ## Proxy shared secret
 
-The trusted-proxy check is by peer address only, so on a shared host any local process connecting from `127.0.0.1` looks like the proxy. Set `PIRC_PROXY_SECRET` on the gateway (≥ 32 random characters, e.g. `openssl rand -base64 36`) and have the proxy prove itself with it on every `/api/` request; the gateway then refuses trusted-address requests without the matching `x-pirc-proxy-secret` header. Without it the gateway logs a warning at startup.
+The trusted-proxy check is by peer address only, so on a shared host any local process connecting from `127.0.0.1` looks like the proxy. Set `PIRC_PROXY_SECRET` on the gateway (≥ 32 random characters, e.g. `openssl rand -base64 36`) and have the proxy prove itself with it on every `/api/` request; the gateway then refuses trusted-address requests without the matching `x-pirc-proxy-secret` header. The gateway refuses to start without it (unless `PIRC_PROXY_SECRET_REQUIRED=false`, for development only).
 
 nginx: keep the header in a file readable only by root and the nginx account, outside any world-readable config or the Nix store, and include it in `location /api/`:
 

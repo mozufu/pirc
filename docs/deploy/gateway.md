@@ -18,18 +18,18 @@ The gateway refuses to start when a required value is missing or when it sees a 
 
 The gateway trusts an identity header only when the TCP peer is a listed proxy. Every value is an exact match; there are no wildcards or CIDR ranges.
 
-| Variable               | Required | Default       | Meaning                                                                                                            |
-| ---------------------- | -------- | ------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `PIRC_TRUSTED_PROXIES` | yes      | —             | Comma-separated peer addresses allowed to set the identity header, e.g. `127.0.0.1,::1`.                           |
-| `PIRC_IDENTITY_HEADER` | no       | `x-pirc-user` | Header the proxy fills with the authenticated user (compared case-insensitively).                                  |
-| `PIRC_ALLOWED_USERS`   | yes      | —             | Comma-separated identities allowed in, all of them [one person](README.md#one-user). Nodes check it again.         |
-| `PIRC_ALLOWED_ORIGINS` | yes      | —             | Exact `Origin` values, e.g. `https://pirc.example.ts.net`. Required on mutating requests and WebSocket upgrades.   |
-| `PIRC_ALLOWED_HOSTS`   | yes      | —             | Exact `Host` values (include the port if browsers send one).                                                       |
-| `PIRC_PROXY_SECRET`    | no       | —             | Shared secret (≥ 32 characters) the proxy must send as `x-pirc-proxy-secret`; see below. Keep it in a secret file. |
+| Variable               | Required | Default       | Meaning                                                                                                                                                                                                |
+| ---------------------- | -------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `PIRC_TRUSTED_PROXIES` | yes      | —             | Comma-separated peer addresses allowed to set the identity header, e.g. `127.0.0.1,::1`.                                                                                                               |
+| `PIRC_IDENTITY_HEADER` | no       | `x-pirc-user` | Header the proxy fills with the authenticated user (compared case-insensitively).                                                                                                                      |
+| `PIRC_ALLOWED_USERS`   | yes      | —             | Comma-separated identities allowed in, all of them [one person](README.md#one-user). Nodes check it again.                                                                                             |
+| `PIRC_ALLOWED_ORIGINS` | yes      | —             | Exact `Origin` values, e.g. `https://pirc.example.ts.net`. Required on mutating requests and WebSocket upgrades.                                                                                       |
+| `PIRC_ALLOWED_HOSTS`   | yes      | —             | Exact `Host` values (include the port if browsers send one).                                                                                                                                           |
+| `PIRC_PROXY_SECRET`    | yes      | —             | Shared secret (≥ 32 characters) the proxy must send as `x-pirc-proxy-secret`; see below. Keep it in a secret file. `PIRC_PROXY_SECRET_REQUIRED=false` waives it, for development without a proxy only. |
 
 ### Proxy shared secret
 
-The peer-address check alone cannot tell the proxy from any other process on the same host: with `PIRC_TRUSTED_PROXIES=127.0.0.1`, anything that can connect to the gateway port from loopback (an agent's shell on a co-located node, a stray script) could set `Host` and `x-pirc-user` and act as any allowed user. Set `PIRC_PROXY_SECRET` and have the proxy add `x-pirc-proxy-secret: <secret>` to every `/api/` request (overwriting whatever a client sent). Requests from a trusted address without the matching header are then refused as if they came from an untrusted address. The comparison is constant-time. Without the variable the gateway logs a startup warning and keeps the address-only check.
+The peer-address check alone cannot tell the proxy from any other process on the same host: with `PIRC_TRUSTED_PROXIES=127.0.0.1`, anything that can connect to the gateway port from loopback (an agent's shell on a co-located node, a stray script) could set `Host` and `x-pirc-user` and act as any allowed user. Set `PIRC_PROXY_SECRET` and have the proxy add `x-pirc-proxy-secret: <secret>` to every `/api/` request (overwriting whatever a client sent). Requests from a trusted address without the matching header are then refused as if they came from an untrusted address. The comparison is constant-time. The gateway refuses to start without it. Only for development with no proxy in front, `PIRC_PROXY_SECRET_REQUIRED=false` keeps the address-only check (with a startup warning).
 
 The NixOS module generates the secret and wires nginx automatically (`services.pirc.nginx.proxySecret`, on by default). For other proxies see [Reverse proxy](reverse-proxy.md#proxy-shared-secret). Independently of the secret, do not run a node on the gateway host unless its agents are network-sandboxed: they could otherwise reach the gateway port directly.
 
@@ -131,4 +131,4 @@ curl -s -H 'Host: pirc.example.ts.net' -H 'x-pirc-user: alice@example.com' http:
 curl -s -H 'Host: pirc.example.ts.net' -H 'x-pirc-user: alice@example.com' http://127.0.0.1:8787/api/nodes
 ```
 
-This works only because `127.0.0.1` is in `PIRC_TRUSTED_PROXIES` (with `PIRC_PROXY_SECRET` set, add `-H "x-pirc-proxy-secret: $(cat <secret-file>)"`); it is the reason the gateway must not be reachable from anywhere else. Through the proxy, the same requests must return `401`/`403` when you add an `x-pirc-user` header yourself: the proxy must overwrite it.
+This works only because `127.0.0.1` is in `PIRC_TRUSTED_PROXIES` (add `-H "x-pirc-proxy-secret: $(cat <secret-file>)"`); it is the reason the gateway must not be reachable from anywhere else. Through the proxy, the same requests must return `401`/`403` when you add an `x-pirc-user` header yourself: the proxy must overwrite it.

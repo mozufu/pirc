@@ -126,9 +126,9 @@ async fn run(config: GatewayConfig) -> Result<(), String> {
     ));
     if config.auth.proxy_secret.is_none() {
         log::warn(
-            "PIRC_PROXY_SECRET is not set: any process that can reach the gateway port from a trusted \
-             proxy address (PIRC_TRUSTED_PROXIES) can claim to be any allowed user. Set it and have \
-             the proxy send it as x-pirc-proxy-secret (docs/deploy).",
+            "PIRC_PROXY_SECRET_REQUIRED=false: running without a proxy secret, so any process that \
+             can reach the gateway port from a trusted proxy address (PIRC_TRUSTED_PROXIES) can \
+             claim to be any allowed user. Use this only for development.",
         );
     }
     // An invalid models file at startup is fatal; a missing one means no providers.

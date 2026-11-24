@@ -287,6 +287,13 @@ impl GatewayConfig {
         }
         let allowed_users = allowed_users(env)?;
         let proxy_secret = proxy_secret(env.get("PIRC_PROXY_SECRET"))?;
+        if proxy_secret.is_none() && bool_var(env.get("PIRC_PROXY_SECRET_REQUIRED"), true) {
+            return error(
+                "PIRC_PROXY_SECRET is required: set a secret of at least 32 characters and have \
+                 the reverse proxy send it as x-pirc-proxy-secret. Only for development without a \
+                 proxy, set PIRC_PROXY_SECRET_REQUIRED=false",
+            );
+        }
         let upload_max_bytes = upload_limit(env)?;
         let port = integer(env.get("PIRC_PORT"), 8787);
         let port = u16::try_from(port)
@@ -386,7 +393,7 @@ fn upload_limit(env: &Env) -> Result<usize, ConfigError> {
     Ok(limit as usize)
 }
 
-/// Optional, but a guessable secret would be worse than an honest absence.
+/// Required unless `PIRC_PROXY_SECRET_REQUIRED=false`; a short secret is refused.
 fn proxy_secret(value: Option<&str>) -> Result<Option<String>, ConfigError> {
     let secret = value.unwrap_or_default().trim();
     if secret.is_empty() {
@@ -507,6 +514,7 @@ mod tests {
             ("PIRC_STATE_DIR", dir),
             ("PIRC_TIMEZONE", "UTC"),
             ("HOME", "/home/test"),
+            ("PIRC_PROXY_SECRET", "0123456789abcdef0123456789abcdef"),
         ];
         for (name, value) in extra {
             vars.retain(|(existing, _)| existing != name);
@@ -533,6 +541,40 @@ mod tests {
             PathBuf::from("/home/test/.config/.pirc/models.json")
         );
         assert!(config.auth.trusted_proxies.contains("::1"));
+    }
+
+    #[test]
+    fn the_proxy_secret_is_required_unless_explicitly_waived() {
+        let dir = tempfile::tempdir().unwrap();
+        let dir = dir.path().to_str().unwrap();
+        let config = GatewayConfig::load(&base(dir, &[])).unwrap();
+        assert_eq!(
+            config.auth.proxy_secret.as_deref(),
+            Some("0123456789abcdef0123456789abcdef")
+        );
+        for unset in ["", "   "] {
+            let error =
+                GatewayConfig::load(&base(dir, &[("PIRC_PROXY_SECRET", unset)])).unwrap_err();
+            assert!(error.0.contains("PIRC_PROXY_SECRET is required"), "{error}");
+        }
+        let error = GatewayConfig::load(&base(
+            dir,
+            &[
+                ("PIRC_PROXY_SECRET", ""),
+                ("PIRC_PROXY_SECRET_REQUIRED", "yes"),
+            ],
+        ))
+        .unwrap_err();
+        assert!(error.0.contains("PIRC_PROXY_SECRET is required"), "{error}");
+        let waived = GatewayConfig::load(&base(
+            dir,
+            &[
+                ("PIRC_PROXY_SECRET", ""),
+                ("PIRC_PROXY_SECRET_REQUIRED", "false"),
+            ],
+        ))
+        .unwrap();
+        assert!(waived.auth.proxy_secret.is_none());
     }
 
     #[test]

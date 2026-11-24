@@ -96,6 +96,12 @@ let
   // lib.optionalAttrs (cfg.timeZone != null) {
     PIRC_TIMEZONE = cfg.timeZone;
   }
+  # Turning the generated nginx secret off is an explicit opt-out. Without the
+  # generated nginx, the operator's own proxy must send a secret supplied through
+  # the environment file.
+  // lib.optionalAttrs (cfg.nginx.enable && !cfg.nginx.proxySecret) {
+    PIRC_PROXY_SECRET_REQUIRED = "false";
+  }
   // cfg.environment;
 
   nodeEnvironment = {

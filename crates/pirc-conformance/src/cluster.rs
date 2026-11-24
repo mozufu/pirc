@@ -191,6 +191,8 @@ impl Cluster {
             ("PIRC_PORT", port.to_string()),
             ("PIRC_STATE_DIR", dir_in(&root, "gateway-state")),
             ("PIRC_TRUSTED_PROXIES", "127.0.0.1,::1".to_owned()),
+            // The test client is the trusted proxy; it sends no secret.
+            ("PIRC_PROXY_SECRET_REQUIRED", "false".to_owned()),
             ("PIRC_IDENTITY_HEADER", "x-pirc-user".to_owned()),
             ("PIRC_ALLOWED_USERS", USER.to_owned()),
             ("PIRC_ALLOWED_ORIGINS", ORIGIN.to_owned()),

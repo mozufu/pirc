@@ -361,6 +361,7 @@ mod tests {
                 ("PIRC_ALLOWED_ORIGINS", "https://pirc.example"),
                 ("PIRC_ALLOWED_HOSTS", "pirc.example"),
                 ("PIRC_ALLOWED_USERS", "test-user"),
+                ("PIRC_PROXY_SECRET_REQUIRED", "false"),
                 ("PIRC_STATE_DIR", "gateway-state"),
                 ("PIRC_TIMEZONE", "UTC"),
                 ("HOME", env.home().to_str().unwrap()),
