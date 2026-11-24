@@ -347,7 +347,9 @@ export async function startStack({
       PIRC_MODELS_FILE: modelsFile,
       PIRC_CONFIG_DIR: sub('gateway-config'),
       PIRC_TIMEZONE: 'UTC',
-      ...(proxySecret ? { PIRC_PROXY_SECRET: proxySecret } : { PIRC_PROXY_SECRET_REQUIRED: 'false' }),
+      ...(proxySecret
+        ? { PIRC_PROXY_SECRET: proxySecret }
+        : { PIRC_PROXY_SECRET_REQUIRED: 'false' }),
       ...gatewayEnv,
     },
   });
