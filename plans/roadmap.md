@@ -193,6 +193,9 @@ Specification: [client.md](client.md). Steps:
 1. **Workspace layout**: Dart pub workspace, `apps/app` (new Flutter app, Android and
    Web targets), `packages/pirc_render`, `packages/pirc_client`, `packages/pirc_ui`.
    The old `apps/android` keeps building until M8.
+   The Android app has two Gradle flavors from the start, `standard` and `tailscale`
+   ([client.md](client.md#embedded-tailscale-m10)), selected together with
+   `--dart-define=PIRC_TAILSCALE`; until M10 they differ only in application ID.
 2. **Rendering package**: break the `rendering/` ↔ `live/` cycle, inject localization,
    theme and host services, move engine files out of `live/`, put tier-3 code behind
    interfaces so chat Markdown does not compile it in, add test tags.
@@ -244,9 +247,12 @@ web view for script-bearing documents (Q8), notifications while running.
 
 ## M10 Embedded Tailscale
 
-Spike first, then build (P16, [client.md](client.md#embedded-tailscale-m10)): an
-Android build flavor embedding a userspace tailnet node on the official Tailscale
-service, exposing a loopback proxy used by the Dart HTTP client and the Kotlin
+Spike first, then build (P16, [client.md](client.md#embedded-tailscale-m10)). Every
+Android release has two variants, `standard` (no Tailscale code) and `tailscale`;
+M5 already sets up the two Gradle flavors and the `PIRC_TAILSCALE` define so the
+variants exist from the first build, with the `tailscale` one identical until this
+milestone. The `tailscale` variant embeds a userspace tailnet node on the official
+Tailscale service, exposing a loopback proxy used by the Dart HTTP client and the Kotlin
 background client, with in-app sign-in through Tailscale's login page. The spike
 measures binary size, idle battery use, start-up time from a push and coexistence
 with the system Tailscale app.
@@ -254,7 +260,8 @@ with the system Tailscale app.
 ## M11 Release
 
 Outline: rewrite `README.md` and `docs/` for pirc 2, full validation run requested by
-the owner, changelog with the breaking-change notice, version bump.
+the owner, changelog with the breaking-change notice, version bump. Android
+artifacts: both the `standard` and the `tailscale` APK.
 
 ---
 

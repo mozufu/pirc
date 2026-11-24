@@ -142,8 +142,21 @@ Desktop has no background push; notifications are shown while the app runs.
 Android first (P16). The deployment is reachable only inside the tailnet (Gateway,
 nginx and Authelia), on the official Tailscale service.
 
-- A build flavor links a userspace tailnet node (`tsnet` through libtailscale or a
-  gomobile binding). It does not use Android's `VpnService`, so it works while the
+- **Two Android build variants**, both shipped for every release:
+  - `standard`: no Tailscale code; reaches the Gateway through the device's network
+    (system Tailscale app, LAN or VPN). Smaller, and the default for development.
+  - `tailscale`: the same app plus the embedded node described below.
+
+  They are Gradle product flavors (`flutter build apk --flavor standard|tailscale`)
+  with the Dart side selected by `--dart-define=PIRC_TAILSCALE=true|false`; the
+  `standard` flavor must not link the native library. They share the application ID
+  base but install side by side (`dev.pirc.mobile` and `dev.pirc.mobile.tailscale`),
+  so both can be tested on one device; pairing and data are per install. Release
+  artifacts are named `pirc-<version>-standard.apk` and `pirc-<version>-tailscale.apk`.
+  CI builds both variants. Desktop and Web have only the standard build for now.
+
+- The `tailscale` flavor links a userspace tailnet node (`tsnet` through libtailscale
+  or a gomobile binding). It does not use Android's `VpnService`, so it works while the
   system Tailscale app is off and does not take the device's single VPN slot.
 - The node exposes a loopback HTTP CONNECT proxy. The Dart `HttpClient` (via
   `findProxy`) and the Kotlin background client (OkHttp `proxy`) both use it; nothing
