@@ -544,44 +544,6 @@ async fn public_confirmation_is_gated_and_never_records_or_dispatches() {
     );
     assert_eq!(count(&app.db.lock()), 0);
 }
-#[test]
-fn migration_and_canonical_deletion_preserve_barriers_and_erase_frozen_details() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("old.sqlite");
-    {
-        let db = Db::open(&path).unwrap();
-        let db = db.lock();
-        super::super::tests::seed(&db);
-        db.execute_batch("DROP TRIGGER conversation_transition_void_blocks_fence_receipt; DROP TRIGGER conversation_transition_void_blocks_fenced; DROP TRIGGER conversation_transition_void_retained; DROP TRIGGER conversation_transition_void_answered_once; DROP TRIGGER conversation_transition_void_needs_unknown_outcome; DROP TABLE conversation_transition_voids; DROP TRIGGER conversation_transition_cancellation_session_deleted; DROP TABLE conversation_transition_cancellations; DROP TRIGGER conversation_operation_authority_session_deleted; DROP TABLE conversation_operation_authorities; DROP TABLE conversation_authority_clock; DROP TRIGGER conversation_transition_progress_session_deleted; DROP TABLE conversation_transition_progress; DROP TRIGGER conversation_transition_acceptance_session_deleted; DROP TABLE conversation_transition_acceptances; PRAGMA user_version=1027;").unwrap();
-    }
-    let reopened = Db::open(&path).unwrap();
-    assert_eq!(count(&reopened.lock()), 0);
-    let (app, _dir, id) = app();
-    let (row, c, o, m) = setup(&app, &id);
-    reserve(
-        &app,
-        &identity(),
-        &row,
-        &c,
-        &o,
-        &m,
-        app.nodes.connection("node").unwrap(),
-    )
-    .unwrap();
-    let db = app.db.lock();
-    db.begin_session_deletion(&id, "alice").unwrap();
-    db.finish_session_deletion(&id).unwrap();
-    let (state, raw): (String, Option<String>) = db
-        .query_row(
-            "SELECT state,frozen_json FROM conversation_transition_acceptances",
-            [],
-            |r| Ok((r.get(0)?, r.get(1)?)),
-        )
-        .unwrap();
-    assert_eq!(state, "deleted");
-    assert!(raw.is_none());
-    assert!(require_unused(&db, "alice", "move-1").is_err());
-}
 
 #[tokio::test]
 async fn changed_policy_and_control_before_first_dispatch_cannot_send() {

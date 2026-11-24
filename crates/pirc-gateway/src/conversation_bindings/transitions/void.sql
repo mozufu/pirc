@@ -45,7 +45,6 @@ CREATE TRIGGER IF NOT EXISTS conversation_transition_void_retained BEFORE DELETE
 END;
 -- The new ending: `outcome_unknown` becomes `released` only when the Node's void
 -- receipt is in the database. Every other transition is as before.
-DROP TRIGGER IF EXISTS conversation_transition_acceptance_progress;
 CREATE TRIGGER conversation_transition_acceptance_progress BEFORE UPDATE ON conversation_transition_acceptances WHEN
  (NEW.frozen_json IS NOT OLD.frozen_json AND NOT(NEW.state='deleted' AND NEW.frozen_json IS NULL AND NOT EXISTS(SELECT 1 FROM sessions WHERE id=OLD.session_id))) OR
  NOT(NEW.state=OLD.state OR (OLD.state='accepted' AND NEW.state='outcome_unknown') OR (OLD.state IN ('accepted','outcome_unknown') AND NEW.state='node_fenced')

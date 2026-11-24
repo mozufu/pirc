@@ -16,8 +16,6 @@ CREATE TABLE workspace_policy_versions (
 );
 CREATE VIEW current_workspace_policies AS SELECT v.* FROM workspace_policy_versions v
  WHERE revision=(SELECT MAX(revision) FROM workspace_policy_versions WHERE workspace_id=v.workspace_id);
-INSERT INTO workspace_policy_versions SELECT w.id,1,COALESCE(c.policy_json,'{"version":1,"delegation":true,"memory_search":true,"remote_recall":true,"schedules":true,"web_search":true,"delegation_approval":"always"}')
- FROM workspaces w LEFT JOIN workspace_capabilities c ON c.workspace_id=w.id;
 CREATE TRIGGER binding_workspace_policy_insert AFTER INSERT ON workspaces BEGIN
  INSERT INTO workspace_policy_versions VALUES(NEW.id,1,'{"version":1,"delegation":true,"memory_search":true,"remote_recall":true,"schedules":true,"web_search":true,"delegation_approval":"always"}');
 END;
@@ -49,8 +47,6 @@ CREATE TABLE conversation_project_memberships (
  CHECK(resolution!='member' OR project_workspace_id IS NOT NULL),
  CHECK(resolution!='none' OR project_workspace_id IS NULL)
 );
-INSERT INTO conversation_project_memberships(session_id,source_workspace_id,resolution)
- SELECT session_id,legacy_workspace_id,'unresolved' FROM conversation_bindings;
 -- Preserve a last known project when its mode is unavailable, only while the
 -- original association still matches. Never turn that retained ID into a grant.
 CREATE VIEW conversation_membership_targets AS

@@ -222,21 +222,3 @@ async fn fresh_deletion_respects_mode_permission_but_committed_cleanup_survives_
         204
     );
 }
-#[tokio::test]
-async fn migration_from_1015_queues_cancelled_acceptances_without_losing_identity() {
-    let (app, _dir, session) = accepted(true).await;
-    app.db
-        .lock()
-        .begin_session_deletion(&session, "alice")
-        .unwrap();
-    app.db.lock().execute_batch(concat!(include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/conversation_bindings/test_remove_policies.sql")), "DROP TABLE conversation_submission_retry_retirements; DROP TABLE conversation_submission_retry_attempts; DROP TRIGGER submission_pre_stop_cancelled; DROP TABLE conversation_submission_pending_stops; DROP TABLE conversation_submission_stop_controls; DROP TRIGGER submission_remote_cancelled; DROP TABLE conversation_submission_remote_cleanup; DROP TRIGGER IF EXISTS conversation_binding_insert; DROP TRIGGER IF EXISTS conversation_binding_mapping; DROP TRIGGER IF EXISTS conversation_binding_mode; DROP TABLE IF EXISTS conversation_bindings; PRAGMA user_version=1015;")).unwrap();
-    let db = Db::open(&app.config.state_dir.join("gateway.sqlite")).unwrap();
-    let j = read(&db.lock(), "alice", "draft-1").unwrap().unwrap();
-    assert_eq!(j.session, session);
-    assert!(j.expected.is_none());
-    assert!(
-        lookup(&db.lock(), "alice", "draft-1")
-            .unwrap()
-            .cleanup_pending
-    );
-}

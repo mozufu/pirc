@@ -341,28 +341,6 @@ async fn concurrent_clients_can_reserve_only_one_successor_of_the_same_rejection
         1
     );
 }
-#[tokio::test]
-async fn schema_1018_upgrade_keeps_the_rejected_original_without_an_implicit_attempt() {
-    let (app, _dir, first) = rejected(true).await;
-    app.db
-        .lock()
-        .execute_batch(
-            concat!(include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/conversation_bindings/test_remove_policies.sql")), "DROP TABLE conversation_submission_retry_retirements; DROP TABLE conversation_submission_retry_attempts; DROP TRIGGER IF EXISTS conversation_binding_insert; DROP TRIGGER IF EXISTS conversation_binding_mapping; DROP TRIGGER IF EXISTS conversation_binding_mode; DROP TABLE IF EXISTS conversation_bindings; PRAGMA user_version=1018;"),
-        )
-        .unwrap();
-    let reopened = crate::db::Db::open(&app.config.state_dir.join("gateway.sqlite")).unwrap();
-    let db = reopened.lock();
-    assert_eq!(count(&db, "conversation_submission_retry_attempts"), 0);
-    assert_eq!(db.get_command(&first.command).unwrap().status, "rejected");
-    assert_eq!(
-        lookup(&db, "alice", "draft-1")
-            .unwrap()
-            .submission
-            .unwrap()
-            .message,
-        "Keep this first message"
-    );
-}
 
 #[tokio::test]
 async fn only_a_new_known_rejected_successor_advances_the_monotonic_attempt_number() {

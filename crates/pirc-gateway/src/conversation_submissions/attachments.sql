@@ -1,7 +1,5 @@
 -- File bytes live in the gateway's private submission-staging directory.
 -- The deadline is committed before filesystem work, including crash orphans.
-ALTER TABLE conversation_submissions ADD COLUMN attachments_expires_at INTEGER;
-ALTER TABLE conversation_submissions ADD COLUMN attachments_expired_at INTEGER;
 CREATE TABLE conversation_submission_attachments (
  owner_user TEXT NOT NULL, operation_id TEXT NOT NULL, attachment_id TEXT NOT NULL,
  byte_size INTEGER NOT NULL CHECK(byte_size>0), sha256 TEXT NOT NULL,

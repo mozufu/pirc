@@ -307,36 +307,3 @@ async fn independent_connections_serialize_retirement_against_reservation() {
         }
     }
 }
-
-#[tokio::test]
-async fn schema_1019_migration_preserves_original_input_and_reserved_retry() {
-    let (app, _dir, first) = rejected(true).await;
-    let next = reserve(&app, &identity(), OP, &input(&first, "existing"))
-        .unwrap()
-        .unwrap();
-    let before = serde_json::to_value(lookup(&app.db.lock(), "alice", OP).unwrap()).unwrap();
-    app.db
-        .lock()
-        .execute_batch(
-            concat!(include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/conversation_bindings/test_remove_policies.sql")), "DROP TABLE conversation_submission_retry_retirements; DROP TRIGGER IF EXISTS conversation_binding_insert; DROP TRIGGER IF EXISTS conversation_binding_mapping; DROP TRIGGER IF EXISTS conversation_binding_mode; DROP TABLE IF EXISTS conversation_bindings; PRAGMA user_version=1019;"),
-        )
-        .unwrap();
-    let db = Db::open(&app.config.state_dir.join("gateway.sqlite")).unwrap();
-    let conn = db.lock();
-    assert_eq!(
-        serde_json::to_value(lookup(&conn, "alice", OP).unwrap()).unwrap(),
-        before
-    );
-    assert_eq!(
-        current_number(&conn, "alice", OP, &next.command).unwrap(),
-        1
-    );
-    assert_eq!(conn.get_command(&first.command).unwrap().status, "rejected");
-    assert_eq!(count(&conn, "commands"), 2);
-    assert_eq!(count(&conn, "conversation_submission_retry_retirements"), 0);
-    assert_eq!(
-        conn.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
-            .unwrap(),
-        crate::db::SCHEMA_VERSION
-    );
-}

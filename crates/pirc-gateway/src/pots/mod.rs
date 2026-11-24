@@ -10,6 +10,5 @@ pub use store::*;
 #[cfg(test)]
 mod api_tests;
 #[cfg(test)]
-mod migration_tests;
 #[cfg(test)]
 mod tests;

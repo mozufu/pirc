@@ -12,10 +12,6 @@ CREATE TABLE conversation_bindings (
  mode_id TEXT NOT NULL
 );
 CREATE INDEX conversation_bindings_workspace ON conversation_bindings(execution_workspace_id);
-INSERT INTO conversation_bindings(session_id,legacy_workspace_id,execution_workspace_id,node_id,mode_id)
- SELECT s.id,s.workspace_id,s.workspace_id,s.node_id,
-   (SELECT kind FROM workspaces WHERE id=s.workspace_id)
- FROM sessions s;
 
 -- Cover every creator atomically: legacy HTTP, first Send, delegation, schedules,
 -- pots and checkpoint continuation. No read-time allocation or history rewrite.

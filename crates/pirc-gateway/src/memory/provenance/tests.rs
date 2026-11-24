@@ -391,74 +391,6 @@ fn deleting_an_editor_keeps_other_creators_memory_and_project_scrub_erases_only_
     assert_eq!(count(&conn, "memory_version_contexts"), 0);
 }
 
-#[test]
-fn migration_keeps_large_legacy_history_unknown_under_concurrent_opens() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("db");
-    let id = {
-        let db = Db::open(&path).unwrap();
-        let conn = db.lock();
-        seed(&conn);
-        let id = session(&conn, "writer", "node:a");
-        crate::db::atomic(&conn,|tx|{
-            for i in 1..=2048 {
-                tx.execute("INSERT INTO memory_log(owner_user,entry_id,revision,op,content,origins_json,sources_json,actor,at) VALUES('alice','old',?,'replace',?,'[]',?,'session:legacy',?)",params![i,format!("historical {i}"),json!({"sessionId":id}).to_string(),i])?;
-            } Ok(())
-        }).unwrap();
-        conn.execute("INSERT INTO memory_entries(id,owner_user,kind,content,status,revision,origins_json,sources_json,created_at,updated_at,created_by_session) VALUES('old','alice','note','historical 2048','active',2048,'[]',?,1,2048,?)",params![json!({"sessionId":id}).to_string(),id]).unwrap();
-        conn.execute_batch(concat!(
-            include_str!("../test_remove_provenance.sql"),
-            "PRAGMA user_version=1022;"
-        ))
-        .unwrap();
-        id
-    };
-    let gate = std::sync::Barrier::new(4);
-    std::thread::scope(|scope| {
-        let handles: Vec<_> = (0..4)
-            .map(|_| {
-                scope.spawn(|| {
-                    gate.wait();
-                    let db = Db::open(&path).unwrap();
-                    assert_eq!(count(&db.lock(), "memory_log"), 2048);
-                })
-            })
-            .collect();
-        for h in handles {
-            h.join().unwrap();
-        }
-    });
-    let db = Db::open(&path).unwrap();
-    let conn = db.lock();
-    assert_eq!(count(&conn, "memory_version_contexts"), 0);
-    assert_eq!(count(&conn, "memory_proposal_contexts"), 0);
-    assert_eq!(store(&conn).history(USER, "old").unwrap().len(), 2048);
-    assert_eq!(
-        store(&conn).entry(USER, "old").unwrap().content,
-        "historical 2048"
-    );
-    assert_eq!(
-        version(&conn, USER, "old", Some(1024)).unwrap().source,
-        Source::Unknown
-    );
-    let source: String = conn
-        .query_row(
-            "SELECT sources_json FROM memory_log WHERE revision=2048",
-            [],
-            |r| r.get(0),
-        )
-        .unwrap();
-    assert_eq!(source, json!({"sessionId":id}).to_string());
-    let (entry, _) = store(&conn)
-        .write_note(USER, &note("new after migration"), &change(&id))
-        .unwrap();
-    assert_eq!(
-        project(&version(&conn, USER, &entry.id, Some(1)).unwrap()),
-        Some("node:a")
-    );
-    assert_eq!(count(&conn, "memory_version_contexts"), 1);
-}
-
 #[tokio::test]
 async fn stale_agent_context_cannot_write_or_propose_under_a_new_environment() {
     let (app, _dir) = crate::memory::tests::app();
@@ -1001,40 +933,6 @@ fn large_history_review_scrubs_only_selected_origins_and_preserves_outside_versi
         version(&conn, USER, &entry.id, Some(2))
             .unwrap()
             .relation("node:b"),
-        Relation::Project
-    );
-}
-
-#[test]
-fn migration_from_1023_does_not_invent_cleanup_receipts() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("gateway.sqlite");
-    let db = Db::open(&path).unwrap();
-    let conn = db.lock();
-    seed(&conn);
-    let a = session(&conn, "a", "node:a");
-    let entry = store(&conn)
-        .write_note(USER, &note("kept"), &change(&a))
-        .unwrap()
-        .0;
-    conn.begin_workspace_deletion("node:a", USER).unwrap();
-    conn.execute_batch("DROP TRIGGER conversation_transition_void_blocks_fence_receipt; DROP TRIGGER conversation_transition_void_blocks_fenced; DROP TRIGGER conversation_transition_void_retained; DROP TRIGGER conversation_transition_void_answered_once; DROP TRIGGER conversation_transition_void_needs_unknown_outcome; DROP TABLE conversation_transition_voids; DROP TRIGGER conversation_transition_cancellation_session_deleted; DROP TABLE conversation_transition_cancellations; DROP TRIGGER conversation_operation_authority_session_deleted; DROP TABLE conversation_operation_authorities; DROP TABLE conversation_authority_clock; DROP TRIGGER conversation_transition_progress_session_deleted; DROP TABLE conversation_transition_progress; DROP TRIGGER conversation_transition_acceptance_session_deleted; DROP TABLE conversation_transition_acceptances; DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences; DROP TABLE conversation_transition_previews; DROP TRIGGER command_environment_immutable; DROP TABLE command_environments; DROP TABLE project_memory_cleanup_sessions; DROP TABLE project_memory_cleanup; PRAGMA user_version=1023;").unwrap();
-    drop(conn);
-    drop(db);
-    let db = Db::open(&path).unwrap();
-    let conn = db.lock();
-    assert_eq!(count(&conn, "project_memory_cleanup"), 0);
-    assert_eq!(
-        conn.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
-            .unwrap(),
-        crate::db::SCHEMA_VERSION
-    );
-    assert!(conn.workspace_deletion("node:a").unwrap().is_some());
-    assert_eq!(store(&conn).entry(USER, &entry.id).unwrap().content, "kept");
-    assert_eq!(
-        version(&conn, USER, &entry.id, Some(1))
-            .unwrap()
-            .relation("node:a"),
         Relation::Project
     );
 }

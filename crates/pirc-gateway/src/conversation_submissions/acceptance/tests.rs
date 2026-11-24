@@ -579,29 +579,6 @@ fn concurrent_sqlite_connections_publish_one_accepted_identity() {
         1
     );
 }
-#[test]
-fn migration_preserves_1013_preparations_and_existing_sessions() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("gateway.sqlite");
-    let db = Connection::open(&path).unwrap();
-    db.execute_batch(concat!(
-        include_str!("../../schema.sql"),
-        include_str!("../../calendar/schema.sql"),
-        include_str!("../../pots/schema.sql"),
-        include_str!("../schema.sql"),
-        include_str!("../attachments.sql"),
-        "PRAGMA user_version=1013;"
-    ))
-    .unwrap();
-    super::super::tests::setup(&db);
-    db.execute("INSERT INTO sessions(id,workspace_id,private_session_path,name,node_id,pi_session_id,owner_user,created_at,updated_at) VALUES('old','node:repo','node://node/old','Old','node','old','alice',1,1)", []).unwrap();
-    drop(db);
-    let db = Db::open(&path).unwrap();
-    reserve(&mut db.lock(), "alice", &input()).unwrap();
-    assert_eq!(db.lock().get_session("old").unwrap().id, "old");
-    assert!(!lookup(&db.lock(), "alice", "draft-1").unwrap().accepted);
-    assert_eq!(count(&db.lock(), "conversation_submission_acceptances"), 0);
-}
 
 #[tokio::test]
 async fn revocation_while_preflight_waits_prevents_durable_acceptance() {

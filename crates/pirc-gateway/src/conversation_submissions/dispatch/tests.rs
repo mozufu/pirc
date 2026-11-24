@@ -385,34 +385,6 @@ async fn deleted_node_receipts_do_not_claim_a_message_was_never_admitted() {
 }
 
 #[tokio::test]
-async fn migration_from_1014_preserves_pending_acceptance_and_existing_commands() {
-    let (app, _dir, session) = ready(true).await;
-    let path = app.config.state_dir.join("gateway.sqlite");
-    {
-        let db = app.db.lock();
-        db.receive_command("legacy-command", &session, "hash", &json!({"type":"stop"}))
-            .unwrap();
-        db.execute_batch(concat!(include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/conversation_bindings/test_remove_policies.sql")), "DROP TABLE conversation_submission_retry_retirements; DROP TABLE conversation_submission_retry_attempts; DROP TRIGGER submission_pre_stop_cancelled; DROP TABLE conversation_submission_pending_stops; DROP TABLE conversation_submission_stop_controls; DROP TRIGGER submission_remote_cancelled; DROP TABLE conversation_submission_remote_cleanup; DROP TRIGGER submission_dispatch_cancelled; DROP TABLE conversation_submission_dispatches; DROP TRIGGER IF EXISTS conversation_binding_insert; DROP TRIGGER IF EXISTS conversation_binding_mapping; DROP TRIGGER IF EXISTS conversation_binding_mode; DROP TABLE IF EXISTS conversation_bindings; PRAGMA user_version=1014;")).unwrap();
-    }
-    drop(app);
-    let db = Db::open(&path).unwrap();
-    let conn = db.lock();
-    assert_eq!(
-        conn.get_command("legacy-command").unwrap().session_id,
-        session
-    );
-    let row = lookup(&conn, "alice", "draft-1").unwrap();
-    assert_eq!(row.state, Phase::Ready);
-    assert!(row.accepted);
-    assert!(row.message_admission.is_none());
-    assert_eq!(count(&conn, "conversation_submission_dispatches"), 0);
-    assert_eq!(
-        conn.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
-            .unwrap(),
-        crate::db::SCHEMA_VERSION
-    );
-}
-#[tokio::test]
 async fn ordinary_command_lookup_is_owner_scoped_read_only_and_hidden_during_deletion() {
     let (app, _dir, session) = ready(false).await;
     let send = reserve(&app, &identity(), "draft-1", &control())

@@ -163,25 +163,6 @@ fn parallel_device_requests_share_one_frozen_identity() {
     assert!(hashes.iter().all(|h| h == &hashes[0]));
     assert_eq!(count(&db.lock()), 1);
 }
-#[test]
-fn migration_preserves_old_binding_without_inventing_previews() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("db");
-    let id = {
-        let db = Db::open(&path).unwrap();
-        let db = db.lock();
-        let id = seed(&db);
-        db.execute_batch("DROP TRIGGER conversation_transition_void_blocks_fence_receipt; DROP TRIGGER conversation_transition_void_blocks_fenced; DROP TRIGGER conversation_transition_void_retained; DROP TRIGGER conversation_transition_void_answered_once; DROP TRIGGER conversation_transition_void_needs_unknown_outcome; DROP TABLE conversation_transition_voids; DROP TRIGGER conversation_transition_cancellation_session_deleted; DROP TABLE conversation_transition_cancellations; DROP TRIGGER conversation_operation_authority_session_deleted; DROP TABLE conversation_operation_authorities; DROP TABLE conversation_authority_clock; DROP TRIGGER conversation_transition_progress_session_deleted; DROP TABLE conversation_transition_progress; DROP TRIGGER conversation_transition_acceptance_session_deleted; DROP TABLE conversation_transition_acceptances; DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences; DROP TABLE conversation_transition_previews; PRAGMA user_version=1025;")
-            .unwrap();
-        id
-    };
-    let db = Db::open(&path).unwrap();
-    assert_eq!(count(&db.lock()), 0);
-    assert_eq!(
-        db.lock().get_session(&id).unwrap().workspace_id,
-        "node:repo"
-    );
-}
 
 pub(super) fn app() -> (AppState, tempfile::TempDir, String) {
     app_with(&[])

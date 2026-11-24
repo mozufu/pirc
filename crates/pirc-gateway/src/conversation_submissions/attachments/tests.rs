@@ -286,34 +286,6 @@ fn independent_connections_upload_once_and_cancellation_wins_without_revival() {
     );
 }
 
-#[test]
-fn schema_1012_migration_preserves_prepared_identity_and_adds_empty_staging() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("gateway.sqlite");
-    let prior = Connection::open(&path).unwrap();
-    prior
-        .execute_batch(concat!(
-            include_str!("../../schema.sql"),
-            include_str!("../../calendar/schema.sql"),
-            include_str!("../../pots/schema.sql"),
-            include_str!("../schema.sql"),
-            "PRAGMA user_version=1012;"
-        ))
-        .unwrap();
-    super::super::tests::setup(&prior);
-    let input = input();
-    prior.execute("INSERT INTO conversation_submissions(owner_user,operation_id,workspace_id,node_id,local_workspace_id,session_id,node_operation_id,command_id,submission_hash,payload_json,state,created_at,updated_at) VALUES('alice','draft-1','node:repo','node','repo','session_previous','creation_previous','command_previous',?1,?2,'preparing',1,1)",params![input.hash(),serde_json::to_string(&input.submission).unwrap()]).unwrap();
-    drop(prior);
-    let db = Db::open(&path).unwrap();
-    let row = reserve(&mut db.lock(), "alice", &input).unwrap();
-    assert_eq!(row.session_id, "session_previous");
-    assert!(row.staged_attachment_ids.is_empty());
-    assert!(row.attachments_expires_at.is_none());
-    assert_eq!(count(&db.lock(), "conversation_submission_cleanup"), 0);
-    cancel(&db.lock(), "alice", "draft-1").unwrap();
-    assert_eq!(count(&db.lock(), "conversation_submission_cleanup"), 1);
-}
-
 #[tokio::test]
 async fn startup_worker_recovers_cancelled_files_after_database_reopen() {
     let (app, _dir) = disk_app();

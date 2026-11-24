@@ -577,42 +577,6 @@ async fn removed_mode_does_not_prevent_the_owner_from_fencing_an_unmapped_input(
         Phase::Stopping
     );
 }
-#[tokio::test]
-async fn migration_from_1016_preserves_accepted_input_and_existing_commands() {
-    let (app, _dir, session) = accepted(true).await;
-    app.db
-        .lock()
-        .receive_command("old-command", &session, "hash", &json!({"type":"stop"}))
-        .unwrap();
-    app.db.lock().execute_batch(concat!(include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/conversation_bindings/test_remove_policies.sql")), "DROP TABLE conversation_submission_retry_retirements; DROP TABLE conversation_submission_retry_attempts; DROP TRIGGER submission_pre_stop_cancelled; DROP TABLE conversation_submission_pending_stops; DROP TABLE conversation_submission_stop_controls; DROP TRIGGER IF EXISTS conversation_binding_insert; DROP TRIGGER IF EXISTS conversation_binding_mapping; DROP TRIGGER IF EXISTS conversation_binding_mode; DROP TABLE IF EXISTS conversation_bindings; PRAGMA user_version=1016;")).unwrap();
-    let fresh = App::new(
-        app.config.clone(),
-        Arc::new(Db::open(&app.config.state_dir.join("gateway.sqlite")).unwrap()),
-        app.backends.clone(),
-        crate::app::test_modes(),
-    );
-    assert_eq!(
-        fresh
-            .db
-            .lock()
-            .get_command("old-command")
-            .unwrap()
-            .session_id,
-        session
-    );
-    assert_eq!(
-        fresh
-            .db
-            .lock()
-            .query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
-            .unwrap(),
-        crate::db::SCHEMA_VERSION
-    );
-    let generation = lease(&fresh).await;
-    let row = queue(&fresh, &alice(), OP, &held("phone", generation)).unwrap();
-    assert_eq!(row.state, Phase::Stopping);
-    assert!(row.submission.is_some());
-}
 
 #[tokio::test]
 async fn concurrent_connections_queue_exactly_one_stop_identity() {

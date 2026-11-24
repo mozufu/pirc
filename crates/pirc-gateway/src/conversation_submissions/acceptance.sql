@@ -21,8 +21,6 @@ END;
 
 -- Removing Work keeps accepted history and pending input. Unaccepted drafts still
 -- cancel, as before. Restoring that workspace may reconcile the same acceptance.
-DROP TRIGGER submission_workspace_removed;
-DROP TRIGGER submission_workspace_removal_completed;
 CREATE TRIGGER submission_workspace_removed AFTER INSERT ON workspace_removals
  WHEN NEW.status='removed' BEGIN
  UPDATE conversation_submissions SET state='cancelled',payload_json=NULL,updated_at=NEW.removed_at

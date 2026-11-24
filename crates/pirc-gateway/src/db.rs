@@ -37,13 +37,10 @@ macro_rules! sql_text_enum {
 }
 pub(crate) use sql_text_enum;
 
-/// `PRAGMA user_version` of the Rust schema. The TS gateway's migrations
-/// numbered 1 to 19; the Rust line starts far above them, at
-/// [`FIRST_SCHEMA_VERSION`], so a TS-era database is recognized and refused
-/// rather than misread.
-pub const SCHEMA_VERSION: i64 = 1034;
-/// The first Rust schema; later ones are reached through [`MIGRATIONS`].
-const FIRST_SCHEMA_VERSION: i64 = 1000;
+/// `PRAGMA user_version` of the pirc 2 schema. Databases from earlier
+/// releases (any other version) are refused, never migrated: pirc 2 starts
+/// from fresh state.
+pub const SCHEMA_VERSION: i64 = 1100;
 const SCHEMA: &str = concat!(
     include_str!("schema.sql"),
     include_str!("calendar/schema.sql"),
@@ -70,102 +67,6 @@ const SCHEMA: &str = concat!(
     include_str!("conversation_submissions/recovery.sql"),
     include_str!("conversation_bindings/transitions/void.sql")
 );
-/// Each migration takes a database from the version before it to its own;
-/// [`SCHEMA`] assembles the newest whole schema, including calendar tables.
-const MIGRATIONS: &[(i64, &str)] = &[
-    (
-        // Repository identity by normalized `origin` (docs/architecture/assistant-memory.md).
-        1001,
-        "ALTER TABLE workspaces ADD COLUMN repo TEXT;
-         ALTER TABLE memory_records ADD COLUMN repo TEXT;",
-    ),
-    (
-        // Projects linked to workspaces (docs/architecture/assistant-memory.md).
-        1002,
-        "CREATE TABLE project_links (
-           project_workspace_id TEXT NOT NULL REFERENCES workspaces(id), workspace_id TEXT NOT NULL,
-           repo TEXT, created_at INTEGER NOT NULL,
-           PRIMARY KEY (project_workspace_id, workspace_id)
-         );",
-    ),
-    (
-        // Agents' schedule deletions wait for the user (security audit L10);
-        1003,
-        "ALTER TABLE schedule_proposals ADD COLUMN operation TEXT NOT NULL DEFAULT 'save';
-         -- The delegation checkbox for auto mode, and retention (docs/architecture/assistant-memory.md).
-         ALTER TABLE delegations ADD COLUMN as_user_request INTEGER NOT NULL DEFAULT 0;
-         CREATE INDEX delegations_follows ON delegations(follows);",
-    ),
-    (
-        // Project deletion (docs/guides/chat-projects.md): its fence, and
-        // tombstones scoped to the deleted project.
-        1004,
-        "ALTER TABLE session_deletions ADD COLUMN workspace_id TEXT;
-         CREATE TABLE workspace_deletions (
-           workspace_id TEXT PRIMARY KEY, owner_user TEXT NOT NULL, status TEXT NOT NULL, created_at INTEGER NOT NULL
-         );
-         CREATE TABLE memory_tombstones_scoped (
-           owner_user TEXT NOT NULL, scope_id TEXT NOT NULL DEFAULT 'global', content_hash TEXT NOT NULL,
-           forgotten_at INTEGER NOT NULL,
-           PRIMARY KEY (owner_user, scope_id, content_hash)
-         );
-         INSERT INTO memory_tombstones_scoped (owner_user, scope_id, content_hash, forgotten_at)
-           SELECT owner_user, 'global', content_hash, forgotten_at FROM memory_tombstones;
-         DROP TABLE memory_tombstones;
-         ALTER TABLE memory_tombstones_scoped RENAME TO memory_tombstones;",
-    ),
-    (
-        // Delegation without the approval card (docs/guides/chat-projects.md):
-        // how each started, and what its dispatch rested on.
-        1005,
-        "ALTER TABLE delegations ADD COLUMN dispatch TEXT;
-         ALTER TABLE delegations ADD COLUMN origins_json TEXT;
-         ALTER TABLE delegations ADD COLUMN quote TEXT;
-         ALTER TABLE delegations ADD COLUMN quote_entry_ids TEXT;
-         UPDATE delegations SET dispatch='approved' WHERE dispatched_at IS NOT NULL OR status IN ('running','waiting_input','completed','failed');",
-    ),
-    (1006, "ALTER TABLE memory_mirrors ADD COLUMN digest TEXT;"),
-    (1007, include_str!("calendar/schema.sql")),
-    (
-        // Private node-owned checkpoint continuation workspaces.
-        1008,
-        "CREATE TABLE IF NOT EXISTS checkpoint_workspace_owners (
-           workspace_id TEXT PRIMARY KEY REFERENCES workspaces(id) ON DELETE CASCADE,
-           owner_user TEXT
-         );",
-    ),
-    (1009, "CREATE TABLE workspace_removals (workspace_id TEXT PRIMARY KEY REFERENCES workspaces(id) ON DELETE CASCADE, owner_user TEXT NOT NULL, removed_at INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'removed' CHECK(status IN ('checking','removed')), token TEXT NOT NULL DEFAULT '');"),
-    (1010, include_str!("pots/schema.sql")),
-    // Execution statuses/accepted instructions are not readable by old Gateways.
-    // No SQL shape changes; the version fence prevents unsafe downgrade.
-    (1011, "SELECT 1;"),
-    (1012, include_str!("conversation_submissions/schema.sql")),
-    (1013, include_str!("conversation_submissions/attachments.sql")),
-    (1014, include_str!("conversation_submissions/acceptance.sql")),
-    (1015, include_str!("conversation_submissions/dispatch.sql")),
-    (1016, include_str!("conversation_submissions/cancellation.sql")),
-    (1017, include_str!("conversation_submissions/pre_stop.sql")),
-    // Semantic fence: older Gateways must not execute first Send without the new client contract.
-    (1018, "SELECT 1;"),
-    (1019, include_str!("conversation_submissions/retries.sql")),
-    (1020, include_str!("conversation_submissions/retry_retirements.sql")),
-    (1021, include_str!("conversation_bindings/schema.sql")),
-    (1022, include_str!("conversation_bindings/policies.sql")),
-    (1023, include_str!("memory/provenance.sql")),
-    (1024, include_str!("memory/project_cleanup.sql")),
-    (1025, include_str!("conversation_bindings/commands.sql")),
-    (1026, include_str!("conversation_bindings/transitions.sql")),
-    (1027, include_str!("conversation_bindings/transitions/receipts.sql")),
-    (1028, include_str!("conversation_bindings/transitions/acceptance.sql")),
-    // Transition Stop commands reuse commands, with new guarded semantics.
-    (1029, "SELECT 1;"),
-    (1030, include_str!("conversation_bindings/transitions/installation.sql")),
-    (1031, include_str!("conversation_bindings/transitions/authority.sql")),
-    (1032, include_str!("conversation_bindings/transitions/cancellation.sql")),
-    (1033, include_str!("conversation_submissions/recovery.sql")),
-    (1034, include_str!("conversation_bindings/transitions/void.sql")),
-];
-
 /// Placeholder name of a new session until the agent's title replaces it.
 pub const PLACEHOLDER_SESSION_NAME: &str = "New session";
 
@@ -223,9 +124,9 @@ impl Db {
     }
 }
 
-/// A TS-era `gateway.sqlite` left in the state directory while
-/// `PIRC_DATABASE_PATH` points elsewhere is refused too.
-pub fn refuse_typescript_database(path: &Path) -> Result<(), String> {
+/// A `gateway.sqlite` from an earlier release left in the state directory
+/// while `PIRC_DATABASE_PATH` points elsewhere is refused too.
+pub fn refuse_earlier_database(path: &Path) -> Result<(), String> {
     if !path.exists() {
         return Ok(());
     }
@@ -234,17 +135,16 @@ pub fn refuse_typescript_database(path: &Path) -> Result<(), String> {
     let version: i64 = connection
         .pragma_query_value(None, "user_version", |row| row.get(0))
         .map_err(|error| format!("{}: {error}", path.display()))?;
-    if (1..FIRST_SCHEMA_VERSION).contains(&version) {
-        return Err(typescript_era(path));
+    if version != 0 && version < SCHEMA_VERSION {
+        return Err(earlier_release(path));
     }
     Ok(())
 }
 
-fn typescript_era(path: &Path) -> String {
+fn earlier_release(path: &Path) -> String {
     format!(
-        "{} was written by the TypeScript gateway (pirc 0.3 or earlier). This gateway starts \
-         from a fresh state directory: devices are paired again, sessions start anew. See the \
-         upgrade notes (docs/deploy/upgrades.md), then move the old state directory away.",
+        "{} was created by an earlier pirc. pirc 2 cannot read it; move or delete the state \
+         directory and start fresh (docs/deploy/upgrades.md).",
         path.display()
     )
 }
@@ -312,10 +212,10 @@ fn is_busy_or_locked(error: &rusqlite::Error) -> bool {
     )
 }
 
-/// Create the schema in a new database; refuse one from the TS gateway or a
-/// newer Rust gateway. The version is read and acted on under one
+/// Create the schema in a new database; refuse one from an earlier release or
+/// a newer gateway. The version is read and acted on under one
 /// `BEGIN IMMEDIATE` write lock, so two processes opening the same database
-/// cannot both create or migrate it; any failure rolls the whole chain back.
+/// cannot both create it.
 fn create_schema(connection: &Connection, path: &Path) -> Result<(), String> {
     let describe = |error: rusqlite::Error| format!("{}: {error}", path.display());
     connection
@@ -338,17 +238,14 @@ fn apply_schema(connection: &Connection, path: &Path) -> Result<(), String> {
     if version == SCHEMA_VERSION {
         return Ok(());
     }
-    if (1..FIRST_SCHEMA_VERSION).contains(&version) {
-        return Err(typescript_era(path));
-    }
-    if (FIRST_SCHEMA_VERSION..SCHEMA_VERSION).contains(&version) {
-        return migrate(connection, version).map_err(describe);
-    }
     if version > SCHEMA_VERSION {
         return Err(format!(
             "{} has schema version {version}, newer than this gateway's {SCHEMA_VERSION}",
             path.display()
         ));
+    }
+    if version != 0 {
+        return Err(earlier_release(path));
     }
     let tables: i64 = connection
         .query_row("SELECT count(*) FROM sqlite_master", [], |row| row.get(0))
@@ -364,35 +261,6 @@ fn apply_schema(connection: &Connection, path: &Path) -> Result<(), String> {
             "{SCHEMA}\nPRAGMA user_version = {SCHEMA_VERSION};"
         ))
         .map_err(describe)
-}
-
-/// Bring an older Rust schema up to date, inside [`create_schema`]'s
-/// transaction.
-fn migrate(connection: &Connection, from: i64) -> rusqlite::Result<()> {
-    // Unpublished calendar/checkpoint builds used 1006/1007 before upstream
-    // assigned 1006 to the memory digest. Preserve their data while joining
-    // the upstream sequence, under create_schema's single write transaction.
-    if (1006..=1007).contains(&from) {
-        let digest: bool = connection.query_row(
-            "SELECT EXISTS(SELECT 1 FROM pragma_table_info('memory_mirrors') WHERE name='digest')",
-            [],
-            |row| row.get(0),
-        )?;
-        if !digest {
-            connection.execute_batch("ALTER TABLE memory_mirrors ADD COLUMN digest TEXT;")?;
-        }
-    }
-    for (version, sql) in MIGRATIONS.iter().filter(|(version, _)| *version > from) {
-        let calendar_exists: bool = connection.query_row(
-            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='calendar_events')",
-            [], |row| row.get(0),
-        )?;
-        if *version != 1007 || !calendar_exists {
-            connection.execute_batch(sql)?;
-        }
-        connection.pragma_update(None, "user_version", version)?;
-    }
-    Ok(())
 }
 
 /// Storage failures are logged and become a plain 500.

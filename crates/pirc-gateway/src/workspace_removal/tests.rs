@@ -411,38 +411,6 @@ async fn http_removal_filters_node_lists_and_restores_only_on_add() {
 }
 
 #[test]
-fn migration_from_1008_preserves_workspace_and_history() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("db.sqlite");
-    {
-        let conn = Connection::open(&path).unwrap();
-        conn.execute_batch(concat!(
-            include_str!("../schema.sql"),
-            include_str!("../calendar/schema.sql"),
-            "PRAGMA user_version=1008;"
-        ))
-        .unwrap();
-        conn.sync_remote_workspaces(
-            "work",
-            &[(
-                "repo".into(),
-                "Repo".into(),
-                ModeId::new("directory").unwrap(),
-            )],
-        )
-        .unwrap();
-        conn.execute("INSERT INTO sessions(id,workspace_id,private_session_path,name,node_id,pi_session_id,owner_user,created_at,updated_at) VALUES('old','work:repo','node://work/s','Old','work','s','u',1,1)", []).unwrap();
-        conn.execute_batch("DROP TABLE workspace_removals;")
-            .unwrap();
-    }
-    let db = Db::open(&path).unwrap();
-    let conn = db.lock();
-    assert!(conn.get_workspace("work:repo").is_ok());
-    assert_eq!(conn.list_sessions().unwrap().len(), 1);
-    assert!(!removed(&conn, "work:repo").unwrap());
-}
-
-#[test]
 fn checking_fences_mutations_and_only_its_token_can_finalize_or_rollback() {
     let (app, _dir) = fixture();
     let session = session(&app, "u");

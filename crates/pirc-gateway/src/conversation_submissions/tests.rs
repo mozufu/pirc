@@ -331,40 +331,6 @@ fn strict_validation_bounds_text_and_attachment_manifests() {
     assert!(serde_json::from_value::<Input>(json!({"operationId":"a","owner":"bob","submission":{"workspaceId":"node:repo","message":"text"}})).is_err());
 }
 
-#[test]
-fn migration_from_1011_preserves_sessions_and_installs_cleanup_triggers() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("gateway.sqlite");
-    let prior = Connection::open(&path).unwrap();
-    prior
-        .execute_batch(concat!(
-            include_str!("../schema.sql"),
-            include_str!("../calendar/schema.sql"),
-            include_str!("../pots/schema.sql"),
-            "PRAGMA user_version=1011;"
-        ))
-        .unwrap();
-    setup(&prior);
-    prior.execute("INSERT INTO sessions(id,workspace_id,private_session_path,name,node_id,pi_session_id,owner_user,created_at,updated_at) VALUES('old','node:repo','node://node/old','Old','node','old','alice',1,1)", []).unwrap();
-    drop(prior);
-    let db = Db::open(&path).unwrap();
-    assert_eq!(db.lock().get_session("old").unwrap().id, "old");
-    assert_eq!(
-        db.lock()
-            .query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0))
-            .unwrap(),
-        crate::db::SCHEMA_VERSION
-    );
-    reserve(&mut db.lock(), "alice", &input()).unwrap();
-    db.lock()
-        .begin_workspace_deletion("node:repo", "alice")
-        .unwrap();
-    assert_eq!(
-        lookup(&db.lock(), "alice", "draft-1").unwrap().state,
-        Phase::Cancelled
-    );
-}
-
 pub(super) fn app() -> (AppState, tempfile::TempDir) {
     app_with_database(false)
 }

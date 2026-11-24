@@ -5,7 +5,7 @@ CREATE TABLE conversation_node_fences (
  operation_id TEXT NOT NULL,
  session_id TEXT NOT NULL,
  intent_digest TEXT NOT NULL,
- state TEXT NOT NULL CHECK(state IN ('fenced','deleted')),
+ state TEXT NOT NULL CHECK(state IN ('fenced','installed','released','deleted')),
  created_at INTEGER NOT NULL,
  PRIMARY KEY(owner_user,operation_id)
 );
@@ -16,9 +16,8 @@ END;
 CREATE TRIGGER conversation_node_fence_retained BEFORE DELETE ON conversation_node_fences BEGIN
  SELECT RAISE(ABORT,'Node fence receipts are retained');
 END;
-CREATE TRIGGER conversation_node_fence_closed BEFORE UPDATE OF state ON conversation_node_fences WHEN (OLD.state='deleted' AND NEW.state!='deleted') OR (NEW.state='deleted' AND EXISTS(SELECT 1 FROM sessions WHERE id=OLD.session_id)) BEGIN
- SELECT RAISE(ABORT,'Only canonical session deletion may close a Node fence');
-END;
-CREATE TRIGGER conversation_node_fence_session_deleted AFTER DELETE ON sessions BEGIN
- UPDATE conversation_node_fences SET state='deleted' WHERE session_id=OLD.id;
+CREATE TRIGGER conversation_node_fence_closed BEFORE UPDATE OF state ON conversation_node_fences WHEN NEW.state!=OLD.state AND NOT(
+ (OLD.state='fenced' AND NEW.state IN ('installed','released'))
+ OR (NEW.state='deleted' AND NOT EXISTS(SELECT 1 FROM sessions WHERE id=OLD.session_id))) BEGIN
+ SELECT RAISE(ABORT,'A Node fence ends only by installation, release or canonical session deletion');
 END;

@@ -15,8 +15,3 @@ CREATE TRIGGER submission_remote_cancelled AFTER UPDATE OF state ON conversation
  SELECT NEW.owner_user,NEW.operation_id,NEW.session_id,NEW.node_id,NEW.node_operation_id,NEW.local_workspace_id,NEW.submission_hash,a.node_session_id,NEW.updated_at
  FROM conversation_submission_acceptances a WHERE a.owner_user=NEW.owner_user AND a.operation_id=NEW.operation_id;
 END;
--- Migrate already-cancelled accepted operations too: an older Gateway may have
--- lost a remote allocation response before recording its private mapping.
-INSERT OR IGNORE INTO conversation_submission_remote_cleanup(owner_user,operation_id,session_id,node_id,node_operation_id,local_workspace_id,submission_hash,expected_node_session_id,created_at)
-SELECT s.owner_user,s.operation_id,s.session_id,s.node_id,s.node_operation_id,s.local_workspace_id,s.submission_hash,a.node_session_id,s.updated_at
-FROM conversation_submissions s JOIN conversation_submission_acceptances a USING(owner_user,operation_id) WHERE s.state='cancelled';

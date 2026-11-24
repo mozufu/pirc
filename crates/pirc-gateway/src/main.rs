@@ -113,7 +113,7 @@ async fn run(config: GatewayConfig) -> Result<(), String> {
         .map_err(|error| format!("cannot register gateway private directories: {error}"))?;
     let default_database = config.state_dir.join("gateway.sqlite");
     if default_database != config.database_path {
-        db::refuse_typescript_database(&default_database)?;
+        db::refuse_earlier_database(&default_database)?;
     }
     let db = Arc::new(Db::open(&config.database_path)?);
     let recovery = db

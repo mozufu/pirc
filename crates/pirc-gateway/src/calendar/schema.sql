@@ -1,6 +1,4 @@
 -- Personal calendar data is user-owned and independent of agent execution.
--- Legacy runs keep NULL: their origin cannot be safely inferred.
-ALTER TABLE schedule_runs ADD COLUMN origin TEXT;
 CREATE TABLE calendar_events (
   id TEXT PRIMARY KEY, owner_user TEXT NOT NULL, creation_key TEXT NOT NULL,
   creation_hash TEXT NOT NULL, spec_json TEXT NOT NULL, revision INTEGER NOT NULL,

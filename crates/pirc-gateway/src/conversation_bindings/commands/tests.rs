@@ -310,44 +310,6 @@ fn independent_devices_racing_same_id_admit_only_once() {
 }
 
 #[test]
-fn migration_does_not_invent_an_environment_for_historical_commands() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("db");
-    let old = {
-        let db = Db::open(&path).unwrap();
-        let conn = db.lock();
-        let session = setup(&conn);
-        conn.receive_command(
-            "historical",
-            &session.id,
-            &payload_hash(&prompt()),
-            &prompt(),
-        )
-        .unwrap();
-        conn.execute_batch("DROP TRIGGER conversation_transition_void_blocks_fence_receipt; DROP TRIGGER conversation_transition_void_blocks_fenced; DROP TRIGGER conversation_transition_void_retained; DROP TRIGGER conversation_transition_void_answered_once; DROP TRIGGER conversation_transition_void_needs_unknown_outcome; DROP TABLE conversation_transition_voids; DROP TRIGGER conversation_transition_cancellation_session_deleted; DROP TABLE conversation_transition_cancellations; DROP TRIGGER conversation_operation_authority_session_deleted; DROP TABLE conversation_operation_authorities; DROP TABLE conversation_authority_clock; DROP TRIGGER conversation_transition_progress_session_deleted; DROP TABLE conversation_transition_progress; DROP TRIGGER conversation_transition_acceptance_session_deleted; DROP TABLE conversation_transition_acceptances; DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences; DROP TABLE conversation_transition_previews; DROP TRIGGER command_environment_immutable; DROP TABLE command_environments; PRAGMA user_version=1024;").unwrap();
-        session
-    };
-    let db = Db::open(&path).unwrap();
-    let conn = db.lock();
-    assert_eq!(origin(&conn, "historical"), None);
-    change(&conn);
-    let current = conn.get_session(&old.id).unwrap();
-    assert!(
-        receive(
-            &conn,
-            &current,
-            "alice",
-            "historical",
-            &prompt(),
-            Some(&old.binding)
-        )
-        .unwrap()
-        .1
-    );
-    assert_eq!(origin(&conn, "historical"), None);
-}
-
-#[test]
 fn deleting_session_cannot_admit_new_work_or_replay_old_receipts() {
     let db = Db::memory();
     let conn = db.lock();

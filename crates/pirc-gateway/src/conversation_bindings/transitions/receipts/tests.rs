@@ -306,30 +306,6 @@ async fn connection_and_device_changes_after_query_never_persist_a_receipt() {
         assert_eq!(count(&app.db.lock()), 0);
     }
 }
-#[test]
-fn migration_preserves_previews_without_inventing_node_acceptance() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("db");
-    let (id, hash) = {
-        let db = Db::open(&path).unwrap();
-        let db = db.lock();
-        let id = seed(&db);
-        let row = reserve(&db, "alice", &id, &input(&db, &id)).unwrap();
-        db.execute_batch("DROP TRIGGER conversation_transition_void_blocks_fence_receipt; DROP TRIGGER conversation_transition_void_blocks_fenced; DROP TRIGGER conversation_transition_void_retained; DROP TRIGGER conversation_transition_void_answered_once; DROP TRIGGER conversation_transition_void_needs_unknown_outcome; DROP TABLE conversation_transition_voids; DROP TRIGGER conversation_transition_cancellation_session_deleted; DROP TABLE conversation_transition_cancellations; DROP TRIGGER conversation_operation_authority_session_deleted; DROP TABLE conversation_operation_authorities; DROP TABLE conversation_authority_clock; DROP TRIGGER conversation_transition_progress_session_deleted; DROP TABLE conversation_transition_progress; DROP TRIGGER conversation_transition_acceptance_session_deleted; DROP TABLE conversation_transition_acceptances; DROP TRIGGER conversation_node_fence_session_deleted; DROP TABLE conversation_node_fences; PRAGMA user_version=1026;")
-            .unwrap();
-        (id, row.plan_hash)
-    };
-    let db = Db::open(&path).unwrap();
-    let db = db.lock();
-    assert_eq!(count(&db), 0);
-    assert_eq!(read(&db, "alice", &id, "move-1").unwrap().plan_hash, hash);
-    require_open(&db, &id).unwrap();
-    assert_eq!(
-        db.pragma_query_value(None, "user_version", |r| r.get::<_, i64>(0))
-            .unwrap(),
-        crate::db::SCHEMA_VERSION
-    );
-}
 
 #[tokio::test]
 async fn fence_received_during_capability_wait_prevents_dispatch_and_node_reauthorization() {

@@ -571,27 +571,6 @@ fn automatic_forecasts_deduplicate_but_manual_and_legacy_runs_keep_their_identit
     assert_ne!(account_key("alice"), account_key("bob"));
 }
 
-#[test]
-fn migration_from_previous_version_preserves_existing_schedules() {
-    let dir = tempfile::tempdir().unwrap();
-    let path = dir.path().join("db.sqlite");
-    let c = Connection::open(&path).unwrap();
-    c.execute_batch(include_str!("../schema.sql")).unwrap();
-    c.execute_batch("DROP TABLE workspace_removals;").unwrap();
-    schedule(&c, "0 9 * * *");
-    c.pragma_update(None, "user_version", 1006).unwrap();
-    drop(c);
-    let db = Db::open(&path).unwrap();
-    let c = db.lock();
-    assert_eq!(list(&c, "alice").unwrap().len(), 0);
-    assert_eq!(
-        c.query_row("SELECT COUNT(*) FROM schedules", [], |r| r.get::<_, i64>(0))
-            .unwrap(),
-        1
-    );
-    create(&c, "alice", "migrated", &spec(), 0).unwrap();
-}
-
 pub(super) fn fixture() -> (crate::app::AppState, tempfile::TempDir) {
     use crate::app::App;
     use pirc_config::{Env, GatewayConfig};

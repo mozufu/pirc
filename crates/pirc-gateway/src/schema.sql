@@ -152,7 +152,9 @@ CREATE INDEX schedules_due ON schedules(status, next_run_at);
 CREATE TABLE schedule_runs (
   id TEXT PRIMARY KEY, schedule_id TEXT NOT NULL, owner_user TEXT NOT NULL,
   due_at INTEGER NOT NULL, status TEXT NOT NULL, session_id TEXT, result TEXT,
-  started_at INTEGER, finished_at INTEGER, created_at INTEGER NOT NULL
+  started_at INTEGER, finished_at INTEGER, created_at INTEGER NOT NULL,
+  -- What started the run (calendar/schema.sql); NULL when unknown.
+  origin TEXT
 );
 CREATE INDEX schedule_runs_schedule ON schedule_runs(schedule_id, created_at);
 CREATE INDEX schedule_runs_session ON schedule_runs(session_id, status);
