@@ -9,20 +9,20 @@ acceptance, activation.
 
 ## Status
 
-| Milestone                                                     | Design   | Code        | Acceptance | Notes                                               |
-| ------------------------------------------------------------- | -------- | ----------- | ---------- | --------------------------------------------------- |
-| [M0 Unify the working tree](#m0-unify-the-working-tree)       | complete | complete    | n/a        | `e1a08db9`, `162c113b`                              |
-| [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement) |
-| [M2 Backend baseline](#m2-backend-baseline)                   | complete | in progress |            | steps 1–5 and 7 done; 6 moved to M4                 |
-| [M3 Usage ledger](#m3-usage-ledger)                           | complete |             |            | P20                                                 |
-| [M4 Pots backend](#m4-pots-backend)                           | complete |             |            | Q6                                                  |
-| [M5 Client foundation](#m5-client-foundation)                 | complete | in progress |            | steps detailed                                      |
-| [M6 Work and settings screens](#m6-work-and-settings-screens) | outline  |             |            |                                                     |
-| [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                     |
-| [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                     |
-| [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                  |
-| [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                                                     |
-| [M11 Release](#m11-release)                                   | outline  |             |            |                                                     |
+| Milestone                                                     | Design   | Code        | Acceptance | Notes                                                       |
+| ------------------------------------------------------------- | -------- | ----------- | ---------- | ----------------------------------------------------------- |
+| [M0 Unify the working tree](#m0-unify-the-working-tree)       | complete | complete    | n/a        | `e1a08db9`, `162c113b`                                      |
+| [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)         |
+| [M2 Backend baseline](#m2-backend-baseline)                   | complete | in progress |            | steps 1–5 and 7 done; 6 moved to M4                         |
+| [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
+| [M4 Pots backend](#m4-pots-backend)                           | complete |             |            | Q6                                                          |
+| [M5 Client foundation](#m5-client-foundation)                 | complete | in progress |            | steps detailed                                              |
+| [M6 Work and settings screens](#m6-work-and-settings-screens) | outline  |             |            |                                                             |
+| [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |
+| [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                             |
+| [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                          |
+| [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                                                             |
+| [M11 Release](#m11-release)                                   | outline  |             |            |                                                             |
 
 "Outline" milestones get their detailed steps written (rule P12) before they start,
 using what the earlier milestones produced.
@@ -169,7 +169,9 @@ Specification: [usage.md](usage.md). Steps:
 3. Attribute each request to an actor (user, pot, schedule, delegation, title/
    classifier side requests) and a causal root.
 4. Aggregation queries and `GET /api/usage/*` endpoints.
-5. Budget admission hook used by M4.
+5. Budget admission hook: built with the pot budgets in M4 (reservation against
+   the pot, the causal root and the owner caps, as [usage.md](usage.md#budget-admission)
+   describes), so no unused code lands before its caller.
 
 ---
 
