@@ -27,6 +27,21 @@ fn native_available() -> bool {
         Path::new("/usr/bin/sandbox-exec").exists()
     } else if cfg!(target_os = "linux") {
         Command::new("bwrap").arg("--version").output().is_ok()
+            && Command::new("bwrap")
+                .args([
+                    "--ro-bind",
+                    "/",
+                    "/",
+                    "--dev",
+                    "/dev",
+                    "--proc",
+                    "/proc",
+                    "--unshare-pid",
+                    "--",
+                    "/bin/true",
+                ])
+                .output()
+                .is_ok_and(|output| output.status.success())
     } else {
         false
     };
@@ -35,7 +50,7 @@ fn native_available() -> bool {
         "native checkpoint acceptance requires Seatbelt or bubblewrap"
     );
     if !available {
-        eprintln!("native checkpoint acceptance skipped: Seatbelt/bubblewrap unavailable");
+        eprintln!("native checkpoint acceptance skipped: a usable Seatbelt/bubblewrap unavailable");
     }
     available
 }
@@ -49,10 +64,7 @@ async fn cluster() -> Option<Cluster> {
         env: vec![("PIRC_ALLOWED_USERS", format!("{USER},other@example.com"))],
         node_env: vec![
             ("PIRC_SANDBOX_SRT", String::new()),
-            (
-                "PIRC_AGENT_FEATURES",
-                "observational-memory,workspace-memory".into(),
-            ),
+            ("PIRC_AGENT_FEATURES", "workspace-memory".into()),
             ("PIRC_CHECKPOINT_WORKSPACES", r#"["test"]"#.into()),
             ("PIRC_ALLOWED_USERS", format!("{USER},other@example.com")),
         ],
