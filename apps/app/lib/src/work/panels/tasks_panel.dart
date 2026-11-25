@@ -7,12 +7,10 @@ import 'package:pirc_ui/pirc_ui.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../connection/data.dart';
 import 'panel_common.dart';
+import '../labels.dart';
 
-PanelKey _state(String sessionId) => panelKey(
-  sessionId,
-  'panel/state',
-  sections: const ['background', 'team', 'memory'],
-);
+PanelKey _state(String sessionId) =>
+    panelKey(sessionId, 'panel/state', sections: const ['background', 'team']);
 
 /// 10c. Tasks: background tasks and teammates from `…/panel/state`; a task's
 /// output from `…/panel/background/:taskId` and its Stop (lease).
@@ -73,7 +71,7 @@ class _TasksPanelState extends ConsumerState<TasksPanel> {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(fontFamily: 'monospace'),
                 ),
-                subtitle: Text('${task['status']}'),
+                subtitle: Text(l10n.taskStatus('${task['status']}')),
                 onTap: () => setState(() => _task = '${task['id']}'),
               ),
             if (agents.isNotEmpty) _Section(l10n.tasksTeam),
@@ -83,7 +81,11 @@ class _TasksPanelState extends ConsumerState<TasksPanel> {
                 leading: const Icon(LucideIcons.bot, size: 18),
                 title: Text('${agent['name'] ?? agent['id'] ?? ''}'),
                 subtitle: Text(
-                  '${agent['status'] ?? ''} ${agent['task'] ?? ''}'.trim(),
+                  [
+                    if (agent['status'] != null)
+                      l10n.taskStatus('${agent['status']}'),
+                    if (agent['task'] != null) '${agent['task']}',
+                  ].join(' · '),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -192,62 +194,6 @@ class _TaskDetail extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// 10c. Memory: the memory panel of `…/panel/state` (read only).
-class MemoryPanel extends ConsumerWidget {
-  const MemoryPanel({super.key, required this.sessionId});
-  final String sessionId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final key = _state(sessionId);
-    return PanelBody<Object?>(
-      value: ref.watch(panelReadProvider(key)),
-      onRetry: () => ref.invalidate(panelReadProvider(key)),
-      emptyText: l10n.memoryEmpty,
-      isEmpty: (d) {
-        final memory = field(d, 'memory');
-        return ((field(memory, 'observations') as List?)?.isEmpty ?? true) &&
-            ((field(memory, 'reflections') as List?)?.isEmpty ?? true);
-      },
-      builder: (d) {
-        final memory = field(d, 'memory');
-        final counts = field(memory, 'counts');
-        final observations =
-            (field(memory, 'observations') as List? ?? const []).cast<Map>();
-        final reflections = (field(memory, 'reflections') as List? ?? const [])
-            .cast<Map>();
-        return ListView(
-          children: [
-            ListTile(
-              dense: true,
-              title: Text(
-                l10n.memoryCounts(
-                  (field(counts, 'observations') as num?)?.toInt() ?? 0,
-                  (field(counts, 'reflections') as num?)?.toInt() ?? 0,
-                ),
-              ),
-              subtitle: field(memory, 'enabled') == false
-                  ? Text(l10n.memoryOff)
-                  : null,
-            ),
-            if (reflections.isNotEmpty) _Section(l10n.memoryReflections),
-            for (final r in reflections)
-              ListTile(dense: true, title: Text('${r['content']}')),
-            if (observations.isNotEmpty) _Section(l10n.memoryObservations),
-            for (final o in observations)
-              ListTile(
-                dense: true,
-                title: Text('${o['content']}'),
-                enabled: o['visible'] != false,
-              ),
-          ],
-        );
-      },
     );
   }
 }

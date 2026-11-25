@@ -440,7 +440,6 @@
   "panelGit": "Git",
   "panelTerminal": "Terminal",
   "panelTasks": "Tasks",
-  "panelMemory": "Memory",
   "panelBrowser": "Browser",
   "panelContext": "Context",
   "panelCheckpoints": "Checkpoints",
@@ -481,21 +480,6 @@
   "tasksTeam": "Teammates",
   "tasksStop": "Stop",
   "tasksNoOutput": "No output yet.",
-  "memoryEmpty": "Nothing remembered yet.",
-  "memoryCounts": "{observations} observations · {reflections} reflections",
-  "@memoryCounts": {
-    "placeholders": {
-      "observations": {
-        "type": "int"
-      },
-      "reflections": {
-        "type": "int"
-      }
-    }
-  },
-  "memoryOff": "Memory is off for this work.",
-  "memoryReflections": "Reflections",
-  "memoryObservations": "Observations",
   "contextEmpty": "Send a message first to see its context.",
   "contextUsage": "About {used} of {window} tokens",
   "@contextUsage": {
@@ -819,5 +803,51 @@
   "projectHost": "Host",
   "projectName": "Name",
   "projectPath": "Folder on the host",
-  "projectCreate": "Add"
+  "projectCreate": "Add",
+  "browserRecordings": "Recordings",
+  "browserRecordingLoad": "Load",
+  "browserRecordingFailed": "The recording could not be loaded.",
+  "browserRecordingOpen": "Open in another app",
+  "browserRecordingSize": "{megabytes} MB",
+  "@browserRecordingSize": {
+    "placeholders": {
+      "megabytes": {
+        "type": "String"
+      }
+    }
+  },
+  "imageLabel": "Image",
+  "imageUnreadable": "This image cannot be shown.",
+  "statusCompleted": "Completed",
+  "statusStopped": "Stopped",
+  "statusTimedOut": "Timed out",
+  "statusPending": "Waiting",
+  "statusInProgress": "In progress",
+  "jobPreparing": "Preparing",
+  "jobReady": "Ready",
+  "jobOpened": "Opened",
+  "jobStale": "Out of date",
+  "jobInterrupted": "Interrupted",
+  "operationRecorded": "Recorded",
+  "resultKindMarkdown": "Document",
+  "resultKindCode": "Code",
+  "resultKindTable": "Table",
+  "timeZone": "Time zone",
+  "timeZoneDevice": "This device's (UTC{offset})",
+  "@timeZoneDevice": {
+    "placeholders": {
+      "offset": {
+        "type": "String"
+      }
+    }
+  },
+  "timeZoneUtc": "UTC{offset}",
+  "@timeZoneUtc": {
+    "placeholders": {
+      "offset": {
+        "type": "String"
+      }
+    }
+  },
+  "timeZoneNote": "The calendar shows times and creates events and tasks in this time zone."
 }

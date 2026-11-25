@@ -7,6 +7,7 @@ import 'package:pirc_ui/pirc_ui.dart';
 
 import '../../../l10n/app_localizations.dart';
 import 'panel_common.dart';
+import '../session_controller.dart';
 
 /// 10a. Files (read only): `GET …/files?path=` with a path bar, and
 /// `…/files/content?path=` for one file.
@@ -30,8 +31,14 @@ class _FilesPanelState extends ConsumerState<FilesPanel> {
             widget.sessionId,
             'files',
             query: {if (_dir.isNotEmpty) 'path': _dir},
+            sections: const [anyPanelChange],
           )
-        : panelKey(widget.sessionId, 'files/content', query: {'path': _file!});
+        : panelKey(
+            widget.sessionId,
+            'files/content',
+            query: {'path': _file!},
+            sections: const [anyPanelChange],
+          );
     final value = ref.watch(panelReadProvider(key));
     final parts = [
       for (final part in (_file ?? _dir).split('/'))

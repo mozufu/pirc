@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../format.dart';
 import 'panel_common.dart';
+import '../session_controller.dart';
 
 /// 10a. Git (read only): `git/status` and `git/diff` for changes,
 /// `git/log` and `git/commits/:sha` for history.
@@ -75,8 +76,13 @@ class _GitPanelState extends ConsumerState<GitPanel> {
       );
     }
     final key = _history
-        ? panelKey(id, 'git/log', query: {'limit': '50'})
-        : panelKey(id, 'git/status');
+        ? panelKey(
+            id,
+            'git/log',
+            query: {'limit': '50'},
+            sections: const [anyPanelChange],
+          )
+        : panelKey(id, 'git/status', sections: const [anyPanelChange]);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

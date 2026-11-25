@@ -12,6 +12,7 @@ import '../format.dart';
 import '../shell/app_drawer.dart';
 import 'project_screen.dart';
 import 'work_data.dart';
+import 'work_side.dart';
 
 /// The Work tab's list (E2–E4): filters, search, rows grouped by project.
 class WorkListScreen extends ConsumerWidget {
@@ -263,9 +264,17 @@ class _GroupHeader extends StatelessWidget {
 /// One Work row: line 1 the name, who started it and the time; line 2 the
 /// host and the state, with a symbol and text.
 class WorkRow extends ConsumerWidget {
-  const WorkRow({super.key, required this.item, this.selected = false});
+  const WorkRow({
+    super.key,
+    required this.item,
+    this.selected = false,
+    this.from,
+  });
 
   final WorkItem item;
+
+  /// The Work item Back returns to from the opened conversation.
+  final String? from;
   final bool selected;
 
   @override
@@ -393,7 +402,7 @@ class WorkRow extends ConsumerWidget {
         CustomSemanticsAction(label: l10n.moreActions): actions,
       },
       child: InkWell(
-        onTap: () => openWorkSession(context, ref, item.session),
+        onTap: () => openWorkSession(context, ref, item.session, from: from),
         onLongPress: actions,
         onSecondaryTap: actions,
         child: row,
@@ -448,10 +457,15 @@ class WorkRow extends ConsumerWidget {
 }
 
 /// Opens [session] and clears its unread mark on every device.
-void openWorkSession(BuildContext context, WidgetRef ref, Session session) {
-  context.go(
-    Uri(path: '/work', queryParameters: {'open': session.id}).toString(),
-  );
+///
+/// [from] is the Work item Back returns to (a project page), if any.
+void openWorkSession(
+  BuildContext context,
+  WidgetRef ref,
+  Session session, {
+  String? from,
+}) {
+  context.go(workLocation(session.id, from: from));
   final api = ref.read(apiProvider);
   if (session.unread && api != null) {
     SessionsApi(api).markRead(session.id).ignore();

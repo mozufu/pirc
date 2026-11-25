@@ -175,7 +175,12 @@ class _Conversations extends ConsumerWidget {
         .expand((g) => g.items)
         .toList();
     if (items.isEmpty) return Center(child: Text(l10n.emptyWork));
-    return ListView(children: [for (final item in items) WorkRow(item: item)]);
+    return ListView(
+      children: [
+        for (final item in items)
+          WorkRow(item: item, from: projectOpen(workspaceId)),
+      ],
+    );
   }
 }
 

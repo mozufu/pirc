@@ -6,7 +6,11 @@ import 'package:pirc_app/src/work/project_screen.dart';
 import 'support/harness.dart';
 import 'support/work_fixtures.dart';
 
-Future<FakeGateway> _project(WidgetTester tester, {bool rules = true}) async {
+Future<FakeGateway> _project(
+  WidgetTester tester, {
+  bool rules = true,
+  double width = 1300,
+}) async {
   final fixture = WorkFixture();
   final g = fixture.install();
   g.json['GET /api/workspaces'] = (_) => {
@@ -59,6 +63,7 @@ Future<FakeGateway> _project(WidgetTester tester, {bool rules = true}) async {
     tester,
     gateway: g,
     location: '/work',
+    width: width,
     overrides: [clockProvider.overrideWithValue(() => fixedNow)],
   );
   // Default G: the group header opens the project.
@@ -96,6 +101,30 @@ void main() {
       findsNothing,
       reason: 'another project',
     );
+  });
+
+  appTest('Back from a conversation opened on the project page returns there', (
+    tester,
+  ) async {
+    await _project(tester, width: 375);
+    await tester.tap(
+      find.descendant(
+        of: find.byType(ProjectScreen),
+        matching: find.textContaining(
+          'Fix the login keyboard',
+          findRichText: true,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(ProjectScreen), findsNothing);
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ProjectScreen), findsOneWidget);
+    // And Back from the project goes to the Work list.
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ProjectScreen), findsNothing);
   });
 
   appTest('resources: a capability switch patches only that key', (

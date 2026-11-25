@@ -5,6 +5,7 @@ import 'package:pirc_client/pirc_client.dart';
 import '../connection/data.dart';
 import '../connection/hints.dart';
 import '../format.dart';
+import '../preferences.dart';
 
 enum CalendarView { month, week, day, list }
 
@@ -26,7 +27,7 @@ class CalendarPositionNotifier extends Notifier<CalendarPosition> {
   @override
   CalendarPosition build() => CalendarPosition(
     CalendarView.month,
-    DateUtils.dateOnly(ref.read(clockProvider)()),
+    DateUtils.dateOnly(ref.read(calendarZoneProvider).now()),
   );
 
   void show(CalendarView view) => state = CalendarPosition(view, state.anchor);
@@ -40,7 +41,7 @@ class CalendarPositionNotifier extends Notifier<CalendarPosition> {
 
   void today() => state = CalendarPosition(
     state.view,
-    DateUtils.dateOnly(ref.read(clockProvider)()),
+    DateUtils.dateOnly(ref.read(calendarZoneProvider).now()),
   );
 
   /// The next (or, with [back], the previous) range.
@@ -76,19 +77,80 @@ class CalendarPositionNotifier extends Notifier<CalendarPosition> {
 }
 
 /// This device's offset as the Gateway reads a time zone (`+08:00`).
-String zoneOffset(DateTime now) {
-  final offset = now.timeZoneOffset;
+String zoneOffset(DateTime now) => offsetText(now.timeZoneOffset);
+
+/// [offset] as the Gateway reads a time zone (`+08:00`, `-03:30`).
+String offsetText(Duration offset) {
   final sign = offset.isNegative ? '-' : '+';
   final minutes = offset.inMinutes.abs();
   String two(int n) => n.toString().padLeft(2, '0');
   return '$sign${two(minutes ~/ 60)}:${two(minutes % 60)}';
 }
 
+/// `+05:30` as a duration; null when it is not an offset.
+Duration? parseOffset(String text) {
+  final match = RegExp(r'^([+-])(\d{2}):(\d{2})$').firstMatch(text);
+  if (match == null) return null;
+  final minutes = int.parse(match[2]!) * 60 + int.parse(match[3]!);
+  return Duration(minutes: match[1] == '-' ? -minutes : minutes);
+}
+
+/// The calendar's time zone (the general setting): the device's own, or a
+/// fixed offset. Times are shown as "wall" [DateTime]s in that zone: local
+/// [DateTime] values whose fields are the zone's date and clock time.
+@immutable
+class CalendarZone {
+  const CalendarZone(this.fixed, this.clock);
+
+  /// The fixed offset, or null for the device's time zone.
+  final Duration? fixed;
+  final DateTime Function() clock;
+
+  /// The zone as the Gateway reads it.
+  String get name => fixed == null ? zoneOffset(clock()) : offsetText(fixed!);
+
+  /// The instant [millis] as a wall time in this zone.
+  DateTime wall(int millis) {
+    if (fixed == null) return DateTime.fromMillisecondsSinceEpoch(millis);
+    final t = DateTime.fromMillisecondsSinceEpoch(
+      millis,
+      isUtc: true,
+    ).add(fixed!);
+    return DateTime(t.year, t.month, t.day, t.hour, t.minute, t.second);
+  }
+
+  /// The instant of the wall time [wall] in this zone.
+  int epoch(DateTime wall) => fixed == null
+      ? wall.millisecondsSinceEpoch
+      : DateTime.utc(
+          wall.year,
+          wall.month,
+          wall.day,
+          wall.hour,
+          wall.minute,
+          wall.second,
+        ).subtract(fixed!).millisecondsSinceEpoch;
+
+  /// The current wall time in this zone.
+  DateTime now() => wall(clock().millisecondsSinceEpoch);
+}
+
+final calendarZoneProvider = Provider<CalendarZone>((ref) {
+  final saved = ref.watch(timeZoneProvider);
+  return CalendarZone(
+    saved == null ? null : parseOffset(saved),
+    ref.watch(clockProvider),
+  );
+});
+
 /// One calendar item: a personal event occurrence or an agent task run.
 @immutable
 class CalendarItem {
-  const CalendarItem(this.json);
+  const CalendarItem(this.json, [this.zone]);
   final Map<String, Object?> json;
+
+  /// The zone its times are shown in; null is the device's.
+  final CalendarZone? zone;
 
   String get id => '${json['id']}';
   bool get isEvent => json['type'] == 'event';
@@ -97,12 +159,13 @@ class CalendarItem {
   bool get allDay => json['allDay'] == true;
   String? get originalStart => json['originalStart'] as String?;
   int? get revision => (json['revision'] as num?)?.toInt();
-  DateTime get start => DateTime.fromMillisecondsSinceEpoch(
-    (json['startAt'] as num?)?.toInt() ?? 0,
-  );
-  DateTime get end => DateTime.fromMillisecondsSinceEpoch(
-    (json['endAt'] as num?)?.toInt() ?? 0,
-  );
+  DateTime get start => _wall(json['startAt']);
+  DateTime get end => _wall(json['endAt']);
+
+  DateTime _wall(Object? millis) {
+    final value = (millis as num?)?.toInt() ?? 0;
+    return zone?.wall(value) ?? DateTime.fromMillisecondsSinceEpoch(value);
+  }
 
   /// Run state for tasks: planned, running, waiting_input, completed,
   /// failed, missed, dismissed, skipped.
@@ -135,12 +198,11 @@ class CalendarItem {
 final calendarItemsProvider = FutureProvider<List<CalendarItem>>((ref) async {
   watchHint(ref, 'schedules_changed');
   final (from, to) = ref.watch(calendarPositionProvider.select(viewRange));
-  final items = await CalendarApi(requireApi(ref)).items(
-    from: from.millisecondsSinceEpoch,
-    to: to.millisecondsSinceEpoch,
-    timezone: zoneOffset(ref.read(clockProvider)()),
-  );
-  return [for (final item in items) CalendarItem(item)];
+  final zone = ref.watch(calendarZoneProvider);
+  final items = await CalendarApi(
+    requireApi(ref),
+  ).items(from: zone.epoch(from), to: zone.epoch(to), timezone: zone.name);
+  return [for (final item in items) CalendarItem(item, zone)];
 });
 
 /// Agent tasks, for the task list and forms; read again on

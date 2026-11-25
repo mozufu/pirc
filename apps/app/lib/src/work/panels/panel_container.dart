@@ -16,7 +16,6 @@ enum PanelSection {
   git,
   terminal,
   tasks,
-  memory,
   browser,
   context,
   checkpoints;
@@ -28,7 +27,7 @@ enum PanelSection {
 /// The `side` value that opens [section] beside the conversation.
 String panelSide(PanelSection section) => 'panel:${section.name}';
 
-/// The work panels: six tabs, then "More" for Context and Checkpoints
+/// The work panels: five tabs, then "More" for Context and Checkpoints
 /// (default F). A panel loads when it opens and again when a
 /// `panel_changed` names its section.
 class PanelContainer extends StatelessWidget {
@@ -79,11 +78,6 @@ class PanelContainer extends StatelessWidget {
                 l10n.panelTasks,
               ),
               PanelTab(
-                PanelSection.memory,
-                LucideIcons.brain,
-                l10n.panelMemory,
-              ),
-              PanelTab(
                 PanelSection.browser,
                 LucideIcons.globe,
                 l10n.panelBrowser,
@@ -110,7 +104,6 @@ class PanelContainer extends StatelessWidget {
                 PanelSection.git => GitPanel(sessionId: sessionId),
                 PanelSection.terminal => TerminalsPanel(sessionId: sessionId),
                 PanelSection.tasks => TasksPanel(sessionId: sessionId),
-                PanelSection.memory => MemoryPanel(sessionId: sessionId),
                 PanelSection.browser => BrowserPanel(sessionId: sessionId),
                 PanelSection.context => ContextPanel(sessionId: sessionId),
                 PanelSection.checkpoints => CheckpointsPanel(

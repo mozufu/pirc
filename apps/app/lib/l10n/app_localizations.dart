@@ -1443,12 +1443,6 @@ abstract class AppLocalizations {
   /// **'Tasks'**
   String get panelTasks;
 
-  /// No description provided for @panelMemory.
-  ///
-  /// In en, this message translates to:
-  /// **'Memory'**
-  String get panelMemory;
-
   /// No description provided for @panelBrowser.
   ///
   /// In en, this message translates to:
@@ -1610,36 +1604,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No output yet.'**
   String get tasksNoOutput;
-
-  /// No description provided for @memoryEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'Nothing remembered yet.'**
-  String get memoryEmpty;
-
-  /// No description provided for @memoryCounts.
-  ///
-  /// In en, this message translates to:
-  /// **'{observations} observations · {reflections} reflections'**
-  String memoryCounts(int observations, int reflections);
-
-  /// No description provided for @memoryOff.
-  ///
-  /// In en, this message translates to:
-  /// **'Memory is off for this work.'**
-  String get memoryOff;
-
-  /// No description provided for @memoryReflections.
-  ///
-  /// In en, this message translates to:
-  /// **'Reflections'**
-  String get memoryReflections;
-
-  /// No description provided for @memoryObservations.
-  ///
-  /// In en, this message translates to:
-  /// **'Observations'**
-  String get memoryObservations;
 
   /// No description provided for @contextEmpty.
   ///
@@ -2864,6 +2828,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add'**
   String get projectCreate;
+
+  /// No description provided for @browserRecordings.
+  ///
+  /// In en, this message translates to:
+  /// **'Recordings'**
+  String get browserRecordings;
+
+  /// No description provided for @browserRecordingLoad.
+  ///
+  /// In en, this message translates to:
+  /// **'Load'**
+  String get browserRecordingLoad;
+
+  /// No description provided for @browserRecordingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The recording could not be loaded.'**
+  String get browserRecordingFailed;
+
+  /// No description provided for @browserRecordingOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in another app'**
+  String get browserRecordingOpen;
+
+  /// No description provided for @browserRecordingSize.
+  ///
+  /// In en, this message translates to:
+  /// **'{megabytes} MB'**
+  String browserRecordingSize(String megabytes);
+
+  /// No description provided for @imageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Image'**
+  String get imageLabel;
+
+  /// No description provided for @imageUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'This image cannot be shown.'**
+  String get imageUnreadable;
+
+  /// No description provided for @statusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get statusCompleted;
+
+  /// No description provided for @statusStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped'**
+  String get statusStopped;
+
+  /// No description provided for @statusTimedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Timed out'**
+  String get statusTimedOut;
+
+  /// No description provided for @statusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get statusPending;
+
+  /// No description provided for @statusInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'In progress'**
+  String get statusInProgress;
+
+  /// No description provided for @jobPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing'**
+  String get jobPreparing;
+
+  /// No description provided for @jobReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready'**
+  String get jobReady;
+
+  /// No description provided for @jobOpened.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened'**
+  String get jobOpened;
+
+  /// No description provided for @jobStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of date'**
+  String get jobStale;
+
+  /// No description provided for @jobInterrupted.
+  ///
+  /// In en, this message translates to:
+  /// **'Interrupted'**
+  String get jobInterrupted;
+
+  /// No description provided for @operationRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded'**
+  String get operationRecorded;
+
+  /// No description provided for @resultKindMarkdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Document'**
+  String get resultKindMarkdown;
+
+  /// No description provided for @resultKindCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get resultKindCode;
+
+  /// No description provided for @resultKindTable.
+  ///
+  /// In en, this message translates to:
+  /// **'Table'**
+  String get resultKindTable;
+
+  /// No description provided for @timeZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Time zone'**
+  String get timeZone;
+
+  /// No description provided for @timeZoneDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'This device\'s (UTC{offset})'**
+  String timeZoneDevice(String offset);
+
+  /// No description provided for @timeZoneUtc.
+  ///
+  /// In en, this message translates to:
+  /// **'UTC{offset}'**
+  String timeZoneUtc(String offset);
+
+  /// No description provided for @timeZoneNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The calendar shows times and creates events and tasks in this time zone.'**
+  String get timeZoneNote;
 }
 
 class _AppLocalizationsDelegate

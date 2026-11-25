@@ -105,6 +105,9 @@ class FakeGateway {
   /// When set, connects fail with it.
   Object? connectError;
 
+  /// Socket paths whose connects fail with the given error.
+  final connectErrors = <String, Object>{};
+
   /// When set, every request fails with it.
   Object? sendError;
 
@@ -157,6 +160,8 @@ class _Transport implements Transport {
   @override
   Future<EventSocket> connectEvents(Uri target) async {
     if (gateway.connectError != null) throw gateway.connectError!;
+    final refused = gateway.connectErrors[target.path];
+    if (refused != null) throw refused;
     final socket = FakeEventSocket(target);
     gateway.sockets.add(socket);
     return socket;

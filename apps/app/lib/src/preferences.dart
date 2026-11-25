@@ -99,6 +99,43 @@ class StartTabNotifier extends Notifier<String> {
   }
 }
 
+/// The UTC offsets the time zone setting offers (every one in use today).
+const timeZoneChoices = [
+  '-12:00', '-11:00', '-10:00', '-09:30', '-09:00', '-08:00', '-07:00', //
+  '-06:00', '-05:00', '-04:00', '-03:30', '-03:00', '-02:00', '-01:00', //
+  '+00:00', '+01:00', '+02:00', '+03:00', '+03:30', '+04:00', '+04:30', //
+  '+05:00', '+05:30', '+05:45', '+06:00', '+06:30', '+07:00', '+08:00', //
+  '+08:45', '+09:00', '+09:30', '+10:00', '+10:30', '+11:00', '+12:00', //
+  '+12:45', '+13:00', '+14:00',
+];
+
+/// The calendar's time zone: a fixed UTC offset from [timeZoneChoices], or
+/// null for the device's own (which follows daylight saving time).
+final timeZoneProvider = NotifierProvider<TimeZoneNotifier, String?>(
+  TimeZoneNotifier.new,
+);
+
+class TimeZoneNotifier extends Notifier<String?> {
+  @override
+  String? build() {
+    final saved = ref
+        .read(sharedPreferencesProvider)
+        .getString(PrefKeys.timeZone);
+    return timeZoneChoices.contains(saved) ? saved : null;
+  }
+
+  void select(String? offset) {
+    final prefs = ref.read(sharedPreferencesProvider);
+    if (offset == null || !timeZoneChoices.contains(offset)) {
+      state = null;
+      prefs.remove(PrefKeys.timeZone);
+    } else {
+      state = offset;
+      prefs.setString(PrefKeys.timeZone, offset);
+    }
+  }
+}
+
 /// The locale for [language]; null lets Flutter match the system locale.
 Locale? localeFor(String? language) => switch (language) {
   'en' => const Locale('en'),

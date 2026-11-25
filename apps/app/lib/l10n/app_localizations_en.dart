@@ -781,9 +781,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get panelTasks => 'Tasks';
 
   @override
-  String get panelMemory => 'Memory';
-
-  @override
   String get panelBrowser => 'Browser';
 
   @override
@@ -866,23 +863,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tasksNoOutput => 'No output yet.';
-
-  @override
-  String get memoryEmpty => 'Nothing remembered yet.';
-
-  @override
-  String memoryCounts(int observations, int reflections) {
-    return '$observations observations · $reflections reflections';
-  }
-
-  @override
-  String get memoryOff => 'Memory is off for this work.';
-
-  @override
-  String get memoryReflections => 'Reflections';
-
-  @override
-  String get memoryObservations => 'Observations';
 
   @override
   String get contextEmpty => 'Send a message first to see its context.';
@@ -1553,4 +1533,86 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get projectCreate => 'Add';
+
+  @override
+  String get browserRecordings => 'Recordings';
+
+  @override
+  String get browserRecordingLoad => 'Load';
+
+  @override
+  String get browserRecordingFailed => 'The recording could not be loaded.';
+
+  @override
+  String get browserRecordingOpen => 'Open in another app';
+
+  @override
+  String browserRecordingSize(String megabytes) {
+    return '$megabytes MB';
+  }
+
+  @override
+  String get imageLabel => 'Image';
+
+  @override
+  String get imageUnreadable => 'This image cannot be shown.';
+
+  @override
+  String get statusCompleted => 'Completed';
+
+  @override
+  String get statusStopped => 'Stopped';
+
+  @override
+  String get statusTimedOut => 'Timed out';
+
+  @override
+  String get statusPending => 'Waiting';
+
+  @override
+  String get statusInProgress => 'In progress';
+
+  @override
+  String get jobPreparing => 'Preparing';
+
+  @override
+  String get jobReady => 'Ready';
+
+  @override
+  String get jobOpened => 'Opened';
+
+  @override
+  String get jobStale => 'Out of date';
+
+  @override
+  String get jobInterrupted => 'Interrupted';
+
+  @override
+  String get operationRecorded => 'Recorded';
+
+  @override
+  String get resultKindMarkdown => 'Document';
+
+  @override
+  String get resultKindCode => 'Code';
+
+  @override
+  String get resultKindTable => 'Table';
+
+  @override
+  String get timeZone => 'Time zone';
+
+  @override
+  String timeZoneDevice(String offset) {
+    return 'This device\'s (UTC$offset)';
+  }
+
+  @override
+  String timeZoneUtc(String offset) {
+    return 'UTC$offset';
+  }
+
+  @override
+  String get timeZoneNote =>
+      'The calendar shows times and creates events and tasks in this time zone.';
 }

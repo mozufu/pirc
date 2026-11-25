@@ -32,6 +32,11 @@ enum ControlState {
   other,
 }
 
+/// The [SessionView.panels] key that moves on every `panel_changed`, whatever
+/// it names, and at the end of each run. Panels the agent never names
+/// (files, Git, terminals) read again on it.
+const anyPanelChange = '*';
+
 @immutable
 class SessionView {
   const SessionView({
@@ -59,8 +64,9 @@ class SessionView {
   /// The session was deleted elsewhere.
   final bool deleted;
 
-  /// A counter per panel section (`memory`, `git`, `checkpoints`, …) that
-  /// moves on each `panel_changed` naming it: open panels read again.
+  /// A counter per panel section (`context`, `background`, `checkpoints`, …)
+  /// that moves on each `panel_changed` naming it: open panels read again.
+  /// [anyPanelChange] moves on every `panel_changed` and when a run settles.
   final Map<String, int> panels;
 
   /// The name from the last `control_changed` that gave another client
@@ -221,11 +227,18 @@ class SessionController extends Notifier<SessionView> {
             state = state.copyWith(deleted: true);
             return;
           case PanelChanged(:final sections):
-            _bumpPanels(sections);
+            _bumpPanels([...sections, anyPanelChange]);
           case CheckpointsChanged():
             _bumpPanels(const ['checkpoints']);
           default:
-            break;
+            // The workspace (files, Git, terminals) may have changed during
+            // the run; the agent names none of those sections.
+            final data = event.data;
+            if (event.type == 'pi_event' &&
+                data is Map &&
+                data['type'] == 'agent_settled') {
+              _bumpPanels(const [anyPanelChange]);
+            }
         }
         final next = reduceEvent(current, envelope);
         state = state.copyWith(state: next);

@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import '../connection/data.dart';
 import 'session_controller.dart';
 import 'timeline.dart';
+import 'work_side.dart';
 
 /// Extra parts of the conversation that later steps add (composer, panels,
 /// the From line). Kept as builders so this screen stays small.
@@ -96,7 +97,7 @@ class ConversationScreen extends ConsumerWidget {
             ? IconButton(
                 tooltip: l10n.back,
                 icon: const Icon(LucideIcons.chevronLeft),
-                onPressed: () => context.go('/work'),
+                onPressed: () => context.go(workBackLocation(context)),
               )
             : null,
         centerTitle: true,

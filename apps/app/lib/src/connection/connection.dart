@@ -157,7 +157,16 @@ class ConnectionController extends Notifier<ConnectionStatus> {
     Uri gateway,
     Transport transport,
   ) async {
-    final api = ApiClient(transport);
+    final api = ApiClient(
+      transport,
+      // A 401 or 426 from any later request (a list read, a panel) ends the
+      // connection the same way as one at connect time. Deferred, so the
+      // caller's own handling and this one never run inside each other; the
+      // generation check makes the second one a no-op.
+      onFatal: (error) => scheduleMicrotask(() {
+        if (generation == _generation) _handleFatal(error);
+      }),
+    );
     try {
       final capabilities = await api.connect();
       if (generation != _generation) return;

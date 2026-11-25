@@ -8,6 +8,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../connection/data.dart';
 import '../../format.dart';
 import 'panel_common.dart';
+import '../labels.dart';
 
 /// 10e. Checkpoints (default F): the list, a preview, the recovery job and
 /// "continue". Recovery is a user action and needs the control lease.
@@ -207,7 +208,10 @@ class _CaptureState extends ConsumerState<_Capture> {
                         })
                       : null,
                   title: Text('${op['path']}'),
-                  subtitle: Text('${op['tool']} · ${op['state']}'),
+                  subtitle: Text(
+                    '${op['tool']} · '
+                    '${l10n.checkpointOperationState('${op['state']}')}',
+                  ),
                 ),
               if (_preview != null)
                 ListTile(
@@ -221,7 +225,11 @@ class _CaptureState extends ConsumerState<_Capture> {
                 ),
               if (job != null)
                 ListTile(
-                  title: Text(l10n.checkpointsJob('${job['state']}')),
+                  title: Text(
+                    l10n.checkpointsJob(
+                      l10n.checkpointJobState('${job['state']}'),
+                    ),
+                  ),
                   subtitle: Text(
                     '${((job['manifest'] as Map?)?['paths'] as List? ?? const []).length}',
                   ),

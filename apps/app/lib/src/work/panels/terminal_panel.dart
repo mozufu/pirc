@@ -32,7 +32,8 @@ class TerminalsPanel extends ConsumerStatefulWidget {
 class _TerminalsPanelState extends ConsumerState<TerminalsPanel> {
   bool _creating = false;
 
-  PanelKey get _key => panelKey(widget.sessionId, 'terminals');
+  PanelKey get _key =>
+      panelKey(widget.sessionId, 'terminals', sections: const [anyPanelChange]);
 
   Future<void> _create() async {
     final body = leaseBody(ref, widget.sessionId);

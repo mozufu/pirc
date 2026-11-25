@@ -742,9 +742,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get panelTasks => 'Tasks';
 
   @override
-  String get panelMemory => '記憶';
-
-  @override
   String get panelBrowser => '瀏覽器';
 
   @override
@@ -826,23 +823,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get tasksNoOutput => '還沒有輸出。';
-
-  @override
-  String get memoryEmpty => '還沒有記住任何事。';
-
-  @override
-  String memoryCounts(int observations, int reflections) {
-    return '$observations 則觀察 · $reflections 則反思';
-  }
-
-  @override
-  String get memoryOff => '這個工作沒有開啟記憶。';
-
-  @override
-  String get memoryReflections => '反思';
-
-  @override
-  String get memoryObservations => '觀察';
 
   @override
   String get contextEmpty => '先送出訊息才能查看 context。';
@@ -1486,6 +1466,87 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get projectCreate => '加入';
+
+  @override
+  String get browserRecordings => '錄影';
+
+  @override
+  String get browserRecordingLoad => '載入';
+
+  @override
+  String get browserRecordingFailed => '無法載入錄影。';
+
+  @override
+  String get browserRecordingOpen => '用其他 App 開啟';
+
+  @override
+  String browserRecordingSize(String megabytes) {
+    return '$megabytes MB';
+  }
+
+  @override
+  String get imageLabel => '圖片';
+
+  @override
+  String get imageUnreadable => '無法顯示這張圖片。';
+
+  @override
+  String get statusCompleted => '已完成';
+
+  @override
+  String get statusStopped => '已停止';
+
+  @override
+  String get statusTimedOut => '逾時';
+
+  @override
+  String get statusPending => '等待中';
+
+  @override
+  String get statusInProgress => '進行中';
+
+  @override
+  String get jobPreparing => '準備中';
+
+  @override
+  String get jobReady => '已就緒';
+
+  @override
+  String get jobOpened => '已開啟';
+
+  @override
+  String get jobStale => '已過期';
+
+  @override
+  String get jobInterrupted => '已中斷';
+
+  @override
+  String get operationRecorded => '已記錄';
+
+  @override
+  String get resultKindMarkdown => '文件';
+
+  @override
+  String get resultKindCode => '程式碼';
+
+  @override
+  String get resultKindTable => '表格';
+
+  @override
+  String get timeZone => '時區';
+
+  @override
+  String timeZoneDevice(String offset) {
+    return '跟隨這台裝置（UTC$offset）';
+  }
+
+  @override
+  String timeZoneUtc(String offset) {
+    return 'UTC$offset';
+  }
+
+  @override
+  String get timeZoneNote => '行事曆以這個時區顯示時間，並以它建立活動與工作。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

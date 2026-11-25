@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:pirc_client/pirc_client.dart';
@@ -182,9 +185,18 @@ class UserMessage extends StatelessWidget {
                 color: colors['surface.bubble'],
                 borderRadius: BorderRadius.circular(PircRadius.xl),
               ),
-              child: NativeMarkdown(
-                source: message.content,
-                lineHeight: 24 / 16,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (message.images.isNotEmpty)
+                    InlineImages(images: message.images),
+                  if (message.content.trim().isNotEmpty)
+                    NativeMarkdown(
+                      source: message.content,
+                      lineHeight: 24 / 16,
+                    ),
+                ],
               ),
             ),
           ),
@@ -221,6 +233,7 @@ class AssistantMessage extends StatelessWidget {
       children: [
         if (message.content.trim().isNotEmpty)
           NativeMarkdown(source: message.content, streaming: message.isPartial),
+        if (message.images.isNotEmpty) InlineImages(images: message.images),
         if (message.tools.isNotEmpty) ...[
           const SizedBox(height: PircSpacing.stackSm),
           RunCard(tools: message.tools),
@@ -315,7 +328,20 @@ class _RunCardState extends State<RunCard> {
             ),
           ),
           if (_open)
-            for (final tool in tools) _ToolStep(tool: tool),
+            for (final tool in tools) _ToolStep(tool: tool)
+          else if (tools.any((tool) => tool.images.isNotEmpty))
+            // Image results stay visible while the steps are folded.
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                PircSpacing.stackMd,
+                0,
+                PircSpacing.stackMd,
+                PircSpacing.stackSm,
+              ),
+              child: InlineImages(
+                images: [for (final tool in tools) ...tool.images],
+              ),
+            ),
         ],
       ),
     );
@@ -378,6 +404,7 @@ class _ToolStep extends StatelessWidget {
                 style: PircType.monoCode.style(color: colors['code.text']),
               ),
             ),
+          if (tool.images.isNotEmpty) InlineImages(images: tool.images),
         ],
       ),
     );
@@ -407,6 +434,84 @@ class SystemEvent extends StatelessWidget {
         maxLines: 4,
         overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
+      ),
+    );
+  }
+}
+
+/// Images in a message or a tool result: thumbnails up to 240 high; a tap
+/// shows one whole. Data that does not decode shows a note instead.
+class InlineImages extends StatelessWidget {
+  const InlineImages({super.key, required this.images});
+
+  final List<InlineImage> images;
+
+  static Uint8List? _bytes(InlineImage image) {
+    try {
+      return base64Decode(image.base64);
+    } on FormatException {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final colors = PircColorTokens.of(context);
+    Widget unreadable() => Text(
+      l10n.imageUnreadable,
+      style: Theme.of(
+        context,
+      ).textTheme.bodySmall?.copyWith(color: colors['text.muted']),
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: PircSpacing.stackXs),
+      child: Wrap(
+        spacing: PircSpacing.stackSm,
+        runSpacing: PircSpacing.stackSm,
+        children: [
+          for (final image in images)
+            if (_bytes(image) case final bytes?)
+              Semantics(
+                image: true,
+                button: true,
+                label: l10n.imageLabel,
+                child: GestureDetector(
+                  onTap: () => showDialog<void>(
+                    context: context,
+                    builder: (context) => Dialog(
+                      clipBehavior: Clip.antiAlias,
+                      child: InteractiveViewer(
+                        child: Image.memory(
+                          bytes,
+                          errorBuilder: (_, _, _) => unreadable(),
+                        ),
+                      ),
+                    ),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(PircRadius.sm),
+                    child: ConstrainedBox(
+                      // At least a tap target, however small the image.
+                      constraints: const BoxConstraints(
+                        minWidth: 48,
+                        minHeight: 48,
+                        maxHeight: 240,
+                        maxWidth: 320,
+                      ),
+                      child: Image.memory(
+                        bytes,
+                        fit: BoxFit.contain,
+                        excludeFromSemantics: true,
+                        errorBuilder: (_, _, _) => unreadable(),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            else
+              unreadable(),
+        ],
       ),
     );
   }

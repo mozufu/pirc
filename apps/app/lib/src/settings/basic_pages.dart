@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../calendar/calendar_data.dart';
 import '../connection/connection.dart';
+import '../format.dart';
 import '../preferences.dart';
 import 'settings_widgets.dart';
 
-/// General: language, appearance, text size and the tab the app opens on.
+/// General: language, appearance, text size, time zone and the tab the app
+/// opens on.
 class GeneralPage extends ConsumerWidget {
   const GeneralPage({super.key});
 
@@ -75,6 +78,18 @@ class GeneralPage extends ConsumerWidget {
           ],
         ),
         SettingsGroup(
+          title: l10n.timeZone,
+          children: [
+            ListTile(
+              key: const Key('time-zone'),
+              title: Text(_zoneLabel(l10n, ref, ref.watch(timeZoneProvider))),
+              subtitle: Text(l10n.timeZoneNote),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _pickTimeZone(context, ref),
+            ),
+          ],
+        ),
+        SettingsGroup(
           title: l10n.startTab,
           children: [
             for (final (path, label) in [
@@ -94,6 +109,46 @@ class GeneralPage extends ConsumerWidget {
     );
   }
 }
+
+String _zoneLabel(AppLocalizations l10n, WidgetRef ref, String? offset) =>
+    offset == null
+    ? l10n.timeZoneDevice(zoneOffset(ref.read(clockProvider)()))
+    : l10n.timeZoneUtc(offset);
+
+Future<void> _pickTimeZone(BuildContext context, WidgetRef ref) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        final l10n = AppLocalizations.of(context);
+        final current = ref.read(timeZoneProvider);
+        void pick(String? offset) {
+          ref.read(timeZoneProvider.notifier).select(offset);
+          Navigator.pop(context);
+        }
+
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.6,
+          builder: (context, scroll) => ListView(
+            controller: scroll,
+            children: [
+              ChoiceRow(
+                label: _zoneLabel(l10n, ref, null),
+                selected: current == null,
+                onTap: () => pick(null),
+              ),
+              for (final offset in timeZoneChoices)
+                ChoiceRow(
+                  label: l10n.timeZoneUtc(offset),
+                  selected: current == offset,
+                  onTap: () => pick(offset),
+                ),
+            ],
+          ),
+        );
+      },
+    );
 
 /// Account and this device: the account name, the Gateway, and "Unpair this
 /// device…" (native builds), which removes the token and local data.

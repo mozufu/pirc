@@ -6,10 +6,26 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:pirc_client/pirc_client.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../connection/connection.dart';
+import '../../connection/data.dart';
 import 'panel_common.dart';
+
+/// `Saved recording <path>` browser log entries name a recording file.
+final _recordingLog = RegExp(
+  r'^Saved recording (\.pirc/recordings/\S+\.webm)$',
+);
+
+/// The recordings named by browser log [entries], oldest first, each once.
+List<String> recordingsIn(Iterable<Object?> entries) => [
+  ...{
+    for (final entry in entries)
+      if (entry is Map)
+        ?_recordingLog.firstMatch('${entry['action'] ?? ''}')?.group(1),
+  },
+];
 
 /// 10d. Browser: the `…/browser/stream` socket (screencast frames and
 /// state), taking and returning control, and recording. Every message but
@@ -26,6 +42,7 @@ class _BrowserPanelState extends ConsumerState<BrowserPanel> {
   EventSocket? _socket;
   StreamSubscription<Object?>? _frames;
   Map? _state;
+  List<String> _recordings = const [];
   Uint8List? _frame;
   Size _frameSize = const Size(1280, 800);
   String? _error;
@@ -80,6 +97,16 @@ class _BrowserPanelState extends ConsumerState<BrowserPanel> {
             (frame['height'] as num?)?.toDouble() ?? 800,
           );
         });
+      case 'log':
+        setState(
+          () =>
+              _recordings = recordingsIn(frame['entries'] as List? ?? const []),
+        );
+      case 'log_entry':
+        final more = recordingsIn([frame['entry']]);
+        if (more.isNotEmpty) {
+          setState(() => _recordings = {..._recordings, ...more}.toList());
+        }
       case 'error':
         setState(() => _error = '${frame['message'] ?? ''}');
     }
@@ -169,6 +196,8 @@ class _BrowserPanelState extends ConsumerState<BrowserPanel> {
             padding: const EdgeInsets.all(8),
             child: Text(_error!, style: Theme.of(context).textTheme.bodySmall),
           ),
+        if (_recordings.isNotEmpty)
+          _Recordings(sessionId: widget.sessionId, paths: _recordings),
         Expanded(
           child: _frame == null
               ? PanelNote(text: l10n.browserNoFrame, icon: LucideIcons.globe)
@@ -225,6 +254,113 @@ class _BrowserPanelState extends ConsumerState<BrowserPanel> {
                 _text.clear();
               },
             ),
+          ),
+      ],
+    );
+  }
+}
+
+/// The saved recordings (`GET …/browser/recording?path=`). A recording is
+/// WebM, which not every platform can play in the app, so a loaded one is
+/// handed to another app (or saved) through the share sheet. Reading needs
+/// no control lease.
+class _Recordings extends ConsumerStatefulWidget {
+  const _Recordings({required this.sessionId, required this.paths});
+
+  final String sessionId;
+  final List<String> paths;
+
+  @override
+  ConsumerState<_Recordings> createState() => _RecordingsState();
+}
+
+class _RecordingsState extends ConsumerState<_Recordings> {
+  final _loaded = <String, Uint8List>{};
+  final _loading = <String>{};
+  final _failed = <String>{};
+
+  Future<void> _load(String path) async {
+    final api = ref.read(apiProvider);
+    if (api == null) return;
+    setState(() {
+      _loading.add(path);
+      _failed.remove(path);
+    });
+    try {
+      final reply = checked(
+        await api.send(
+          ApiRequest.get(
+            sessionPath(widget.sessionId, 'browser/recording'),
+            query: {'path': path},
+          ),
+          timeout: const Duration(minutes: 3),
+        ),
+      );
+      if (mounted) {
+        setState(() => _loaded[path] = Uint8List.fromList(reply.body));
+      }
+    } on PircException {
+      if (mounted) setState(() => _failed.add(path));
+    } finally {
+      if (mounted) setState(() => _loading.remove(path));
+    }
+  }
+
+  void _open(String path, Uint8List bytes) => SharePlus.instance.share(
+    ShareParams(
+      files: [
+        XFile.fromData(
+          bytes,
+          mimeType: 'video/webm',
+          name: path.split('/').last,
+        ),
+      ],
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final text = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+          child: Text(l10n.browserRecordings, style: text.labelMedium),
+        ),
+        for (final path in widget.paths.reversed)
+          ListTile(
+            key: ValueKey('recording:$path'),
+            dense: true,
+            leading: const Icon(LucideIcons.video, size: 18),
+            title: Text(path.split('/').last),
+            subtitle: _failed.contains(path)
+                ? Text(l10n.browserRecordingFailed)
+                : _loaded[path] == null
+                ? null
+                : Text(
+                    l10n.browserRecordingSize(
+                      (_loaded[path]!.length / (1024 * 1024)).toStringAsFixed(
+                        1,
+                      ),
+                    ),
+                  ),
+            trailing: _loading.contains(path)
+                ? const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : _loaded[path] == null
+                ? TextButton(
+                    onPressed: () => _load(path),
+                    child: Text(l10n.browserRecordingLoad),
+                  )
+                : IconButton(
+                    tooltip: l10n.browserRecordingOpen,
+                    icon: const Icon(LucideIcons.share2, size: 18),
+                    onPressed: () => _open(path, _loaded[path]!),
+                  ),
           ),
       ],
     );

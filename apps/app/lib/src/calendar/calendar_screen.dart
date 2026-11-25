@@ -8,7 +8,6 @@ import 'package:pirc_ui/pirc_ui.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../connection/data.dart';
-import '../format.dart';
 import '../shell/app_drawer.dart';
 import 'calendar_data.dart';
 import 'calendar_forms.dart';
@@ -25,10 +24,14 @@ Future<void> newEvent(
   WidgetRef ref,
   DateTime day, {
   int? hour,
+  int? endHour,
 }) async {
   final start = DateTime(day.year, day.month, day.day, hour ?? 9);
-  final end = start.add(const Duration(hours: 1));
-  final timezone = zoneOffset(ref.read(clockProvider)());
+  // A drag gives the end; 24 is the next midnight.
+  final end = endHour != null && hour != null && endHour > hour
+      ? DateTime(day.year, day.month, day.day, endHour)
+      : start.add(const Duration(hours: 1));
+  final timezone = ref.read(calendarZoneProvider).name;
   final spec = await showDialog<Map<String, Object?>>(
     context: context,
     builder: (_) => EventForm(
@@ -51,7 +54,7 @@ Future<void> newEvent(
 Future<void> newTask(BuildContext context, WidgetRef ref) async {
   final body = await showDialog<Map<String, Object?>>(
     context: context,
-    builder: (_) => TaskForm(timezone: zoneOffset(ref.read(clockProvider)())),
+    builder: (_) => TaskForm(timezone: ref.read(calendarZoneProvider).name),
   );
   if (body == null || !context.mounted) return;
   await calendarAction(context, (api) => api.createSchedule(body), ref);
@@ -84,7 +87,7 @@ class CalendarScreen extends ConsumerWidget {
           children: [
             Text(l10n.tabCalendar, style: text.titleSmall),
             Text(
-              'UTC${zoneOffset(ref.read(clockProvider)())}',
+              'UTC${ref.watch(calendarZoneProvider).name}',
               style: text.labelSmall,
             ),
           ],
@@ -284,7 +287,7 @@ class _Month extends ConsumerWidget {
     final colors = PircColorTokens.of(context);
     final text = Theme.of(context).textTheme;
     final (from, _) = viewRange(position);
-    final today = DateUtils.dateOnly(ref.read(clockProvider)());
+    final today = DateUtils.dateOnly(ref.read(calendarZoneProvider).now());
     final locale = Localizations.localeOf(context).toLanguageTag();
     final selected = position.anchor;
     final selectedItems = items.where((i) => i.on(selected)).toList()
@@ -478,28 +481,86 @@ class _Days extends StatelessWidget {
   }
 }
 
-/// Day: all-day items, then one row per hour; a long press on an hour
-/// opens a draft there.
-class _Day extends ConsumerWidget {
+/// Day: all-day items, then one row per hour. A long press on an hour opens
+/// a draft there; holding and dragging across hours picks the range first
+/// (shown while dragging), and the draft opens when the finger lifts. Only
+/// Save in the draft creates the event.
+class _Day extends ConsumerStatefulWidget {
   const _Day({required this.day, required this.items});
   final DateTime day;
   final List<CalendarItem> items;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dayItems = items.where((i) => i.on(day)).toList();
+  ConsumerState<_Day> createState() => _DayState();
+}
+
+class _DayState extends ConsumerState<_Day> {
+  final _rows = List.generate(24, (_) => GlobalKey());
+
+  /// The hour the drag started on and the hour under the finger now.
+  (int, int)? _range;
+
+  /// The hour row under [global], or null between rows.
+  int? _hourAt(Offset global) {
+    for (var hour = 0; hour < 24; hour++) {
+      final box = _rows[hour].currentContext?.findRenderObject() as RenderBox?;
+      if (box == null || !box.hasSize) continue;
+      final local = box.globalToLocal(global);
+      if (local.dy >= 0 && local.dy < box.size.height) return hour;
+    }
+    return null;
+  }
+
+  bool _picked(int hour) {
+    final range = _range;
+    if (range == null) return false;
+    final (a, b) = range;
+    return hour >= (a < b ? a : b) && hour <= (a < b ? b : a);
+  }
+
+  void _start(int hour) => setState(() => _range = (hour, hour));
+
+  void _move(Offset global) {
+    final range = _range;
+    final hour = _hourAt(global);
+    if (range == null || hour == null || hour == range.$2) return;
+    setState(() => _range = (range.$1, hour));
+  }
+
+  void _end() {
+    final range = _range;
+    setState(() => _range = null);
+    if (range == null) return;
+    final (a, b) = range;
+    final first = a < b ? a : b;
+    final last = a < b ? b : a;
+    newEvent(context, ref, widget.day, hour: first, endHour: last + 1);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final day = widget.day;
+    final dayItems = widget.items.where((i) => i.on(day)).toList();
     final colors = PircColorTokens.of(context);
     return ListView(
       children: [
         for (final item in dayItems.where((i) => i.allDay))
           _ItemRow(item: item),
         for (var hour = 0; hour < 24; hour++)
-          InkWell(
+          GestureDetector(
             key: Key('hour-$hour'),
-            onLongPress: () => newEvent(context, ref, day, hour: hour),
+            behavior: HitTestBehavior.opaque,
+            onLongPressStart: (_) => _start(hour),
+            onLongPressMoveUpdate: (details) => _move(details.globalPosition),
+            onLongPressEnd: (_) => _end(),
+            onLongPressCancel: () => setState(() => _range = null),
             child: Container(
+              key: _rows[hour],
               constraints: const BoxConstraints(minHeight: 44),
               decoration: BoxDecoration(
+                color: _picked(hour)
+                    ? colors['accent.default'].withValues(alpha: 0.12)
+                    : null,
                 border: Border(top: BorderSide(color: colors['line.hairline'])),
               ),
               child: Row(

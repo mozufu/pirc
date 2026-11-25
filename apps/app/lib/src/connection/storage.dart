@@ -19,6 +19,10 @@ abstract final class PrefKeys {
   static const appearance = 'appearance';
   static const textScale = 'textScale';
   static const startTab = 'startTab';
+
+  /// A fixed UTC offset (`+05:30`) for the calendar; absent means the
+  /// device's own time zone.
+  static const timeZone = 'timeZone';
   static const gatewayUrl = 'gatewayUrl';
   static const clientId = 'clientId';
 

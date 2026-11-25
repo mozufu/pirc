@@ -1,7 +1,9 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/calendar/calendar_data.dart';
 import 'package:pirc_app/src/calendar/calendar_screen.dart';
+import 'package:pirc_app/src/connection/storage.dart';
 import 'package:pirc_app/src/format.dart';
 
 import 'support/harness.dart';
@@ -98,6 +100,7 @@ Future<FakeGateway> _calendar(
   List<Map<String, Object?>>? items,
   String location = '/calendar',
   bool gone = false,
+  Map<String, Object> prefs = const {},
 }) async {
   final g = FakeGateway();
   g.json['GET /api/calendar'] = (_) => {
@@ -138,6 +141,9 @@ Future<FakeGateway> _calendar(
     gateway: g,
     width: 1300,
     location: location,
+    saved: Saved(
+      prefs: {PrefKeys.gatewayUrl: 'https://gateway.test/', ...prefs},
+    ),
     overrides: [clockProvider.overrideWithValue(() => _now)],
   );
   return g;
@@ -222,6 +228,71 @@ void main() {
       'location': '',
       'description': '',
     });
+  });
+
+  appTest('a fixed time zone reads, shows and creates in that zone', (
+    tester,
+  ) async {
+    // 14:00 at UTC+08:00 is 11:30 at UTC+05:30.
+    final at = DateTime.utc(2026, 11, 25, 6).millisecondsSinceEpoch;
+    final g = await _calendar(
+      tester,
+      items: [
+        {
+          ..._event(),
+          'startAt': at,
+          'endAt': at + const Duration(hours: 1).inMilliseconds,
+        },
+      ],
+      prefs: {PrefKeys.timeZone: '+05:30'},
+    );
+    final read = g.sent('GET', '/api/calendar').last;
+    expect(read.query['timezone'], '+05:30');
+    expect(
+      read.query['from'],
+      '${DateTime.utc(2026, 11, 1).subtract(const Duration(hours: 5, minutes: 30)).millisecondsSinceEpoch}',
+    );
+    expect(find.text('UTC+05:30'), findsOneWidget);
+    await _tap(tester, find.text('Day'));
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('hour-11')),
+        matching: find.text('Dentist'),
+      ),
+      findsOneWidget,
+    );
+    await tester.scrollUntilVisible(find.byKey(const Key('hour-16')), 200);
+    await tester.longPress(find.byKey(const Key('hour-16')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('event-title')), 'Tea');
+    await _tap(tester, find.text('Save'));
+    final create = g.sent('POST', '/api/calendar/events').single.json! as Map;
+    expect((create['event']! as Map)['timezone'], '+05:30');
+    expect((create['event']! as Map)['start'], '2026-11-25T16:00');
+  });
+
+  appTest('a drag across hours of the day view drafts that range', (
+    tester,
+  ) async {
+    final g = await _calendar(tester);
+    await _tap(tester, find.text('Day'));
+    final from = tester.getCenter(find.byKey(const Key('hour-10')));
+    final to = tester.getCenter(find.byKey(const Key('hour-12')));
+    final gesture = await tester.startGesture(from);
+    await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+    await gesture.moveTo(Offset(from.dx, (from.dy + to.dy) / 2));
+    await tester.pump();
+    await gesture.moveTo(to);
+    await tester.pump();
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(find.text('New event'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('event-title')), 'Review');
+    await _tap(tester, find.text('Save'));
+    final create = g.sent('POST', '/api/calendar/events').single.json! as Map;
+    final event = create['event']! as Map;
+    expect(event['start'], '2026-11-25T10:00');
+    expect(event['end'], '2026-11-25T13:00');
   });
 
   appTest('editing a one-off event saves the series', (tester) async {

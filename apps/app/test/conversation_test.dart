@@ -100,6 +100,62 @@ void main() {
     expect(find.textContaining('tool step'), findsWidgets);
   });
 
+  appTest('images in a message and in a tool result are shown', (tester) async {
+    // A 1×1 PNG.
+    const png =
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    final session = FixtureSession('joined-mid-stream.json');
+    (session.snapshot['history']! as List).addAll([
+      {
+        'role': 'user',
+        'content': [
+          {'type': 'text', 'text': 'What is in this picture?'},
+          {'type': 'image', 'mimeType': 'image/png', 'data': png},
+        ],
+        'timestamp': 1500,
+      },
+      {
+        'role': 'assistant',
+        'content': [
+          {
+            'type': 'toolCall',
+            'id': 'shot',
+            'name': 'browser',
+            'arguments': {'action': 'screenshot'},
+          },
+        ],
+        'stopReason': 'toolUse',
+        'timestamp': 1600,
+      },
+      {
+        'role': 'toolResult',
+        'toolCallId': 'shot',
+        'toolName': 'browser',
+        'content': [
+          {'type': 'image', 'mimeType': 'image/png', 'data': png},
+          {'type': 'image', 'mimeType': 'image/png', 'data': '%%%'},
+        ],
+        'timestamp': 1700,
+      },
+    ]);
+    await _open(tester, session, height: 3000);
+    await tester.pumpAndSettle();
+    final images = find.descendant(
+      of: find.byType(InlineImages),
+      matching: find.byWidgetPredicate(
+        (w) => w is Image && w.image is MemoryImage,
+      ),
+    );
+    // The user's image, and the tool's while its steps are folded.
+    expect(images, findsNWidgets(2));
+    expect(find.text('This image cannot be shown.'), findsOneWidget);
+    await tester.ensureVisible(images.last);
+    await tester.pumpAndSettle();
+    await tester.tap(images.last);
+    await tester.pumpAndSettle();
+    expect(find.byType(InteractiveViewer), findsOneWidget);
+  });
+
   appTest('a reset loads a new snapshot and resumes from its watermark', (
     tester,
   ) async {

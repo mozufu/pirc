@@ -16,6 +16,7 @@ import 'questions.dart';
 import 'result_reader.dart';
 import 'session_controller.dart';
 import 'work_data.dart';
+import 'work_side.dart';
 
 /// A work conversation with everything the Work tab adds: the pot bar and
 /// the From line, question cards, the approval mode and the composer.
@@ -71,13 +72,11 @@ class WorkConversation extends ConsumerWidget {
             tooltip: l10n.panelsOpen,
             icon: const Icon(LucideIcons.panelRight),
             onPressed: () => context.go(
-              Uri(
-                path: '/work',
-                queryParameters: {
-                  'open': sessionId,
-                  'side': panelSide(PanelSection.files),
-                },
-              ).toString(),
+              workLocation(
+                sessionId,
+                side: panelSide(PanelSection.files),
+                context: context,
+              ),
             ),
           ),
           ApprovalModeButton(

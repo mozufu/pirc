@@ -124,7 +124,7 @@ void main() {
     tester,
   ) async {
     await _open(tester, [_report(1)]);
-    expect(find.text('markdown · v1'), findsOneWidget);
+    expect(find.text('Document · v1'), findsOneWidget);
     expect(find.text('API report'), findsOneWidget);
     expect(find.text('Three specs compared'), findsOneWidget);
     await _openCard(tester);

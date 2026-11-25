@@ -39,7 +39,9 @@ class TabScreen extends ConsumerWidget {
       // Back closes the open item first (one-pane layouts show it alone).
       canPop: open == null,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop && open != null) context.go(tab.path);
+        if (!didPop && open != null) {
+          context.go(tab == AppTab.work ? workBackLocation(context) : tab.path);
+        }
       },
       child: PushDrawer(
         open: ref.watch(drawerOpenProvider),

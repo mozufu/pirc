@@ -121,6 +121,38 @@ void main() {
     expect(find.text('Pair this device'), findsOneWidget);
   });
 
+  testWidgets('a 401 on an ordinary read removes the token and pairs again', (
+    tester,
+  ) async {
+    final gateway = FakeGateway();
+    gateway.json['GET /api/sessions'] = (_) => apiError(401, 'unauthenticated');
+    final saved = Saved();
+    final container = await pumpApp(tester, gateway: gateway, saved: saved);
+    await tester.pumpAndSettle();
+    expect(gateway.sent('GET', '/api/sessions'), isNotEmpty);
+    expect(saved.secrets.values.containsKey(deviceTokenKey), isFalse);
+    expect(container.read(connectionProvider).phase, ConnectionPhase.unpaired);
+    expect(find.text('Pair this device'), findsOneWidget);
+  });
+
+  testWidgets('a 426 on an ordinary read shows the update page', (
+    tester,
+  ) async {
+    final gateway = FakeGateway();
+    gateway.json['GET /api/sessions'] = (_) =>
+        apiError(426, 'client_upgrade_required');
+    final saved = Saved();
+    final container = await pumpApp(tester, gateway: gateway, saved: saved);
+    await tester.pumpAndSettle();
+    expect(
+      container.read(connectionProvider).phase,
+      ConnectionPhase.upgradeRequired,
+    );
+    expect(find.text('Update the app'), findsOneWidget);
+    // The token stays: only the build is too old.
+    expect(saved.secrets.values.containsKey(deviceTokenKey), isTrue);
+  });
+
   testWidgets('a 426 at start shows the blocking update page', (tester) async {
     await pumpApp(tester, gateway: _Refusing(426, 'client_upgrade_required'));
     expect(find.text('Update the app'), findsOneWidget);

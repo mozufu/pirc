@@ -7,7 +7,6 @@ import 'package:pirc_client/pirc_client.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../connection/data.dart';
-import '../format.dart';
 import 'calendar_data.dart';
 import 'calendar_forms.dart';
 
@@ -65,8 +64,7 @@ class _EventDetail extends ConsumerWidget {
     final spec = await showDialog<Map<String, Object?>>(
       context: context,
       builder: (_) => EventForm(
-        timezone:
-            '${event['timezone'] ?? zoneOffset(ref.read(clockProvider)())}',
+        timezone: '${event['timezone'] ?? ref.read(calendarZoneProvider).name}',
         initial: {...occurrence, 'recurrence': event['recurrence']},
       ),
     );
@@ -279,7 +277,7 @@ class _TaskDetail extends ConsumerWidget {
                         context: context,
                         builder: (_) => TaskForm(
                           schedule: schedule,
-                          timezone: zoneOffset(ref.read(clockProvider)()),
+                          timezone: ref.read(calendarZoneProvider).name,
                         ),
                       );
                       if (body == null) return;

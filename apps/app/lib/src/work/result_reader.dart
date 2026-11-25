@@ -12,6 +12,8 @@ import '../../l10n/app_localizations.dart';
 import 'artifacts.dart';
 import 'session_controller.dart';
 import 'timeline.dart';
+import 'work_side.dart';
+import 'labels.dart';
 
 /// The `side` query value that opens result [id] beside its conversation.
 String resultSide(String id) => 'result:$id';
@@ -96,7 +98,7 @@ class ResultCard extends StatelessWidget {
               const SizedBox(width: PircSpacing.stackSm),
               Expanded(
                 child: Text(
-                  '${artifact.kind} · v${artifact.version}',
+                  '${l10n.resultKind(artifact.kind)} · v${artifact.version}',
                   style: text.labelSmall,
                 ),
               ),
@@ -128,13 +130,11 @@ class ResultCard extends StatelessWidget {
             children: [
               TextButton.icon(
                 onPressed: () => context.go(
-                  Uri(
-                    path: '/work',
-                    queryParameters: {
-                      'open': sessionId,
-                      'side': resultSide(artifact.id),
-                    },
-                  ).toString(),
+                  workLocation(
+                    sessionId,
+                    side: resultSide(artifact.id),
+                    context: context,
+                  ),
                 ),
                 icon: const Icon(LucideIcons.arrowUpRight, size: 18),
                 label: Text(

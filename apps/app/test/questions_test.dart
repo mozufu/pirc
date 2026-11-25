@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/connection/storage.dart';
 import 'package:pirc_app/src/format.dart';
 import 'package:pirc_app/src/work/questions.dart';
+import 'package:pirc_client/pirc_client.dart';
 
 import 'support/harness.dart';
 import 'support/session_fixture.dart';
@@ -96,6 +99,49 @@ void main() {
     expect(body['clientId'], 'me');
     expect(body.containsKey('generation'), isFalse);
     // Answered: one summary line until the snapshot reports its end.
+    expect(find.text('Q q1 · Only the 3 failures'), findsOneWidget);
+  });
+
+  appTest('while an answer is sending the card waits and cannot send twice', (
+    tester,
+  ) async {
+    final s = await _open(tester, [
+      _question(
+        'q1',
+        'select',
+        request: {
+          'options': ['Only the 3 failures', 'All of them'],
+        },
+      ),
+    ]);
+    final pending = Completer<ApiResponse?>();
+    s.gateway!.routes.insert(
+      0,
+      (r) => r.path.endsWith('/interactions/q1/answer') ? pending.future : null,
+    );
+    await tester.tap(find.text('Only the 3 failures'));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('send-answer-q1')));
+    await tester.pump();
+    final send = find.byKey(const Key('send-answer-q1'));
+    expect(
+      find.descendant(
+        of: send,
+        matching: find.byType(CircularProgressIndicator),
+      ),
+      findsOneWidget,
+    );
+    expect(tester.widget<FilledButton>(send).onPressed, isNull);
+    // The options are locked too.
+    await tester.tap(find.text('All of them'));
+    await tester.pump();
+    expect(
+      s.gateway!.sent('POST', '/api/sessions/s2/interactions/q1/answer'),
+      hasLength(1),
+    );
+    pending.complete(reply(200, {'ok': true}));
+    await tester.pumpAndSettle();
+    expect(_answer(s, 'q1')['answer'], {'value': 'Only the 3 failures'});
     expect(find.text('Q q1 · Only the 3 failures'), findsOneWidget);
   });
 

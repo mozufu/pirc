@@ -318,7 +318,7 @@ void main() {
     testWidgets('delete asks first; a refusal is shown', (tester) async {
       final gateway = await _pumpWork(tester);
       gateway.json['DELETE /api/sessions/s-fix'] = (r) =>
-          apiError(400, 'invalid_input', 'Only chats can be deleted');
+          apiError(409, 'run_active', 'Stop the work before deleting it');
       await _openActions(tester, 'Fix the login keyboard  You');
       await tester.tap(find.text('Delete…'));
       await tester.pumpAndSettle();
@@ -333,9 +333,23 @@ void main() {
       await tester.pumpAndSettle();
       expect(gateway.sent('DELETE', '/api/sessions/s-fix'), hasLength(1));
       expect(
-        find.text('That did not work: Only chats can be deleted'),
+        find.text('That did not work: Stop the work before deleting it'),
         findsOneWidget,
       );
+    });
+
+    testWidgets('a work conversation a pot opened can be deleted', (
+      tester,
+    ) async {
+      final gateway = await _pumpWork(tester);
+      gateway.json['DELETE /api/sessions/s-ipad'] = (r) => {'ok': true};
+      await _openActions(tester, 'Add iPad keyboard tests  From Tester');
+      await tester.tap(find.text('Delete…'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.pumpAndSettle();
+      expect(gateway.sent('DELETE', '/api/sessions/s-ipad'), hasLength(1));
+      expect(find.textContaining('That did not work'), findsNothing);
     });
 
     testWidgets('opening an unread session marks it read', (tester) async {

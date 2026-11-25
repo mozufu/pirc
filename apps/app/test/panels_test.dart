@@ -53,14 +53,6 @@ final _full = <String, Object?>{
   },
   'panel/state': {
     'agentRunning': true,
-    'memory': {
-      'enabled': true,
-      'counts': {'observations': 1, 'reflections': 0},
-      'observations': [
-        {'id': 'o1', 'content': 'Uses Riverpod', 'visible': true},
-      ],
-      'reflections': <Object?>[],
-    },
     'backgroundTasks': [
       {'id': 't1', 'command': 'npm run dev', 'status': 'running'},
     ],
@@ -96,7 +88,7 @@ final _full = <String, Object?>{
         'pinned': false,
         'created': 1,
         'operations': [
-          {'id': 'op1', 'path': 'a.dart', 'tool': 'edit', 'state': 'done'},
+          {'id': 'op1', 'path': 'a.dart', 'tool': 'edit', 'state': 'observed'},
         ],
       },
     ],
@@ -111,7 +103,6 @@ final _empty = <String, Object?>{
   'git/status': {'repo': true, 'files': <Object?>[], 'ahead': 0, 'behind': 0},
   'terminals': {'terminals': <Object?>[]},
   'panel/state': {
-    'memory': {'observations': <Object?>[], 'reflections': <Object?>[]},
     'backgroundTasks': <Object?>[],
     'team': {'agents': <Object?>[]},
   },
@@ -129,7 +120,6 @@ const _panels = {
   PanelSection.git: ('git/status', 'No changes.'),
   PanelSection.terminal: ('terminals', 'No terminals.'),
   PanelSection.tasks: ('panel/state', 'No background tasks or teammates.'),
-  PanelSection.memory: ('panel/state', 'Nothing remembered yet.'),
   PanelSection.context: (
     'panel/context',
     'Send a message first to see its context.',
@@ -146,9 +136,11 @@ Future<FixtureSession> _open(
   List overrides = const [],
   FutureOr<ApiResponse?> Function(ApiRequest request)? route,
   bool settle = true,
+  Map<String, Object> socketErrors = const {},
 }) async {
   final s = FixtureSession('joined-mid-stream.json')..lease = lease;
   final gateway = s.install();
+  gateway.connectErrors.addAll(socketErrors);
   s.gateway = gateway;
   if (route != null) gateway.routes.add(route);
   gateway.routes.add((request) {
@@ -299,6 +291,130 @@ void main() {
       expect(create.onPressed, isNull);
     });
 
+    appTest('tasks: read-only without the lease; Stop is disabled', (
+      tester,
+    ) async {
+      await _open(
+        tester,
+        PanelSection.tasks,
+        lease: {'clientId': 'other-phone', 'generation': 3},
+        route: (r) => r.path == '$_base/panel/background/t1'
+            ? reply(200, {
+                'task': {'id': 't1', 'status': 'running'},
+                'output': 'listening on :5173',
+              })
+            : null,
+      );
+      await tester.tap(find.text('npm run dev'));
+      await tester.pumpAndSettle();
+      expect(find.text('listening on :5173'), findsOneWidget);
+      expect(
+        find.text('Read only: another device controls this work.'),
+        findsOneWidget,
+      );
+      final stop = tester.widget<TextButton>(
+        find.ancestor(
+          of: find.text('Stop'),
+          matching: find.byWidgetPredicate((w) => w is TextButton),
+        ),
+      );
+      expect(stop.onPressed, isNull);
+    });
+
+    appTest('checkpoints: read-only without the lease; Recover is disabled', (
+      tester,
+    ) async {
+      final s = await _open(
+        tester,
+        PanelSection.checkpoints,
+        lease: {'clientId': 'other-phone', 'generation': 3},
+        route: (r) => r.path == '$_base/checkpoints/cap1/preview'
+            ? reply(200, {
+                'version': 1,
+                'revision': 'rev1',
+                'copiedBytes': 10,
+                'exclusions': <String, Object?>{},
+              })
+            : null,
+      );
+      await tester.tap(find.textContaining('1 files'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Read only: another device controls this work.'),
+        findsOneWidget,
+      );
+      // A preview only reads, so it stays open to every device.
+      await tester.tap(find.text('Preview').last);
+      await tester.pumpAndSettle();
+      final recover = tester.widget<FilledButton>(
+        find.ancestor(
+          of: find.text('Recover'),
+          matching: find.byType(FilledButton),
+        ),
+      );
+      expect(recover.onPressed, isNull);
+      expect(
+        s.gateway!.sent('POST', '$_base/checkpoints/cap1/recoveries'),
+        isEmpty,
+      );
+    });
+
+    appTest('browser: before any state, nothing is open', (tester) async {
+      await _open(tester, PanelSection.browser);
+      // The socket opened but sent no state yet.
+      expect(find.text('No browser is open for this work.'), findsOneWidget);
+    });
+
+    appTest('browser: a closed stream says the browser is unavailable', (
+      tester,
+    ) async {
+      final s = await _open(tester, PanelSection.browser);
+      s.gateway!.socket('$_base/browser/stream')!.serverClose(1011);
+      await tester.pumpAndSettle();
+      expect(
+        find.text('The browser is not available on this host.'),
+        findsOneWidget,
+      );
+    });
+
+    appTest('browser: a refused stream shows the reason', (tester) async {
+      await _open(
+        tester,
+        PanelSection.browser,
+        socketErrors: {
+          '$_base/browser/stream': const ApiError(
+            503,
+            'node_offline',
+            'Host is offline',
+          ),
+        },
+      );
+      expect(find.text('Host is offline'), findsOneWidget);
+    });
+
+    appTest('browser: open, waiting for the first frame', (tester) async {
+      final s = await _open(tester, PanelSection.browser);
+      s.gateway!.socket('$_base/browser/stream')!.push({
+        'type': 'state',
+        'state': {'active': true, 'url': 'https://example.test/'},
+      });
+      await tester.pumpAndSettle();
+      expect(find.text('Waiting for the page…'), findsOneWidget);
+    });
+
+    appTest('browser: an error frame is shown', (tester) async {
+      final s = await _open(tester, PanelSection.browser);
+      final stream = s.gateway!.socket('$_base/browser/stream')!;
+      stream
+        ..push({
+          'type': 'state',
+          'state': {'active': true, 'url': 'https://example.test/'},
+        })
+        ..push({'type': 'error', 'message': 'Navigation failed'});
+      await tester.pumpAndSettle();
+      expect(find.text('Navigation failed'), findsOneWidget);
+    });
+
     appTest('browser: read-only without the lease', (tester) async {
       final s = await _open(
         tester,
@@ -343,6 +459,44 @@ void main() {
     await tester.pumpAndSettle();
     expect(s.gateway!.sent('GET', '$_base/panel/context').length, before + 1);
   });
+
+  for (final (section, route) in [
+    (PanelSection.files, 'files'),
+    (PanelSection.git, 'git/status'),
+    (PanelSection.terminal, 'terminals'),
+  ]) {
+    appTest('${section.name} reads again on any panel_changed and run end', (
+      tester,
+    ) async {
+      final s = await _open(tester, section);
+      int count() => s.gateway!.sent('GET', '$_base/$route').length;
+      final before = count();
+      final events = s.gateway!.socket('/api/events')!;
+      events.push({
+        'sessionId': 's2',
+        'epoch': 1,
+        'sequence': 5,
+        'type': 'pi_event',
+        'timestamp': 1,
+        'data': {
+          'type': 'panel_changed',
+          'sections': ['background'],
+        },
+      });
+      await tester.pumpAndSettle();
+      expect(count(), before + 1);
+      events.push({
+        'sessionId': 's2',
+        'epoch': 1,
+        'sequence': 6,
+        'type': 'pi_event',
+        'timestamp': 2,
+        'data': {'type': 'agent_settled'},
+      });
+      await tester.pumpAndSettle();
+      expect(count(), greaterThanOrEqualTo(before + 2));
+    });
+  }
 
   appTest('files: a folder opens, then a file', (tester) async {
     final s = await _open(
@@ -467,6 +621,87 @@ void main() {
     expect(takeover['generation'], 1);
   });
 
+  appTest('browser: a saved recording loads from the recording route', (
+    tester,
+  ) async {
+    final s = await _open(
+      tester,
+      PanelSection.browser,
+      route: (r) => r.path == '$_base/browser/recording'
+          ? (r.query['path'] == '.pirc/recordings/a.webm'
+                ? ApiResponse(200, List.filled(3 * 1024 * 1024, 7))
+                : apiError(404, 'not_found'))
+          : null,
+    );
+    final stream = s.gateway!.socket('$_base/browser/stream')!;
+    stream
+      ..push({
+        'type': 'state',
+        'state': {'active': true, 'url': 'https://example.test/'},
+      })
+      ..push({
+        'type': 'log',
+        'entries': [
+          {'action': 'Saved recording .pirc/recordings/a.webm'},
+          {'action': 'Saved recording ../secret.webm'},
+          {'action': 'Clicked'},
+        ],
+      })
+      ..push({
+        'type': 'log_entry',
+        'entry': {'action': 'Saved recording .pirc/recordings/b.webm'},
+      });
+    await tester.pumpAndSettle();
+    expect(find.text('Recordings'), findsOneWidget);
+    expect(find.text('a.webm'), findsOneWidget);
+    expect(find.text('b.webm'), findsOneWidget);
+    expect(find.text('secret.webm'), findsNothing);
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const ValueKey('recording:.pirc/recordings/a.webm')),
+        matching: find.text('Load'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('3.0 MB'), findsOneWidget);
+    expect(find.byTooltip('Open in another app'), findsOneWidget);
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const ValueKey('recording:.pirc/recordings/b.webm')),
+        matching: find.text('Load'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('The recording could not be loaded.'), findsOneWidget);
+  });
+
+  appTest('tasks: statuses are words, not codes', (tester) async {
+    await _open(
+      tester,
+      PanelSection.tasks,
+      replies: {
+        ..._full,
+        'panel/state': {
+          'backgroundTasks': [
+            {'id': 't1', 'command': 'npm run dev', 'status': 'running'},
+            {'id': 't2', 'command': 'npm test', 'status': 'timed_out'},
+            {'id': 't3', 'command': 'make', 'status': 'some_new_state'},
+          ],
+          'team': {
+            'agents': [
+              {'id': 'a1', 'name': 'Reviewer', 'status': 'in_progress'},
+            ],
+          },
+        },
+      },
+    );
+    expect(find.text('Running'), findsWidgets);
+    expect(find.text('Timed out'), findsOneWidget);
+    expect(find.text('some_new_state'), findsOneWidget);
+    expect(find.text('In progress'), findsOneWidget);
+    expect(find.text('timed_out'), findsNothing);
+  });
+
   appTest('checkpoints: preview, recover with the lease, continue', (
     tester,
   ) async {
@@ -509,6 +744,9 @@ void main() {
     expect(recover['previewRevision'], 'rev1');
     expect(recover['operations'], ['op1']);
     expect(recover['generation'], 1);
+    // States are words, not codes.
+    expect(find.text('Recovery: Ready'), findsOneWidget);
+    expect(find.text('edit · Recorded'), findsOneWidget);
     await tester.tap(find.text('Continue in a new conversation'));
     await tester.pumpAndSettle();
     final cont =

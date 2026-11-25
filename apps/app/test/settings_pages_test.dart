@@ -75,6 +75,33 @@ final _snapshot = {
 };
 
 void main() {
+  group('while loading, each page shows progress and nothing else', () {
+    for (final (page, path, granted) in [
+      ('providers', '/api/providers', ['providers']),
+      ('notifications', '/api/push', <String>[]),
+      ('calendar', '/api/calendar/permissions', <String>[]),
+      ('modes', '/api/modes', <String>[]),
+    ]) {
+      appTest(page, (tester) async {
+        final never = Completer<ApiResponse?>();
+        await _page(
+          tester,
+          page,
+          (g) {
+            g.routes.add((r) => r.path == path ? never.future : null);
+          },
+          granted: granted,
+          settle: false,
+        );
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.text('The list could not be loaded.'), findsNothing);
+        never.complete(apiError(500, 'internal'));
+        await tester.pumpAndSettle();
+        expect(find.text('The list could not be loaded.'), findsOneWidget);
+      });
+    }
+  });
+
   group('providers', () {
     appTest('without the grant, it asks for access', (tester) async {
       await _page(tester, 'providers', (_) {});

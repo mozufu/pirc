@@ -56,12 +56,40 @@ void main() {
     await tester.scrollUntilVisible(find.text('Larger'), 200);
     await _open(tester, 'Larger');
     await tester.scrollUntilVisible(find.text('Calendar'), 200);
+    await tester.ensureVisible(find.text('Calendar'));
+    await tester.pumpAndSettle();
     await _open(tester, 'Calendar');
     expect(container.read(themeModeProvider), ThemeMode.dark);
     expect(container.read(textScaleProvider), 1.3);
     expect(container.read(startTabProvider), '/calendar');
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString(PrefKeys.startTab), '/calendar');
+  });
+
+  appTest('general: the time zone is the device\'s or a fixed offset', (
+    tester,
+  ) async {
+    final container = await pumpApp(
+      tester,
+      gateway: FakeGateway(),
+      location: '/settings/general',
+    );
+    expect(container.read(timeZoneProvider), isNull);
+    await tester.scrollUntilVisible(find.byKey(const Key('time-zone')), 200);
+    expect(find.textContaining("This device's (UTC"), findsOneWidget);
+    await _open(tester, 'Time zone');
+    await tester.tap(find.byKey(const Key('time-zone')));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('UTC+05:30'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await _open(tester, 'UTC+05:30');
+    expect(container.read(timeZoneProvider), '+05:30');
+    expect(find.text('UTC+05:30'), findsOneWidget);
+    final prefs = await SharedPreferences.getInstance();
+    expect(prefs.getString(PrefKeys.timeZone), '+05:30');
   });
 
   appTest('account: unpair asks, then removes the token and opens pairing', (
