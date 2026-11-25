@@ -229,7 +229,11 @@ pub fn write_context(dir: &Path, snapshot: &Value) -> Result<(), String> {
                 )
             })
         });
-    let _ = crate::state_io::remove_file(&temp);
+    // A successful rename already moved the temporary file; only a failed
+    // write leaves one to remove (and its absence is not an error).
+    if result.is_err() {
+        let _ = crate::state_io::remove_file(&temp);
+    }
     result
 }
 

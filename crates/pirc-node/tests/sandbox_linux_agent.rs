@@ -107,6 +107,7 @@ fn serve_inference(
     catalog: Value,
     replies: Arc<Mutex<VecDeque<Vec<Value>>>>,
     writes: Arc<pirc_node::persistence::Writes>,
+    failures: Arc<Mutex<Vec<String>>>,
 ) {
     let listener = UnixListener::bind(socket).unwrap();
     tokio::spawn(async move {
@@ -114,6 +115,7 @@ fn serve_inference(
             let catalog = catalog.clone();
             let replies = replies.clone();
             let writes = writes.clone();
+            let failures = failures.clone();
             tokio::spawn(async move {
                 let mut buffer = Vec::new();
                 let mut chunk = [0u8; 8192];
@@ -141,31 +143,41 @@ fn serve_inference(
                         Ok(read) => buffer.extend_from_slice(&chunk[..read]),
                     }
                 }
-                let body = if head.starts_with("GET /models") {
-                    catalog.to_string()
+                let (status, body) = if head.starts_with("GET /models") {
+                    ("200 OK".to_owned(), catalog.to_string())
                 } else if head.starts_with("POST /persistence ") {
                     let token = head
                         .lines()
                         .find_map(|line| line.strip_prefix("Authorization: Bearer "))
                         .unwrap_or_default();
-                    let body: Value =
+                    let request: Value =
                         serde_json::from_slice(&buffer[head_end..head_end + length]).unwrap();
-                    writes
-                        .apply_response(token, body.clone())
-                        .unwrap_or_else(|error| {
-                            panic!("persistence request failed: {body}: {error:?}")
-                        })
-                        .to_string()
+                    match writes.apply_response(token, request.clone()) {
+                        Ok(reply) => ("200 OK".to_owned(), reply.to_string()),
+                        Err(error) => {
+                            failures
+                                .lock()
+                                .unwrap()
+                                .push(format!("{request}: {error:?}"));
+                            (
+                                "500 Internal Server Error".to_owned(),
+                                json!({"error": error.to_string()}).to_string(),
+                            )
+                        }
+                    }
                 } else {
                     let reply = replies
                         .lock()
                         .unwrap()
                         .pop_front()
                         .unwrap_or_else(|| text_reply("done"));
-                    reply.iter().map(|line| format!("{line}\n")).collect()
+                    (
+                        "200 OK".to_owned(),
+                        reply.iter().map(|line| format!("{line}\n")).collect(),
+                    )
                 };
                 let response = format!(
-                    "HTTP/1.1 200 OK\r\nContent-Type: application/x-ndjson\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                    "HTTP/1.1 {status}\r\nContent-Type: application/x-ndjson\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
                     body.len()
                 );
                 let _ = stream.write_all(response.as_bytes()).await;
@@ -185,11 +197,13 @@ async fn persistence_transport_preserves_session_snapshot_hashes() {
     let lease = writes
         .register(socket.to_str().unwrap(), root.path(), None)
         .unwrap();
+    let failures = Arc::new(Mutex::new(Vec::new()));
     serve_inference(
         &socket,
         models(&socket),
         Arc::new(Mutex::new(VecDeque::new())),
         writes,
+        failures.clone(),
     );
     for op in ["session_open", "session_snapshot"] {
         let body = json!({"op": op, "path": root.path().join("session.jsonl")}).to_string();
@@ -215,6 +229,7 @@ async fn persistence_transport_preserves_session_snapshot_hashes() {
         assert_eq!(reply["ok"], true);
         assert_eq!(reply["hash"], pirc_agent::journal::digest(&[]), "{op}");
     }
+    assert!(failures.lock().unwrap().is_empty());
 }
 
 /// bash for the agent's `bash` tool, which runs `/bin/bash`: on hosts
@@ -266,7 +281,14 @@ async fn a_real_agent_is_confined() {
     let persistence = writes
         .register(socket.to_str().unwrap(), &session_dir, None)
         .unwrap();
-    serve_inference(&socket, models(&socket), replies.clone(), writes);
+    let failures = Arc::new(Mutex::new(Vec::new()));
+    serve_inference(
+        &socket,
+        models(&socket),
+        replies.clone(),
+        writes,
+        failures.clone(),
+    );
     let secret = path(root, "state/secret");
     let home_probe = path(root, "home/probe");
     // Port of a host listener the agent must not reach.
@@ -406,4 +428,9 @@ async fn a_real_agent_is_confined() {
     for name in [".pirc", ".bashrc", ".git/hooks/pre-commit"] {
         assert!(gone(&Path::new(&w).join(name)).await, "{name}");
     }
+    assert!(
+        failures.lock().unwrap().is_empty(),
+        "persistence failed: {:?}",
+        failures.lock().unwrap()
+    );
 }

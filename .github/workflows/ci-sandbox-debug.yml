@@ -3,8 +3,8 @@ on:
   push:
     branches: [ci-sandbox-fix]
 jobs:
-  sandbox-agent:
-    name: Native sandbox agent debug
+  sandbox-podman:
+    name: Native sandbox (bubblewrap, uid 0, podman)
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -13,11 +13,35 @@ jobs:
         with:
           toolchain: 1.98.1
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
-      - name: Install bubblewrap
+      - name: Install bubblewrap, podman, capability and network tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends bubblewrap git git-lfs curl openssh-client netcat-openbsd
+          sudo apt-get install -y --no-install-recommends bubblewrap podman uidmap libcap2-bin util-linux git git-lfs curl openssh-client netcat-openbsd
       - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-      - run: cargo test -p pirc-node --test sandbox_linux_agent -- --nocapture
+      - run: >-
+          podman build -t localhost/pirc-bwrap-test:latest
+          -f crates/pirc-node/tests/fixtures/bwrap.Containerfile
+          crates/pirc-node/tests/fixtures
+      - run: >-
+          cargo test -p pirc-node
+          --test sandbox_native --test sandbox_registry --test sandbox_persistence --test agent_process_privacy --test sandbox_linux_uid0
+          --test sandbox_linux_readonly --test sandbox_linux_agent
+          --test sandbox_linux_panel_git --test sandbox_network --test sandbox_linux_processes
+          -- --nocapture
         env:
           PIRC_PROCESS_SCOPE_REQUIRED: '1'
+      - name: Native checkpoint end-to-end acceptance
+        run: |
+          cargo build --locked -p pirc-gateway -p pirc-node
+          cargo test --locked -p pirc-node --lib checkpoints::api::tests -- --test-threads=1
+          cargo test --locked -p pirc-node --test checkpoint_capture --test checkpoint_recovery --test checkpoint_safety -- --test-threads=1
+          cargo test --locked -p pirc-conformance --test checkpoints -- --test-threads=1
+        env:
+          PIRC_CONFORMANCE_BIN_DIR: target/debug
+          PIRC_CONFORMANCE_REQUIRED: '1'
+          PIRC_CHECKPOINT_NATIVE_REQUIRED: '1'
+      - name: Execution fence install acknowledgement
+        run: >-
+          cargo test -p pirc-node --lib
+          execution_fences::install::tests::unproven_evidence_installs_only_after_acknowledging_its_exact_digest
+          -- --exact --nocapture
