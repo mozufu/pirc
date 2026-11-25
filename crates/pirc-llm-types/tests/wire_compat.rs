@@ -112,6 +112,7 @@ fn enum_spellings_are_stable() {
         r#""medium""#,
         r#""high""#,
         r#""xhigh""#,
+        r#""max""#,
     ] {
         fixed::<ThinkingLevel>(bytes);
     }

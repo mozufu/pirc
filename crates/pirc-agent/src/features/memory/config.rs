@@ -67,20 +67,13 @@ impl Default for WorkspaceMemoryConfig {
     }
 }
 
-/// A model choice of valid settings; `max` (accepted for configs carried
-/// over from Pi) is the highest level.
+/// A model choice of valid settings.
 pub(crate) fn model_choice(value: &Value) -> ModelChoice {
     let text = |key: &str| value[key].as_str().unwrap_or_default().to_owned();
     ModelChoice {
         provider: text("provider"),
         id: text("id"),
-        thinking: value["thinking"].as_str().and_then(|level| {
-            if level == "max" {
-                Some(ThinkingLevel::Xhigh)
-            } else {
-                thinking_level(level)
-            }
-        }),
+        thinking: value["thinking"].as_str().and_then(thinking_level),
     }
 }
 
@@ -176,7 +169,7 @@ mod tests {
         }));
         assert!(!unknown.workspace.enabled);
         assert_eq!(unknown.workspace.max_tokens, 123);
-        assert_eq!(unknown.model.unwrap().thinking, Some(ThinkingLevel::Xhigh));
+        assert_eq!(unknown.model.unwrap().thinking, Some(ThinkingLevel::Max));
         assert_eq!(
             unknown.fallback_models,
             [ModelChoice {

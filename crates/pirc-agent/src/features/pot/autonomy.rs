@@ -79,14 +79,14 @@ fn reminder(args: &Map<String, Value>) -> Result<(i64, String), String> {
 
 /// `level` and its reason; only a pot with automatic thinking gets to ask.
 fn thinking(args: &Map<String, Value>) -> Result<(String, String), String> {
-    const LEVELS: [&str; 6] = ["off", "minimal", "low", "medium", "high", "xhigh"];
+    const LEVELS: [&str; 7] = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
     let level = args
         .get("level")
         .and_then(Value::as_str)
         .ok_or("level must be a thinking level")?
         .to_owned();
     if !LEVELS.contains(&level.as_str()) {
-        return Err("level is one of off, minimal, low, medium, high, xhigh".into());
+        return Err("level is one of off, minimal, low, medium, high, xhigh, max".into());
     }
     Ok((level, string_or(args, "reason", "").trim().to_owned()))
 }
@@ -296,7 +296,7 @@ impl ThinkingTool {
                     "properties": {
                         "level": {
                             "type": "string",
-                            "enum": ["off", "minimal", "low", "medium", "high", "xhigh"],
+                            "enum": ["off", "minimal", "low", "medium", "high", "xhigh", "max"],
                             "description": "The thinking level for your next wakes",
                         },
                         "reason": { "type": "string", "description": "Why this level is right now" },
@@ -508,6 +508,10 @@ mod tests {
             thinking(&map(json!({ "level": "high", "reason": " hard task " }))),
             Ok(("high".into(), "hard task".into()))
         );
-        assert!(thinking(&map(json!({ "level": "max", "reason": "x" }))).is_err());
+        assert_eq!(
+            thinking(&map(json!({ "level": "max", "reason": "x" }))),
+            Ok(("max".into(), "x".into()))
+        );
+        assert!(thinking(&map(json!({ "level": "huge", "reason": "x" }))).is_err());
     }
 }

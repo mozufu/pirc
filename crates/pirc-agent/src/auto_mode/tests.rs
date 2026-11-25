@@ -839,7 +839,7 @@ fn reads_classifier_settings_and_choices() {
     for broken in [
         json!({ "timeoutMs": 120_001, "useModel": false }),
         json!({ "timeoutMs": 1.5, "useModel": false }),
-        json!({ "model": { "provider": "p", "id": "m", "thinking": "max" }, "useModel": false }),
+        json!({ "model": { "provider": "p", "id": "m", "thinking": "huge" }, "useModel": false }),
         json!({ "model": null, "useModel": false }),
         json!({ "fallbackModels": [{ "provider": "", "id": "m" }], "useModel": false }),
     ] {

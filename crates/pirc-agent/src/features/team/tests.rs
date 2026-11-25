@@ -404,7 +404,7 @@ fn spawns_a_teammate_that_reports_to_the_parent() {
                 "--model",
                 "fake/fake-model",
                 "--thinking",
-                "xhigh",
+                "max",
                 "--name",
                 "team:helper",
             ]

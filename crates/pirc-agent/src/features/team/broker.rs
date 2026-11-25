@@ -1179,11 +1179,7 @@ impl Team {
         let (argv, cwd, env, configure, mode) = {
             let m = member.borrow();
             let mut argv = self.options.command.clone();
-            let thinking = if m.thinking == "max" {
-                "xhigh"
-            } else {
-                m.thinking.as_str()
-            };
+            let thinking = m.thinking.as_str();
             argv.extend(
                 [
                     "agent",

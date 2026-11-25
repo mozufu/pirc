@@ -225,7 +225,7 @@ pub fn set_thinking(
 ) -> ApiResult<Value> {
     if !THINKING.contains(&level) {
         return Err(invalid(
-            "level is one of off, minimal, low, medium, high, xhigh",
+            "level is one of off, minimal, low, medium, high, xhigh, max",
         ));
     }
     let reason = checked_reason(reason)?;

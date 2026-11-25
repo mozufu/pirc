@@ -66,6 +66,7 @@ mod shared {
             ThinkingLevel::Medium => "medium",
             ThinkingLevel::High => "high",
             ThinkingLevel::Xhigh => "xhigh",
+            ThinkingLevel::Max => "max",
         }
     }
 
@@ -135,32 +136,15 @@ mod shared {
         }
     }
 
-    /// The effective reasoning level (`streamOptions`): the requested level or
-    /// the next one the model supports.
+    /// The effective reasoning level (`streamOptions`): the requested level,
+    /// clamped to the nearest supported one for this model.
     pub fn reasoning_effort(request: &StreamRequest<'_>, model: &PiModel) -> Option<String> {
-        let enabled = model.reasoning && request.options.thinking != ThinkingLevel::Off;
-        if !enabled {
-            return None;
-        }
-        let levels = ["minimal", "low", "medium", "high", "xhigh"];
-        let available: Vec<(usize, &str)> = levels
-            .iter()
-            .copied()
-            .enumerate()
-            .filter(|(_, level)| {
-                model.level_map(level) != Some(None)
-                    && (*level != "xhigh" || model.level_map("xhigh").is_some())
-            })
-            .collect();
-        let requested = levels
-            .iter()
-            .position(|level| *level == level_name(request.options.thinking));
-        let requested = requested.unwrap_or(0);
-        available
-            .iter()
-            .find(|(index, _)| *index >= requested)
-            .or(available.last())
-            .map(|(_, level)| (*level).to_owned())
+        let level = pirc_llm_types::effective_thinking_level(
+            model.reasoning,
+            model.thinking_level_map.as_ref(),
+            request.options.thinking,
+        )?;
+        Some(level_name(level).to_owned())
     }
 
     /// pi-ai's context message (after the adapter's `historyMessage`).
@@ -454,5 +438,75 @@ mod shared {
         }
         flush(&mut result, &mut pending, &mut existing);
         result
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::*;
+        use crate::runtime::{ResolvedEndpoint, ResolvedModel};
+        use pirc_llm_types::ModelApi;
+
+        fn map(entries: &[(&str, Option<&str>)]) -> IndexMap<String, Option<String>> {
+            entries
+                .iter()
+                .map(|(level, effort)| ((*level).to_owned(), effort.map(str::to_owned)))
+                .collect()
+        }
+
+        /// The effective level and the provider effort sent for it.
+        fn effort(
+            levels: Option<IndexMap<String, Option<String>>>,
+            level: ThinkingLevel,
+        ) -> Option<(String, String)> {
+            let endpoint =
+                ResolvedEndpoint::new(ModelApi::OpenaiResponses, "openai", "https://model.invalid");
+            let mut model = ResolvedModel::new("m", 1024);
+            model.reasoning = true;
+            model.thinking_level_map = levels;
+            let mut request = StreamRequest::new("openai", &endpoint, &model);
+            request.options.thinking = level;
+            let pi_model = PiModel::new(&request);
+            let effective = reasoning_effort(&request, &pi_model)?;
+            let mapped = pi_model.mapped_effort(&effective);
+            Some((effective, mapped))
+        }
+
+        #[test]
+        fn maps_xhigh_and_max_to_the_levels_the_model_offers() {
+            let pair = |left: &str, right: &str| Some((left.to_owned(), right.to_owned()));
+            assert_eq!(
+                effort(
+                    Some(map(&[("xhigh", Some("xhigh")), ("max", Some("max"))])),
+                    ThinkingLevel::Xhigh
+                ),
+                pair("xhigh", "xhigh")
+            );
+            assert_eq!(
+                effort(
+                    Some(map(&[("xhigh", Some("xhigh")), ("max", Some("max"))])),
+                    ThinkingLevel::Max
+                ),
+                pair("max", "max")
+            );
+            // A model with only max keeps the old `xhigh` meaning.
+            assert_eq!(
+                effort(Some(map(&[("max", Some("max"))])), ThinkingLevel::Xhigh),
+                pair("max", "max")
+            );
+            assert_eq!(
+                effort(Some(map(&[("max", Some("max"))])), ThinkingLevel::Max),
+                pair("max", "max")
+            );
+            assert_eq!(
+                effort(Some(map(&[("xhigh", Some("xhigh"))])), ThinkingLevel::Max),
+                pair("xhigh", "xhigh")
+            );
+            // Unsupported levels clamp down to the highest offered.
+            assert_eq!(
+                effort(Some(map(&[("max", None)])), ThinkingLevel::Max),
+                pair("high", "high")
+            );
+            assert_eq!(effort(None, ThinkingLevel::Max), pair("high", "high"));
+        }
     }
 }

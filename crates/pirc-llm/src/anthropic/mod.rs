@@ -162,7 +162,6 @@ fn options(
     if let Some(level) = level.as_deref() {
         let fallback = match level {
             "minimal" => "low",
-            "xhigh" => "high",
             other => other,
         };
         options.effort = Some(

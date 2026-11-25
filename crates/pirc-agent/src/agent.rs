@@ -363,6 +363,7 @@ fn thinking_name(level: ThinkingLevel) -> &'static str {
         ThinkingLevel::Medium => "medium",
         ThinkingLevel::High => "high",
         ThinkingLevel::Xhigh => "xhigh",
+        ThinkingLevel::Max => "max",
     }
 }
 
@@ -1480,7 +1481,7 @@ impl Agent {
             self.set_model(&provider, &id)?;
         }
         if let Some(thinking) = &preset.thinking {
-            self.set_thinking(if thinking == "max" { "xhigh" } else { thinking })?;
+            self.set_thinking(thinking)?;
         }
         let mut data = Map::new();
         data.insert("name".to_owned(), json!(name));

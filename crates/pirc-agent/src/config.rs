@@ -328,7 +328,7 @@ fn model_ref(checker: &mut Checker, value: Option<&Value>) -> Option<ModelRef> {
 }
 
 /// `thinkingLevels`.
-pub const THINKING_LEVELS: [&str; 6] = ["off", "minimal", "low", "medium", "high", "xhigh"];
+pub const THINKING_LEVELS: [&str; 7] = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
 
 /// A thinking level by name.
 pub fn thinking_level(name: &str) -> Option<ThinkingLevel> {

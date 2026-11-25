@@ -20,7 +20,10 @@ pub use inference::{
     AssistantContent, AssistantDelta, AssistantMessage, InferenceErrorCode, Message, StopReason,
     ToolChoice, ToolSpec, Usage, UserBlock, UserContent,
 };
-pub use models::{Model, ModelApi, ModelRef, Provider, ThinkingLevel};
+pub use models::{
+    Model, ModelApi, ModelRef, Provider, THINKING_LEVELS, ThinkingLevel, effective_thinking_level,
+    model_thinking_levels, supports_thinking_level,
+};
 
 /// Preserve explicit null separately from an absent opaque field.
 mod opaque {

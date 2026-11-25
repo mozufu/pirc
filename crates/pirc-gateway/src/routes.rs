@@ -1523,9 +1523,11 @@ pub async fn list_models(
         }
         Some(_) => return Err(ApiError::invalid_input().into()),
     }
-    Ok(ok(
-        json!({ "models": pirc_providers::list_models(&app.models()) }),
-    ))
+    let models = app.models();
+    Ok(ok(json!({
+        "models": pirc_providers::list_models(&models),
+        "defaultModel": models.default_model.clone(),
+    })))
 }
 
 // ---- side panel, terminals and recordings: relayed verbatim -----------------------
@@ -1806,6 +1808,38 @@ mod tests {
             unreachable!()
         };
         command_payload(map).map(Value::Object)
+    }
+
+    #[tokio::test]
+    async fn models_list_each_models_thinking_levels_and_the_default_model() {
+        let (app, _dir) = crate::test_support::app_with_catalog(json!({
+            "providers": { "p": {
+                "api": "openai-completions", "baseUrl": "https://model.invalid",
+                "models": [
+                    { "id": "both", "reasoning": true,
+                      "thinkingLevelMap": { "xhigh": "xhigh", "max": "max" } },
+                    { "id": "plain" },
+                ] } },
+            "defaultModel": { "provider": "p", "id": "both", "thinking": "high" }
+        }));
+        let (code, body) =
+            crate::test_support::call(&app, "GET", "/api/models", Some("alice"), None, None).await;
+        assert_eq!(code, 200);
+        assert_eq!(
+            body["models"][0]["thinkingLevels"],
+            json!(["minimal", "low", "medium", "high", "xhigh", "max"])
+        );
+        assert_eq!(body["models"][1]["thinkingLevels"], json!([]));
+        assert_eq!(
+            body["defaultModel"],
+            json!({ "provider": "p", "id": "both", "thinking": "high" })
+        );
+
+        let (app, _dir) = crate::test_support::app_with_models(json!({}));
+        let (code, body) =
+            crate::test_support::call(&app, "GET", "/api/models", Some("alice"), None, None).await;
+        assert_eq!(code, 200);
+        assert_eq!(body["defaultModel"], Value::Null);
     }
 
     #[test]

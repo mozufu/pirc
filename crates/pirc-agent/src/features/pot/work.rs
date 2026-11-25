@@ -97,7 +97,7 @@ impl WorkTool {
                         "instruction": string("What the work session should do"),
                         "provider": string("A work model's provider (with model); omit both for your first direct model"),
                         "model": string("A work model (with provider)"),
-                        "thinking": { "type": "string", "enum": ["off", "minimal", "low", "medium", "high", "xhigh"] },
+                        "thinking": { "type": "string", "enum": ["off", "minimal", "low", "medium", "high", "xhigh", "max"] },
                         "approvalId": string("The user's allow-once approval for this start"),
                         "reason": string("Why this model, shown when it needs approval"),
                         "estimateMicros": { "type": "integer", "minimum": 0, "description": "Your cost estimate in micro-USD" },

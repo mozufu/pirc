@@ -636,10 +636,10 @@ async fn simple_commands_and_their_data() {
     assert_eq!(
         run(
             &agent,
-            json!({ "type": "set_thinking_level", "level": "max" })
+            json!({ "type": "set_thinking_level", "level": "huge" })
         )
         .await["error"],
-        "Unknown thinking level: max"
+        "Unknown thinking level: huge"
     );
     assert_eq!(
         run(&agent, json!({ "type": "teleport" })).await["error"],

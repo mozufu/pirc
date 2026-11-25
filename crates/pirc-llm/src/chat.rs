@@ -2,7 +2,7 @@
 //! with the legacy `openai-chat` API (`agent/providers/openai-chat.ts`).
 
 use crate::outcome::{ErrorKind, LlmError};
-use crate::runtime::RunRequest as StreamRequest;
+use crate::runtime::{ResolvedModel, RunRequest as StreamRequest};
 use pirc_llm_types::{
     AssistantContent, AssistantDelta, AssistantMessage, Message, StopReason, ThinkingLevel,
     UserBlock, UserContent,
@@ -165,15 +165,25 @@ fn to_openai_messages(request: &StreamRequest<'_>, flags: &Compat) -> Vec<Value>
     out
 }
 
-fn effort(level: ThinkingLevel) -> &'static str {
-    match level {
-        ThinkingLevel::Off => "none",
-        ThinkingLevel::Minimal => "minimal",
-        ThinkingLevel::Low => "low",
-        ThinkingLevel::Medium => "medium",
-        ThinkingLevel::High => "high",
-        ThinkingLevel::Xhigh => "xhigh",
-    }
+/// `reasoning_effort`: the model's mapping for the effective level, else the
+/// level name (`none` for off).
+fn effort(model: &ResolvedModel, level: ThinkingLevel) -> String {
+    let Some(effective) = model.effective_thinking_level(level) else {
+        return model
+            .thinking_level_map
+            .as_ref()
+            .and_then(|map| map.get("off"))
+            .and_then(Option::as_deref)
+            .unwrap_or("none")
+            .to_owned();
+    };
+    model
+        .thinking_level_map
+        .as_ref()
+        .and_then(|map| map.get(effective.as_str()))
+        .and_then(Option::as_deref)
+        .unwrap_or_else(|| effective.as_str())
+        .to_owned()
 }
 
 /// `openAIBody`.
@@ -219,7 +229,7 @@ fn openai_body(request: &StreamRequest<'_>, flags: &Compat) -> Map<String, Value
     if request.model.reasoning && flags.reasoning_effort {
         body.insert(
             "reasoning_effort".to_owned(),
-            json!(effort(request.options.thinking)),
+            json!(effort(request.model, request.options.thinking)),
         );
     }
     if flags.session_affinity {

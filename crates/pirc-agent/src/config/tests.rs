@@ -573,7 +573,7 @@ fn rejects_invalid_config_with_every_issue() {
             json!({}),
             json!({"foo": 1, "defaultModel": {"provider": "p", "thinking": "big"}, "hooks": {"beforeTool": [{"command": "", "timeoutMs": 1.5}]}}),
             "defaultModel.id: Required (string)\n\
-             defaultModel.thinking: Expected one of 'off', 'minimal', 'low', 'medium', 'high', 'xhigh', received 'big'\n\
+             defaultModel.thinking: Expected one of 'off', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', received 'big'\n\
              hooks.beforeTool[0].command: Expected at least 1 characters\n\
              hooks.beforeTool[0].timeoutMs: Expected an integer\n\
              (root): Unknown key(s): 'foo'",
@@ -868,13 +868,20 @@ fn session_settings_prefer_the_latest_recorded_change() {
         session_settings(&branch, Some(&fallback), &catalog),
         (pair("b", "2"), ThinkingLevel::Low)
     );
-    // An unknown recorded level is medium, not the default's.
+    // A recorded level beyond the ladder is medium, not the default's.
     let odd = [entry(EntryData::ThinkingLevelChange {
-        thinking_level: "max".into(),
+        thinking_level: "huge".into(),
     })];
     assert_eq!(
         session_settings(&odd, Some(&fallback), &catalog).1,
         ThinkingLevel::Medium
+    );
+    let max = [entry(EntryData::ThinkingLevelChange {
+        thinking_level: "max".into(),
+    })];
+    assert_eq!(
+        session_settings(&max, Some(&fallback), &catalog).1,
+        ThinkingLevel::Max
     );
     let empty: Models = serde_json::from_value(json!({})).unwrap();
     assert_eq!(

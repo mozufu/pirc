@@ -3,7 +3,7 @@
 //! `piProvider` and no model-level `api`.
 
 use crate::outcome::{ErrorKind, LlmError};
-use crate::runtime::RunRequest as StreamRequest;
+use crate::runtime::{ResolvedModel, RunRequest as StreamRequest};
 use pirc_llm_types::{
     AssistantContent, AssistantDelta, AssistantMessage, Message, StopReason, ThinkingLevel,
     ToolChoice, UserBlock, UserContent,
@@ -152,16 +152,34 @@ fn budget(level: ThinkingLevel) -> i128 {
         ThinkingLevel::Off | ThinkingLevel::Medium => 10_000,
         ThinkingLevel::High => 24_000,
         ThinkingLevel::Xhigh => 48_000,
+        ThinkingLevel::Max => 64_000,
     }
 }
 
-/// `efforts`.
-fn effort(level: ThinkingLevel) -> Value {
+/// `efforts`: the model's mapping for the effective level, else the level's
+/// provider default.
+fn effort(model: &ResolvedModel, level: ThinkingLevel) -> Value {
+    // Before `max` was its own level, `xhigh` was the only way to ask an
+    // Anthropic model without a map for its maximum effort.
+    if level == ThinkingLevel::Xhigh && model.thinking_level_map.is_none() {
+        return json!("max");
+    }
+    let Some(level) = model.effective_thinking_level(level) else {
+        return Value::Null;
+    };
+    if let Some(mapped) = model
+        .thinking_level_map
+        .as_ref()
+        .and_then(|map| map.get(level.as_str()))
+        .and_then(Option::as_deref)
+    {
+        return json!(mapped);
+    }
     match level {
         ThinkingLevel::Minimal | ThinkingLevel::Low => json!("low"),
         ThinkingLevel::Medium => json!("medium"),
-        ThinkingLevel::High => json!("high"),
-        ThinkingLevel::Xhigh => json!("max"),
+        ThinkingLevel::High | ThinkingLevel::Xhigh => json!("high"),
+        ThinkingLevel::Max => json!("max"),
         // `efforts.off` is undefined, and `thinking: off` never gets here.
         ThinkingLevel::Off => Value::Null,
     }
@@ -211,7 +229,7 @@ fn anthropic_body(request: &StreamRequest<'_>) -> Map<String, Value> {
             body.insert("thinking".to_owned(), json!({ "type": "adaptive" }));
             body.insert(
                 "output_config".to_owned(),
-                json!({ "effort": effort(request.options.thinking) }),
+                json!({ "effort": effort(request.model, request.options.thinking) }),
             );
         } else {
             let budget =
@@ -858,6 +876,41 @@ mod tests {
             request.options.thinking = ThinkingLevel::Off;
             assert!(!anthropic_body(&request).contains_key("thinking"));
         }
+    }
+
+    #[test]
+    fn maps_xhigh_and_max_to_the_models_efforts() {
+        let map = |entries: &[(&str, Option<&str>)]| -> indexmap::IndexMap<String, Option<String>> {
+            entries
+                .iter()
+                .map(|(level, effort)| ((*level).to_owned(), effort.map(str::to_owned)))
+                .collect()
+        };
+        let effort = |levels: Option<indexmap::IndexMap<String, Option<String>>>,
+                      level: ThinkingLevel| {
+            let mut fixture = RuntimeFixture::new();
+            fixture.model.reasoning = true;
+            fixture.model.thinking_level_map = levels;
+            fixture
+                .endpoint
+                .compat
+                .insert("forceAdaptiveThinking".to_owned(), json!(true));
+            let mut request = fixture.request();
+            request.options.thinking = level;
+            anthropic_body(&request)["output_config"]["effort"].clone()
+        };
+        let both = || map(&[("xhigh", Some("xhigh")), ("max", Some("max"))]);
+        assert_eq!(effort(Some(both()), ThinkingLevel::Xhigh), json!("xhigh"));
+        assert_eq!(effort(Some(both()), ThinkingLevel::Max), json!("max"));
+        let max_only = || map(&[("max", Some("max"))]);
+        assert_eq!(effort(Some(max_only()), ThinkingLevel::Xhigh), json!("max"));
+        assert_eq!(effort(Some(max_only()), ThinkingLevel::Max), json!("max"));
+        let neither = || map(&[("xhigh", None), ("max", None)]);
+        assert_eq!(effort(Some(neither()), ThinkingLevel::Xhigh), json!("high"));
+        assert_eq!(effort(Some(neither()), ThinkingLevel::Max), json!("high"));
+        // Before `max`, `xhigh` was the only way to ask an unmapped model
+        // for its maximum effort.
+        assert_eq!(effort(None, ThinkingLevel::Xhigh), json!("max"));
     }
 
     #[test]

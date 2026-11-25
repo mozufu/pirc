@@ -373,7 +373,8 @@ mod tests {
     fn model_refs() {
         assert!(model_ref(&json!({ "provider": "p", "id": "m", "thinking": "high" })).is_some());
         assert!(model_ref(&json!({ "provider": "p", "id": "m", "x": 1 })).is_none());
-        assert!(model_ref(&json!({ "provider": "p", "id": "m", "thinking": "max" })).is_none());
+        assert!(model_ref(&json!({ "provider": "p", "id": "m", "thinking": "max" })).is_some());
+        assert!(model_ref(&json!({ "provider": "p", "id": "m", "thinking": "huge" })).is_none());
         assert!(model_ref(&json!({ "provider": "p" })).is_none());
     }
 }

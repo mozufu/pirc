@@ -117,6 +117,25 @@ impl ResolvedModel {
             max_tokens,
         }
     }
+
+    /// The reasoning levels this model offers, in order.
+    pub fn thinking_levels(&self) -> Vec<ThinkingLevel> {
+        pirc_llm_types::model_thinking_levels(self.reasoning, self.thinking_level_map.as_ref())
+    }
+
+    /// Whether this model accepts `level` without clamping.
+    pub fn supports_thinking_level(&self, level: ThinkingLevel) -> bool {
+        pirc_llm_types::supports_thinking_level(level, self.thinking_level_map.as_ref())
+    }
+
+    /// The level a request uses after clamping to this model's levels.
+    pub fn effective_thinking_level(&self, level: ThinkingLevel) -> Option<ThinkingLevel> {
+        pirc_llm_types::effective_thinking_level(
+            self.reasoning,
+            self.thinking_level_map.as_ref(),
+            level,
+        )
+    }
 }
 
 impl From<&Model> for ResolvedModel {

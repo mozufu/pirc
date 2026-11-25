@@ -369,6 +369,7 @@ pub fn list_models(models: &Models) -> Vec<Value> {
                     "maxTokens": model.max_tokens,
                     "reasoning": model.reasoning,
                     "input": model.input,
+                    "thinkingLevels": model.thinking_levels(),
                 })
             })
         })
@@ -592,10 +593,54 @@ mod tests {
             list_models(&models),
             [
                 json!({ "provider": "p", "id": "m", "name": "Model", "contextWindow": 200000,
-                    "maxTokens": 32000, "reasoning": false, "input": ["text"] }),
+                    "maxTokens": 32000, "reasoning": false, "input": ["text"],
+                    "thinkingLevels": [] }),
                 json!({ "provider": "p", "id": "n", "name": "n", "contextWindow": 200000,
-                    "maxTokens": 32000, "reasoning": false, "input": ["text"] }),
+                    "maxTokens": 32000, "reasoning": false, "input": ["text"],
+                    "thinkingLevels": [] }),
             ]
+        );
+    }
+
+    #[test]
+    fn lists_the_thinking_levels_each_model_offers() {
+        let models: Models = serde_json::from_value(json!({ "providers": { "p": {
+            "api": "openai-completions", "baseUrl": "https://model.invalid",
+            "models": [
+                { "id": "plain", "reasoning": false },
+                { "id": "default-levels", "reasoning": true },
+                { "id": "both", "reasoning": true,
+                    "thinkingLevelMap": {"minimal": null, "low": "low", "medium": "medium",
+                        "high": "high", "xhigh": "xhigh", "max": "max"} },
+                { "id": "max-only", "reasoning": true,
+                    "thinkingLevelMap": {"max": "max"} },
+                { "id": "no-top", "reasoning": true,
+                    "thinkingLevelMap": {"xhigh": null, "max": null} },
+            ] } } }))
+        .unwrap();
+        let levels = |id: &str| {
+            list_models(&models)
+                .into_iter()
+                .find(|model| model["id"] == json!(id))
+                .unwrap()["thinkingLevels"]
+                .clone()
+        };
+        assert_eq!(levels("plain"), json!([]));
+        assert_eq!(
+            levels("default-levels"),
+            json!(["minimal", "low", "medium", "high"])
+        );
+        assert_eq!(
+            levels("both"),
+            json!(["low", "medium", "high", "xhigh", "max"])
+        );
+        assert_eq!(
+            levels("max-only"),
+            json!(["minimal", "low", "medium", "high", "max"])
+        );
+        assert_eq!(
+            levels("no-top"),
+            json!(["minimal", "low", "medium", "high"])
         );
     }
 }

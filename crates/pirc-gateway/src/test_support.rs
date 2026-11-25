@@ -11,6 +11,12 @@ use crate::db::Db;
 /// An app on an in-memory database whose file-managed providers are `models`
 /// (the `providers` object of a models file).
 pub fn app_with_models(providers: Value) -> (AppState, tempfile::TempDir) {
+    app_with_catalog(serde_json::json!({ "providers": providers }))
+}
+
+/// An app on an in-memory database with a whole models file: `providers` and
+/// an optional `defaultModel`.
+pub fn app_with_catalog(catalog: Value) -> (AppState, tempfile::TempDir) {
     let dir = tempfile::tempdir().unwrap();
     let state = dir.path().join("state");
     let env = pirc_config::Env::new(
@@ -31,7 +37,7 @@ pub fn app_with_models(providers: Value) -> (AppState, tempfile::TempDir) {
         ],
         "/work",
     );
-    let models = serde_json::from_value(serde_json::json!({ "providers": providers })).unwrap();
+    let models = serde_json::from_value(catalog).unwrap();
     let backends = pirc_providers::backends::BackendService::open(&state, models).unwrap();
     let app = App::new(
         pirc_config::GatewayConfig::load(&env).unwrap(),
