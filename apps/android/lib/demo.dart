@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'bridge.dart';
+import 'live/render_host_adapter.dart';
 import 'reply_controller.dart';
 import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  installAppRenderHost();
   runApp(PircApp(theme: await PircTheme.load()));
 }
 
