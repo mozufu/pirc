@@ -16,7 +16,7 @@ acceptance, activation.
 | [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11   |
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
 | [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–4 done                                              |
-| [M5 Client foundation](#m5-client-foundation)                 | complete | in progress |            | steps 1–3 done (`f81ba7fd`…`4697e62e`)                      |
+| [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2a28174`; CI on Linux not yet seen             |
 | [M6 Work and settings screens](#m6-work-and-settings-screens) | outline  |             |            |                                                             |
 | [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |
 | [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                             |
@@ -354,16 +354,29 @@ the backend milestones. Flutter comes from the Nix shell (`nix develop`, Flutter
      the four tabs (Chat, Work, Activity, Calendar) and Settings as placeholders, en
      and zh-TW catalogs (ARB and `flutter gen-l10n`), a language setting, and the
      `PIRC_TAILSCALE`/flavor check.
+   - As built: each tab is one route page whose open item is the `open` query
+     parameter, so opening an item never rebuilds the list; the scaffold keeps
+     list, content and side pane under stable keys, so a resize moves them and keeps
+     drafts and scroll positions. The Traditional Chinese catalog is `app_zh.arb`
+     (gen-l10n needs a base `zh` file) and `app_zh_TW.arb` inherits it. The app adds
+     the renderer's `RenderColors` from the tokens, mapping the five names the
+     tokens call differently (`web.bg`, `web.line`, `web.muted`, `code.head`,
+     `border.default`). Language and appearance are not stored yet (M6).
      Done when: widget tests show each layout at 375, 700, 1000 and 1300 wide, and
      switching layout keeps the selected tab and route; light and dark build.
 5. **Test layout and CI.**
    - `dart_test.yaml` in each package declares the tags `tier3`, `node`, `fonts`
-     and `device`; the default run excludes all four. Renderer tests that need
-     Arial/Menlo, Node or the script runtime are tagged.
+     and `device`; the default run skips all four and reports them as skipped.
+     They run with `flutter test --run-skipped -t <tag>` (a config `exclude_tags`
+     cannot be lifted from the command line). Renderer tests that load host fonts
+     are tagged `fonts`; the `pirc_render_document` tests are tagged `tier3`, except
+     the Canvas decoder's work-budget tests, which are resource-safety regressions.
+     The renderer suite had never run on Linux; tests that fail there for font
+     reasons get the `fonts` tag when the Client workflow shows them.
    - Safety regressions (credential attachment and redirects, opaque origins,
      remote-content gating, content containment, request shapes) are untagged.
    - New workflow `.github/workflows/client.yml`: `flutter analyze` and the default
-     tests for the workspace members, and the `standard` debug APK and Web build of
+     tests for the workspace members, and both debug APKs and the Web build of
      `apps/app`. `android.yml` adds `packages/**` and `pubspec.*` to its paths and
      keeps building the old app.
      Done when: the default suites pass locally and the workflow file is valid.
