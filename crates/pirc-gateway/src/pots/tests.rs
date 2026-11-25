@@ -4189,3 +4189,275 @@ mod dispatch {
         assert_eq!(*fake.sessions_started(), 2);
     }
 }
+
+mod handover {
+    use super::super::handover::{self, Fit, ItemKind, NewHandover, ProposedBy, To};
+    use super::super::threads::{self, GroupInput};
+    use super::*;
+    use rusqlite::params;
+
+    struct World {
+        db: Db,
+        a: String,
+        b: String,
+        work_here: String,
+        work_elsewhere: String,
+        group: String,
+    }
+
+    fn world() -> World {
+        let db = db();
+        let (a, b, work_here, work_elsewhere, group) = {
+            let mut conn = db.lock();
+            let a = create(&mut conn, "alice", input("Tester")).unwrap().id;
+            let b = create(&mut conn, "alice", input("Helper")).unwrap().id;
+            for (id, workspace) in [("w-here", "node:repo"), ("w-else", "node:other")] {
+                conn.execute(
+                    "INSERT INTO pot_works(id,owner_user,pot_id,session_id,workspace_id,title,provider,model,created_at,updated_at)
+                     VALUES(?1,'alice',?2,?1,?3,?1,'p','m',0,0)",
+                    params![id, a, workspace],
+                )
+                .unwrap();
+            }
+            conn.execute(
+                "INSERT INTO pot_reminders(id,pot_id,owner_user,note,due_at,created_at) VALUES('r1',?1,'alice','Check CI',?2,0)",
+                params![a, crate::util::now_ms() + 3_600_000],
+            )
+            .unwrap();
+            let group = threads::create_group(
+                &conn,
+                "alice",
+                GroupInput {
+                    name: "Release".into(),
+                    avatar_color: None,
+                    host_pot_id: a.clone(),
+                    member_pot_ids: vec![b.clone()],
+                    project_id: None,
+                },
+            )
+            .unwrap()
+            .id;
+            (a, b, "w-here".to_owned(), "w-else".to_owned(), group)
+        };
+        World {
+            db,
+            a,
+            b,
+            work_here,
+            work_elsewhere,
+            group,
+        }
+    }
+
+    fn to_pot(id: &str) -> To {
+        To::Pot {
+            pot_id: id.to_owned(),
+        }
+    }
+
+    fn propose(
+        conn: &rusqlite::Connection,
+        from: &str,
+        to: To,
+        by: ProposedBy,
+    ) -> handover::Handover {
+        handover::propose(
+            conn,
+            "alice",
+            NewHandover {
+                from_pot_id: from.into(),
+                to,
+                items: None,
+                reason: String::new(),
+            },
+            by,
+        )
+        .unwrap()
+    }
+
+    fn fit_of(h: &handover::Handover, kind: ItemKind, r#ref: &str) -> Fit {
+        h.items
+            .iter()
+            .find(|i| i.kind == kind && (r#ref.is_empty() || i.r#ref == r#ref))
+            .unwrap()
+            .fit
+    }
+
+    #[test]
+    fn what_fits_moves_to_the_receiver_and_the_rest_stops() {
+        let w = world();
+        let mut conn = w.db.lock();
+        let h = propose(&conn, &w.a, to_pot(&w.b), ProposedBy::User);
+        assert_eq!(
+            h.items.len(),
+            6,
+            "two responsibilities, a reminder, two works, a group"
+        );
+        assert_eq!(fit_of(&h, ItemKind::Responsibility, ""), Fit::Ok);
+        assert_eq!(fit_of(&h, ItemKind::Work, &w.work_here), Fit::Ok);
+        assert_eq!(
+            fit_of(&h, ItemKind::Work, &w.work_elsewhere),
+            Fit::Stop,
+            "no location there"
+        );
+        assert_eq!(fit_of(&h, ItemKind::GroupHost, &w.group), Fit::Ok);
+        let before_b = read(&conn, "alice", &w.b).unwrap().revision;
+        let (applied, kick) = handover::confirm(&mut conn, "alice", &h.id, h.revision).unwrap();
+        assert_eq!(applied.state, "applied");
+        assert_eq!(kick.as_deref(), Some(w.b.as_str()));
+        let b = read(&conn, "alice", &w.b).unwrap();
+        assert_eq!(b.input.work.responsibilities.len(), 4);
+        assert_eq!(b.revision, before_b + 1);
+        assert!(
+            read(&conn, "alice", &w.a)
+                .unwrap()
+                .input
+                .work
+                .responsibilities
+                .is_empty()
+        );
+        let owner_of = |sql: &str| -> String { conn.query_row(sql, [], |r| r.get(0)).unwrap() };
+        assert_eq!(
+            owner_of("SELECT pot_id FROM pot_works WHERE id='w-here'"),
+            w.b
+        );
+        assert_eq!(
+            owner_of("SELECT pot_id FROM pot_works WHERE id='w-else'"),
+            w.a,
+            "a stop stays"
+        );
+        assert_eq!(
+            owner_of("SELECT pot_id FROM pot_reminders WHERE id='r1'"),
+            w.b
+        );
+        assert_eq!(
+            threads::get(&conn, "alice", &w.group)
+                .unwrap()
+                .host_pot_id
+                .as_deref(),
+            Some(w.b.as_str())
+        );
+        let wake: String = conn
+            .query_row(
+                "SELECT source FROM pot_wakes WHERE pot_id=?1",
+                [&w.b],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(wake, "handover");
+        // Decided once only.
+        assert_eq!(
+            handover::confirm(&mut conn, "alice", &h.id, applied.revision)
+                .unwrap_err()
+                .code,
+            "already_decided"
+        );
+        assert_eq!(handover::get(&conn, "bob", &h.id).unwrap_err().status, 404);
+    }
+
+    #[test]
+    fn a_receiver_that_may_do_less_narrows_and_fits_are_checked_again_at_apply() {
+        let w = world();
+        let mut conn = w.db.lock();
+        conn.execute(
+            "UPDATE pot_permissions SET reach='observe' WHERE pot_id=?1",
+            [&w.b],
+        )
+        .unwrap();
+        let h = propose(&conn, &w.a, to_pot(&w.b), ProposedBy::User);
+        assert_eq!(fit_of(&h, ItemKind::Responsibility, ""), Fit::Narrowed);
+        assert_eq!(fit_of(&h, ItemKind::Work, &w.work_here), Fit::Stop);
+        // Back to work reach, but the location is removed before the user confirms.
+        conn.execute(
+            "UPDATE pot_permissions SET reach='work' WHERE pot_id=?1",
+            [&w.b],
+        )
+        .unwrap();
+        let h = propose(&conn, &w.a, to_pot(&w.b), ProposedBy::User);
+        assert_eq!(fit_of(&h, ItemKind::Work, &w.work_here), Fit::Ok);
+        conn.execute("DELETE FROM pot_work_locations WHERE pot_id=?1", [&w.b])
+            .unwrap();
+        let (applied, _) = handover::confirm(&mut conn, "alice", &h.id, h.revision).unwrap();
+        assert_eq!(fit_of(&applied, ItemKind::Work, &w.work_here), Fit::Stop);
+        let still: String = conn
+            .query_row("SELECT pot_id FROM pot_works WHERE id='w-here'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(still, w.a);
+        // A stale revision is refused; a rejected handover moves nothing.
+        let h = propose(&conn, &w.a, to_pot(&w.b), ProposedBy::User);
+        assert_eq!(
+            handover::confirm(&mut conn, "alice", &h.id, h.revision + 1)
+                .unwrap_err()
+                .code,
+            "revision_conflict"
+        );
+        assert_eq!(
+            handover::reject(&conn, "alice", &h.id).unwrap().state,
+            "rejected"
+        );
+    }
+
+    #[test]
+    fn to_the_user_works_are_taken_over_and_the_rest_stops() {
+        let w = world();
+        let mut conn = w.db.lock();
+        let h = propose(&conn, &w.a, To::User, ProposedBy::User);
+        assert_eq!(fit_of(&h, ItemKind::Work, &w.work_here), Fit::Ok);
+        assert_eq!(fit_of(&h, ItemKind::Responsibility, ""), Fit::Stop);
+        handover::confirm(&mut conn, "alice", &h.id, h.revision).unwrap();
+        let state: String = conn
+            .query_row("SELECT state FROM pot_works WHERE id='w-here'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(state, "taken_over");
+        assert_eq!(
+            read(&conn, "alice", &w.a)
+                .unwrap()
+                .input
+                .work
+                .responsibilities
+                .len(),
+            2
+        );
+    }
+
+    #[test]
+    fn a_pot_cannot_hand_an_item_straight_back_but_the_user_can() {
+        let w = world();
+        let mut conn = w.db.lock();
+        let h = propose(&conn, &w.a, to_pot(&w.b), ProposedBy::User);
+        handover::confirm(&mut conn, "alice", &h.id, h.revision).unwrap();
+        // B, as a pot, tries to hand the reminder and the work back to A.
+        let back = propose(&conn, &w.b, to_pot(&w.a), ProposedBy::Pot);
+        assert_eq!(fit_of(&back, ItemKind::Reminder, "r1"), Fit::Stop);
+        assert_eq!(fit_of(&back, ItemKind::Responsibility, ""), Fit::Stop);
+        assert!(
+            back.items
+                .iter()
+                .all(|i| i.reason.as_deref().unwrap_or("").contains("recently"))
+        );
+        // The user can.
+        let by_user = propose(&conn, &w.b, to_pot(&w.a), ProposedBy::User);
+        assert_eq!(fit_of(&by_user, ItemKind::Reminder, "r1"), Fit::Ok);
+        // Nothing to hand over, and no handover to oneself.
+        assert_eq!(
+            handover::propose(
+                &conn,
+                "alice",
+                NewHandover {
+                    from_pot_id: w.a.clone(),
+                    to: to_pot(&w.a),
+                    items: None,
+                    reason: String::new()
+                },
+                ProposedBy::User
+            )
+            .unwrap_err()
+            .status,
+            400
+        );
+    }
+}

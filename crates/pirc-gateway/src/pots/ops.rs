@@ -23,7 +23,19 @@ pub enum Op {
     BudgetStatus,
     BudgetRequest(super::budget::RequestInput),
     ObserveNote(super::observe::Note),
+    HandoverPropose(HandoverPropose),
     ObserveRead(ObserveRead),
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct HandoverPropose {
+    /// Another pot, or absent for the user.
+    to_pot_id: Option<String>,
+    #[serde(default)]
+    items: Option<Vec<super::handover::ItemRef>>,
+    #[serde(default)]
+    reason: String,
 }
 
 #[derive(serde::Deserialize)]
@@ -167,6 +179,11 @@ pub fn parse_op(op: &str, args: &Value) -> Option<Result<Op, ()>> {
         "pot.budget.request" => Some(
             serde_json::from_value::<super::budget::RequestInput>(args.clone())
                 .map(Op::BudgetRequest)
+                .map_err(|_| ()),
+        ),
+        "pot.handover.propose" => Some(
+            serde_json::from_value(args.clone())
+                .map(Op::HandoverPropose)
                 .map_err(|_| ()),
         ),
         "pot.observe.note" => Some(
@@ -404,6 +421,41 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
                 crate::push::notify(app, &context.user, message);
             }
             Ok(serde_json::to_value(noted).expect("notes serialize"))
+        }
+        Op::HandoverPropose(input) => {
+            let handover = {
+                let conn = app.db.lock();
+                let pot = pot_of_session(&conn, &context.user, &context.session.id)?;
+                let to = match input.to_pot_id {
+                    Some(pot_id) => super::handover::To::Pot { pot_id },
+                    None => super::handover::To::User,
+                };
+                let handover = super::handover::propose(
+                    &conn,
+                    &context.user,
+                    super::handover::NewHandover {
+                        from_pot_id: pot.id.clone(),
+                        to,
+                        items: input.items,
+                        reason: input.reason,
+                    },
+                    super::handover::ProposedBy::Pot,
+                )?;
+                super::threads::post_card(
+                    &conn,
+                    &context.user,
+                    &pot.id,
+                    &format!("Proposes handing over {} items.", handover.items.len()),
+                    super::threads::Card::Handover {
+                        handover_id: handover.id.clone(),
+                    },
+                )?;
+                handover
+            };
+            app.pots_changed(&context.user);
+            app.threads_changed(&context.user);
+            app.activity_changed(&context.user);
+            Ok(json!({ "handover": handover }))
         }
         Op::ObserveRead(read) => {
             let pot = pot_of_session(&app.db.lock(), &context.user, &context.session.id)?;

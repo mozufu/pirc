@@ -1,0 +1,1 @@
+Propose handing over what you hold (responsibilities, your pending reminders, work you coordinate, groups you host) to another pot or to the user; omit items to propose everything. The user decides; nothing moves until they confirm, and the receiver keeps only what its own permissions allow. You cannot hand an item to a pot that had it recently.

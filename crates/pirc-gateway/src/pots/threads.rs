@@ -76,6 +76,8 @@ pub enum Card {
     BudgetRequest { request_id: String },
     /// `GET /api/pot-works/{workId}`; the work session is `sessionId`.
     Work { work_id: String, session_id: String },
+    /// `GET /api/handovers/{handoverId}`: a pot proposes a handover.
+    Handover { handover_id: String },
 }
 
 fn thread_row(row: &Row) -> rusqlite::Result<Thread> {

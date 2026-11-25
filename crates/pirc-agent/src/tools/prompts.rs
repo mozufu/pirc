@@ -55,6 +55,7 @@ prompts!(
     find,
     get_goal,
     grep,
+    handover_propose,
     history_read,
     history_search,
     ls,

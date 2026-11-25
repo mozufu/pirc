@@ -35,6 +35,11 @@ pub fn routes() -> Router<AppState> {
             get(list_messages).post(post_message),
         )
         .route("/api/activity", get(list_activity))
+        .route("/api/pots/{id}/held", get(held_items))
+        .route("/api/handovers", get(list_handovers).post(create_handover))
+        .route("/api/handovers/{id}", get(read_handover))
+        .route("/api/handovers/{id}/confirm", post(confirm_handover))
+        .route("/api/handovers/{id}/reject", post(reject_handover))
         .route("/api/observation-notifications", get(list_notifications))
         .route(
             "/api/observation-notifications/{id}/read",
@@ -525,4 +530,84 @@ async fn read_notification(
     let notification = super::observe::mark_read(&app.db.lock(), &identity.user, &id)?;
     app.notifications_changed(&identity.user);
     Ok(axum::Json(json!({ "notification": notification })))
+}
+
+async fn held_items(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+) -> ApiResult<axum::Json<Value>> {
+    let items = super::handover::held(&app.db.lock(), &identity.user, &id)?;
+    Ok(axum::Json(json!({ "items": items })))
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct HandoverFilter {
+    state: Option<String>,
+}
+
+async fn list_handovers(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    axum::extract::Query(filter): axum::extract::Query<HandoverFilter>,
+) -> ApiResult<axum::Json<Value>> {
+    let handovers = super::handover::list(&app.db.lock(), &identity.user, filter.state.as_deref())?;
+    Ok(axum::Json(json!({ "handovers": handovers })))
+}
+
+async fn create_handover(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    ReqBody(body): ReqBody,
+) -> ApiResult<(axum::http::StatusCode, axum::Json<Value>)> {
+    let input: super::handover::NewHandover = body.parse()?;
+    let handover = super::handover::propose(
+        &app.db.lock(),
+        &identity.user,
+        input,
+        super::handover::ProposedBy::User,
+    )?;
+    app.pots_changed(&identity.user);
+    app.activity_changed(&identity.user);
+    Ok((
+        axum::http::StatusCode::CREATED,
+        axum::Json(json!({ "handover": handover })),
+    ))
+}
+
+async fn read_handover(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+) -> ApiResult<axum::Json<Value>> {
+    let handover = super::handover::get(&app.db.lock(), &identity.user, &id)?;
+    Ok(axum::Json(json!({ "handover": handover })))
+}
+
+async fn confirm_handover(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+    body: ReqBody,
+) -> ApiResult<axum::Json<Value>> {
+    let Revision { revision } = body.0.parse()?;
+    let (handover, kick) =
+        super::handover::confirm(&mut app.db.lock(), &identity.user, &id, revision)?;
+    app.pots_changed(&identity.user);
+    app.activity_changed(&identity.user);
+    if let Some(pot) = kick {
+        super::runtime::kick(&app, &identity.user, &pot);
+    }
+    Ok(axum::Json(json!({ "handover": handover })))
+}
+
+async fn reject_handover(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+) -> ApiResult<axum::Json<Value>> {
+    let handover = super::handover::reject(&app.db.lock(), &identity.user, &id)?;
+    app.pots_changed(&identity.user);
+    Ok(axum::Json(json!({ "handover": handover })))
 }

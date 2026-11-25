@@ -350,3 +350,31 @@ CREATE TABLE obs_dispatches (
  created_at INTEGER NOT NULL
 );
 CREATE UNIQUE INDEX obs_dispatches_active ON obs_dispatches(owner_user, purpose_key) WHERE state='active';
+-- Handovers of a pot's items to another pot or the user (plans/pots.md,
+-- Handover, pause, archive, delete). Kept after the pot is deleted.
+CREATE TABLE pot_handovers (
+ id TEXT PRIMARY KEY,
+ owner_user TEXT NOT NULL,
+ from_pot_id TEXT REFERENCES pots(id) ON DELETE SET NULL,
+ to_kind TEXT NOT NULL CHECK(to_kind IN ('pot','user')),
+ to_pot_id TEXT REFERENCES pots(id) ON DELETE SET NULL,
+ proposed_by TEXT NOT NULL CHECK(proposed_by IN ('user','pot')),
+ reason TEXT NOT NULL DEFAULT '' CHECK(length(reason)<=2000),
+ state TEXT NOT NULL DEFAULT 'proposed' CHECK(state IN ('proposed','applied','rejected')),
+ revision INTEGER NOT NULL DEFAULT 1,
+ created_at INTEGER NOT NULL,
+ applied_at INTEGER
+);
+CREATE INDEX pot_handovers_owner ON pot_handovers(owner_user, state, created_at DESC);
+CREATE TABLE pot_handover_items (
+ handover_id TEXT NOT NULL REFERENCES pot_handovers(id) ON DELETE CASCADE,
+ kind TEXT NOT NULL CHECK(kind IN ('responsibility','reminder','work','group_host')),
+ ref TEXT NOT NULL,
+ label TEXT NOT NULL,
+ -- How the item is recognised across handovers (loop-guard rule 1).
+ item_key TEXT NOT NULL,
+ fit TEXT NOT NULL CHECK(fit IN ('ok','narrowed','stop')),
+ reason TEXT,
+ PRIMARY KEY(handover_id, kind, ref)
+);
+CREATE INDEX pot_handover_items_key ON pot_handover_items(item_key);

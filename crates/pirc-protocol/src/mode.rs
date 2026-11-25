@@ -156,6 +156,7 @@ pub const TOOL_NAMES: &[&str] = &[
     "find",
     "get_goal",
     "grep",
+    "handover_propose",
     "ls",
     "memory_note",
     "memory_propose_user",

@@ -46,7 +46,8 @@ fn no_store_route(method: &Method, path: &str) -> bool {
                 | "model-approvals"
                 | "activity"
                 | "pot-works"
-                | "observation-notifications",
+                | "observation-notifications"
+                | "handovers",
                 ..,
             ],
         ) => true,
