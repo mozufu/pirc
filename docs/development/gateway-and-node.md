@@ -144,8 +144,9 @@ Every session route is answered by the node that owns the session; the gateway c
 - `PATCH /api/sessions/:id` takes any of `{ "name", "pinned", "settled" }`. A `name` renames the session and marks the name as user-chosen, so generated titles no longer replace it. `pinned` and `settled` are booleans that organize the sidebar (sessions report them as `pinnedAt` / `settledAt` timestamps, or `null`); only the gateway stores them, and they do not change the session's activity time.
 - `GET /api/sessions/:id/snapshot`
 - `POST /api/sessions/:id/commands`
-- `GET /api/sessions/:id/control`
-- `POST /api/sessions/:id/control/{acquire,heartbeat,release}`
+- `GET /api/sessions/:id/control`: the lease, with `holder: { name, kind: "device" | "browser" }` naming the client that holds it
+- `POST /api/sessions/:id/control/{acquire,heartbeat,release}`; acquire and heartbeat take an optional `clientName` (1 to 60 characters) that the Gateway keeps for a browser and never forwards to the node
+- `GET /api/clients` (the account's clients that took control, most recent first: `{ clientId, name, kind, deviceId?, lastSeenAt }`, to name a `clientId` seen in events), `PUT /api/clients/:clientId` with `{ name }` (renames a browser), `GET|PATCH /api/device` with `{ name }` (a paired device reads or renames its own record, without a management grant). A paired device is named by its device record; a browser by the name it sent, else one read from its user agent ("Chrome on macOS")
 - `POST /api/sessions/:id/interactions/:interactionId/answer`
 - `POST /api/sessions/:id/uploads` with raw bytes; PNG/JPEG/GIF/WebP are sniffed and sent to the model as images, anything else needs `?filename=` and is copied into the session's workspace (`.pirc/uploads/`) for the agent's file tools to read; stored on the session's node
 - `GET /api/models` lists the gateway's models (identical for every session and node; an optional `sessionId` is only checked for access)

@@ -588,7 +588,9 @@ pub(crate) async fn delete_owned_session(
         let session = db.claim_session(&session_id, &user, true)?;
         let workspace = db.get_workspace(&session.workspace_id)?;
         if check_mode && !node.workspace_mode(&workspace)?.delete_sessions {
-            return Err(ApiError::bad_request("Conversations in this workspace cannot be deleted"));
+            return Err(ApiError::bad_request(
+                "Conversations in this workspace cannot be deleted",
+            ));
         }
         db.begin_session_deletion(&session_id, &user)?;
         (session, workspace)

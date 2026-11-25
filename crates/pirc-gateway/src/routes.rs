@@ -622,7 +622,12 @@ pub async fn delete_session(
             .require_mode(&conn.get_workspace(&session.workspace_id)?)?
             .delete_sessions
         {
-            return Err(ApiError::new(400, "invalid_input", "Conversations in this workspace cannot be deleted").into());
+            return Err(ApiError::new(
+                400,
+                "invalid_input",
+                "Conversations in this workspace cannot be deleted",
+            )
+            .into());
         }
         session
     };
@@ -1211,7 +1216,11 @@ pub async fn control(
     Path(session_id): Path<String>,
 ) -> Handled {
     let claimed = app.claim(&identity, &session_id)?;
-    let lease = app.db.lock().get_lease(&claimed.session.id)?;
+    let conn = app.db.lock();
+    let mut lease = conn.get_lease(&claimed.session.id)?;
+    if lease.is_object() {
+        lease["holder"] = crate::clients::holder(&conn, &identity.user, &lease)?;
+    }
     Ok(ok(json!({ "lease": lease })))
 }
 
@@ -1231,6 +1240,10 @@ struct LeaseBody {
         skip_serializing_if = "Option::is_none"
     )]
     force: Option<bool>,
+    /// What to call this client where it holds control; the Gateway keeps it,
+    /// the Node never sees it.
+    #[serde(default, deserialize_with = "present", skip_serializing)]
+    client_name: Option<String>,
 }
 
 impl LeaseBody {
@@ -1258,6 +1271,7 @@ pub async fn acquire(
     State(app): State<AppState>,
     Extension(identity): Extension<Identity>,
     Path(session_id): Path<String>,
+    headers: HeaderMap,
     ReqBody(body): ReqBody,
 ) -> Handled {
     let claimed = app.claim(&identity, &session_id)?;
@@ -1276,12 +1290,22 @@ pub async fn acquire(
         Some(json!(lease)),
     )
     .await?;
-    app.db.lock().mirror_lease(
-        &claimed.session.id,
-        &remote_lease(&remote)?,
-        &identity.user,
-        force,
-    )?;
+    {
+        let conn = app.db.lock();
+        conn.mirror_lease(
+            &claimed.session.id,
+            &remote_lease(&remote)?,
+            &identity.user,
+            force,
+        )?;
+        crate::clients::record(
+            &conn,
+            &identity,
+            &lease.client_id,
+            lease.client_name.as_deref(),
+            &headers,
+        )?;
+    }
     Ok(ok(remote))
 }
 
@@ -1289,6 +1313,7 @@ pub async fn heartbeat(
     State(app): State<AppState>,
     Extension(identity): Extension<Identity>,
     Path(session_id): Path<String>,
+    headers: HeaderMap,
     ReqBody(body): ReqBody,
 ) -> Handled {
     let claimed = app.claim(&identity, &session_id)?;
@@ -1307,12 +1332,22 @@ pub async fn heartbeat(
         Some(json!(lease)),
     )
     .await?;
-    app.db.lock().mirror_lease(
-        &claimed.session.id,
-        &remote_lease(&remote)?,
-        &identity.user,
-        false,
-    )?;
+    {
+        let conn = app.db.lock();
+        conn.mirror_lease(
+            &claimed.session.id,
+            &remote_lease(&remote)?,
+            &identity.user,
+            false,
+        )?;
+        crate::clients::record(
+            &conn,
+            &identity,
+            &lease.client_id,
+            lease.client_name.as_deref(),
+            &headers,
+        )?;
+    }
     Ok(ok(remote))
 }
 

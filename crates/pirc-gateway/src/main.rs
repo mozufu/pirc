@@ -11,6 +11,7 @@ mod backends;
 mod calendar;
 mod capabilities;
 mod checkpoints;
+mod clients;
 mod conversation_bindings;
 mod conversation_submissions;
 mod db;

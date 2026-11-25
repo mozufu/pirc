@@ -64,6 +64,14 @@ CREATE TABLE device_tokens (
   last_used_at INTEGER NOT NULL
 );
 CREATE INDEX device_tokens_owner ON device_tokens(owner_user);
+-- Clients that took control, by the clientId they send (clients.rs): a paired
+-- device is named by its record, a browser by the name it sent or its user agent.
+CREATE TABLE clients (
+  owner_user TEXT NOT NULL, client_id TEXT NOT NULL, device_id TEXT,
+  name TEXT CHECK(name IS NULL OR length(name) BETWEEN 1 AND 60),
+  user_agent TEXT, last_seen_at INTEGER NOT NULL,
+  PRIMARY KEY (owner_user, client_id)
+);
 
 -- The assistant's memory (daemon/memory.ts).
 CREATE TABLE memory_entries (
