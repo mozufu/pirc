@@ -10,12 +10,14 @@ Future<FakeGateway> _open(
   WidgetTester tester,
   FixtureSession session, {
   double width = 1300,
+  double height = 900,
 }) async {
   final gateway = session.install();
   await pumpApp(
     tester,
     gateway: gateway,
     width: width,
+    height: height,
     location: '/work?open=${session.id}',
   );
   return gateway;
@@ -31,7 +33,7 @@ void main() {
   ]) {
     appTest('$name replays into the screen', (tester) async {
       final session = FixtureSession(name);
-      final gateway = await _open(tester, session);
+      final gateway = await _open(tester, session, height: 3000);
       final socket = _events(gateway);
       final watermark = session.snapshot['watermark']! as Map;
       expect(socket.target.queryParameters, {

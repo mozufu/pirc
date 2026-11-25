@@ -950,6 +950,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Its mode is not available on this Gateway'**
   String get workspaceUnavailable;
+
+  /// No description provided for @handledElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} · handled on another device'**
+  String handledElsewhere(String title);
+
+  /// No description provided for @questionExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get questionExpired;
+
+  /// No description provided for @expiresAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Expires at {time}'**
+  String expiresAt(String time);
+
+  /// No description provided for @no.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get no;
+
+  /// No description provided for @yes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get yes;
+
+  /// No description provided for @questionSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get questionSkipped;
+
+  /// No description provided for @skip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get skip;
+
+  /// No description provided for @approvalReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Read only'**
+  String get approvalReadOnly;
+
+  /// No description provided for @approvalAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto'**
+  String get approvalAuto;
+
+  /// No description provided for @approvalFullAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Full access'**
+  String get approvalFullAccess;
+
+  /// No description provided for @approvalMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval mode'**
+  String get approvalMode;
+
+  /// No description provided for @approvalFullAccessWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent may run any command and change any file without asking. Use this only for work you trust.'**
+  String get approvalFullAccessWarning;
+
+  /// No description provided for @approvalFullAccessConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow full access'**
+  String get approvalFullAccessConfirm;
 }
 
 class _AppLocalizationsDelegate

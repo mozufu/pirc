@@ -9,7 +9,10 @@ import 'router.dart';
 import 'shell/app_drawer.dart';
 import 'work/composer/composer.dart';
 import 'work/conversation_screen.dart';
+import 'work/composer/composer_controller.dart';
 import 'work/new_conversation/new_conversation_screen.dart';
+import 'work/questions.dart';
+import 'work/session_controller.dart';
 import 'work/work_data.dart';
 import 'work/work_list_screen.dart';
 
@@ -87,6 +90,16 @@ class TabScreen extends ConsumerWidget {
                     parts: ConversationParts(
                       bottom: (context, view) =>
                           SessionComposer(sessionId: open, view: view),
+                      footer: (context, view) => questionCards(open, view),
+                      actions: (context, view) => [
+                        ApprovalModeButton(
+                          mode: view.state?.approvalMode,
+                          enabled: view.control == ControlState.mine,
+                          onSelected: (mode) => ref
+                              .read(composerProvider(open).notifier)
+                              .setApprovalMode(mode),
+                        ),
+                      ],
                     ),
                   ),
                   _ => _ItemPlaceholder(

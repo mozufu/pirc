@@ -25,6 +25,9 @@ class FixtureSession {
   int generation = 0;
   bool heartbeatLost = false;
 
+  /// Set by tests that keep the Gateway with the session.
+  FakeGateway? gateway;
+
   List<Object?> get events => fixture['events']! as List<Object?>;
 
   FakeGateway install([FakeGateway? into]) {

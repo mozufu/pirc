@@ -482,4 +482,48 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get workspaceUnavailable =>
       'Its mode is not available on this Gateway';
+
+  @override
+  String handledElsewhere(String title) {
+    return '$title · handled on another device';
+  }
+
+  @override
+  String get questionExpired => 'Expired';
+
+  @override
+  String expiresAt(String time) {
+    return 'Expires at $time';
+  }
+
+  @override
+  String get no => 'No';
+
+  @override
+  String get yes => 'Yes';
+
+  @override
+  String get questionSkipped => 'Skipped';
+
+  @override
+  String get skip => 'Skip';
+
+  @override
+  String get approvalReadOnly => 'Read only';
+
+  @override
+  String get approvalAuto => 'Auto';
+
+  @override
+  String get approvalFullAccess => 'Full access';
+
+  @override
+  String get approvalMode => 'Approval mode';
+
+  @override
+  String get approvalFullAccessWarning =>
+      'The agent may run any command and change any file without asking. Use this only for work you trust.';
+
+  @override
+  String get approvalFullAccessConfirm => 'Allow full access';
 }

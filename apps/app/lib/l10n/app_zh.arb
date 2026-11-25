@@ -141,5 +141,18 @@
   "noWorkspaces": "還沒有專案。",
   "hostOffline": "{host} · 離線",
   "workspaceHostOffline": "主機離線",
-  "workspaceUnavailable": "這個 Gateway 沒有它的模式"
+  "workspaceUnavailable": "這個 Gateway 沒有它的模式",
+  "handledElsewhere": "{title} · 已在另一台裝置處理",
+  "questionExpired": "已過期",
+  "expiresAt": "{time} 過期",
+  "no": "否",
+  "yes": "是",
+  "questionSkipped": "已略過",
+  "skip": "略過",
+  "approvalReadOnly": "唯讀",
+  "approvalAuto": "自動",
+  "approvalFullAccess": "完全存取",
+  "approvalMode": "核准模式",
+  "approvalFullAccessWarning": "agent 可以不經詢問執行任何指令、修改任何檔案。只在你信任的工作使用。",
+  "approvalFullAccessConfirm": "允許完全存取"
 }

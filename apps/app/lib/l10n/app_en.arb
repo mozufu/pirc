@@ -211,5 +211,32 @@
     }
   },
   "workspaceHostOffline": "Its host is offline",
-  "workspaceUnavailable": "Its mode is not available on this Gateway"
+  "workspaceUnavailable": "Its mode is not available on this Gateway",
+  "handledElsewhere": "{title} · handled on another device",
+  "@handledElsewhere": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "questionExpired": "Expired",
+  "expiresAt": "Expires at {time}",
+  "@expiresAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "no": "No",
+  "yes": "Yes",
+  "questionSkipped": "Skipped",
+  "skip": "Skip",
+  "approvalReadOnly": "Read only",
+  "approvalAuto": "Auto",
+  "approvalFullAccess": "Full access",
+  "approvalMode": "Approval mode",
+  "approvalFullAccessWarning": "The agent may run any command and change any file without asking. Use this only for work you trust.",
+  "approvalFullAccessConfirm": "Allow full access"
 }

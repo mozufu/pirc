@@ -453,6 +453,50 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get workspaceUnavailable => '這個 Gateway 沒有它的模式';
+
+  @override
+  String handledElsewhere(String title) {
+    return '$title · 已在另一台裝置處理';
+  }
+
+  @override
+  String get questionExpired => '已過期';
+
+  @override
+  String expiresAt(String time) {
+    return '$time 過期';
+  }
+
+  @override
+  String get no => '否';
+
+  @override
+  String get yes => '是';
+
+  @override
+  String get questionSkipped => '已略過';
+
+  @override
+  String get skip => '略過';
+
+  @override
+  String get approvalReadOnly => '唯讀';
+
+  @override
+  String get approvalAuto => '自動';
+
+  @override
+  String get approvalFullAccess => '完全存取';
+
+  @override
+  String get approvalMode => '核准模式';
+
+  @override
+  String get approvalFullAccessWarning =>
+      'agent 可以不經詢問執行任何指令、修改任何檔案。只在你信任的工作使用。';
+
+  @override
+  String get approvalFullAccessConfirm => '允許完全存取';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
