@@ -155,6 +155,7 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
                 super::runtime::kick(app, &context.user, pot);
             }
             app.threads_changed(&context.user);
+            app.activity_changed(&context.user);
             Ok(json!({ "message": message, "woken": woken }))
         }
     }

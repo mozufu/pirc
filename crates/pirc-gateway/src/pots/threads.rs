@@ -15,6 +15,7 @@ use rusqlite::{Connection, OptionalExtension, Row, params};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+use super::activity::{self, Counterpart, Entry, Kind, Refs};
 use super::runtime::{self, NewWake, Source};
 use super::store::{self, DmRule, PotState};
 use crate::error::{ApiError, ApiResult};
@@ -495,6 +496,44 @@ pub fn post_pot(
     }
     let author = Author::Pot(from);
     let message = append(conn, &thread, &author, body, &mentions, false, causal_root)?;
+    let preview: String = message
+        .body
+        .lines()
+        .next()
+        .unwrap_or_default()
+        .chars()
+        .take(160)
+        .collect();
+    let (kind, counterpart, summary) = match (&target, thread.kind.as_str()) {
+        (Target::Pot(to), _) => (
+            Kind::Dm,
+            Counterpart::Pot((*to).to_owned()),
+            format!("Message to {}: {preview}", pot_name(conn, to)),
+        ),
+        (_, "group") => (
+            Kind::GroupMessage,
+            Counterpart::System,
+            format!("In {}: {preview}", thread.name),
+        ),
+        _ => (
+            Kind::ForwardedToUser,
+            Counterpart::User,
+            format!("To the user: {preview}"),
+        ),
+    };
+    activity::log(
+        conn,
+        owner,
+        from,
+        Entry::new(kind, summary)
+            .toward(counterpart)
+            .refs(Refs {
+                thread: Some(thread.id.clone()),
+                message: Some(message.id.clone()),
+                ..Refs::default()
+            })
+            .root(causal_root),
+    )?;
     let mut woken = Vec::new();
     for pot in addressees(&thread, &author, &mentions, false) {
         // In a group, only a mention wakes another pot, and only if allowed.

@@ -1,6 +1,6 @@
 //! Hint frames for `/api/events` sockets that opt in (`directory=1`,
 //! `memory=1`, `schedules=1`, `sessions=1`, `pots=1`, `threads=1`,
-//! `approvals=1`): sent outside the session's sequence and never replayed, so
+//! `approvals=1`, `activity=1`): sent outside the session's sequence and never replayed, so
 //! clients that treat an unknown event as a reset are unaffected
 //! (`daemon/app.ts`).
 
@@ -84,6 +84,8 @@ pub struct Hints {
     pub threads: Arc<Listeners<String>>,
     /// The owner's model approvals changed (`approvals=1`).
     pub approvals: Arc<Listeners<String>>,
+    /// The owner's pot activity grew (`activity=1`).
+    pub activity: Arc<Listeners<String>>,
 }
 
 impl Hints {
@@ -96,6 +98,7 @@ impl Hints {
             pots: Listeners::new(),
             threads: Listeners::new(),
             approvals: Listeners::new(),
+            activity: Listeners::new(),
         }
     }
 }

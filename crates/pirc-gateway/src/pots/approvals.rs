@@ -11,6 +11,7 @@ use rusqlite::{Connection, OptionalExtension, Row, TransactionBehavior, params};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 
+use super::activity::{self, Counterpart, Entry, Kind, Refs};
 use super::runtime::{self, NewWake, Source};
 use super::store::{self, ModelMode, PotState, THINKING};
 use super::threads;
@@ -266,6 +267,23 @@ pub fn request(
             "This pot has the most pending approvals allowed",
         ));
     }
+    activity::log(
+        conn,
+        owner,
+        pot_id,
+        Entry::new(
+            Kind::AwaitingApproval,
+            format!(
+                "Asks to use {}/{} for \"{}\"",
+                input.provider, input.model, input.work_title
+            ),
+        )
+        .toward(Counterpart::User)
+        .refs(Refs {
+            approval: Some(id.clone()),
+            ..Refs::default()
+        }),
+    )?;
     read(conn, owner, &id)
 }
 
@@ -381,6 +399,27 @@ pub fn answer(conn: &mut Connection, owner: &str, id: &str, answer: Answer) -> A
             }),
         },
     )?;
+    let verdict = match approval.state {
+        ApprovalState::AllowedOnce => "allowed once",
+        _ => "denied",
+    };
+    activity::log(
+        &tx,
+        owner,
+        &approval.pot_id,
+        Entry::new(
+            Kind::ApprovalAnswered,
+            format!(
+                "The user {verdict} {}/{} for \"{}\"",
+                approval.provider, approval.model, approval.work_title
+            ),
+        )
+        .toward(Counterpart::User)
+        .refs(Refs {
+            approval: Some(approval.id.clone()),
+            ..Refs::default()
+        }),
+    )?;
     tx.commit()?;
     Ok(approval)
 }
@@ -431,6 +470,7 @@ impl App {
     ) -> ApiResult<Approval> {
         let approval = request(&self.db.lock(), owner, pot_id, input)?;
         self.approvals_changed(owner);
+        self.activity_changed(owner);
         Ok(approval)
     }
 }

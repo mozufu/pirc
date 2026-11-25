@@ -188,3 +188,28 @@ CREATE TABLE model_approvals (
 );
 CREATE INDEX model_approvals_owner ON model_approvals(owner_user, state, created_at DESC);
 CREATE INDEX model_approvals_pot_pending ON model_approvals(pot_id, state) WHERE state='pending';
+-- What pots did (plans/pots.md, Activity and point of view). A row keeps the
+-- pot's name and color, so it still reads after the pot is deleted, until the
+-- owner's retention removes it.
+CREATE TABLE pot_activity (
+ id TEXT PRIMARY KEY,
+ owner_user TEXT NOT NULL,
+ pot_id TEXT REFERENCES pots(id) ON DELETE SET NULL,
+ pot_name TEXT NOT NULL,
+ pot_avatar_color INTEGER NOT NULL,
+ at INTEGER NOT NULL,
+ kind TEXT NOT NULL CHECK(kind IN (
+  'created','updated','paused','resumed','archived','restored','deleted',
+  'dm','group_message','assign','work_opened','work_instruction','file_read',
+  'thinking_adjust','fallback','autonomy_changed','reminder_set','review',
+  'handover_proposed','awaiting_confirm','awaiting_approval','approval_answered',
+  'forwarded_to_user','budget_request','budget_exhausted','loop_guard')),
+ counterpart_kind TEXT CHECK(counterpart_kind IS NULL OR counterpart_kind IN ('user','pot','work_session','workspace','system')),
+ counterpart_id TEXT,
+ summary TEXT NOT NULL CHECK(length(summary) BETWEEN 1 AND 400),
+ refs_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(refs_json)),
+ causal_root TEXT,
+ CHECK(counterpart_id IS NULL OR counterpart_kind IS NOT NULL)
+);
+CREATE INDEX pot_activity_owner ON pot_activity(owner_user, at DESC);
+CREATE INDEX pot_activity_pot ON pot_activity(pot_id, at DESC);

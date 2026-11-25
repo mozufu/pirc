@@ -1,5 +1,6 @@
 //! Multiple named pots (plans/pots.md). Built in the steps of roadmap M4.
 
+pub mod activity;
 pub mod api;
 pub mod approvals;
 pub mod ops;

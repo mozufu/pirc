@@ -1555,3 +1555,124 @@ mod approvals {
         }
     }
 }
+
+mod activity {
+    use super::super::activity::{self, Entry, Kind};
+    use super::super::threads::{self, Target};
+    use super::*;
+
+    fn rows(
+        conn: &rusqlite::Connection,
+        owner: &str,
+    ) -> Vec<(Option<String>, String, String, String)> {
+        conn.prepare("SELECT pot_id, pot_name, kind, summary FROM pot_activity WHERE owner_user=?1 ORDER BY rowid")
+            .unwrap()
+            .query_map([owner], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap()
+    }
+
+    #[test]
+    fn lifecycle_changes_and_pot_messages_are_logged() {
+        let db = db();
+        let mut conn = db.lock();
+        let mut a = input("Tester");
+        a.permissions.dm.receive = DmRule::All;
+        let a = create(&mut conn, "alice", a).unwrap();
+        let mut b = input("Helper");
+        b.permissions.dm.receive = DmRule::All;
+        let b = create(&mut conn, "alice", b).unwrap();
+        let mut profile = a.input.profile.clone();
+        profile.personality = "Warmer.".into();
+        update(
+            &mut conn,
+            "alice",
+            &a.id,
+            PotPatch {
+                revision: 1,
+                profile: Some(profile),
+                ..PotPatch::default()
+            },
+        )
+        .unwrap();
+        set_state(&mut conn, "alice", &a.id, 2, PotState::Paused).unwrap();
+        set_state(&mut conn, "alice", &a.id, 3, PotState::Archived).unwrap();
+        set_state(&mut conn, "alice", &a.id, 4, PotState::Paused).unwrap();
+        threads::post_pot(
+            &conn,
+            "alice",
+            &b.id,
+            Target::Pot(&a.id),
+            "Ping\nmore",
+            vec![],
+            Some("root"),
+        )
+        .unwrap();
+        let kinds: Vec<(String, String)> = rows(&conn, "alice")
+            .into_iter()
+            .map(|(_, name, kind, _)| (name, kind))
+            .collect();
+        let expected = [
+            ("Tester", "created"),
+            ("Helper", "created"),
+            ("Tester", "updated"),
+            ("Tester", "paused"),
+            ("Tester", "archived"),
+            ("Tester", "restored"),
+            ("Helper", "dm"),
+        ];
+        assert_eq!(kinds, expected.map(|(n, k)| (n.to_owned(), k.to_owned())));
+        let all = rows(&conn, "alice");
+        assert_eq!(all[2].3, "The user changed: profile");
+        assert_eq!(all[6].3, "Message to Tester: Ping");
+        let root: String = conn
+            .query_row(
+                "SELECT causal_root FROM pot_activity WHERE kind='dm'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(root, "root");
+        assert!(rows(&conn, "bob").is_empty());
+    }
+
+    #[test]
+    fn a_row_keeps_the_pots_name_after_it_is_gone_and_summaries_are_bounded() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        activity::log(
+            &conn,
+            "alice",
+            &pot.id,
+            Entry::new(Kind::Review, "é".repeat(1000)),
+        )
+        .unwrap();
+        assert_eq!(
+            rows(&conn, "alice")[1].3.chars().count(),
+            activity::MAX_SUMMARY
+        );
+        assert_eq!(
+            activity::log(&conn, "alice", &pot.id, Entry::new(Kind::Review, "  "))
+                .unwrap_err()
+                .status,
+            400
+        );
+        // Another owner's pot cannot be logged against.
+        assert_eq!(
+            activity::log(&conn, "bob", &pot.id, Entry::new(Kind::Review, "x"))
+                .unwrap_err()
+                .status,
+            404
+        );
+        conn.execute("DELETE FROM pots WHERE id=?1", [&pot.id])
+            .unwrap();
+        let left = rows(&conn, "alice");
+        assert_eq!(left.len(), 2);
+        assert!(
+            left.iter()
+                .all(|(id, name, _, _)| id.is_none() && name == "Tester")
+        );
+    }
+}

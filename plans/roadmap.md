@@ -211,7 +211,8 @@ that a session can only act as itself.
    `pot.message.send` operation; events kind `threads`. Each delivered message
    becomes a wake of the addressed pot.
 5. **Activity and point of view.** Writes from every earlier step go through one
-   `activity::log`; `GET /api/activity` with filters and paging; `GET /api/pots/{id}/view`;
+   `activity::log` (landed first, with the `pot_activity` table and `activity=1`
+   hints, so parallel steps can write activity); `GET /api/activity` with filters and paging; `GET /api/pots/{id}/view`;
    retention sweep.
 6. **Work dispatch and model approvals.**
    - 6a. _Model approvals_ (independent of step 5; may land first): the

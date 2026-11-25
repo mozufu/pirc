@@ -5,6 +5,7 @@
 use rusqlite::{Connection, OptionalExtension, Row, TransactionBehavior, params};
 use serde::{Deserialize, Serialize};
 
+use super::activity::{Counterpart, Entry, Kind};
 use crate::error::{ApiError, ApiResult};
 use crate::util::{new_id, now_ms};
 
@@ -467,6 +468,16 @@ pub fn create(conn: &mut Connection, owner: &str, input: PotInput) -> ApiResult<
     )?;
     write_sections(&tx, &id, &input, false)?;
     let pot = read(&tx, owner, &id)?;
+    super::activity::log(
+        &tx,
+        owner,
+        &id,
+        Entry::new(
+            Kind::Created,
+            format!("{} was created", pot.input.profile.name),
+        )
+        .toward(Counterpart::User),
+    )?;
     tx.commit()?;
     Ok(pot)
 }
@@ -684,6 +695,31 @@ pub fn update(conn: &mut Connection, owner: &str, id: &str, patch: PotPatch) -> 
     )?;
     write_sections(&tx, id, &input, true)?;
     let pot = read(&tx, owner, id)?;
+    let sections: Vec<&str> = [
+        (current.input.profile != pot.input.profile, "profile"),
+        (current.input.work != pot.input.work, "work"),
+        (
+            current.input.permissions != pot.input.permissions,
+            "permissions",
+        ),
+        (current.input.models != pot.input.models, "models"),
+        (current.input.autonomy != pot.input.autonomy, "autonomy"),
+    ]
+    .into_iter()
+    .filter_map(|(changed, name)| changed.then_some(name))
+    .collect();
+    if !sections.is_empty() {
+        super::activity::log(
+            &tx,
+            owner,
+            id,
+            Entry::new(
+                Kind::Updated,
+                format!("The user changed: {}", sections.join(", ")),
+            )
+            .toward(Counterpart::User),
+        )?;
+    }
     tx.commit()?;
     Ok(pot)
 }
@@ -720,6 +756,22 @@ pub fn set_state(
         params![to, now_ms(), id, owner],
     )?;
     let pot = read(&tx, owner, id)?;
+    let name = &pot.input.profile.name;
+    let (kind, summary) = match (current.state, to) {
+        (_, PotState::Archived) => (Kind::Archived, format!("The user archived {name}")),
+        (PotState::Archived, _) => (
+            Kind::Restored,
+            format!("The user restored {name}; it stays paused until resumed"),
+        ),
+        (_, PotState::Paused) => (Kind::Paused, format!("The user paused {name}")),
+        _ => (Kind::Resumed, format!("The user resumed {name}")),
+    };
+    super::activity::log(
+        &tx,
+        owner,
+        id,
+        Entry::new(kind, summary).toward(Counterpart::User),
+    )?;
     tx.commit()?;
     Ok(pot)
 }

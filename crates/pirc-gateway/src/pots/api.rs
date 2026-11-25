@@ -85,6 +85,7 @@ async fn create(
     check(&app, &identity, &input)?;
     let pot = store::create(&mut app.db.lock(), &identity.user, input)?;
     app.pots_changed(&identity.user);
+    app.activity_changed(&identity.user);
     Ok((axum::http::StatusCode::CREATED, ok(pot)))
 }
 
@@ -115,6 +116,7 @@ async fn update(
     check(&app, &identity, &next)?;
     let pot = store::update(&mut app.db.lock(), &identity.user, &id, patch)?;
     app.pots_changed(&identity.user);
+    app.activity_changed(&identity.user);
     Ok(ok(pot))
 }
 
@@ -134,6 +136,7 @@ async fn transition(
     let Revision { revision } = body.0.parse()?;
     let pot = store::set_state(&mut app.db.lock(), &identity.user, id, revision, to)?;
     app.pots_changed(&identity.user);
+    app.activity_changed(&identity.user);
     if pot.state == PotState::Active {
         super::runtime::kick(app, &identity.user, id);
     }
@@ -326,6 +329,7 @@ async fn answer_approval(
     let input: Answer = body.parse()?;
     let approval = approvals::answer(&mut app.db.lock(), &identity.user, &id, input)?;
     app.approvals_changed(&identity.user);
+    app.activity_changed(&identity.user);
     super::runtime::kick(&app, &identity.user, &approval.pot_id);
     Ok(axum::Json(json!({ "approval": approval })))
 }

@@ -52,6 +52,10 @@ impl App {
         self.hints.approvals.notify(&user.to_owned());
     }
 
+    pub fn activity_changed(&self, user: &str) {
+        self.hints.activity.notify(&user.to_owned());
+    }
+
     pub fn schedules_changed(&self, user: &str) {
         self.hints.schedules.notify(&user.to_owned());
     }
