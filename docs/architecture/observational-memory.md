@@ -12,15 +12,15 @@ Existing repository ledgers remain read-only until an explicit cold cutover with
 
 `features.workspaceMemory` in the node's global config controls repository extraction. Unknown keys are reported and ignored; invalid control flags fail closed (`enabled` becomes false, `passive` true) while valid fields remain in effect.
 
-| Key                    | Default     | Meaning                                                                                                   |
-| ---------------------- | ----------- | --------------------------------------------------------------------------------------------------------- |
-| `enabled`              | `true`      | Extract and show repository notes. A mode must also enable `workspace_memory` and `repository`.            |
-| `passive`              | `false`     | Stop automatic extraction at turn boundaries; `/om:workspace` commands still work.                        |
-| `model`                | unset       | `{provider, id, thinking?}` for extraction. Unset uses the session model.                                 |
-| `fallbackModels`       | `[]`        | Tried in order while the preferred model cools down.                                                      |
-| `missingModelPolicy`   | `fallback`  | `fallback` uses the session model; `error` stops extraction when a configured model does not resolve.      |
-| `maxTokens`            | `3000`      | Budget for the notes shown to a session, and the extraction target.                                       |
-| `rateLimitCooldownMs`  | `900000`    | How long a rate-limited extraction model is skipped.                                                      |
+| Key                   | Default    | Meaning                                                                                               |
+| --------------------- | ---------- | ----------------------------------------------------------------------------------------------------- |
+| `enabled`             | `true`     | Extract and show repository notes. A mode must also enable `workspace_memory` and `repository`.       |
+| `passive`             | `false`    | Stop automatic extraction at turn boundaries; `/om:workspace` commands still work.                    |
+| `model`               | unset      | `{provider, id, thinking?}` for extraction. Unset uses the session model.                             |
+| `fallbackModels`      | `[]`       | Tried in order while the preferred model cools down.                                                  |
+| `missingModelPolicy`  | `fallback` | `fallback` uses the session model; `error` stops extraction when a configured model does not resolve. |
+| `maxTokens`           | `3000`     | Budget for the notes shown to a session, and the extraction target.                                   |
+| `rateLimitCooldownMs` | `900000`   | How long a rate-limited extraction model is skipped.                                                  |
 
 ## Activation status and large histories
 
