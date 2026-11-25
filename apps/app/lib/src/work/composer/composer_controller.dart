@@ -128,15 +128,23 @@ class ComposerController extends Notifier<ComposerState> {
     try {
       final uploads = <String>[];
       final api = ref.read(apiProvider);
-      for (final attachment in state.attachments) {
-        uploads.add(
-          await SessionsApi(api!).upload(
-            sessionId,
-            attachment.bytes,
-            filename: attachment.name,
-            contentType: attachment.mimeType,
-          ),
-        );
+      try {
+        for (final attachment in state.attachments) {
+          uploads.add(
+            await SessionsApi(api!).upload(
+              sessionId,
+              attachment.bytes,
+              filename: attachment.name,
+              contentType: attachment.mimeType,
+            ),
+          );
+        }
+      } on PircException catch (error) {
+        // Nothing was sent: the draft and the attachments stay.
+        if (!ref.read(connectionProvider.notifier).report(error)) {
+          state = state.copyWith(error: error.message);
+        }
+        return;
       }
       final ids = uploads.isEmpty ? null : uploads;
       final payload = !runActive

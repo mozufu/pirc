@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pirc_app/src/connection/storage.dart';
+import 'package:pirc_app/src/work/composer/attachments.dart';
 import 'package:pirc_client/pirc_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -175,6 +177,37 @@ void main() {
       expect(row.enabled, isFalse);
       expect(find.text('This model has no thinking levels'), findsOneWidget);
     });
+  });
+
+  appTest('a refused upload keeps the draft and sends nothing', (tester) async {
+    final c = _Composer();
+    c.gateway.json['POST /api/sessions/s2/uploads'] = (_) =>
+        apiError(413, 'payload_too_large', 'Upload exceeds configured limit');
+    await pumpApp(
+      tester,
+      gateway: c.gateway,
+      location: '/work?open=s2',
+      overrides: [
+        filePickerProvider.overrideWithValue(
+          () async => [
+            PendingAttachment(
+              id: 'a1',
+              name: 'big.png',
+              mimeType: 'image/png',
+              bytes: Uint8List(4),
+            ),
+          ],
+        ),
+      ],
+    );
+    await tester.tap(find.byTooltip('Attach files'));
+    await tester.pumpAndSettle();
+    await _type(tester, 'See this');
+    await _send(tester);
+    expect(find.text('Upload exceeds configured limit'), findsOneWidget);
+    expect(_fieldText(tester), 'See this');
+    expect(find.text('big.png'), findsOneWidget);
+    expect(c.payloads, isEmpty);
   });
 
   appTest('a stale binding keeps the draft and loads a new snapshot', (
