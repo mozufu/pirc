@@ -7,7 +7,7 @@
 use std::rc::Rc;
 use std::time::Duration;
 
-use serde_json::{Map, Value, json};
+use serde_json::{Map, Value};
 
 use crate::LocalBoxFuture;
 use crate::agent::Agent;
@@ -15,10 +15,12 @@ use crate::channels::process_gateway;
 use crate::context::PromptSection;
 use crate::feature::{BeforeStart, Feature, PromptAddition};
 use crate::signal::{AbortController, AbortSignal};
-use crate::tools::{Tool, ToolContext, ToolResult, ToolSpec, typed};
+use crate::tools::Tool;
 
 /// How long a run waits for the pot's identity before it fails to start.
 const CONTEXT_TIMEOUT: Duration = Duration::from_secs(15);
+
+mod send;
 
 pub struct PotFeature;
 
@@ -105,88 +107,10 @@ async fn load(signal: &AbortSignal) -> Result<PromptSection, String> {
     identity_section(&context)
 }
 
-pub const SEND_TOOL: &str = "message_send";
-
-struct SendTool {
-    spec: ToolSpec,
-}
-
-impl SendTool {
-    fn new() -> Self {
-        let string = |description: &str| json!({ "type": "string", "description": description });
-        Self {
-            spec: ToolSpec::new(
-                SEND_TOOL,
-                json!({
-                    "type": "object",
-                    "properties": {
-                        "toPot": string("Another pot's ID, for a direct message"),
-                        "threadId": string("A thread you belong to"),
-                        "body": string("The message"),
-                        "mentions": { "type": "array", "items": { "type": "string" },
-                                      "description": "In a group: pot IDs to wake" },
-                    },
-                    "required": ["body"],
-                    "additionalProperties": false,
-                }),
-                None,
-            ),
-        }
-    }
-
-    async fn run(&self, args: Map<String, Value>, ctx: ToolContext) -> Result<ToolResult, String> {
-        if args.contains_key("toPot") == args.contains_key("threadId") {
-            return Ok(ToolResult::error("Give exactly one of toPot or threadId"));
-        }
-        let gateway = process_gateway().ok_or("this pot has no Gateway connection")?;
-        let sent = gateway
-            .gateway
-            .request("pot.message.send", args, Some(&ctx.signal))
-            .await;
-        let result = match sent {
-            Ok(result) => result,
-            Err(error) => return Ok(ToolResult::error(error.message().to_owned())),
-        };
-        let woken = result["woken"].as_array().map_or(0, Vec::len);
-        let text = match woken {
-            0 => "Sent. Nobody was woken by it.".to_owned(),
-            1 => "Sent; it woke 1 pot.".to_owned(),
-            n => format!("Sent; it woke {n} pots."),
-        };
-        let data = json!({
-            "messageId": result["message"]["id"],
-            "threadId": result["message"]["threadId"],
-            "woken": result["woken"],
-        });
-        Ok(typed(text, data, None, false))
-    }
-}
-
-impl Tool for SendTool {
-    fn name(&self) -> &str {
-        self.spec.name
-    }
-    fn description(&self) -> &str {
-        &self.spec.description
-    }
-    fn parameters(&self) -> &Map<String, Value> {
-        &self.spec.parameters
-    }
-    fn result_schema(&self) -> Option<&Value> {
-        self.spec.result_schema.as_ref()
-    }
-    fn execute<'a>(
-        &'a self,
-        args: Map<String, Value>,
-        ctx: ToolContext,
-    ) -> LocalBoxFuture<'a, Result<ToolResult, String>> {
-        Box::pin(async move { self.run(args, ctx).await })
-    }
-}
-
+/// Every tool a pot session registers, for the mode tool registry test.
 #[cfg(test)]
 pub(crate) fn registered_tool_names() -> Vec<String> {
-    vec![SEND_TOOL.to_owned()]
+    vec![send::SEND_TOOL.to_owned()]
 }
 
 impl Feature for PotFeature {
@@ -196,7 +120,7 @@ impl Feature for PotFeature {
 
     fn tools(&self, agent: &Rc<Agent>) -> Vec<Rc<dyn Tool>> {
         if process_gateway().is_some() && agent.config().mode().pot {
-            vec![Rc::new(SendTool::new())]
+            vec![send::tool()]
         } else {
             Vec::new()
         }

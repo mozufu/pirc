@@ -156,6 +156,23 @@ and not patched in the meantime.
 
 ---
 
+## M3 Usage ledger
+
+Specification: [usage.md](usage.md). Steps:
+
+1. Keep pricing in the model catalog (`scripts/model-catalog.ts`, `catalog.json`,
+   `crates/pirc-llm-types` `Model.cost`), with a pricing revision.
+2. Record one `usage_events` row per model request at the Gateway's inference
+   completion (`nodes.rs` `start_inference`), including failures with partial usage.
+3. Attribute each request to an actor (user, pot, schedule, delegation, title/
+   classifier side requests) and a causal root.
+4. Aggregation queries and `GET /api/usage/*` endpoints.
+5. Budget admission hook: built with the pot budgets in M4 (reservation against
+   the pot, the causal root and the owner caps, as [usage.md](usage.md#budget-admission)
+   describes), so no unused code lands before its caller.
+
+---
+
 ## M4 Pots backend
 
 Specification: [pots.md](pots.md). Each step is one or a few pushable commits; each
@@ -226,15 +243,41 @@ that a session can only act as itself.
      `pot-instruction` delivery that renders as "From <pot>" (backend provenance
      only); at-most-once delivery with an uncertain state; an `ask` model goes
      through 6a before the session starts.
-7. **Autonomy.** Review timer (`autonomy_interval_s`, default 2 days, off allowed)
-   driven by the Gateway's scheduler; `pot.set_autonomy`, `pot.remind_me` (a
-   pot-target schedule), `pot.set_thinking` (applied through the existing session
-   thinking control, logged), fallback switches reported by the agent and logged.
-8. **Budgets, causal roots and the loop guard.** Usage admission (M3.5) before each
-   pot-attributed model request (the inference path refuses with
-   `budget_exhausted`), `causal_roots` with depth/fan-out, `pot.budget.status` and
-   `pot.budget.request` (decision card), the loop guard of
-   [pots.md](pots.md#loop-guard); usage attribution gains `actor_kind='pot'`.
+7. **Autonomy and the pot's models** (parallel to 5 and 6b; code in
+   `pots/autonomy.rs` and `features/pot/autonomy.rs`).
+   - Models: the pot's primary model and thinking level are applied to its session
+     when it is allocated and before each wake if they changed; on a retryable
+     failure before any output the agent moves to the next fallback (as role
+     fallback does) and reports it (`pot.fallback`), logged as `fallback`.
+   - Review timer: with `autonomy_interval_s` set, a pot not engaged since
+     `last_engaged_at + interval` gets a `review` wake (`next_review_at` in
+     `pot_runtime`, driven by the pots sweep); user messages, assigned work and
+     non-review wakes set `last_engaged_at`.
+   - Tools and operations: `set_autonomy` (`pot.autonomy.set`, interval or off,
+     reason, logged `autonomy_changed`), `remind_me` (`pot.reminder.create`: a
+     `pot_reminders` row delivered as a `reminder` wake at its time; at most 50
+     pending per pot; logged `reminder_set`), `set_thinking` (`pot.thinking.set`,
+     only with `thinking_auto`, logged `thinking_adjust`).
+     Done when: Gateway tests for each operation and the review timer (due, not
+     due, off, engaged recently), agent tests for the tools and the fallback report.
+8. **Budgets, causal roots and the loop guard.**
+   - 8a. _Admission and budget tools_ (parallel to 5, 6b and 7; code in
+     `pots/budget.rs`, `usage/admission.rs`, `features/pot/budget.rs`). Requests
+     from a pot's session are attributed `actor_kind='pot'`. Before each such
+     request the inference path reserves an upper bound against the pot's caps and
+     the owner caps in one transaction (usage.md, Budget admission) and refuses with
+     `budget_exhausted` (`pot|owner`, `tokens|money`); completion reconciles.
+     An exhausted pot's model wakes wait. `budget_status` (`pot.budget.status`) and
+     `budget_request` (`pot.budget.request`, table `budget_requests`, one open per
+     pot; `GET /api/budget-requests`, `POST …/{id}/answer` with approve, approve
+     another amount, deny; a system message in the direct thread; the answer wakes
+     the pot; logged `budget_request`/`budget_exhausted`).
+     Done when: the acceptance cases of usage.md (concurrent requests near a cap,
+     subscriptions without API-equivalent accounting, price change) pass as
+     Gateway tests.
+   - 8b. _Causal roots and the loop guard_ (after 6b and 8a): `causal_roots` with
+     depth/fan-out and root budgets carried by every wake, DM and work start; the
+     loop guard of [pots.md](pots.md#loop-guard) with its four tests.
 9. **Observation and de-duplication** (L0–L3): observed sources feed `obs_events`,
    per-pot `obs_observations`, lead/merged notifications, one dispatch per purpose.
 10. **Handover, archive and delete**, then **remove the old assistant**: chat mode,
@@ -245,11 +288,14 @@ that a session can only act as itself.
     workspace memory and pot memory use; delete
     `docs/architecture/legacy-observational-memory.md`).
     Deletes: an estimated 10–15k lines including tests.
-11. **Conformance rewrite.** A harness helper starts a conversation through
-    first-send (prepare, accept, materialize, dispatch, wait for the run); every test
-    marked `#[ignore = "pirc 2: …"]` is rewritten on it or deleted with the feature it
-    covered; snapshots are re-recorded on Linux and reviewed; the passing floor goes
-    back above 250.
+11. **Conformance rewrite** (parallel to every other step; touches only
+    `crates/pirc-conformance` and `scripts/conformance-accounting.ts`). A harness
+    helper starts a conversation through first-send (prepare, accept, materialize,
+    dispatch, wait for the run); every test marked `#[ignore = "pirc 2: …"]` is
+    rewritten on it, except tests of the assistant chat mode, which step 10 deletes
+    with the feature. Snapshots are re-recorded on Linux (a temporary branch
+    workflow) and reviewed: only session-creation differences may change. The
+    passing floor goes back above 250.
 
 ---
 
