@@ -160,9 +160,19 @@ class SessionController extends Notifier<SessionView> {
     }
   }
 
-  /// Loads a new snapshot and continues the stream from its watermark.
+  /// Loads a new snapshot and continues the stream from its watermark; opens
+  /// the session when its first snapshot had failed.
   Future<void> reload() async {
     if (_reloading || _disposed) return;
+    if (_stream == null) {
+      _reloading = true;
+      try {
+        await _open();
+      } finally {
+        _reloading = false;
+      }
+      return;
+    }
     _reloading = true;
     try {
       final snapshot = await _snapshot();
@@ -293,12 +303,18 @@ class SessionController extends Notifier<SessionView> {
     unawaited(readControl());
   }
 
+  // `build` runs again on the same notifier when the connection changes, so
+  // what was closed is cleared: a later close must not touch it again.
   void _close() {
     _disposed = true;
     _lifecycle?.dispose();
+    _lifecycle = null;
     unawaited(_signals?.cancel());
+    _signals = null;
     unawaited(_stream?.close());
+    _stream = null;
     final heartbeat = _heartbeat;
+    _heartbeat = null;
     heartbeat?.stop();
     final connection = _connection;
     if (heartbeat != null && connection != null) {

@@ -26,6 +26,7 @@ Future<FakeGateway> _open(
 FakeEventSocket _events(FakeGateway gateway) => gateway.socket('/api/events')!;
 
 void main() {
+  _retrySnapshotTests();
   for (final name in [
     'streaming-turn.json',
     'joined-mid-stream.json',
@@ -242,5 +243,30 @@ void main() {
       ),
       findsNothing,
     );
+  });
+}
+
+void _retrySnapshotTests() {
+  appTest('a first snapshot that failed opens the session on Try again', (
+    tester,
+  ) async {
+    final session = FixtureSession('joined-mid-stream.json');
+    final gateway = session.install();
+    var failing = true;
+    gateway.json['GET /api/sessions/${session.id}/snapshot'] = (_) => failing
+        ? apiError(503, 'node_offline', 'The node is offline')
+        : session.snapshot;
+    await pumpApp(
+      tester,
+      gateway: gateway,
+      width: 1300,
+      height: 900,
+      location: '/work?open=${session.id}',
+    );
+    expect(gateway.socket('/api/events'), isNull);
+    failing = false;
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+    expect(gateway.socket('/api/events'), isNotNull);
   });
 }
