@@ -15,7 +15,7 @@ acceptance, activation.
 | [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)         |
 | [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11   |
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
-| [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–11 done; restoring the role conformance tests       |
+| [M4 Pots backend](#m4-pots-backend)                           | complete | complete    |            | 231 conformance tests pass on Linux                         |
 | [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`               |
 | [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | 12: no files, instructions, delete preview (gone in 10b)    |
 | [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |
@@ -362,10 +362,10 @@ evidence?)` (L1 `obs_observations`, one per pot and event, only for events that
 
 11. **Conformance rewrite.** Done: a harness helper starts conversations through
     first-send (`crates/pirc-conformance/src/first_send.rs`); the 83 set-aside tests
-    run on it; tests of the features removed in step 10 are deleted. Linux run: 224
+    run on it; tests of the features removed in step 10 are deleted. Linux run: 231
     passed, 0 failed, 10 ignored (5 live-client acceptance runs, the Gateway user
     memory replaced by pot memory, 4 terminal cases that need an isolated-terminal
-    backend). The passing floor is 224: the removed features took about 40 passing
+    backend). The passing floor is 231: the removed features took about 30 passing
     tests with them.
 
 ---
