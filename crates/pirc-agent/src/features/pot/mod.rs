@@ -23,6 +23,7 @@ const CONTEXT_TIMEOUT: Duration = Duration::from_secs(15);
 pub(crate) mod autonomy;
 mod budget;
 mod handover;
+mod memory;
 mod observe;
 mod send;
 mod work;
@@ -85,6 +86,27 @@ pub fn identity_section(context: &Value) -> Result<PromptSection, String> {
     if !user.is_empty() {
         out.push_str(&format!("\n\nThe user is {user}."));
     }
+    let notes: Vec<String> = context["memory"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|note| {
+            let content = text(note, "content");
+            (!content.is_empty()).then(|| {
+                format!(
+                    "- [{} r{}] {content}",
+                    text(note, "id"),
+                    note["revision"].as_i64().unwrap_or(1)
+                )
+            })
+        })
+        .collect();
+    if !notes.is_empty() {
+        out.push_str(&format!(
+            "\n\n## Your memory\n\nYour own notes, as they were when this run started:\n{}",
+            notes.join("\n")
+        ));
+    }
     let thread = text(context, "directThreadId");
     if !thread.is_empty() {
         out.push_str(&format!(
@@ -136,6 +158,8 @@ pub(crate) fn registered_tool_names() -> Vec<String> {
         budget::REQUEST_TOOL,
         observe::NOTE_TOOL,
         handover::PROPOSE_TOOL,
+        memory::NOTE_TOOL,
+        memory::SEARCH_TOOL,
         observe::READ_TOOL,
     ]
     .map(str::to_owned)
@@ -160,6 +184,7 @@ impl Feature for PotFeature {
             tools.push(budget::request_tool());
             tools.extend(observe::tools());
             tools.push(handover::tool());
+            tools.extend(memory::tools());
             tools
         } else {
             Vec::new()

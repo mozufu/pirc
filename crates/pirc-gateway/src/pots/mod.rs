@@ -8,6 +8,7 @@ pub mod budget;
 pub mod delivery;
 pub mod guard;
 pub mod handover;
+pub mod memory;
 pub mod observe;
 pub mod ops;
 pub mod retire;

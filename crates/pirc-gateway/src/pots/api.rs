@@ -35,6 +35,11 @@ pub fn routes() -> Router<AppState> {
         )
         .route("/api/activity", get(list_activity))
         .route("/api/pots/{id}/held", get(held_items))
+        .route("/api/pots/{id}/memory", get(pot_memory))
+        .route(
+            "/api/pots/{id}/memory/{entry}",
+            axum::routing::delete(forget_pot_memory),
+        )
         .route("/api/pots/{id}/retire/preview", post(retire_preview))
         .route("/api/pots/{id}/retire", post(retire_pot))
         .route("/api/handovers", get(list_handovers).post(create_handover))
@@ -730,4 +735,25 @@ async fn stop_causal_root(
     app.causal_roots_changed(&identity.user);
     app.activity_changed(&identity.user);
     Ok(axum::Json(json!({ "causalRoot": root })))
+}
+
+async fn pot_memory(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+) -> ApiResult<axum::Json<Value>> {
+    let notes = super::memory::list(&app.db.lock(), &identity.user, &id)?;
+    Ok(axum::Json(
+        json!({ "notes": notes, "budget": super::memory::BUDGET }),
+    ))
+}
+
+async fn forget_pot_memory(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path((id, entry)): Path<(String, String)>,
+) -> ApiResult<axum::http::StatusCode> {
+    super::memory::forget(&app.db.lock(), &identity.user, &id, &entry)?;
+    app.pots_changed(&identity.user);
+    Ok(axum::http::StatusCode::NO_CONTENT)
 }

@@ -457,3 +457,13 @@ CREATE TABLE root_reservations (
  created_at INTEGER NOT NULL
 );
 CREATE INDEX root_reservations_root ON root_reservations(root_id);
+-- A pot's own memory (P8): its notes, never another pot's, deleted with it.
+CREATE TABLE pot_memory (
+ id TEXT PRIMARY KEY,
+ pot_id TEXT NOT NULL REFERENCES pots(id) ON DELETE CASCADE,
+ content TEXT NOT NULL CHECK(length(content) BETWEEN 1 AND 2000),
+ revision INTEGER NOT NULL DEFAULT 1,
+ created_at INTEGER NOT NULL,
+ updated_at INTEGER NOT NULL
+);
+CREATE INDEX pot_memory_pot ON pot_memory(pot_id, created_at);

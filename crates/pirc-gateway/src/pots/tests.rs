@@ -5429,3 +5429,122 @@ mod retire {
         assert!(threads::get(&conn, "alice", &w.group).is_ok());
     }
 }
+
+mod memory {
+    use super::super::memory::{self, Action, NoteInput};
+    use super::*;
+
+    fn note(
+        action: Action,
+        id: Option<&str>,
+        content: Option<&str>,
+        base: Option<i64>,
+    ) -> NoteInput {
+        NoteInput {
+            action,
+            id: id.map(str::to_owned),
+            content: content.map(str::to_owned),
+            base_revision: base,
+        }
+    }
+
+    #[test]
+    fn a_pots_memory_is_its_own_and_revisions_guard_updates() {
+        let db = db();
+        let mut conn = db.lock();
+        let a = create(&mut conn, "alice", input("Tester")).unwrap().id;
+        let b = create(&mut conn, "alice", input("Helper")).unwrap().id;
+        let added = memory::write(
+            &conn,
+            "alice",
+            &a,
+            note(Action::Add, None, Some("CI runs at 2am"), None),
+        )
+        .unwrap();
+        let id = added.note.unwrap().id;
+        memory::write(
+            &conn,
+            "alice",
+            &b,
+            note(Action::Add, None, Some("Helper likes tea"), None),
+        )
+        .unwrap();
+        // Search and list never cross pots.
+        let hits = memory::search(&conn, "alice", &a, "ci tea", None).unwrap();
+        assert_eq!(
+            hits.iter().map(|n| n.content.as_str()).collect::<Vec<_>>(),
+            ["CI runs at 2am"]
+        );
+        assert_eq!(memory::list(&conn, "alice", &b).unwrap().len(), 1);
+        assert_eq!(
+            memory::write(
+                &conn,
+                "alice",
+                &b,
+                note(Action::Remove, Some(&id), None, None)
+            )
+            .unwrap_err()
+            .status,
+            404,
+            "another pot's note is not found"
+        );
+        assert_eq!(memory::list(&conn, "bob", &a).unwrap_err().status, 404);
+        // Updates need the revision the pot saw.
+        let updated = memory::write(
+            &conn,
+            "alice",
+            &a,
+            note(Action::Update, Some(&id), Some("CI runs at 3am"), Some(1)),
+        )
+        .unwrap();
+        assert_eq!(updated.note.unwrap().revision, 2);
+        assert_eq!(
+            memory::write(
+                &conn,
+                "alice",
+                &a,
+                note(Action::Update, Some(&id), Some("x"), Some(1))
+            )
+            .unwrap_err()
+            .code,
+            "revision_conflict"
+        );
+        // The budget holds.
+        let big = "x".repeat(memory::MAX_NOTE);
+        for _ in 0..(memory::BUDGET / memory::MAX_NOTE - 1) {
+            memory::write(
+                &conn,
+                "alice",
+                &a,
+                note(Action::Add, None, Some(&big), None),
+            )
+            .unwrap();
+        }
+        assert_eq!(
+            memory::write(
+                &conn,
+                "alice",
+                &a,
+                note(Action::Add, None, Some(&big), None)
+            )
+            .unwrap_err()
+            .code,
+            "memory_full"
+        );
+        // The user forgets a note; a deleted pot's memory goes with it.
+        memory::forget(&conn, "alice", &a, &id).unwrap();
+        assert_eq!(
+            memory::forget(&conn, "alice", &a, &id).unwrap_err().status,
+            404
+        );
+        conn.execute("DELETE FROM pots WHERE id=?1", [&a]).unwrap();
+        let left: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM pot_memory WHERE pot_id=?1",
+                [&a],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(left, 0);
+    }
+}

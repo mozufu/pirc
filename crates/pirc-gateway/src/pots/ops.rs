@@ -23,6 +23,8 @@ pub enum Op {
     BudgetStatus,
     BudgetRequest(super::budget::RequestInput),
     ObserveNote(super::observe::Note),
+    MemoryNote(super::memory::NoteInput),
+    MemorySearch(MemorySearch),
     HandoverPropose(HandoverPropose),
     ObserveRead(ObserveRead),
 }
@@ -36,6 +38,14 @@ pub struct HandoverPropose {
     items: Option<Vec<super::handover::ItemRef>>,
     #[serde(default)]
     reason: String,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MemorySearch {
+    query: String,
+    #[serde(default)]
+    limit: Option<usize>,
 }
 
 #[derive(serde::Deserialize)]
@@ -186,6 +196,16 @@ pub fn parse_op(op: &str, args: &Value) -> Option<Result<Op, ()>> {
                 .map(Op::HandoverPropose)
                 .map_err(|_| ()),
         ),
+        "pot.memory.note" => Some(
+            serde_json::from_value(args.clone())
+                .map(Op::MemoryNote)
+                .map_err(|_| ()),
+        ),
+        "pot.memory.search" => Some(
+            serde_json::from_value(args.clone())
+                .map(Op::MemorySearch)
+                .map_err(|_| ()),
+        ),
         "pot.observe.note" => Some(
             serde_json::from_value(args.clone())
                 .map(Op::ObserveNote)
@@ -287,6 +307,8 @@ pub fn context(conn: &Connection, owner: &str, session_id: &str) -> ApiResult<Va
         // Where the pot reaches the user when a wake has no reply thread
         // (reviews, reminders, observations).
         "directThreadId": super::threads::direct(conn, owner, &pot.id)?.id,
+        // The pot's own notes, frozen for this run.
+        "memory": super::memory::list(conn, owner, &pot.id)?,
     }))
 }
 
@@ -464,6 +486,21 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
             app.threads_changed(&context.user);
             app.activity_changed(&context.user);
             Ok(json!({ "handover": handover }))
+        }
+        Op::MemoryNote(input) => {
+            let conn = app.db.lock();
+            let pot = pot_of_session(&conn, &context.user, &context.session.id)?;
+            let written = super::memory::write(&conn, &context.user, &pot.id, input)?;
+            drop(conn);
+            app.pots_changed(&context.user);
+            Ok(serde_json::to_value(written).expect("notes serialize"))
+        }
+        Op::MemorySearch(search) => {
+            let conn = app.db.lock();
+            let pot = pot_of_session(&conn, &context.user, &context.session.id)?;
+            let hits =
+                super::memory::search(&conn, &context.user, &pot.id, &search.query, search.limit)?;
+            Ok(json!({ "hits": hits }))
         }
         Op::ObserveRead(read) => {
             let pot = pot_of_session(&app.db.lock(), &context.user, &context.session.id)?;
