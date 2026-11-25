@@ -17,7 +17,7 @@ acceptance, activation.
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
 | [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–10b done; 10c next, 11 in progress on a branch      |
 | [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`               |
-| [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | in progress |            | steps 1–11, 13–16 done; step 12 waits on M4 10b             |
+| [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | 12: no files, instructions, delete preview (gone in 10b)    |
 | [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |
 | [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                             |
 | [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                          |
@@ -883,6 +883,10 @@ that commit.
   (old README § Existing work 3)
 - **M6** Read-only Settings → Modes page listing each mode, its source file and its
   validation warnings, which today are only logged (M6 step 14). (modes.md § Phase 3)
+  Still open: the page lists the modes, but the Gateway reports no source file or
+  warnings yet.
+- **M9** `/api/hints` refuses any query key outside its hint names, so the Web build's
+  `client=` query is refused and its hint stream cannot connect.
 - **M9** Browser acceptance of the approval-mode picker and warning, and of project
   deletion including recovery after a real Node disconnect; installed-PWA Web Push on
   a real iPhone; iOS Safari keyboard and safe areas. (old README § Manual validation)

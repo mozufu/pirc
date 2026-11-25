@@ -2630,6 +2630,156 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{day} · {count, plural, =1{1 item} other{{count} items}}'**
   String calendarDayCount(String day, int count);
+
+  /// No description provided for @projectRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove project…'**
+  String get projectRemove;
+
+  /// No description provided for @projectRemoveTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String projectRemoveTitle(String name);
+
+  /// No description provided for @projectRemoveBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It leaves your lists and its agent tasks pause. Its folder, files and history stay on the host; adding the same folder again brings it back.'**
+  String get projectRemoveBody;
+
+  /// No description provided for @projectRemoveConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get projectRemoveConfirm;
+
+  /// No description provided for @projectRemoveOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'The host is offline. Connect it so it can confirm the project is idle, then try again.'**
+  String get projectRemoveOffline;
+
+  /// No description provided for @projectConversations.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversations'**
+  String get projectConversations;
+
+  /// No description provided for @projectResources.
+  ///
+  /// In en, this message translates to:
+  /// **'Resources'**
+  String get projectResources;
+
+  /// No description provided for @projectRules.
+  ///
+  /// In en, this message translates to:
+  /// **'Rules'**
+  String get projectRules;
+
+  /// No description provided for @capMemorySearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search memory'**
+  String get capMemorySearch;
+
+  /// No description provided for @capRemoteRecall.
+  ///
+  /// In en, this message translates to:
+  /// **'Recall from other conversations'**
+  String get capRemoteRecall;
+
+  /// No description provided for @capSchedules.
+  ///
+  /// In en, this message translates to:
+  /// **'Create agent tasks'**
+  String get capSchedules;
+
+  /// No description provided for @capWebSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search the web'**
+  String get capWebSearch;
+
+  /// No description provided for @projectConfigChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The project config changed. Review it again before trusting it.'**
+  String get projectConfigChanged;
+
+  /// No description provided for @projectConfigInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'The project config is not valid.'**
+  String get projectConfigInvalid;
+
+  /// No description provided for @projectConfigEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This project has no config to trust.'**
+  String get projectConfigEmpty;
+
+  /// No description provided for @projectTrusted.
+  ///
+  /// In en, this message translates to:
+  /// **'Trusted: its hooks and settings run.'**
+  String get projectTrusted;
+
+  /// No description provided for @projectNotTrusted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not trusted: its hooks and settings do not run.'**
+  String get projectNotTrusted;
+
+  /// No description provided for @projectUntrust.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdraw trust'**
+  String get projectUntrust;
+
+  /// No description provided for @projectTrust.
+  ///
+  /// In en, this message translates to:
+  /// **'Trust'**
+  String get projectTrust;
+
+  /// No description provided for @projectCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was added.'**
+  String projectCreated(String name);
+
+  /// No description provided for @projectNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New project'**
+  String get projectNew;
+
+  /// No description provided for @projectHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Host'**
+  String get projectHost;
+
+  /// No description provided for @projectName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get projectName;
+
+  /// No description provided for @projectPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder on the host'**
+  String get projectPath;
+
+  /// No description provided for @projectCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get projectCreate;
 }
 
 class _AppLocalizationsDelegate

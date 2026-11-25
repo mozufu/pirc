@@ -10,6 +10,7 @@ import '../../l10n/app_localizations.dart';
 import '../connection/data.dart';
 import '../format.dart';
 import '../shell/app_drawer.dart';
+import 'project_screen.dart';
 import 'work_data.dart';
 
 /// The Work tab's list (E2–E4): filters, search, rows grouped by project.
@@ -47,6 +48,11 @@ class WorkListScreen extends ConsumerWidget {
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: l10n.projectNew,
+            icon: const Icon(LucideIcons.folderPlus),
+            onPressed: () => newProject(context, ref),
+          ),
           if (onNew != null)
             IconButton(
               tooltip: l10n.newConversation,
@@ -208,32 +214,46 @@ class _GroupHeader extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final text = Theme.of(context).textTheme;
     final colors = PircColorTokens.of(context);
+    final id = group.workspaceId;
     return Semantics(
       header: true,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          PircSpacing.gutterPhone,
-          PircSpacing.stackXl,
-          PircSpacing.gutterPhone,
-          PircSpacing.stackSm,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              LucideIcons.folder,
-              size: PircSize.iconRow,
-              color: colors['text.secondary'],
-            ),
-            const SizedBox(width: PircSpacing.stackSm),
-            Expanded(
-              child: Text(
-                group.name ?? l10n.noProject,
-                style: text.titleMedium?.copyWith(fontWeight: FontWeight.w500),
-                overflow: TextOverflow.ellipsis,
+      // Default G: a tap on a project header opens the project page.
+      child: InkWell(
+        onTap: id == null
+            ? null
+            : () => context.go(
+                Uri(
+                  path: '/work',
+                  queryParameters: {'open': projectOpen(id)},
+                ).toString(),
               ),
-            ),
-            Text(l10n.groupCount(group.items.length), style: text.bodyMedium),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            PircSpacing.gutterPhone,
+            PircSpacing.stackXl,
+            PircSpacing.gutterPhone,
+            PircSpacing.stackSm,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                LucideIcons.folder,
+                size: PircSize.iconRow,
+                color: colors['text.secondary'],
+              ),
+              const SizedBox(width: PircSpacing.stackSm),
+              Expanded(
+                child: Text(
+                  group.name ?? l10n.noProject,
+                  style: text.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              Text(l10n.groupCount(group.items.length), style: text.bodyMedium),
+            ],
+          ),
         ),
       ),
     );

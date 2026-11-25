@@ -721,5 +721,44 @@
         "type": "int"
       }
     }
-  }
+  },
+  "projectRemove": "Remove project…",
+  "projectRemoveTitle": "Remove {name}?",
+  "@projectRemoveTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "projectRemoveBody": "It leaves your lists and its agent tasks pause. Its folder, files and history stay on the host; adding the same folder again brings it back.",
+  "projectRemoveConfirm": "Remove",
+  "projectRemoveOffline": "The host is offline. Connect it so it can confirm the project is idle, then try again.",
+  "projectConversations": "Conversations",
+  "projectResources": "Resources",
+  "projectRules": "Rules",
+  "capMemorySearch": "Search memory",
+  "capRemoteRecall": "Recall from other conversations",
+  "capSchedules": "Create agent tasks",
+  "capWebSearch": "Search the web",
+  "projectConfigChanged": "The project config changed. Review it again before trusting it.",
+  "projectConfigInvalid": "The project config is not valid.",
+  "projectConfigEmpty": "This project has no config to trust.",
+  "projectTrusted": "Trusted: its hooks and settings run.",
+  "projectNotTrusted": "Not trusted: its hooks and settings do not run.",
+  "projectUntrust": "Withdraw trust",
+  "projectTrust": "Trust",
+  "projectCreated": "{name} was added.",
+  "@projectCreated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "projectNew": "New project",
+  "projectHost": "Host",
+  "projectName": "Name",
+  "projectPath": "Folder on the host",
+  "projectCreate": "Add"
 }

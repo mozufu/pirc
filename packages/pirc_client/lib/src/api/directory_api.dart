@@ -107,7 +107,7 @@ class WorkspaceInfo {
   }
 }
 
-/// Nodes and workspaces.
+/// Nodes and workspaces (projects).
 class DirectoryApi {
   const DirectoryApi(this.api);
   final ApiClient api;
@@ -124,4 +124,66 @@ class DirectoryApi {
             const [])
       WorkspaceInfo.fromJson(workspace),
   ];
+
+  static String _ws(String id) => '/api/workspaces/${Uri.encodeComponent(id)}';
+
+  /// Creates a project on [nodeId]: a folder at [path] (absolute or `~/…`,
+  /// which must exist), or a per-session mode without one.
+  Future<WorkspaceInfo> createWorkspace({
+    required String nodeId,
+    required String displayName,
+    String? path,
+    String? mode,
+  }) async => WorkspaceInfo.fromJson(
+    field(
+      await api.post('/api/workspaces', {
+        'nodeId': nodeId,
+        'displayName': displayName,
+        'path': ?path,
+        'mode': ?mode,
+      }),
+      'workspace',
+    ),
+  );
+
+  /// Removes a project from the lists; the host keeps its folder and
+  /// history. Fails with `node_offline` while its host is offline.
+  Future<void> removeWorkspace(String id) => api.delete(_ws(id));
+
+  /// `{version, memory_search, remote_recall, schedules, web_search}`.
+  Future<Map<String, Object?>> capabilities(String id) async =>
+      object(field(await api.get('${_ws(id)}/capabilities'), 'capabilities')) ??
+      const {};
+
+  Future<Map<String, Object?>> setCapabilities(
+    String id,
+    Map<String, Object?> changes,
+  ) async =>
+      object(
+        field(
+          await api.patch('${_ws(id)}/capabilities', {'capabilities': changes}),
+          'capabilities',
+        ),
+      ) ??
+      const {};
+
+  /// The project config summary (`hooks`, `env`, `allowedPaths`,
+  /// `defaultModel`, `hash`, `trusted`, `empty`, or `error`).
+  Future<Map<String, Object?>> projectConfig(String id) async =>
+      object(field(await api.get('${_ws(id)}/project-config'), 'project')) ??
+      const {};
+
+  /// Trusts the config shown with [hash], or withdraws trust. A changed
+  /// config answers 409: show it again before trusting.
+  Future<Map<String, Object?>> trustProject(String id, {String? hash}) async =>
+      object(
+        field(
+          await api.post(
+            '${_ws(id)}/project-trust',
+            hash == null ? {'trusted': false} : {'trusted': true, 'hash': hash},
+          ),
+          'project',
+        ),
+      ) ??
+      const {};
 }

@@ -1352,6 +1352,86 @@ class AppLocalizationsZh extends AppLocalizations {
   String calendarDayCount(String day, int count) {
     return '$day · $count 項';
   }
+
+  @override
+  String get projectRemove => '移除專案…';
+
+  @override
+  String projectRemoveTitle(String name) {
+    return '移除 $name？';
+  }
+
+  @override
+  String get projectRemoveBody =>
+      '它會從列表中移除，agent 任務會暫停。資料夾、檔案和紀錄都留在主機上；再次加入同一個資料夾即可恢復。';
+
+  @override
+  String get projectRemoveConfirm => '移除';
+
+  @override
+  String get projectRemoveOffline => '主機離線。請連上主機讓它確認專案已閒置，再試一次。';
+
+  @override
+  String get projectConversations => '對話';
+
+  @override
+  String get projectResources => '資源';
+
+  @override
+  String get projectRules => '規則';
+
+  @override
+  String get capMemorySearch => '搜尋記憶';
+
+  @override
+  String get capRemoteRecall => '引用其他對話';
+
+  @override
+  String get capSchedules => '建立 agent 任務';
+
+  @override
+  String get capWebSearch => '搜尋網路';
+
+  @override
+  String get projectConfigChanged => '專案設定已變更，信任前請重新檢查。';
+
+  @override
+  String get projectConfigInvalid => '專案設定無效。';
+
+  @override
+  String get projectConfigEmpty => '這個專案沒有需要信任的設定。';
+
+  @override
+  String get projectTrusted => '已信任：會執行它的 hooks 與設定。';
+
+  @override
+  String get projectNotTrusted => '未信任：不會執行它的 hooks 與設定。';
+
+  @override
+  String get projectUntrust => '取消信任';
+
+  @override
+  String get projectTrust => '信任';
+
+  @override
+  String projectCreated(String name) {
+    return '已加入 $name。';
+  }
+
+  @override
+  String get projectNew => '新專案';
+
+  @override
+  String get projectHost => '主機';
+
+  @override
+  String get projectName => '名稱';
+
+  @override
+  String get projectPath => '主機上的資料夾';
+
+  @override
+  String get projectCreate => '加入';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

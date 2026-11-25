@@ -1415,4 +1415,87 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$day · $_temp0';
   }
+
+  @override
+  String get projectRemove => 'Remove project…';
+
+  @override
+  String projectRemoveTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String get projectRemoveBody =>
+      'It leaves your lists and its agent tasks pause. Its folder, files and history stay on the host; adding the same folder again brings it back.';
+
+  @override
+  String get projectRemoveConfirm => 'Remove';
+
+  @override
+  String get projectRemoveOffline =>
+      'The host is offline. Connect it so it can confirm the project is idle, then try again.';
+
+  @override
+  String get projectConversations => 'Conversations';
+
+  @override
+  String get projectResources => 'Resources';
+
+  @override
+  String get projectRules => 'Rules';
+
+  @override
+  String get capMemorySearch => 'Search memory';
+
+  @override
+  String get capRemoteRecall => 'Recall from other conversations';
+
+  @override
+  String get capSchedules => 'Create agent tasks';
+
+  @override
+  String get capWebSearch => 'Search the web';
+
+  @override
+  String get projectConfigChanged =>
+      'The project config changed. Review it again before trusting it.';
+
+  @override
+  String get projectConfigInvalid => 'The project config is not valid.';
+
+  @override
+  String get projectConfigEmpty => 'This project has no config to trust.';
+
+  @override
+  String get projectTrusted => 'Trusted: its hooks and settings run.';
+
+  @override
+  String get projectNotTrusted =>
+      'Not trusted: its hooks and settings do not run.';
+
+  @override
+  String get projectUntrust => 'Withdraw trust';
+
+  @override
+  String get projectTrust => 'Trust';
+
+  @override
+  String projectCreated(String name) {
+    return '$name was added.';
+  }
+
+  @override
+  String get projectNew => 'New project';
+
+  @override
+  String get projectHost => 'Host';
+
+  @override
+  String get projectName => 'Name';
+
+  @override
+  String get projectPath => 'Folder on the host';
+
+  @override
+  String get projectCreate => 'Add';
 }

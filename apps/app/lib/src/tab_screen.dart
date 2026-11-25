@@ -10,6 +10,7 @@ import 'calendar/calendar_screen.dart';
 import 'router.dart';
 import 'shell/app_drawer.dart';
 import 'work/new_conversation/new_conversation_screen.dart';
+import 'work/project_screen.dart';
 import 'work/work_conversation.dart';
 import 'work/work_side.dart';
 import 'work/work_data.dart';
@@ -81,6 +82,11 @@ class TabScreen extends ConsumerWidget {
           content: open == null
               ? null
               : switch (tab) {
+                  AppTab.work when open.startsWith('project:') => ProjectScreen(
+                    key: ValueKey(open),
+                    workspaceId: open.substring('project:'.length),
+                    showBack: !desktop,
+                  ),
                   AppTab.work when open == newConversationKey =>
                     NewConversationScreen(
                       key: const ValueKey(newConversationKey),
