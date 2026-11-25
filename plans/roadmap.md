@@ -213,12 +213,18 @@ that a session can only act as itself.
 5. **Activity and point of view.** Writes from every earlier step go through one
    `activity::log`; `GET /api/activity` with filters and paging; `GET /api/pots/{id}/view`;
    retention sweep.
-6. **Work dispatch and model approvals.** Operations `pot.work.open`,
-   `pot.work.send`, `pot.work.status`; work sessions created through the internal
-   entry with a `pot-instruction` delivery that renders as "From <pot>" (backend
-   provenance only); at-most-once delivery with an uncertain state; `model_approvals`
-   with `GET /api/model-approvals` and `POST …/{id}/answer` (deny, deny with reason,
-   allow once); "Needs you" listing.
+6. **Work dispatch and model approvals.**
+   - 6a. _Model approvals_ (independent of step 5; may land first): the
+     `model_approvals` table, a store to request, list, answer and consume an
+     approval, `GET /api/model-approvals` ("Needs you" listing) and
+     `POST …/{id}/answer` (deny, deny with reason, allow once); a reason is posted in
+     the pot's direct thread; every answer wakes the pot (source `approval`);
+     `approvals_changed` hints. "Allow once" is consumed by exactly one start.
+   - 6b. _Work dispatch_: operations `pot.work.open`, `pot.work.send`,
+     `pot.work.status`; work sessions created through the internal entry with a
+     `pot-instruction` delivery that renders as "From <pot>" (backend provenance
+     only); at-most-once delivery with an uncertain state; an `ask` model goes
+     through 6a before the session starts.
 7. **Autonomy.** Review timer (`autonomy_interval_s`, default 2 days, off allowed)
    driven by the Gateway's scheduler; `pot.set_autonomy`, `pot.remind_me` (a
    pot-target schedule), `pot.set_thinking` (applied through the existing session
