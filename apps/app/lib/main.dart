@@ -1,20 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'src/app.dart';
 import 'src/build_variant.dart';
 
 void main() {
   resolveBuildVariant();
-  runApp(const PircApp());
-}
-
-class PircApp extends StatelessWidget {
-  const PircApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'pirc',
-      home: Scaffold(body: Center(child: Text('pirc'))),
-    );
-  }
+  WidgetsFlutterBinding.ensureInitialized();
+  installRenderer();
+  runApp(const ProviderScope(child: PircApp()));
 }

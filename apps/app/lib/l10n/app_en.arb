@@ -1,0 +1,27 @@
+{
+  "@@locale": "en",
+  "appTitle": "pirc",
+  "tabChat": "Chat",
+  "tabWork": "Work",
+  "tabActivity": "Activity",
+  "tabCalendar": "Calendar",
+  "settings": "Settings",
+  "back": "Back",
+  "emptyChat": "No pots or groups yet",
+  "emptyWork": "No sessions yet",
+  "emptyActivity": "No activity yet",
+  "emptyCalendar": "Nothing scheduled",
+  "nothingOpen": "Select an item to open it",
+  "openItem": "Item {id}",
+  "@openItem": {
+    "placeholders": { "id": { "type": "String" } }
+  },
+  "language": "Language",
+  "languageSystem": "Follow the system",
+  "languageEnglish": "English",
+  "languageTraditionalChinese": "繁體中文",
+  "appearance": "Appearance",
+  "appearanceSystem": "Follow the system",
+  "appearanceLight": "Light",
+  "appearanceDark": "Dark"
+}
