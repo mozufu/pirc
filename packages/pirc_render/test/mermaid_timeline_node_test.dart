@@ -201,7 +201,7 @@ void main() {
       expect(output.lines.single.glyphBounds.height, 20);
       expect(output.textBounds.height, 20);
     },
-    skip: !Platform.isMacOS,
+    tags: ['fonts'],
   );
 
   testWidgets(
@@ -359,6 +359,6 @@ void main() {
         'node   width',
       ]);
     },
-    skip: !Platform.isMacOS,
+    tags: ['fonts'],
   );
 }

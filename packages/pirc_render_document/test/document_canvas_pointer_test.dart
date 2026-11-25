@@ -1,3 +1,6 @@
+@Tags(['tier3'])
+library;
+
 import 'dart:async';
 
 import 'package:flutter/gestures.dart';

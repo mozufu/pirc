@@ -1,3 +1,7 @@
+// Loads /System/Library/Fonts/SFNS.ttf to compare with browser captures.
+@Tags(['fonts'])
+library;
+
 import 'dart:convert';
 import 'dart:io';
 

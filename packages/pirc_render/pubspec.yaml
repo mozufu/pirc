@@ -1,10 +1,10 @@
 name: pirc_render
-description: "Native chat content rendering: Markdown, code, math, tables, images, static HTML and forms, Mermaid."
+description: 'Native chat content rendering: Markdown, code, math, tables, images, static HTML and forms, Mermaid.'
 publish_to: none
 version: 0.1.0
 environment:
   sdk: ^3.12.2
-  flutter: ">=3.44.0"
+  flutter: '>=3.44.0'
 resolution: workspace
 dependencies:
   flutter:

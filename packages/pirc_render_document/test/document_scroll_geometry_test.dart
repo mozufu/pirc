@@ -1,3 +1,6 @@
+@Tags(['tier3'])
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show OverflowBoxFit;
 import 'package:flutter_test/flutter_test.dart';

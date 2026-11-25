@@ -1,3 +1,6 @@
+@Tags(['tier3'])
+library;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:html/parser.dart' as html;
 import 'package:pirc_render_document/src/document_computed_styles.dart';

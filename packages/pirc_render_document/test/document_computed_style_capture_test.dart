@@ -1,3 +1,6 @@
+@Tags(['tier3'])
+library;
+
 import 'dart:convert';
 
 import 'package:flutter/widgets.dart';

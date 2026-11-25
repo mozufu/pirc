@@ -1,0 +1,15 @@
+# Test tags (plans/client.md, Testing). The default run is fast and needs no
+# device, no Node and no macOS-only fonts: tagged tests are skipped there and
+# reported as skipped, never as passed. Safety regressions are never tagged.
+#   flutter test                          default suite
+#   flutter test --run-skipped -t fonts   the tests that need host fonts (macOS)
+#   flutter test --run-skipped            everything
+tags:
+  tier3:
+    skip: 'Tier-3 document feature; run with --run-skipped -t tier3.'
+  node:
+    skip: 'Needs Node; run with --run-skipped -t node.'
+  fonts:
+    skip: 'Needs host fonts (macOS); run with --run-skipped -t fonts.'
+  device:
+    skip: 'Needs a device; run with --run-skipped -t device.'

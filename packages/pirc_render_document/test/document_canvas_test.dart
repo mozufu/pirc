@@ -1,3 +1,5 @@
+// Decoder limits and paint work budgets are resource-safety regressions,
+// so this file stays in the default suite although Canvas is tier 3.
 import 'dart:ui' as ui;
 
 import 'package:flutter_test/flutter_test.dart';
