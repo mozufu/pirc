@@ -16,7 +16,7 @@ acceptance, activation.
 | [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11   |
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
 | [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–4 done                                              |
-| [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2a28174`; CI on Linux not yet seen             |
+| [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`               |
 | [M6 Work and settings screens](#m6-work-and-settings-screens) | outline  |             |            |                                                             |
 | [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |
 | [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                             |
@@ -249,7 +249,8 @@ that a session can only act as itself.
 ## M5 Client foundation
 
 Specification: [client.md](client.md). The client work touches only `pubspec.yaml`
-(root), `apps/app`, `packages/`, `apps/android` and a new CI workflow; it runs beside
+(root), `apps/app`, `packages/`, `apps/android`, `flake.nix` (Web artifacts for
+the Nix Flutter), `.gitignore`, `android.yml` and a new CI workflow; it runs beside
 the backend milestones. Flutter comes from the Nix shell (`nix develop`, Flutter
 3.44.4); Android builds need `ANDROID_HOME` set to a local SDK. Each push runs
 `flutter analyze` on the touched members and their fast tests.
@@ -340,6 +341,12 @@ the backend milestones. Flutter comes from the Nix shell (`nix develop`, Flutter
      whose outcome is unknown (timeout, dropped connection after send) is marked
      uncertain and never re-sent through another path (N8). First-send is the only
      creation path. `GET /api/capabilities` is read on connect.
+   - As built: `ApiClient.connect()` reads the capability document and refuses
+     another `apiVersion`. An event connect times out after 15 s, and `retryNow`
+     replaces a connect still in flight. On Web a refused upgrade (401/426) cannot
+     be told from a dropped connection, so it is retried; a 4401 close stays fatal.
+     The io adapter does the WebSocket handshake itself so redirects are never
+     followed.
      Done when: fixture, transport (fake server), reconnect and command tests pass
      with `dart test`; the web adapter compiles (`dart analyze` and a
      `dart compile js` of a small entry point).
