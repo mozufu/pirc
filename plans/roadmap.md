@@ -18,7 +18,7 @@ acceptance, activation.
 | [M4 Pots backend](#m4-pots-backend)                           | complete | complete    |            | steps 0–13 done; 231 conformance tests on Linux             |
 | [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`               |
 | [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | 12: no files, instructions, delete preview (gone in 10b)    |
-| [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |
+| [M7 Pots screens](#m7-pots-screens)                           | complete |             |            |                                                             |
 | [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                             |
 | [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                          |
 | [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                                                             |
@@ -836,10 +836,225 @@ handover, which is M7.
 
 ## M7 Pots screens
 
-Outline: Chat tab; new pot (four steps); pot conversation with decision cards and work
-cards; pot profile and settings; pause sheet; handover; archive/delete; groups
-(create, conversation, mention popover, info); Activity tab and point of view; model
-approval sheet; Settings → pots; user and usage pages.
+Specification: the design handoff for E ([spec](../docs/design/design-spec-pots.md),
+screens E1–E36, prototype `docs/design/prototype/PhoneE.dc.html?start=<name>`,
+screenshots `docs/design/screenshots/E-*`), [pots.md](pots.md) for behaviour, and
+[components](../docs/design/components.md) and [rules](../docs/design/design-rules.md).
+Every route, field and event is in
+[gateway-and-node.md](../docs/development/gateway-and-node.md). The conventions of M6
+hold: one API file per route family in `packages/pirc_client/lib/src/api/`, shared
+widgets in `packages/pirc_ui/lib/src/components/` under the names of components.md
+and section 10 of the E spec, screens and providers in `apps/app/lib/src/<area>/`,
+every new string in `app_en.arb` and `app_zh.arb` in the same commit, client tests on
+`FakeTransport`, app tests on `test/support/harness.dart`. Step 0 is backend work
+done before step 3 starts; steps 1–2 run first, then 3–13 in any order, then 14.
+
+**Settled for M7 (no open choices).**
+
+- **Avatars** are the five colours only (`avatarColor` 1–5). Image upload is not
+  built; the "upload" tile of E7 and E31 is not shown.
+- **Personality templates** (E7) fill the personality field with this text; the user
+  can edit it. Rigorous: "Precise and careful. Checks facts before answering, says
+  when unsure, and prefers correctness over speed." Concise: "Brief and direct.
+  Answers in as few words as possible and skips pleasantries." Friendly: "Warm and
+  encouraging. Explains things plainly and checks that the user is comfortable with
+  the next step." Custom: an empty field. zh-TW: 嚴謹「精確細心，回答前先查證，不確定時直說，寧可正確也不求快。」、簡潔「簡短直接，用最少的字回答，不寒暄。」、友善「溫暖、鼓勵人，用平常的話說明，確認你對下一步沒有疑問。」
+- **Speech preview** (E7) shows one fixed sample line per template (en/zh in the ARB
+  files); no model is called.
+- **Thinking levels** in the UI map to the backend values: Low `low`, Medium
+  `medium`, High `high`, Highest `xhigh`. "Adjust by itself" is `thinkingAuto`.
+- **Budgets** (E9): money per month in US dollars (sent as micro-dollars) and tokens
+  per day. A new pot starts with US$20 per month and 500,000 tokens per day; both
+  fields are required and 0 means the pot may not spend (the help text says so).
+  Owner-wide caps in Settings → pots: 0 means no owner-wide cap.
+- **Defaults of a new pot**: reach "only answer"; observe nothing; DM send and
+  receive "all"; no work locations; 2 concurrent works; autonomy review every 2 days
+  (the toggle in step ③ can turn it off); main model = the Gateway's default model
+  (`GET /api/models` `defaultModel`), thinking Medium, no fallbacks, no work models.
+- **"Waiting on you"** for a pot is `needsYou` from `GET /api/pots` (pending model
+  approvals, open budget requests, handovers it proposed, suspended causal roots it
+  started). Its chat row shows the yellow `status.warningSoft` badge with that
+  count; unread messages use the ink badge.
+- **Avatar status** (E1 dots) comes from the pot's `status`: `working` → green
+  three-dot capsule (no animation with reduced motion), `unavailable` → grey dot,
+  `idle` → nothing.
+- **Observation notifications** are shown at the top of the Activity tab as a
+  "Noticed" section (open ones first, "Mark read" on each); the Activity tab badge
+  counts open notifications. A push opens the Activity tab on that notification.
+- **Activity type labels** (E5 tags): `dm` 私訊 / Message, `group_message` 群組 /
+  Group, `assign` 交辦 / Handed over, `work_opened` 開工 / Opened work,
+  `work_instruction` 送出指示 / Instruction, `file_read` 讀取 / Read,
+  `thinking_adjust` 自動調整 / Auto-adjusted, `fallback` 備援 / Fallback,
+  `awaiting_confirm` 等你確認 / Needs your OK, `awaiting_approval` 等你核准 /
+  Needs approval, `approval_answered` 已核准 / Approval answered,
+  `forwarded_to_user` 轉給你 / To you, `budget_request` 申請額度 / Budget request,
+  `budget_exhausted` 額度用完 / Out of budget, `loop_guard` 已暫停連鎖 / Chain
+  paused, `handover_proposed` 提議交接 / Proposed handover, `review` 自主檢視 /
+  Review, `reminder_set` 提醒 / Reminder, `autonomy_changed` 自主設定 / Autonomy,
+  lifecycle kinds (`created` … `deleted`) 狀態 / Status.
+- **"Adjust ○○'s permissions…"** in E16 opens that pot's settings (E24) scrolled to
+  step ③; it never changes a permission by itself.
+- **Pause sheet** (E13): "While paused" lists: no new messages or events are
+  delivered (they wait), reviews and reminders wait, it starts no work. "Goes on":
+  works it already opened keep running under their own controls, its threads stay
+  readable, nothing is handed over. The confirm button calls pause.
+- **Groups** may be edited by the user only: name, colour, host, members (2–16). A
+  pot is never added to a group automatically.
+
+0. **Backend additions** (not client work; done before step 3).
+   - Threads: a per-owner read position (`POST /api/threads/{id}/read` with
+     `{ seq }`); `GET /api/threads` gains `unread` and `lastMessage` (author, first
+     line, `createdAt`).
+   - Pots: `GET /api/pots` and `GET /api/pots/{id}` gain `status`
+     (`working`, `idle`, `unavailable`), `needsYou` and `budgetLeft`
+     (`moneyMicros`, `tokens` left in the current windows).
+   - Models: `GET /api/models` gains `defaultModel` (`provider`, `id`, `thinking`).
+   - The user: `GET|PATCH /api/me` (`displayName`, `avatarColor`); pots call the
+     user by `displayName` (`pot.context`).
+   - Groups: `PATCH /api/threads/{id}` (`name`, `avatarColor`, `hostPotId`,
+     `memberPotIds`, with the thread's `revision`) and `DELETE /api/threads/{id}`
+     (groups only).
+   - Point of view: `GET /api/pots/{id}/view` adds `instructions` (what the pot sent
+     into work sessions, newest first, with the work's title and session).
+     Done when: Gateway tests for each, and the routes are in gateway-and-node.md.
+1. **Client package.** `packages/pirc_client/lib/src/api/`:
+   - `pots_api.dart` (extend): full `Pot` model (profile, work, permissions, models,
+     autonomy, state, revision, status, needsYou, sessionId), create, read, patch by
+     section with revision, pause/resume/restore, held items, memory read and forget,
+     retire preview and retire, settings read and patch.
+   - `threads_api.dart`: threads (list, direct thread of a pot, create group, patch,
+     delete, read position), messages (page with `before`, post with `mentions` and
+     `all`), the `Card` union (`model_approval`, `budget_request`, `work`, `handover`,
+     `loop_guard`) and `authorName` for deleted pots.
+   - `decisions_api.dart`: model approvals (list, read, answer), budget requests
+     (list, read, answer), handovers (list, read, create, confirm with revision,
+     reject), causal roots (read, resume, stop).
+   - `activity_api.dart`: activity (filters `potId`, `kind`, `since`, `until`,
+     cursor `before`), pot view, observation notifications (list, read).
+   - `me_api.dart`: `GET|PATCH /api/me`; `usage_api.dart`: `GET /api/usage`.
+   - `HintStream` kinds used by M7: `pots`, `threads`, `approvals`, `activity`,
+     `budgetRequests`, `notifications`, `causalRoots`.
+     Done when: a test per route (request shape and parsing, including each card
+     kind and a deleted author).
+2. **Shared components** (`pirc_ui`, names from E spec § 10): `Avatar` (sizes 28,
+   36, 48, 88; colours `avatar.1`–`avatar.5`; `me`), `AvatarStatus`, `GroupAvatar`,
+   `ChatRow` (with and without avatar), `Bubble` (pot conversations and point of view
+   only; mine on the right, a pot's tinted 18% of its colour in point of view),
+   `HandoffLine`, `WorkCard`, `MentionPopover`, `ProfileHeader`, `HandoverItem` (fit
+   ok / narrowed / stop / muted), `ModelAccess` (direct / ask you), `LogRow` with
+   `LogTag`, `PovBar`, `Stats` (cards, heatmap, weekly bars, cumulative area, bar
+   list).
+   Done when: widget tests and golden images of each at phone width, light and
+   dark.
+3. **Chat tab (E1) and New (E6).** The list holds every non-archived pot's direct
+   thread and every group, newest `updatedAt` first; a row shows the avatar with its
+   status, name, `intro`, time, the last message's first line and the badges of
+   the settled list above. Archived pots are not listed here. Read again on
+   `pots_changed` and `threads_changed`. The ＋ button opens E6 with "New pot" and
+   "New group" (the latter disabled with a note until two pots exist). Empty state:
+   one line and a "New pot" button. The 32-pot limit shows the backend's message.
+   Done when: tests for ordering, both badges, the status dots, the empty state and
+   each hint; goldens at the four widths, light and dark.
+4. **New pot (E7–E10).** Four steps with Back / Next; the last says "Create".
+   ① avatar colour, name (1–40), personality with the templates. ② intro (≤ 200),
+   work description (≤ 8000), responsibilities (add, edit, reorder, remove; title
+   ≤ 200, optional detail). ③ reach (only answer / observe and suggest / start
+   work); observe scopes, one switch each (calendar, schedules, and pickers for
+   workspaces, projects and sessions from `GET /api/workspaces` and
+   `GET /api/sessions`); DM send and receive, each all / selected / off, with a pot
+   picker for selected; when reach is "start work": work locations (workspace and
+   read/write), max concurrent works (0–16), budgets; autonomy review interval
+   (off, 1 day, 2 days, 1 week). ④ main model and fallbacks from `GET /api/models`,
+   thinking, "adjust by itself", and when reach is "start work" the work models,
+   each direct or ask; otherwise the explanation text instead. "Create" posts the
+   whole input once and opens the new pot's conversation. A backend 400 shows its
+   message on the step it concerns; nothing is lost on Back.
+   Done when: tests for each step's validation, the reach-dependent sections, a full
+   create request, and the error path; goldens of the four steps.
+5. **Pot conversation (E11).** The pot's direct thread: bubbles (mine right, the
+   pot's left with its avatar), system messages as notices, cards by `card.kind`:
+   - `work` → `WorkCard` (title, state from `GET /api/pot-works/{id}`; opens the
+     work conversation of M6);
+   - `model_approval` → a card that opens the approval sheet of step 6;
+   - `budget_request` → a card with Approve / Approve another amount / Deny;
+   - `handover` → a card that opens the handover of step 8;
+   - `loop_guard` → a card with Resume / Stop the chain / Pause the pots involved.
+     Each card reads its item and shows its current state; a decided card shows the
+     decision in one line. The composer posts `{ body }`; the pot's reply arrives as
+     a message (`threads_changed`). The read position is sent when the newest message
+     is shown. Older messages load on scroll (`before`). The header shows the avatar,
+     name, status and opens the profile (E12). A deleted pot's thread is read-only and
+     uses `authorName`.
+     Done when: tests for each card and its states, paging, the read position, a
+     deleted pot's thread and the hint updates; goldens.
+6. **Model approval sheet (E25–E26)** from a card, the Work tab's "Needs you" row
+   (M6 left it closed; it opens the sheet now) or a push. It shows the work title,
+   model and thinking, the pot's reason, estimated cost and remaining budget, with
+   Deny, Deny with a reason (expands a field, ≤ 2000) and Allow once. A second
+   device's decision shows "Answered" with the result. Budget requests use the same
+   sheet layout with Approve / Approve another amount (a field in the request's
+   unit) / Deny.
+   Done when: tests for each answer, the reason, the 409 of an answered item and the
+   three entry points.
+7. **Pot profile, settings, pause and memory (E12, E13, E24).** Profile: header
+   (avatar 88, name, intro, status), Message / Settings / Pause or Resume actions,
+   responsibilities, what it may do (a plain summary of permissions), its recent
+   activity (five rows, "See all" opens Activity filtered to it) and its memory
+   (notes from `GET /api/pots/{id}/memory`, each with Forget). Settings (E24) is the
+   four steps on one page, each section saved on its own with the pot's revision
+   (a 409 reloads and keeps the edit visible), then Pause, Hand over…, Archive or
+   delete…. The pause sheet follows the settled text.
+   Done when: tests for each section's save and conflict, pause and resume, forget a
+   note; goldens.
+8. **Handover and retire (E14–E17).** Handover: pick the receiver (another pot or
+   you), tick items from `GET /api/pots/{id}/held`, create, then show each item's
+   fit and reason and Confirm (with the revision) or Cancel. A pot's proposal (its
+   card) opens the same screen with the banner and only Confirm / Reject. Retire:
+   segmented Archive / Delete, a target per item (another pot, you, none) and "Give
+   everything to…", the preview (`…/retire/preview`) with "Will stop" and "Kept", and
+   the button "Hand over and archive" / "Hand over and delete". Delete asks once more
+   with the pot's name typed. After delete the pot's conversation becomes read-only
+   and the app returns to the Chat tab.
+   Done when: tests for each fit, a pot's proposal, rule-1 refusal text, the preview,
+   archive and delete; goldens.
+9. **Groups (E32–E35).** New group: name, colour, host, members (2–16 pots). The
+   group conversation: bubbles with each pot's avatar and name; the composer's @
+   opens `MentionPopover` (members with their reach and `budgetLeft`) and "@all" with
+   the warning that every member will be woken; the request sends `mentions` (pot
+   IDs) and `all`. Group info: members, host, edit (`PATCH`), delete.
+   Done when: tests for creation, mention and all requests, editing with revision,
+   deleting; goldens.
+10. **Activity and point of view (E5, E18–E20, E27).** Activity: the "Noticed"
+    section, then rows (`LogRow`) newest first with paging, filters by pot and by
+    kind; filtering to one pot shows "See ○○'s point of view". Point of view: the
+    read-only bar, the pot's threads (its direct thread, groups, pot DMs) and the
+    messages it sent, the instructions it sent into work (E19, opening the work
+    conversation), and pot DMs (E20) as read-only threads. A row opens its reference:
+    thread, work session, approval, handover.
+    Done when: tests for paging, both filters, each reference, the notifications
+    section and point of view; goldens.
+11. **Settings → pots (E23).** Totals at the top (this month's money and today's
+    tokens from `GET /api/usage`, actor `pot`), owner caps (money per month, tokens
+    per day), when exhausted (pause all / ask), activity retention (1–3650 days),
+    then the pots and the archived pots (Restore). Saved with the settings revision.
+    Done when: tests for each field and restore.
+12. **You and usage (E28–E31) and the drawer user row.** `GET /api/usage` over the
+    shown range: the six numbers, the heatmap (18 / 26–30 / 40 weeks by width), 12
+    weekly bars, the cumulative area, this month by pot and by model as bar lists.
+    Subscription money shows only when "show API-equivalent" is on (P20), marked as
+    an estimate. Edit profile sheet: display name and colour (`PATCH /api/me`). The
+    drawer's user row shows the display name and opens this page.
+    Done when: tests for the numbers, the ranges by width, the estimate marking and
+    the profile edit; goldens.
+13. **Work tab additions (E2–E4, E36).** "Opened by pots" rows open the work with the
+    pot bar of M6; a pending model approval row opens the sheet of step 6; the
+    conversation of a pot-opened work shows its `WorkCard` header link back to the
+    pot.
+    Done when: tests for both entry points.
+14. **Close the milestone.** Goldens of every E screen at the four widths, light and
+    dark, checked against `docs/design/screenshots/E-*`; the ARB key test passes;
+    the placeholder for the Chat and Activity tabs is deleted; the status table is
+    updated.
 
 ## M8 Android cutover
 
