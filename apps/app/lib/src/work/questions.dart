@@ -48,9 +48,9 @@ final questionsProvider = NotifierProvider.autoDispose
     );
 
 /// Answers questions with
-/// `POST /api/sessions/:id/interactions/:interactionId/answer`. A `relay.*`
-/// interaction needs no lease. A pending question that disappears without
-/// this device's answer was "handled elsewhere".
+/// `POST /api/sessions/:id/interactions/:interactionId/answer`, which always
+/// needs the control lease. A pending question that disappears without this
+/// device's answer was "handled elsewhere".
 class QuestionsController extends Notifier<QuestionsState> {
   QuestionsController(this.sessionId);
   final String sessionId;
@@ -96,9 +96,6 @@ class QuestionsController extends Notifier<QuestionsState> {
     }
   }
 
-  static bool isRelay(Interaction interaction) =>
-      interaction.id.startsWith('relay.');
-
   /// Sends [answer]; [summary] is the one line the answered card shows.
   Future<void> answer(
     Interaction interaction,
@@ -109,8 +106,7 @@ class QuestionsController extends Notifier<QuestionsState> {
     final lease = ref
         .read(sessionControllerProvider(sessionId).notifier)
         .heldLease;
-    final relay = isRelay(interaction);
-    if (api == null || (!relay && lease == null)) return;
+    if (api == null || lease == null) return;
     state = QuestionsState(
       sending: {...state.sending, interaction.id},
       resolved: state.resolved,
@@ -122,8 +118,8 @@ class QuestionsController extends Notifier<QuestionsState> {
         '/api/sessions/${Uri.encodeComponent(sessionId)}/interactions/'
         '${Uri.encodeComponent(interaction.id)}/answer',
         {
-          if (!relay) 'clientId': lease!.clientId,
-          if (!relay) 'generation': lease!.generation,
+          'clientId': lease.clientId,
+          'generation': lease.generation,
           'answer': answer,
         },
       );
@@ -131,7 +127,10 @@ class QuestionsController extends Notifier<QuestionsState> {
       ref.read(sessionControllerProvider(sessionId).notifier).lostControl();
       error = 'lost_control';
     } on PircException catch (e) {
-      if (!ref.read(connectionProvider.notifier).report(e)) error = e.message;
+      // A fatal error (pairing gone, app too old) is handled app-wide; the
+      // question still did not get its answer.
+      ref.read(connectionProvider.notifier).report(e);
+      error = e.message;
     }
     state = QuestionsState(
       sending: {...state.sending}..remove(interaction.id),
@@ -276,8 +275,7 @@ class _QuestionCardState extends ConsumerState<QuestionCard> {
     final view = ref.watch(sessionControllerProvider(widget.sessionId));
     final sending = questions.sending.contains(_q.id);
     final expired = _expired;
-    final relay = QuestionsController.isRelay(_q);
-    final controlled = relay || view.control == ControlState.mine;
+    final controlled = view.control == ControlState.mine;
     final enabled = controlled && !sending && !expired;
     final error = switch (questions.errors[_q.id]) {
       null => null,

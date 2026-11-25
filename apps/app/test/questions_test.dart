@@ -179,17 +179,15 @@ void main() {
     expect(enabled.onPressed, isNotNull);
   });
 
-  appTest('a relayed question needs no lease', (tester) async {
-    final s = await _open(
-      tester,
-      [_question('relay.d1.q', 'confirm')],
-      lease: {'clientId': 'other-phone', 'generation': 4},
-    );
+  appTest('an answer refused by a lost pairing is not shown as answered', (
+    tester,
+  ) async {
+    final s = await _open(tester, [_question('q9', 'confirm')]);
+    s.gateway!.json['POST /api/sessions/s2/interactions/q9/answer'] = (_) =>
+        apiError(401, 'unauthorized', 'Pair this device again');
     await tester.tap(find.text('Yes'));
     await tester.pumpAndSettle();
-    expect(_answer(s, 'relay.d1.q'), {
-      'answer': {'confirmed': true},
-    });
+    expect(find.textContaining('Q q9 · '), findsNothing);
   });
 
   appTest('two devices: an answer from the other one shows as handled '
