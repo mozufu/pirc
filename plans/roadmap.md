@@ -323,9 +323,29 @@ evidence?)` (L1 `obs_observations`, one per pot and event, only for events that
      rows, one L2 notification, one L3 dispatch) passes, plus scope, exclusion and
      lead tests.
 10. **Handover, delete and the old assistant.**
-    - 10a. _Handover, archive and delete_ (pots.md, Handover…): `pot_handovers` and
-      items with fit, `handover_propose`, confirm, the retire preview, and delete
-      (handover, then revocation, then the session, then removal); loop-guard rule 1.
+    - 10a. _Handover, archive and delete_ (pots.md, Handover…; code in
+      `pots/handover.rs` and `pots/retire.rs`).
+      - Items of a pot: responsibilities, pending reminders, open works it
+        coordinates, groups it hosts. Fit against the receiver at proposal and again
+        at apply: to a pot, a work is `ok` only with a `write` location for it and
+        the `work` reach, a host role only for a member, a responsibility is
+        `narrowed` when the receiver's reach is lower; to the user, works are taken
+        over and the rest `stop`s. Nothing grants permissions.
+      - `pot_handovers` (from, to pot or user, proposed by user or pot, reason,
+        state `proposed`/`applied`/`rejected`, revision) and `pot_handover_items`
+        (kind, ref, label, fit, reason). `POST /api/handovers` (the user),
+        `handover_propose` (`pot.handover.propose`, a `handover` card), `GET
+/api/handovers`, `POST …/{id}/confirm` with the revision, `…/reject`.
+        Applying moves what fits, wakes the receiver (`handover`), logs `assign`.
+        Loop-guard rule 1: a pot may not hand an item to a pot that held it within
+        `handback_cooldown_s`; the user may.
+      - Retire: `POST /api/pots/{id}/retire/preview` and `…/retire` with the mode
+        (`archive` or `delete`), the revision and a target per item (pot, user or
+        none), applied in order: hand over, drop what has no target, fail queued
+        wakes, then archive, or delete the pot's session and the pot. Rows that
+        outlive a deleted pot keep its name: activity (already), its messages
+        (`author_name`), its direct and DM threads (named, with the pot reference
+        cleared); they expire with the owner's activity retention.
     - 10b. _Remove the assistant chat mode and delegations_ (parallel to 8b and 9;
       no `crates/pirc-conformance` edits): the `chat` mode (`chat.md`,
       `default_chat`, the `chats` workspace and top-level chats), `SOUL.md`/`CHAT.md`
