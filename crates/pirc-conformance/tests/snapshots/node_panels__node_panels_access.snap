@@ -399,51 +399,6 @@ expression: p.into_value()
     "body": {
       "agentRunning": false,
       "backgroundTasks": [],
-      "memory": {
-        "architecture": "handoff",
-        "counts": {
-          "active": 0,
-          "compactions": 0,
-          "dropped": 0,
-          "observations": 0,
-          "reflections": 0,
-          "visibleObservations": 0,
-          "visibleReflections": 0
-        },
-        "enabled": true,
-        "handoff": {
-          "latest": null,
-          "legacyAncestry": null,
-          "snapshots": 0,
-          "textOnly": true
-        },
-        "observations": [],
-        "passive": false,
-        "reflections": [],
-        "thresholds": {
-          "activePool": {
-            "max": 10000,
-            "value": 0
-          },
-          "compaction": {
-            "max": 81000,
-            "value": 0
-          },
-          "observation": {
-            "max": 10000,
-            "value": 0
-          },
-          "reflection": {
-            "max": 20000,
-            "value": 0
-          },
-          "visiblePool": {
-            "max": 20000,
-            "value": 0
-          }
-        }
-      },
-      "memoryRuntime": null,
       "team": {
         "agents": []
       },

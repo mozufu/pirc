@@ -46,51 +46,6 @@ expression: p.into_value()
     "body": {
       "agentRunning": false,
       "backgroundTasks": [],
-      "memory": {
-        "architecture": "handoff",
-        "counts": {
-          "active": 0,
-          "compactions": 0,
-          "dropped": 0,
-          "observations": 0,
-          "reflections": 0,
-          "visibleObservations": 0,
-          "visibleReflections": 0
-        },
-        "enabled": true,
-        "handoff": {
-          "latest": null,
-          "legacyAncestry": null,
-          "snapshots": 0,
-          "textOnly": true
-        },
-        "observations": [],
-        "passive": false,
-        "reflections": [],
-        "thresholds": {
-          "activePool": {
-            "max": 10000,
-            "value": 0
-          },
-          "compaction": {
-            "max": 81000,
-            "value": 0
-          },
-          "observation": {
-            "max": 10000,
-            "value": 0
-          },
-          "reflection": {
-            "max": 20000,
-            "value": 0
-          },
-          "visiblePool": {
-            "max": 20000,
-            "value": 0
-          }
-        }
-      },
-      "memoryRuntime": null,
       "team": {
         "agents": []
       },
@@ -454,51 +409,6 @@ expression: p.into_value()
     "body": {
       "agentRunning": true,
       "backgroundTasks": [],
-      "memory": {
-        "architecture": "handoff",
-        "counts": {
-          "active": 0,
-          "compactions": 0,
-          "dropped": 0,
-          "observations": 0,
-          "reflections": 0,
-          "visibleObservations": 0,
-          "visibleReflections": 0
-        },
-        "enabled": true,
-        "handoff": {
-          "latest": null,
-          "legacyAncestry": null,
-          "snapshots": 0,
-          "textOnly": true
-        },
-        "observations": [],
-        "passive": false,
-        "reflections": [],
-        "thresholds": {
-          "activePool": {
-            "max": 10000,
-            "value": 0
-          },
-          "compaction": {
-            "max": 81000,
-            "value": 10
-          },
-          "observation": {
-            "max": 10000,
-            "value": 110
-          },
-          "reflection": {
-            "max": 20000,
-            "value": 110
-          },
-          "visiblePool": {
-            "max": 20000,
-            "value": 0
-          }
-        }
-      },
-      "memoryRuntime": null,
       "team": {
         "agents": [],
         "tasks": []
@@ -565,10 +475,10 @@ expression: p.into_value()
           "title": "sandbox"
         },
         {
-          "estimatedTokens": 2682,
+          "estimatedTokens": 2683,
           "id": "capabilities",
           "source": "built-in",
-          "text": "<10724 chars>",
+          "text": "<10727 chars>",
           "title": "Capabilities"
         },
         {
@@ -766,51 +676,6 @@ expression: p.into_value()
           "status": "running"
         }
       ],
-      "memory": {
-        "architecture": "handoff",
-        "counts": {
-          "active": 0,
-          "compactions": 0,
-          "dropped": 0,
-          "observations": 0,
-          "reflections": 0,
-          "visibleObservations": 0,
-          "visibleReflections": 0
-        },
-        "enabled": true,
-        "handoff": {
-          "latest": null,
-          "legacyAncestry": null,
-          "snapshots": 0,
-          "textOnly": true
-        },
-        "observations": [],
-        "passive": false,
-        "reflections": [],
-        "thresholds": {
-          "activePool": {
-            "max": 10000,
-            "value": 0
-          },
-          "compaction": {
-            "max": 81000,
-            "value": 42
-          },
-          "observation": {
-            "max": 10000,
-            "value": 142
-          },
-          "reflection": {
-            "max": 20000,
-            "value": 142
-          },
-          "visiblePool": {
-            "max": 20000,
-            "value": 0
-          }
-        }
-      },
-      "memoryRuntime": null,
       "team": {
         "agents": [],
         "tasks": []
@@ -956,51 +821,6 @@ expression: p.into_value()
           "status": "stopped"
         }
       ],
-      "memory": {
-        "architecture": "handoff",
-        "counts": {
-          "active": 0,
-          "compactions": 0,
-          "dropped": 0,
-          "observations": 0,
-          "reflections": 0,
-          "visibleObservations": 0,
-          "visibleReflections": 0
-        },
-        "enabled": true,
-        "handoff": {
-          "latest": null,
-          "legacyAncestry": null,
-          "snapshots": 0,
-          "textOnly": true
-        },
-        "observations": [],
-        "passive": false,
-        "reflections": [],
-        "thresholds": {
-          "activePool": {
-            "max": 10000,
-            "value": 0
-          },
-          "compaction": {
-            "max": 81000,
-            "value": "<depends on the pid's digits>"
-          },
-          "observation": {
-            "max": 10000,
-            "value": 110
-          },
-          "reflection": {
-            "max": 20000,
-            "value": 110
-          },
-          "visiblePool": {
-            "max": 20000,
-            "value": 0
-          }
-        }
-      },
-      "memoryRuntime": null,
       "team": {
         "agents": [],
         "tasks": []

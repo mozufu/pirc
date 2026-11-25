@@ -647,8 +647,8 @@ async fn node_panels_state() {
         &format!("/panel/background/{task}"),
     )
     .await;
-    // The finished task's details (with its pid) count towards compaction.
-    let mut state = p
+    // The finished task is listed once it stopped; its pid is already masked.
+    let state = p
         .api
         .send(
             "GET",
@@ -657,9 +657,6 @@ async fn node_panels_state() {
             None,
         )
         .await;
-    let compaction = &mut state.body["memory"]["thresholds"]["compaction"]["value"];
-    assert!(compaction.is_number());
-    *compaction = json!("<depends on the pid's digits>");
     let request = format!("GET {}/panel/state", p.session);
     p.record("state once it stopped", &request, &state);
     p.call(

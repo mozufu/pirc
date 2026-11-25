@@ -13,13 +13,6 @@ expression: r.into_value()
         "type": "extension_ui_request"
       },
       {
-        "id": "<uuid:2>",
-        "message": "Observational memory configuration: unknown fields were ignored; valid settings remain in effect. features.observationalMemory[\"oldOption\"]: unknown field (ignored) Fix features.observationalMemory in the node config.json and restart the agent. PIRC_MEMORY_PASSIVE still overrides passive.",
-        "method": "notify",
-        "notifyType": "warning",
-        "type": "extension_ui_request"
-      },
-      {
         "command": "get_state",
         "data": {
           "approvalMode": "auto",
@@ -474,7 +467,7 @@ expression: r.into_value()
             "uiLabel": "Bash"
           }
         ],
-        "id": "<uuid:3>",
+        "id": "<uuid:2>",
         "model": {
           "contextWindow": 100000,
           "id": "fake-model",

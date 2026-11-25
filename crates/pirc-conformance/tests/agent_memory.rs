@@ -13,37 +13,6 @@ async fn turn(agent: &mut AgentRun, text: &str) {
 }
 #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
-async fn legacy_settings_do_not_restart_observer_reflector_or_promoter() {
-    for settings in [
-        json!({"observeAfterTokens":1,"reflectAfterTokens":1,"compactAfterTokens":10000000}),
-        json!({"enabled":false,"fallbackModels":[{"provider":"invalid"}],"workspace":{"enabled":false}}),
-    ] {
-        let Some(mut agent) = AgentRun::start(
-            AgentOptions {
-                config: json!({"features":{"observationalMemory":settings}}),
-                ..Default::default()
-            }
-            .features("observational-memory,workspace-memory"),
-        )
-        .await
-        else {
-            return;
-        };
-        turn(&mut agent, "Please inspect this repository").await;
-        assert_eq!(agent.take_requests().len(), 1);
-        let entries = agent.session_entries();
-        assert!(!entries.iter().any(|e| {
-            e["customType"]
-                .as_str()
-                .is_some_and(|s| s.starts_with("om."))
-        }));
-        let commands = agent.call(json!({"type":"get_commands"})).await.to_string();
-        assert!(!commands.contains("om:observe"));
-        assert!(commands.contains("om:workspace"));
-    }
-}
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
-#[tokio::test(flavor = "multi_thread")]
 async fn work_notes_refresh_and_disappear_on_revocation_without_activating_a_ledger() {
     let options = AgentOptions {
         env: vec![("PIRC_GATEWAY".into(), "1".into())],
@@ -205,50 +174,6 @@ async fn rejected_retirement_recovers_but_ambiguous_postcommit_failure_stays_wit
         assert_eq!(
             events.iter().any(|e| e["op"] == "workspace.commit"),
             code != "forbidden"
-        );
-    }
-}
-
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
-#[tokio::test(flavor = "multi_thread")]
-async fn legacy_global_passive_and_forced_passive_never_start_automatic_work_extraction() {
-    for forced in [false, true] {
-        let mut env = vec![("PIRC_GATEWAY".into(), "1".into())];
-        if forced {
-            env.push(("PIRC_MEMORY_PASSIVE".into(), "true".into()));
-        }
-        let features = if forced {
-            json!({"workspaceMemory":{"passive":false}})
-        } else {
-            json!({"observationalMemory":{"passive":true,"workspace":{"passive":false}},"workspaceMemory":{"maxTokens":40000}})
-        };
-        let Some(mut agent) = AgentRun::start(
-            AgentOptions {
-                env,
-                config: json!({"features":features}),
-                ..Default::default()
-            }
-            .features("workspace-memory"),
-        )
-        .await
-        else {
-            return;
-        };
-        agent.answers.lock().unwrap().gateway.insert(
-            "workspace.context".into(),
-            json!({"ok":true,"result":{"legacy":true,"items":[]}}),
-        );
-        agent.push([ModelReply::Text("Main reply".into())]);
-        agent
-            .call(json!({"type":"prompt","message":"Inspect repository"}))
-            .await;
-        agent.settle().await;
-        let events = agent.drain(Duration::from_millis(100)).await;
-        assert_eq!(agent.take_requests().len(), 1);
-        assert!(
-            !events
-                .iter()
-                .any(|e| e["op"] == "workspace.next" || e["op"] == "workspace.commit")
         );
     }
 }
