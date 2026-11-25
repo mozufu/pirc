@@ -3,7 +3,7 @@
 //! through [`log`]. A row snapshots the pot's name and color, so it still reads
 //! after the pot is deleted; the owner's retention removes old rows.
 
-use rusqlite::{Connection, params};
+use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
 
 use crate::app::App;
@@ -216,4 +216,201 @@ impl App {
         self.activity_changed(owner);
         Ok(id)
     }
+}
+
+/// One activity row as clients see it.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Activity {
+    pub id: String,
+    /// `None` once the pot is deleted; the name and color remain.
+    pub pot_id: Option<String>,
+    pub pot_name: String,
+    pub pot_avatar_color: u8,
+    pub at: i64,
+    pub kind: String,
+    pub counterpart: Option<CounterpartView>,
+    pub summary: String,
+    pub refs: Refs,
+    pub causal_root: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct CounterpartView {
+    pub kind: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+}
+
+/// Filters for [`list`]; every field narrows the result.
+#[derive(Clone, Debug, Default, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Query {
+    pub pot_id: Option<String>,
+    /// Comma-separated kinds.
+    pub kind: Option<String>,
+    /// Inclusive lower bound, epoch ms.
+    pub since: Option<i64>,
+    /// Exclusive upper bound, epoch ms.
+    pub until: Option<i64>,
+    /// The last id of the previous page.
+    pub before: Option<String>,
+    pub limit: Option<u32>,
+}
+
+pub const PAGE: u32 = 50;
+pub const MAX_PAGE: u32 = 200;
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Page {
+    pub activity: Vec<Activity>,
+    /// Pass as `before` for the next (older) page; absent on the last page.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_before: Option<String>,
+}
+
+const KINDS: &[&str] = &[
+    "created",
+    "updated",
+    "paused",
+    "resumed",
+    "archived",
+    "restored",
+    "deleted",
+    "dm",
+    "group_message",
+    "assign",
+    "work_opened",
+    "work_instruction",
+    "file_read",
+    "thinking_adjust",
+    "fallback",
+    "autonomy_changed",
+    "reminder_set",
+    "review",
+    "handover_proposed",
+    "awaiting_confirm",
+    "awaiting_approval",
+    "approval_answered",
+    "forwarded_to_user",
+    "budget_request",
+    "budget_exhausted",
+    "loop_guard",
+];
+
+fn invalid(message: &str) -> ApiError {
+    ApiError::new(400, "invalid_input", message)
+}
+
+fn activity_row(r: &rusqlite::Row) -> rusqlite::Result<Activity> {
+    let refs: String = r.get(9)?;
+    let counterpart_kind: Option<String> = r.get(6)?;
+    Ok(Activity {
+        id: r.get(0)?,
+        pot_id: r.get(1)?,
+        pot_name: r.get(2)?,
+        pot_avatar_color: r.get(3)?,
+        at: r.get(4)?,
+        kind: r.get(5)?,
+        counterpart: counterpart_kind.map(|kind| CounterpartView {
+            kind,
+            id: r.get(7).ok().flatten(),
+        }),
+        summary: r.get(8)?,
+        refs: serde_json::from_str(&refs).unwrap_or_default(),
+        causal_root: r.get(10)?,
+    })
+}
+
+/// The owner's activity, newest first.
+pub fn list(conn: &Connection, owner: &str, query: &Query) -> ApiResult<Page> {
+    let limit = query.limit.unwrap_or(PAGE);
+    if !(1..=MAX_PAGE).contains(&limit) {
+        return Err(invalid("limit is 1 to 200"));
+    }
+    let mut sql = String::from(
+        "SELECT id,pot_id,pot_name,pot_avatar_color,at,kind,counterpart_kind,counterpart_id,summary,refs_json,causal_root
+         FROM pot_activity WHERE owner_user=?",
+    );
+    let mut args: Vec<rusqlite::types::Value> = vec![owner.to_owned().into()];
+    if let Some(pot) = &query.pot_id {
+        sql.push_str(" AND pot_id=?");
+        args.push(pot.clone().into());
+    }
+    if let Some(kinds) = &query.kind {
+        let kinds: Vec<&str> = kinds
+            .split(',')
+            .map(str::trim)
+            .filter(|k| !k.is_empty())
+            .collect();
+        if kinds.is_empty() || kinds.len() > KINDS.len() || kinds.iter().any(|k| !KINDS.contains(k))
+        {
+            return Err(invalid("Unknown activity kind"));
+        }
+        sql.push_str(&format!(
+            " AND kind IN ({})",
+            vec!["?"; kinds.len()].join(",")
+        ));
+        args.extend(kinds.iter().map(|k| (*k).to_owned().into()));
+    }
+    if let Some(since) = query.since {
+        sql.push_str(" AND at>=?");
+        args.push(since.into());
+    }
+    if let Some(until) = query.until {
+        sql.push_str(" AND at<?");
+        args.push(until.into());
+    }
+    if let Some(before) = &query.before {
+        let cursor: Option<(i64, i64)> = conn
+            .query_row(
+                "SELECT at,rowid FROM pot_activity WHERE id=?1 AND owner_user=?2",
+                params![before, owner],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .optional()?;
+        let (at, rowid) = cursor.ok_or_else(|| invalid("Unknown page cursor"))?;
+        sql.push_str(" AND (at<? OR (at=? AND rowid<?))");
+        args.extend([at.into(), at.into(), rowid.into()]);
+    }
+    sql.push_str(" ORDER BY at DESC, rowid DESC LIMIT ?");
+    args.push(i64::from(limit + 1).into());
+    let mut activity: Vec<Activity> = conn
+        .prepare(&sql)?
+        .query_map(rusqlite::params_from_iter(args), activity_row)?
+        .collect::<Result<_, _>>()?;
+    let next_before = if activity.len() > limit as usize {
+        activity.truncate(limit as usize);
+        activity.last().map(|a| a.id.clone())
+    } else {
+        None
+    };
+    Ok(Page {
+        activity,
+        next_before,
+    })
+}
+
+/// Remove rows older than each owner's retention (default 90 days).
+pub fn sweep(conn: &Connection, now: i64) -> rusqlite::Result<usize> {
+    conn.execute(
+        "DELETE FROM pot_activity WHERE at < ?1 - 86400000 * COALESCE(
+           (SELECT activity_retention_days FROM pot_settings s WHERE s.owner_user=pot_activity.owner_user), 90)",
+        [now],
+    )
+}
+
+/// Sweep retention hourly.
+pub fn start(app: &crate::app::AppState) {
+    let app = app.clone();
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(3600));
+        loop {
+            interval.tick().await;
+            if let Err(error) = sweep(&app.db.lock(), now_ms()) {
+                crate::log::warn(&format!("pot activity retention: {error}"));
+            }
+        }
+    });
 }

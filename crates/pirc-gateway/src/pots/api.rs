@@ -32,6 +32,8 @@ pub fn routes() -> Router<AppState> {
             "/api/threads/{id}/messages",
             get(list_messages).post(post_message),
         )
+        .route("/api/activity", get(list_activity))
+        .route("/api/pots/{id}/view", get(pot_view))
         .route("/api/model-approvals", get(list_approvals))
         .route("/api/model-approvals/{id}/answer", post(answer_approval))
 }
@@ -332,4 +334,36 @@ async fn answer_approval(
     app.activity_changed(&identity.user);
     super::runtime::kick(&app, &identity.user, &approval.pot_id);
     Ok(axum::Json(json!({ "approval": approval })))
+}
+
+async fn list_activity(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    axum::extract::Query(query): axum::extract::Query<super::activity::Query>,
+) -> ApiResult<axum::Json<super::activity::Page>> {
+    Ok(axum::Json(super::activity::list(
+        &app.db.lock(),
+        &identity.user,
+        &query,
+    )?))
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ViewPage {
+    before: Option<String>,
+}
+
+async fn pot_view(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+    axum::extract::Query(page): axum::extract::Query<ViewPage>,
+) -> ApiResult<axum::Json<super::view::View>> {
+    Ok(axum::Json(super::view::view(
+        &app.db.lock(),
+        &identity.user,
+        &id,
+        page.before.as_deref(),
+    )?))
 }

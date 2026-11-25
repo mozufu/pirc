@@ -281,6 +281,80 @@ mod http {
     }
 
     #[tokio::test]
+    async fn the_owner_reads_activity_and_a_pots_view_over_http() {
+        let (app, _dir) = app();
+        let (_, created) = call(&app, "POST", "/api/pots", Some("alice"), None, Some(body())).await;
+        let id = created["pot"]["id"].as_str().unwrap().to_owned();
+        let (status, page) = call(
+            &app,
+            "GET",
+            "/api/activity?kind=created&limit=10",
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        assert_eq!(status, 200, "{page}");
+        assert_eq!(page["activity"][0]["potName"], "Tester");
+        assert_eq!(
+            page["activity"][0]["counterpart"],
+            json!({ "kind": "user" })
+        );
+        assert!(page.get("nextBefore").is_none());
+        let (_, bobs) = call(&app, "GET", "/api/activity", Some("bob"), None, None).await;
+        assert_eq!(bobs["activity"], json!([]));
+        assert_eq!(
+            call(
+                &app,
+                "GET",
+                "/api/activity?kind=bogus",
+                Some("alice"),
+                None,
+                None
+            )
+            .await
+            .0,
+            400
+        );
+        assert_eq!(
+            call(
+                &app,
+                "GET",
+                "/api/activity?as=pot",
+                Some("alice"),
+                None,
+                None
+            )
+            .await
+            .0,
+            400
+        );
+        let (status, view) = call(
+            &app,
+            "GET",
+            &format!("/api/pots/{id}/view"),
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        assert_eq!((status, view["potId"].as_str()), (200, Some(id.as_str())));
+        assert_eq!(
+            call(
+                &app,
+                "GET",
+                &format!("/api/pots/{id}/view"),
+                Some("bob"),
+                None,
+                None
+            )
+            .await
+            .0,
+            404
+        );
+    }
+
+    #[tokio::test]
     async fn the_owner_talks_to_a_pot_and_its_groups_over_http() {
         let (app, _dir) = app();
         let mut ids = Vec::new();
@@ -1024,6 +1098,35 @@ mod threads {
     }
 
     #[test]
+    fn a_direct_thread_is_made_even_at_the_thread_limit() {
+        let db = db();
+        let mut conn = db.lock();
+        let a = pot(&mut conn, "A", DmRule::All, DmRule::All);
+        let b = pot(&mut conn, "B", DmRule::All, DmRule::All);
+        for i in 0..threads::MAX_THREADS {
+            conn.execute(
+                "INSERT INTO threads(id,owner_user,kind,name,created_at,updated_at) VALUES(?1,'alice','group','g',0,0)",
+                [format!("filler-{i}")],
+            )
+            .unwrap();
+        }
+        let group = GroupInput {
+            name: "One more".into(),
+            avatar_color: None,
+            host_pot_id: a.clone(),
+            member_pot_ids: vec![b.clone()],
+            project_id: None,
+        };
+        assert_eq!(
+            threads::create_group(&conn, "alice", group)
+                .unwrap_err()
+                .code,
+            "limit_reached"
+        );
+        assert_eq!(threads::direct(&conn, "alice", &a).unwrap().kind, "direct");
+    }
+
+    #[test]
     fn pot_messages_follow_both_pots_rules_and_are_read_only_to_the_user() {
         let db = db();
         let mut conn = db.lock();
@@ -1635,6 +1738,193 @@ mod activity {
             .unwrap();
         assert_eq!(root, "root");
         assert!(rows(&conn, "bob").is_empty());
+    }
+
+    #[test]
+    fn activity_is_filtered_paged_and_expires_with_the_owners_retention() {
+        let db = db();
+        let mut conn = db.lock();
+        let a = create(&mut conn, "alice", input("Tester")).unwrap();
+        let b = create(&mut conn, "alice", input("Helper")).unwrap();
+        for i in 0..5 {
+            activity::log(
+                &conn,
+                "alice",
+                &a.id,
+                Entry::new(Kind::Review, format!("review {i}")),
+            )
+            .unwrap();
+        }
+        let query = |q: activity::Query| activity::list(&conn, "alice", &q);
+        let all = query(activity::Query::default()).unwrap();
+        assert_eq!(all.activity.len(), 7);
+        assert_eq!(all.activity[0].summary, "review 4", "newest first");
+        assert!(all.next_before.is_none());
+        let only_b = query(activity::Query {
+            pot_id: Some(b.id.clone()),
+            ..Default::default()
+        })
+        .unwrap();
+        assert_eq!(only_b.activity.len(), 1);
+        let created = query(activity::Query {
+            kind: Some("created, dm".into()),
+            ..Default::default()
+        })
+        .unwrap();
+        assert_eq!(created.activity.len(), 2);
+        assert_eq!(
+            query(activity::Query {
+                kind: Some("nonsense".into()),
+                ..Default::default()
+            })
+            .unwrap_err()
+            .status,
+            400
+        );
+        assert_eq!(
+            query(activity::Query {
+                limit: Some(0),
+                ..Default::default()
+            })
+            .unwrap_err()
+            .status,
+            400
+        );
+        // Pages of three walk every row once.
+        let mut seen = Vec::new();
+        let mut before = None;
+        loop {
+            let page = query(activity::Query {
+                limit: Some(3),
+                before: before.clone(),
+                ..Default::default()
+            })
+            .unwrap();
+            seen.extend(page.activity.iter().map(|a| a.id.clone()));
+            match page.next_before {
+                Some(next) => before = Some(next),
+                None => break,
+            }
+        }
+        assert_eq!(
+            seen,
+            all.activity
+                .iter()
+                .map(|a| a.id.clone())
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(
+            query(activity::Query {
+                before: Some("act_unknown".into()),
+                ..Default::default()
+            })
+            .unwrap_err()
+            .status,
+            400
+        );
+        assert!(
+            activity::list(&conn, "bob", &activity::Query::default())
+                .unwrap()
+                .activity
+                .is_empty()
+        );
+
+        // Retention: the default 90 days, or the owner's own setting.
+        let day = 86_400_000;
+        let now = crate::util::now_ms();
+        conn.execute(
+            "UPDATE pot_activity SET at=?1 WHERE summary='review 0'",
+            [now - 91 * day],
+        )
+        .unwrap();
+        conn.execute(
+            "UPDATE pot_activity SET at=?1 WHERE summary='review 1'",
+            [now - 10 * day],
+        )
+        .unwrap();
+        assert_eq!(activity::sweep(&conn, now).unwrap(), 1);
+        let mut settings = settings(&conn, "alice").unwrap();
+        settings.activity_retention_days = 7;
+        update_settings(&mut conn, "alice", settings).unwrap();
+        assert_eq!(activity::sweep(&conn, now).unwrap(), 1);
+        let left = activity::list(&conn, "alice", &activity::Query::default()).unwrap();
+        assert_eq!(left.activity.len(), 5);
+    }
+
+    #[test]
+    fn a_pots_view_shows_its_threads_and_what_it_sent() {
+        let db = db();
+        let mut conn = db.lock();
+        let mut a = input("Tester");
+        a.permissions.dm.receive = DmRule::All;
+        let a = create(&mut conn, "alice", a).unwrap();
+        let mut b = input("Helper");
+        b.permissions.dm.receive = DmRule::Off;
+        let b = create(&mut conn, "alice", b).unwrap();
+        let c = create(&mut conn, "alice", input("Bystander")).unwrap();
+        threads::direct(&conn, "alice", &c.id).unwrap();
+        for i in 0..3 {
+            threads::post_pot(
+                &conn,
+                "alice",
+                &b.id,
+                Target::Pot(&a.id),
+                &format!("note {i}"),
+                vec![],
+                None,
+            )
+            .unwrap();
+        }
+        let view = super::super::view::view(&conn, "alice", &b.id, None).unwrap();
+        assert_eq!(view.threads.len(), 1, "only the threads it is in");
+        assert_eq!(
+            view.sent
+                .iter()
+                .map(|m| m.body.as_str())
+                .collect::<Vec<_>>(),
+            ["note 2", "note 1", "note 0"]
+        );
+        assert!(
+            super::super::view::view(&conn, "alice", &a.id, None)
+                .unwrap()
+                .sent
+                .is_empty()
+        );
+        assert_eq!(
+            super::super::view::view(&conn, "bob", &b.id, None)
+                .unwrap_err()
+                .status,
+            404
+        );
+        // A DM refused by the receiver's rules is refused and logged.
+        assert_eq!(
+            threads::post_pot(
+                &conn,
+                "alice",
+                &a.id,
+                Target::Pot(&b.id),
+                "hi",
+                vec![],
+                None
+            )
+            .unwrap_err()
+            .code,
+            "dm_refused"
+        );
+        let refused = activity::list(
+            &conn,
+            "alice",
+            &activity::Query {
+                pot_id: Some(a.id.clone()),
+                kind: Some("dm".into()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            refused.activity[0].summary,
+            "Message to Helper refused by the message rules"
+        );
     }
 
     #[test]

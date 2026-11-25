@@ -7,6 +7,7 @@ pub mod ops;
 pub mod runtime;
 pub mod store;
 pub mod threads;
+pub mod view;
 
 #[cfg(test)]
 mod tests;

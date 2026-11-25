@@ -137,7 +137,11 @@ fn insert(
     pot_a: Option<&str>,
     pot_b: Option<&str>,
 ) -> ApiResult<String> {
-    count(conn, owner)?;
+    // A pot's direct thread is not counted: there is one per pot (at most 32),
+    // and notices to the pot must always find it.
+    if kind != "direct" {
+        count(conn, owner)?;
+    }
     let id = new_id("thread");
     let stamp = now_ms();
     conn.execute(
@@ -319,9 +323,14 @@ fn append(
             now_ms(),
         ],
     )?;
+    message(conn, &message_id)
+}
+
+/// One message by id (callers have checked the owner).
+pub fn message(conn: &Connection, id: &str) -> ApiResult<Message> {
     Ok(conn.query_row(
         "SELECT id,thread_id,seq,author_kind,author_id,body,mentions_json,all_mention,created_at FROM messages WHERE id=?1",
-        [&message_id],
+        [id],
         message_row,
     )?)
 }
@@ -471,6 +480,20 @@ pub fn post_pot(
                 return Err(invalid("A pot cannot message itself"));
             }
             if !dm_allowed(conn, owner, from, to)? {
+                activity::log(
+                    conn,
+                    owner,
+                    from,
+                    Entry::new(
+                        Kind::Dm,
+                        format!(
+                            "Message to {} refused by the message rules",
+                            pot_name(conn, to)
+                        ),
+                    )
+                    .toward(Counterpart::Pot(to.to_owned()))
+                    .root(causal_root),
+                )?;
                 return Err(ApiError::new(
                     403,
                     "dm_refused",

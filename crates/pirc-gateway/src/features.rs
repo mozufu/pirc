@@ -40,7 +40,7 @@ fn no_store_route(method: &Method, path: &str) -> bool {
             _,
             [
                 "api",
-                "calendar" | "pots" | "threads" | "model-approvals",
+                "calendar" | "pots" | "threads" | "model-approvals" | "activity",
                 ..,
             ],
         ) => true,
@@ -235,5 +235,6 @@ pub fn start(app: &AppState) -> Result<(), String> {
     crate::schedules::start(app);
     crate::calendar::reminders::start(app);
     crate::pots::runtime::start(app);
+    crate::pots::activity::start(app);
     Ok(())
 }
