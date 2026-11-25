@@ -1,0 +1,73 @@
+name: M4 conformance
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [m4-conformance]
+
+permissions:
+  contents: read
+
+jobs:
+  conformance:
+    name: Record and run conformance on Linux
+    if: github.ref == 'refs/heads/m4-conformance'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
+        with:
+          toolchain: 1.98.1
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+
+      - name: Use Ubuntu archive for browser dependencies
+        run: |
+          for source in /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            if [ -f "$source" ]; then
+              sudo sed -E -i 's|https?://azure\.archive\.ubuntu\.com/ubuntu|https://archive.ubuntu.com/ubuntu|g' "$source"
+            fi
+          done
+
+      - uses: browser-actions/setup-chrome@48ad923757ca74d66703209fe939badbdf80f2f4 # v2
+        id: chrome
+        with:
+          chrome-version: 153.0.8010.47
+          install-dependencies: true
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+
+      - name: Build the executables under test
+        run: cargo build --locked --release -p pirc-gateway -p pirc-node
+
+      - name: Run and re-record conformance
+        env:
+          PIRC_BROWSER_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}
+          PIRC_BROWSER_REQUIRED: '1'
+        run: |
+          set -o pipefail
+          bun scripts/conformance.ts --record 2>&1 | tee conformance.log
+
+      - name: Upload the log
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: conformance-log
+          path: conformance.log
+          if-no-files-found: warn
+
+      - name: Upload snapshots
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: conformance-snapshots
+          path: |
+            crates/pirc-conformance/tests/snapshots
+            crates/pirc-conformance/tests/**/*.snap.new
+          if-no-files-found: warn
