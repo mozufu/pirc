@@ -328,6 +328,8 @@ pub struct GroupInput {
     pub name: String,
     #[serde(default)]
     pub avatar_color: Option<u8>,
+    #[serde(default)]
+    pub avatar_image: Option<String>,
     pub host_pot_id: String,
     pub member_pot_ids: Vec<String>,
     #[serde(default)]
@@ -357,10 +359,13 @@ pub fn create_group(conn: &Connection, owner: &str, input: GroupInput) -> ApiRes
     count(conn, owner)?;
     let id = new_id("thread");
     let stamp = now_ms();
+    if let Some(image) = &input.avatar_image {
+        super::images_owned(conn, owner, image)?;
+    }
     conn.execute(
-        "INSERT INTO threads(id,owner_user,kind,name,avatar_color,host_pot_id,project_id,created_at,updated_at)
-         VALUES(?1,?2,'group',?3,?4,?5,?6,?7,?7)",
-        params![id, owner, name, input.avatar_color, input.host_pot_id, input.project_id, stamp],
+        "INSERT INTO threads(id,owner_user,kind,name,avatar_color,avatar_image,host_pot_id,project_id,created_at,updated_at)
+         VALUES(?1,?2,'group',?3,?4,?8,?5,?6,?7,?7)",
+        params![id, owner, name, input.avatar_color, input.host_pot_id, input.project_id, stamp, input.avatar_image],
     )?;
     for pot in &members {
         conn.execute(

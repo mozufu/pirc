@@ -2444,6 +2444,7 @@ mod threads {
             GroupInput {
                 name: "Release".into(),
                 avatar_color: Some(3),
+                avatar_image: None,
                 host_pot_id: host.clone(),
                 member_pot_ids: vec![member.clone(), third.clone()],
                 project_id: None,
@@ -2485,6 +2486,7 @@ mod threads {
         let lonely = GroupInput {
             name: "Solo".into(),
             avatar_color: None,
+                avatar_image: None,
             host_pot_id: host.clone(),
             member_pot_ids: vec![host.clone()],
             project_id: None,
@@ -2548,6 +2550,7 @@ mod threads {
             GroupInput {
                 name: "Release".into(),
                 avatar_color: None,
+                avatar_image: None,
                 host_pot_id: host.clone(),
                 member_pot_ids: vec![member],
                 project_id: None,
@@ -2668,6 +2671,7 @@ mod threads {
             GroupInput {
                 name: "Release".into(),
                 avatar_color: Some(2),
+                avatar_image: None,
                 host_pot_id: a.clone(),
                 member_pot_ids: vec![b.clone()],
                 project_id: None,
@@ -2754,6 +2758,7 @@ mod threads {
         let group = GroupInput {
             name: "One more".into(),
             avatar_color: None,
+                avatar_image: None,
             host_pot_id: a.clone(),
             member_pot_ids: vec![b.clone()],
             project_id: None,
@@ -4688,6 +4693,7 @@ mod guard {
             GroupInput {
                 name: "Room".into(),
                 avatar_color: None,
+                avatar_image: None,
                 host_pot_id: host.to_owned(),
                 member_pot_ids: members.to_vec(),
                 project_id: None,
@@ -5281,6 +5287,7 @@ mod handover {
                 GroupInput {
                     name: "Release".into(),
                     avatar_color: None,
+                avatar_image: None,
                     host_pot_id: a.clone(),
                     member_pot_ids: vec![b.clone()],
                     project_id: None,
