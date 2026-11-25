@@ -1401,4 +1401,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get taskPause => 'Pause';
+
+  @override
+  String get legendEvent => 'Event';
+
+  @override
+  String calendarDayCount(String day, int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$day · $_temp0';
+  }
 }

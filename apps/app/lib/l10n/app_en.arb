@@ -709,5 +709,17 @@
   "taskPaused": "Paused",
   "taskRunNow": "Run now",
   "taskResume": "Resume",
-  "taskPause": "Pause"
+  "taskPause": "Pause",
+  "legendEvent": "Event",
+  "calendarDayCount": "{day} · {count, plural, =1{1 item} other{{count} items}}",
+  "@calendarDayCount": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

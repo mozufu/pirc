@@ -79,6 +79,48 @@ FakeGateway _conversation() {
   return gateway;
 }
 
+/// November 2026 with an event, an all-day event and an agent task.
+FakeGateway _calendar() {
+  int at(int day, int hour) =>
+      DateTime(2026, 11, day, hour).millisecondsSinceEpoch;
+  final g = FakeGateway();
+  g.json['GET /api/calendar'] = (_) => {
+    'items': [
+      {
+        'id': 'event:e1:x',
+        'type': 'event',
+        'sourceId': 'e1',
+        'title': 'Dentist',
+        'startAt': at(25, 14),
+        'endAt': at(25, 15),
+        'allDay': false,
+      },
+      {
+        'id': 'event:e2:x',
+        'type': 'event',
+        'sourceId': 'e2',
+        'title': 'Holiday',
+        'startAt': at(26, 0),
+        'endAt': at(27, 0),
+        'allDay': true,
+        'startDate': '2026-11-26',
+        'endDate': '2026-11-27',
+      },
+      {
+        'id': 'run:r1',
+        'type': 'schedule',
+        'sourceId': 's1',
+        'title': 'Check tests',
+        'startAt': at(24, 9),
+        'endAt': at(24, 9),
+        'state': 'missed',
+      },
+    ],
+    'nextCursor': null,
+  };
+  return g;
+}
+
 final _screens = <String, (String, FakeGateway Function(), Saved Function())>{
   'conversation': ('/work?open=s2', _conversation, Saved.new),
   'new_conversation': (
@@ -91,6 +133,7 @@ final _screens = <String, (String, FakeGateway Function(), Saved Function())>{
   'settings_general': ('/settings/general', FakeGateway.new, Saved.new),
   'devices': ('/settings/devices', FakeGateway.new, Saved.new),
   'pairing': ('/chat', FakeGateway.new, Saved.unpaired),
+  'calendar': ('/calendar', _calendar, Saved.new),
 };
 
 void main() {

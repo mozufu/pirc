@@ -15,8 +15,8 @@ import 'work/work_side.dart';
 import 'work/work_data.dart';
 import 'work/work_list_screen.dart';
 
-/// One tab in the adaptive frame. Lists and items are placeholders until
-/// M6/M7 fill them; the frame, routing and layouts are final.
+/// One tab in the adaptive frame: the Work and Calendar lists and items;
+/// Chat and Activity stay placeholders until M7.
 class TabScreen extends ConsumerWidget {
   const TabScreen({super.key, required this.tab, this.openItem, this.side});
 
@@ -113,6 +113,7 @@ class TabScreen extends ConsumerWidget {
   }
 }
 
+/// The Chat and Activity tabs until M7 builds them.
 class _TabList extends StatelessWidget {
   const _TabList({required this.tab});
 
@@ -123,9 +124,7 @@ class _TabList extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final (title, empty) = switch (tab) {
       AppTab.chat => (l10n.tabChat, l10n.emptyChat),
-      AppTab.work => (l10n.tabWork, l10n.emptyWork),
-      AppTab.activity => (l10n.tabActivity, l10n.emptyActivity),
-      AppTab.calendar => (l10n.tabCalendar, l10n.emptyCalendar),
+      _ => (l10n.tabActivity, l10n.emptyActivity),
     };
     return Scaffold(
       appBar: AppBar(leading: const DrawerButton(), title: Text(title)),
@@ -134,6 +133,7 @@ class _TabList extends StatelessWidget {
   }
 }
 
+/// An open Chat or Activity item until M7.
 class _ItemPlaceholder extends StatelessWidget {
   const _ItemPlaceholder({
     super.key,

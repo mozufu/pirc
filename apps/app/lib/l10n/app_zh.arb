@@ -419,5 +419,7 @@
   "taskPaused": "已暫停",
   "taskRunNow": "立即執行",
   "taskResume": "繼續",
-  "taskPause": "暫停"
+  "taskPause": "暫停",
+  "legendEvent": "個人事件",
+  "calendarDayCount": "{day} · {count} 項"
 }

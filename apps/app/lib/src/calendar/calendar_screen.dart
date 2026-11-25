@@ -82,7 +82,7 @@ class CalendarScreen extends ConsumerWidget {
         title: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(title, style: text.titleSmall),
+            Text(l10n.tabCalendar, style: text.titleSmall),
             Text(
               'UTC${zoneOffset(ref.read(clockProvider)())}',
               style: text.labelSmall,
@@ -107,55 +107,46 @@ class CalendarScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
             child: Row(
               children: [
+                Expanded(child: Text(title, style: text.titleLarge)),
                 IconButton(
                   tooltip: l10n.calendarPrevious,
                   icon: const Icon(LucideIcons.chevronLeft),
                   onPressed: () => moves.step(back: true),
-                ),
-                Expanded(
-                  child: SegmentedButton<CalendarView>(
-                    showSelectedIcon: false,
-                    style: const ButtonStyle(
-                      visualDensity: VisualDensity.compact,
-                    ),
-                    segments: [
-                      ButtonSegment(
-                        value: CalendarView.month,
-                        label: Text(l10n.viewMonth),
-                      ),
-                      ButtonSegment(
-                        value: CalendarView.week,
-                        label: Text(l10n.viewWeek),
-                      ),
-                      ButtonSegment(
-                        value: CalendarView.day,
-                        label: Text(l10n.viewDay),
-                      ),
-                      ButtonSegment(
-                        value: CalendarView.list,
-                        label: Text(l10n.viewList),
-                      ),
-                    ],
-                    selected: {position.view},
-                    onSelectionChanged: (v) => moves.show(v.single),
-                  ),
                 ),
                 IconButton(
                   tooltip: l10n.calendarNext,
                   icon: const Icon(LucideIcons.chevronRight),
                   onPressed: moves.step,
                 ),
+                FilledButton.tonal(
+                  onPressed: moves.today,
+                  child: Text(l10n.calendarToday),
+                ),
               ],
             ),
           ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: moves.today,
-              child: Text(l10n.calendarToday),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: SegmentedButton<CalendarView>(
+              showSelectedIcon: false,
+              style: const ButtonStyle(visualDensity: VisualDensity.compact),
+              segments: [
+                for (final (view, label) in [
+                  (CalendarView.month, l10n.viewMonth),
+                  (CalendarView.week, l10n.viewWeek),
+                  (CalendarView.day, l10n.viewDay),
+                  (CalendarView.list, l10n.viewList),
+                ])
+                  ButtonSegment(
+                    value: view,
+                    label: Text(label, maxLines: 1, softWrap: false),
+                  ),
+              ],
+              selected: {position.view},
+              onSelectionChanged: (v) => moves.show(v.single),
             ),
           ),
           Expanded(
@@ -207,13 +198,18 @@ class CalendarMark extends StatelessWidget {
     final colors = PircColorTokens.of(context);
     final l10n = AppLocalizations.of(context);
     if (!item.isEvent) {
-      return Icon(
-        LucideIcons.diamond,
-        size: 10,
-        color: item.missed
-            ? colors['status.warning']
-            : colors['accent.default'],
-        semanticLabel: item.missed ? l10n.taskMissed : l10n.taskMark,
+      return Semantics(
+        label: item.missed ? l10n.taskMissed : l10n.taskMark,
+        child: Transform.rotate(
+          angle: 0.785398,
+          child: Container(
+            width: 7,
+            height: 7,
+            color: item.missed
+                ? colors['status.warning']
+                : colors['text.primary'],
+          ),
+        ),
       );
     }
     if (item.allDay) {
@@ -275,6 +271,8 @@ String _stateLabel(AppLocalizations l10n, String? state) => switch (state) {
   _ => state ?? '',
 };
 
+/// Month (D21): a compact grid with marks by shape, a legend, then the
+/// selected day's items. A tap selects a day; a long press opens a draft.
 class _Month extends ConsumerWidget {
   const _Month({required this.position, required this.items});
   final CalendarPosition position;
@@ -282,12 +280,24 @@ class _Month extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final colors = PircColorTokens.of(context);
     final text = Theme.of(context).textTheme;
     final (from, _) = viewRange(position);
     final today = DateUtils.dateOnly(ref.read(clockProvider)());
     final locale = Localizations.localeOf(context).toLanguageTag();
-    return Column(
+    final selected = position.anchor;
+    final selectedItems = items.where((i) => i.on(selected)).toList()
+      ..sort((a, b) => a.start.compareTo(b.start));
+    Widget legend(Widget mark, String label) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        mark,
+        const SizedBox(width: 6),
+        Text(label, style: text.bodySmall),
+      ],
+    );
+    return ListView(
       children: [
         Row(
           children: [
@@ -302,78 +312,129 @@ class _Month extends ConsumerWidget {
               ),
           ],
         ),
-        Expanded(
-          child: Column(
+        for (var week = 0; week < 6; week++)
+          Row(
             children: [
-              for (var week = 0; week < 6; week++)
+              for (var d = 0; d < 7; d++)
                 Expanded(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (var d = 0; d < 7; d++)
-                        Expanded(
-                          child: Builder(
-                            builder: (context) {
-                              final day = DateUtils.dateOnly(
-                                from.add(Duration(days: week * 7 + d)),
-                              );
-                              final dayItems = items
-                                  .where((i) => i.on(day))
-                                  .toList();
-                              final inMonth =
-                                  day.month == position.anchor.month;
-                              return InkWell(
-                                key: Key('day-${dateText(day)}'),
-                                onTap: () => ref
-                                    .read(calendarPositionProvider.notifier)
-                                    .openDay(day),
-                                onLongPress: () => newEvent(context, ref, day),
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: colors['line.hairline'],
-                                      width: 0.5,
-                                    ),
-                                  ),
-                                  padding: const EdgeInsets.all(2),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '${day.day}',
-                                        style: text.labelSmall?.copyWith(
-                                          color: day == today
-                                              ? colors['accent.default']
-                                              : inMonth
-                                              ? colors['text.primary']
-                                              : colors['text.faint'],
-                                          fontWeight: day == today
-                                              ? FontWeight.w700
-                                              : null,
-                                        ),
-                                      ),
-                                      Wrap(
-                                        spacing: 2,
-                                        runSpacing: 2,
-                                        children: [
-                                          for (final item in dayItems.take(4))
-                                            CalendarMark(item: item),
-                                        ],
-                                      ),
-                                    ],
+                  child: Builder(
+                    builder: (context) {
+                      final day = DateUtils.dateOnly(
+                        from.add(Duration(days: week * 7 + d)),
+                      );
+                      final dayItems = items.where((i) => i.on(day)).toList();
+                      final inMonth = day.month == position.anchor.month;
+                      final isSelected = day == selected;
+                      return InkWell(
+                        key: Key('day-${dateText(day)}'),
+                        onTap: () => ref
+                            .read(calendarPositionProvider.notifier)
+                            .select(day),
+                        onLongPress: () => newEvent(context, ref, day),
+                        child: SizedBox(
+                          height: 56,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                width: 30,
+                                height: 30,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isSelected
+                                      ? colors['action.primary']
+                                      : null,
+                                ),
+                                child: Text(
+                                  '${day.day}',
+                                  style: text.bodyMedium?.copyWith(
+                                    color: isSelected
+                                        ? colors['action.onPrimary']
+                                        : day == today
+                                        ? colors['accent.default']
+                                        : inMonth
+                                        ? colors['text.primary']
+                                        : colors['text.faint'],
+                                    fontWeight: day == today || isSelected
+                                        ? FontWeight.w600
+                                        : null,
                                   ),
                                 ),
-                              );
-                            },
+                              ),
+                              const SizedBox(height: 4),
+                              SizedBox(
+                                height: 8,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    for (final item in dayItems.take(3))
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 1.5,
+                                        ),
+                                        child: CalendarMark(item: item),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                    ],
+                      );
+                    },
                   ),
                 ),
             ],
           ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 4,
+            children: [
+              legend(
+                CalendarMark(item: CalendarItem(const {'type': 'event'})),
+                l10n.legendEvent,
+              ),
+              legend(
+                CalendarMark(
+                  item: CalendarItem(const {'type': 'event', 'allDay': true}),
+                ),
+                l10n.eventAllDay,
+              ),
+              legend(
+                CalendarMark(item: CalendarItem(const {'type': 'schedule'})),
+                l10n.taskMark,
+              ),
+              legend(
+                CalendarMark(
+                  item: CalendarItem(const {
+                    'type': 'schedule',
+                    'state': 'missed',
+                  }),
+                ),
+                l10n.taskMissed,
+              ),
+            ],
+          ),
         ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+          child: Text(
+            l10n.calendarDayCount(
+              DateFormat.MMMEd(locale).format(selected),
+              selectedItems.length,
+            ),
+            style: text.titleMedium,
+          ),
+        ),
+        if (selectedItems.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Text(l10n.emptyCalendar, style: text.bodySmall),
+          ),
+        for (final item in selectedItems) _ItemRow(item: item),
       ],
     );
   }

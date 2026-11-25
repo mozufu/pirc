@@ -172,7 +172,15 @@ void main() {
     );
     expect(read.query['timezone'], zoneOffset(_now));
     // Month: marks by shape in the day cells.
-    expect(find.byType(CalendarMark), findsNWidgets(3));
+    Finder marksOn(String day) => find.descendant(
+      of: find.byKey(Key('day-$day')),
+      matching: find.byType(CalendarMark),
+    );
+    expect(marksOn('2026-11-25'), findsNWidgets(2));
+    expect(marksOn('2026-11-26'), findsOneWidget);
+    // The selected day (today) lists its items under the legend.
+    expect(find.text('Dentist'), findsOneWidget);
+    expect(find.text('Check tests'), findsOneWidget);
     expect(find.textContaining('UTC'), findsOneWidget, reason: 'the time zone');
     await _tap(tester, find.text('Week'));
     expect(find.text('Dentist'), findsOneWidget);

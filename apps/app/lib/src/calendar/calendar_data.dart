@@ -31,6 +31,10 @@ class CalendarPositionNotifier extends Notifier<CalendarPosition> {
 
   void show(CalendarView view) => state = CalendarPosition(view, state.anchor);
 
+  /// Selects [day] in the current view.
+  void select(DateTime day) =>
+      state = CalendarPosition(state.view, DateUtils.dateOnly(day));
+
   void openDay(DateTime day) =>
       state = CalendarPosition(CalendarView.day, DateUtils.dateOnly(day));
 
@@ -130,8 +134,7 @@ class CalendarItem {
 /// the Gateway also sends for calendar changes).
 final calendarItemsProvider = FutureProvider<List<CalendarItem>>((ref) async {
   watchHint(ref, 'schedules_changed');
-  final position = ref.watch(calendarPositionProvider);
-  final (from, to) = viewRange(position);
+  final (from, to) = ref.watch(calendarPositionProvider.select(viewRange));
   final items = await CalendarApi(requireApi(ref)).items(
     from: from.millisecondsSinceEpoch,
     to: to.millisecondsSinceEpoch,

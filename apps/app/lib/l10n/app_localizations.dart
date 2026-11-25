@@ -2618,6 +2618,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pause'**
   String get taskPause;
+
+  /// No description provided for @legendEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Event'**
+  String get legendEvent;
+
+  /// No description provided for @calendarDayCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{day} · {count, plural, =1{1 item} other{{count} items}}'**
+  String calendarDayCount(String day, int count);
 }
 
 class _AppLocalizationsDelegate

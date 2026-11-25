@@ -1344,6 +1344,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get taskPause => '暫停';
+
+  @override
+  String get legendEvent => '個人事件';
+
+  @override
+  String calendarDayCount(String day, int count) {
+    return '$day · $count 項';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
