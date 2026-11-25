@@ -2,6 +2,8 @@ name: M4 conformance
 
 on:
   workflow_dispatch:
+  push:
+    branches: [m4-conformance]
 
 permissions:
   contents: read
