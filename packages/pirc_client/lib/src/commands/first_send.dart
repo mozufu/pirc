@@ -70,13 +70,12 @@ class FirstSendClient {
   Future<void> uploadAttachment(
     String operationId,
     String attachmentId,
-    List<int> bytes, {
-    String contentType = 'application/octet-stream',
-  }) => api.json(
+    List<int> bytes,
+  ) => api.json(
     ApiRequest.putBytes(
       _path(operationId, 'attachments/${Uri.encodeComponent(attachmentId)}'),
       bytes,
-      contentType: contentType,
+      contentType: 'application/octet-stream',
     ),
   );
 
@@ -149,12 +148,9 @@ class FirstSendClient {
       if (bytes == null) {
         throw ArgumentError('No bytes for attachment ${attachment.id}');
       }
-      await uploadAttachment(
-        operationId,
-        attachment.id,
-        bytes,
-        contentType: attachment.mimeType,
-      );
+      // Staging always takes raw bytes; the prepared manifest owns the MIME
+      // type, and the Gateway refuses any other content type.
+      await uploadAttachment(operationId, attachment.id, bytes);
     }
     await accept(operationId);
     final ready = await materialize(operationId);

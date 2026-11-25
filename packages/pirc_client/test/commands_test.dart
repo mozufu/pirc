@@ -382,6 +382,54 @@ void main() {
       });
     });
 
+    test(
+      'attachments are staged as raw bytes; the manifest keeps the type',
+      () async {
+        final transport = FakeTransport(
+          onSend: (request) async => request.path.endsWith('/acquire')
+              ? reply(200, {
+                  'lease': {'clientId': 'client-1', 'generation': 1},
+                })
+              : reply(200, preparation('admitted')),
+        );
+        await FirstSendClient(ApiClient(transport)).send(
+          operationId: 'op-1',
+          submission: const Submission(
+            workspaceId: 'w',
+            message: 'see attached',
+            attachments: [
+              SubmissionAttachment(
+                id: 'file-1',
+                name: 'notes.json',
+                mimeType: 'application/json',
+                byteSize: 2,
+                sha256: 'abc',
+              ),
+            ],
+          ),
+          attachments: const {
+            'file-1': [123, 125],
+          },
+          clientId: 'client-1',
+        );
+        final upload = transport.requests.firstWhere(
+          (r) => r.path.contains('/attachments/'),
+        );
+        expect(upload.method, 'PUT');
+        expect(
+          upload.path,
+          '/api/conversation-submissions/op-1/attachments/file-1',
+        );
+        expect(upload.contentType, 'application/octet-stream');
+        expect(upload.bytes, [123, 125]);
+        final prepared = _body(transport.requests.first) as Map;
+        expect(
+          ((prepared['submission'] as Map)['attachments'] as List).single,
+          containsPair('mimeType', 'application/json'),
+        );
+      },
+    );
+
     test('a dispatch without a reply is uncertain and not re-sent', () async {
       final transport = FakeTransport(
         onSend: (request) async {
