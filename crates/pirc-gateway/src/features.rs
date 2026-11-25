@@ -27,6 +27,8 @@ pub fn routes() -> Router<AppState> {
         .merge(crate::calendar::routes())
         .merge(crate::pots::api::routes())
         .merge(crate::clients::routes())
+        .merge(crate::images::routes())
+        .merge(crate::me::routes())
         .merge(crate::push::routes())
 }
 

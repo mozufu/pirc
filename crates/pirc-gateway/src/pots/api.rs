@@ -28,7 +28,11 @@ pub fn routes() -> Router<AppState> {
         .route("/api/pots/{id}/restore", post(restore))
         .route("/api/pots/{id}/thread", get(direct_thread))
         .route("/api/threads", get(list_threads).post(create_group))
-        .route("/api/threads/{id}", get(read_thread))
+        .route(
+            "/api/threads/{id}",
+            get(read_thread).patch(update_thread).delete(delete_thread),
+        )
+        .route("/api/threads/{id}/read", post(read_thread_now))
         .route(
             "/api/threads/{id}/messages",
             get(list_messages).post(post_message),
@@ -94,6 +98,9 @@ fn check(app: &AppState, identity: &Identity, input: &PotInput) -> ApiResult<()>
     for location in &input.permissions.work_locations {
         crate::routes::require_workspace_visible(app, identity, &location.workspace_id)?;
     }
+    if let Some(image) = &input.profile.avatar_image {
+        crate::images::require_owned(&app.db.lock(), &identity.user, image)?;
+    }
     for scope in &input.permissions.observe {
         match scope.kind {
             ScopeKind::Workspace | ScopeKind::Project if !scope.r#ref.is_empty() => {
@@ -121,15 +128,65 @@ fn check(app: &AppState, identity: &Identity, input: &PotInput) -> ApiResult<()>
     Ok(())
 }
 
-fn ok(pot: Pot) -> axum::Json<Value> {
-    axum::Json(json!({ "pot": pot }))
+/// A pot as lists and screens read it: the stored input plus what it is doing
+/// now, what waits for the user and what is left of its budget.
+fn public(app: &AppState, conn: &rusqlite::Connection, owner: &str, pot: &Pot) -> Value {
+    let mut value = serde_json::to_value(pot).unwrap_or_default();
+    let live = pot
+        .session_id
+        .as_deref()
+        .and_then(|session| conn.get_session(session).ok().map(|s| (s.node_id, s.id)));
+    let running = live.is_some_and(|(node, session)| {
+        app.activity_of(node.as_deref(), &session)
+            .is_some_and(|activity| activity.run.is_some())
+    });
+    let delivering: i64 = conn
+        .query_row(
+            "SELECT count(*) FROM pot_wakes WHERE pot_id=?1 AND state IN ('delivering','delivered')",
+            [&pot.id],
+            |r| r.get(0),
+        )
+        .unwrap_or(0);
+    value["status"] = json!(if pot.state != PotState::Active {
+        "unavailable"
+    } else if running || delivering > 0 {
+        "working"
+    } else {
+        "idle"
+    });
+    let count = |sql: &str| -> i64 { conn.query_row(sql, [&pot.id], |r| r.get(0)).unwrap_or(0) };
+    value["needsYou"] = json!(
+        count("SELECT count(*) FROM model_approvals WHERE pot_id=?1 AND state='pending'")
+            + count("SELECT count(*) FROM budget_requests WHERE pot_id=?1 AND state='pending'")
+            + count("SELECT count(*) FROM pot_handovers WHERE from_pot_id=?1 AND state='proposed'")
+            + count(
+                "SELECT count(*) FROM causal_roots WHERE initiator_pot=?1 AND state='suspended'"
+            )
+    );
+    if let Ok(status) =
+        super::budget::status_for(conn, owner, &pot.id, app.config.timezone.as_str())
+    {
+        value["budgetLeft"] = json!({
+            "moneyMicros": status["money"]["remainingMicros"],
+            "tokens": status["tokens"]["remaining"],
+        });
+    }
+    value
+}
+
+fn ok(app: &AppState, conn: &rusqlite::Connection, owner: &str, pot: &Pot) -> axum::Json<Value> {
+    axum::Json(json!({ "pot": public(app, conn, owner, pot) }))
 }
 
 async fn list(
     State(app): State<AppState>,
     Extension(identity): Extension<Identity>,
 ) -> ApiResult<axum::Json<Value>> {
-    let pots = store::list(&app.db.lock(), &identity.user)?;
+    let conn = app.db.lock();
+    let pots: Vec<Value> = store::list(&conn, &identity.user)?
+        .iter()
+        .map(|pot| public(&app, &conn, &identity.user, pot))
+        .collect();
     Ok(axum::Json(json!({ "pots": pots })))
 }
 
@@ -141,9 +198,13 @@ async fn create(
     let input: PotInput = body.parse()?;
     check(&app, &identity, &input)?;
     let pot = store::create(&mut app.db.lock(), &identity.user, input)?;
+    let shown = public(&app, &app.db.lock(), &identity.user, &pot);
     app.pots_changed(&identity.user);
     app.activity_changed(&identity.user);
-    Ok((axum::http::StatusCode::CREATED, ok(pot)))
+    Ok((
+        axum::http::StatusCode::CREATED,
+        axum::Json(json!({ "pot": shown })),
+    ))
 }
 
 async fn read(
@@ -151,7 +212,9 @@ async fn read(
     Extension(identity): Extension<Identity>,
     Path(id): Path<String>,
 ) -> ApiResult<axum::Json<Value>> {
-    Ok(ok(store::read(&app.db.lock(), &identity.user, &id)?))
+    let conn = app.db.lock();
+    let pot = store::read(&conn, &identity.user, &id)?;
+    Ok(ok(&app, &conn, &identity.user, &pot))
 }
 
 async fn update(
@@ -172,9 +235,10 @@ async fn update(
     }
     check(&app, &identity, &next)?;
     let pot = store::update(&mut app.db.lock(), &identity.user, &id, patch)?;
+    let shown = public(&app, &app.db.lock(), &identity.user, &pot);
     app.pots_changed(&identity.user);
     app.activity_changed(&identity.user);
-    Ok(ok(pot))
+    Ok(axum::Json(json!({ "pot": shown })))
 }
 
 #[derive(Deserialize)]
@@ -192,12 +256,13 @@ async fn transition(
 ) -> ApiResult<axum::Json<Value>> {
     let Revision { revision } = body.0.parse()?;
     let pot = store::set_state(&mut app.db.lock(), &identity.user, id, revision, to)?;
+    let shown = public(app, &app.db.lock(), &identity.user, &pot);
     app.pots_changed(&identity.user);
     app.activity_changed(&identity.user);
     if pot.state == PotState::Active {
         super::runtime::kick(app, &identity.user, id);
     }
-    Ok(ok(pot))
+    Ok(axum::Json(json!({ "pot": shown })))
 }
 
 async fn pause(
@@ -756,4 +821,43 @@ async fn forget_pot_memory(
     super::memory::forget(&app.db.lock(), &identity.user, &id, &entry)?;
     app.pots_changed(&identity.user);
     Ok(axum::http::StatusCode::NO_CONTENT)
+}
+
+async fn update_thread(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+    ReqBody(body): ReqBody,
+) -> ApiResult<axum::Json<Value>> {
+    let patch: threads::GroupPatch = body.parse()?;
+    let thread = threads::update_group(&app.db.lock(), &identity.user, &id, patch)?;
+    app.threads_changed(&identity.user);
+    Ok(axum::Json(json!({ "thread": thread })))
+}
+
+async fn delete_thread(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+) -> ApiResult<axum::http::StatusCode> {
+    threads::delete_group(&app.db.lock(), &identity.user, &id)?;
+    app.threads_changed(&identity.user);
+    Ok(axum::http::StatusCode::NO_CONTENT)
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ReadPosition {
+    seq: i64,
+}
+
+async fn read_thread_now(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+    ReqBody(body): ReqBody,
+) -> ApiResult<axum::Json<Value>> {
+    let ReadPosition { seq } = body.parse()?;
+    let thread = threads::mark_read(&app.db.lock(), &identity.user, &id, seq)?;
+    Ok(axum::Json(json!({ "thread": thread })))
 }

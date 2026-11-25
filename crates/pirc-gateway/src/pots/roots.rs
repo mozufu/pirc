@@ -179,7 +179,10 @@ fn room(
 ) -> ApiResult<(i64, i64)> {
     let (money_cap, tokens_cap) = match pot {
         Some(_) => (caps.pot_money, caps.pot_tokens),
-        None => (caps.owner_money, caps.owner_tokens),
+        None => (
+            (caps.owner_money > 0).then_some(caps.owner_money),
+            (caps.owner_tokens > 0).then_some(caps.owner_tokens),
+        ),
     };
     let money_used = budget::money_used(
         conn,
@@ -192,16 +195,8 @@ fn room(
     let tokens_used = budget::tokens_used(conn, owner, pot, windows.day_start, windows.day_end)?
         + budget::tokens_reserved(conn, owner, pot, windows.day_start)?;
     // A zero owner-wide cap means the owner set none; pot caps always apply.
-    let money = if money_cap > 0 || pot.is_some() {
-        money_cap.saturating_sub(money_used).max(0)
-    } else {
-        i64::MAX
-    };
-    let tokens = if tokens_cap > 0 || pot.is_some() {
-        tokens_cap.saturating_sub(tokens_used).max(0)
-    } else {
-        i64::MAX
-    };
+    let money = money_cap.map_or(i64::MAX, |cap| cap.saturating_sub(money_used).max(0));
+    let tokens = tokens_cap.map_or(i64::MAX, |cap| cap.saturating_sub(tokens_used).max(0));
     Ok((money, tokens))
 }
 

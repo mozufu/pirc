@@ -173,7 +173,10 @@ pub fn reserve(
         Some(&reservation.pot_id),
         reservation.windows.month_start,
     )?;
-    if pot_money.saturating_add(reservation.money_micros) > caps.pot_money {
+    if caps
+        .pot_money
+        .is_some_and(|cap| pot_money.saturating_add(reservation.money_micros) > cap)
+    {
         return Ok(Some(Exhaustion {
             scope: Scope::Pot,
             unit: Unit::Money,
@@ -191,7 +194,10 @@ pub fn reserve(
         Some(&reservation.pot_id),
         reservation.windows.day_start,
     )?;
-    if pot_tokens.saturating_add(reservation.tokens) > caps.pot_tokens {
+    if caps
+        .pot_tokens
+        .is_some_and(|cap| pot_tokens.saturating_add(reservation.tokens) > cap)
+    {
         return Ok(Some(Exhaustion {
             scope: Scope::Pot,
             unit: Unit::Tokens,

@@ -111,6 +111,9 @@ text_enum!(ModelMode { Direct = "direct", Ask = "ask" });
 pub struct Profile {
     pub name: String,
     pub avatar_color: u8,
+    /// An uploaded picture (images.rs) beside the colour.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub avatar_image: Option<String>,
     #[serde(default)]
     pub personality: String,
 }
@@ -175,9 +178,11 @@ pub struct Permissions {
     pub work_locations: Vec<Location>,
     pub max_concurrent_works: u32,
     /// Monthly money cap, micro-US-dollars. Required: no default spending.
-    pub budget_money_month_micros: u64,
+    /// Money per month; `None` is no money limit (tokens still apply).
+    pub budget_money_month_micros: Option<u64>,
     /// Daily token cap. Required: no default spending.
-    pub budget_tokens_day: u64,
+    /// Tokens per day; `None` is no token limit.
+    pub budget_tokens_day: Option<u64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -287,6 +292,11 @@ impl PotInput {
         if perm.max_concurrent_works > 16 {
             return Err(invalid("maxConcurrentWorks must be 0 to 16"));
         }
+        if perm.budget_money_month_micros.is_none() && perm.budget_tokens_day.is_none() {
+            return Err(invalid(
+                "Turn off at most one limit: tokens or money must apply",
+            ));
+        }
         if perm.reach != Reach::Work && !perm.work_locations.is_empty() {
             return Err(invalid("Only a pot that may start work has work locations"));
         }
@@ -385,8 +395,8 @@ fn write_sections(conn: &Connection, id: &str, input: &PotInput, replace: bool) 
             perm.dm.send,
             perm.dm.receive,
             perm.max_concurrent_works,
-            perm.budget_money_month_micros as i64,
-            perm.budget_tokens_day as i64,
+            perm.budget_money_month_micros.map(|v| v as i64),
+            perm.budget_tokens_day.map(|v| v as i64),
         ],
     )?;
     for scope in &perm.observe {
@@ -462,9 +472,9 @@ pub fn create(conn: &mut Connection, owner: &str, input: PotInput) -> ApiResult<
     let stamp = now_ms();
     let p = &input.profile;
     tx.execute(
-        "INSERT INTO pots(id,owner_user,name,avatar_color,personality,intro,work_description,created_at,updated_at)
-         VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?8)",
-        params![id, owner, p.name, p.avatar_color, p.personality, input.work.intro, input.work.description, stamp],
+        "INSERT INTO pots(id,owner_user,name,avatar_color,personality,intro,work_description,created_at,updated_at,avatar_upload)
+         VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?8,?9)",
+        params![id, owner, p.name, p.avatar_color, p.personality, input.work.intro, input.work.description, stamp, p.avatar_image],
     )?;
     write_sections(&tx, &id, &input, false)?;
     let pot = read(&tx, owner, &id)?;
@@ -495,6 +505,7 @@ fn base(row: &Row) -> rusqlite::Result<(Pot, String)> {
                 profile: Profile {
                     name: row.get(6)?,
                     avatar_color: row.get(7)?,
+                    avatar_image: row.get(21)?,
                     personality: row.get(8)?,
                 },
                 work: Work {
@@ -513,8 +524,8 @@ fn base(row: &Row) -> rusqlite::Result<(Pot, String)> {
                     },
                     work_locations: Vec::new(),
                     max_concurrent_works: row.get(14)?,
-                    budget_money_month_micros: row.get::<_, i64>(15)? as u64,
-                    budget_tokens_day: row.get::<_, i64>(16)? as u64,
+                    budget_money_month_micros: row.get::<_, Option<i64>>(15)?.map(|v| v as u64),
+                    budget_tokens_day: row.get::<_, Option<i64>>(16)?.map(|v| v as u64),
                 },
                 models: Models {
                     main: ModelChoice {
@@ -538,7 +549,7 @@ fn base(row: &Row) -> rusqlite::Result<(Pot, String)> {
 const SELECT: &str = "SELECT p.id,p.state,p.revision,p.created_at,p.updated_at,r.session_id,
   p.name,p.avatar_color,p.personality,p.intro,p.work_description,
   m.reach,m.dm_send,m.dm_receive,m.max_concurrent_works,m.budget_money_month_micros,m.budget_tokens_day,
-  r.thinking,r.thinking_auto,r.autonomy_interval_s,p.owner_user
+  r.thinking,r.thinking_auto,r.autonomy_interval_s,p.owner_user,p.avatar_upload
   FROM pots p JOIN pot_permissions m ON m.pot_id=p.id JOIN pot_runtime r ON r.pot_id=p.id";
 
 fn fill(conn: &Connection, pot: &mut Pot) -> rusqlite::Result<()> {
@@ -681,7 +692,7 @@ pub fn update(conn: &mut Connection, owner: &str, id: &str, patch: PotPatch) -> 
     let p = &input.profile;
     tx.execute(
         "UPDATE pots SET name=?1,avatar_color=?2,personality=?3,intro=?4,work_description=?5,
-          revision=revision+1,updated_at=?6 WHERE id=?7 AND owner_user=?8",
+          revision=revision+1,updated_at=?6,avatar_upload=?9 WHERE id=?7 AND owner_user=?8",
         params![
             p.name,
             p.avatar_color,
@@ -690,10 +701,14 @@ pub fn update(conn: &mut Connection, owner: &str, id: &str, patch: PotPatch) -> 
             input.work.description,
             now_ms(),
             id,
-            owner
+            owner,
+            p.avatar_image
         ],
     )?;
     write_sections(&tx, id, &input, true)?;
+    if current.input.profile.avatar_image != input.profile.avatar_image {
+        crate::images::release(&tx, current.input.profile.avatar_image.as_deref())?;
+    }
     let pot = read(&tx, owner, id)?;
     let sections: Vec<&str> = [
         (current.input.profile != pot.input.profile, "profile"),

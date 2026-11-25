@@ -42,7 +42,26 @@ pub struct Thread {
     /// Member pots: the direct thread's pot, a DM's two pots, a group's members.
     pub pots: Vec<String>,
     pub last_seq: i64,
+    /// Messages after the user's read position.
+    pub unread: i64,
+    /// The newest message in short: who wrote it and its first line.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub last_message: Option<LastMessage>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub avatar_image: Option<String>,
+    pub revision: i64,
     pub updated_at: i64,
+}
+
+/// The newest message of a thread, for its row.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LastMessage {
+    /// `user`, `pot` or `system`.
+    pub author_kind: String,
+    pub author_name: String,
+    pub body: String,
+    pub created_at: i64,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -98,11 +117,43 @@ fn thread_row(row: &Row) -> rusqlite::Result<Thread> {
             .flatten()
             .collect(),
         last_seq: row.get(8)?,
+        unread: 0,
+        last_message: None,
+        avatar_image: row.get(10)?,
+        revision: row.get(11)?,
         updated_at: row.get(9)?,
     })
 }
 
-const THREAD: &str = "SELECT id,kind,name,avatar_color,host_pot_id,project_id,pot_a,pot_b,last_seq,updated_at FROM threads";
+const THREAD: &str = "SELECT id,kind,name,avatar_color,host_pot_id,project_id,pot_a,pot_b,last_seq,updated_at,avatar_image,revision FROM threads";
+
+/// Unread count and the newest message of a thread.
+fn summary(conn: &Connection, thread: &mut Thread) -> rusqlite::Result<()> {
+    thread.unread = conn.query_row(
+        "SELECT count(*) FROM messages m JOIN threads t ON t.id=m.thread_id
+         WHERE m.thread_id=?1 AND m.seq>t.last_read_seq",
+        [&thread.id],
+        |r| r.get(0),
+    )?;
+    thread.last_message = conn
+        .query_row(
+            "SELECT m.author_kind, COALESCE(m.author_name,
+               (SELECT p.name FROM pots p WHERE p.id=m.author_id), ''),
+               m.body, m.created_at
+             FROM messages m WHERE m.thread_id=?1 ORDER BY m.seq DESC LIMIT 1",
+            [&thread.id],
+            |r| {
+                Ok(LastMessage {
+                    author_kind: r.get(0)?,
+                    author_name: r.get(1)?,
+                    body: r.get(2)?,
+                    created_at: r.get(3)?,
+                })
+            },
+        )
+        .optional()?;
+    Ok(())
+}
 
 fn members(conn: &Connection, thread: &mut Thread) -> rusqlite::Result<()> {
     if thread.kind == "group" {
@@ -124,6 +175,7 @@ pub fn get(conn: &Connection, owner: &str, id: &str) -> ApiResult<Thread> {
         .optional()?
         .ok_or_else(|| ApiError::not_found("Thread not found"))?;
     members(conn, &mut thread)?;
+    summary(conn, &mut thread)?;
     Ok(thread)
 }
 
@@ -136,6 +188,7 @@ pub fn list(conn: &Connection, owner: &str) -> ApiResult<Vec<Thread>> {
         .collect::<Result<_, _>>()?;
     for thread in &mut threads {
         members(conn, thread)?;
+        summary(conn, thread)?;
     }
     Ok(threads)
 }
@@ -337,6 +390,134 @@ fn message_row(row: &Row) -> rusqlite::Result<Message> {
     })
 }
 
+/// The user has read up to `seq` (never past what the thread has).
+pub fn mark_read(conn: &Connection, owner: &str, id: &str, seq: i64) -> ApiResult<Thread> {
+    let thread = get(conn, owner, id)?;
+    let seq = seq.max(0).min(thread.last_seq);
+    conn.execute(
+        "UPDATE threads SET last_read_seq=max(last_read_seq,?2) WHERE id=?1",
+        params![id, seq],
+    )?;
+    get(conn, owner, id)
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct GroupPatch {
+    pub revision: i64,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default, deserialize_with = "crate::me::present_u8")]
+    pub avatar_color: Option<Option<u8>>,
+    #[serde(default, deserialize_with = "crate::me::present")]
+    pub avatar_image: Option<Option<String>>,
+    #[serde(default)]
+    pub host_pot_id: Option<String>,
+    #[serde(default)]
+    pub member_pot_ids: Option<Vec<String>>,
+}
+
+/// A group's name, colour, picture, host and members; the user only.
+pub fn update_group(
+    conn: &Connection,
+    owner: &str,
+    id: &str,
+    patch: GroupPatch,
+) -> ApiResult<Thread> {
+    let thread = get(conn, owner, id)?;
+    if thread.kind != "group" {
+        return Err(ApiError::new(
+            400,
+            "invalid_input",
+            "Only a group can be changed",
+        ));
+    }
+    if patch.revision != thread.revision {
+        return Err(ApiError::new(
+            409,
+            "revision_conflict",
+            "The group changed; read it again",
+        ));
+    }
+    let name = match patch.name.as_deref().map(str::trim) {
+        None => thread.name.clone(),
+        Some(name) if name.is_empty() || name.chars().count() > 60 => {
+            return Err(invalid("A group name is 1 to 60 characters"));
+        }
+        Some(name) => name.to_owned(),
+    };
+    let color = match patch.avatar_color {
+        None => thread.avatar_color,
+        Some(color) => {
+            if color.is_some_and(|c| !(1..=5).contains(&c)) {
+                return Err(invalid("avatarColor must be 1 to 5"));
+            }
+            color
+        }
+    };
+    let image = match patch.avatar_image {
+        None => thread.avatar_image.clone(),
+        Some(None) => None,
+        Some(Some(id)) => {
+            super::images_owned(conn, owner, &id)?;
+            Some(id)
+        }
+    };
+    let host = patch
+        .host_pot_id
+        .unwrap_or_else(|| thread.host_pot_id.clone().unwrap_or_default());
+    let mut members = patch.member_pot_ids.unwrap_or_else(|| thread.pots.clone());
+    if host.is_empty() {
+        return Err(invalid("A group has a host"));
+    }
+    if !members.contains(&host) {
+        members.push(host.clone());
+    }
+    members.sort();
+    members.dedup();
+    if members.len() < 2 || members.len() > MAX_MEMBERS {
+        return Err(invalid("A group has 2 to 16 pots"));
+    }
+    for pot in &members {
+        store::read(conn, owner, pot)?;
+    }
+    let tx = conn.unchecked_transaction()?;
+    tx.execute(
+        "UPDATE threads SET name=?2,avatar_color=?3,avatar_image=?4,host_pot_id=?5,revision=revision+1,updated_at=?6
+         WHERE id=?1",
+        params![id, name, color, image, host, now_ms()],
+    )?;
+    tx.execute("DELETE FROM thread_members WHERE thread_id=?1", [id])?;
+    for pot in &members {
+        tx.execute(
+            "INSERT INTO thread_members(thread_id,pot_id) VALUES(?1,?2)",
+            params![id, pot],
+        )?;
+    }
+    if thread.avatar_image != image {
+        super::images_release(&tx, thread.avatar_image.as_deref())?;
+    }
+    tx.commit()?;
+    get(conn, owner, id)
+}
+
+pub fn delete_group(conn: &Connection, owner: &str, id: &str) -> ApiResult<()> {
+    let thread = get(conn, owner, id)?;
+    if thread.kind != "group" {
+        return Err(ApiError::new(
+            400,
+            "invalid_input",
+            "Only a group can be deleted",
+        ));
+    }
+    conn.execute(
+        "DELETE FROM threads WHERE id=?1 AND owner_user=?2",
+        params![id, owner],
+    )?;
+    super::images_release(conn, thread.avatar_image.as_deref())?;
+    Ok(())
+}
+
 /// A page of messages, newest last; `before` is a sequence number.
 pub fn messages(
     conn: &Connection,
@@ -407,6 +588,13 @@ fn append(
             card.map(|card| serde_json::to_string(card).expect("cards serialize")),
         ],
     )?;
+    if matches!(author, Author::User) {
+        // The user's own message is read by them where it was written.
+        conn.execute(
+            "UPDATE threads SET last_read_seq=max(last_read_seq,?2) WHERE id=?1",
+            params![thread.id, seq],
+        )?;
+    }
     message(conn, &message_id)
 }
 

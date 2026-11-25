@@ -8,6 +8,15 @@ pub mod budget;
 pub mod delivery;
 pub mod guard;
 pub mod handover;
+
+/// `images::require_owned` and `images::release`, re-exported for threads.
+fn images_owned(conn: &rusqlite::Connection, owner: &str, id: &str) -> crate::error::ApiResult<()> {
+    crate::images::require_owned(conn, owner, id)
+}
+
+fn images_release(conn: &rusqlite::Connection, id: Option<&str>) -> crate::error::ApiResult<()> {
+    crate::images::release(conn, id)
+}
 pub mod memory;
 pub mod observe;
 pub mod ops;

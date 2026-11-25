@@ -31,8 +31,9 @@ CREATE TABLE pot_permissions (
  dm_send TEXT NOT NULL DEFAULT 'all' CHECK(dm_send IN ('all','selected','off')),
  dm_receive TEXT NOT NULL DEFAULT 'all' CHECK(dm_receive IN ('all','selected','off')),
  max_concurrent_works INTEGER NOT NULL DEFAULT 1 CHECK(max_concurrent_works BETWEEN 0 AND 16),
- budget_money_month_micros INTEGER NOT NULL DEFAULT 0 CHECK(budget_money_month_micros>=0),
- budget_tokens_day INTEGER NOT NULL DEFAULT 0 CHECK(budget_tokens_day>=0)
+ -- Either may be off (NULL), never both (the service enforces it).
+ budget_money_month_micros INTEGER CHECK(budget_money_month_micros IS NULL OR budget_money_month_micros>=0),
+ budget_tokens_day INTEGER CHECK(budget_tokens_day IS NULL OR budget_tokens_day>=0)
 );
 CREATE TABLE pot_observe_scopes (
  pot_id TEXT NOT NULL REFERENCES pots(id) ON DELETE CASCADE,
@@ -145,6 +146,11 @@ CREATE TABLE threads (
  pot_a TEXT REFERENCES pots(id) ON DELETE SET NULL,
  pot_b TEXT REFERENCES pots(id) ON DELETE SET NULL,
  last_seq INTEGER NOT NULL DEFAULT 0,
+ -- The user's read position and a group's edit revision.
+ last_read_seq INTEGER NOT NULL DEFAULT 0,
+ revision INTEGER NOT NULL DEFAULT 1,
+ -- An uploaded picture (images.rs) instead of the colour.
+ avatar_image TEXT,
  created_at INTEGER NOT NULL,
  updated_at INTEGER NOT NULL,
  CHECK(kind!='direct' OR pot_b IS NULL),

@@ -21,6 +21,22 @@ pub struct View {
     /// Pass as `before` for older sent messages; absent on the last page.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub next_before: Option<String>,
+    /// What it sent into the work sessions it coordinates, newest first.
+    pub instructions: Vec<Instruction>,
+}
+
+/// One instruction a pot sent into its work (point of view, E19).
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Instruction {
+    pub id: String,
+    pub work_id: String,
+    pub work_title: String,
+    pub session_id: String,
+    pub body: String,
+    /// `delivered`, `refused` or `uncertain`.
+    pub delivery: String,
+    pub created_at: i64,
 }
 
 pub fn view(conn: &Connection, owner: &str, pot_id: &str, before: Option<&str>) -> ApiResult<View> {
@@ -62,10 +78,29 @@ pub fn view(conn: &Connection, owner: &str, pot_id: &str, before: Option<&str>) 
     } else {
         None
     };
+    let instructions = conn
+        .prepare(
+            "SELECT i.id, w.id, w.title, w.session_id, i.body, i.state, i.created_at
+             FROM pot_work_instructions i JOIN pot_works w ON w.id=i.work_id
+             WHERE w.pot_id=?1 ORDER BY i.created_at DESC, i.rowid DESC LIMIT 50",
+        )?
+        .query_map([pot_id], |r| {
+            Ok(Instruction {
+                id: r.get(0)?,
+                work_id: r.get(1)?,
+                work_title: r.get(2)?,
+                session_id: r.get(3)?,
+                body: r.get(4)?,
+                delivery: r.get(5)?,
+                created_at: r.get(6)?,
+            })
+        })?
+        .collect::<Result<_, _>>()?;
     Ok(View {
         pot_id: pot_id.to_owned(),
         threads,
         sent,
         next_before,
+        instructions,
     })
 }

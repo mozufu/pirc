@@ -83,13 +83,29 @@ fn permissions_grant_nothing_beyond_their_reach_and_limits_stay_finite() {
     answering.permissions.observe.clear();
     create(&mut conn, "alice", answering).unwrap();
 
-    // Budgets are required fields: an omitted one is invalid, never unlimited.
+    // A limit may be turned off (null or absent), never both at once.
     let mut value = serde_json::to_value(input("No budget")).unwrap();
     value["permissions"]
         .as_object_mut()
         .unwrap()
         .remove("budgetTokensDay");
-    assert!(serde_json::from_value::<PotInput>(value).is_err());
+    let tokens_off: PotInput = serde_json::from_value(value.clone()).unwrap();
+    assert_eq!(tokens_off.permissions.budget_tokens_day, None);
+    assert_eq!(
+        tokens_off.permissions.budget_money_month_micros,
+        Some(20_000_000)
+    );
+    assert_eq!(
+        create(&mut conn, "alice", tokens_off)
+            .unwrap()
+            .input
+            .permissions
+            .budget_tokens_day,
+        None
+    );
+    value["permissions"]["budgetMoneyMonthMicros"] = serde_json::Value::Null;
+    let both = serde_json::from_value::<PotInput>(value).unwrap();
+    assert_eq!(create(&mut conn, "alice", both).unwrap_err().status, 400);
 
     let mut bad = input("Bad");
     bad.permissions.work_locations[0].workspace_id = "node:unknown".into();
@@ -360,7 +376,7 @@ mod budget {
         let pot = read(&conn, "alice", &pot.id).unwrap();
         assert_eq!(
             pot.input.permissions.budget_money_month_micros,
-            20_000_000 + 250_000
+            Some(20_000_000 + 250_000)
         );
         // Answering twice is a conflict; every answer wakes the pot.
         assert_eq!(
@@ -414,8 +430,11 @@ mod budget {
         assert_eq!(approved.state, RequestState::Approved);
         assert_eq!(approved.approved_tokens, Some(50_000));
         let pot = read(&conn, "alice", &pot.id).unwrap();
-        assert_eq!(pot.input.permissions.budget_tokens_day, 550_000);
-        assert_eq!(pot.input.permissions.budget_money_month_micros, 20_000_000);
+        assert_eq!(pot.input.permissions.budget_tokens_day, Some(550_000));
+        assert_eq!(
+            pot.input.permissions.budget_money_month_micros,
+            Some(20_000_000)
+        );
         // Approving answers no longer pending.
         assert!(
             budget::list(&conn, "alice", Some(RequestState::Pending))

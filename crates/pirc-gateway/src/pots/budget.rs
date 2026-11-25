@@ -117,8 +117,9 @@ pub struct Exhaustion {
 
 /// The owner's caps for one pot.
 pub struct Caps {
-    pub pot_money: i64,
-    pub pot_tokens: i64,
+    /// `None`: the pot has no limit for this unit.
+    pub pot_money: Option<i64>,
+    pub pot_tokens: Option<i64>,
     pub owner_money: i64,
     pub owner_tokens: i64,
     pub count_subscription_money: bool,
@@ -128,8 +129,12 @@ pub fn caps(conn: &Connection, owner: &str, pot_id: &str) -> ApiResult<Caps> {
     let pot = store::read(conn, owner, pot_id)?;
     let settings = store::settings(conn, owner)?;
     Ok(Caps {
-        pot_money: pot.input.permissions.budget_money_month_micros as i64,
-        pot_tokens: pot.input.permissions.budget_tokens_day as i64,
+        pot_money: pot
+            .input
+            .permissions
+            .budget_money_month_micros
+            .map(|v| v as i64),
+        pot_tokens: pot.input.permissions.budget_tokens_day.map(|v| v as i64),
         owner_money: settings.cap_money_month_micros as i64,
         owner_tokens: settings.cap_tokens_day as i64,
         count_subscription_money: settings.count_subscription_money,
@@ -247,7 +252,7 @@ pub fn exhaustion(
         windows.month_end,
         caps.count_subscription_money,
     )? + money_reserved(conn, owner, Some(pot_id), windows.month_start)?;
-    if pot_money >= caps.pot_money {
+    if caps.pot_money.is_some_and(|cap| pot_money >= cap) {
         return Ok(Some(Exhaustion {
             scope: Scope::Pot,
             unit: Unit::Money,
@@ -260,7 +265,7 @@ pub fn exhaustion(
         windows.day_start,
         windows.day_end,
     )? + tokens_reserved(conn, owner, Some(pot_id), windows.day_start)?;
-    if pot_tokens >= caps.pot_tokens {
+    if caps.pot_tokens.is_some_and(|cap| pot_tokens >= cap) {
         return Ok(Some(Exhaustion {
             scope: Scope::Pot,
             unit: Unit::Tokens,
@@ -397,8 +402,8 @@ fn used(
     ))
 }
 
-fn remaining(cap: i64, used: i64, reserved: i64) -> i64 {
-    cap.saturating_sub(used).saturating_sub(reserved).max(0)
+fn remaining(cap: Option<i64>, used: i64, reserved: i64) -> Option<i64> {
+    cap.map(|cap| cap.saturating_sub(used).saturating_sub(reserved).max(0))
 }
 
 /// `pot.budget.status`: the pot's remaining money and tokens for the current
@@ -429,14 +434,14 @@ pub fn status(conn: &Connection, owner: &str, pot_id: &str, windows: Windows) ->
                 "capMicros": caps.owner_money,
                 "usedMicros": owner_money_used,
                 "reservedMicros": owner_money_reserved,
-                "remainingMicros": remaining(caps.owner_money, owner_money_used, owner_money_reserved),
+                "remainingMicros": remaining((caps.owner_money > 0).then_some(caps.owner_money), owner_money_used, owner_money_reserved),
                 "unlimited": caps.owner_money == 0,
             },
             "tokens": {
                 "cap": caps.owner_tokens,
                 "used": owner_tokens_used,
                 "reserved": owner_tokens_reserved,
-                "remaining": remaining(caps.owner_tokens, owner_tokens_used, owner_tokens_reserved),
+                "remaining": remaining((caps.owner_tokens > 0).then_some(caps.owner_tokens), owner_tokens_used, owner_tokens_reserved),
                 "unlimited": caps.owner_tokens == 0,
             },
             "countSubscriptionMoney": caps.count_subscription_money,

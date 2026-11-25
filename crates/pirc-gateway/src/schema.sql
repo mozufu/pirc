@@ -183,3 +183,22 @@ CREATE TABLE workspace_removals (
 
 -- The one chat node this gateway is bound to.
 CREATE TABLE assistant_node (singleton INTEGER PRIMARY KEY CHECK(singleton = 1), node_id TEXT NOT NULL);
+
+-- Pictures the user uploaded for avatars (images.rs): a pot, a group and the
+-- user refer to one by id; the bytes never change under an id.
+CREATE TABLE images (
+  id TEXT PRIMARY KEY, owner_user TEXT NOT NULL,
+  mime_type TEXT NOT NULL CHECK(mime_type IN ('image/png','image/jpeg','image/webp')),
+  bytes BLOB NOT NULL, created_at INTEGER NOT NULL
+);
+CREATE INDEX images_owner ON images(owner_user);
+
+-- The user's own profile: the name pots call them by, and their avatar.
+CREATE TABLE user_profiles (
+  owner_user TEXT PRIMARY KEY,
+  display_name TEXT NOT NULL CHECK(length(display_name) BETWEEN 1 AND 60),
+  avatar_color INTEGER NOT NULL DEFAULT 1 CHECK(avatar_color BETWEEN 1 AND 5),
+  avatar_image TEXT REFERENCES images(id) ON DELETE SET NULL,
+  revision INTEGER NOT NULL DEFAULT 1,
+  updated_at INTEGER NOT NULL
+);
