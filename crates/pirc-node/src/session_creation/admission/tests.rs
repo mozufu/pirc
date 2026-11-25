@@ -262,3 +262,43 @@ async fn raw_command_lookup_neither_claims_an_unowned_session_nor_renews_its_lea
     );
     node.close().await;
 }
+#[tokio::test]
+async fn any_client_of_the_owner_may_stop_without_control() {
+    use pirc_protocol::{HttpMethod, NodeHttpRequest};
+    let (_dir, node, session) = super::super::uploads::tests::node().await;
+    // The phone holds control; the laptop stops without it.
+    node.db
+        .lock()
+        .acquire_lease(&session, "phone", false, 60_000)
+        .unwrap();
+    let command = |id: &str, client: &str, payload: serde_json::Value| NodeHttpRequest {
+        method: HttpMethod::Post,
+        url: format!("/api/sessions/{session}/commands"),
+        user: "test-user".into(),
+        payload: Some(json!({ "commandId": id, "clientId": client, "payload": payload })),
+        body_base64: None,
+        content_type: None,
+    };
+    let stop = node
+        .router
+        .handle(
+            &node,
+            command("stop-laptop", "laptop", json!({ "type": "stop" })),
+        )
+        .await;
+    assert_eq!(stop.status, 202, "{stop:?}");
+    // Anything else still needs control.
+    let other = node
+        .router
+        .handle(
+            &node,
+            command(
+                "prompt-laptop",
+                "laptop",
+                json!({ "type": "prompt", "message": "hi" }),
+            ),
+        )
+        .await;
+    assert_eq!(other.status, 400, "{other:?}");
+    node.close().await;
+}

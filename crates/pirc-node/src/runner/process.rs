@@ -319,11 +319,19 @@ impl Runner {
         rpc_id: &str,
         interaction_id: &str,
         answer: &Map<String, Value>,
+        ended: &crate::store::InteractionRow,
     ) -> ApiResult<()> {
+        // Who answered and when, so other devices say so instead of guessing.
         let answered = || {
             self.publish(
                 "interaction_answered",
-                json!({ "interactionId": interaction_id, "interactionEpoch": self.epoch }),
+                json!({
+                    "interactionId": interaction_id,
+                    "interactionEpoch": self.epoch,
+                    "status": "answered",
+                    "answeredBy": ended.answered_by,
+                    "resolvedAt": ended.resolved_at,
+                }),
             );
         };
         let dialog = self.lock().node_dialogs.remove(rpc_id);
@@ -431,7 +439,7 @@ impl Runner {
             if let Ok(Some(interaction)) = cancelled {
                 self.publish(
                     "interaction_answered",
-                    json!({ "interactionId": interaction, "interactionEpoch": self.epoch, "cancelled": true }),
+                    json!({ "interactionId": interaction, "interactionEpoch": self.epoch, "cancelled": true, "status": "cancelled", "resolvedAt": crate::util::now_ms() }),
                 );
                 let _ = self.update_current_run(RunStatus::Running);
             }
@@ -633,7 +641,7 @@ impl Runner {
                 if let Some(interaction) = cancelled {
                     self.publish(
                         "interaction_answered",
-                        json!({ "interactionId": interaction, "interactionEpoch": self.epoch, "cancelled": true }),
+                        json!({ "interactionId": interaction, "interactionEpoch": self.epoch, "cancelled": true, "status": "cancelled", "resolvedAt": crate::util::now_ms() }),
                     );
                     self.update_current_run(RunStatus::Running)
                         .map_err(thrown)?;

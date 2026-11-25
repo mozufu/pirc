@@ -31,7 +31,9 @@ use crate::util::{now_ms, prefix_uuid, safe_json};
 
 /// `PRAGMA user_version` of the pirc 2 node schema. Databases from earlier
 /// releases are refused, never migrated: pirc 2 starts from fresh state.
-pub const SCHEMA_VERSION: i64 = 2101;
+pub const SCHEMA_VERSION: i64 = 2102;
+/// How long a snapshot keeps a question that ended.
+pub const RECENTLY_ENDED_MS: i64 = 10 * 60_000;
 /// The pirc 2 gateway's `user_version`, recognized to give a clear error.
 const GATEWAY_SCHEMA_VERSION: i64 = 1100;
 const SCHEMA: &str = concat!(
@@ -394,6 +396,13 @@ pub struct InteractionRow {
     pub status: InteractionStatus,
     pub request: Map<String, Value>,
     pub expires_at: i64,
+    /// The `clientId` that answered it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub answered_by: Option<String>,
+    /// When it ended (answered, cancelled, stale); an expired one ends at
+    /// `expires_at`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub resolved_at: Option<i64>,
 }
 
 /// A granted or renewed control lease (`{clientId, generation, expiresAt}`).
@@ -614,7 +623,11 @@ pub trait Store {
         session_id: &str,
         epoch: i64,
         answer: &Value,
+        answered_by: Option<&str>,
     ) -> ApiResult<InteractionRow>;
+    /// Pending questions, and those that ended in the last 10 minutes (an
+    /// expired pending one is reported as `expired`).
+    fn recent_interactions(&self, session_id: &str) -> ApiResult<Vec<InteractionRow>>;
     /// The agent withdrew a dialog: the interaction id if one was pending.
     fn cancel_interaction_by_rpc_id(
         &self,
@@ -681,8 +694,7 @@ const SESSION_SELECT: &str = "SELECT s.id, s.workspace_id, s.node_id, s.owner_us
      s.settled_at, s.activity_at, s.read_at, s.created_at, s.updated_at, \
      s.private_session_path, s.pi_session_id, s.partial_output_lost FROM sessions s";
 
-const INTERACTION_COLUMNS: &str =
-    "id, rpc_id, session_id, runner_epoch, kind, status, request_json, expires_at";
+const INTERACTION_COLUMNS: &str = "id, rpc_id, session_id, runner_epoch, kind, status, request_json, expires_at, answered_by, resolved_at";
 
 /// A stored enum (`snake_case` text) as its Rust value; an unknown text is
 /// a corrupt row.
@@ -778,6 +790,8 @@ fn interaction_row(row: &Row<'_>) -> rusqlite::Result<InteractionRow> {
         status: parse_enum(row.get("status")?)?,
         request: object(&row.get::<_, String>("request_json")?),
         expires_at: row.get("expires_at")?,
+        answered_by: row.get("answered_by")?,
+        resolved_at: row.get("resolved_at")?,
     })
 }
 
@@ -852,8 +866,8 @@ impl Store for Connection {
                 [stamp],
             )?;
             let stale_interactions = db.execute(
-                "UPDATE interactions SET status='stale' WHERE status='pending'",
-                [],
+                "UPDATE interactions SET status='stale', resolved_at=?1 WHERE status='pending'",
+                [stamp],
             )?;
             let unknown_commands = db.execute(
                 "UPDATE commands SET status='outcome_unknown', error_text='node restarted before \
@@ -1450,6 +1464,29 @@ impl Store for Connection {
         .ok_or_else(|| ApiError::not_found("Interaction not found"))
     }
 
+    fn recent_interactions(&self, session_id: &str) -> ApiResult<Vec<InteractionRow>> {
+        let now = now_ms();
+        let since = now - RECENTLY_ENDED_MS;
+        let mut statement = self.prepare(&format!(
+            "SELECT {INTERACTION_COLUMNS} FROM interactions WHERE session_id=?1 AND (
+               status='pending' AND expires_at>?3 - ?4
+               OR status!='pending' AND COALESCE(resolved_at, answered_at, 0)>?2)
+             ORDER BY created_at, rowid"
+        ))?;
+        let rows = statement.query_map(
+            params![session_id, since, now, RECENTLY_ENDED_MS],
+            interaction_row,
+        )?;
+        let mut rows: Vec<InteractionRow> = rows.collect::<rusqlite::Result<_>>()?;
+        for row in &mut rows {
+            if row.status == InteractionStatus::Pending && row.expires_at <= now {
+                row.status = InteractionStatus::Expired;
+                row.resolved_at = Some(row.expires_at);
+            }
+        }
+        Ok(rows)
+    }
+
     fn pending_interactions(&self, session_id: &str) -> ApiResult<Vec<InteractionRow>> {
         let mut statement = self.prepare(&format!(
             "SELECT {INTERACTION_COLUMNS} FROM interactions WHERE session_id=?1 AND \
@@ -1465,6 +1502,7 @@ impl Store for Connection {
         session_id: &str,
         epoch: i64,
         answer: &Value,
+        answered_by: Option<&str>,
     ) -> ApiResult<InteractionRow> {
         atomic(self, |db| {
             crate::execution_fences::require_open(db, session_id)?;
@@ -1477,14 +1515,14 @@ impl Store for Connection {
                 return Err(stale_interaction("Interaction is no longer answerable"));
             }
             let changed = db.execute(
-                "UPDATE interactions SET status='answered', answer_json=?1, answered_at=?2 \
-                 WHERE id=?3 AND status='pending' AND runner_epoch=?4",
-                params![answer.to_string(), now_ms(), interaction_id, epoch],
+                "UPDATE interactions SET status='answered', answer_json=?1, answered_at=?2, \
+                 resolved_at=?2, answered_by=?5 WHERE id=?3 AND status='pending' AND runner_epoch=?4",
+                params![answer.to_string(), now_ms(), interaction_id, epoch, answered_by],
             )?;
             if changed != 1 {
                 return Err(stale_interaction("Interaction was already answered"));
             }
-            Ok(interaction)
+            db.get_interaction(interaction_id)
         })
     }
 
@@ -1504,8 +1542,8 @@ impl Store for Connection {
             .optional()?;
         if let Some(id) = &found {
             self.execute(
-                "UPDATE interactions SET status='cancelled' WHERE id=?1",
-                [id],
+                "UPDATE interactions SET status='cancelled', resolved_at=?2 WHERE id=?1",
+                params![id, now_ms()],
             )?;
         }
         Ok(found)
@@ -1513,9 +1551,9 @@ impl Store for Connection {
 
     fn stale_epoch_interactions(&self, session_id: &str, epoch: i64) -> ApiResult<()> {
         self.execute(
-            "UPDATE interactions SET status='stale' WHERE session_id=?1 AND status='pending' \
+            "UPDATE interactions SET status='stale', resolved_at=?3 WHERE session_id=?1 AND status='pending' \
              AND runner_epoch!=?2",
-            params![session_id, epoch],
+            params![session_id, epoch, now_ms()],
         )?;
         Ok(())
     }

@@ -72,6 +72,11 @@ CREATE TABLE clients (
   user_agent TEXT, last_seen_at INTEGER NOT NULL,
   PRIMARY KEY (owner_user, client_id)
 );
+-- When each client last sent a command or an answer in a session.
+CREATE TABLE session_actions (
+  session_id TEXT NOT NULL, client_id TEXT NOT NULL, at INTEGER NOT NULL,
+  PRIMARY KEY (session_id, client_id)
+);
 
 -- The assistant's memory (daemon/memory.ts).
 CREATE TABLE memory_entries (

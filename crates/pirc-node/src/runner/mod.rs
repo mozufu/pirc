@@ -927,6 +927,7 @@ impl RunnerManager {
         rpc_id: &str,
         interaction_id: &str,
         answer: &Map<String, Value>,
+        ended: &crate::store::InteractionRow,
     ) -> ApiResult<()> {
         self.node()?.session_mode(session_id)?;
         let runner = self.get(session_id);
@@ -937,7 +938,7 @@ impl RunnerManager {
                 "Interaction belongs to an inactive runner epoch",
             ));
         };
-        runner.answer(rpc_id, interaction_id, answer).await
+        runner.answer(rpc_id, interaction_id, answer, ended).await
     }
 
     /// `stopSession` (chat deletion): wait for a start in flight, stop the

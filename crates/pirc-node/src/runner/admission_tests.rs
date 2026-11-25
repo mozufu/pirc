@@ -705,7 +705,8 @@ async fn transition_blocks_queued_input_and_late_approval_but_keeps_stop_availab
                 &interaction.id,
                 &f.current,
                 runner.epoch(),
-                &json!({"confirmed":true})
+                &json!({"confirmed":true}),
+                None
             )
             .unwrap_err()
             .code,

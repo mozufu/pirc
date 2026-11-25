@@ -31,6 +31,7 @@ pub(crate) fn issue(
         &interaction.session_id,
         interaction.runner_epoch,
         &json!({"confirmed":confirmed}),
+        None,
     )?;
     Ok(interaction.id)
 }
@@ -147,6 +148,7 @@ async fn declined_pending_expired_or_model_created_confirmations_never_start() {
             &f.current,
             origin.epoch,
             &json!({"confirmed":true}),
+            None,
         )
         .unwrap();
         fake

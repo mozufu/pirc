@@ -78,6 +78,10 @@ CREATE TABLE interactions (
   expires_at INTEGER NOT NULL,
   created_at INTEGER NOT NULL,
   answered_at INTEGER,
+  -- The client that answered (its clientId), and when the question ended for
+  -- any reason, so every device can say what happened.
+  answered_by TEXT,
+  resolved_at INTEGER,
   UNIQUE(session_id, runner_epoch, rpc_id)
 );
 CREATE INDEX interactions_pending ON interactions(session_id, status, expires_at);

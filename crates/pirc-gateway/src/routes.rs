@@ -810,6 +810,8 @@ struct CommandBody {
     expected_binding: Option<crate::conversation_bindings::Binding>,
     command_id: String,
     client_id: String,
+    /// The held lease's generation; a plain Stop needs none (M4 step 13).
+    #[serde(default)]
     generation: u64,
     payload: Map<String, Value>,
 }
@@ -882,7 +884,11 @@ pub async fn command(
     let input: CommandBody = body.parse()?;
     length_within(&input.command_id, 1, 200)?;
     length_within(&input.client_id, 1, usize::MAX)?;
-    if input.generation == 0 || !input.payload.get("type").is_some_and(Value::is_string) {
+    // Any of the owner's clients may Stop without control.
+    let plain_stop = input.payload.get("type") == Some(&json!("stop"));
+    if (input.generation == 0 && !plain_stop)
+        || !input.payload.get("type").is_some_and(Value::is_string)
+    {
         return Err(ApiError::invalid_input().into());
     }
     let session_id = claimed.session.id.as_str();
@@ -897,8 +903,10 @@ pub async fn command(
     let (command, duplicate) = {
         let conn = app.db.lock();
         atomic(&conn, |tx| {
-            tx.validate_lease(session_id, &input.client_id, input.generation as i64)?;
-            tx.validate_lease_user(session_id, &identity.user)?;
+            if !plain_stop {
+                tx.validate_lease(session_id, &input.client_id, input.generation as i64)?;
+                tx.validate_lease_user(session_id, &identity.user)?;
+            }
             let received = crate::conversation_bindings::commands::receive(
                 tx,
                 &claimed.session,
@@ -916,6 +924,7 @@ pub async fn command(
     if duplicate {
         return Ok(ok(json!({ "command": command, "duplicate": true })));
     }
+    crate::clients::note_action(&app.db.lock(), session_id, &input.client_id)?;
     if app.nodes.get(&claimed.node_id).is_none() {
         app.db.lock().update_command(
             &input.command_id,
@@ -1219,7 +1228,8 @@ pub async fn control(
     let conn = app.db.lock();
     let mut lease = conn.get_lease(&claimed.session.id)?;
     if lease.is_object() {
-        lease["holder"] = crate::clients::holder(&conn, &identity.user, &lease)?;
+        lease["holder"] =
+            crate::clients::holder(&conn, &identity.user, &claimed.session.id, &lease)?;
     }
     Ok(ok(json!({ "lease": lease })))
 }
@@ -1381,18 +1391,17 @@ pub async fn answer(
     State(app): State<AppState>,
     Extension(identity): Extension<Identity>,
     Path((session_id, interaction_id)): Path<(String, String)>,
+    headers: HeaderMap,
     ReqBody(body): ReqBody,
 ) -> Handled {
     let claimed = app.claim(&identity, &session_id)?;
     app.require_writable(&claimed.session)?;
-    // `answerBody`: a client and a held generation; the rest passes through.
-    let (client_id, generation) = match body.json() {
-        Some(Value::Object(answer)) => match (&answer.get("clientId"), &answer.get("generation")) {
-            (Some(Value::String(client)), Some(Value::Number(generation)))
-                if !client.is_empty() && generation.as_u64().is_some_and(|g| g > 0) =>
-            {
-                (client.clone(), generation.as_u64().unwrap_or(0) as i64)
-            }
+    // `answerBody`: the answering client; the rest passes through. Any of the
+    // owner's clients may answer without control: the node keeps the first
+    // answer and names its client (M4 step 13).
+    let client_id = match body.json() {
+        Some(Value::Object(answer)) => match answer.get("clientId") {
+            Some(Value::String(client)) if (1..=200).contains(&client.len()) => client.clone(),
             _ => return Err(ApiError::invalid_input().into()),
         },
         _ => return Err(ApiError::invalid_input().into()),
@@ -1400,8 +1409,8 @@ pub async fn answer(
     let session_id = claimed.session.id.as_str();
     {
         let conn = app.db.lock();
-        conn.validate_lease(session_id, &client_id, generation)?;
-        conn.validate_lease_user(session_id, &identity.user)?;
+        crate::clients::record(&conn, &identity, &client_id, None, &headers)?;
+        crate::clients::note_action(&conn, session_id, &client_id)?;
     }
     let given = body.json().and_then(|body| body.get("answer")).cloned();
     // The gateway's own confirmations are answered here; the node never saw them.

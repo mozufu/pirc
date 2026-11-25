@@ -183,13 +183,35 @@ pub fn list(conn: &Connection, owner: &str) -> ApiResult<Vec<Client>> {
     Ok(rows.into_iter().map(client).collect())
 }
 
-/// The lease's holder, for `GET …/control`.
-pub fn holder(conn: &Connection, owner: &str, lease: &Value) -> ApiResult<Value> {
+/// A client sent a command or an answer in a session: what "the holder acted
+/// recently" means when another device is about to send.
+pub fn note_action(conn: &Connection, session_id: &str, client_id: &str) -> ApiResult<()> {
+    conn.execute(
+        "INSERT INTO session_actions(session_id,client_id,at) VALUES(?1,?2,?3)
+         ON CONFLICT(session_id,client_id) DO UPDATE SET at=excluded.at",
+        params![session_id, client_id, now_ms()],
+    )?;
+    Ok(())
+}
+
+/// The lease's holder, for `GET …/control`: its name, kind and when it last
+/// sent something in this session.
+pub fn holder(conn: &Connection, owner: &str, session_id: &str, lease: &Value) -> ApiResult<Value> {
     let Some(client_id) = lease["clientId"].as_str() else {
         return Ok(Value::Null);
     };
+    let last_action: Option<i64> = conn
+        .query_row(
+            "SELECT at FROM session_actions WHERE session_id=?1 AND client_id=?2",
+            params![session_id, client_id],
+            |r| r.get(0),
+        )
+        .optional()?;
     Ok(match find(conn, owner, client_id)? {
-        Some(client) => json!({ "name": client.name, "kind": client.kind }),
+        Some(client) => {
+            json!({ "name": client.name, "kind": client.kind, "lastActionAt": last_action })
+        }
+        None if last_action.is_some() => json!({ "lastActionAt": last_action }),
         None => Value::Null,
     })
 }
@@ -336,8 +358,8 @@ mod tests {
             record(&conn, &browser("alice"), "web-1", None, &agent(MAC_CHROME)).unwrap();
             let lease = json!({ "clientId": "web-1" });
             assert_eq!(
-                holder(&conn, "alice", &lease).unwrap(),
-                json!({ "name": "Chrome on macOS", "kind": "browser" })
+                holder(&conn, "alice", "s", &lease).unwrap(),
+                json!({ "name": "Chrome on macOS", "kind": "browser", "lastActionAt": null })
             );
             // The name it sends wins, and stays when a later call sends none.
             record(
@@ -350,7 +372,7 @@ mod tests {
             .unwrap();
             record(&conn, &browser("alice"), "web-1", None, &agent(MAC_CHROME)).unwrap();
             assert_eq!(
-                holder(&conn, "alice", &lease).unwrap()["name"],
+                holder(&conn, "alice", "s", &lease).unwrap()["name"],
                 "Office iMac"
             );
             assert!(
@@ -378,11 +400,11 @@ mod tests {
             )
             .unwrap();
             assert_eq!(
-                holder(&conn, "alice", &json!({ "clientId": "app-1" })).unwrap(),
-                json!({ "name": "Pixel 9", "kind": "device" })
+                holder(&conn, "alice", "s", &json!({ "clientId": "app-1" })).unwrap(),
+                json!({ "name": "Pixel 9", "kind": "device", "lastActionAt": null })
             );
             // Another owner knows neither.
-            assert_eq!(holder(&conn, "bob", &lease).unwrap(), Value::Null);
+            assert_eq!(holder(&conn, "bob", "s", &lease).unwrap(), Value::Null);
         }
         // The device renames itself; the holder name follows.
         let (status, renamed) = call(
@@ -508,7 +530,19 @@ mod control_tests {
         assert_eq!(status, 200, "{control}");
         assert_eq!(
             control["lease"]["holder"],
-            json!({ "name": "Office iMac", "kind": "browser" })
+            json!({ "name": "Office iMac", "kind": "browser", "lastActionAt": null })
         );
+        // Once it sends something, the read says when.
+        note_action(&app.db.lock(), &session, "web-1").unwrap();
+        let (_, control) = call(
+            &app,
+            "GET",
+            &format!("/api/sessions/{session}/control"),
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        assert!(control["lease"]["holder"]["lastActionAt"].as_i64().unwrap() > now_ms() - 5_000);
     }
 }

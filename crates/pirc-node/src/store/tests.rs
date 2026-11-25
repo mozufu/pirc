@@ -471,6 +471,72 @@ fn runs_commands_and_recovery() {
 }
 
 #[test]
+fn every_device_sees_how_each_question_ended() {
+    let (db, id) = store_with_session();
+    let db = db.lock();
+    let later = now_ms() + 60_000;
+    let answered = db
+        .create_interaction(&id, 1, "r1", "confirm", &Map::new(), later)
+        .unwrap();
+    db.create_interaction(&id, 1, "r2", "input", &Map::new(), later)
+        .unwrap();
+    db.create_interaction(&id, 1, "r3", "input", &Map::new(), now_ms() - 1)
+        .unwrap();
+    let open = db
+        .create_interaction(&id, 1, "r4", "input", &Map::new(), later)
+        .unwrap();
+    // The first answer is kept and names its client; a second is refused.
+    let ended = db
+        .claim_interaction(
+            &answered.id,
+            &id,
+            1,
+            &serde_json::json!({ "confirmed": true }),
+            Some("phone"),
+        )
+        .unwrap();
+    assert_eq!(ended.answered_by.as_deref(), Some("phone"));
+    assert!(ended.resolved_at.is_some());
+    assert!(
+        db.claim_interaction(
+            &answered.id,
+            &id,
+            1,
+            &serde_json::json!({ "confirmed": false }),
+            Some("laptop")
+        )
+        .is_err()
+    );
+    db.cancel_interaction_by_rpc_id(&id, 1, "r2").unwrap();
+    let recent = db.recent_interactions(&id).unwrap();
+    let seen: Vec<(&str, InteractionStatus, Option<&str>)> = recent
+        .iter()
+        .map(|i| (i.rpc_id.as_str(), i.status, i.answered_by.as_deref()))
+        .collect();
+    assert_eq!(
+        seen,
+        [
+            ("r1", InteractionStatus::Answered, Some("phone")),
+            ("r2", InteractionStatus::Cancelled, None),
+            ("r3", InteractionStatus::Expired, None),
+            ("r4", InteractionStatus::Pending, None),
+        ]
+    );
+    // A runner restart makes the open one stale, and it says so.
+    db.stale_epoch_interactions(&id, 2).unwrap();
+    let after = db.get_interaction(&open.id).unwrap();
+    assert_eq!(after.status, InteractionStatus::Stale);
+    assert!(after.resolved_at.is_some());
+    // Ended questions drop out of snapshots after a while.
+    db.execute(
+        "UPDATE interactions SET resolved_at=?1, answered_at=?1, expires_at=?1",
+        [now_ms() - RECENTLY_ENDED_MS - 1_000],
+    )
+    .unwrap();
+    assert!(db.recent_interactions(&id).unwrap().is_empty());
+}
+
+#[test]
 fn leases_and_interactions() {
     let (db, id) = store_with_session();
     let db = db.lock();
@@ -521,15 +587,21 @@ fn leases_and_interactions() {
         ["r1", "r2"]
     );
     assert_eq!(
-        db.claim_interaction(&first.id, &id, 2, &Value::Null)
+        db.claim_interaction(&first.id, &id, 2, &Value::Null, None)
             .unwrap_err()
             .message,
         "Interaction is no longer answerable"
     );
-    db.claim_interaction(&first.id, &id, 1, &serde_json::json!({ "confirmed": true }))
-        .unwrap();
+    db.claim_interaction(
+        &first.id,
+        &id,
+        1,
+        &serde_json::json!({ "confirmed": true }),
+        None,
+    )
+    .unwrap();
     assert_eq!(
-        db.claim_interaction(&first.id, &id, 1, &Value::Null)
+        db.claim_interaction(&first.id, &id, 1, &Value::Null, None)
             .unwrap_err()
             .code,
         "stale_interaction"

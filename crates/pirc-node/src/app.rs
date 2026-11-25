@@ -919,7 +919,7 @@ async fn snapshot(node: Node, request: Request) -> ApiResult<Response> {
     // in one tick after its awaits).
     let read = |state: crate::runner::ReducedState| -> ApiResult<_> {
         let db = node.db.lock();
-        let interactions = db.pending_interactions(&session_id)?;
+        let interactions = db.recent_interactions(&session_id)?;
         let run = db.latest_run(&session_id)?;
         drop(db);
         let watermark = node.events.watermark(&session_id, session.runner_epoch);
@@ -1199,8 +1199,14 @@ async fn command(node: Node, request: Request) -> ApiResult<Response> {
     let session = claim(&node, &request)?;
     let map = object(request.json())?;
     let command_id = string(map, "commandId", false, 1, 200)?;
-    let (client_id, generation) = held_lease(map)?;
     let payload = command_payload(map.get("payload").unwrap_or(&Value::Null))?;
+    // Any of the owner's clients may Stop without control (M4 step 13).
+    let plain_stop = matches!(payload, CommandPayload::Stop);
+    let (client_id, generation) = if plain_stop {
+        (string(map, "clientId", false, 1, usize::MAX)?, 0)
+    } else {
+        held_lease(map)?
+    };
     // Stopping is the only action allowed after a mode is removed.
     if !matches!(
         payload,
@@ -1221,7 +1227,9 @@ async fn command(node: Node, request: Request) -> ApiResult<Response> {
     let (row, duplicate, initial_stop) = {
         let mut db = node.db.lock();
         let tx = db.transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
-        tx.validate_lease(&session.id, &client_id, generation)?;
+        if !plain_stop {
+            tx.validate_lease(&session.id, &client_id, generation)?;
+        }
         let (row, duplicate) =
             tx.receive_command(&command_id, &session.id, &payload_hash(&stored), &stored)?;
         crate::command_environment::record(
@@ -1429,16 +1437,16 @@ fn interaction_answer(value: &Value) -> ApiResult<Map<String, Value>> {
     Err(ApiError::invalid_input())
 }
 
+/// Any of the owner's clients may answer, without control: the first answer
+/// is kept and names its client; a later one is refused as no longer
+/// answerable (plans/roadmap.md M4 step 13).
 async fn answer(node: Node, request: Request) -> ApiResult<Response> {
     let session = claim_mutable(&node, &request)?;
     let interaction_id = param(&request, "interactionId").to_owned();
     let map = object(request.json())?;
-    let (client_id, generation) = held_lease(map)?;
+    let client_id = string(map, "clientId", false, 1, 200)?;
     let answer = interaction_answer(map.get("answer").unwrap_or(&Value::Null))?;
-    node.db
-        .lock()
-        .validate_lease(&session.id, &client_id, generation)?;
-    answer_interaction(&node, &session, &interaction_id, answer).await
+    answer_interaction(&node, &session, &interaction_id, answer, Some(&client_id)).await
 }
 
 async fn answer_interaction(
@@ -1446,6 +1454,7 @@ async fn answer_interaction(
     session: &SessionRow,
     interaction_id: &str,
     answer: Map<String, Value>,
+    answered_by: Option<&str>,
 ) -> ApiResult<Response> {
     let active = node
         .runners
@@ -1464,6 +1473,7 @@ async fn answer_interaction(
         &session.id,
         epoch,
         &Value::Object(answer.clone()),
+        answered_by,
     )?;
     // Publishes `interaction_answered` before the answer goes on.
     node.runners
@@ -1473,6 +1483,7 @@ async fn answer_interaction(
             &interaction.rpc_id,
             &interaction.id,
             &answer,
+            &interaction,
         )
         .await?;
     Ok(Response::json(

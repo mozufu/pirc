@@ -363,11 +363,11 @@ async fn sandbox_exec_persists_host_management_question_before_user_approval() {
         .unwrap();
         assert_eq!(path, "host_management");
         assert!(run.is_none());
-        db.claim_interaction(&interaction.id, &f.current, runner.epoch, &answer)
+        db.claim_interaction(&interaction.id, &f.current, runner.epoch, &answer, None)
             .unwrap();
         // A second device's stale confirmation cannot launch another command.
         assert!(
-            db.claim_interaction(&interaction.id, &f.current, runner.epoch, &answer)
+            db.claim_interaction(&interaction.id, &f.current, runner.epoch, &answer, None)
                 .is_err()
         );
     }
@@ -376,6 +376,7 @@ async fn sandbox_exec_persists_host_management_question_before_user_approval() {
             &interaction.rpc_id,
             &interaction.id,
             answer.as_object().unwrap(),
+            &interaction,
         )
         .await
         .unwrap();
