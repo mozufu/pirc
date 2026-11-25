@@ -15,7 +15,7 @@ acceptance, activation.
 | [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)         |
 | [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11   |
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
-| [M4 Pots backend](#m4-pots-backend)                           | complete | complete    |            | steps 0–12 done; 231 conformance tests on Linux             |
+| [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | step 13 (several devices) in progress                       |
 | [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`               |
 | [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | 12: no files, instructions, delete preview (gone in 10b)    |
 | [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |
@@ -378,6 +378,20 @@ evidence?)` (L1 `obs_observations`, one per pot and event, only for events that
     `PUT /api/clients/{clientId}` renames a browser; `GET|PATCH /api/device` lets a
     paired device read and rename itself (no management grant: it is its own
     record). The app adds the name to Settings (this device) and shows it.
+13. **Working from several devices** (owner decision, 2026-11-25). Control is
+    split in three:
+    - Any of the owner's devices, without control: read, answer a question (the
+      node keeps the first answer; the others are told who answered) and Stop.
+    - Sending takes control: a device without it takes it when it sends; when the
+      holder acted in the last 30 seconds the app asks once first. The control
+      read gives the holder's `lastActionAt`.
+    - Explicit control stays for terminal input, browser takeover, switching the
+      host and checkpoint recovery.
+      A question records how it ended (`answered` with the answering client and
+      time, `cancelled` by the agent or a Stop, `expired`, `stale` after a runner
+      restart) in its `interaction_answered` event, and snapshots keep questions that
+      ended in the last 10 minutes, so every device shows what really happened
+      ("Answered on Pixel 9 at 10:32") instead of guessing "handled elsewhere".
 
 ---
 
