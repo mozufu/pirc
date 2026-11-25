@@ -91,5 +91,18 @@
   "emptyFilter": "這裡沒有工作。",
   "listFailed": "無法載入列表。",
   "retry": "重試",
-  "newConversation": "新對話"
+  "newConversation": "新對話",
+  "questionWaits": "有問題等你回答",
+  "newContent": "有新內容",
+  "turnFailed": "這一輪失敗了。",
+  "turnStopped": "已停止。",
+  "toolSteps": "{count} 個工具步驟",
+  "toolFailures": "{count} 個失敗",
+  "stepFailed": "失敗",
+  "stepDone": "完成",
+  "sessionDeleted": "這個工作已被刪除。",
+  "sessionFailed": "無法載入這個工作。",
+  "partialOutputLost": "重新連線時遺失了部分輸出。",
+  "controlledElsewhere": "由另一台裝置控制中",
+  "takeControl": "取得控制權"
 }

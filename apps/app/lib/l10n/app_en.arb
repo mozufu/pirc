@@ -133,5 +133,32 @@
   "emptyFilter": "Nothing here.",
   "listFailed": "The list could not be loaded.",
   "retry": "Try again",
-  "newConversation": "New conversation"
+  "newConversation": "New conversation",
+  "questionWaits": "A question waits for you",
+  "newContent": "New content",
+  "turnFailed": "This turn failed.",
+  "turnStopped": "Stopped.",
+  "toolSteps": "{count, plural, =1{1 tool step} other{{count} tool steps}}",
+  "@toolSteps": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "toolFailures": "{count} failed",
+  "@toolFailures": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "stepFailed": "Failed",
+  "stepDone": "Done",
+  "sessionDeleted": "This work was deleted.",
+  "sessionFailed": "This work could not be loaded.",
+  "partialOutputLost": "Some output was lost while reconnecting.",
+  "controlledElsewhere": "Controlled by another device",
+  "takeControl": "Take control"
 }

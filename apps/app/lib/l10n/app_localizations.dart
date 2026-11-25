@@ -650,6 +650,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'New conversation'**
   String get newConversation;
+
+  /// No description provided for @questionWaits.
+  ///
+  /// In en, this message translates to:
+  /// **'A question waits for you'**
+  String get questionWaits;
+
+  /// No description provided for @newContent.
+  ///
+  /// In en, this message translates to:
+  /// **'New content'**
+  String get newContent;
+
+  /// No description provided for @turnFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This turn failed.'**
+  String get turnFailed;
+
+  /// No description provided for @turnStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopped.'**
+  String get turnStopped;
+
+  /// No description provided for @toolSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 tool step} other{{count} tool steps}}'**
+  String toolSteps(int count);
+
+  /// No description provided for @toolFailures.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} failed'**
+  String toolFailures(int count);
+
+  /// No description provided for @stepFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get stepFailed;
+
+  /// No description provided for @stepDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get stepDone;
+
+  /// No description provided for @sessionDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'This work was deleted.'**
+  String get sessionDeleted;
+
+  /// No description provided for @sessionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This work could not be loaded.'**
+  String get sessionFailed;
+
+  /// No description provided for @partialOutputLost.
+  ///
+  /// In en, this message translates to:
+  /// **'Some output was lost while reconnecting.'**
+  String get partialOutputLost;
+
+  /// No description provided for @controlledElsewhere.
+  ///
+  /// In en, this message translates to:
+  /// **'Controlled by another device'**
+  String get controlledElsewhere;
+
+  /// No description provided for @takeControl.
+  ///
+  /// In en, this message translates to:
+  /// **'Take control'**
+  String get takeControl;
 }
 
 class _AppLocalizationsDelegate

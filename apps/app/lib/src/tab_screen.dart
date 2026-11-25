@@ -7,6 +7,7 @@ import 'package:pirc_ui/pirc_ui.dart';
 import '../l10n/app_localizations.dart';
 import 'router.dart';
 import 'shell/app_drawer.dart';
+import 'work/conversation_screen.dart';
 import 'work/work_data.dart';
 import 'work/work_list_screen.dart';
 
@@ -65,11 +66,20 @@ class TabScreen extends ConsumerWidget {
           },
           content: open == null
               ? null
-              : _ItemPlaceholder(
-                  key: ValueKey(open),
-                  title: l10n.openItem(open),
-                  onBack: () => context.go(tab.path),
-                ),
+              : switch (tab) {
+                  AppTab.work => ConversationScreen(
+                    key: ValueKey(open),
+                    sessionId: open,
+                    showBack:
+                        PircLayout.forWidth(MediaQuery.sizeOf(context).width) !=
+                        PircLayout.desktop,
+                  ),
+                  _ => _ItemPlaceholder(
+                    key: ValueKey(open),
+                    title: l10n.openItem(open),
+                    onBack: () => context.go(tab.path),
+                  ),
+                },
           placeholder: _Empty(text: l10n.nothingOpen),
         ),
       ),

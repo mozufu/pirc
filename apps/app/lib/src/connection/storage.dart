@@ -20,6 +20,7 @@ abstract final class PrefKeys {
   static const textScale = 'textScale';
   static const startTab = 'startTab';
   static const gatewayUrl = 'gatewayUrl';
+  static const clientId = 'clientId';
 
   /// Per-session drafts and the first-send journal use these prefixes.
   static const draftPrefix = 'draft.';

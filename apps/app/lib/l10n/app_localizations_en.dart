@@ -309,4 +309,53 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get newConversation => 'New conversation';
+
+  @override
+  String get questionWaits => 'A question waits for you';
+
+  @override
+  String get newContent => 'New content';
+
+  @override
+  String get turnFailed => 'This turn failed.';
+
+  @override
+  String get turnStopped => 'Stopped.';
+
+  @override
+  String toolSteps(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tool steps',
+      one: '1 tool step',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String toolFailures(int count) {
+    return '$count failed';
+  }
+
+  @override
+  String get stepFailed => 'Failed';
+
+  @override
+  String get stepDone => 'Done';
+
+  @override
+  String get sessionDeleted => 'This work was deleted.';
+
+  @override
+  String get sessionFailed => 'This work could not be loaded.';
+
+  @override
+  String get partialOutputLost => 'Some output was lost while reconnecting.';
+
+  @override
+  String get controlledElsewhere => 'Controlled by another device';
+
+  @override
+  String get takeControl => 'Take control';
 }

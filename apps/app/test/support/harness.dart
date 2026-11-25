@@ -176,6 +176,35 @@ class Saved {
   final MemorySecretStore secrets;
 }
 
+final _containers = <ProviderContainer>[];
+
+/// Unmounts the app and disposes its providers, so their timers (lease
+/// heartbeats, socket backoff) stop before the test ends.
+Future<void> disposeApp(WidgetTester tester) async {
+  await tester.pumpWidget(const SizedBox());
+  for (final container in _containers) {
+    container.dispose();
+  }
+  _containers.clear();
+  await tester.pump();
+}
+
+/// A widget test that disposes the app at its end ([disposeApp]).
+void appTest(
+  String description,
+  Future<void> Function(WidgetTester tester) body, {
+  Object? tags,
+  bool? skip,
+}) => testWidgets(
+  description,
+  (tester) async {
+    await body(tester);
+    await disposeApp(tester);
+  },
+  tags: tags,
+  skip: skip,
+);
+
 /// Pumps the whole app at [width] against [gateway].
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
@@ -206,7 +235,10 @@ Future<ProviderContainer> pumpApp(
       ...overrides.cast(),
     ],
   );
-  addTearDown(container.dispose);
+  _containers.add(container);
+  addTearDown(() {
+    if (_containers.remove(container)) container.dispose();
+  });
   await tester.pumpWidget(
     UncontrolledProviderScope(container: container, child: const PircApp()),
   );

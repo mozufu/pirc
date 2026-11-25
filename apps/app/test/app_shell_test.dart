@@ -37,14 +37,14 @@ void main() {
     (1300.0, PircLayout.desktop),
   ]) {
     testWidgets('$width wide uses the $layout layout', (tester) async {
-      await _pump(tester, width: width, location: '/work?open=s1');
+      await _pump(tester, width: width, location: '/activity?open=s1');
       expect(find.byType(AdaptiveScaffold), findsOneWidget);
       expect(
         find.byType(NavigationBar),
         layout == PircLayout.compact ? findsOneWidget : findsNothing,
       );
       expect(find.text('Item s1'), findsOneWidget);
-      final listShown = find.text('No sessions yet').evaluate().isNotEmpty;
+      final listShown = find.text('No activity yet').evaluate().isNotEmpty;
       expect(
         listShown,
         layout == PircLayout.landscape || layout == PircLayout.desktop,
@@ -55,33 +55,33 @@ void main() {
   testWidgets('a layout change keeps the tab and the open item', (
     tester,
   ) async {
-    await _pump(tester, width: 1300, location: '/work?open=s1');
+    await _pump(tester, width: 1300, location: '/activity?open=s1');
     for (final width in [1000.0, 700.0, 375.0, 1300.0]) {
       await _resize(tester, width);
       expect(find.text('Item s1'), findsOneWidget, reason: '$width');
       final scaffold = tester.widget<AdaptiveScaffold>(
         find.byType(AdaptiveScaffold),
       );
-      expect(scaffold.selectedIndex, AppTab.work.index, reason: '$width');
+      expect(scaffold.selectedIndex, AppTab.activity.index, reason: '$width');
     }
   });
 
   testWidgets('tabs switch and keep their own open item', (tester) async {
-    await _pump(tester, width: 1300, location: '/work?open=s1');
+    await _pump(tester, width: 1300, location: '/activity?open=s1');
     await tester.tap(find.text('Calendar'));
     await tester.pumpAndSettle();
     expect(find.text('Nothing scheduled'), findsOneWidget);
-    await tester.tap(find.text('Work'));
+    await tester.tap(find.text('Activity'));
     await tester.pumpAndSettle();
     expect(find.text('Item s1'), findsOneWidget);
   });
 
   testWidgets('back closes the open item on a phone', (tester) async {
-    await _pump(tester, width: 375, location: '/work?open=s1');
+    await _pump(tester, width: 375, location: '/activity?open=s1');
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
     expect(find.text('Item s1'), findsNothing);
-    expect(find.text('No sessions yet'), findsOneWidget);
+    expect(find.text('No activity yet'), findsOneWidget);
   });
 
   testWidgets('Traditional Chinese labels the tabs and the renderer', (

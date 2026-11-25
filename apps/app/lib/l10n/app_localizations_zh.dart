@@ -295,6 +295,49 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get newConversation => '新對話';
+
+  @override
+  String get questionWaits => '有問題等你回答';
+
+  @override
+  String get newContent => '有新內容';
+
+  @override
+  String get turnFailed => '這一輪失敗了。';
+
+  @override
+  String get turnStopped => '已停止。';
+
+  @override
+  String toolSteps(int count) {
+    return '$count 個工具步驟';
+  }
+
+  @override
+  String toolFailures(int count) {
+    return '$count 個失敗';
+  }
+
+  @override
+  String get stepFailed => '失敗';
+
+  @override
+  String get stepDone => '完成';
+
+  @override
+  String get sessionDeleted => '這個工作已被刪除。';
+
+  @override
+  String get sessionFailed => '無法載入這個工作。';
+
+  @override
+  String get partialOutputLost => '重新連線時遺失了部分輸出。';
+
+  @override
+  String get controlledElsewhere => '由另一台裝置控制中';
+
+  @override
+  String get takeControl => '取得控制權';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
