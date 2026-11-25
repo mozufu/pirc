@@ -164,3 +164,92 @@ async fn update_me(
     let profile = update(&app.db.lock(), &identity.user, patch)?;
     Ok(axum::Json(json!({ "profile": profile })))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_support::{app_with_models, call};
+
+    #[tokio::test]
+    async fn the_profile_starts_as_the_signed_in_user_and_keeps_its_revision() {
+        let (app, _dir) = app_with_models(json!({}));
+        let (_, me) = call(&app, "GET", "/api/me", Some("alice"), None, None).await;
+        assert_eq!(me["profile"]["displayName"], "alice");
+        assert_eq!(
+            (
+                me["profile"]["avatarColor"].as_u64(),
+                me["profile"]["revision"].as_u64()
+            ),
+            (Some(1), Some(0))
+        );
+        let (status, updated) = call(
+            &app,
+            "PATCH",
+            "/api/me",
+            Some("alice"),
+            None,
+            Some(json!({ "revision": 0, "displayName": "  Ice Bear ", "avatarColor": 3 })),
+        )
+        .await;
+        assert_eq!(status, 200, "{updated}");
+        assert_eq!(updated["profile"]["displayName"], "Ice Bear");
+        assert_eq!(updated["profile"]["revision"], 1);
+        // A stale revision is refused; another owner is unaffected.
+        assert_eq!(
+            call(
+                &app,
+                "PATCH",
+                "/api/me",
+                Some("alice"),
+                None,
+                Some(json!({ "revision": 0, "avatarColor": 2 }))
+            )
+            .await
+            .0,
+            409
+        );
+        assert_eq!(
+            call(
+                &app,
+                "PATCH",
+                "/api/me",
+                Some("alice"),
+                None,
+                Some(json!({ "revision": 1, "displayName": "  " }))
+            )
+            .await
+            .0,
+            400
+        );
+        assert_eq!(
+            call(
+                &app,
+                "PATCH",
+                "/api/me",
+                Some("alice"),
+                None,
+                Some(json!({ "revision": 1, "avatarColor": 9 }))
+            )
+            .await
+            .0,
+            400
+        );
+        assert_eq!(
+            call(
+                &app,
+                "PATCH",
+                "/api/me",
+                Some("alice"),
+                None,
+                Some(json!({ "revision": 1, "avatarImage": "img_unknown" }))
+            )
+            .await
+            .0,
+            400
+        );
+        let (_, bob) = call(&app, "GET", "/api/me", Some("bob"), None, None).await;
+        assert_eq!(bob["profile"]["displayName"], "bob");
+        // Pots call the user by the new name.
+        assert_eq!(display_name(&app.db.lock(), "alice").unwrap(), "Ice Bear");
+    }
+}

@@ -142,3 +142,98 @@ async fn download(
     )
         .into_response())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_support::{app_with_models, call};
+
+    const PNG: &[u8] = &[0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3];
+
+    #[test]
+    fn the_type_comes_from_the_bytes() {
+        assert_eq!(sniff(PNG), Some("image/png"));
+        assert_eq!(sniff(&[0xff, 0xd8, 0xff, 9]), Some("image/jpeg"));
+        assert_eq!(sniff(b"RIFF\0\0\0\0WEBPVP8 "), Some("image/webp"));
+        assert_eq!(sniff(b"GIF89a"), None);
+    }
+
+    #[tokio::test]
+    async fn pictures_are_the_owners_and_never_change_under_an_id() {
+        let (app, _dir) = app_with_models(json!({}));
+        let (status, uploaded) = call(
+            &app,
+            "POST",
+            "/api/images",
+            Some("alice"),
+            None,
+            Some(json!({ "bytes": true })),
+        )
+        .await;
+        // JSON bodies are not pictures.
+        assert_eq!(status, 400, "{uploaded}");
+        let id = {
+            let conn = app.db.lock();
+            store(&conn, "alice", PNG).unwrap()
+        };
+        assert_eq!(
+            store(&app.db.lock(), "alice", b"GIF89a")
+                .unwrap_err()
+                .status,
+            400
+        );
+        assert_eq!(
+            store(&app.db.lock(), "alice", &vec![0u8; MAX_BYTES + 1])
+                .unwrap_err()
+                .status,
+            413
+        );
+        // Another owner cannot use or read it.
+        assert_eq!(
+            require_owned(&app.db.lock(), "bob", &id)
+                .unwrap_err()
+                .status,
+            400
+        );
+        let (status, body) = call(
+            &app,
+            "GET",
+            &format!("/api/images/{id}"),
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        assert_eq!(status, 200);
+        assert_eq!(body["error"], json!(null), "served as bytes, not JSON");
+        assert_eq!(
+            call(
+                &app,
+                "GET",
+                &format!("/api/images/{id}"),
+                Some("bob"),
+                None,
+                None
+            )
+            .await
+            .0,
+            404
+        );
+        // A picture only its owner still refers to stays; a released one goes.
+        app.db
+            .lock()
+            .execute(
+                "INSERT INTO user_profiles(owner_user,display_name,avatar_image,updated_at) VALUES('alice','A',?1,0)",
+                [&id],
+            )
+            .unwrap();
+        release(&app.db.lock(), Some(&id)).unwrap();
+        assert!(require_owned(&app.db.lock(), "alice", &id).is_ok());
+        app.db
+            .lock()
+            .execute("DELETE FROM user_profiles", [])
+            .unwrap();
+        release(&app.db.lock(), Some(&id)).unwrap();
+        assert!(require_owned(&app.db.lock(), "alice", &id).is_err());
+    }
+}

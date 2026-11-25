@@ -277,7 +277,13 @@ mod tests {
             "budget": [{ "unit": "tokens", "percent": 82, "window": "day" }],
         }))
         .unwrap();
-        assert!(tight.text.contains("## Budget\n\n- 82% of today's token limit is used up."), "{}", tight.text);
+        assert!(
+            tight
+                .text
+                .contains("## Budget\n\n- 82% of today's token limit is used up."),
+            "{}",
+            tight.text
+        );
         // A minimal pot has only its name.
         let bare = identity_section(&json!({ "pot": { "name": "Bare" } })).unwrap();
         assert_eq!(bare.text, "You are Bare, one of the user's pots.");

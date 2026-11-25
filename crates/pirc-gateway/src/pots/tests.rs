@@ -859,6 +859,83 @@ mod http {
     }
 
     #[tokio::test]
+    async fn the_pot_list_says_what_waits_and_what_is_left() {
+        let (app, _dir) = app();
+        let (_, created) = call(&app, "POST", "/api/pots", Some("alice"), None, Some(body())).await;
+        let id = created["pot"]["id"].as_str().unwrap().to_owned();
+        assert_eq!(
+            (
+                created["pot"]["status"].as_str(),
+                created["pot"]["needsYou"].as_u64()
+            ),
+            (Some("idle"), Some(0))
+        );
+        assert_eq!(created["pot"]["budgetLeft"]["moneyMicros"], 20_000_000);
+        assert_eq!(created["pot"]["budgetLeft"]["tokens"], 500_000);
+        // A pending model approval and a proposed handover count as waiting.
+        let approval = app
+            .request_approval(
+                "alice",
+                &id,
+                crate::pots::approvals::NewApproval {
+                    work_title: "Fix".into(),
+                    workspace_id: "node:repo".into(),
+                    provider: "oauth:anthropic".into(),
+                    model: "claude-opus-5".into(),
+                    thinking: None,
+                    reason: String::new(),
+                    estimate_micros: 0,
+                    remaining_micros: None,
+                },
+            )
+            .unwrap();
+        let (_, listed) = call(&app, "GET", "/api/pots", Some("alice"), None, None).await;
+        assert_eq!(listed["pots"][0]["needsYou"], 1);
+        // Answering clears it; a paused pot is unavailable.
+        crate::pots::approvals::answer(
+            &mut app.db.lock(),
+            "alice",
+            &approval.id,
+            crate::pots::approvals::Answer {
+                answer: crate::pots::approvals::Decision::Deny,
+                reason: None,
+            },
+        )
+        .unwrap();
+        let state = crate::pots::store::read(&app.db.lock(), "alice", &id).unwrap();
+        crate::pots::store::set_state(
+            &mut app.db.lock(),
+            "alice",
+            &id,
+            state.revision,
+            super::PotState::Paused,
+        )
+        .unwrap();
+        let (_, read) = call(
+            &app,
+            "GET",
+            &format!("/api/pots/{id}"),
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        assert_eq!(read["pot"]["status"], "unavailable");
+        assert_eq!(read["pot"]["needsYou"], 0);
+        // A limit turned off has no budgetLeft entry.
+        let mut input = body();
+        input["permissions"]["budgetMoneyMonthMicros"] = json!(null);
+        let (status, off) = call(&app, "POST", "/api/pots", Some("alice"), None, Some(input)).await;
+        assert_eq!(status, 201, "{off}");
+        assert_eq!(
+            off["pot"]["permissions"]["budgetMoneyMonthMicros"],
+            json!(null)
+        );
+        assert_eq!(off["pot"]["budgetLeft"]["moneyMicros"], json!(null));
+        assert_eq!(off["pot"]["budgetLeft"]["tokens"], 500_000);
+    }
+
+    #[tokio::test]
     async fn the_owner_talks_to_a_pot_and_its_groups_over_http() {
         let (app, _dir) = app();
         let mut ids = Vec::new();
@@ -2524,6 +2601,144 @@ mod threads {
     }
 
     #[test]
+    fn unread_messages_and_the_newest_one_show_in_the_list() {
+        let db = db();
+        let mut conn = db.lock();
+        let tester = pot(&mut conn, "Tester", DmRule::All, DmRule::All);
+        let thread = threads::direct(&conn, "alice", &tester).unwrap();
+        // A pot's reply is a pot message and stays unread.
+        let reply = |text: &str| {
+            conn.execute(
+                "INSERT INTO pot_wakes(id,pot_id,owner_user,source,thread_id,content,state,reply,created_at)
+                 VALUES(?1,?2,'alice','user',?3,'hi','settled',?4,0)",
+                rusqlite::params![crate::util::new_id("wake"), tester, thread.id, text],
+            )
+            .unwrap();
+            let id: String = conn
+                .query_row(
+                    "SELECT id FROM pot_wakes WHERE pot_id=?1 ORDER BY rowid DESC LIMIT 1",
+                    [&tester],
+                    |r| r.get(0),
+                )
+                .unwrap();
+            threads::post_reply(&conn, &id).unwrap().unwrap();
+        };
+        reply("Done");
+        let shown = threads::get(&conn, "alice", &thread.id).unwrap();
+        assert_eq!(shown.unread, 1);
+        assert_eq!(
+            shown
+                .last_message
+                .as_ref()
+                .map(|m| (m.author_name.as_str(), m.body.as_str())),
+            Some(("Tester", "Done"))
+        );
+        let listed = threads::list(&conn, "alice").unwrap();
+        assert_eq!(listed[0].unread, 1);
+        // The user's own message is read where it is written: the read
+        // position moves to it, and what came before is read too.
+        threads::post_user(&conn, "alice", &thread.id, "Hello", vec![], false).unwrap();
+        let shown = threads::get(&conn, "alice", &thread.id).unwrap();
+        assert_eq!(shown.unread, 0);
+        assert_eq!(
+            shown.last_message.as_ref().map(|m| m.body.as_str()),
+            Some("Hello")
+        );
+        // Reading up to the end clears it; a later reply is new again.
+        threads::mark_read(&conn, "alice", &thread.id, 999).unwrap();
+        assert_eq!(threads::get(&conn, "alice", &thread.id).unwrap().unread, 0);
+        reply("More");
+        assert_eq!(threads::get(&conn, "alice", &thread.id).unwrap().unread, 1);
+        assert_eq!(
+            threads::get(&conn, "bob", &thread.id).unwrap_err().status,
+            404
+        );
+    }
+
+    #[test]
+    fn a_group_can_be_edited_and_deleted_by_its_owner() {
+        let db = db();
+        let mut conn = db.lock();
+        let a = pot(&mut conn, "A", DmRule::All, DmRule::All);
+        let b = pot(&mut conn, "B", DmRule::All, DmRule::All);
+        let c = pot(&mut conn, "C", DmRule::All, DmRule::All);
+        let group = threads::create_group(
+            &conn,
+            "alice",
+            GroupInput {
+                name: "Release".into(),
+                avatar_color: Some(2),
+                host_pot_id: a.clone(),
+                member_pot_ids: vec![b.clone()],
+                project_id: None,
+            },
+        )
+        .unwrap();
+        let patch = |revision: i64, value: serde_json::Value| {
+            let mut value = value;
+            value["revision"] = json!(revision);
+            serde_json::from_value::<threads::GroupPatch>(value).unwrap()
+        };
+        // A stale revision is refused; the host must be a member.
+        assert_eq!(
+            threads::update_group(
+                &conn,
+                "alice",
+                &group.id,
+                patch(group.revision + 1, json!({ "name": "X" }))
+            )
+            .unwrap_err()
+            .code,
+            "revision_conflict"
+        );
+        assert_eq!(
+            threads::update_group(
+                &conn,
+                "alice",
+                &group.id,
+                patch(group.revision, json!({ "memberPotIds": [] }))
+            )
+            .unwrap_err()
+            .status,
+            400
+        );
+        let edited = threads::update_group(
+            &conn,
+            "alice",
+            &group.id,
+            patch(group.revision, json!({ "name": "Ship", "hostPotId": c, "memberPotIds": [a.clone(), b.clone(), c.clone()] })),
+        )
+        .unwrap();
+        assert_eq!((edited.name.as_str(), edited.revision), ("Ship", 2));
+        assert_eq!(edited.host_pot_id.as_deref(), Some(c.as_str()));
+        assert_eq!(edited.pots.len(), 3);
+        // Direct threads are not groups.
+        let direct = threads::direct(&conn, "alice", &a).unwrap();
+        assert_eq!(
+            threads::update_group(
+                &conn,
+                "alice",
+                &direct.id,
+                patch(direct.revision, json!({ "name": "X" }))
+            )
+            .unwrap_err()
+            .status,
+            400
+        );
+        assert_eq!(
+            threads::delete_group(&conn, "bob", &group.id)
+                .unwrap_err()
+                .status,
+            404
+        );
+        threads::delete_group(&conn, "alice", &group.id).unwrap();
+        assert_eq!(
+            threads::get(&conn, "alice", &group.id).unwrap_err().status,
+            404
+        );
+    }
+
+    #[test]
     fn a_direct_thread_is_made_even_at_the_thread_limit() {
         let db = db();
         let mut conn = db.lock();
@@ -2601,9 +2816,9 @@ mod threads {
 }
 
 mod approvals {
-    use super::super::approvals::{self, Answer, ApprovalState, Decision, NewApproval};
     use super::super::threads;
     use super::*;
+    use crate::pots::approvals::{self, Answer, ApprovalState, Decision, NewApproval};
 
     fn ask() -> NewApproval {
         NewApproval {
@@ -3415,10 +3630,10 @@ mod activity {
 }
 
 mod work {
-    use super::super::approvals::{self, Answer, Decision};
     use super::super::work;
     use crate::db::Store;
     use crate::nodes::ConnectedNode;
+    use crate::pots::approvals::{self, Answer, Decision};
     use crate::test_support::app_with_models;
     use crate::util::now_ms;
     use pirc_protocol::{HttpMethod, ModeId, NodeHttpRequest, NodeHttpResponse};
@@ -4811,7 +5026,7 @@ mod guard {
 
     #[test]
     fn a_decision_still_stands_after_its_root_was_stopped() {
-        use super::super::approvals::{self, Answer, Decision};
+        use crate::pots::approvals::{self, Answer, Decision};
         let db = db();
         let mut conn = db.lock();
         let a = create(&mut conn, "alice", input("Tester")).unwrap().id;

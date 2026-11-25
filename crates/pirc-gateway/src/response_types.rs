@@ -14,7 +14,15 @@ use axum::response::{IntoResponse, Response};
 use crate::error::ApiError;
 
 /// The media types the gateway answers with.
-pub const ALLOWED_RESPONSE_TYPES: &[&str] = &["application/json", "text/plain", "video/webm"];
+pub const ALLOWED_RESPONSE_TYPES: &[&str] = &[
+    "application/json",
+    "text/plain",
+    "video/webm",
+    // Uploaded avatar pictures (images.rs).
+    "image/png",
+    "image/jpeg",
+    "image/webp",
+];
 
 fn media_type(value: &HeaderValue) -> String {
     String::from_utf8_lossy(value.as_bytes())
