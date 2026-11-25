@@ -4,7 +4,8 @@ import 'package:flutter/services.dart' show appFlavor;
 ///
 /// The Gradle flavor (`--flavor standard|tailscale`) and the Dart define
 /// (`--dart-define=PIRC_TAILSCALE=true|false`) are chosen together. Web and
-/// desktop builds have no flavor and only the standard variant.
+/// macOS builds have no flavor (`appFlavor` is null) and only the standard
+/// variant, so `PIRC_TAILSCALE=true` is refused there.
 enum BuildVariant { standard, tailscale }
 
 const bool _tailscaleDefine = bool.fromEnvironment('PIRC_TAILSCALE');

@@ -27,5 +27,10 @@ void main() {
       () => resolveBuildVariant(flavor: 'other', tailscaleDefine: false),
       throwsStateError,
     );
+    // macOS and Web have no flavor and only the standard build.
+    expect(
+      () => resolveBuildVariant(flavor: null, tailscaleDefine: true),
+      throwsStateError,
+    );
   });
 }
