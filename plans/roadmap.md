@@ -9,20 +9,20 @@ acceptance, activation.
 
 ## Status
 
-| Milestone                                                     | Design   | Code        | Acceptance | Notes                                                              |
-| ------------------------------------------------------------- | -------- | ----------- | ---------- | ------------------------------------------------------------------ |
-| [M0 Unify the working tree](#m0-unify-the-working-tree)       | complete | complete    | n/a        | `e1a08db9`, `162c113b`                                             |
-| [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)                |
-| [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11          |
-| [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4        |
-| [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–8a, 9 and 10a done; 8b, 10b and 11 in progress on branches |
-| [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`                      |
-| [M6 Work and settings screens](#m6-work-and-settings-screens) | complete |             |            | 16 steps; defaults A–H accepted 2026-11-25                         |
-| [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                                    |
-| [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                                    |
-| [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                                 |
-| [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                                                                    |
-| [M11 Release](#m11-release)                                   | outline  |             |            |                                                                    |
+| Milestone                                                     | Design   | Code        | Acceptance | Notes                                                       |
+| ------------------------------------------------------------- | -------- | ----------- | ---------- | ----------------------------------------------------------- |
+| [M0 Unify the working tree](#m0-unify-the-working-tree)       | complete | complete    | n/a        | `e1a08db9`, `162c113b`                                      |
+| [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)         |
+| [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11   |
+| [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
+| [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–9 and 10a done; 10b and 11 in progress on branches  |
+| [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`               |
+| [M6 Work and settings screens](#m6-work-and-settings-screens) | complete |             |            | 16 steps; defaults A–H accepted 2026-11-25                  |
+| [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |
+| [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                             |
+| [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                          |
+| [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                                                             |
+| [M11 Release](#m11-release)                                   | outline  |             |            |                                                             |
 
 "Outline" milestones get their detailed steps written (rule P12) before they start,
 using what the earlier milestones produced.

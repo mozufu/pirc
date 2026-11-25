@@ -85,6 +85,16 @@ pub struct NewWake<'a> {
     pub details: Value,
 }
 
+/// An enqueue whose root was stopped queues nothing, and that is not an error
+/// for a caller recording a user decision.
+pub fn unless_stopped(queued: ApiResult<String>) -> ApiResult<Option<String>> {
+    match queued {
+        Ok(id) => Ok(Some(id)),
+        Err(error) if error.code == "root_stopped" => Ok(None),
+        Err(error) => Err(error),
+    }
+}
+
 /// Queue a wake for the owner's pot; it is delivered by [`kick`] or the sweep.
 /// A wake past its root's depth or fan-out limit is refused with a clear error
 /// instead of being queued; the caller still stores what it was doing.

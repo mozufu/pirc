@@ -4743,6 +4743,47 @@ mod guard {
     }
 
     #[test]
+    fn a_decision_still_stands_after_its_root_was_stopped() {
+        use super::super::approvals::{self, Answer, Decision};
+        let db = db();
+        let mut conn = db.lock();
+        let a = create(&mut conn, "alice", input("Tester")).unwrap().id;
+        let direct = threads::direct(&conn, "alice", &a).unwrap();
+        threads::post_user(&conn, "alice", &direct.id, "Fix CI", vec![], false).unwrap();
+        let root = last_root(&conn);
+        claim(&conn, &a).unwrap();
+        let approval = approvals::request(
+            &conn,
+            "alice",
+            &a,
+            serde_json::from_value(json!({ "workTitle": "Fix", "workspaceId": "node:repo",
+                "provider": "oauth:anthropic", "model": "claude-opus-5" }))
+            .unwrap(),
+        )
+        .unwrap();
+        roots::stop(&conn, "alice", &root.id).unwrap();
+        let answered = approvals::answer(
+            &mut conn,
+            "alice",
+            &approval.id,
+            Answer {
+                answer: Decision::AllowOnce,
+                reason: None,
+            },
+        )
+        .unwrap();
+        assert_eq!(answered.state, approvals::ApprovalState::AllowedOnce);
+        let wakes: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM pot_wakes WHERE source='approval'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(wakes, 0, "the stopped root takes nothing more");
+    }
+
+    #[test]
     fn a_wake_carries_its_root_and_depth() {
         let db = db();
         let mut conn = db.lock();

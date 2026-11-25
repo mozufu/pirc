@@ -408,7 +408,7 @@ pub fn answer(conn: &mut Connection, owner: &str, id: &str, answer: Answer) -> A
         super::guard::progress(&tx, root_id, &approval.pot_id, "approval_answered")?;
     }
     let thread = threads::direct(&tx, owner, &approval.pot_id)?;
-    runtime::enqueue(
+    let woken = runtime::enqueue(
         &tx,
         owner,
         &approval.pot_id,
@@ -435,7 +435,9 @@ pub fn answer(conn: &mut Connection, owner: &str, id: &str, answer: Answer) -> A
                 "workspaceId": approval.workspace_id,
             }),
         },
-    )?;
+    );
+    // A stopped root takes nothing more; the answer itself still stands.
+    runtime::unless_stopped(woken)?;
     let verdict = match approval.state {
         ApprovalState::AllowedOnce => "allowed once",
         _ => "denied",

@@ -891,7 +891,7 @@ pub fn answer(
         super::guard::progress(&tx, root_id, &request.pot_id, "budget_answered")?;
     }
     let thread = threads::direct(&tx, owner, &request.pot_id)?;
-    runtime::enqueue(
+    let woken = runtime::enqueue(
         &tx,
         owner,
         &request.pot_id,
@@ -917,7 +917,9 @@ pub fn answer(
                 "tokens": approved_tokens,
             }),
         },
-    )?;
+    );
+    // A stopped root takes nothing more; the answer itself still stands.
+    runtime::unless_stopped(woken)?;
     activity::log(
         &tx,
         owner,
