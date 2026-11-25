@@ -15,7 +15,7 @@ acceptance, activation.
 | [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)         |
 | [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11   |
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
-| [M4 Pots backend](#m4-pots-backend)                           | complete | complete    |            | 231 conformance tests pass on Linux                         |
+| [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | step 12 (client names) in progress                          |
 | [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`               |
 | [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | 12: no files, instructions, delete preview (gone in 10b)    |
 | [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |
@@ -367,6 +367,17 @@ evidence?)` (L1 `obs_observations`, one per pot and event, only for events that
     memory replaced by pot memory, 4 terminal cases that need an isolated-terminal
     backend). The passing floor is 231: the removed features took about 30 passing
     tests with them.
+12. **Client names** (owner request, 2026-11-25). Every client that takes control
+    has a name the other clients can show ("Controlled by <name>", the devices
+    list, later "handled on <name>"). A `clients` table (owner, `clientId`, device,
+    name, user agent, last seen) is filled when a client acquires or keeps control.
+    A paired device is named by its device record; a browser by the name it sends
+    (`clientName`), else one read from its user agent ("Chrome on macOS").
+    `GET /api/sessions/{id}/control` adds `holder` (name, kind); `GET /api/clients`
+    lists the owner's clients for resolving `clientId`s in events;
+    `PUT /api/clients/{clientId}` renames a browser; `GET|PATCH /api/device` lets a
+    paired device read and rename itself (no management grant: it is its own
+    record). The app adds the name to Settings (this device) and shows it.
 
 ---
 
