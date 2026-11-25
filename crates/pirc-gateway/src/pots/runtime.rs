@@ -12,10 +12,11 @@ use std::time::Duration;
 use rusqlite::{Connection, OptionalExtension, params};
 use serde_json::{Value, json};
 
+use super::delivery::Sent;
 use super::store::{self, PotState};
 use crate::app::AppState;
 use crate::db::{Session, Store};
-use crate::dispatch::{Progress, deliver, read_progress, start_session};
+use crate::dispatch::{Progress, read_progress, start_session};
 use crate::error::{ApiError, ApiResult};
 use crate::util::{new_id, now_ms};
 
@@ -33,6 +34,7 @@ pub enum Source {
     Group,
     Dm,
     Approval,
+    Handover,
 }
 
 impl Source {
@@ -42,6 +44,7 @@ impl Source {
             Self::Group => "group",
             Self::Dm => "dm",
             Self::Approval => "approval",
+            Self::Handover => "handover",
         }
     }
 }
@@ -206,21 +209,29 @@ pub async fn pump(app: &AppState, owner: &str, pot_id: &str) -> ApiResult<()> {
         }
     };
     let message = json!({ "customType": "pot-wake", "content": content, "details": details });
-    let sent = deliver(app, &session, owner, message).await;
+    let sent = super::delivery::send(app, &session, owner, message).await;
     let conn = app.db.lock();
     match sent {
-        Ok(()) => {
+        Sent::Delivered => {
             conn.execute(
                 "UPDATE pot_wakes SET state='delivered',delivered_at=?2,error=NULL WHERE id=?1",
                 params![id, now_ms()],
             )?;
         }
-        Err(failure) => {
-            // The Node refused or could not be asked: the message did not run.
+        // It may have run: followed like a delivered wake, never sent again;
+        // if the session never shows it, it is failed later.
+        Sent::Uncertain(reason) => {
+            conn.execute(
+                "UPDATE pot_wakes SET state='delivered',delivered_at=?2,error=?3 WHERE id=?1",
+                params![id, now_ms(), reason],
+            )?;
+        }
+        Sent::Refused(reason) => {
+            // The Node refused or was never asked: the message did not run.
             conn.execute(
                 "UPDATE pot_wakes SET attempts=attempts+1,error=?2,
                   state=CASE WHEN attempts+1>=?3 THEN 'failed' ELSE 'queued' END WHERE id=?1",
-                params![id, failure.0, MAX_ATTEMPTS],
+                params![id, reason, MAX_ATTEMPTS],
             )?;
         }
     }

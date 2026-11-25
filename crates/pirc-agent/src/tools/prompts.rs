@@ -76,6 +76,9 @@ prompts!(
     update_goal,
     web_fetch,
     web_search,
+    work_open,
+    work_send,
+    work_status,
     write,
 );
 

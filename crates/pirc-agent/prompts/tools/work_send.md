@@ -1,0 +1,1 @@
+Send the next instruction into a work session you opened. Each instruction is delivered at most once: if delivery is unknown, check work_status before sending it again. Work the user took over refuses further instructions.

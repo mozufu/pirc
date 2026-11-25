@@ -1966,3 +1966,386 @@ mod activity {
         );
     }
 }
+
+mod work {
+    use super::super::approvals::{self, Answer, Decision};
+    use super::super::work;
+    use crate::db::Store;
+    use crate::nodes::ConnectedNode;
+    use crate::test_support::app_with_models;
+    use crate::util::now_ms;
+    use pirc_protocol::{HttpMethod, ModeId, NodeHttpRequest, NodeHttpResponse};
+    use serde_json::{Value, json};
+    use std::sync::{Arc, Mutex};
+
+    #[derive(Default)]
+    struct Fake {
+        delivered: Mutex<Vec<Value>>,
+        sessions: Mutex<u32>,
+        /// How the next deliveries end: "ok", "refuse" or "lose".
+        delivery: Mutex<&'static str>,
+        answered: Mutex<bool>,
+    }
+
+    fn node() -> ConnectedNode {
+        ConnectedNode {
+            id: "node".into(),
+            role: pirc_protocol::NodeRole::Node,
+            modes: vec![ModeId::new("directory").unwrap()],
+            workspaces: vec![pirc_protocol::RegisteredWorkspace {
+                checkpoint_private: false,
+                id: "repo".into(),
+                display_name: "Repo".into(),
+                mode: ModeId::new("directory").unwrap(),
+                roles: None,
+                repo: None,
+            }],
+            connected_at: now_ms(),
+            last_seen_at: now_ms(),
+            added: Default::default(),
+        }
+    }
+
+    fn respond(
+        fake: &Fake,
+        request: &NodeHttpRequest,
+    ) -> crate::error::ApiResult<NodeHttpResponse> {
+        let ok = |status, body: Value| {
+            Ok(NodeHttpResponse {
+                status,
+                body: Some(body),
+            })
+        };
+        let url = request.url.as_str();
+        match request.method {
+            HttpMethod::Post if url == "/api/session-creations/internal" => {
+                let mut n = fake.sessions.lock().unwrap();
+                *n += 1;
+                ok(201, json!({ "session": { "id": format!("remote-{n}") } }))
+            }
+            HttpMethod::Patch => ok(200, json!({})),
+            HttpMethod::Post if url.ends_with("/deliver") => match *fake.delivery.lock().unwrap() {
+                "refuse" => ok(409, json!({ "error": { "message": "busy" } })),
+                "lose" => {
+                    fake.delivered
+                        .lock()
+                        .unwrap()
+                        .push(request.payload.clone().unwrap());
+                    Err(crate::error::ApiError::new(
+                        504,
+                        "node_timeout",
+                        "Node request timed out",
+                    ))
+                }
+                _ => {
+                    fake.delivered
+                        .lock()
+                        .unwrap()
+                        .push(request.payload.clone().unwrap());
+                    ok(202, json!({ "delivered": true }))
+                }
+            },
+            HttpMethod::Get if url.ends_with("/snapshot") => {
+                let mut history: Vec<Value> = fake
+                    .delivered
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .map(|m| json!({ "role": "custom", "customType": m["customType"], "content": m["content"], "details": m["details"] }))
+                    .collect();
+                let answered = *fake.answered.lock().unwrap();
+                if answered {
+                    history.push(json!({ "role": "assistant", "content": [{ "type": "text", "text": "Fixed the build." }] }));
+                }
+                ok(
+                    200,
+                    json!({ "history": history, "interactions": [],
+                    "run": { "status": if answered { "succeeded" } else { "running" }, "createdAt": 1 } }),
+                )
+            }
+            _ => panic!("unexpected Node request {:?} {url}", request.method),
+        }
+    }
+
+    fn setup() -> (crate::app::AppState, tempfile::TempDir, Arc<Fake>) {
+        let (app, dir) = app_with_models(json!({}));
+        super::db_setup(&app.db.lock());
+        let fake = Arc::new(Fake::default());
+        *fake.delivery.lock().unwrap() = "ok";
+        let handler = fake.clone();
+        app.nodes
+            .set_test_node(node(), move |request| respond(&handler, &request));
+        (app, dir, fake)
+    }
+
+    fn pot(app: &crate::app::AppState, edit: impl FnOnce(&mut super::PotInput)) -> String {
+        let mut input = super::input("Tester");
+        edit(&mut input);
+        super::create(&mut app.db.lock(), "alice", input)
+            .unwrap()
+            .id
+    }
+
+    fn open(model: Option<&str>, approval: Option<&str>) -> work::Open {
+        serde_json::from_value(json!({
+            "workspaceId": "node:repo", "title": "Fix CI", "instruction": "Make the build green.",
+            "provider": model.map(|_| "oauth:anthropic"), "model": model, "approvalId": approval,
+            "reason": "Hard bug",
+        }))
+        .unwrap()
+    }
+
+    fn activity_kinds(app: &crate::app::AppState) -> Vec<String> {
+        let conn = app.db.lock();
+        conn.prepare("SELECT kind FROM pot_activity ORDER BY rowid")
+            .unwrap()
+            .query_map([], |r| r.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn a_pot_opens_work_with_a_direct_model_and_its_instruction_is_from_it() {
+        let (app, _dir, fake) = setup();
+        let pot = pot(&app, |_| {});
+        let opened = work::open(&app, "alice", &pot, open(None, None))
+            .await
+            .unwrap();
+        assert_eq!(opened["state"], "started");
+        assert_eq!(opened["instruction"]["delivery"], "delivered");
+        let delivered = fake.delivered.lock().unwrap()[0].clone();
+        assert_eq!(delivered["customType"], "pot-instruction");
+        assert_eq!(
+            delivered["model"],
+            json!({ "provider": "oauth:anthropic", "id": "claude-fable-5" })
+        );
+        assert!(
+            delivered["content"]
+                .as_str()
+                .unwrap()
+                .starts_with("Instruction from Tester, a pot")
+        );
+        assert_eq!(delivered["details"]["potId"], pot.as_str());
+        let session = opened["work"]["sessionId"].as_str().unwrap().to_owned();
+        assert_eq!(
+            app.db.lock().get_session(&session).unwrap().workspace_id,
+            "node:repo"
+        );
+        assert_eq!(
+            activity_kinds(&app)[1..],
+            ["work_opened", "work_instruction"]
+        );
+        // Status follows the last instruction to its answer.
+        let status = work::status(&app, "alice", &pot, &session).await.unwrap();
+        assert_eq!(status["run"], "working");
+        *fake.answered.lock().unwrap() = true;
+        let status = work::status(&app, "alice", &pot, &session).await.unwrap();
+        assert_eq!(
+            (status["run"].as_str(), status["answer"].as_str()),
+            (Some("over"), Some("Fixed the build."))
+        );
+        assert_eq!(
+            work::list(&app.db.lock(), "alice", Some(&pot))
+                .unwrap()
+                .len(),
+            1
+        );
+        assert!(work::list(&app.db.lock(), "bob", None).unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn an_ask_model_starts_only_after_allow_once_and_only_once() {
+        let (app, _dir, fake) = setup();
+        let pot = pot(&app, |_| {});
+        let first = work::open(&app, "alice", &pot, open(Some("claude-opus-5"), None))
+            .await
+            .unwrap();
+        assert_eq!(first["state"], "awaiting_approval");
+        assert_eq!(*fake.sessions.lock().unwrap(), 0, "nothing started");
+        let approval = first["approvalId"].as_str().unwrap().to_owned();
+        // Not yet allowed: refused.
+        assert_eq!(
+            work::open(
+                &app,
+                "alice",
+                &pot,
+                open(Some("claude-opus-5"), Some(&approval))
+            )
+            .await
+            .unwrap_err()
+            .status,
+            409
+        );
+        approvals::answer(
+            &mut app.db.lock(),
+            "alice",
+            &approval,
+            Answer {
+                answer: Decision::AllowOnce,
+                reason: None,
+            },
+        )
+        .unwrap();
+        let started = work::open(
+            &app,
+            "alice",
+            &pot,
+            open(Some("claude-opus-5"), Some(&approval)),
+        )
+        .await
+        .unwrap();
+        assert_eq!(started["state"], "started");
+        assert_eq!(
+            fake.delivered.lock().unwrap()[0]["model"]["id"],
+            "claude-opus-5"
+        );
+        let again = work::open(
+            &app,
+            "alice",
+            &pot,
+            open(Some("claude-opus-5"), Some(&approval)),
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(again.status, 409, "a second start needs a new approval");
+        assert_eq!(*fake.sessions.lock().unwrap(), 1);
+    }
+
+    #[tokio::test]
+    async fn work_stays_inside_the_pots_reach_locations_models_and_concurrency() {
+        let (app, _dir, _fake) = setup();
+        let reader = pot(&app, |input| {
+            input.permissions.work_locations[0].access = super::Access::Read
+        });
+        assert_eq!(
+            work::open(&app, "alice", &reader, open(None, None))
+                .await
+                .unwrap_err()
+                .status,
+            403
+        );
+        let tester = pot(&app, |_| {});
+        let mut elsewhere = open(None, None);
+        elsewhere.workspace_id = "node:other".into();
+        assert_eq!(
+            work::open(&app, "alice", &tester, elsewhere)
+                .await
+                .unwrap_err()
+                .status,
+            403
+        );
+        assert_eq!(
+            work::open(&app, "alice", &tester, open(Some("gpt-5"), None))
+                .await
+                .unwrap_err()
+                .status,
+            400
+        );
+        // Two at once (the pot's limit), then refused.
+        work::open(&app, "alice", &tester, open(None, None))
+            .await
+            .unwrap();
+        work::open(&app, "alice", &tester, open(None, None))
+            .await
+            .unwrap();
+        assert_eq!(
+            work::open(&app, "alice", &tester, open(None, None))
+                .await
+                .unwrap_err()
+                .code,
+            "limit_reached"
+        );
+        // Another owner cannot use the pot.
+        assert_eq!(
+            work::open(&app, "bob", &tester, open(None, None))
+                .await
+                .unwrap_err()
+                .status,
+            404
+        );
+        super::set_state(
+            &mut app.db.lock(),
+            "alice",
+            &tester,
+            1,
+            super::PotState::Paused,
+        )
+        .unwrap();
+        app.db.lock().execute("DELETE FROM pot_works", []).unwrap();
+        assert_eq!(
+            work::open(&app, "alice", &tester, open(None, None))
+                .await
+                .unwrap_err()
+                .code,
+            "pot_inactive"
+        );
+    }
+
+    #[tokio::test]
+    async fn an_unconfirmed_instruction_is_uncertain_and_taken_over_work_refuses_more() {
+        let (app, _dir, fake) = setup();
+        let pot = pot(&app, |_| {});
+        let opened = work::open(&app, "alice", &pot, open(None, None))
+            .await
+            .unwrap();
+        let session = opened["work"]["sessionId"].as_str().unwrap().to_owned();
+        let work_id = opened["work"]["id"].as_str().unwrap().to_owned();
+        *fake.delivery.lock().unwrap() = "refuse";
+        assert_eq!(
+            work::send(&app, "alice", &pot, &session, "Also run lint")
+                .await
+                .unwrap_err()
+                .code,
+            "not_delivered"
+        );
+        *fake.delivery.lock().unwrap() = "lose";
+        let unsure = work::send(&app, "alice", &pot, &session, "Also run lint")
+            .await
+            .unwrap();
+        assert_eq!(unsure["delivery"], "uncertain");
+        assert_eq!(
+            fake.delivered.lock().unwrap().len(),
+            2,
+            "sent once, never again"
+        );
+        // Another pot does not coordinate it.
+        let other = super::create(&mut app.db.lock(), "alice", super::input("Other"))
+            .unwrap()
+            .id;
+        assert_eq!(
+            work::send(&app, "alice", &other, &session, "x")
+                .await
+                .unwrap_err()
+                .status,
+            404
+        );
+        // The user takes it over: the pot is told and cannot send any more.
+        assert_eq!(
+            work::take_over(&app.db.lock(), "bob", &work_id)
+                .unwrap_err()
+                .status,
+            404
+        );
+        let taken = work::take_over(&app.db.lock(), "alice", &work_id).unwrap();
+        assert_eq!(taken.state, "taken_over");
+        *fake.delivery.lock().unwrap() = "ok";
+        assert_eq!(
+            work::send(&app, "alice", &pot, &session, "x")
+                .await
+                .unwrap_err()
+                .code,
+            "taken_over"
+        );
+        let wake: String = app
+            .db
+            .lock()
+            .query_row(
+                "SELECT source FROM pot_wakes WHERE pot_id=?1",
+                [&pot],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(wake, "handover");
+    }
+}

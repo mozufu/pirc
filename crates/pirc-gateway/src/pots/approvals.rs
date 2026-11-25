@@ -101,10 +101,8 @@ pub struct Answer {
     pub reason: Option<String>,
 }
 
-/// What a pot asks before starting work with an `ask` model. The work
-/// dispatch (roadmap M4 step 6b) builds these; the routes only read and answer
-/// them.
-#[allow(dead_code)]
+/// What a pot asks before starting work with an `ask` model (built by
+/// `pot.work.open`).
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct NewApproval {
@@ -205,7 +203,6 @@ pub fn read(conn: &Connection, owner: &str, id: &str) -> ApiResult<Approval> {
 }
 
 /// A pot asks to start work with an `ask` model.
-#[allow(dead_code)] // Called by pot.work.open (M4 step 6b).
 pub fn request(
     conn: &Connection,
     owner: &str,
@@ -426,7 +423,6 @@ pub fn answer(conn: &mut Connection, owner: &str, id: &str, answer: Answer) -> A
 
 /// Take an `allowed_once` approval for exactly one start. The conditional
 /// update makes a second take (or another start's) fail.
-#[allow(dead_code)] // Called by pot.work.open (M4 step 6b).
 pub fn consume(
     conn: &Connection,
     owner: &str,
@@ -460,8 +456,7 @@ pub fn consume(
 impl App {
     /// Request an approval and tell the owner's clients (`approvals=1`).
     /// Callers that hold the app use this; the store function alone cannot
-    /// hint. The work dispatch (M4 step 6b) calls it.
-    #[allow(dead_code)]
+    /// hint.
     pub fn request_approval(
         &self,
         owner: &str,
@@ -473,4 +468,15 @@ impl App {
         self.activity_changed(owner);
         Ok(approval)
     }
+}
+
+/// Give back a consumed "allow once" whose start then failed, so the pot can
+/// try that one start again.
+pub fn release(conn: &Connection, owner: &str, id: &str) -> ApiResult<()> {
+    conn.execute(
+        "UPDATE model_approvals SET state='allowed_once',used_at=NULL
+         WHERE id=?1 AND owner_user=?2 AND state='used'",
+        params![id, owner],
+    )?;
+    Ok(())
 }

@@ -13,6 +13,22 @@ use crate::error::{ApiError, ApiResult};
 pub enum Op {
     Context,
     Send(Send),
+    WorkOpen(super::work::Open),
+    WorkSend(WorkSend),
+    WorkStatus(WorkStatus),
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct WorkSend {
+    session_id: String,
+    instruction: String,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct WorkStatus {
+    session_id: String,
 }
 
 #[derive(serde::Deserialize)]
@@ -42,6 +58,21 @@ pub fn parse_op(op: &str, args: &Value) -> Option<Result<Op, ()>> {
                 .filter(|send| send.to_pot.is_some() != send.thread_id.is_some())
                 .map(Op::Send)
                 .ok_or(()),
+        ),
+        "pot.work.open" => Some(
+            serde_json::from_value(args.clone())
+                .map(Op::WorkOpen)
+                .map_err(|_| ()),
+        ),
+        "pot.work.send" => Some(
+            serde_json::from_value(args.clone())
+                .map(Op::WorkSend)
+                .map_err(|_| ()),
+        ),
+        "pot.work.status" => Some(
+            serde_json::from_value(args.clone())
+                .map(Op::WorkStatus)
+                .map_err(|_| ()),
         ),
         _ => None,
     }
@@ -157,6 +188,25 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
             app.threads_changed(&context.user);
             app.activity_changed(&context.user);
             Ok(json!({ "message": message, "woken": woken }))
+        }
+        Op::WorkOpen(input) => {
+            let pot = pot_of_session(&app.db.lock(), &context.user, &context.session.id)?;
+            super::work::open(app, &context.user, &pot.id, input).await
+        }
+        Op::WorkSend(send) => {
+            let pot = pot_of_session(&app.db.lock(), &context.user, &context.session.id)?;
+            super::work::send(
+                app,
+                &context.user,
+                &pot.id,
+                &send.session_id,
+                &send.instruction,
+            )
+            .await
+        }
+        Op::WorkStatus(status) => {
+            let pot = pot_of_session(&app.db.lock(), &context.user, &context.session.id)?;
+            super::work::status(app, &context.user, &pot.id, &status.session_id).await
         }
     }
 }

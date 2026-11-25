@@ -213,3 +213,31 @@ CREATE TABLE pot_activity (
 );
 CREATE INDEX pot_activity_owner ON pot_activity(owner_user, at DESC);
 CREATE INDEX pot_activity_pot ON pot_activity(pot_id, at DESC);
+-- Work sessions a pot opened and coordinates (plans/pots.md, Work dispatch).
+CREATE TABLE pot_works (
+ id TEXT PRIMARY KEY,
+ owner_user TEXT NOT NULL,
+ pot_id TEXT NOT NULL REFERENCES pots(id) ON DELETE CASCADE,
+ session_id TEXT NOT NULL UNIQUE,
+ workspace_id TEXT NOT NULL,
+ title TEXT NOT NULL CHECK(length(title) BETWEEN 1 AND 200),
+ provider TEXT NOT NULL,
+ model TEXT NOT NULL,
+ thinking TEXT,
+ -- taken_over: the user took it; the pot may no longer send into it.
+ state TEXT NOT NULL DEFAULT 'open' CHECK(state IN ('open','taken_over')),
+ created_at INTEGER NOT NULL,
+ updated_at INTEGER NOT NULL
+);
+CREATE INDEX pot_works_pot ON pot_works(pot_id, state);
+CREATE INDEX pot_works_owner ON pot_works(owner_user, created_at DESC);
+-- Each instruction a pot sent into its work, delivered at most once.
+CREATE TABLE pot_work_instructions (
+ id TEXT PRIMARY KEY,
+ work_id TEXT NOT NULL REFERENCES pot_works(id) ON DELETE CASCADE,
+ body TEXT NOT NULL CHECK(length(body) BETWEEN 1 AND 32768),
+ state TEXT NOT NULL CHECK(state IN ('sending','delivered','refused','uncertain')),
+ error TEXT,
+ created_at INTEGER NOT NULL
+);
+CREATE INDEX pot_work_instructions_work ON pot_work_instructions(work_id, created_at);

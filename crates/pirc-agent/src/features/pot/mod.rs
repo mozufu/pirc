@@ -21,6 +21,7 @@ use crate::tools::Tool;
 const CONTEXT_TIMEOUT: Duration = Duration::from_secs(15);
 
 mod send;
+mod work;
 
 pub struct PotFeature;
 
@@ -110,7 +111,14 @@ async fn load(signal: &AbortSignal) -> Result<PromptSection, String> {
 /// Every tool a pot session registers, for the mode tool registry test.
 #[cfg(test)]
 pub(crate) fn registered_tool_names() -> Vec<String> {
-    vec![send::SEND_TOOL.to_owned()]
+    [
+        send::SEND_TOOL,
+        work::OPEN_TOOL,
+        work::SEND_TOOL,
+        work::STATUS_TOOL,
+    ]
+    .map(str::to_owned)
+    .to_vec()
 }
 
 impl Feature for PotFeature {
@@ -120,7 +128,9 @@ impl Feature for PotFeature {
 
     fn tools(&self, agent: &Rc<Agent>) -> Vec<Rc<dyn Tool>> {
         if process_gateway().is_some() && agent.config().mode().pot {
-            vec![send::tool()]
+            let mut tools = vec![send::tool()];
+            tools.extend(work::tools());
+            tools
         } else {
             Vec::new()
         }

@@ -33,6 +33,8 @@ pub fn routes() -> Router<AppState> {
             get(list_messages).post(post_message),
         )
         .route("/api/activity", get(list_activity))
+        .route("/api/pot-works", get(list_works))
+        .route("/api/pot-works/{id}/take-over", post(take_over_work))
         .route("/api/pots/{id}/view", get(pot_view))
         .route("/api/model-approvals", get(list_approvals))
         .route("/api/model-approvals/{id}/answer", post(answer_approval))
@@ -366,4 +368,30 @@ async fn pot_view(
         &id,
         page.before.as_deref(),
     )?))
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct WorkFilter {
+    pot_id: Option<String>,
+}
+
+async fn list_works(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    axum::extract::Query(filter): axum::extract::Query<WorkFilter>,
+) -> ApiResult<axum::Json<Value>> {
+    let works = super::work::list(&app.db.lock(), &identity.user, filter.pot_id.as_deref())?;
+    Ok(axum::Json(json!({ "works": works })))
+}
+
+async fn take_over_work(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+) -> ApiResult<axum::Json<Value>> {
+    let work = super::work::take_over(&app.db.lock(), &identity.user, &id)?;
+    app.pots_changed(&identity.user);
+    super::runtime::kick(&app, &identity.user, &work.pot_id);
+    Ok(axum::Json(json!({ "work": work })))
 }
