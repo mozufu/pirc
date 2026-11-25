@@ -921,6 +921,11 @@ components.
   readable, nothing is handed over. The confirm button calls pause.
 - **Groups** may be edited by the user only: name, colour, host, members (2–16). A
   pot is never added to a group automatically.
+- **The user's avatar** is not shown on the user's own bubbles in pot and group
+  conversations (they are the right-hand bubbles); in a pot's point of view
+  (E18–E20) the user's messages show the user's avatar.
+- **Archived pots** are not in the Chat tab; Settings → pots lists them, and each
+  opens its old conversations read-only, with Restore.
 
 0. **Backend additions** (not client work; done before step 3).
    - Threads: a per-owner read position (`POST /api/threads/{id}/read` with
@@ -1070,7 +1075,7 @@ components.
 11. **Settings → pots (E23).** Totals at the top (this month's money and today's
     tokens from `GET /api/usage`, actor `pot`), owner caps (money per month, tokens
     per day), when exhausted (pause all / ask), activity retention (1–3650 days),
-    then the pots and the archived pots (Restore). Saved with the settings revision.
+    then the pots and the archived pots (open the old conversations read-only, Restore). Saved with the settings revision.
     Done when: tests for each field and restore.
 12. **You and usage (E28–E31) and the drawer user row.** `GET /api/usage` over the
     shown range: the six numbers, the heatmap (18 / 26–30 / 40 weeks by width), 12
