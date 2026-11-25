@@ -165,7 +165,7 @@ const CHAT_IDENTITY: &str = "You are pirc, the user's personal assistant";
 const CHAT_ENVIRONMENT: &str = "This chat has its own private working directory";
 const CODING_IDENTITY: &str = "You are pirc, a coding agent";
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[ignore = "pirc 2: assistant chat mode is removed with the feature in M4.10"]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_chat() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -851,7 +851,7 @@ fn tool_text(request: &Value) -> String {
 /// the gateway, kept in `<state>/chat/<project>/files`, read (never
 /// written) by the project's chats, also when added while a chat runs, and
 /// removed with the project.
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[ignore = "pirc 2: assistant chat mode is removed with the feature in M4.10"]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_chat_project_files() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

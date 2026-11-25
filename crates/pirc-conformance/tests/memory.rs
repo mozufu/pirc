@@ -281,7 +281,7 @@ async fn offline(api: &Api, node: &str) {
     panic!("{node} stayed online");
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[ignore = "pirc 2: assistant chat mode is removed with the feature in M4.10"]
 #[tokio::test(flavor = "multi_thread")]
 async fn memory() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

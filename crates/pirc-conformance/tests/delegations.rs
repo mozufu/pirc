@@ -344,7 +344,7 @@ async fn chat_interactions(api: &Api, chat: &str, home: &mut FakeNode) -> Value 
     snapshot.body["interactions"].clone()
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[ignore = "pirc 2: assistant chat mode is removed with the feature in M4.10"]
 #[tokio::test(flavor = "multi_thread")]
 async fn delegations() {
     let Some(cluster) = start(None).await else {
@@ -712,7 +712,7 @@ async fn delegations() {
     insta::assert_json_snapshot!("delegations", r.t.into_value());
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[ignore = "pirc 2: assistant chat mode is removed with the feature in M4.10"]
 #[tokio::test(flavor = "multi_thread")]
 async fn delegation_expiry() {
     let Some(cluster) = start(Some(1000)).await else {
@@ -806,7 +806,7 @@ async fn put_links(api: &Api, r: &mut Recorder, step: &str, workspace: &str, ids
 /// A chat project linked to directory workspaces (docs/architecture/assistant-memory.md):
 /// the links its settings edit, the workspace list its assistant gets, and
 /// `delegate` and `memory_search` without a workspace.
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[ignore = "pirc 2: assistant chat mode is removed with the feature in M4.10"]
 #[tokio::test(flavor = "multi_thread")]
 async fn project_links() {
     let Some(cluster) = start(None).await else {
@@ -973,7 +973,7 @@ async fn project_links() {
 /// delegations: the assistant sees both targets with their modes, and the
 /// gateway starts the delegated session in the scratch workspace.
 /// Assertion-based, so it does not depend on the recorded snapshots.
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[ignore = "pirc 2: assistant chat mode is removed with the feature in M4.10"]
 #[tokio::test(flavor = "multi_thread")]
 async fn delegation_to_a_per_session_workspace() {
     let Some(cluster) = start(None).await else {
@@ -1168,7 +1168,7 @@ async fn set_approval(api: &Api, policy: &str) {
 /// fallback, the cap on automatic delegations, verified quotes reaching the
 /// delegated run, approvals relayed to the chat and answered there without
 /// a lease, and Stop.
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[ignore = "pirc 2: assistant chat mode is removed with the feature in M4.10"]
 #[tokio::test(flavor = "multi_thread")]
 async fn delegation_autonomy() {
     let Some(cluster) = start(None).await else {

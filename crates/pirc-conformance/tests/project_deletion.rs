@@ -151,7 +151,7 @@ fn names(dir: &Path) -> Vec<String> {
     names
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[ignore = "pirc 2: assistant chat mode is removed with the feature in M4.10"]
 #[tokio::test(flavor = "multi_thread")]
 async fn project_deletion() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
