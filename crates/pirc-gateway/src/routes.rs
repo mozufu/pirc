@@ -550,15 +550,30 @@ pub async fn list_sessions(
     Extension(identity): Extension<Identity>,
 ) -> Handled {
     let user = identity.user.as_str();
-    let (sessions, origins) = {
+    let (sessions, origins, workspaces) = {
         let conn = app.db.lock();
-        (conn.list_sessions()?, conn.session_origins(user)?)
+        (
+            conn.list_sessions()?,
+            conn.session_origins(user)?,
+            conn.list_workspaces()?,
+        )
     };
+    // A pot's own session is its business: the user reads pots through
+    // their threads and points of view, not the session list.
+    let pot_workspaces: std::collections::HashSet<String> = workspaces
+        .into_iter()
+        .filter(|workspace| app.mode(&workspace.mode).is_some_and(|mode| mode.pot))
+        .map(|workspace| workspace.id)
+        .collect();
     // The newest origin of a session wins, as in the TS map.
     let origins: std::collections::HashMap<_, _> = origins.into_iter().collect();
     let sessions: Vec<Value> = sessions
         .into_iter()
-        .filter(|session| session.node_id.is_some() && session.owner_user.as_deref() == Some(user))
+        .filter(|session| {
+            session.node_id.is_some()
+                && session.owner_user.as_deref() == Some(user)
+                && !pot_workspaces.contains(&session.workspace_id)
+        })
         .map(|session| {
             let live = app.activity_of(session.node_id.as_deref(), &session.id);
             let mut public = session.public();

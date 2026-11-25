@@ -1467,6 +1467,29 @@ mod runtime {
     }
 
     #[tokio::test]
+    async fn a_pots_own_session_is_not_in_the_session_list() {
+        let (app, _dir, _fake, pot) = setup();
+        wake(&app, &pot, "Hello");
+        runtime::check(&app, "alice", &pot).await.unwrap();
+        let session = super::read(&app.db.lock(), "alice", &pot)
+            .unwrap()
+            .session_id
+            .unwrap();
+        let (status, listed) =
+            crate::test_support::call(&app, "GET", "/api/sessions", Some("alice"), None, None)
+                .await;
+        assert_eq!(status, 200, "{listed}");
+        assert!(
+            !listed["sessions"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|s| s["id"] == session.as_str()),
+            "{listed}"
+        );
+    }
+
+    #[tokio::test]
     async fn a_paused_pot_gets_nothing_and_refused_sends_are_retried_then_failed() {
         let (app, _dir, fake, pot) = setup();
         let id = wake(&app, &pot, "Hello");
