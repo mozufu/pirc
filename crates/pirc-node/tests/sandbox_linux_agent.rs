@@ -148,12 +148,13 @@ fn serve_inference(
                         .lines()
                         .find_map(|line| line.strip_prefix("Authorization: Bearer "))
                         .unwrap_or_default();
+                    let body: Value =
+                        serde_json::from_slice(&buffer[head_end..head_end + length]).unwrap();
                     writes
-                        .apply_response(
-                            token,
-                            serde_json::from_slice(&buffer[head_end..head_end + length]).unwrap(),
-                        )
-                        .unwrap()
+                        .apply_response(token, body.clone())
+                        .unwrap_or_else(|error| {
+                            panic!("persistence request failed: {body}: {error:?}")
+                        })
                         .to_string()
                 } else {
                     let reply = replies

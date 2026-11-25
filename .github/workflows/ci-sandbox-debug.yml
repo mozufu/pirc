@@ -1,0 +1,22 @@
+name: Sandbox debug
+on:
+  workflow_dispatch:
+jobs:
+  sandbox-agent:
+    name: Native sandbox agent debug
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: dtolnay/rust-toolchain@e2a55d2ffb04f378e9626c28d38b36d230d1e12f # master
+        with:
+          toolchain: 1.98.1
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+      - name: Install bubblewrap
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends bubblewrap git git-lfs curl openssh-client netcat-openbsd
+      - run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - run: cargo test -p pirc-node --test sandbox_linux_agent -- --nocapture
+        env:
+          PIRC_PROCESS_SCOPE_REQUIRED: '1'
