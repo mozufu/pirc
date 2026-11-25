@@ -622,7 +622,7 @@ pub async fn delete_session(
             .require_mode(&conn.get_workspace(&session.workspace_id)?)?
             .delete_sessions
         {
-            return Err(ApiError::new(400, "invalid_input", "Only chats can be deleted").into());
+            return Err(ApiError::new(400, "invalid_input", "Conversations in this workspace cannot be deleted").into());
         }
         session
     };

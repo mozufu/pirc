@@ -375,7 +375,7 @@ pub fn default_work() -> Mode {
         workspace_memory: true,
         repository: true,
         recap: true,
-        delete_sessions: false,
+        delete_sessions: true,
         pot: false,
     }
 }

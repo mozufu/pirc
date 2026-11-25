@@ -186,7 +186,12 @@ async fn unaccepted_discard_never_creates_a_remote_cleanup_job() {
 #[tokio::test]
 async fn fresh_deletion_respects_mode_permission_but_committed_cleanup_survives_mode_removal() {
     let (app, _dir, session) = accepted(false).await;
-    *app.modes.write().unwrap() = Arc::new(crate::app::test_modes());
+    // A mode that keeps its conversations.
+    let mut keeping = crate::app::test_modes();
+    for mode in keeping.modes.values_mut() {
+        mode.delete_sessions = false;
+    }
+    *app.modes.write().unwrap() = Arc::new(keeping);
     assert_eq!(
         call(
             &app,

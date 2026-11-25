@@ -188,7 +188,7 @@ pub(crate) async fn try_delete(
                 return Err(ApiError::new(
                     400,
                     "invalid_input",
-                    "Only chats can be deleted",
+                    "Conversations in this workspace cannot be deleted",
                 ));
             }
             // The trigger scrubs the payload and queues remote cleanup in this

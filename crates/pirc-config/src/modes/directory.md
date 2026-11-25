@@ -21,5 +21,7 @@ project_config: true
 workspace_memory: true
 repository: true
 recap: true
-delete_sessions: false
+# Deleting a conversation removes its transcript, uploads and checkpoints;
+# the files in the working directory stay.
+delete_sessions: true
 ---
