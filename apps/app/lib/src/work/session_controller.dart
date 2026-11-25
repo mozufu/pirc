@@ -6,6 +6,7 @@ import 'package:pirc_client/pirc_client.dart';
 
 import '../connection/connection.dart';
 import '../connection/storage.dart';
+import 'client_names.dart';
 
 /// This app install's control-lease client ID, kept in app storage.
 final clientIdProvider = Provider<String>((ref) {
@@ -105,12 +106,21 @@ class SessionController extends Notifier<SessionView> {
   ControlLeaseClient get _leases => ControlLeaseClient(_api);
   String get _clientId => ref.read(clientIdProvider);
 
+  /// Names this browser where it holds control; a paired app is named by its
+  /// device record instead.
+  String? get _clientName =>
+      ref.read(isWebProvider) ? ref.read(webClientNameProvider) : null;
+
   @override
   SessionView build() {
     _connection = ref.watch(
       connectionProvider.select((status) => status.connection),
     );
     _disposed = false;
+    ref.listen(
+      webClientNameProvider,
+      (_, name) => _heartbeat?.clientName = name,
+    );
     ref.onDispose(_close);
     if (_connection != null) scheduleMicrotask(_open);
     return const SessionView();
@@ -185,6 +195,10 @@ class SessionController extends Notifier<SessionView> {
   void _onSignal(EventStreamSignal signal) {
     switch (signal) {
       case EventReceived(:final event):
+        if (event.type == 'control_updated') {
+          _applyControlEvent(event.data);
+          return;
+        }
         final current = state.state;
         if (current == null) return;
         final envelope = normalizeEvent(event.raw);
@@ -225,6 +239,71 @@ class SessionController extends Notifier<SessionView> {
     },
   );
 
+  /// `control_updated` carries only a client ID: apply who holds it and look
+  /// the name up afterwards.
+  void _applyControlEvent(Object? data) {
+    final envelope = data is Map ? data : const {};
+    final raw = envelope['control'] is Map
+        ? envelope['control'] as Map
+        : envelope;
+    final clientId = raw['clientId'] ?? raw['holderClientId'];
+    if (clientId is! String || clientId.isEmpty) return;
+    final holder = raw['holder'] is Map
+        ? ControlHolder.fromJson(raw['holder'])
+        : raw['holderName'] is String
+        ? ControlHolder(name: raw['holderName'] as String, kind: '')
+        : null;
+    final lease = ControlLease(
+      clientId: clientId,
+      generation: raw['generation'] is num
+          ? (raw['generation'] as num).toInt()
+          : 0,
+      expiresAt: raw['expiresAt'] is num
+          ? (raw['expiresAt'] as num).toInt()
+          : null,
+      expired: raw['expired'] == true,
+      holder: holder,
+    );
+    final mine = lease.clientId == _clientId && !lease.expired;
+    if (!mine) _heartbeat?.stop();
+    state = state.copyWith(
+      control: mine
+          ? ControlState.mine
+          : lease.expired
+          ? ControlState.unknown
+          : ControlState.other,
+      lease: lease,
+    );
+    _resolveHolder(lease);
+  }
+
+  /// Reads the name of a holder this Gateway did not name itself.
+  void _resolveHolder(ControlLease? lease) {
+    if (lease == null ||
+        lease.holder != null ||
+        lease.expired ||
+        lease.clientId == _clientId) {
+      return;
+    }
+    final clientId = lease.clientId;
+    unawaited(
+      ref.read(clientNamesProvider.notifier).resolve(clientId).then((client) {
+        if (_disposed || client == null) return;
+        final current = state.lease;
+        if (current == null ||
+            current.clientId != clientId ||
+            current.holder != null) {
+          return;
+        }
+        state = state.copyWith(
+          lease: current.copyWith(
+            holder: ControlHolder(name: client.name, kind: client.kind),
+          ),
+        );
+      }),
+    );
+  }
+
   Future<void> _takeControlIfFree() async {
     try {
       final lease = await _leases.read(sessionId);
@@ -235,6 +314,7 @@ class SessionController extends Notifier<SessionView> {
         );
       } else {
         state = state.copyWith(control: ControlState.other, lease: lease);
+        _resolveHolder(lease);
       }
     } on PircException catch (error) {
       if (!_disposed && error is LostControl) await readControl();
@@ -249,6 +329,7 @@ class SessionController extends Notifier<SessionView> {
         clientId: _clientId,
         generation: generation,
         force: force,
+        clientName: _clientName,
       );
       if (_disposed) return;
       _heartbeat?.stop();
@@ -260,6 +341,7 @@ class SessionController extends Notifier<SessionView> {
             WidgetsBinding.instance.lifecycleState == null ||
             WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed,
         onLost: (_) => unawaited(readControl()),
+        clientName: _clientName,
       )..start();
       state = state.copyWith(control: ControlState.mine, lease: lease);
     } on LostControl {
@@ -287,6 +369,7 @@ class SessionController extends Notifier<SessionView> {
         lease: lease,
         clearLease: lease == null,
       );
+      _resolveHolder(lease);
       if (retake && (lease == null || lease.expired)) await takeControl();
     } on PircException {
       // Leave the state as it is; the next action reads it again.

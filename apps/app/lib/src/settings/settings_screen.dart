@@ -25,6 +25,11 @@ class SettingsScreen extends ConsumerWidget {
         SettingsGroup(
           children: [
             SettingsLink(
+              icon: LucideIcons.monitorSmartphone,
+              label: l10n.settingsThisDevice,
+              path: '/settings/device',
+            ),
+            SettingsLink(
               icon: LucideIcons.circleUser,
               label: l10n.settingsAccount,
               subtitle: account,

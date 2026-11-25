@@ -277,9 +277,13 @@ class _QuestionCardState extends ConsumerState<QuestionCard> {
     final expired = _expired;
     final controlled = view.control == ControlState.mine;
     final enabled = controlled && !sending && !expired;
+    final holder = view.lease?.holder?.name;
+    final elsewhere = holder == null || holder.isEmpty
+        ? l10n.controlledElsewhere
+        : l10n.controlledByName(holder);
     final error = switch (questions.errors[_q.id]) {
       null => null,
-      'lost_control' => l10n.controlledElsewhere,
+      'lost_control' => elsewhere,
       final message => message,
     };
 
@@ -441,7 +445,7 @@ class _QuestionCardState extends ConsumerState<QuestionCard> {
                       if (_q.description?.isNotEmpty ?? false)
                         Text(_q.description!, style: text.bodySmall),
                       if (!controlled && !expired)
-                        Text(l10n.controlledElsewhere, style: text.bodySmall),
+                        Text(elsewhere, style: text.bodySmall),
                     ],
                   ),
                 ),

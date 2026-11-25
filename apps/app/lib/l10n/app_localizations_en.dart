@@ -357,6 +357,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get controlledElsewhere => 'Controlled by another device';
 
   @override
+  String controlledByName(String name) {
+    return 'Controlled by $name';
+  }
+
+  @override
   String get takeControl => 'Take control';
 
   @override
@@ -960,6 +965,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get startTab => 'When the app opens';
+
+  @override
+  String get settingsThisDevice => 'This device';
+
+  @override
+  String get thisDeviceWebHint =>
+      'Leave empty to let the Gateway name it from the browser.';
+
+  @override
+  String get thisDeviceNameRule => 'A name must be 1 to 60 characters.';
+
+  @override
+  String get thisDeviceSaved => 'Device name saved.';
 
   @override
   String get settingsAccount => 'Account and this device';

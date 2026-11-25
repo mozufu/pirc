@@ -337,6 +337,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get controlledElsewhere => '由另一台裝置控制中';
 
   @override
+  String controlledByName(String name) {
+    return '由 $name 控制中';
+  }
+
+  @override
   String get takeControl => '取得控制權';
 
   @override
@@ -920,6 +925,18 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get startTab => '打開 App 時';
+
+  @override
+  String get settingsThisDevice => '這台裝置';
+
+  @override
+  String get thisDeviceWebHint => '留空則由 Gateway 依瀏覽器命名。';
+
+  @override
+  String get thisDeviceNameRule => '名稱需為 1 至 60 個字元。';
+
+  @override
+  String get thisDeviceSaved => '已儲存裝置名稱。';
 
   @override
   String get settingsAccount => '帳號與這台裝置';

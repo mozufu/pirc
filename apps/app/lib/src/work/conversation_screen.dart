@@ -193,6 +193,11 @@ class ControlBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final colors = PircColorTokens.of(context);
+    final holder = ref
+        .watch(sessionControllerProvider(sessionId))
+        .lease
+        ?.holder
+        ?.name;
     return Material(
       color: colors['surface.subtle'],
       child: SafeArea(
@@ -212,7 +217,9 @@ class ControlBar extends ConsumerWidget {
               const SizedBox(width: PircSpacing.stackSm),
               Expanded(
                 child: Text(
-                  l10n.controlledElsewhere,
+                  holder == null || holder.isEmpty
+                      ? l10n.controlledElsewhere
+                      : l10n.controlledByName(holder),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),

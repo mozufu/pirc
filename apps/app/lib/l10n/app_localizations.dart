@@ -723,6 +723,12 @@ abstract class AppLocalizations {
   /// **'Controlled by another device'**
   String get controlledElsewhere;
 
+  /// No description provided for @controlledByName.
+  ///
+  /// In en, this message translates to:
+  /// **'Controlled by {name}'**
+  String controlledByName(String name);
+
   /// No description provided for @takeControl.
   ///
   /// In en, this message translates to:
@@ -1790,6 +1796,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'When the app opens'**
   String get startTab;
+
+  /// No description provided for @settingsThisDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'This device'**
+  String get settingsThisDevice;
+
+  /// No description provided for @thisDeviceWebHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to let the Gateway name it from the browser.'**
+  String get thisDeviceWebHint;
+
+  /// No description provided for @thisDeviceNameRule.
+  ///
+  /// In en, this message translates to:
+  /// **'A name must be 1 to 60 characters.'**
+  String get thisDeviceNameRule;
+
+  /// No description provided for @thisDeviceSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Device name saved.'**
+  String get thisDeviceSaved;
 
   /// No description provided for @settingsAccount.
   ///

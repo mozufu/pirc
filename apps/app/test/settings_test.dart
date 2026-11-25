@@ -17,6 +17,7 @@ void main() {
   ) async {
     await pumpApp(tester, gateway: FakeGateway(), location: '/settings');
     for (final label in [
+      'This device',
       'Account and this device',
       'Model providers and default model',
       'Memory',

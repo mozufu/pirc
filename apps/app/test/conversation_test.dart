@@ -177,6 +177,67 @@ void main() {
       expect(find.byType(ControlBar), findsNothing);
     });
 
+    appTest('the holder is named when the Gateway names it', (tester) async {
+      final session = FixtureSession('joined-mid-stream.json')
+        ..lease = {
+          'clientId': 'other-phone',
+          'generation': 4,
+          'holder': {'name': 'Pixel 9', 'kind': 'device'},
+        };
+      await _open(tester, session);
+      expect(find.text('Controlled by Pixel 9'), findsOneWidget);
+      expect(find.text('Controlled by another device'), findsNothing);
+    });
+
+    appTest('an unnamed holder is resolved with GET /api/clients', (
+      tester,
+    ) async {
+      final session = FixtureSession('joined-mid-stream.json')
+        ..lease = {'clientId': 'other-phone', 'generation': 4};
+      final gateway = session.install();
+      session.gateway = gateway;
+      gateway.json['GET /api/clients'] = (_) => {
+        'clients': [
+          {
+            'clientId': 'other-phone',
+            'name': 'Office iMac',
+            'kind': 'browser',
+            'lastSeenAt': 1,
+          },
+        ],
+      };
+      await pumpApp(tester, gateway: gateway, location: '/work?open=s2');
+      expect(gateway.sent('GET', '/api/clients'), hasLength(1));
+      expect(find.text('Controlled by Office iMac'), findsOneWidget);
+    });
+
+    appTest('a control event with only a clientId resolves its name', (
+      tester,
+    ) async {
+      final session = FixtureSession('joined-mid-stream.json');
+      final gateway = await _open(tester, session);
+      gateway.json['GET /api/clients'] = (_) => {
+        'clients': [
+          {
+            'clientId': 'other-phone',
+            'name': 'Pixel 9',
+            'kind': 'device',
+            'lastSeenAt': 2,
+          },
+        ],
+      };
+      _events(gateway).push({
+        'sessionId': 's2',
+        'epoch': 1,
+        'sequence': 99,
+        'type': 'control_updated',
+        'timestamp': 1,
+        'data': {'clientId': 'other-phone', 'generation': 5},
+      });
+      await tester.pumpAndSettle();
+      expect(find.text('Controlled by Pixel 9'), findsOneWidget);
+    });
+
     appTest('losing the lease on a heartbeat shows the bar', (tester) async {
       final session = FixtureSession('joined-mid-stream.json');
       final gateway = await _open(tester, session);

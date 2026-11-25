@@ -22,6 +22,9 @@ abstract final class PrefKeys {
   static const gatewayUrl = 'gatewayUrl';
   static const clientId = 'clientId';
 
+  /// The Web build's chosen client name; empty means the Gateway names it.
+  static const clientName = 'clientName';
+
   /// Per-session drafts and the first-send journal use these prefixes.
   static const draftPrefix = 'draft.';
   static const firstSendJournal = 'firstSendJournal';

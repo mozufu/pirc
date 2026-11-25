@@ -8,6 +8,7 @@ import 'package:pirc_client/pirc_client.dart';
 import '../../connection/connection.dart';
 import '../../connection/data.dart';
 import '../../connection/storage.dart';
+import '../client_names.dart';
 import '../composer/attachments.dart';
 import '../session_controller.dart';
 
@@ -155,6 +156,9 @@ class FirstSendController extends Notifier<FirstSendState> {
       final outcome = await client.send(
         operationId: operationId,
         clientId: ref.read(clientIdProvider),
+        clientName: ref.read(isWebProvider)
+            ? ref.read(webClientNameProvider)
+            : null,
         submission: Submission(
           workspaceId: workspaceId,
           message: message,
@@ -242,6 +246,9 @@ class FirstSendController extends Notifier<FirstSendState> {
       final lease = await client.control.acquire(
         sessionId,
         clientId: ref.read(clientIdProvider),
+        clientName: ref.read(isWebProvider)
+            ? ref.read(webClientNameProvider)
+            : null,
       );
       _journal(
         _from(

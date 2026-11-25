@@ -160,6 +160,14 @@
   "sessionFailed": "This work could not be loaded.",
   "partialOutputLost": "Some output was lost while reconnecting.",
   "controlledElsewhere": "Controlled by another device",
+  "controlledByName": "Controlled by {name}",
+  "@controlledByName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "takeControl": "Take control",
   "dockGoal": "Goal",
   "dockTodo": "Tasks",
@@ -534,6 +542,10 @@
   "textLarge": "Large",
   "textLarger": "Larger",
   "startTab": "When the app opens",
+  "settingsThisDevice": "This device",
+  "thisDeviceWebHint": "Leave empty to let the Gateway name it from the browser.",
+  "thisDeviceNameRule": "A name must be 1 to 60 characters.",
+  "thisDeviceSaved": "Device name saved.",
   "settingsAccount": "Account and this device",
   "accountName": "Account",
   "accountGateway": "Gateway",

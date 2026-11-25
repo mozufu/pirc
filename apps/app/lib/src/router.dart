@@ -5,8 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'connection/connection.dart';
 import 'connection/connection_screens.dart';
 import 'preferences.dart';
-import 'settings/devices_page.dart';
 import 'settings/basic_pages.dart';
+import 'settings/device_page.dart';
+import 'settings/devices_page.dart';
 import 'settings/more_pages.dart';
 import 'settings/providers_page.dart';
 import 'settings/settings_screen.dart';
@@ -102,6 +103,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ),
       ),
       for (final (path, page) in [
+        ('device', const ThisDevicePage()),
         ('devices', const DevicesPage()),
         ('general', const GeneralPage()),
         ('account', const AccountPage()),
