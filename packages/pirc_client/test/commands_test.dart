@@ -82,6 +82,37 @@ void main() {
       }
     });
 
+    test('a plain stop without control sends only its client', () async {
+      transport.onSend = (request) async => reply(202, {
+        'command': _command('stop-1', 'accepted'),
+        'duplicate': false,
+      });
+      final outcome = await sender.send(
+        sessionId: 's1',
+        payload: CommandPayload.stop(),
+        clientId: 'client-1',
+        commandId: 'stop-1',
+      );
+      expect(outcome, isA<CommandAccepted>());
+      expect(_body(transport.requests.single), {
+        'commandId': 'stop-1',
+        'clientId': 'client-1',
+        'payload': {'type': 'stop'},
+      });
+    });
+
+    test('any other command without a lease is never sent', () {
+      expect(
+        () => sender.send(
+          sessionId: 's1',
+          payload: CommandPayload.steer('x'),
+          clientId: 'client-1',
+        ),
+        throwsArgumentError,
+      );
+      expect(transport.requests, isEmpty);
+    });
+
     test('a bound command without a binding is never sent', () async {
       expect(
         () => sender.send(
@@ -340,14 +371,15 @@ void main() {
       },
     );
 
-    test('a control read names the holder; absent means unknown', () {
+    test('a control read names the holder and its last action', () {
       final named = ControlLease.fromJson({
         'clientId': 'other-phone',
         'generation': 4,
-        'holder': {'name': 'Pixel 9', 'kind': 'device'},
+        'holder': {'name': 'Pixel 9', 'kind': 'device', 'lastActionAt': 1700},
       });
       expect(named.holder?.name, 'Pixel 9');
       expect(named.holder?.kind, 'device');
+      expect(named.holder?.lastActionAt, 1700);
       expect(ControlLease.fromJson({'clientId': 'x'}).holder, isNull);
     });
 

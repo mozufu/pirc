@@ -41,6 +41,41 @@ void main() {
     });
   });
 
+  test('a snapshot says how each question ended', () {
+    final state = snapshotState({
+      'session': {'id': 's1', 'workspaceId': 'w', 'name': 'Work'},
+      'interactions': [
+        {
+          'id': 'q1',
+          'runnerEpoch': 1,
+          'kind': 'confirm',
+          'status': 'answered',
+          'answeredBy': 'phone',
+          'resolvedAt': 1700,
+          'expiresAt': 1800,
+          'request': {'title': 'Continue?'},
+        },
+        {
+          'id': 'q2',
+          'runnerEpoch': 1,
+          'kind': 'confirm',
+          'status': 'stale',
+          'resolvedAt': 1600,
+          'expiresAt': 1800,
+          'request': {'title': 'Restarted'},
+        },
+      ],
+      'watermark': {'epoch': 1, 'sequence': 2},
+    });
+    expect(state.interactions, hasLength(2));
+    expect(state.interactions.first.status, 'answered');
+    expect(state.interactions.first.answeredBy, 'phone');
+    expect(state.interactions.first.resolvedAt, 1700);
+    expect(state.interactions.first.statusKnown, isTrue);
+    expect(state.interactions.last.status, 'stale');
+    expect(state.interactions.last.answeredBy, isNull);
+  });
+
   test('capabilities expose the pots feature', () {
     final capabilities = Capabilities.fromJson({
       'apiVersion': 2,

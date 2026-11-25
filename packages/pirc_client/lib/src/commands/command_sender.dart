@@ -72,12 +72,14 @@ class CommandSender {
 
   /// Sends [payload] under the held [lease]. [binding] (`session.binding` from
   /// the snapshot) is required except for `stop` and `stop_transition`.
+  /// A plain `stop` needs no lease: pass this device's [clientId] instead.
   /// Error replies from the gateway are thrown as typed [ApiError]s
   /// (e.g. [StaleEnvironment], [LostControl]); the command did not run.
   Future<CommandOutcome> send({
     required String sessionId,
     required CommandPayload payload,
-    required ControlLease lease,
+    ControlLease? lease,
+    String? clientId,
     ExpectedBinding? binding,
     String? commandId,
   }) async {
@@ -88,14 +90,30 @@ class CommandSender {
         '`${payload.type}` needs the session binding; reload the session',
       );
     }
+    final stop = payload.type == 'stop';
+    if (!stop && lease == null) {
+      throw ArgumentError.value(
+        lease,
+        'lease',
+        '`${payload.type}` needs the control lease',
+      );
+    }
+    final sender = lease?.clientId ?? clientId;
+    if (sender == null || sender.isEmpty) {
+      throw ArgumentError.value(
+        clientId,
+        'clientId',
+        'a command names its client',
+      );
+    }
     final id = commandId ?? _newId();
     if (_uncertain.contains(id)) {
       throw StateError('Command $id has an unknown outcome; read its receipt');
     }
     final body = {
       'commandId': id,
-      'clientId': lease.clientId,
-      'generation': lease.generation,
+      'clientId': sender,
+      if (!stop) 'generation': lease!.generation,
       if (payload.needsBinding) 'expectedBinding': binding!.toJson(),
       'payload': payload.toJson(),
     };

@@ -47,7 +47,10 @@ Interaction _interaction(Object? raw) {
   final title = text(field(request, 'title')) ?? 'The agent needs your input';
   final description = text(field(request, 'message'));
   final expiresAt = number(field(raw, 'expiresAt'));
-  final status = text(field(raw, 'status')) ?? 'pending';
+  final rawStatus = text(field(raw, 'status'));
+  final status = rawStatus ?? 'pending';
+  final answeredBy = str(field(raw, 'answeredBy'));
+  final resolvedAt = number(field(raw, 'resolvedAt'));
   final relayed = _relayedFrom(field(request, 'relayed'));
   Interaction build({
     String kind = 'input',
@@ -68,6 +71,9 @@ Interaction _interaction(Object? raw) {
     description: description,
     expiresAt: expiresAt,
     status: status,
+    statusKnown: rawStatus != null,
+    answeredBy: answeredBy,
+    resolvedAt: resolvedAt,
     relayed: relayed,
     options: options,
     multiple: multiple,

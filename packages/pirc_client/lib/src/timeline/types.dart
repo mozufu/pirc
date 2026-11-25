@@ -357,6 +357,9 @@ class Interaction {
     this.description,
     this.expiresAt,
     this.status = 'pending',
+    this.statusKnown = true,
+    this.answeredBy,
+    this.resolvedAt,
     this.options = const [],
     this.multiple = false,
     this.placeholder,
@@ -380,7 +383,19 @@ class Interaction {
   final String title;
   final String? description;
   final int? expiresAt;
+
+  /// `pending`, `answered`, `cancelled`, `expired` or `stale`.
   final String status;
+
+  /// False on an older snapshot that did not say; such a pending question
+  /// gets only a neutral fallback when it disappears.
+  final bool statusKnown;
+
+  /// The `clientId` that answered; only for `answered`.
+  final String? answeredBy;
+
+  /// When the question ended (answered, cancelled, stale or expiry).
+  final int? resolvedAt;
   final List<InteractionOption> options;
   final bool multiple;
   final String? placeholder;
@@ -391,6 +406,36 @@ class Interaction {
   final String? language;
   final UserRequestChoice? userRequestChoice;
   final RelayedFrom? relayed;
+
+  /// The end an `interaction_answered` event reports.
+  Interaction copyWith({
+    String? status,
+    bool? statusKnown,
+    String? answeredBy,
+    int? resolvedAt,
+  }) => Interaction(
+    id: id,
+    runnerEpoch: runnerEpoch,
+    toolCallId: toolCallId,
+    kind: kind,
+    title: title,
+    description: description,
+    expiresAt: expiresAt,
+    status: status ?? this.status,
+    statusKnown: statusKnown ?? this.statusKnown,
+    answeredBy: answeredBy ?? this.answeredBy,
+    resolvedAt: resolvedAt ?? this.resolvedAt,
+    options: options,
+    multiple: multiple,
+    placeholder: placeholder,
+    initialValue: initialValue,
+    confirmLabel: confirmLabel,
+    cancelLabel: cancelLabel,
+    modelChoice: modelChoice,
+    language: language,
+    userRequestChoice: userRequestChoice,
+    relayed: relayed,
+  );
 }
 
 /// Whether an agent runs inside its node's OS sandbox, and why not.
@@ -450,6 +495,7 @@ class SessionState {
   SessionState copyWith({
     Session? session,
     List<Message>? messages,
+    List<Interaction>? interactions,
     List<QueueItem>? queue,
     String? cursor,
     String? approvalMode,
@@ -462,7 +508,7 @@ class SessionState {
     runnerStatus: runnerStatus,
     run: run,
     messages: messages ?? this.messages,
-    interactions: interactions,
+    interactions: interactions ?? this.interactions,
     queue: queue ?? this.queue,
     cursor: cursor ?? this.cursor,
     runnerEpoch: runnerEpoch,

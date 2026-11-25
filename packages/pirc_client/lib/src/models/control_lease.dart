@@ -6,17 +6,25 @@ import '../json.dart';
 /// by its device record or a browser by the name it sent (else its user agent).
 @immutable
 class ControlHolder {
-  const ControlHolder({required this.name, required this.kind});
+  const ControlHolder({
+    required this.name,
+    required this.kind,
+    this.lastActionAt,
+  });
 
   factory ControlHolder.fromJson(Object? json) => ControlHolder(
     name: str(field(json, 'name')) ?? '',
     kind: str(field(json, 'kind')) ?? '',
+    lastActionAt: number(field(json, 'lastActionAt')),
   );
 
   final String name;
 
   /// `device` (a paired app) or `browser`.
   final String kind;
+
+  /// When the holder last sent a command or an answer in this session.
+  final int? lastActionAt;
 }
 
 /// Who may drive a session (`GET /api/sessions/{id}/control`). TTL 30 s.
