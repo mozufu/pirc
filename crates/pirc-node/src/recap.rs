@@ -6,9 +6,9 @@
 //! The model call is the agent's (its recap feature); this only reads,
 //! bounded and redacted (`pirc_agent::redact`), with every limit in UTF-16
 //! units as TS counts them. The TS query also excluded sessions started by
-//! schedules or delegations through the gateway's tables, which a node's
+//! schedules through the gateway's tables, which a node's
 //! store never filled; those exclusions are dropped, the node-local
-//! markers (`scheduled-run`, `assistant-delegation` entries) stay. Golden
+//! markers (`scheduled-run` entries) stay. Golden
 //! cases: `node-recap.test.ts`.
 //!
 //! Its queries are its own (run on `node.db.lock()`, released before any
@@ -41,7 +41,7 @@ const MAX_TEXT: usize = 1800;
 const MAX_SESSION_JSON: usize = 5000;
 const DAY_MS: i64 = 86_400_000;
 const SAMPLING: &str = "Bounded sample of recent owned sessions in this exact workspace; active branch only, user text prioritized. Entire recap-marked, oversized, malformed, or changing sessions are excluded. Not full history coverage. Redaction is best-effort.";
-const BACKGROUND_TYPES: [&str; 2] = ["scheduled-run", "assistant-delegation"];
+const BACKGROUND_TYPES: [&str; 1] = ["scheduled-run"];
 
 /// `collectRecap(db, sessionId, args)`: the evidence object, or the error
 /// the agent gets (`args` must be `{days?: 1..90}`, strict).

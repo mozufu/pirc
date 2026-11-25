@@ -12,19 +12,15 @@ mod store;
 pub(crate) mod text;
 
 use axum::Router;
-use rusqlite::{Connection, OptionalExtension, params};
+use rusqlite::Connection;
 use serde_json::Value;
 
 use crate::agent_ops::OpContext;
 use crate::app::{App, AppState};
-use crate::db::{Store as _, atomic};
-use crate::error::{ApiError, ApiResult};
+use crate::error::ApiResult;
 
 pub use ops::Op;
-pub use store::{
-    Budgets, ProjectAction, ProjectChoice, ProjectDecision, ProjectEntry, ProjectProposal,
-    ProjectProposalDecision, Store,
-};
+pub use store::{Budgets, Store};
 
 /// The memory store over `conn`, with the configured budgets.
 pub fn store<'a>(app: &App, conn: &'a Connection) -> Store<'a> {
@@ -53,89 +49,8 @@ pub fn routes() -> Router<AppState> {
 /// Forget what memory learned from a deleted chat (`MemoryStore.forgetSession`),
 /// inside the deletion's transaction.
 pub fn forget_session(app: &App, conn: &Connection, user: &str, session_id: &str) -> ApiResult<()> {
-    let project_cleanup: bool = conn.query_row("SELECT EXISTS(SELECT 1 FROM project_memory_cleanup_sessions s JOIN project_memory_cleanup c USING(workspace_id) WHERE s.session_id=? AND c.owner_user=?)",[session_id,user],|r| r.get(0))?;
-    if project_cleanup {
-        return Ok(());
-    }
     interactions::ensure_known(app, conn);
     store(app, conn).forget_session(user, session_id)
-}
-
-/// Whether the global-memory part of this deletion already committed.
-pub fn project_cleanup_complete(conn: &Connection, user: &str, scope: &str) -> ApiResult<bool> {
-    let owner: Option<String> = conn
-        .query_row(
-            "SELECT owner_user FROM project_memory_cleanup WHERE workspace_id=?",
-            [scope],
-            |r| r.get(0),
-        )
-        .optional()?;
-    if owner.as_ref().is_some_and(|owner| owner != user) {
-        return Err(ApiError::new(
-            403,
-            "forbidden",
-            "Project belongs to another user",
-        ));
-    }
-    Ok(owner.is_some())
-}
-
-pub fn project_plan(
-    app: &App,
-    conn: &Connection,
-    user: &str,
-    scope: &str,
-) -> ApiResult<Vec<ProjectEntry>> {
-    if project_cleanup_complete(conn, user, scope)? {
-        return Ok(Vec::new());
-    }
-    store(app, conn).project_plan(user, scope)
-}
-pub fn project_proposals(
-    app: &App,
-    conn: &Connection,
-    user: &str,
-    scope: &str,
-) -> ApiResult<Vec<ProjectProposal>> {
-    if project_cleanup_complete(conn, user, scope)? {
-        return Ok(Vec::new());
-    }
-    store(app, conn).project_proposals(user, scope)
-}
-
-/// Memory effects and receipt commit with the project fence. No final sweep:
-/// later edits must not be overwritten when the remote cleanup is retried.
-pub fn delete_project(
-    app: &App,
-    conn: &Connection,
-    user: &str,
-    scope: &str,
-    decisions: &[(String, ProjectDecision)],
-    proposal_decisions: &[(String, ProjectProposalDecision)],
-) -> ApiResult<()> {
-    atomic(conn, |conn| {
-        if project_cleanup_complete(conn, user, scope)? {
-            return Ok(());
-        }
-        let deletion = conn
-            .workspace_deletion(scope)?
-            .ok_or_else(ApiError::internal)?;
-        if deletion.owner_user != user {
-            return Err(ApiError::new(
-                403,
-                "forbidden",
-                "Project belongs to another user",
-            ));
-        }
-        interactions::ensure_known(app, conn);
-        store(app, conn).delete_project(user, scope, decisions, proposal_decisions)?;
-        conn.execute(
-            "INSERT INTO project_memory_cleanup VALUES(?,?,1,?)",
-            params![scope, user, crate::util::now_ms()],
-        )?;
-        conn.execute("INSERT INTO project_memory_cleanup_sessions SELECT id,workspace_id FROM sessions WHERE workspace_id=?",[scope])?;
-        Ok(())
-    })
 }
 
 /// The user's memory changed (`MemoryInteractions.changed`): its pending

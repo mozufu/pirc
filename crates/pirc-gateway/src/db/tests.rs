@@ -415,7 +415,7 @@ fn capabilities() {
     );
     let patch: CapabilitiesPatch = serde_json::from_value(json!({ "web_search": false })).unwrap();
     let policy = conn.patch_workspace_capabilities("n1:w", &patch).unwrap();
-    assert!(!policy.web_search && policy.delegation);
+    assert!(!policy.web_search);
     assert_eq!(
         conn.require_workspace_capability("n1:w", Capability::WebSearch)
             .unwrap_err()
@@ -424,34 +424,8 @@ fn capabilities() {
     );
     assert_eq!(
         json!(policy),
-        json!({ "version": 1, "delegation": true, "memory_search": true,
-                "remote_recall": true, "schedules": true, "web_search": false,
-                "delegation_approval": "always" })
-    );
-    // Policies stored before the approval setting read as `always`.
-    conn.execute(
-        "UPDATE workspace_capabilities SET policy_json=? WHERE workspace_id='n1:w'",
-        [
-            json!({ "version": 1, "delegation": true, "memory_search": true,
+        json!({ "version": 1, "memory_search": true,
                 "remote_recall": true, "schedules": true, "web_search": false })
-            .to_string(),
-        ],
-    )
-    .unwrap();
-    assert_eq!(
-        conn.get_workspace_capabilities("n1:w")
-            .unwrap()
-            .delegation_approval,
-        DelegationApproval::Always
-    );
-    let patch: CapabilitiesPatch =
-        serde_json::from_value(json!({ "delegation_approval": "untrusted" })).unwrap();
-    let policy = conn.patch_workspace_capabilities("n1:w", &patch).unwrap();
-    assert_eq!(policy.delegation_approval, DelegationApproval::Untrusted);
-    assert!(!policy.web_search);
-    assert!(
-        serde_json::from_value::<CapabilitiesPatch>(json!({ "delegation_approval": "sometimes" }))
-            .is_err()
     );
     assert!(serde_json::from_value::<CapabilitiesPatch>(json!({ "version": 2 })).is_err());
     assert!(serde_json::from_value::<CapabilitiesPatch>(json!({ "other": 1 })).is_err());

@@ -19,7 +19,6 @@ use crate::{ConfigError, Env, default_config_dir};
 /// Human-editable initial files, also suitable for printing for comparison.
 /// The filename supplies the id; Markdown after front matter supplies the body.
 pub const DEFAULT_MODE_FILES: &[(&str, &str)] = &[
-    ("chat.md", include_str!("modes/chat.md")),
     ("directory.md", include_str!("modes/directory.md")),
     ("pot.md", include_str!("modes/pot.md")),
 ];
@@ -239,11 +238,12 @@ fn existing_directory(dir: &Path) -> Result<bool, ConfigError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pirc_protocol::mode::{PromptSection, default_chat, default_work};
+    use pirc_protocol::mode::{PromptSection, default_work};
     use std::os::unix::fs::{PermissionsExt, symlink};
 
-    const CHAT_FILE: &str = include_str!("modes/chat.md");
+    const POT_FILE: &str = include_str!("modes/pot.md");
     const WORK_FILE: &str = include_str!("modes/directory.md");
+    const BODY_FILE: &str = "---\nlabel: Research\nui:\n  noun: session\nworkdir: workspace\nprompt: [base]\nassistant: user\nschedule_scope: own\n---\n";
 
     fn ids(catalog: &ModeCatalog) -> Vec<&str> {
         catalog.modes.keys().map(ModeId::as_str).collect()
@@ -251,19 +251,18 @@ mod tests {
 
     #[test]
     fn default_markdown_matches_protocol_defaults_exactly() {
-        assert_eq!(parse_mode("chat", CHAT_FILE).unwrap(), default_chat());
         assert_eq!(parse_mode("directory", WORK_FILE).unwrap(), default_work());
     }
 
     #[test]
     fn filename_is_authoritative_and_body_is_markdown() {
-        let mode = parse_mode("research", &format!("{CHAT_FILE}\n  Study carefully.\n")).unwrap();
+        let mode = parse_mode("research", &format!("{WORK_FILE}\n  Study carefully.\n")).unwrap();
         assert_eq!(mode.id.as_str(), "research");
         assert_eq!(mode.body, "Study carefully.");
         assert!(mode.prompt.contains(&PromptSection::Body));
         for id in ["", "../chat", "chat.md", "Upper", "1first", "a/b"] {
             assert!(
-                parse_mode(id, CHAT_FILE)
+                parse_mode(id, WORK_FILE)
                     .unwrap_err()
                     .contains("invalid mode id")
             );
@@ -276,8 +275,8 @@ mod tests {
                 "body must come from the Markdown body",
             ),
         ] {
-            let text = CHAT_FILE.replacen("---\n", &format!("---\n{field}\n"), 1);
-            assert!(parse_mode("chat", &text).unwrap_err().contains(rule));
+            let text = WORK_FILE.replacen("---\n", &format!("---\n{field}\n"), 1);
+            assert!(parse_mode("directory", &text).unwrap_err().contains(rule));
         }
     }
 
@@ -325,14 +324,13 @@ mod tests {
             let error = parse_mode("directory", &text).unwrap_err();
             assert!(error.contains(rule), "{error} should contain {rule}");
         }
-        let without_body = CHAT_FILE.replace("  - body\n", "");
         assert!(
-            parse_mode("chat", &format!("{without_body}Instructions"))
+            parse_mode("research", &format!("{BODY_FILE}Instructions"))
                 .unwrap_err()
                 .contains("body prompt section")
         );
         assert!(
-            parse_mode("chat", &format!("{CHAT_FILE}{}", "x".repeat(8001)))
+            parse_mode("research", &format!("{BODY_FILE}{}", "x".repeat(8001)))
                 .unwrap_err()
                 .contains("body")
         );
@@ -342,7 +340,7 @@ mod tests {
     fn catalog_sorts_files_skips_bad_ones_and_reports_source_and_rule() {
         let root = tempfile::tempdir().unwrap();
         let dir = root.path();
-        fs::write(dir.join("zeta.md"), CHAT_FILE).unwrap();
+        fs::write(dir.join("zeta.md"), POT_FILE).unwrap();
         fs::write(dir.join("alpha.md"), WORK_FILE).unwrap();
         fs::write(dir.join("invalid.md"), "---\nlabel: [\n---\n").unwrap();
         fs::write(
@@ -350,7 +348,7 @@ mod tests {
             WORK_FILE.replace("tools: null", "tools: [not_real]"),
         )
         .unwrap();
-        fs::write(dir.join("Upper.md"), CHAT_FILE).unwrap();
+        fs::write(dir.join("Upper.md"), POT_FILE).unwrap();
         fs::write(dir.join("bad-utf8.md"), [0xff]).unwrap();
         fs::write(dir.join("ignored.txt"), "ignored").unwrap();
         fs::create_dir(dir.join("not-a-file.md")).unwrap();
@@ -390,9 +388,8 @@ mod tests {
         assert!(initialize_modes(&dir).unwrap());
         let catalog = load_modes(&dir).unwrap();
         assert!(catalog.warnings.is_empty());
-        assert_eq!(ids(&catalog), ["chat", "directory", "pot"]);
+        assert_eq!(ids(&catalog), ["directory", "pot"]);
         assert!(catalog.modes[&ModeId::new("pot").unwrap()].pot);
-        assert_eq!(catalog.modes[&ModeId::new("chat").unwrap()], default_chat());
         assert_eq!(
             catalog.modes[&ModeId::new("directory").unwrap()],
             default_work()
@@ -417,14 +414,14 @@ mod tests {
         let root = tempfile::tempdir().unwrap();
         let dir = root.path().join("modes");
         initialize_modes(&dir).unwrap();
-        let changed = CHAT_FILE.replace("label: Chat", "label: Research");
-        fs::write(dir.join("chat.md"), &changed).unwrap();
+        let changed = POT_FILE.replace("label: Pot", "label: Research");
+        fs::write(dir.join("pot.md"), &changed).unwrap();
         fs::remove_file(dir.join("directory.md")).unwrap();
         assert!(!initialize_modes(&dir).unwrap());
-        assert_eq!(fs::read_to_string(dir.join("chat.md")).unwrap(), changed);
+        assert_eq!(fs::read_to_string(dir.join("pot.md")).unwrap(), changed);
         assert!(!dir.join("directory.md").exists());
         let catalog = load_modes(&dir).unwrap();
-        assert_eq!(ids(&catalog), ["chat", "pot"]);
+        assert_eq!(ids(&catalog), ["pot"]);
         assert_eq!(catalog.modes.values().next().unwrap().label, "Research");
     }
 
@@ -448,7 +445,7 @@ mod tests {
         let store = root.path().join("store");
         fs::create_dir(&store).unwrap();
         let source = root.path().join("source.md");
-        fs::write(&source, CHAT_FILE).unwrap();
+        fs::write(&source, POT_FILE).unwrap();
         fs::set_permissions(&source, fs::Permissions::from_mode(0o400)).unwrap();
         symlink(&source, store.join("research.md")).unwrap();
         symlink(root.path().join("missing.md"), store.join("missing.md")).unwrap();
@@ -459,7 +456,7 @@ mod tests {
         assert_eq!(ids(&catalog), ["research"]);
         assert_eq!(catalog.warnings.len(), 1);
         assert_eq!(catalog.warnings[0].source, dir.join("missing.md"));
-        assert!(!store.join("chat.md").exists());
+        assert!(!store.join("pot.md").exists());
     }
 
     #[test]

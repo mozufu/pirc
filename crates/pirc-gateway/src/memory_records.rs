@@ -22,7 +22,7 @@ use crate::db::{Store, atomic};
 use crate::dispatch::resolve_directory_workspace;
 use crate::error::{ApiError, ApiResult};
 use crate::memory::schema::{array, hex12, optional, required, string};
-use crate::memory::text::{clip, fold, local_stamp, parse_date, words};
+use crate::memory::text::{clip, fold, parse_date, words};
 use crate::util::{now_ms, safe_json};
 
 const HIT_CHARS: usize = 600;
@@ -526,8 +526,8 @@ fn all_rows(conn: &Connection, sql: &str, values: Vec<Sql>) -> ApiResult<Vec<Map
     Ok(rows.collect::<Result<_, _>>()?)
 }
 
-/// The workspaces a search keeps to: their ledgers, and every record and
-/// delegation of their repositories.
+/// The workspaces a search keeps to: their ledgers and every record of
+/// their repositories.
 struct Scope {
     ids: Vec<String>,
     repos: Vec<String>,
@@ -542,27 +542,8 @@ fn placeholders(count: usize) -> String {
     }
 }
 
-/// Where a search without a workspace looked, in a project with links.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Searched {
-    /// The linked workspaces and the other clones of their repositories.
-    Linked,
-    /// Nothing there: every workspace.
-    Everywhere,
-}
-
-impl Searched {
-    pub fn name(self) -> &'static str {
-        match self {
-            Self::Linked => "linked",
-            Self::Everywhere => "everywhere",
-        }
-    }
-}
-
-/// Notes and delegations of `user` holding any of the words in `query`,
-/// most words first, then current before superseded, then newest. With
-/// `workspace`, those of its ledger and of every clone of its repository.
+/// Notes of `user` holding any of the words in `query`, most words first,
+/// then current before superseded, then newest.
 #[cfg(test)]
 pub fn search(
     app: &App,
@@ -571,21 +552,17 @@ pub fn search(
     workspace: Option<&str>,
     limit: Option<i64>,
 ) -> ApiResult<Vec<Value>> {
-    search_in(app, user, query, workspace, limit, None, false).map(|(hits, _)| hits)
+    search_in(app, user, query, workspace, limit)
 }
 
-/// [`search`] from a chat in `project`: without a workspace, and unless
-/// `everywhere`, the workspaces it is linked to (and their clones) first,
-/// then every workspace if nothing is found there.
+/// [`search`] with a workspace by id or name.
 pub fn search_in(
     app: &App,
     user: &str,
     query: &str,
     workspace: Option<&str>,
     limit: Option<i64>,
-    project: Option<&str>,
-    everywhere: bool,
-) -> ApiResult<(Vec<Value>, Option<Searched>)> {
+) -> ApiResult<Vec<Value>> {
     let folded = fold(query);
     let mut terms: Vec<&str> = Vec::new();
     for word in words(&folded) {
@@ -604,29 +581,9 @@ pub fn search_in(
             ids: vec![workspace.id],
             repos: workspace.repo.into_iter().collect(),
         };
-        return Ok((find_hits(app, user, &terms, limit, Some(&scope))?, None));
+        return find_hits(app, user, &terms, limit, Some(&scope));
     }
-    if !everywhere && let Some(project) = project {
-        let scope = {
-            let conn = app.db.lock();
-            let links = crate::project_links::links(&conn, project)?;
-            Scope {
-                repos: crate::project_links::repos(&conn, &links)?,
-                ids: links.into_iter().map(|link| link.workspace_id).collect(),
-            }
-        };
-        if !scope.ids.is_empty() {
-            let hits = find_hits(app, user, &terms, limit, Some(&scope))?;
-            if !hits.is_empty() {
-                return Ok((hits, Some(Searched::Linked)));
-            }
-            return Ok((
-                find_hits(app, user, &terms, limit, None)?,
-                Some(Searched::Everywhere),
-            ));
-        }
-    }
-    Ok((find_hits(app, user, &terms, limit, None)?, None))
+    find_hits(app, user, &terms, limit, None)
 }
 
 fn find_hits(
@@ -651,7 +608,7 @@ fn find_hits(
         .map(|term| Sql::Text(format!("%{}%", escape_like(term))));
     let mut values: Vec<Sql> = vec![Sql::Text(user.to_owned())];
     values.extend(patterns.clone());
-    let (records_in, delegations_in) = match scope {
+    let records_in = match scope {
         Some(scope) => {
             values.extend(scope.ids.iter().cloned().map(Sql::Text));
             // A workspace without a repository keeps to its own ledgers.
@@ -660,16 +617,11 @@ fn find_hits(
                 placeholders(scope.ids.len()),
                 placeholders(scope.repos.len()),
             );
-            (
-                format!(
-                    " AND ((node_id || '/' || ledger_key) IN (SELECT node_id || '/' || ledger_key FROM memory_records WHERE workspace_id IN {ids}) OR repo IN {repos})"
-                ),
-                format!(
-                    " AND (workspace_id IN {ids} OR workspace_id IN (SELECT id FROM workspaces WHERE repo IN {repos}))"
-                ),
+            format!(
+                " AND ((node_id || '/' || ledger_key) IN (SELECT node_id || '/' || ledger_key FROM memory_records WHERE workspace_id IN {ids}) OR repo IN {repos})"
             )
         }
-        None => (String::new(), String::new()),
+        None => String::new(),
     };
     let conn = app.db.lock();
     let records = all_rows(
@@ -679,14 +631,6 @@ fn find_hits(
             any_term("content"),
         ),
         values.clone(),
-    )?;
-    let delegations = all_rows(
-        &conn,
-        &format!(
-            "SELECT * FROM delegations WHERE owner_user=? AND {}{delegations_in}",
-            any_term("(title || ' ' || task || ' ' || COALESCE(result, ''))"),
-        ),
-        values,
     )?;
     let score = |text: &str| {
         let folded = fold(text);
@@ -729,24 +673,6 @@ fn find_hits(
             current: text(row, "status") == "active",
             time: parse_date(&text(row, "recorded_at").replacen(' ', "T", 1)).unwrap_or(0),
             hit: Value::Object(hit),
-        });
-    }
-    for row in &delegations {
-        let result = row.get("result").and_then(Value::as_str);
-        let (title, task) = (text(row, "title"), text(row, "task"));
-        let updated_at = row.get("updated_at").and_then(Value::as_i64).unwrap_or(0);
-        ranked.push(Ranked {
-            score: score(&format!("{title} {task} {}", result.unwrap_or_default())),
-            current: true,
-            time: updated_at,
-            hit: json!({
-                "id": text(row, "id"),
-                "kind": "delegation",
-                "workspace": label(&conn, row.get("workspace_id").and_then(Value::as_str), None),
-                "date": local_stamp(updated_at),
-                "status": text(row, "status"),
-                "content": clip(&format!("{title}: {}", result.unwrap_or(&task)), HIT_CHARS),
-            }),
         });
     }
     ranked.sort_by(|a, b| {

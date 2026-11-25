@@ -716,7 +716,6 @@ mod tests {
         Agent::new(crate::agent::AgentOptions {
             config,
             capabilities: Default::default(),
-            project_instructions: None,
             role: None,
             store,
             emit: Rc::new(|_| {}),

@@ -56,16 +56,4 @@ pub trait AgentHost {
     fn approval_mode(&self) -> ApprovalMode {
         default_approval_mode(&self.config().features)
     }
-    /// Entries (ids from [`AgentHost::context_entries`]) the classifier may
-    /// read as the user's requests although they are not user messages: a
-    /// delegated task the user approved as their own request, during the
-    /// run it started.
-    fn run_user_requests(&self) -> Vec<String> {
-        Vec::new()
-    }
-    /// The user's own words a delegated task carried, verified in their
-    /// chat (never the task text), during the run it started.
-    fn run_user_quotes(&self) -> Vec<String> {
-        Vec::new()
-    }
 }

@@ -22,7 +22,6 @@ pub enum Op {
         query: String,
         workspace: Option<String>,
         limit: Option<i64>,
-        everywhere: bool,
     },
     Recall {
         id: String,
@@ -147,7 +146,7 @@ fn parse_propose(args: &Value) -> Result<ProposeArgs, ()> {
 }
 
 fn parse_search(args: &Value) -> Result<Op, ()> {
-    let object = strict(args, &["query", "workspace", "limit", "everywhere"]).ok_or(())?;
+    let object = strict(args, &["query", "workspace", "limit"]).ok_or(())?;
     Ok(Op::Search {
         query: required(object, "query", |value| {
             string(value, 1, 500).map(str::to_owned)
@@ -158,7 +157,6 @@ fn parse_search(args: &Value) -> Result<Op, ()> {
         limit: optional(object, "limit", |value| {
             int(value).filter(|n| (1..=20).contains(n))
         })?,
-        everywhere: optional(object, "everywhere", Value::as_bool)?.unwrap_or(false),
     })
 }
 
@@ -203,14 +201,41 @@ fn require_current_environment(conn: &rusqlite::Connection, context: &OpContext)
     Ok(())
 }
 
+/// The user's repository workspaces, as `memory_search` may target them.
+fn workspaces(app: &AppState) -> ApiResult<Value> {
+    let all = app.db.lock().list_workspaces()?;
+    let listed = all
+        .iter()
+        .filter(|workspace| {
+            app.mode(&workspace.mode)
+                .is_some_and(|mode| mode.repository)
+                && workspace.id.contains(':')
+        })
+        .map(|workspace| {
+            let mut item = Map::new();
+            item.insert("id".into(), json!(workspace.id));
+            item.insert("name".into(), json!(workspace.display_name));
+            item.insert("node".into(), json!(workspace.host_id));
+            item.insert(
+                "online".into(),
+                json!(crate::dispatch::workspace_online(app, workspace)),
+            );
+            if let Some(repo) = &workspace.repo {
+                item.insert("repo".into(), json!(repo));
+            }
+            Value::Object(item)
+        })
+        .collect();
+    Ok(Value::Array(listed))
+}
+
 pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Value> {
     let user = context.user.as_str();
     let session_id = context.session.id.as_str();
     match op {
-        // Every session in a chat workspace is an assistant; directory
-        // workspaces have no policy: every capability stays allowed. A
-        // coding session reads the approved USER entries and nothing else:
-        // no notes, no workspaces, and its memory operations stay refused.
+        // A full-assistant mode sees USER and MEMORY; a coding session reads
+        // the approved USER entries and nothing else: no notes, no
+        // workspaces, and its memory operations stay refused.
         Op::Context => {
             if !context.mode.full_assistant() {
                 let user = {
@@ -232,10 +257,7 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
             result.insert("enabled".into(), json!(true));
             result.insert("capabilities".into(), json!(capabilities));
             result.extend(memory);
-            result.insert(
-                "workspaces".into(),
-                crate::delegations::workspaces(app, Some(&context.workspace.id))?,
-            );
+            result.insert("workspaces".into(), workspaces(app)?);
             Ok(Value::Object(result))
         }
         Op::Note(args) => {
@@ -294,24 +316,11 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
             query,
             workspace,
             limit,
-            everywhere,
         } => {
             require_assistant(context)?;
-            // In a project linked to workspaces, those (and their clones) first.
-            let (hits, searched) = memory_records::search_in(
-                app,
-                user,
-                &query,
-                workspace.as_deref(),
-                limit,
-                Some(&context.workspace.id),
-                everywhere,
-            )?;
-            let mut result = json!({ "hits": hits });
-            if let Some(searched) = searched {
-                result["searched"] = json!(searched.name());
-            }
-            Ok(result)
+            Ok(json!({
+                "hits": memory_records::search_in(app, user, &query, workspace.as_deref(), limit)?,
+            }))
         }
         Op::Recall { id } => {
             require_assistant(context)?;

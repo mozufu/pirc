@@ -1,6 +1,6 @@
 //! `role` (`agent/features/role.ts`): the role an agent runs in
 //! (`roles.rs`) puts its instructions into the system prompt. Teammates and
-//! subagents get the role from their parent; delegated sessions from the
+//! subagents get the role from their parent; delivered sessions from the
 //! gateway (`Agent::set_role`).
 
 use std::rc::Rc;

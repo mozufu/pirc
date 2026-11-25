@@ -194,7 +194,6 @@ fn audiences_topics_and_payloads_as_web_push_made_them() {
         ),
         ("", "t00"),
         ("x😀y", "t139784"),
-        ("delegation:abc", "tmhb3f4e"),
     ] {
         assert_eq!(topic_of(tag), topic, "{tag}");
     }

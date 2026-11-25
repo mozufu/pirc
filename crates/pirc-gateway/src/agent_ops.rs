@@ -5,8 +5,8 @@
 //! workspace's capability policy permits it; an agent can never act as
 //! another session.
 //!
-//! Each area parses and runs its own operations (`memory`, `delegations`,
-//! `schedules`, `calendar`, `web_search`); this module does the common checks in the TS
+//! Each area parses and runs its own operations (`memory`, `schedules`,
+//! `calendar`, `web_search`, `pots`); this module does the common checks in the TS
 //! order: unknown session, foreign session, unknown op, invalid arguments,
 //! capability, then the op.
 
@@ -15,7 +15,7 @@ use serde_json::{Value, json};
 use crate::app::AppState;
 use crate::db::{Capability, Session, Store, Workspace};
 use crate::error::ApiError;
-use crate::{calendar, delegations, memory, schedules, web_search};
+use crate::{calendar, memory, schedules, web_search};
 
 /// Who is asking.
 pub struct OpContext {
@@ -35,7 +35,6 @@ fn agent_error(status: u16, code: &str, message: &str) -> (u16, Value) {
 /// One area's parsed operation.
 enum Parsed {
     Memory(memory::Op),
-    Delegation(delegations::Op),
     Schedule(schedules::Op),
     Calendar(calendar::agent::Op),
     Web(web_search::Op),
@@ -99,9 +98,6 @@ fn parse(op: &str, args: &Value) -> Option<Result<Parsed, ()>> {
     if let Some(parsed) = memory::parse_op(op, args) {
         return Some(parsed.map(Parsed::Memory));
     }
-    if let Some(parsed) = delegations::parse_op(op, args) {
-        return Some(parsed.map(Parsed::Delegation));
-    }
     if let Some(parsed) = schedules::parse_op(op, args) {
         return Some(parsed.map(Parsed::Schedule));
     }
@@ -115,9 +111,7 @@ fn parse(op: &str, args: &Value) -> Option<Result<Parsed, ()>> {
 }
 
 fn capability(op: &str) -> Option<Capability> {
-    if op.starts_with("delegation.") {
-        Some(Capability::Delegation)
-    } else if op.starts_with("schedule.") {
+    if op.starts_with("schedule.") {
         Some(Capability::Schedules)
     } else {
         match op {
@@ -222,7 +216,6 @@ pub async fn run(
                 crate::memory_records::mirror_state(app, node_id, &key, &context.user)
             }
             Parsed::Memory(op) => memory::run_op(app, &context, op).await,
-            Parsed::Delegation(op) => delegations::run_op(app, &context, op).await,
             Parsed::Schedule(op) => schedules::run_op(app, &context, op).await,
             Parsed::Calendar(op) => calendar::agent::run_op(app, &context, op).await,
             Parsed::Web(op) => web_search::run_op(app, &context, op).await,

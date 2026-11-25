@@ -731,7 +731,7 @@ pub async fn workspace_details(
 }
 
 /// `roleBriefs(loadRoles(root))`, or `None` (logged) when they do not load:
-/// a delegation then cannot pick a role there.
+/// a scheduled run then cannot pick a role there.
 pub fn workspace_roles(config: &pirc_config::NodeConfig, root: &str) -> Option<Vec<WorkspaceRole>> {
     let dirs = pirc_agent::roles::role_dirs(&config.config_dir.to_string_lossy(), root);
     match pirc_agent::roles::read_roles(&dirs) {

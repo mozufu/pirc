@@ -14,7 +14,6 @@ pub mod compact;
 pub mod goal;
 pub mod memory;
 pub mod pot;
-pub mod project_instructions;
 pub mod recap;
 pub mod role;
 pub mod sandbox;
@@ -55,7 +54,6 @@ pub fn builtin_features() -> Vec<Rc<dyn Feature>> {
         todo::feature(),
         compact::feature(),
         // Chat sessions only: the project's instructions, before USER/MEMORY.
-        project_instructions::feature(),
         // Agents started in a role: the role's instructions.
         role::feature(),
         memory::feature(),
@@ -152,7 +150,6 @@ mod tests {
                 "ask-question",
                 "todo",
                 "compact",
-                "project-instructions",
                 "role",
                 "observational-memory",
                 "workspace-memory",

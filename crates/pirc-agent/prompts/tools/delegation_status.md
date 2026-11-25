@@ -1,1 +1,0 @@
-Check on delegations: one with its full result, by id, or the recent ones with their status. A long result comes in 12000-character chunks: call again with offset set to the reported next offset until none is given.

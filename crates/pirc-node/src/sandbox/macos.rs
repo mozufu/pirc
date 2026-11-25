@@ -520,7 +520,6 @@ impl Sandbox for MacSandbox {
                     .chain(input.inference_socket.as_deref())
                     .chain(socket_dir)
                     .chain(input.protected_paths.iter().map(PathBuf::as_path))
-                    .chain(input.project_files_dir.as_deref())
                     .collect();
                 let literal_roots = self.own_paths(&home, &extra)?;
                 let (parent, own) = temp_parent(&tmp)?;

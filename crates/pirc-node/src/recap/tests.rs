@@ -320,22 +320,21 @@ fn rejects_symlink_files_and_directories_and_skips_huge_files_without_reading() 
 #[test]
 fn node_local_background_markers_exclude_entire_sessions() {
     let fixture = Fixture::new();
-    for custom_type in ["scheduled-run", "assistant-delegation"] {
-        fixture.session(vec![
-            user("before background marker"),
-            json!({ "type": "message", "message": { "role": "custom", "customType": custom_type,
-                "content": "background task" } }),
-            with(user("off-marker branch"), json!({ "parentId": "e1" })),
-        ]);
-        fixture.session(vec![
-            user("before"),
-            json!({ "type": "custom", "customType": custom_type, "data": {} }),
-            user("after"),
-        ]);
-    }
+    let custom_type = "scheduled-run";
+    fixture.session(vec![
+        user("before background marker"),
+        json!({ "type": "message", "message": { "role": "custom", "customType": custom_type,
+            "content": "background task" } }),
+        with(user("off-marker branch"), json!({ "parentId": "e1" })),
+    ]);
+    fixture.session(vec![
+        user("before"),
+        json!({ "type": "custom", "customType": custom_type, "data": {} }),
+        user("after"),
+    ]);
     let result = fixture.collect(json!({})).unwrap();
     assert!(ids(&result).is_empty());
-    assert_eq!(reasons(&result), vec!["background_session"; 4]);
+    assert_eq!(reasons(&result), vec!["background_session"; 2]);
 }
 
 #[test]

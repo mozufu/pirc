@@ -525,7 +525,7 @@ async fn validates_send_now_and_deliver() {
     }
     let response = run(
         &agent,
-        json!({ "type": "deliver", "message": { "customType": "delegation",
+        json!({ "type": "deliver", "message": { "customType": "pot-wake",
         "content": "Done.", "details": { "taskId": "t1" } } }),
     )
     .await;
@@ -550,7 +550,7 @@ async fn validates_send_now_and_deliver() {
         *agent.delivered.borrow(),
         [
             Delivery {
-                custom_type: "delegation".to_owned(),
+                custom_type: "pot-wake".to_owned(),
                 // Labelled: never the user's words (L11).
                 content: format!("{GATEWAY_MESSAGE_LABEL}\nDone."),
                 display: true,

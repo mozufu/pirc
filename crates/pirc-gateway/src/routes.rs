@@ -11,7 +11,7 @@ use axum::http::{HeaderMap, StatusCode, Uri, header};
 use axum::response::{IntoResponse, Response};
 use base64::Engine;
 use base64::engine::general_purpose::STANDARD;
-use pirc_protocol::{HttpMethod, Mode, NodeHttpRequest, RegisteredWorkspace};
+use pirc_protocol::{HttpMethod, NodeHttpRequest, RegisteredWorkspace};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value, json};
 
@@ -168,21 +168,6 @@ pub async fn list_nodes(
     ok(json!({ "nodes": nodes }))
 }
 
-fn assistant_node_id(app: &AppState) -> Result<String, ApiError> {
-    let offline = || {
-        ApiError::new(
-            503,
-            "node_offline",
-            "The chat node is offline or not registered",
-        )
-    };
-    let node_id = app.db.lock().assistant_node()?.ok_or_else(offline)?;
-    match app.nodes.get(&node_id) {
-        Some(node) if node.role == pirc_protocol::NodeRole::Chat => Ok(node_id),
-        _ => Err(offline()),
-    }
-}
-
 pub async fn assistant_node(State(app): State<AppState>) -> Handled {
     let node_id = app.db.lock().assistant_node()?;
     let online = node_id.as_deref().is_some_and(|id| {
@@ -216,70 +201,6 @@ pub async fn release_assistant_node(
     app.nodes.disconnect(&app, &node_id);
     app.directory_changed();
     Ok(ok(json!({ "nodeId": null, "online": false })))
-}
-
-pub async fn assistant_prompts(
-    State(app): State<AppState>,
-    Extension(identity): Extension<Identity>,
-) -> Handled {
-    let node_id = assistant_node_id(&app)?;
-    let response = app
-        .relay(
-            &node_id,
-            &identity,
-            HttpMethod::Get,
-            "/api/assistant/prompts".into(),
-            None,
-        )
-        .await?;
-    if response.status != 200 {
-        return Ok(forward(response));
-    }
-    let mut body = match response.body {
-        Some(Value::Object(body)) => body,
-        _ => Map::new(),
-    };
-    body.insert("nodeId".into(), json!(node_id));
-    Ok(ok(Value::Object(body)))
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-struct PromptBody {
-    text: String,
-    node_id: String,
-}
-
-pub async fn save_assistant_prompt(
-    State(app): State<AppState>,
-    Extension(identity): Extension<Identity>,
-    Path(name): Path<String>,
-    ReqBody(body): ReqBody,
-) -> Handled {
-    if name != "soul" && name != "chat" {
-        return Err(ApiError::invalid_input().into());
-    }
-    let PromptBody { text, node_id } = body.parse()?;
-    length_within(&node_id, 1, usize::MAX)?;
-    if app.db.lock().assistant_node()?.as_deref() != Some(node_id.as_str()) {
-        return Err(ApiError::new(
-            409,
-            "binding_changed",
-            "Chat node binding changed; refresh and review before saving",
-        )
-        .into());
-    }
-    let target = assistant_node_id(&app)?;
-    let response = app
-        .relay(
-            &target,
-            &identity,
-            HttpMethod::Put,
-            format!("/api/assistant/prompts/{name}"),
-            Some(json!({ "text": text })),
-        )
-        .await?;
-    Ok(forward(response))
 }
 
 // ---- workspaces ---------------------------------------------------------------
@@ -371,10 +292,6 @@ pub async fn patch_capabilities(
 ) -> Handled {
     let CapabilitiesBody { capabilities } = body.parse()?;
     require_workspace_visible(&app, &identity, &workspace_id)?;
-    let workspace = app.db.lock().get_workspace(&workspace_id)?;
-    if !app.require_mode(&workspace)?.full_assistant() {
-        return Err(ApiError::invalid_input().into());
-    }
     let capabilities = app
         .db
         .lock()
@@ -383,77 +300,21 @@ pub async fn patch_capabilities(
     Ok(ok(json!({ "capabilities": capabilities })))
 }
 
-/// The workspaces a chat project is linked to (docs/architecture/assistant-memory.md).
-pub async fn get_links(
-    State(app): State<AppState>,
-    Extension(identity): Extension<Identity>,
-    Path(workspace_id): Path<String>,
-) -> Handled {
-    require_workspace_visible(&app, &identity, &workspace_id)?;
-    let links = crate::project_links::project_links(&app.db.lock(), &app.catalog(), &workspace_id)?;
-    Ok(ok(crate::project_links::view(&app, &links)?))
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-struct LinksBody {
-    workspace_ids: Vec<String>,
-}
-
-/// Replace a project's links: `delegate` and `memory_search` follow at once,
-/// the workspace list of chats started from now on.
-pub async fn put_links(
-    State(app): State<AppState>,
-    Extension(identity): Extension<Identity>,
-    Path(workspace_id): Path<String>,
-    ReqBody(body): ReqBody,
-) -> Handled {
-    let LinksBody { workspace_ids } = body.parse()?;
-    if workspace_ids.len() > 4 * crate::project_links::MAX_LINKS {
-        return Err(ApiError::new(400, "invalid_input", "Too many workspaces").into());
-    }
-    for id in &workspace_ids {
-        length_within(id, 1, 300)?;
-        require_workspace_visible(&app, &identity, id)?;
-    }
-    require_workspace_visible(&app, &identity, &workspace_id)?;
-    let links = crate::project_links::set_links(
-        &app.db.lock(),
-        &app.catalog(),
-        &workspace_id,
-        &workspace_ids,
-    )?;
-    Ok(ok(crate::project_links::view(&app, &links)?))
-}
-
 /// A workspace resource the node keeps and the gateway relays.
 #[derive(Clone, Copy)]
 enum NodeResource {
-    Instructions,
-    Files,
     ProjectConfig,
 }
 
 impl NodeResource {
-    fn allowed(self, mode: &Mode) -> bool {
-        match self {
-            Self::Instructions => mode.project_instructions,
-            Self::Files => mode.project_files,
-            Self::ProjectConfig => mode.project_config,
-        }
-    }
-
     fn refusal(self) -> &'static str {
         match self {
-            Self::Instructions => "Only chat projects have instructions",
-            Self::Files => "Only chat projects have project files",
             Self::ProjectConfig => "Only directory workspaces have a project config",
         }
     }
 }
 
-/// The node and node-local URL of a workspace's `rest`, if its mode has
-/// `resource`.
+/// The node and node-local URL of a workspace's `rest`.
 fn workspace_on_node(
     app: &AppState,
     identity: &Identity,
@@ -467,7 +328,9 @@ fn workspace_on_node(
         Some(local)
             if app
                 .mode(&workspace.mode)
-                .is_some_and(|mode| resource.allowed(&mode)) =>
+                .is_some_and(|mode| match resource {
+                    NodeResource::ProjectConfig => mode.project_config,
+                }) =>
         {
             local.to_owned()
         }
@@ -485,159 +348,6 @@ fn workspace_on_node(
     Ok((
         workspace.host_id,
         format!("/api/workspaces/{}{rest}", urlencoding_component(&local)),
-    ))
-}
-
-/// A chat project's instructions: the node keeps them; the gateway relays.
-pub async fn get_instructions(
-    State(app): State<AppState>,
-    Extension(identity): Extension<Identity>,
-    Path(workspace_id): Path<String>,
-) -> Handled {
-    let (node_id, url) = workspace_on_node(
-        &app,
-        &identity,
-        &workspace_id,
-        NodeResource::Instructions,
-        "/instructions",
-    )?;
-    Ok(forward(
-        app.relay(&node_id, &identity, HttpMethod::Get, url, None)
-            .await?,
-    ))
-}
-
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct TextBody {
-    text: String,
-}
-
-pub async fn patch_instructions(
-    State(app): State<AppState>,
-    Extension(identity): Extension<Identity>,
-    Path(workspace_id): Path<String>,
-    ReqBody(body): ReqBody,
-) -> Handled {
-    let (node_id, url) = workspace_on_node(
-        &app,
-        &identity,
-        &workspace_id,
-        NodeResource::Instructions,
-        "/instructions",
-    )?;
-    let TextBody { text } = body.parse()?;
-    length_within(&text, 0, 100_000)?;
-    Ok(forward(
-        app.relay(
-            &node_id,
-            &identity,
-            HttpMethod::Patch,
-            url,
-            Some(json!({ "text": text })),
-        )
-        .await?,
-    ))
-}
-
-/// A chat project's files: the node keeps them; the gateway relays.
-pub async fn get_project_files(
-    State(app): State<AppState>,
-    Extension(identity): Extension<Identity>,
-    Path(workspace_id): Path<String>,
-) -> Handled {
-    let (node_id, url) = workspace_on_node(
-        &app,
-        &identity,
-        &workspace_id,
-        NodeResource::Files,
-        "/files",
-    )?;
-    Ok(forward(
-        app.relay(&node_id, &identity, HttpMethod::Get, url, None)
-            .await?,
-    ))
-}
-
-/// The one non-empty value of `name` in the query.
-fn query_value(uri: &Uri, name: &str) -> Result<String, ApiError> {
-    match query_map(uri).get(name).map(Vec::as_slice) {
-        Some([value]) => {
-            length_within(value, 1, 1000)?;
-            Ok(value.clone())
-        }
-        _ => Err(ApiError::invalid_input()),
-    }
-}
-
-/// `POST /api/workspaces/:id/files?filename=…`, raw bytes: add or replace a
-/// project file on the project's node.
-pub async fn upload_project_file(
-    State(app): State<AppState>,
-    Extension(identity): Extension<Identity>,
-    Path(workspace_id): Path<String>,
-    uri: Uri,
-    ReqBody(body): ReqBody,
-) -> Handled {
-    let filename = query_value(&uri, "filename")?;
-    let (node_id, url) = workspace_on_node(
-        &app,
-        &identity,
-        &workspace_id,
-        NodeResource::Files,
-        &format!("/files?filename={}", urlencoding_component(&filename)),
-    )?;
-    let Body::Raw {
-        bytes,
-        content_type,
-    } = body
-    else {
-        return Err(ApiError::new(400, "invalid_input", "Upload body must be raw bytes").into());
-    };
-    if bytes.is_empty() || bytes.len() > app.config.upload_max_bytes {
-        return Err(
-            ApiError::new(413, "payload_too_large", "Upload exceeds configured limit").into(),
-        );
-    }
-    let content_type = content_type
-        .as_deref()
-        .map(|value| value.split(';').next().unwrap_or_default().to_owned())
-        .unwrap_or_else(|| "application/octet-stream".to_owned());
-    let response = app
-        .nodes
-        .request(
-            &node_id,
-            NodeHttpRequest {
-                method: HttpMethod::Post,
-                url,
-                user: identity.user.clone(),
-                payload: None,
-                body_base64: Some(STANDARD.encode(&bytes)),
-                content_type: Some(content_type),
-            },
-        )
-        .await?;
-    Ok(forward(response))
-}
-
-/// `DELETE /api/workspaces/:id/files?name=…`.
-pub async fn delete_project_file(
-    State(app): State<AppState>,
-    Extension(identity): Extension<Identity>,
-    Path(workspace_id): Path<String>,
-    uri: Uri,
-) -> Handled {
-    let name = query_value(&uri, "name")?;
-    let (node_id, url) = workspace_on_node(
-        &app,
-        &identity,
-        &workspace_id,
-        NodeResource::Files,
-        &format!("/files?name={}", urlencoding_component(&name)),
-    )?;
-    Ok(forward(
-        app.relay(&node_id, &identity, HttpMethod::Delete, url, None)
-            .await?,
     ))
 }
 
@@ -861,13 +571,6 @@ pub async fn list_sessions(
             }
             if let Some(origin) = origins.get(&session.id) {
                 public["origin"] = json!(origin);
-                // A delegated session's approval, answerable from Needs you.
-                if let crate::db::SessionOrigin::Delegation { delegation_id, .. } = origin
-                    && let Some(approval) =
-                        crate::delegations::pending_approval(&app, delegation_id)
-                {
-                    public["origin"]["approval"] = approval;
-                }
             }
             public
         })
@@ -1061,18 +764,13 @@ pub async fn snapshot(
         }
     }
     body.insert("session".into(), session);
-    // Confirmations the gateway itself asks for (delegations, schedules, memory).
+    // Confirmations the gateway itself asks for (schedules, memory).
     let mut interactions = match body.get("interactions") {
         Some(Value::Array(items)) => items.clone(),
         _ => Vec::new(),
     };
     interactions.extend(app.pending_gateway_interactions(&claimed.session.id, &identity.user));
     body.insert("interactions".into(), Value::Array(interactions));
-    // The delegations it started that still run (with Stop).
-    body.insert(
-        "delegations".into(),
-        crate::delegations::active(&app, &claimed.session.id),
-    );
     body.insert(
         "watermark".into(),
         json!(
@@ -1635,22 +1333,6 @@ pub async fn answer(
 ) -> Handled {
     let claimed = app.claim(&identity, &session_id)?;
     app.require_writable(&claimed.session)?;
-    // A delegated session's dialog relayed to this chat: the owner answers
-    // it without holding a control lease (docs/architecture/security-decisions.md).
-    if interaction_id.starts_with(crate::delegations::RELAY_PREFIX) {
-        let given = body.json().and_then(|body| body.get("answer")).cloned();
-        if let Some(answer) = crate::delegations::answer_relayed(
-            &app,
-            &claimed.session.id,
-            &interaction_id,
-            &identity.user,
-            given.as_ref(),
-        )
-        .await?
-        {
-            return Ok(ok(answer));
-        }
-    }
     // `answerBody`: a client and a held generation; the rest passes through.
     let (client_id, generation) = match body.json() {
         Some(Value::Object(answer)) => match (&answer.get("clientId"), &answer.get("generation")) {

@@ -17,8 +17,7 @@ pub struct Binding {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Membership {
     pub revision: i64,
-    /// Existing project/workspace association. Directory workspaces and the
-    /// top-level chats workspace are not silently promoted to projects.
+    /// The repository workspace a session belongs to, when it has one.
     pub legacy_workspace_id: String,
 }
 

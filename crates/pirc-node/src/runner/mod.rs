@@ -17,7 +17,7 @@
 //!   `pi_session_id`), `cwd = chat::session_root`, its own process group,
 //!   the environment `without_secrets(node.env)` plus the node's variables
 //!   (`PI_CODING_AGENT_SESSION_DIR`, `PIRC_WRITE_BROKER=1`, `PIRC_GATEWAY=1`,
-//!   `PIRC_MODE`, `PIRC_PROJECT_TRUST` or `PIRC_PROJECT_INSTRUCTIONS`,
+//!   `PIRC_MODE` or `PIRC_PROJECT_TRUST`,
 //!   `PIRC_WORKSPACE_MEMORY_DIR`, `PIRC_BROWSER=1|0` from
 //!   `node.browser.enabled()`, `PIRC_SANDBOX=srt`, `PIRC_SANDBOX_POLICY`)
 //!   and `prepared.env`; epoch from `increment_epoch`, older epochs'
@@ -166,7 +166,7 @@ pub enum CommandPayload {
     },
 }
 
-/// What the gateway pushes into a session (`deliverBody`): a delegated
+/// What the gateway pushes into a session (`deliverBody`): a
 /// task, news of one, or a scheduled run. Validated by core.
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -1065,13 +1065,8 @@ async fn start(node: &Node, session_id: &str) -> ApiResult<Arc<Runner>> {
                     .models
                     .inference()
                     .map(|inference| inference.socket_path.into()),
-                // The user's project instructions: never writable from the session.
-                protected_paths: crate::chat::project_instructions_path(&workspace, &mode)
-                    .into_iter()
-                    .collect(),
+                protected_paths: Vec::new(),
                 workspace_memory_file: ledger.as_ref().map(|ledger| ledger.file.clone()),
-                // Read-only and shared: uploads reach the running session.
-                project_files_dir: crate::project_files::existing_files_dir(&workspace, &mode),
                 recovery: None,
             }
         };

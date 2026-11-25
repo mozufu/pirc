@@ -71,25 +71,9 @@ fn remove_keeps_history_and_pauses_schedules_until_explicit_restore() {
     let session = session(&app, "u");
     let conn = app.db.lock();
     schedule(&conn, "u");
-    conn.sync_remote_workspaces(
-        "home",
-        &[(
-            "project".into(),
-            "Project".into(),
-            ModeId::new("chat").unwrap(),
-        )],
-    )
-    .unwrap();
     conn.execute(
         "UPDATE workspaces SET repo='https://example.com/original' WHERE id='work:repo'",
         [],
-    )
-    .unwrap();
-    let original = crate::project_links::set_links(
-        &conn,
-        &app.catalog(),
-        "home:project",
-        &["work:repo".into()],
     )
     .unwrap();
     remove(&app, &conn, "work:repo", "u").unwrap();
@@ -125,56 +109,11 @@ fn remove_keeps_history_and_pauses_schedules_until_explicit_restore() {
             .unwrap(),
         "paused"
     );
-    assert_eq!(
-        crate::project_links::links(&conn, "home:project")
-            .unwrap()
-            .len(),
-        1
-    );
-    // Editing unrelated links must keep the removed link and its metadata.
     conn.execute(
         "UPDATE workspaces SET repo='https://example.com/changed' WHERE id='work:repo'",
         [],
     )
     .unwrap();
-    conn.sync_remote_workspaces(
-        "work",
-        &[(
-            "other".into(),
-            "Other".into(),
-            ModeId::new("directory").unwrap(),
-        )],
-    )
-    .unwrap();
-    let kept = crate::project_links::set_links(
-        &conn,
-        &app.catalog(),
-        "home:project",
-        &["work:repo".into(), "work:other".into()],
-    )
-    .unwrap();
-    assert_eq!(
-        kept.iter().find(|link| link.workspace_id == "work:repo"),
-        original.first()
-    );
-    conn.sync_remote_workspaces(
-        "home",
-        &[(
-            "another".into(),
-            "Another".into(),
-            ModeId::new("chat").unwrap(),
-        )],
-    )
-    .unwrap();
-    assert!(
-        crate::project_links::set_links(
-            &conn,
-            &app.catalog(),
-            "home:another",
-            &["work:repo".into()],
-        )
-        .is_err()
-    );
     // A reconnect/configured workspace never restores an explicit removal.
     conn.sync_remote_workspaces(
         "work",
@@ -223,7 +162,7 @@ fn other_users_data_is_never_hidden() {
 }
 
 #[test]
-fn active_sessions_delegations_and_schedule_runs_block_removal() {
+fn active_sessions_and_schedule_runs_block_removal() {
     let (app, _dir) = fixture();
     let session = session(&app, "u");
     app.on_node_activity(
@@ -249,13 +188,6 @@ fn active_sessions_delegations_and_schedule_runs_block_removal() {
         409
     );
     conn.set_runner_state(&session.id, "ready").unwrap();
-    conn.execute("INSERT INTO delegations (id,owner_user,assistant_session_id,workspace_id,title,task,status,expires_at,created_at,updated_at) VALUES ('d','u','assistant','work:repo','D','T','pending_approval',1000,0,0)", []).unwrap();
-    assert_eq!(
-        remove(&app, &conn, "work:repo", "u").unwrap_err().status,
-        409
-    );
-    conn.execute("UPDATE delegations SET status='completed'", [])
-        .unwrap();
     schedule(&conn, "u");
     conn.execute("INSERT INTO schedule_runs (id,schedule_id,owner_user,due_at,status,created_at) VALUES ('run','schedule','u',0,'running',0)", []).unwrap();
     assert_eq!(
@@ -268,14 +200,10 @@ fn active_sessions_delegations_and_schedule_runs_block_removal() {
 }
 
 #[test]
-fn projects_cannot_be_removed_but_missing_work_modes_can() {
+fn per_session_workspaces_cannot_be_removed_but_missing_modes_can() {
     let (app, _dir) = fixture();
     let conn = app.db.lock();
-    for (id, mode) in [
-        ("chats", "chat"),
-        ("project", "chat"),
-        ("custom", "unavailable"),
-    ] {
+    for (id, mode) in [("pot", "pot"), ("custom", "unavailable")] {
         conn.sync_remote_workspaces(
             "work",
             &[(id.into(), id.into(), ModeId::new(mode).unwrap())],
@@ -283,11 +211,7 @@ fn projects_cannot_be_removed_but_missing_work_modes_can() {
         .unwrap();
     }
     assert_eq!(
-        remove(&app, &conn, "work:chats", "u").unwrap_err().status,
-        400
-    );
-    assert_eq!(
-        remove(&app, &conn, "work:project", "u").unwrap_err().status,
+        remove(&app, &conn, "work:pot", "u").unwrap_err().status,
         400
     );
     remove(&app, &conn, "work:custom", "u").unwrap();

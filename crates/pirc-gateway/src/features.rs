@@ -1,13 +1,13 @@
 //! The gateway's features around sessions: device pairing here, and the
-//! hooks the core calls into the assistant's memory, delegations,
-//! schedules and push notifications (their own modules).
+//! hooks the core calls into the assistant's memory, schedules and push
+//! notifications (their own modules).
 
 use axum::Router;
 use axum::extract::{Extension, Path, State};
 use axum::http::{HeaderValue, Method, header};
 use axum::middleware::Next;
 use axum::response::Response;
-use axum::routing::{delete, get, post};
+use axum::routing::{delete, get};
 use rusqlite::Connection;
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -22,7 +22,6 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .route("/api/devices", get(list_devices).post(pair_device))
         .route("/api/devices/{id}", delete(revoke_device))
-        .route("/api/delegations/{id}/stop", post(stop_delegation))
         .merge(crate::memory::routes())
         .merge(crate::schedules::routes())
         .merge(crate::calendar::routes())
@@ -144,20 +143,6 @@ async fn revoke_device(
     Ok(no_content())
 }
 
-/// Stop a delegation's run from the chat that started it.
-async fn stop_delegation(
-    State(app): State<AppState>,
-    Extension(identity): Extension<Identity>,
-    Path(id): Path<String>,
-) -> Handled {
-    if id.encode_utf16().count() > 40 {
-        return Err(ApiError::invalid_input().into());
-    }
-    Ok(ok(
-        crate::delegations::stop(&app, &identity.user, &id).await?
-    ))
-}
-
 impl App {
     /// Memory hints (`memory=1`) for `user`, after memory's own update.
     pub fn memory_changed(&self, user: &str) {
@@ -176,11 +161,10 @@ impl App {
         crate::memory::forget_session(self, conn, user, session_id)
     }
 
-    /// Confirmations the gateway asks for itself (delegations, schedule and
-    /// calendar proposals, memory), shown with the node's interactions.
+    /// Confirmations the gateway asks for itself (schedule and calendar
+    /// proposals, memory), shown with the node's interactions.
     pub fn pending_gateway_interactions(&self, session_id: &str, user: &str) -> Vec<Value> {
-        let mut pending = crate::delegations::pending_interactions(self, session_id);
-        pending.extend(crate::schedules::pending_interactions(self, session_id));
+        let mut pending = crate::schedules::pending_interactions(self, session_id);
         pending.extend(crate::calendar::agent::pending_interactions(
             self, session_id,
         ));
@@ -223,11 +207,6 @@ pub fn answer_gateway_interaction(
         return Ok(Some(answered));
     }
     if let Some(answered) =
-        crate::delegations::answer(app, session_id, interaction_id, user, answer.as_ref())?
-    {
-        return Ok(Some(answered));
-    }
-    if let Some(answered) =
         crate::schedules::answer(app, session_id, interaction_id, user, answer.as_ref())?
     {
         return Ok(Some(answered));
@@ -238,7 +217,6 @@ pub fn answer_gateway_interaction(
 /// Start the features' background work; fails on unusable push keys.
 pub fn start(app: &AppState) -> Result<(), String> {
     crate::push::start(app)?;
-    crate::delegations::start(app);
     crate::schedules::start(app);
     crate::calendar::reminders::start(app);
     crate::pots::runtime::start(app);

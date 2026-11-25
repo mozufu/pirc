@@ -674,15 +674,6 @@ impl State {
                         .unwrap_or_default()
                 })
             }),
-            instructions: Some({
-                let weak = weak.clone();
-                Rc::new(move || match weak.upgrade() {
-                    Some(agent) if agent.config().mode().project_instructions => {
-                        crate::features::project_instructions::frozen_instructions(&agent)
-                    }
-                    _ => Ok(String::new()),
-                })
-            }),
             acquire_write: Some({
                 let weak = weak.clone();
                 Rc::new(move |path: String, signal: AbortSignal| {

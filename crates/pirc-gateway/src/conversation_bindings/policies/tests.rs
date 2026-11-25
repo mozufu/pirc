@@ -7,12 +7,6 @@ fn seed(db: &Connection) {
     db.sync_remote_workspaces(
         "node",
         &[
-            ("chats".into(), "Chats".into(), ModeId::new("chat").unwrap()),
-            (
-                "project".into(),
-                "Project".into(),
-                ModeId::new("chat").unwrap(),
-            ),
             (
                 "repo".into(),
                 "Repo".into(),
@@ -23,6 +17,7 @@ fn seed(db: &Connection) {
                 "Other".into(),
                 ModeId::new("directory").unwrap(),
             ),
+            ("pot".into(), "Pot".into(), ModeId::new("pot").unwrap()),
             (
                 "custom".into(),
                 "Custom".into(),
@@ -55,21 +50,20 @@ fn patch(raw: serde_json::Value) -> CapabilitiesPatch {
 }
 
 #[test]
-fn membership_classifies_legacy_projects_without_inventing_directory_projects() {
+fn membership_maps_repository_workspaces_to_their_project() {
     let db = Db::memory();
     let conn = db.lock();
     seed(&conn);
-    let ids: Vec<_> = ["chats", "project", "repo", "custom"]
+    let ids: Vec<_> = ["repo", "pot", "custom"]
         .iter()
         .map(|w| create(&conn, w, w))
         .collect();
-    assert_eq!(view(&conn, &ids[1]).project.resolution, "unresolved");
+    assert_eq!(view(&conn, &ids[0]).project.resolution, "unresolved");
     install_catalog(&conn, &crate::app::test_modes()).unwrap();
     for (id, resolution, project) in [
-        (&ids[0], "none", None),
-        (&ids[1], "member", Some("node:project")),
-        (&ids[2], "none", None),
-        (&ids[3], "mode_unavailable", None),
+        (&ids[0], "member", Some("node:repo")),
+        (&ids[1], "none", None),
+        (&ids[2], "mode_unavailable", None),
     ] {
         let v = view(&conn, id);
         assert_eq!(v.project.resolution, resolution);
@@ -80,7 +74,7 @@ fn membership_classifies_legacy_projects_without_inventing_directory_projects() 
         assert_eq!(v.workspace_policy.revision, 1);
         assert_eq!(v.enforcement, "not_tracked");
     }
-    let new = create(&conn, "project", "new");
+    let new = create(&conn, "repo", "new");
     assert_eq!(view(&conn, &new).project.resolution, "member");
     let repo = create(&conn, "repo", "move");
     conn.execute(
@@ -89,7 +83,9 @@ fn membership_classifies_legacy_projects_without_inventing_directory_projects() 
     )
     .unwrap();
     let v = view(&conn, &repo);
-    assert_eq!(v.project.revision, 1); // legacy location is not project membership
+    assert_eq!(v.project.resolution, "member");
+    assert_eq!(v.project.workspace_id.as_deref(), Some("node:other"));
+    assert_eq!(v.project.revision, 2);
     assert_eq!(v.binding.membership.revision, 2);
     assert_eq!(v.binding.execution.generation, 2);
 }
@@ -104,9 +100,9 @@ fn same_id_policy_edits_removal_and_restart_are_versioned_without_erasing_member
         let conn = db.lock();
         seed(&conn);
         install_catalog(&conn, &catalog).unwrap();
-        create(&conn, "project", "s")
+        create(&conn, "repo", "s")
     };
-    let mode_id = ModeId::new("chat").unwrap();
+    let mode_id = ModeId::new("directory").unwrap();
     catalog.modes.get_mut(&mode_id).unwrap().body = "new rules".into();
     install_catalog(&db.lock(), &catalog).unwrap();
     assert_eq!(view(&db.lock(), &id).binding.execution.generation, 2);
@@ -115,7 +111,7 @@ fn same_id_policy_edits_removal_and_restart_are_versioned_without_erasing_member
     install_catalog(&db.lock(), &catalog).unwrap();
     let v = view(&db.lock(), &id);
     assert_eq!(v.project.resolution, "mode_unavailable");
-    assert_eq!(v.project.workspace_id.as_deref(), Some("node:project"));
+    assert_eq!(v.project.workspace_id.as_deref(), Some("node:repo"));
     assert_eq!(v.project.revision, 2);
     assert_eq!(v.mode_policy.unwrap().revision, 3);
     assert_eq!(v.binding.execution.generation, 3);
@@ -132,7 +128,7 @@ fn same_id_policy_edits_removal_and_restart_are_versioned_without_erasing_member
     let bodies: Vec<Option<String>> = db
         .lock()
         .prepare(
-            "SELECT mode_json FROM mode_policy_versions WHERE mode_id='chat' ORDER BY revision",
+            "SELECT mode_json FROM mode_policy_versions WHERE mode_id='directory' ORDER BY revision",
         )
         .unwrap()
         .query_map([], |r| r.get(0))
@@ -151,7 +147,7 @@ fn unavailable_destination_does_not_inherit_source_project_or_change_history() {
     let conn = db.lock();
     seed(&conn);
     install_catalog(&conn, &crate::app::test_modes()).unwrap();
-    let id = create(&conn, "project", "s");
+    let id = create(&conn, "repo", "s");
     conn.execute(
         "UPDATE sessions SET workspace_id='node:custom' WHERE id=?",
         [&id],
@@ -175,14 +171,16 @@ fn failed_catalog_install_rolls_back_versions_generation_and_membership() {
     seed(&conn);
     let mut catalog = crate::app::test_modes();
     install_catalog(&conn, &catalog).unwrap();
-    let id = create(&conn, "project", "s");
+    let id = create(&conn, "repo", "s");
     let before = serde_json::to_value(view(&conn, &id)).unwrap();
     conn.execute_batch("CREATE TRIGGER fail_project_update BEFORE UPDATE ON conversation_project_memberships BEGIN SELECT RAISE(ABORT,'test failure'); END;").unwrap();
-    catalog
+    let directory = catalog
         .modes
-        .get_mut(&ModeId::new("chat").unwrap())
-        .unwrap()
-        .projects = false;
+        .get_mut(&ModeId::new("directory").unwrap())
+        .unwrap();
+    directory.repository = false;
+    directory.workspace_memory = false;
+    directory.project_config = false;
     assert!(install_catalog(&conn, &catalog).is_err());
     assert_eq!(serde_json::to_value(view(&conn, &id)).unwrap(), before);
     assert_eq!(count(&conn, "mode_policy_versions"), 3);
@@ -194,18 +192,18 @@ fn capabilities_have_atomic_snapshots_noop_stability_and_default_reset() {
     let conn = db.lock();
     seed(&conn);
     install_catalog(&conn, &crate::app::test_modes()).unwrap();
-    let id = create(&conn, "project", "s");
-    conn.patch_workspace_capabilities("node:project", &patch(json!({"delegation":true})))
+    let id = create(&conn, "repo", "s");
+    conn.patch_workspace_capabilities("node:repo", &patch(json!({"schedules":true})))
         .unwrap();
     assert_eq!(view(&conn, &id).workspace_policy.revision, 1);
-    conn.patch_workspace_capabilities("node:project", &patch(json!({"web_search":false})))
+    conn.patch_workspace_capabilities("node:repo", &patch(json!({"web_search":false})))
         .unwrap();
     let v = view(&conn, &id);
     assert_eq!(v.workspace_policy.revision, 2);
     assert_eq!(v.binding.execution.generation, 2);
     assert_eq!(v.project.revision, 1);
     conn.execute(
-        "DELETE FROM workspace_capabilities WHERE workspace_id='node:project'",
+        "DELETE FROM workspace_capabilities WHERE workspace_id='node:repo'",
         [],
     )
     .unwrap();
@@ -220,11 +218,11 @@ fn capabilities_have_atomic_snapshots_noop_stability_and_default_reset() {
     )
     .unwrap();
     assert!(
-        conn.patch_workspace_capabilities("node:project", &patch(json!({"web_search":false})))
+        conn.patch_workspace_capabilities("node:repo", &patch(json!({"web_search":false})))
             .is_err()
     );
     assert_eq!(
-        conn.get_workspace_capabilities("node:project").unwrap(),
+        conn.get_workspace_capabilities("node:repo").unwrap(),
         Capabilities::default()
     );
     assert_eq!(view(&conn, &id).workspace_policy.revision, 3);
@@ -232,15 +230,15 @@ fn capabilities_have_atomic_snapshots_noop_stability_and_default_reset() {
     conn.finish_session_deletion(&id).unwrap();
     assert_eq!(count(&conn, "conversation_project_memberships"), 0);
     conn.execute(
-        "DELETE FROM workspace_capabilities WHERE workspace_id='node:project'",
+        "DELETE FROM workspace_capabilities WHERE workspace_id='node:repo'",
         [],
     )
     .unwrap();
-    conn.execute("DELETE FROM workspaces WHERE id='node:project'", [])
+    conn.execute("DELETE FROM workspaces WHERE id='node:repo'", [])
         .unwrap();
     assert_eq!(
         conn.query_row(
-            "SELECT count(*) FROM workspace_policy_versions WHERE workspace_id='node:project'",
+            "SELECT count(*) FROM workspace_policy_versions WHERE workspace_id='node:repo'",
             [],
             |r| r.get::<_, i64>(0)
         )
@@ -258,7 +256,7 @@ fn concurrent_independent_capability_patches_preserve_both_edits_and_consistent_
         let conn = db.lock();
         seed(&conn);
         install_catalog(&conn, &crate::app::test_modes()).unwrap();
-        create(&conn, "project", "s")
+        create(&conn, "repo", "s")
     };
     let gate = std::sync::Barrier::new(2);
     std::thread::scope(|scope| {
@@ -271,7 +269,7 @@ fn concurrent_independent_capability_patches_preserve_both_edits_and_consistent_
                     let db = Db::open(path).unwrap();
                     gate.wait();
                     db.lock()
-                        .patch_workspace_capabilities("node:project", &patch(raw))
+                        .patch_workspace_capabilities("node:repo", &patch(raw))
                         .unwrap();
                 })
             })
@@ -380,14 +378,14 @@ async fn http(
 #[tokio::test]
 async fn web_and_paired_android_read_identical_offline_state_with_owner_and_revocation_checks() {
     let (app, _dir) = app();
-    let id = create(&app.db.lock(), "project", "s");
+    let id = create(&app.db.lock(), "repo", "s");
     let (device, token) = app.devices.create("alice", "Android").unwrap();
     let (_, other) = app.devices.create("bob", "Other phone").unwrap();
     let web = http(&app, &id, Some("alice"), None).await;
     let native = http(&app, &id, None, Some(&token)).await;
     assert_eq!(web.0, 200);
     assert_eq!(native, web);
-    assert_eq!(web.1["project"]["workspaceId"], "node:project");
+    assert_eq!(web.1["project"]["workspaceId"], "node:repo");
     assert_eq!(web.1["enforcement"], "not_tracked");
     assert!(web.1.get("piSessionId").is_none());
     assert_eq!(http(&app, &id, Some("bob"), None).await.0, 403);
@@ -405,7 +403,7 @@ async fn web_and_paired_android_read_identical_offline_state_with_owner_and_revo
 #[test]
 fn failed_catalog_publication_keeps_the_running_catalog_and_versions() {
     let (app, _dir) = app();
-    let id = create(&app.db.lock(), "project", "s");
+    let id = create(&app.db.lock(), "repo", "s");
     let before = app.catalog();
     app.db.lock().execute_batch("CREATE TRIGGER fail_mode_insert BEFORE INSERT ON mode_policy_versions BEGIN SELECT RAISE(ABORT,'disk failure'); END;").unwrap();
     assert!(app.replace_catalog(ModeCatalog::default()).is_err());
@@ -428,18 +426,18 @@ fn histories_cannot_be_edited_or_deleted_independently_and_workspace_cascade_sti
     ] {
         assert!(conn.execute(sql, []).is_err(), "{sql}");
     }
-    conn.patch_workspace_capabilities("node:project", &patch(json!({"web_search":false})))
+    conn.patch_workspace_capabilities("node:repo", &patch(json!({"web_search":false})))
         .unwrap();
     conn.execute(
-        "DELETE FROM workspace_capabilities WHERE workspace_id='node:project'",
+        "DELETE FROM workspace_capabilities WHERE workspace_id='node:repo'",
         [],
     )
     .unwrap();
-    conn.execute("DELETE FROM workspaces WHERE id='node:project'", [])
+    conn.execute("DELETE FROM workspaces WHERE id='node:repo'", [])
         .unwrap();
     assert_eq!(
         conn.query_row(
-            "SELECT count(*) FROM workspace_policy_versions WHERE workspace_id='node:project'",
+            "SELECT count(*) FROM workspace_policy_versions WHERE workspace_id='node:repo'",
             [],
             |r| r.get::<_, i64>(0)
         )

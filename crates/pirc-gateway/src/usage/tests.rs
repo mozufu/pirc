@@ -200,20 +200,12 @@ fn attribution_uses_the_gateway_session_and_its_origin() {
     let (app, _dir) = app();
     let plain = session(&app, "remote-plain");
     let scheduled = session(&app, "remote-scheduled");
-    let delegated = session(&app, "remote-delegated");
     {
         let db = app.db.lock();
         db.execute(
             "INSERT INTO schedule_runs(id,schedule_id,owner_user,due_at,status,session_id,created_at)
              VALUES('run','schedule-1','alice',1,'running',?1,1)",
             [&scheduled],
-        )
-        .unwrap();
-        db.execute(
-            "INSERT INTO delegations(id,owner_user,assistant_session_id,workspace_id,title,task,status,
-              target_session_id,expires_at,created_at,updated_at)
-             VALUES('delegation-1','alice','chat','node:repo','t','task','running',?1,9,1,1)",
-            [&delegated],
         )
         .unwrap();
     }
@@ -232,11 +224,6 @@ fn attribution_uses_the_gateway_session_and_its_origin() {
     assert_eq!(
         (who.actor_kind, who.actor_id.as_deref()),
         ("schedule", Some("schedule-1"))
-    );
-    let who = attribute(&db, "node", "remote-delegated").unwrap();
-    assert_eq!(
-        (who.actor_kind, who.actor_id.as_deref()),
-        ("delegation", Some("delegation-1"))
     );
     // A pot's own session is charged to the pot, whose id comes from the
     // session mapping and never from the agent.

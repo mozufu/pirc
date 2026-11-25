@@ -404,16 +404,6 @@ impl NodeRegistry {
         Ok(())
     }
 
-    /// Forget a workspace the node deleted (a chat project), until it registers again.
-    pub fn remove_workspace(&self, node_id: &str, local_id: &str) {
-        let mut state = self.lock();
-        if let Some(connection) = state.connections.get_mut(node_id) {
-            let node = &mut connection.node;
-            node.workspaces.retain(|item| item.id != local_id);
-            node.added.remove(local_id);
-        }
-    }
-
     /// Capture the connection whose capabilities are about to be checked.
     pub(crate) fn connection(&self, node_id: &str) -> ApiResult<NodeConnection> {
         let state = self.lock();

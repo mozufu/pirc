@@ -137,7 +137,6 @@ async fn native_state_custody() {
             inference_socket: Some(socket),
             protected_paths: vec![],
             workspace_memory_file: Some(ledger.clone()),
-            project_files_dir: None,
             recovery: None,
         })
         .await

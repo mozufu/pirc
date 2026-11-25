@@ -110,15 +110,12 @@ pub struct PrepareInput {
     pub session_dir: PathBuf,
     /// The node's inference socket.
     pub inference_socket: Option<PathBuf>,
-    /// Never writable from the session (a chat project's instructions).
+    /// Never writable from the session.
     pub protected_paths: Vec<PathBuf>,
     /// The workspace-memory ledger made by the node when missing. Builtin
     /// agents read it directly and append through node persistence; the rest
     /// of the directory stays closed.
     pub workspace_memory_file: Option<PathBuf>,
-    /// A chat project's files, which the session may read but never write
-    /// (the node changes them while the session runs).
-    pub project_files_dir: Option<PathBuf>,
     /// C6a explicit folder grants and denies of the conversation.
     pub grants: Vec<crate::grants::FolderGrant>,
 }

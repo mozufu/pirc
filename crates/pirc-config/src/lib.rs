@@ -23,8 +23,7 @@ pub mod registry;
 pub mod text;
 
 pub use node::{
-    BrowserSettings, CHAT_WORKSPACE_ID, ConfigWorkspace, NodeConfig, POTS_WORKSPACE_ID,
-    SandboxSettings, Viewport,
+    BrowserSettings, ConfigWorkspace, NodeConfig, POTS_WORKSPACE_ID, SandboxSettings, Viewport,
 };
 
 const DAY_MS: u64 = 24 * 60 * 60 * 1000;
@@ -234,8 +233,8 @@ pub struct GatewayConfig {
     /// Characters of the assistant's memory per user (USER entries, MEMORY notes).
     pub memory_budget_user: usize,
     pub memory_budget_note: usize,
-    /// How long a delegation waits for the user's approval (PIRC_DELEGATION_TTL_MS).
-    pub delegation_ttl_ms: u64,
+    /// How long a proposal waits for the user's approval (PIRC_PROPOSAL_TTL_MS).
+    pub proposal_ttl_ms: u64,
     /// Exa key for agents' web_search (EXA_API_KEY); without it web search is off.
     pub exa_api_key: Option<String>,
     /// Default IANA time zone of schedules agents create (`PIRC_TIMEZONE`, else the system's).
@@ -330,7 +329,7 @@ impl GatewayConfig {
             modes_dir: env.resolve(modes::default_modes_dir(env)),
             memory_budget_user: integer(env.get("PIRC_MEMORY_USER_CHARS"), 2000) as usize,
             memory_budget_note: integer(env.get("PIRC_MEMORY_NOTE_CHARS"), 8000) as usize,
-            delegation_ttl_ms: integer(env.get("PIRC_DELEGATION_TTL_MS"), 3_600_000),
+            proposal_ttl_ms: integer(env.get("PIRC_PROPOSAL_TTL_MS"), 3_600_000),
             exa_api_key: env
                 .get("EXA_API_KEY")
                 .map(str::trim)

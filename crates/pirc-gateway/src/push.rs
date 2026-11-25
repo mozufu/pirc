@@ -887,7 +887,7 @@ fn push_of(app: &App) -> ApiResult<Arc<Push>> {
 
 /// A session that starts waiting for its user (a dangerous command to
 /// confirm, a question) pushes to them; the gateway's own confirmations (a
-/// delegation or schedule to approve) count too (`watchInteractions`).
+/// schedule to approve) count too (`watchInteractions`).
 fn waiting_message(
     conn: &rusqlite::Connection,
     session_id: &str,
@@ -895,33 +895,16 @@ fn waiting_message(
 ) -> Option<(String, PushMessage)> {
     let session = conn.get_session(session_id).ok()?;
     let user = session.owner_user?;
-    // A delegated session's confirmation is relayed to the chat that started
-    // it, which pushes it instead (answerable there without control).
-    if data
-        .and_then(|data| data.get("kind"))
-        .and_then(Value::as_str)
-        == Some("confirm")
-        && relayed_to_chat(conn, session_id)
-    {
-        return None;
-    }
     let request = data.and_then(|data| data.get("request"));
     let asked = request
         .and_then(|request| request.get("title"))
         .and_then(Value::as_str)
         .filter(|title| !title.trim_matches(js_space).is_empty());
-    let relayed_from = request
-        .and_then(|request| request.get("relayed"))
-        .and_then(|relayed| relayed.get("sessionName"))
-        .and_then(Value::as_str);
     let interaction = exact_interaction_push("interaction_created", session_id, data);
     Some((
         user,
         PushMessage {
-            title: match relayed_from {
-                Some(name) => format!("{name} needs you"),
-                None => format!("{} is waiting for you", session.name),
-            },
+            title: format!("{} is waiting for you", session.name),
             body: asked.unwrap_or("It needs your answer to go on.").to_owned(),
             tag: interaction
                 .as_ref()
@@ -931,17 +914,6 @@ fn waiting_message(
             interaction,
         },
     ))
-}
-
-/// The session is a running delegation's, whose chat still exists: its
-/// confirmations are relayed there.
-fn relayed_to_chat(conn: &rusqlite::Connection, session_id: &str) -> bool {
-    conn.query_row(
-        "SELECT 1 FROM delegations d JOIN sessions s ON s.id=d.assistant_session_id WHERE d.target_session_id=? AND d.status IN ('running','waiting_input') LIMIT 1",
-        [session_id],
-        |_| Ok(()),
-    )
-    .is_ok()
 }
 
 fn exact_interaction_push(

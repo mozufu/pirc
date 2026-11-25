@@ -75,11 +75,8 @@ impl Terminals {
                     workspace_root: cwd.into(),
                     session_dir: row.private_session_path.into(),
                     inference_socket: None,
-                    protected_paths: crate::chat::project_instructions_path(&workspace, &mode)
-                        .into_iter()
-                        .collect(),
+                    protected_paths: Vec::new(),
                     workspace_memory_file: None,
-                    project_files_dir: crate::project_files::existing_files_dir(&workspace, &mode),
                 },
                 PathBuf::from(&shell),
             )

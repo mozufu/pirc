@@ -41,7 +41,7 @@ fn fixture() -> Fixture {
             ("PIRC_STATE_DIR", state.to_str().unwrap()),
             ("PIRC_CONFIG_DIR", dir.path().to_str().unwrap()),
             ("PIRC_TIMEZONE", "UTC"),
-            ("PIRC_DELEGATION_TTL_MS", "60000"),
+            ("PIRC_PROPOSAL_TTL_MS", "60000"),
             ("HOME", "/home/test"),
         ],
         "/work",
@@ -63,7 +63,7 @@ fn fixture() -> Fixture {
         for (node, id, name, kind) in [
             ("work", "test", "Test", ModeId::new("directory").unwrap()),
             ("lab", "test", "Lab", ModeId::new("directory").unwrap()),
-            ("home", "chats", "Chats", ModeId::new("chat").unwrap()),
+            ("home", "pots", "Pots", ModeId::new("assistant").unwrap()),
         ] {
             conn.sync_remote_workspaces(node, &[(id.into(), name.into(), kind)])
                 .unwrap();
@@ -79,14 +79,9 @@ fn reload_keeps_valid_edits_and_skips_invalid_files() {
     for (name, text) in pirc_config::modes::DEFAULT_MODE_FILES {
         std::fs::write(f.app.config.modes_dir.join(name), text).unwrap();
     }
-    let chat_file = f.app.config.modes_dir.join("chat.md");
-    let text = std::fs::read_to_string(&chat_file).unwrap();
-    std::fs::write(
-        &chat_file,
-        text.replace("delegate: true", "delegate: false")
-            .replace("schedule_scope: any", "schedule_scope: own"),
-    )
-    .unwrap();
+    let pot_file = f.app.config.modes_dir.join("pot.md");
+    let text = std::fs::read_to_string(&pot_file).unwrap();
+    std::fs::write(&pot_file, text.replace("label: Pot", "label: Edited Pot")).unwrap();
     std::fs::write(
         f.app.config.modes_dir.join("broken.md"),
         "---\nunknown: true\n---\n",
@@ -95,11 +90,14 @@ fn reload_keeps_valid_edits_and_skips_invalid_files() {
     f.app.reload_modes();
     let catalog = f.app.catalog();
     assert_eq!(catalog.warnings.len(), 1);
-    assert!(!catalog.modes[&ModeId::new("chat").unwrap()].delegate);
-    assert_eq!(catalog.modes.len(), 3);
-    std::fs::remove_file(chat_file).unwrap();
+    assert_eq!(
+        catalog.modes[&ModeId::new("pot").unwrap()].label,
+        "Edited Pot"
+    );
+    assert_eq!(catalog.modes.len(), 2);
+    std::fs::remove_file(pot_file).unwrap();
     f.app.reload_modes();
-    assert!(f.app.mode(&ModeId::new("chat").unwrap()).is_none());
+    assert!(f.app.mode(&ModeId::new("pot").unwrap()).is_none());
 }
 
 #[test]
@@ -121,12 +119,11 @@ fn missing_and_custom_modes_never_fall_back() {
         "mode_unavailable"
     );
     let mut catalog = crate::app::test_modes();
-    let mut mode = pirc_protocol::mode::default_chat();
+    let mut mode = pirc_protocol::mode::default_work();
     mode.id = mode_id.clone();
-    mode.delegate = false;
     catalog.modes.insert(mode_id.clone(), mode);
     *f.app.modes.write().unwrap() = Arc::new(catalog);
-    assert!(!f.app.require_mode(&workspace).unwrap().delegate);
+    assert_eq!(f.app.require_mode(&workspace).unwrap().id, mode_id);
     let session = f
         .app
         .db
@@ -481,7 +478,7 @@ async fn op(app: &AppState, context: &OpContext, name: &str, args: Value) -> Api
 async fn agents_propose_within_their_scope() {
     let f = fixture();
     let app = &f.app;
-    let chat = context(app, "home:chats", "c1");
+    let chat = context(app, "home:pots", "c1");
     // The assistant names a directory workspace by id or by a unique name.
     assert_eq!(
         message(
@@ -767,7 +764,7 @@ async fn agents_propose_within_their_scope() {
 #[tokio::test]
 async fn proposals_lapse() {
     let f = fixture();
-    let chat = context(&f.app, "home:chats", "c1");
+    let chat = context(&f.app, "home:pots", "c1");
     let proposed = op(
         &f.app,
         &chat,
@@ -840,7 +837,7 @@ async fn pages_through_long_results() {
     assert!(view["result"].as_str().unwrap().encode_utf16().count() <= 4000);
     assert_eq!(view["resultChars"], 30_000);
 
-    let chat = context(&f.app, "home:chats", "c1");
+    let chat = context(&f.app, "home:pots", "c1");
     let brief = op(&f.app, &chat, "schedule.list", json!({})).await.unwrap();
     assert_eq!(brief["schedules"][0]["lastRun"]["resultChars"], 30_000);
     let mut text = String::new();

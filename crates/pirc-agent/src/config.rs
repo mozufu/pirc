@@ -150,9 +150,6 @@ pub struct AgentConfig {
     pub system_prompt: Vec<PromptSection>,
     /// The validated capability snapshot supplied by the node, never read from disk.
     pub mode: Mode,
-    /// A chat project's files directory, read-only (`PIRC_PROJECT_FILES`,
-    /// set by the node when the sandbox opened it).
-    pub project_files: Option<String>,
 }
 
 /// `defaultConfigDir(env)`: `$PIRC_CONFIG_DIR`, default `~/.config/.pirc`.
@@ -188,27 +185,6 @@ fn read_text(file: &str) -> Result<String, String> {
         return Ok(String::new());
     }
     Ok(js::trim(&js::read_text(path)?).to_owned())
-}
-
-/// `PROMPT_MAX_CHARS` of a chat's persona and rules.
-const PROMPT_MAX_CHARS: usize = 8000;
-
-/// `readAssistantPrompt(file)`: follows links, never reads a device or FIFO.
-pub fn read_assistant_prompt(file: &str) -> Result<String, String> {
-    let path = Path::new(file);
-    match std::fs::metadata(path) {
-        Ok(meta) if !meta.is_file() => return Ok(String::new()),
-        Ok(_) => {}
-        Err(error) if error.raw_os_error() == Some(2) => return Ok(String::new()),
-        Err(error) => return Err(js::node_error(&error, "stat", Some(path))),
-    }
-    let text = match std::fs::read(path) {
-        Ok(bytes) => String::from_utf8_lossy(&bytes).into_owned(),
-        Err(error) if error.raw_os_error() == Some(2) => return Ok(String::new()),
-        Err(error) => return Err(js::node_error(&error, "open", Some(path))),
-    };
-    let text = text.replace("\r\n", "\n");
-    Ok(js::utf16_prefix(js::trim(&text), PROMPT_MAX_CHARS).to_owned())
 }
 
 /// The node's settings (`globalSchema`).
@@ -525,12 +501,6 @@ const BASE_PROMPT: &str = "You are pirc, a coding agent operating inside a user'
 Work carefully: read before editing, keep changes minimal and verified, and report blockers honestly.
 File tools can read anywhere except credential stores and pirc's private state, and write only to the workspace and explicitly allowed paths.";
 
-/// For chats: the working directory is the chat's own, not a project.
-const CHAT_IDENTITY: &str =
-    "You are pirc, the user's personal assistant, chatting with them on one of their machines.
-Answer directly; use tools when they help, and report what you did and any blockers honestly.";
-const CHAT_ENVIRONMENT: &str = "This chat has its own private working directory; file tools write only to it and explicitly allowed paths, and read anywhere except credential stores and pirc's private state.";
-
 /// `parsePathPolicy(PIRC_SANDBOX_POLICY)`.
 fn parse_path_policy(value: Option<&str>) -> Result<Option<PathPolicy>, String> {
     let Some(text) = value.filter(|text| !text.is_empty()) else {
@@ -678,22 +648,9 @@ pub fn load_agent_config(
     protected_paths.push(js::path_join(&[&config_dir, "roles"]));
     // On a shared gateway/node host these files define capability grants.
     protected_paths.extend(pirc_policy::session::mode_write_paths(&config_dir)?);
-    protected_paths.push(js::path_join(&[&config_dir, "SOUL.md"]));
-    protected_paths.push(js::path_join(&[&config_dir, "CHAT.md"]));
-    // A chat project's instructions: only the user edits them, from the web.
-    if mode.project_instructions
-        && let Some(file) = truthy_env(env, "PIRC_PROJECT_INSTRUCTIONS")
-    {
-        protected_paths.push(js::path_resolve(&[&file]));
-    }
-    let project_files = mode
-        .project_files
-        .then(|| truthy_env(env, "PIRC_PROJECT_FILES"))
-        .flatten();
     let mut features = global.features;
     apply_mode_features(&mut features, &mode);
     Ok(AgentConfig {
-        project_files,
         role_dirs: crate::roles::role_dirs(&config_dir, &project_root),
         config_dir,
         workspace: workspace.to_owned(),
@@ -727,27 +684,6 @@ fn mode_prompt_sections(
         let section = match source {
             ModePromptSection::Base => {
                 PromptSection::new("base", "Coding instructions", "built-in", BASE_PROMPT)
-            }
-            ModePromptSection::Soul => {
-                let file = js::path_join(&[config_dir, "SOUL.md"]);
-                let soul = read_assistant_prompt(&file)?;
-                if soul.is_empty() {
-                    PromptSection::new("soul", "Persona", "built-in", CHAT_IDENTITY)
-                } else {
-                    PromptSection::new("soul", "Persona", &file, soul)
-                }
-            }
-            ModePromptSection::ChatEnv => {
-                PromptSection::new("chat-env", "Chat environment", "built-in", CHAT_ENVIRONMENT)
-            }
-            ModePromptSection::ChatMd => {
-                let file = js::path_join(&[config_dir, "CHAT.md"]);
-                PromptSection::new(
-                    "chat-md",
-                    "Chat rules",
-                    &file,
-                    read_assistant_prompt(&file)?,
-                )
             }
             ModePromptSection::Body => PromptSection::new(
                 "mode:body",

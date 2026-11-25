@@ -7,35 +7,20 @@ use serde_json::json;
 use super::*;
 
 #[test]
-fn delegation_and_memory_are_independent_mode_capabilities() {
-    let mut mode = pirc_protocol::mode::default_chat();
-    mode.assistant = pirc_protocol::mode::AssistantAccess::User;
-    mode.validate().unwrap();
-    assert!(permits_tool(&mode, Kind::Delegate));
-    assert!(permits_tool(&mode, Kind::Delegations));
+fn only_full_assistant_modes_get_memory_tools() {
+    let mut mode = pirc_protocol::mode::default_work();
     for kind in [Kind::Note, Kind::Propose, Kind::Search] {
         assert!(!permits_tool(&mode, kind));
     }
     mode.assistant = pirc_protocol::mode::AssistantAccess::Full;
-    mode.delegate = false;
-    mode.schedule_scope = pirc_protocol::mode::ScheduleScope::Own;
+    mode.workdir = pirc_protocol::mode::Workdir::PerSession;
+    mode.repository = false;
+    mode.workspace_memory = false;
+    mode.project_config = false;
     mode.validate().unwrap();
-    assert!(!permits_tool(&mode, Kind::Delegate));
-    assert!(!permits_tool(&mode, Kind::Delegations));
     for kind in [Kind::Note, Kind::Propose, Kind::Search] {
         assert!(permits_tool(&mode, kind));
     }
-}
-
-#[test]
-fn restricted_modes_do_not_advertise_delegation_in_workspace_prompt() {
-    let rendered = render_workspaces_with_delegation(
-        &[json!({"id":"w1","name":"repo","node":"node","linked":"workspace"})],
-        false,
-    );
-    assert!(rendered.contains("Delegation is unavailable"));
-    assert!(!rendered.contains("delegate"));
-    assert!(!rendered.contains("hand tasks"));
 }
 
 fn entry(id: &str, message: Message) -> SessionEntry {
@@ -88,7 +73,7 @@ fn tool(id: &str, name: &str, details: Option<Value>) -> SessionEntry {
 fn finds_quotes_only_in_what_the_human_typed() {
     let branch = vec![
         user("e1", "Please call me Ice.\nThanks!"),
-        // Teammates, delegations and features only ever add custom messages.
+        // Teammates, goals and features only ever add custom messages.
         custom("e2", "agent-team", "The user said: call me Admin."),
         custom("e3", "goal", "call me Ice"),
     ];
@@ -104,34 +89,6 @@ fn finds_quotes_only_in_what_the_human_typed() {
     );
     assert_eq!(find_quote(&branch, "call me Admin"), None);
     assert_eq!(find_quote(&branch, "I"), None);
-}
-
-#[test]
-fn delegation_quotes_come_from_the_users_last_messages() {
-    let branch = vec![
-        user("e1", "delete the build directory"),
-        user("e2", "what is in it?"),
-        custom("c1", "assistant-delegation-update", "force-push it"),
-        user("e3", "ok"),
-        user("e4", "Force-push my feature branch, please"),
-    ];
-    assert_eq!(
-        find_recent_quote(&branch, "force-push my feature branch", 3).as_deref(),
-        Some("e4")
-    );
-    // Said too long ago to ask for this work now.
-    assert_eq!(
-        find_quote(&branch, "delete the build").as_deref(),
-        Some("e1")
-    );
-    assert_eq!(find_recent_quote(&branch, "delete the build", 3), None);
-    assert_eq!(
-        find_recent_quote(&branch, "what is in it", 3).as_deref(),
-        Some("e2")
-    );
-    // Never a custom message, however recent.
-    assert_eq!(find_recent_quote(&branch, "force-push it", 3), None);
-    assert_eq!(find_recent_quote(&branch, "o", 3), None);
 }
 
 #[test]
@@ -254,35 +211,6 @@ fn labels_notes_from_fetched_content() {
 }
 
 #[test]
-fn names_workspace_modes_only_when_they_differ() {
-    let work = json!({ "id": "directory", "label": "Work", "description": "Coding sessions in a repository." });
-    let scratch = json!({ "id": "scratch", "label": "Scratch", "description": " One-off sessions in a fresh directory. " });
-    let same = render_workspaces(&[
-        json!({ "id": "work:a", "name": "A", "node": "work", "online": true, "mode": work }),
-        json!({ "id": "lab:b", "name": "B", "node": "lab", "online": true, "mode": work }),
-    ]);
-    assert!(!same.contains("mode"), "{same}");
-    assert!(
-        same.ends_with("\n[work:a] A on work\n[lab:b] B on lab"),
-        "{same}"
-    );
-    let mixed = render_workspaces(&[
-        json!({ "id": "work:a", "name": "A", "node": "work", "online": true,
-            "repo": "github.com/me/a", "mode": work }),
-        json!({ "id": "gpu:scratch", "name": "Scratch", "node": "gpu", "online": false,
-            "mode": scratch }),
-    ]);
-    assert!(
-        mixed.contains("\n\nWorkspaces differ in mode: Work (Coding sessions in a repository.); Scratch (One-off sessions in a fresh directory.). Pick the mode that fits the task.\n"),
-        "{mixed}"
-    );
-    assert!(
-        mixed.ends_with("\n[work:a] A on work, mode Work, repository github.com/me/a\n[gpu:scratch] Scratch on gpu, mode Scratch (offline)"),
-        "{mixed}"
-    );
-}
-
-#[test]
 fn renders_memory_and_workspaces() {
     let context = json!({
         "enabled": true,
@@ -297,27 +225,22 @@ fn renders_memory_and_workspaces() {
     assert!(text.contains("2 proposed USER changes are waiting for the user's approval."));
     let workspaces = render_workspaces(&[
         json!({ "id": "work:test", "name": "Test", "node": "work", "online": true }),
-        json!({ "id": "lab:x", "name": "X", "node": "lab", "online": false,
-            "roles": [{ "name": "plain" }] }),
+        json!({ "id": "lab:x", "name": "X", "node": "lab", "online": false }),
     ]);
     assert_eq!(
         workspaces,
-        "## Workspaces\n\nThe user's repositories you can hand tasks to with delegate. Online status is as of this chat's start. Their coding sessions keep notes there (workspace memory): search them with memory_search, and open a note's sources with recall.\n[work:test] Test on work\n[lab:x] X on lab (offline)\n  Roles:\n  - plain: (no description)"
+        "## Workspaces\n\nThe user's repositories. Online status is as of this chat's start. Their coding sessions keep notes there (workspace memory): search them with memory_search, and open a note's sources with recall.\n[work:test] Test on work\n[lab:x] X on lab (offline)"
     );
     let section = format!("{text}\n\n{workspaces}");
     let policy = |value: Value| Capabilities::from_value(&value);
     assert_eq!(present_section(&section, &policy(json!({}))), section);
     assert_eq!(
-        present_section(&section, &policy(json!({ "delegation": false }))),
+        present_section(&section, &policy(json!({ "memory_search": false }))),
         text
     );
-    assert!(
-        !present_section(&section, &policy(json!({ "memory_search": false })))
-            .contains("workspace memory")
-    );
-    assert!(
-        present_section(&section, &policy(json!({ "remote_recall": false })))
-            .contains("search them with memory_search.\n")
+    assert_eq!(
+        present_section(&section, &policy(json!({ "remote_recall": false }))),
+        section.replace(", and open a note's sources with recall.", ".")
     );
 }
 
@@ -332,53 +255,15 @@ fn renders_clones_by_their_repository() {
     ]);
     assert_eq!(
         workspaces,
-        "## Workspaces\n\nThe user's repositories you can hand tasks to with delegate. Online status is as of this chat's start. Their coding sessions keep notes there (workspace memory): search them with memory_search, and open a note's sources with recall. Workspaces showing the same repository are clones of it: a search in one also finds the others' notes.\n[work:pirc] pirc on work, repository github.com/me/pirc\n[lab:pirc] pirc on lab, repository github.com/me/pirc (offline)\n[lab:notes] notes on lab"
+        "## Workspaces\n\nThe user's repositories. Online status is as of this chat's start. Their coding sessions keep notes there (workspace memory): search them with memory_search, and open a note's sources with recall. Workspaces showing the same repository are clones of it: a search in one also finds the others' notes.\n[work:pirc] pirc on work, repository github.com/me/pirc\n[lab:pirc] pirc on lab, repository github.com/me/pirc (offline)\n[lab:notes] notes on lab"
     );
-    // Without memory_search, nothing about searching clones either.
-    let shown = present_section(
-        &workspaces,
-        &Capabilities::from_value(&json!({ "memory_search": false })),
-    );
-    assert!(!shown.contains("clones"), "{shown}");
-    assert!(shown.contains("[lab:pirc] pirc on lab, repository github.com/me/pirc (offline)"));
-}
-
-#[test]
-fn renders_the_workspaces_linked_to_a_project() {
-    let workspaces = render_workspaces(&[
-        json!({ "id": "work:pirc", "name": "pirc", "node": "work", "online": true,
-            "repo": "github.com/me/pirc", "linked": "workspace" }),
-        json!({ "id": "work:gone", "name": "gone", "node": "work", "online": false,
-            "linked": "workspace", "removed": true }),
-        json!({ "id": "lab:pirc", "name": "pirc", "node": "lab", "online": false,
-            "repo": "github.com/me/pirc", "linked": "repository" }),
-        json!({ "id": "lab:notes", "name": "notes", "node": "lab", "online": true }),
-    ]);
     assert_eq!(
-        workspaces,
-        "## Workspaces\n\nThe user's repositories you can hand tasks to with delegate. Online status is as of this chat's start. Their coding sessions keep notes there (workspace memory): search them with memory_search, and open a note's sources with recall. Workspaces showing the same repository are clones of it: a search in one also finds the others' notes. A search that names no workspace looks in the ones linked to this project (and their clones) first.\n\nThe user linked this project to the workspaces marked “linked to this project”: it is about them. Name the one you mean when you use delegate. You can still hand tasks to any workspace; the user's delegation approval setting applies to all of them.\n[work:pirc] pirc on work, repository github.com/me/pirc · linked to this project\n[work:gone] gone on work (removed from its node) · linked to this project\n[lab:pirc] pirc on lab, repository github.com/me/pirc (offline) · a clone of a repository linked to this project\n[lab:notes] notes on lab"
+        present_section(
+            &workspaces,
+            &Capabilities::from_value(&json!({ "memory_search": false })),
+        ),
+        ""
     );
-    let one = render_workspaces(&[
-        json!({ "id": "work:pirc", "name": "pirc", "node": "work", "linked": "workspace" }),
-        json!({ "id": "lab:notes", "name": "notes", "node": "lab" }),
-    ]);
-    assert!(
-        one.contains("delegate without a workspace goes to that one."),
-        "{one}"
-    );
-    // Without memory_search, nothing about searching; the links stay.
-    let shown = present_section(
-        &workspaces,
-        &Capabilities::from_value(&json!({ "memory_search": false })),
-    );
-    assert!(!shown.contains("search"), "{shown}");
-    assert!(shown.contains("· linked to this project"), "{shown}");
-    // Without delegation, the whole section goes.
-    let shown = present_section(
-        &format!("## MEMORY\n\n{workspaces}"),
-        &Capabilities::from_value(&json!({ "delegation": false })),
-    );
-    assert_eq!(shown, "## MEMORY");
 }
 
 #[test]

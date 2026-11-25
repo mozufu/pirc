@@ -61,16 +61,14 @@ pub fn restore(conn: &Connection, id: &str, user: &str) -> ApiResult<()> {
 
 fn removable(app: &App, workspace: &Workspace) -> ApiResult<()> {
     if workspace.local_id().is_none()
-        || workspace.local_id() == Some("chats")
-        || workspace.mode.as_str() == "chat"
         || app
             .mode(&workspace.mode)
-            .is_some_and(|mode| mode.projects || mode.full_assistant())
+            .is_some_and(|mode| mode.workdir != pirc_protocol::mode::Workdir::Workspace)
     {
         return Err(ApiError::new(
             400,
             "invalid_input",
-            "Only Work workspaces can be removed; chat projects use Delete project",
+            "Only repository workspaces can be removed",
         ));
     }
     Ok(())
@@ -127,7 +125,7 @@ fn begin(
             ));
         }
         let busy: bool = conn.query_row(
-            "SELECT EXISTS(SELECT 1 FROM sessions WHERE workspace_id=?1 AND runner_state NOT IN ('stopped','failed','ready')) OR EXISTS(SELECT 1 FROM delegations WHERE workspace_id=?1 AND status IN ('pending_approval','running','waiting_input')) OR EXISTS(SELECT 1 FROM schedule_runs r JOIN schedules s ON s.id=r.schedule_id WHERE s.workspace_id=?1 AND r.status IN ('running','waiting_input')) OR EXISTS(SELECT 1 FROM commands c JOIN sessions s ON s.id=c.session_id WHERE s.workspace_id=?1 AND c.status IN ('received','dispatched'))",
+            "SELECT EXISTS(SELECT 1 FROM sessions WHERE workspace_id=?1 AND runner_state NOT IN ('stopped','failed','ready')) OR EXISTS(SELECT 1 FROM schedule_runs r JOIN schedules s ON s.id=r.schedule_id WHERE s.workspace_id=?1 AND r.status IN ('running','waiting_input')) OR EXISTS(SELECT 1 FROM commands c JOIN sessions s ON s.id=c.session_id WHERE s.workspace_id=?1 AND c.status IN ('received','dispatched'))",
             [id], |row| row.get(0))?;
         let live = conn.workspace_session_ids(id)?.iter().any(|session_id| {
             app.activity_of(Some(&workspace.host_id), session_id)
@@ -137,7 +135,7 @@ fn begin(
             return Err(ApiError::new(
                 409,
                 "conflict",
-                "Stop active sessions and delegations before removing this workspace",
+                "Stop active sessions before removing this workspace",
             ));
         }
         let token = new_id("removal");

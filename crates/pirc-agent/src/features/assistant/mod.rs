@@ -7,9 +7,9 @@
 //! on their exact words, which code finds in their own messages: the model
 //! never decides where a memory came from.
 //!
-//! A coding session (a directory workspace's main agent, delegated ones
-//! included) starts with the approved USER entries only, frozen the same
-//! way: it reads them, never writes them, and has none of the tools.
+//! A coding session (a directory workspace's main agent) starts with the
+//! approved USER entries only, frozen the same way: it reads them, never
+//! writes them, and has none of the tools.
 
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
@@ -30,12 +30,11 @@ use crate::channels::{ChannelError, NodeChannels, process_gateway};
 use crate::context::PromptSection;
 use crate::feature::{BeforeStart, Feature, PromptAddition};
 use crate::redact::redact_secrets;
-use crate::roles::{RoleBrief, describe_roles};
 use crate::session_store::{EntryData, SessionEntry};
 use crate::signal::{AbortController, AbortSignal};
 use crate::tools::js::{self, js_regex};
 use crate::tools::prompts::{PromptVar, tool_prompt};
-use crate::tools::result_schema::{arr, bool_, fields, int, nullable, obj, str_};
+use crate::tools::result_schema::{arr, bool_, fields, int, obj, str_};
 use crate::tools::{Tool, ToolContext, ToolResult, typed};
 use crate::ui::NotifyLevel;
 
@@ -44,13 +43,8 @@ use crate::ui::NotifyLevel;
 pub const ASSISTANT_SNAPSHOT: &str = "assistant.snapshot";
 pub const NOTE_TOOL: &str = "memory_note";
 pub const PROPOSE_TOOL: &str = "memory_propose_user";
-pub const DELEGATE_TOOL: &str = "delegate";
-pub const DELEGATIONS_TOOL: &str = "delegation_status";
 pub const SEARCH_TOOL: &str = "memory_search";
 const MEMORY_TOOLS: [&str; 2] = [NOTE_TOOL, PROPOSE_TOOL];
-/// A delegation's quote must come from the user's last this many messages
-/// (auto mode's classifier window; the gateway's `QUOTE_MESSAGES`).
-const QUOTE_MESSAGES: usize = 3;
 /// Session entry: a note revision this chat wrote (`learn` after a restart).
 const NOTE_REVISION: &str = "assistant.note_revision";
 /// A chat waits this long for its memory before starting without it (and
@@ -174,17 +168,10 @@ fn replace_first(text: &str, regex: &js::JsRegex, replacement: &str) -> String {
 /// can change later), so guidance for disabled tools is taken out each
 /// time it is shown.
 pub fn present_section(section: &str, capabilities: &Capabilities) -> String {
-    if !capabilities.allows("delegation") {
-        return replace_first(
-            section,
-            js_regex!(r"\n*## Workspaces\n[\s\S]*?(?=\n## |$)"),
-            "",
-        );
-    }
     if !capabilities.allows("memory_search") {
         return replace_first(
             section,
-            js_regex!(r" Their coding sessions keep notes there \(workspace memory\)[^\n]*"),
+            js_regex!(r"\n*## Workspaces\n[\s\S]*?(?=\n## |$)"),
             "",
         );
     }
@@ -198,125 +185,32 @@ pub fn present_section(section: &str, capabilities: &Capabilities) -> String {
     section.to_owned()
 }
 
-fn role_brief(value: &Value) -> RoleBrief {
-    let text = |key: &str| value.get(key).and_then(Value::as_str).map(str::to_owned);
-    let list = |key: &str| {
-        value
-            .get(key)
-            .and_then(Value::as_array)
-            .map(|items| items.iter().map(js::string_of).collect())
-    };
-    RoleBrief {
-        name: string(value.get("name")),
-        description: text("description").filter(|d| !d.is_empty()),
-        models: list("models"),
-        thinking: text("thinking").filter(|t| !t.is_empty()),
-        tools: list("tools"),
-        source: text("source"),
-        overrides: text("overrides"),
-    }
-}
-
-/// `renderWorkspaces`: the user's repositories the assistant can hand
-/// tasks to, as of the chat's start. In a project, the gateway lists the
-/// workspaces it is linked to first (`linked`: `workspace`, or
-/// `repository` for another clone of a linked one's repository).
+/// `renderWorkspaces`: the user's repositories, as of the chat's start.
 pub fn render_workspaces(workspaces: &[Value]) -> String {
-    render_workspaces_with_delegation(workspaces, true)
-}
-
-fn render_workspaces_with_delegation(workspaces: &[Value], delegation: bool) -> String {
     if workspaces.is_empty() {
         return String::new();
     }
     let repos = workspaces
         .iter()
         .any(|workspace| workspace.get("repo").is_some_and(Value::is_string));
-    fn linked_to(workspace: &Value) -> Option<&str> {
-        workspace.get("linked").and_then(Value::as_str)
-    }
-    let linked: Vec<&Value> = workspaces
-        .iter()
-        .filter(|workspace| linked_to(workspace) == Some("workspace"))
-        .collect();
-    // Modes matter only when the targets differ in mode (e.g. repositories
-    // and per-session scratch workspaces): then each line names its mode and
-    // the modes are described once.
-    let mut modes: Vec<(String, String, String)> = Vec::new();
-    for workspace in workspaces {
-        let Some(mode) = workspace.get("mode") else {
-            continue;
-        };
-        let id = string(mode.get("id"));
-        if !id.is_empty() && !modes.iter().any(|(known, _, _)| *known == id) {
-            modes.push((
-                id,
-                string(mode.get("label")),
-                string(mode.get("description")),
-            ));
-        }
-    }
-    let show_modes = modes.len() > 1;
     let mut lines = vec![
         "## Workspaces".to_owned(),
         String::new(),
         format!(
-            "{} Online status is as of this chat's start. Their coding sessions keep notes there (workspace memory): search them with {SEARCH_TOOL}, and open a note's sources with recall.{}{}",
-            if delegation {
-                format!("The user's repositories you can hand tasks to with {DELEGATE_TOOL}.")
-            } else {
-                "The user's repositories. Delegation is unavailable in this session.".to_owned()
-            },
+            "The user's repositories. Online status is as of this chat's start. Their coding sessions keep notes there (workspace memory): search them with {SEARCH_TOOL}, and open a note's sources with recall.{}",
             if repos {
                 " Workspaces showing the same repository are clones of it: a search in one also finds the others' notes."
             } else {
                 ""
             },
-            if linked.is_empty() {
-                ""
-            } else {
-                " A search that names no workspace looks in the ones linked to this project (and their clones) first."
-            }
         ),
     ];
-    if show_modes {
-        let described: Vec<String> = modes
-            .iter()
-            .map(|(_, label, description)| {
-                if description.is_empty() {
-                    label.clone()
-                } else {
-                    format!("{label} ({})", js::trim(description))
-                }
-            })
-            .collect();
-        lines.push(String::new());
-        lines.push(format!(
-            "Workspaces differ in mode: {}. Pick the mode that fits the task.",
-            described.join("; ")
-        ));
-    }
-    if !linked.is_empty() && delegation {
-        lines.push(String::new());
-        lines.push(format!(
-            "The user linked this project to the workspaces marked “linked to this project”: it is about them. {} You can still hand tasks to any workspace; the user's delegation approval setting applies to all of them.",
-            if linked.len() == 1 {
-                format!("{DELEGATE_TOOL} without a workspace goes to that one.")
-            } else {
-                format!("Name the one you mean when you use {DELEGATE_TOOL}.")
-            }
-        ));
-    }
     for workspace in workspaces {
         let line = format!(
-            "[{}] {} on {}{}{}{}{}",
+            "[{}] {} on {}{}{}",
             string(workspace.get("id")),
             string(workspace.get("name")),
             string(workspace.get("node")),
-            match workspace.get("mode").map(|mode| string(mode.get("label"))) {
-                Some(label) if show_modes && !label.is_empty() => format!(", mode {label}"),
-                _ => String::new(),
-            },
             match workspace.get("repo").and_then(Value::as_str) {
                 Some(repo) => format!(", repository {repo}"),
                 None => String::new(),
@@ -328,24 +222,8 @@ fn render_workspaces_with_delegation(workspaces: &[Value], delegation: bool) -> 
             } else {
                 ""
             },
-            match linked_to(workspace) {
-                Some("workspace") => " · linked to this project",
-                Some("repository") => " · a clone of a repository linked to this project",
-                _ => "",
-            }
         );
-        let roles = array(workspace.get("roles"));
-        if roles.is_empty() {
-            lines.push(line);
-            continue;
-        }
-        let briefs: Vec<RoleBrief> = roles.iter().map(role_brief).collect();
-        let described = describe_roles(&briefs)
-            .split('\n')
-            .map(|item| format!("  {item}"))
-            .collect::<Vec<_>>()
-            .join("\n");
-        lines.push(format!("{line}\n  Roles:\n{described}"));
+        lines.push(line);
     }
     lines.join("\n")
 }
@@ -403,7 +281,7 @@ fn words(value: &str) -> String {
 }
 
 /// `findQuote`: the newest message the human typed in this chat (`role:
-/// 'user'`; features, delegations and teammates only add custom messages)
+/// 'user'`; features, goals and teammates only add custom messages)
 /// that contains `quote`.
 pub fn find_quote(branch: &[SessionEntry], quote: &str) -> Option<String> {
     let wanted = words(quote);
@@ -418,29 +296,6 @@ pub fn find_quote(branch: &[SessionEntry], quote: &str) -> Option<String> {
         }
         _ => None,
     })
-}
-
-/// The newest of the user's last `messages` messages in this chat that
-/// contains `quote` (as [`find_quote`]): words they said a while ago are
-/// not taken as asking for work now.
-pub fn find_recent_quote(branch: &[SessionEntry], quote: &str, messages: usize) -> Option<String> {
-    let wanted = words(quote);
-    if js::len16(&wanted) < 2 {
-        return None;
-    }
-    branch
-        .iter()
-        .rev()
-        .filter_map(|entry| match &entry.data {
-            EntryData::Message(Message::User { content, .. }) => Some((entry, content)),
-            _ => None,
-        })
-        .take(messages)
-        .find_map(|(entry, content)| {
-            words(&user_text(content))
-                .contains(&wanted)
-                .then(|| entry.id.clone())
-        })
 }
 
 /// `currentOrigins`: where what the assistant knows right now came from:
@@ -677,10 +532,7 @@ async fn fresh_sections(
     } else {
         [
             render_memory(&context),
-            render_workspaces_with_delegation(
-                array(context.get("workspaces")),
-                agent.config().mode().delegate && agent.get_tool(DELEGATE_TOOL).is_some(),
-            ),
+            render_workspaces(array(context.get("workspaces"))),
         ]
         .into_iter()
         .filter(|s| !s.is_empty())
@@ -752,99 +604,10 @@ fn object(value: Value) -> Map<String, Value> {
     }
 }
 
-/// The documented fields of a gateway delegation record (`delegationData`).
-fn delegation_data(delegation: &Value) -> Value {
-    let mut out = Map::new();
-    for key in ["id", "title", "workspace", "status"] {
-        out.insert(key.to_owned(), json!(string(delegation.get(key))));
-    }
-    for key in ["role", "model", "thinking", "dispatch", "session", "result"] {
-        if let Some(value) = delegation.get(key).filter(|v| v.is_string()) {
-            out.insert(key.to_owned(), value.clone());
-        }
-    }
-    for key in ["resultOffset", "resultChars"] {
-        if let Some(value) = delegation.get(key).filter(|v| v.is_number()) {
-            out.insert(key.to_owned(), value.clone());
-        }
-    }
-    if delegation.get("resultChars").is_some() {
-        let next = delegation.get("nextOffset").cloned().unwrap_or(Value::Null);
-        out.insert("nextOffset".to_owned(), next);
-    }
-    Value::Object(out)
-}
-
-/// `a ?? b` of two record fields.
-fn either<'a>(value: Option<&'a Value>, fallback: Option<&'a Value>) -> Option<&'a Value> {
-    value.filter(|v| !v.is_null()).or(fallback)
-}
-
-/// `resultFooter`: where a chunked delegation result stands, and how to
-/// read on.
-fn result_footer(delegation: &Value) -> String {
-    let Some(chars) = delegation.get("resultChars") else {
-        return String::new();
-    };
-    let start = string(either(delegation.get("resultOffset"), Some(&json!(0))));
-    let next = delegation.get("nextOffset");
-    let end = string(either(next, Some(chars)));
-    let chars = js::string_of(chars);
-    match next {
-        None => format!("\n[Result characters {start}–{end} of {chars}; end of result]"),
-        Some(_) => format!(
-            "\n[Result characters {start}–{end} of {chars}; continue with delegation_status id={} offset={end}]",
-            string(delegation.get("id"))
-        ),
-    }
-}
-
-/// `DELEGATION`.
-fn delegation_schema() -> Value {
-    obj(
-        vec![
-            ("id", str_(None)),
-            ("title", str_(None)),
-            ("workspace", str_(None)),
-            ("status", str_(None)),
-            ("role", str_(None)),
-            ("model", str_(None)),
-            ("thinking", str_(None)),
-            (
-                "dispatch",
-                str_(Some(
-                    "approved: the user approved it; auto: it started without asking",
-                )),
-            ),
-            ("session", str_(Some("Name of the session doing the work"))),
-            ("result", str_(Some("This chunk of the final answer"))),
-            ("resultOffset", int(None)),
-            ("resultChars", int(None)),
-            (
-                "nextOffset",
-                nullable(int(Some("Where the next chunk starts, or null at the end"))),
-            ),
-        ],
-        &[
-            "role",
-            "model",
-            "thinking",
-            "dispatch",
-            "session",
-            "result",
-            "resultOffset",
-            "resultChars",
-            "nextOffset",
-        ],
-    )
-}
-
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Kind {
     Note,
     Propose,
-    Delegate,
-    Delegations,
     Search,
 }
 
@@ -855,9 +618,6 @@ struct AssistantTool {
     agent: Weak<Agent>,
     state: Shared,
     gateway: Rc<NodeChannels>,
-    /// One description, or `memory_search`'s four (a getter in TS: only
-    /// mention tools the chat's capability policy allows), by
-    /// `recall + 2 × delegation`.
     descriptions: Vec<String>,
     parameters: Map<String, Value>,
     result_schema: Value,
@@ -930,58 +690,13 @@ impl AssistantTool {
                     &[],
                 ),
             ),
-            Kind::Delegate => (
-                DELEGATE_TOOL,
-                fixed(DELEGATE_TOOL),
-                json!({
-                    "type": "object",
-                    "properties": {
-                        "workspace": param("The workspace id (like m5pro:workspace_…), or its name if no other workspace has it. Leave it out in a project linked to exactly one workspace to use that one."),
-                        "task": param("The whole task, standing on its own."),
-                        "title": param("A short title; it names the new session."),
-                        "follows": param("An earlier delegation's id (like d1a2b3c4d): send the task to its session instead."),
-                        "quote": param("The user's exact words, from one of their last three messages, that asked for this work. They are checked against those messages."),
-                        "role": {
-                            "type": "string",
-                            "pattern": "^[a-z][a-z0-9_-]{0,39}$",
-                            "description": "A role of the target workspace (see ## Workspaces); default: none (the workspace default). Not with follows.",
-                        },
-                    },
-                    "required": ["task"],
-                    "additionalProperties": false,
-                }),
-                // Asks the user; nothing runs until they approve it in the chat.
-                fields(vec![("delegation", delegation_schema())], &[]),
-            ),
-            Kind::Delegations => (
-                DELEGATIONS_TOOL,
-                fixed(DELEGATIONS_TOOL),
-                json!({
-                    "type": "object",
-                    "properties": {
-                        "id": param("A delegation id, like d1a2b3c4d."),
-                        "offset": {
-                            "type": "integer",
-                            "minimum": 0,
-                            "description": "With id: first result character to return (default 0)",
-                        },
-                    },
-                    "additionalProperties": false,
-                }),
-                fields(vec![("delegations", arr(delegation_schema(), None))], &[]),
-            ),
             Kind::Search => (
                 SEARCH_TOOL,
-                (0..4)
-                    .map(|index| {
-                        tool_prompt(
-                            SEARCH_TOOL,
-                            &[
-                                ("recall", PromptVar::Flag(index & 1 == 1)),
-                                ("delegation", PromptVar::Flag(index & 2 == 2)),
-                            ],
-                        )
-                        .expect("the memory_search description")
+                [true, false]
+                    .into_iter()
+                    .map(|recall| {
+                        tool_prompt(SEARCH_TOOL, &[("recall", PromptVar::Flag(recall))])
+                            .expect("the memory_search description")
                     })
                     .collect(),
                 json!({
@@ -990,7 +705,6 @@ impl AssistantTool {
                         "query": param("Words to look for, separated by spaces."),
                         "workspace": param("Only this workspace and other clones of its repository: its id, or its name if no other workspace has it."),
                         "limit": { "type": "number", "description": "At most this many results (1 to 20, default 8)." },
-                        "everywhere": { "type": "boolean", "description": "In a project linked to workspaces: search all workspaces at once instead of the linked ones first (default false)." },
                     },
                     "required": ["query"],
                     "additionalProperties": false,
@@ -1035,8 +749,6 @@ impl AssistantTool {
         match self.kind {
             Kind::Note => self.note(&agent, &args, &ctx).await,
             Kind::Propose => self.propose(&agent, &args, &ctx).await,
-            Kind::Delegate => self.delegate(&agent, &args, &ctx).await,
-            Kind::Delegations => self.delegations(&args, &ctx).await,
             Kind::Search => self.search(&args, &ctx).await,
         }
     }
@@ -1279,158 +991,6 @@ impl AssistantTool {
         }
     }
 
-    async fn delegate(
-        &self,
-        agent: &Agent,
-        args: &Map<String, Value>,
-        ctx: &ToolContext,
-    ) -> Result<ToolResult, String> {
-        let task = trimmed(args, "task");
-        if task.is_empty() {
-            return Ok(text("task is required", None, true));
-        }
-        let branch = agent.branch();
-        // What the chat read since the user's last message decides whether
-        // an `untrusted` policy starts it at once. Earlier delegate calls
-        // only report what the gateway recorded.
-        let origins: Vec<String> = current_origins(&branch, &agent.running_script_capabilities())
-            .into_iter()
-            .filter(|origin| *origin != format!("tool:{DELEGATE_TOOL}"))
-            .collect();
-        let quote = args
-            .get("quote")
-            .and_then(Value::as_str)
-            .map(js::trim)
-            .filter(|quote| !quote.is_empty());
-        let mut verified = None;
-        if let Some(raw) = quote {
-            let Some(found) = find_recent_quote(&branch, raw, QUOTE_MESSAGES) else {
-                return Ok(text(
-                    "That quote is not in the user's last three messages in this chat. Quote their exact words, or leave quote out.",
-                    None,
-                    true,
-                ));
-            };
-            verified = Some((redact_secrets(raw), found));
-        }
-        // Without a workspace or follows, the gateway uses the project's only
-        // linked workspace, or says to name one.
-        let [workspace, title, follows, role] =
-            ["workspace", "title", "follows", "role"].map(|key| trimmed(args, key));
-        let mut request = Map::new();
-        if !workspace.is_empty() {
-            request.insert("workspace".to_owned(), json!(workspace));
-        }
-        request.insert("task".to_owned(), json!(redact_secrets(&task)));
-        for (key, value) in [("title", &title), ("follows", &follows), ("role", &role)] {
-            if !value.is_empty() {
-                request.insert(key.to_owned(), json!(value));
-            }
-        }
-        request.insert("origins".to_owned(), json!(origins));
-        if let Some((quote, entry)) = verified {
-            request.insert("quote".to_owned(), json!(quote));
-            request.insert("entryIds".to_owned(), json!([entry]));
-        }
-        match self.request("delegation.create", request, ctx).await {
-            Ok(result) => {
-                let role = result
-                    .get("role")
-                    .filter(|role| js::truthy(Some(role)))
-                    .map(|role| format!(", role {}", js::string_of(role)))
-                    .unwrap_or_default();
-                let (id, title, workspace) = (
-                    string(result.get("id")),
-                    string(result.get("title")),
-                    string(result.get("workspace")),
-                );
-                Ok(typed(
-                    if result.get("dispatch").and_then(Value::as_str) == Some("auto") {
-                        format!(
-                            "Started delegation {id} (“{title}”, {workspace}{role}) without asking: the user's delegation approval setting allows it. The user sees it in this chat and can stop it. You will get a message when it finishes, fails or needs them."
-                        )
-                    } else {
-                        format!(
-                            "Asked the user to approve delegation {id} (“{title}”, {workspace}{role}). They can pick the model when approving. Nothing runs until they do; you will get a message when it finishes, fails or needs them."
-                        )
-                    },
-                    json!({ "delegation": delegation_data(&result) }),
-                    Some(json!({ "delegationId": result.get("id") })),
-                    false,
-                ))
-            }
-            Err(error) => failure(error),
-        }
-    }
-
-    async fn delegations(
-        &self,
-        args: &Map<String, Value>,
-        ctx: &ToolContext,
-    ) -> Result<ToolResult, String> {
-        let id = trimmed(args, "id");
-        let offset = args
-            .get("offset")
-            .filter(|offset| offset.as_f64().is_some_and(|n| n.fract() == 0.0 && n > 0.0))
-            .cloned();
-        let mut request = Map::new();
-        if !id.is_empty() {
-            request.insert("id".to_owned(), json!(id));
-            if let Some(offset) = offset {
-                request.insert("offset".to_owned(), offset);
-            }
-        }
-        let result = match self.request("delegation.status", request, ctx).await {
-            Ok(result) => result,
-            Err(error) => return failure(error),
-        };
-        let listed = array(result.get("delegations"));
-        let delegations: Vec<Value> = listed.iter().map(delegation_data).collect();
-        if listed.is_empty() {
-            return Ok(typed(
-                "No delegations yet.",
-                json!({ "delegations": delegations }),
-                None,
-                false,
-            ));
-        }
-        let shown: Vec<String> = listed
-            .iter()
-            .map(|d| {
-                let session = d
-                    .get("session")
-                    .filter(|s| js::truthy(Some(s)))
-                    .map(|s| format!(" (session “{}”)", js::string_of(s)))
-                    .unwrap_or_default();
-                let result = d
-                    .get("result")
-                    .filter(|r| js::truthy(Some(r)))
-                    .map(|r| format!("\n{}", js::string_of(r)))
-                    .unwrap_or_default();
-                format!(
-                    "{} · {} · “{}” → {}{session}{result}{}",
-                    string(d.get("id")),
-                    string(d.get("status")),
-                    string(d.get("title")),
-                    string(d.get("workspace")),
-                    result_footer(d)
-                )
-            })
-            .collect();
-        let ids: Vec<Value> = listed
-            .iter()
-            .map(|d| d.get("id").cloned().unwrap_or(Value::Null))
-            .collect();
-        Ok(ToolResult {
-            data: Some(object(json!({ "delegations": delegations }))),
-            ..text(
-                shown.join("\n\n"),
-                Some(json!({ "delegations": ids })),
-                false,
-            )
-        })
-    }
-
     async fn search(
         &self,
         args: &Map<String, Value>,
@@ -1454,9 +1014,6 @@ impl AssistantTool {
         if let Some(limit) = limit {
             request.insert("limit".to_owned(), crate::messages::js::number_value(limit));
         }
-        if args.get("everywhere") == Some(&Value::Bool(true)) {
-            request.insert("everywhere".to_owned(), json!(true));
-        }
         let result = match self.request("memory.search", request, ctx).await {
             Ok(result) => result,
             Err(error) => return failure(error),
@@ -1476,19 +1033,9 @@ impl AssistantTool {
                 Value::Object(out)
             })
             .collect();
-        // In a project with links, the gateway says where it looked.
-        let searched = result.get("searched").and_then(Value::as_str);
         if listed.is_empty() {
             return Ok(typed(
-                format!(
-                    "Nothing found for {}{}.",
-                    js::stringify(&json!(query)),
-                    if searched == Some("everywhere") {
-                        ", in the workspaces linked to this project or any other"
-                    } else {
-                        ""
-                    }
-                ),
+                format!("Nothing found for {}.", js::stringify(&json!(query))),
                 json!({ "hits": hits }),
                 None,
                 false,
@@ -1497,16 +1044,9 @@ impl AssistantTool {
         let shown: Vec<String> = listed
             .iter()
             .map(|hit| {
-                let kind = string(hit.get("kind"));
                 let status = string(hit.get("status"));
-                let workspace = string(hit.get("workspace"));
-                let delegation = kind == "delegation";
-                let place = if delegation {
-                    format!("delegation to {workspace}")
-                } else {
-                    workspace
-                };
-                let state = if delegation || status != "active" {
+                let place = string(hit.get("workspace"));
+                let state = if status != "active" {
                     format!(" · {status}")
                 } else {
                     String::new()
@@ -1528,22 +1068,9 @@ impl AssistantTool {
             .iter()
             .map(|hit| hit.get("id").cloned().unwrap_or(Value::Null))
             .collect();
-        let scope = match searched {
-            Some("linked") => {
-                "From the workspaces linked to this project and their clones; pass everywhere: true to search all workspaces.\n\n"
-            }
-            Some("everywhere") => {
-                "Nothing in the workspaces linked to this project; these are from all workspaces.\n\n"
-            }
-            _ => "",
-        };
         Ok(ToolResult {
             data: Some(object(json!({ "hits": hits }))),
-            ..text(
-                format!("{scope}{}", shown.join("\n\n")),
-                Some(json!({ "hits": ids })),
-                false,
-            )
+            ..text(shown.join("\n\n"), Some(json!({ "hits": ids })), false)
         })
     }
 }
@@ -1557,16 +1084,10 @@ impl Tool for AssistantTool {
         if self.kind != Kind::Search {
             return &self.descriptions[0];
         }
-        let (recall, delegation) = self.agent.upgrade().map_or((true, true), |agent| {
-            let capabilities = agent.capabilities();
-            (
-                capabilities.allows("remote_recall") && agent.get_tool("recall").is_some(),
-                capabilities.allows("delegation")
-                    && agent.config().mode().delegate
-                    && agent.get_tool(DELEGATE_TOOL).is_some(),
-            )
+        let recall = self.agent.upgrade().is_none_or(|agent| {
+            agent.capabilities().allows("remote_recall") && agent.get_tool("recall").is_some()
         });
-        &self.descriptions[usize::from(recall) + 2 * usize::from(delegation)]
+        &self.descriptions[usize::from(!recall)]
     }
 
     fn parameters(&self) -> &Map<String, Value> {
@@ -1601,12 +1122,8 @@ struct AssistantFeature {
     state: Shared,
 }
 
-fn permits_tool(mode: &pirc_protocol::Mode, kind: Kind) -> bool {
-    if matches!(kind, Kind::Delegate | Kind::Delegations) {
-        mode.delegate
-    } else {
-        mode.full_assistant()
-    }
+fn permits_tool(mode: &pirc_protocol::Mode, _kind: Kind) -> bool {
+    mode.full_assistant()
 }
 
 impl Feature for AssistantFeature {
@@ -1618,24 +1135,18 @@ impl Feature for AssistantFeature {
         let Some(gateway) = process_gateway() else {
             return Vec::new();
         };
-        [
-            Kind::Note,
-            Kind::Propose,
-            Kind::Delegate,
-            Kind::Delegations,
-            Kind::Search,
-        ]
-        .into_iter()
-        .filter(|kind| permits_tool(agent.config().mode(), *kind))
-        .map(|kind| {
-            Rc::new(AssistantTool::new(
-                kind,
-                agent,
-                self.state.clone(),
-                gateway.clone(),
-            )) as Rc<dyn Tool>
-        })
-        .collect()
+        [Kind::Note, Kind::Propose, Kind::Search]
+            .into_iter()
+            .filter(|kind| permits_tool(agent.config().mode(), *kind))
+            .map(|kind| {
+                Rc::new(AssistantTool::new(
+                    kind,
+                    agent,
+                    self.state.clone(),
+                    gateway.clone(),
+                )) as Rc<dyn Tool>
+            })
+            .collect()
     }
 
     fn init<'a>(&'a self, agent: &'a Rc<Agent>) -> LocalBoxFuture<'a, Result<(), String>> {
@@ -1683,26 +1194,6 @@ impl Feature for AssistantFeature {
         agent.invalidate_prompt("assistant");
         Box::pin(async { Ok(()) })
     }
-}
-
-#[cfg(test)]
-pub(crate) fn registered_tool_names(agent: &Rc<Agent>) -> Vec<String> {
-    let gateway = crate::channels::node_channels();
-    let state = Rc::new(State::default());
-    [
-        Kind::Note,
-        Kind::Propose,
-        Kind::Delegate,
-        Kind::Delegations,
-        Kind::Search,
-    ]
-    .into_iter()
-    .map(|kind| {
-        AssistantTool::new(kind, agent, state.clone(), gateway.clone())
-            .name()
-            .to_owned()
-    })
-    .collect()
 }
 
 #[cfg(test)]

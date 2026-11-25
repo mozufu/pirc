@@ -116,7 +116,6 @@ fn make(dir: &std::path::Path, action: Action, settings: Value) -> (Rc<Agent>, R
         store: SessionStore::open(dir.join("session"), dir.to_str().unwrap()).unwrap(),
         config,
         capabilities: Default::default(),
-        project_instructions: None,
         role: None,
         emit: Rc::new(|_| {}),
         ui: Rc::new(testing::TestUi::default()),
@@ -338,8 +337,8 @@ async fn route_changes_invalidate_calibration_but_prefix_changes_preserve_scale(
 }
 
 #[tokio::test]
-async fn scheduled_and_delegated_tasks_without_human_messages_compact_and_reopen() {
-    for kind in ["scheduled-run", "assistant-delegation"] {
+async fn scheduled_tasks_without_human_messages_compact_and_reopen() {
+    for kind in ["scheduled-run"] {
         let dir = tempfile::tempdir().unwrap();
         let (agent, _) = make(
             dir.path(),

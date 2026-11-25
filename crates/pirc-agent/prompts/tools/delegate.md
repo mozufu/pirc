@@ -1,7 +1,0 @@
-Hand a task to an agent working in one of the user's workspaces (see ## Workspaces). Depending on the user's delegation approval setting, they approve it first in this chat, seeing the workspace and your whole task, or it starts at once. So agree on the plan with the user in the conversation before you call this. It runs in a new session there, and you get a message when it finishes, fails or needs the user.
-
-Pass as quote the user's exact words from one of their last three messages that asked for this work. The delegated agent's auto mode reads them as the user's request (never your task text), so it can do what they asked without stopping for approval; without a quote it treats nothing as the user's request. A quote that is not in those messages is refused.
-
-The other agent sees nothing of this chat: write the task so it stands on its own, with the goal, the facts it needs and what to report back. To send more instructions to the same session, pass the earlier delegation's id as follows instead of a workspace. In a project linked to exactly one workspace (marked under ## Workspaces), leaving workspace out sends the task there.
-
-Pick the workspace role that fits the work (see its Roles under ## Workspaces); the role sets the model, thinking level, tools and role instructions. You never pick a model: the user can when approving; otherwise the role's model, or the workspace default, runs it. A follow-up keeps its session's role.

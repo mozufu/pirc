@@ -464,9 +464,7 @@ pub fn session(
             .check_session(&input.session_id)
             .map_err(ApiError::bad_request)?;
     }
-    if input.recovery.is_some()
-        && (input.workspace_memory_file.is_some() || input.project_files_dir.is_some())
-    {
+    if input.recovery.is_some() && input.workspace_memory_file.is_some() {
         return Err(ApiError::bad_request(
             "Recovery must start without inherited memory or project state",
         ));
@@ -508,10 +506,7 @@ pub fn session(
         inference_socket: input.inference_socket.as_deref().map(text),
         tmp_dirs: vec![text(&tmp), "/tmp".to_owned()],
         protected_paths,
-        read_only_dirs: [text(&sandbox_bin_dir(config))]
-            .into_iter()
-            .chain(input.project_files_dir.as_deref().map(text))
-            .collect(),
+        read_only_dirs: [text(&sandbox_bin_dir(config))].into_iter().collect(),
         platform: Platform::current(),
         uid: nix::unistd::getuid().as_raw(),
         ssh_auth_sock: env.get("SSH_AUTH_SOCK").map(str::to_owned),
@@ -817,7 +812,6 @@ mod tests {
             inference_socket: None,
             protected_paths: Vec::new(),
             workspace_memory_file: None,
-            project_files_dir: None,
         };
         let Session { tmp, policy, .. } = session(&config, &env, &node_tmp, &input).unwrap();
         let text = |path: &Path| path.display().to_string();
@@ -860,7 +854,6 @@ mod tests {
             inference_socket: None,
             protected_paths: Vec::new(),
             workspace_memory_file: None,
-            project_files_dir: None,
             recovery: None,
         };
         let a = session(&config, &env, &node_tmp, &input("pi_a")).unwrap();
@@ -924,7 +917,6 @@ mod tests {
             inference_socket: None,
             protected_paths: Vec::new(),
             workspace_memory_file: None,
-            project_files_dir: None,
             recovery: None,
         };
         let temp_warning = |node_tmp: &NodeTmp| {
@@ -965,7 +957,6 @@ mod tests {
             inference_socket: None,
             protected_paths: Vec::new(),
             workspace_memory_file: Some(memory.join(file)),
-            project_files_dir: None,
             recovery: None,
         };
         // Another repository's ledger (one not yet made would be writable

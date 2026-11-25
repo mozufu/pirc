@@ -181,7 +181,7 @@ fn a_project_being_deleted_is_fenced() {
             "node",
             "P",
             "/state/chat/p",
-            ModeId::new("chat").unwrap(),
+            ModeId::new("pot").unwrap(),
         )
         .unwrap();
     let session = connection.create_session("p", "/private/1", "u").unwrap();
@@ -317,20 +317,20 @@ fn workspaces_and_role_pin() {
     assert_eq!(listed[0].defaults["x"], 1);
     check_role(&listed, &[ModeId::new("directory").unwrap()]).unwrap();
     assert!(
-        check_role(&listed, &[ModeId::new("chat").unwrap()])
+        check_role(&listed, &[ModeId::new("pot").unwrap()])
             .unwrap_err()
             .contains("incompatible with configured accepted modes")
     );
-    let chat = db
-        .ensure_chat_workspace("chats", "node", "Chats", "/s/chat/chats", "chat")
+    let pots = db
+        .ensure_chat_workspace("pots", "node", "Pots", "/s/chat/pots", "pot")
         .unwrap();
-    assert_eq!(chat.mode, ModeId::new("chat").unwrap());
+    assert_eq!(pots.mode, ModeId::new("pot").unwrap());
     assert_eq!(
         db.get_workspace("nope").unwrap_err().message,
         "Workspace not found"
     );
     // Capability authorization belongs to the catalog-aware route, not SQL storage.
-    db.set_workspace_trust("chats", Some("h"), "u").unwrap();
+    db.set_workspace_trust("pots", Some("h"), "u").unwrap();
     db.set_workspace_trust("a", Some("h"), "u").unwrap();
     assert_eq!(db.get_workspace_trust("a").unwrap().as_deref(), Some("h"));
     db.set_workspace_trust("a", None, "u").unwrap();

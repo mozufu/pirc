@@ -355,9 +355,13 @@ pub(super) mod tests {
     #[tokio::test]
     async fn per_session_target_does_not_allocate_a_directory() {
         let (_dir, node, request, mut input) = fixture().await;
-        let mut chat = pirc_protocol::mode::default_chat();
-        chat.id = ModeId::new("review").unwrap();
-        node.replace_modes(vec![pirc_protocol::mode::default_work(), chat])
+        let mut review = pirc_protocol::mode::default_work();
+        review.id = ModeId::new("review").unwrap();
+        review.workdir = pirc_protocol::mode::Workdir::PerSession;
+        review.repository = false;
+        review.workspace_memory = false;
+        review.project_config = false;
+        node.replace_modes(vec![pirc_protocol::mode::default_work(), review])
             .await;
         let dir = crate::chat::chat_workspace_dir(&node.config, "project").unwrap();
         node.db

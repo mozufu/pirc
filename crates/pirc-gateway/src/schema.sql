@@ -47,14 +47,13 @@ CREATE TABLE leases (
 
 CREATE TABLE session_deletions (
   session_id TEXT PRIMARY KEY, owner_user TEXT NOT NULL, status TEXT NOT NULL, created_at INTEGER NOT NULL,
-  -- Its workspace, so deleting a project also finds the chats deleted from it before
-  -- (NULL for deletions before schema 1004).
+  -- Its workspace, so a workspace-wide cleanup also finds earlier session deletions.
   workspace_id TEXT
 );
 
--- A chat project being deleted ('deleting') or deleted ('deleted'). The row outlives the
--- project, with no content, so node announcements, late events and restored node backups
--- cannot bring the project back (docs/guides/chat-projects.md).
+-- A workspace being deleted ('deleting') or deleted ('deleted'). The row outlives the
+-- workspace, with no content, so node announcements, late events and restored node backups
+-- cannot bring it back.
 CREATE TABLE workspace_deletions (
   workspace_id TEXT PRIMARY KEY, owner_user TEXT NOT NULL, status TEXT NOT NULL, created_at INTEGER NOT NULL
 );
@@ -90,34 +89,11 @@ CREATE TABLE memory_proposals (
 );
 CREATE INDEX memory_proposals_owner ON memory_proposals(owner_user, status);
 CREATE TABLE memory_tombstones (
-  -- 'global' (Forget, chat deletion) refuses the text from then on; a project's
-  -- workspace id (project deletion) only records it: other chats may write it again.
+  -- 'global' (Forget, session deletion) refuses the text from then on.
   owner_user TEXT NOT NULL, scope_id TEXT NOT NULL DEFAULT 'global', content_hash TEXT NOT NULL,
   forgotten_at INTEGER NOT NULL,
   PRIMARY KEY (owner_user, scope_id, content_hash)
 );
-
--- Tasks the assistant hands to other workspaces (daemon/delegations.ts).
-CREATE TABLE delegations (
-  id TEXT PRIMARY KEY, owner_user TEXT NOT NULL, assistant_session_id TEXT NOT NULL,
-  workspace_id TEXT NOT NULL, title TEXT NOT NULL, task TEXT NOT NULL, follows TEXT,
-  status TEXT NOT NULL, target_session_id TEXT, result TEXT, notified_status TEXT,
-  expires_at INTEGER NOT NULL, dispatched_at INTEGER,
-  created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
-  -- The model (and thinking level) it runs on, and the role its new session starts in.
-  model_json TEXT, thinking TEXT, role TEXT,
-  -- 1: the user approved it as their own request for auto mode, for the run it starts.
-  as_user_request INTEGER NOT NULL DEFAULT 0,
-  -- How it started: 'approved' (the user's card), 'auto' (the chat's delegation
-  -- approval policy), NULL before it started. The origins of the chat's context
-  -- the agent reported (JSON array), and the user's own words it verified
-  -- (quote, JSON array of their message entry ids).
-  dispatch TEXT, origins_json TEXT, quote TEXT, quote_entry_ids TEXT
-);
-CREATE INDEX delegations_owner ON delegations(owner_user, status);
-CREATE INDEX delegations_follows ON delegations(follows);
-CREATE INDEX delegations_assistant ON delegations(assistant_session_id, status);
-CREATE INDEX delegations_target ON delegations(target_session_id, status);
 
 -- Workspace memory mirrored from the nodes (daemon/memory-records.ts).
 CREATE TABLE memory_mirrors (
@@ -179,16 +155,6 @@ CREATE INDEX push_subscriptions_owner ON push_subscriptions(owner_user);
 -- A chat workspace's capability policy (gateway-owned; node sync never touches it).
 CREATE TABLE workspace_capabilities (
   workspace_id TEXT PRIMARY KEY REFERENCES workspaces(id), policy_json TEXT NOT NULL
-);
-
--- The directory workspaces a chat project is about (docs/architecture/assistant-memory.md): a
--- default and an ordering, never a permission. No foreign key on workspace_id: a
--- link to a workspace that went away stays, shown as such. repo is the workspace's
--- normalized origin, so a link also covers the other clones of its repository.
-CREATE TABLE project_links (
-  project_workspace_id TEXT NOT NULL REFERENCES workspaces(id), workspace_id TEXT NOT NULL,
-  repo TEXT, created_at INTEGER NOT NULL,
-  PRIMARY KEY (project_workspace_id, workspace_id)
 );
 
 -- BEGIN workspace removals (1009)

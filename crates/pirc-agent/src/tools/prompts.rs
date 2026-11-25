@@ -49,8 +49,6 @@ prompts!(
     budget_status,
     calendar,
     create_goal,
-    delegate,
-    delegation_status,
     edit,
     find,
     get_goal,
@@ -222,26 +220,10 @@ mod tests {
         let today = tool_prompt("web_search", &[("today", Text("2026-10-02"))]).unwrap();
         assert!(today.contains("(today is 2026-10-02)"));
         assert!(!today.contains("{{"));
-        let all = tool_prompt(
-            "memory_search",
-            &[("recall", Flag(true)), ("delegation", Flag(true))],
-        )
-        .unwrap();
-        assert!(all.ends_with(
-            "are marked. Open a note's sources with recall (12-hex ids). See a delegation with delegation_status."
-        ));
-        let none = tool_prompt(
-            "memory_search",
-            &[("recall", Flag(false)), ("delegation", Flag(false))],
-        )
-        .unwrap();
+        let all = tool_prompt("memory_search", &[("recall", Flag(true))]).unwrap();
+        assert!(all.ends_with("are marked. Open a note's sources with recall (12-hex ids)."));
+        let none = tool_prompt("memory_search", &[("recall", Flag(false))]).unwrap();
         assert!(none.ends_with("superseded ones are marked."));
-        let one = tool_prompt(
-            "memory_search",
-            &[("recall", Flag(false)), ("delegation", Flag(true))],
-        )
-        .unwrap();
-        assert!(one.ends_with("are marked. See a delegation with delegation_status."));
         assert!(
             tool_prompt("recall", &[("chatSearch", Flag(false))])
                 .unwrap()
@@ -260,11 +242,6 @@ mod tests {
             tool_prompt("web_search", &[("today", Flag(true))])
                 .unwrap_err()
                 .contains("needs text")
-        );
-        assert!(
-            tool_prompt("memory_search", &[("recall", Flag(true))])
-                .unwrap_err()
-                .contains("no value for {{delegation}}")
         );
         assert!(
             tool_prompt("nope", &[])

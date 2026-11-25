@@ -7,12 +7,16 @@ use crate::tools::testing::{self, TestUi};
 
 /// An agent running only this feature, in a fresh session; the lines it
 /// emits are collected.
-fn agent(dir: &std::path::Path, chat: bool) -> (Rc<Agent>, Rc<RefCell<Vec<Value>>>) {
+fn agent(dir: &std::path::Path, pot: bool) -> (Rc<Agent>, Rc<RefCell<Vec<Value>>>) {
     let workspace = dir.join("workspace");
     std::fs::create_dir_all(&workspace).unwrap();
     let mut config = testing::config(&workspace.display().to_string(), json!({}));
-    if chat {
-        config.mode = pirc_protocol::mode::default_chat();
+    if pot {
+        let (_, text) = pirc_config::modes::DEFAULT_MODE_FILES
+            .iter()
+            .find(|(file, _)| *file == "pot.md")
+            .unwrap();
+        config.mode = pirc_config::modes::parse_mode("pot", text).unwrap();
     }
     let store = SessionStore::open(dir.join("session"), &config.workspace).unwrap();
     let lines = Rc::new(RefCell::new(Vec::new()));
@@ -20,7 +24,6 @@ fn agent(dir: &std::path::Path, chat: bool) -> (Rc<Agent>, Rc<RefCell<Vec<Value>
     let agent = Agent::new(AgentOptions {
         config,
         capabilities: Default::default(),
-        project_instructions: None,
         role: None,
         store,
         emit: Rc::new(move |line: Value| sink.borrow_mut().push(line)),
@@ -158,7 +161,7 @@ fn checks_line_counts() {
 }
 
 #[test]
-fn chats_leave_the_tool_out() {
+fn pots_leave_the_tool_out() {
     let dir = tempfile::tempdir().unwrap();
     let (agent, _) = agent(dir.path(), true);
     assert!(agent.get_tool("background_task").is_none());

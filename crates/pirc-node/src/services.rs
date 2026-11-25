@@ -222,8 +222,8 @@ impl Services {
     ///    ([`Db::open`]); refuse state whose workspaces belong to the other
     ///    role ("State contains workspaces incompatible with ..."), without
     ///    changing them.
-    /// 2. `sync_workspaces`, the chat node's top-level chats
-    ///    (`chat::ensure_top_level_chats`), `recover_startup` (logged).
+    /// 2. `sync_workspaces`, the chat node's pots workspace
+    ///    (`chat::ensure_pots`), `recover_startup` (logged).
     /// 3. Build the components (`Arc::new_cyclic`), start the sandbox probe
     ///    in the background (log "agent sandbox ready" or "agent sandbox
     ///    unavailable, no agent can start: <reason>"), warn about legacy
@@ -266,9 +266,6 @@ impl Services {
             connection
                 .sync_workspaces(&config.node_id, &config.workspaces)
                 .map_err(failed)?;
-            if config.chat() && config.modes.iter().any(|mode| mode.as_str() == "chat") {
-                crate::chat::ensure_top_level_chats(&config, &connection).map_err(failed)?;
-            }
             if config.chat() && config.modes.iter().any(|mode| mode.as_str() == "pot") {
                 crate::chat::ensure_pots(&config, &connection).map_err(failed)?;
             }

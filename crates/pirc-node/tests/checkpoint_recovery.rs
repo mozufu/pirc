@@ -543,7 +543,6 @@ async fn a_recovery_workspace_has_one_writer_group_with_a_fenced_new_generation(
     assert!(ticket.generation() > opened.revision);
     let input = ticket.prepare_input("fresh-session".into(), f.state.join("sessions/fresh"), None);
     assert!(input.workspace_memory_file.is_none());
-    assert!(input.project_files_dir.is_none());
     assert_eq!(input.workspace_root, ticket.root());
 }
 #[tokio::test]
@@ -837,7 +836,6 @@ async fn native_sandbox_keeps_source_private_store_and_other_recoveries_closed_a
             inference_socket: None,
             protected_paths: vec![],
             workspace_memory_file: None,
-            project_files_dir: None,
             recovery: None,
         })
         .await

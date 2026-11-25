@@ -272,18 +272,24 @@ impl App {
 #[cfg(test)]
 pub fn test_modes() -> pirc_config::modes::ModeCatalog {
     let mut catalog = pirc_config::modes::ModeCatalog::default();
-    for mode in [
-        pirc_protocol::mode::default_chat(),
-        pirc_protocol::mode::default_work(),
-    ] {
-        catalog.modes.insert(mode.id.clone(), mode);
-    }
+    let mode = pirc_protocol::mode::default_work();
+    catalog.modes.insert(mode.id.clone(), mode);
     let (_, pot) = pirc_config::modes::DEFAULT_MODE_FILES
         .iter()
         .find(|(file, _)| *file == "pot.md")
         .expect("the pot mode ships");
     let pot = pirc_config::modes::parse_mode("pot", pot).expect("the pot mode parses");
     catalog.modes.insert(pot.id.clone(), pot);
+    // A per-session mode that may schedule anywhere, as the removed chat
+    // mode did; tests of schedules and memory still need one.
+    let mut scheduler = pirc_protocol::mode::default_work();
+    scheduler.id = pirc_protocol::ModeId::new("assistant").expect("test mode id");
+    scheduler.workdir = pirc_protocol::mode::Workdir::PerSession;
+    scheduler.schedule_scope = pirc_protocol::mode::ScheduleScope::Any;
+    scheduler.repository = false;
+    scheduler.workspace_memory = false;
+    scheduler.project_config = false;
+    catalog.modes.insert(scheduler.id.clone(), scheduler);
     catalog
 }
 
@@ -367,11 +373,6 @@ pub fn router(app: AppState) -> Router {
             "/api/assistant/node/release",
             post(routes::release_assistant_node),
         )
-        .route("/api/assistant/prompts", get(routes::assistant_prompts))
-        .route(
-            "/api/assistant/prompts/{name}",
-            axum::routing::put(routes::save_assistant_prompt),
-        )
         .route(
             "/api/workspaces",
             get(routes::list_workspaces).post(routes::create_workspace),
@@ -384,20 +385,6 @@ pub fn router(app: AppState) -> Router {
         .route(
             "/api/workspaces/{workspace_id}/capabilities",
             get(routes::get_capabilities).patch(routes::patch_capabilities),
-        )
-        .route(
-            "/api/workspaces/{workspace_id}/links",
-            get(routes::get_links).put(routes::put_links),
-        )
-        .route(
-            "/api/workspaces/{workspace_id}/instructions",
-            get(routes::get_instructions).patch(routes::patch_instructions),
-        )
-        .route(
-            "/api/workspaces/{workspace_id}/files",
-            get(routes::get_project_files)
-                .post(routes::upload_project_file)
-                .delete(routes::delete_project_file),
         )
         .route(
             "/api/workspaces/{workspace_id}/project-config",
@@ -471,7 +458,6 @@ pub fn router(app: AppState) -> Router {
         .merge(crate::checkpoints::routes())
         .merge(routes::feature_routes())
         .merge(crate::management::routes())
-        .merge(crate::project_deletion::routes())
         .merge(crate::backends::routes())
         .fallback(not_found)
         .method_not_allowed_fallback(not_found)
@@ -491,21 +477,11 @@ pub fn router(app: AppState) -> Router {
 const PARAM_ROUTES: &[(&str, &str)] = &[
     ("GET", "/api/sessions/{id}/terminals/{terminal_id}/stream"),
     ("GET", "/api/sessions/{id}/browser/stream"),
-    ("PUT", "/api/assistant/prompts/{name}"),
     ("DELETE", "/api/workspaces/{workspace_id}"),
     ("GET", "/api/workspaces/{workspace_id}/capabilities"),
     ("PATCH", "/api/workspaces/{workspace_id}/capabilities"),
-    ("GET", "/api/workspaces/{workspace_id}/links"),
-    ("PUT", "/api/workspaces/{workspace_id}/links"),
-    ("GET", "/api/workspaces/{workspace_id}/instructions"),
-    ("PATCH", "/api/workspaces/{workspace_id}/instructions"),
-    ("GET", "/api/workspaces/{workspace_id}/files"),
-    ("POST", "/api/workspaces/{workspace_id}/files"),
-    ("DELETE", "/api/workspaces/{workspace_id}/files"),
     ("GET", "/api/workspaces/{workspace_id}/project-config"),
     ("POST", "/api/workspaces/{workspace_id}/project-trust"),
-    ("GET", "/api/workspaces/{workspace_id}/deletion"),
-    ("POST", "/api/workspaces/{workspace_id}/deletion"),
     ("DELETE", "/api/sessions/{id}"),
     ("PATCH", "/api/sessions/{id}"),
     ("POST", "/api/sessions/{id}/read"),
@@ -576,7 +552,6 @@ const PARAM_ROUTES: &[(&str, &str)] = &[
     ("POST", "/api/native-management/requests/{id}/deny"),
     ("POST", "/api/native-management/requests/{id}/claim"),
     ("DELETE", "/api/devices/{id}"),
-    ("POST", "/api/delegations/{id}/stop"),
     ("PUT", "/api/providers/{id}"),
     ("DELETE", "/api/providers/{id}"),
     ("GET", "/api/provider-auth/sessions/{id}"),

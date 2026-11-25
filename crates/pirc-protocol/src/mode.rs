@@ -66,12 +66,6 @@ pub enum PromptSection {
     AgentsWorkspace,
     #[serde(rename = "agents:project")]
     AgentsProject,
-    #[serde(rename = "soul")]
-    Soul,
-    #[serde(rename = "chat-env")]
-    ChatEnv,
-    #[serde(rename = "chat-md")]
-    ChatMd,
     #[serde(rename = "body")]
     Body,
 }
@@ -150,8 +144,6 @@ pub const TOOL_NAMES: &[&str] = &[
     "budget_status",
     "calendar",
     "create_goal",
-    "delegate",
-    "delegation_status",
     "edit",
     "find",
     "get_goal",
@@ -205,17 +197,12 @@ pub struct Mode {
     pub features_on: Vec<String>,
     pub tools: Option<Vec<String>>,
     pub assistant: AssistantAccess,
-    pub delegate: bool,
-    pub delegate_target: bool,
     pub schedule_scope: ScheduleScope,
-    pub project_instructions: bool,
-    pub project_files: bool,
     pub project_config: bool,
     pub workspace_memory: bool,
     pub repository: bool,
     pub recap: bool,
     pub delete_sessions: bool,
-    pub projects: bool,
     /// A pot's own session: the Gateway supplies its identity and messages.
     /// Written only when set, so other modes keep their shape.
     #[serde(skip_serializing_if = "std::ops::Not::not")]
@@ -241,15 +228,7 @@ struct ModeFields {
     #[serde(default)]
     tools: Option<Vec<String>>,
     assistant: AssistantAccess,
-    #[serde(default)]
-    delegate: bool,
-    #[serde(default)]
-    delegate_target: bool,
     schedule_scope: ScheduleScope,
-    #[serde(default)]
-    project_instructions: bool,
-    #[serde(default)]
-    project_files: bool,
     #[serde(default)]
     project_config: bool,
     #[serde(default)]
@@ -260,8 +239,6 @@ struct ModeFields {
     recap: bool,
     #[serde(default)]
     delete_sessions: bool,
-    #[serde(default)]
-    projects: bool,
     #[serde(default)]
     pot: bool,
 }
@@ -281,17 +258,12 @@ impl<'de> Deserialize<'de> for Mode {
             features_on: raw.features_on,
             tools: raw.tools,
             assistant: raw.assistant,
-            delegate: raw.delegate,
-            delegate_target: raw.delegate_target,
             schedule_scope: raw.schedule_scope,
-            project_instructions: raw.project_instructions,
-            project_files: raw.project_files,
             project_config: raw.project_config,
             workspace_memory: raw.workspace_memory,
             repository: raw.repository,
             recap: raw.recap,
             delete_sessions: raw.delete_sessions,
-            projects: raw.projects,
             pot: raw.pot,
         };
         mode.validate().map_err(serde::de::Error::custom)?;
@@ -366,23 +338,11 @@ impl Mode {
         if self.full_assistant() && self.workdir == Workdir::Workspace {
             return Err("assistant: full forbids workdir: workspace".into());
         }
-        if self.delegate && self.delegate_target {
-            return Err("delegate and delegate_target cannot both be enabled".into());
-        }
         if self.workspace_memory && !self.repository {
             return Err("workspace_memory requires repository".into());
         }
         if self.project_config && !self.repository {
             return Err("project_config requires repository".into());
-        }
-        if self.schedule_scope == ScheduleScope::Any && !self.delegate {
-            return Err("schedule_scope: any requires delegate".into());
-        }
-        if self.projects && self.workdir == Workdir::Workspace {
-            return Err("projects forbids workdir: workspace".into());
-        }
-        if self.repository && (self.project_files || self.project_instructions) {
-            return Err("project_files and project_instructions forbid repository".into());
         }
         Ok(())
     }
@@ -411,56 +371,12 @@ pub fn default_work() -> Mode {
         features_on: Vec::new(),
         tools: None,
         assistant: AssistantAccess::User,
-        delegate: false,
-        delegate_target: true,
         schedule_scope: ScheduleScope::Own,
-        project_instructions: false,
-        project_files: false,
         project_config: true,
         workspace_memory: true,
         repository: true,
         recap: true,
         delete_sessions: false,
-        projects: false,
-        pot: false,
-    }
-}
-
-/// Source for `chat.md`, and a fixture until the catalog cutover.
-pub fn default_chat() -> Mode {
-    Mode {
-        id: ModeId::new("chat").expect("default mode id"),
-        label: "Chat".into(),
-        description: "The personal assistant's chats and projects.".into(),
-        ui: ModeUi {
-            icon: None,
-            noun: "chat".into(),
-        },
-        workdir: Workdir::PerSession,
-        prompt: vec![
-            PromptSection::Soul,
-            PromptSection::ChatEnv,
-            PromptSection::ChatMd,
-            PromptSection::Body,
-        ],
-        body: String::new(),
-        features_off: ["goal", "todo", "agentTeam", "background"]
-            .map(str::to_owned)
-            .to_vec(),
-        features_on: Vec::new(),
-        tools: None,
-        assistant: AssistantAccess::Full,
-        delegate: true,
-        delegate_target: false,
-        schedule_scope: ScheduleScope::Any,
-        project_instructions: true,
-        project_files: true,
-        project_config: false,
-        workspace_memory: false,
-        repository: false,
-        recap: false,
-        delete_sessions: true,
-        projects: true,
         pot: false,
     }
 }
@@ -472,11 +388,10 @@ mod tests {
 
     #[test]
     fn defaults_match_the_legacy_ids_and_validate() {
-        for mode in [default_chat(), default_work()] {
-            mode.validate().unwrap();
-            let wire = serde_json::to_value(&mode).unwrap();
-            assert_eq!(serde_json::from_value::<Mode>(wire).unwrap(), mode);
-        }
+        let mode = default_work();
+        mode.validate().unwrap();
+        let wire = serde_json::to_value(&mode).unwrap();
+        assert_eq!(serde_json::from_value::<Mode>(wire).unwrap(), mode);
     }
 
     #[test]
@@ -521,7 +436,6 @@ mod tests {
     #[test]
     fn refuses_all_forbidden_combinations_on_deserialization() {
         refuses(json!({"assistant":"full"}), "assistant: full");
-        refuses(json!({"delegate":true}), "delegate and delegate_target");
         refuses(
             json!({"repository":false}),
             "workspace_memory requires repository",
@@ -529,22 +443,6 @@ mod tests {
         refuses(
             json!({"repository":false,"workspace_memory":false}),
             "project_config requires repository",
-        );
-        refuses(
-            json!({"schedule_scope":"any"}),
-            "schedule_scope: any requires delegate",
-        );
-        refuses(
-            json!({"projects":true}),
-            "projects forbids workdir: workspace",
-        );
-        refuses(
-            json!({"project_files":true}),
-            "project_files and project_instructions forbid repository",
-        );
-        refuses(
-            json!({"project_instructions":true}),
-            "project_files and project_instructions forbid repository",
         );
     }
 

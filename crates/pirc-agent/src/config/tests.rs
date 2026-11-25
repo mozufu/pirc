@@ -73,7 +73,7 @@ fn hash_of(workspace: &Path) -> String {
 
 fn load(setup: &Setup, workspace: &Path, extra: &[(&str, &str)]) -> AgentConfig {
     let config_dir = text(&setup.config_dir);
-    let mode = mode_json(false);
+    let mode = mode_json();
     let mut vars = vec![("PIRC_CONFIG_DIR", config_dir.as_str())];
     if !extra.iter().any(|(name, _)| *name == "PIRC_MODE") {
         vars.push(("PIRC_MODE", mode.as_str()));
@@ -82,13 +82,8 @@ fn load(setup: &Setup, workspace: &Path, extra: &[(&str, &str)]) -> AgentConfig 
     load_agent_config(&text(workspace), models(), &env_of(&vars)).unwrap()
 }
 
-fn mode_json(chat: bool) -> String {
-    serde_json::to_string(&if chat {
-        pirc_protocol::mode::default_chat()
-    } else {
-        pirc_protocol::mode::default_work()
-    })
-    .unwrap()
+fn mode_json() -> String {
+    serde_json::to_string(&pirc_protocol::mode::default_work()).unwrap()
 }
 
 fn env_lookup<'a>(config: &'a AgentConfig, name: &str) -> Option<&'a str> {
@@ -390,8 +385,6 @@ fn merges_trusted_project_config_and_prompts_from_pirc() {
     expected.extend([
         format!("{}/roles", text(&setup.config_dir)),
         format!("{}/modes", text(&setup.config_dir)),
-        format!("{}/SOUL.md", text(&setup.config_dir)),
-        format!("{}/CHAT.md", text(&setup.config_dir)),
     ]);
     assert_eq!(config.protected_paths, expected);
     assert!(config.allowed_paths.ends_with(&skills));
@@ -466,7 +459,7 @@ fn applies_the_node_sandbox_policy_it_is_given() {
             &env_of(&[
                 ("PIRC_CONFIG_DIR", &config_dir),
                 ("PIRC_SANDBOX_POLICY", bad),
-                ("PIRC_MODE", &mode_json(false)),
+                ("PIRC_MODE", &mode_json()),
             ]),
         )
         .unwrap_err();
@@ -475,83 +468,11 @@ fn applies_the_node_sandbox_policy_it_is_given() {
 }
 
 #[test]
-fn separates_chat_rules_and_persona_from_all_coding_agents_files() {
-    let setup = workspace_with(json!({}));
-    let dir = &setup.config_dir;
-    let workspace = &setup.workspace;
-    fs::write(dir.join("SOUL.md"), "Unique persona").unwrap();
-    fs::write(dir.join("CHAT.md"), "Unique chat rules\r\n").unwrap();
-    for root in [dir.clone(), workspace.clone(), workspace.join(".pirc")] {
-        fs::write(
-            root.join("AGENTS.md"),
-            format!("Coding rules {}", text(&root)),
-        )
-        .unwrap();
-    }
-    let chat_mode = mode_json(true);
-    let chat_env = [("PIRC_MODE", chat_mode.as_str())];
-    let chat = load(&setup, workspace, &chat_env);
-    let prompt = join_prompt(&chat.system_prompt);
-    assert!(prompt.starts_with("Unique persona\n\nThis chat"));
-    assert!(prompt.ends_with("Unique chat rules"));
-    assert!(!prompt.contains("Coding rules"));
-    assert!(
-        chat.protected_paths
-            .contains(&format!("{}/SOUL.md", text(dir)))
-    );
-    assert_eq!(chat.mode(), &pirc_protocol::mode::default_chat());
-    assert_eq!(
-        chat.system_prompt[0].source,
-        format!("{}/SOUL.md", text(dir))
-    );
-    let work = load(&setup, workspace, &[]);
-    assert_eq!(
-        join_prompt(&work.system_prompt)
-            .matches("Coding rules")
-            .count(),
-        3
-    );
-    assert!(!join_prompt(&work.system_prompt).contains("Unique"));
-    fs::remove_file(dir.join("SOUL.md")).unwrap();
-    let builtin = load(&setup, workspace, &chat_env);
-    assert!(join_prompt(&builtin.system_prompt).contains("the user's personal assistant"));
-    assert_eq!(builtin.system_prompt[0].source, "built-in");
-    fs::write(dir.join("SOUL.md"), "x".repeat(9000)).unwrap();
-    assert!(
-        join_prompt(&load(&setup, workspace, &chat_env).system_prompt)
-            .starts_with(&format!("{}\n\n", "x".repeat(8000)))
-    );
-    // A directory where the prompt should be is no prompt.
-    fs::remove_file(dir.join("CHAT.md")).unwrap();
-    fs::create_dir(dir.join("CHAT.md")).unwrap();
-    assert_eq!(load(&setup, workspace, &chat_env).system_prompt.len(), 2);
-}
-
-#[test]
 fn default_mode_sections_reproduce_legacy_prompts_exactly() {
     let setup = workspace_with(json!({}));
     let config_dir = text(&setup.config_dir);
     let workspace = text(&setup.workspace);
     let project_dir = text(&setup.workspace.join(".pirc"));
-    fs::write(setup.config_dir.join("SOUL.md"), "Persona\r\n").unwrap();
-    fs::write(setup.config_dir.join("CHAT.md"), "Rules\r\n").unwrap();
-    let soul_file = format!("{config_dir}/SOUL.md");
-    let chat_file = format!("{config_dir}/CHAT.md");
-    let legacy_chat = vec![
-        PromptSection::new(
-            "soul",
-            "Persona",
-            &soul_file,
-            read_assistant_prompt(&soul_file).unwrap(),
-        ),
-        PromptSection::new("chat-env", "Chat environment", "built-in", CHAT_ENVIRONMENT),
-        PromptSection::new(
-            "chat-md",
-            "Chat rules",
-            &chat_file,
-            read_assistant_prompt(&chat_file).unwrap(),
-        ),
-    ];
     let mut legacy_work = vec![PromptSection::new(
         "base",
         "Coding instructions",
@@ -572,29 +493,13 @@ fn default_mode_sections_reproduce_legacy_prompts_exactly() {
             read_text(&file).unwrap(),
         ));
     }
-    for (mode, expected) in [
-        (pirc_protocol::mode::default_chat(), legacy_chat),
-        (pirc_protocol::mode::default_work(), legacy_work),
-    ] {
-        let actual = mode_prompt_sections(&mode, &config_dir, &workspace, &project_dir).unwrap();
-        assert_eq!(
-            join_prompt(&actual).as_bytes(),
-            join_prompt(&expected).as_bytes()
-        );
-        assert_eq!(actual, expected);
-    }
-    fs::remove_file(&soul_file).unwrap();
-    let fallback = mode_prompt_sections(
-        &pirc_protocol::mode::default_chat(),
-        &config_dir,
-        &workspace,
-        &project_dir,
-    )
-    .unwrap();
+    let mode = pirc_protocol::mode::default_work();
+    let actual = mode_prompt_sections(&mode, &config_dir, &workspace, &project_dir).unwrap();
     assert_eq!(
-        fallback[0],
-        PromptSection::new("soul", "Persona", "built-in", CHAT_IDENTITY)
+        join_prompt(&actual).as_bytes(),
+        join_prompt(&legacy_work).as_bytes()
     );
+    assert_eq!(actual, legacy_work);
 }
 
 #[test]
@@ -616,47 +521,6 @@ fn renders_mode_sections_in_order_without_reading_unselected_files() {
     assert_eq!(actual[0].id, "mode:body");
     assert_eq!(actual[0].text, "Mode instructions");
     assert_eq!(actual[1].id, "base");
-}
-
-#[test]
-fn protects_a_chat_projects_instructions_file() {
-    let setup = workspace_with(json!({}));
-    let file = text(&setup.workspace.join("instructions.md"));
-    let chat = load(
-        &setup,
-        &setup.workspace,
-        &[
-            ("PIRC_MODE", &mode_json(true)),
-            ("PIRC_PROJECT_INSTRUCTIONS", &file),
-        ],
-    );
-    assert_eq!(chat.protected_paths.last(), Some(&file));
-    let directory = load(
-        &setup,
-        &setup.workspace,
-        &[("PIRC_PROJECT_INSTRUCTIONS", &file)],
-    );
-    assert!(!directory.protected_paths.contains(&file));
-}
-
-#[test]
-fn reads_a_chat_projects_files_directory() {
-    let setup = workspace_with(json!({}));
-    let dir = "/state/chat/p/files";
-    let chat = load(
-        &setup,
-        &setup.workspace,
-        &[("PIRC_MODE", &mode_json(true)), ("PIRC_PROJECT_FILES", dir)],
-    );
-    assert_eq!(chat.project_files.as_deref(), Some(dir));
-    let empty = load(
-        &setup,
-        &setup.workspace,
-        &[("PIRC_MODE", &mode_json(true)), ("PIRC_PROJECT_FILES", "")],
-    );
-    assert_eq!(empty.project_files, None);
-    let directory = load(&setup, &setup.workspace, &[("PIRC_PROJECT_FILES", dir)]);
-    assert_eq!(directory.project_files, None);
 }
 
 #[test]
@@ -733,7 +597,7 @@ fn rejects_invalid_config_with_every_issue() {
             models(),
             &env_of(&[
                 ("PIRC_CONFIG_DIR", &config_dir),
-                ("PIRC_MODE", &mode_json(false)),
+                ("PIRC_MODE", &mode_json()),
             ]),
         )
         .unwrap_err();
@@ -745,7 +609,7 @@ fn rejects_invalid_config_with_every_issue() {
         models(),
         &env_of(&[
             ("PIRC_CONFIG_DIR", &text(&setup.config_dir)),
-            ("PIRC_MODE", &mode_json(false)),
+            ("PIRC_MODE", &mode_json()),
         ]),
     )
     .unwrap_err();
@@ -805,10 +669,13 @@ fn mode_snapshot_ignores_mode_files_and_disabled_project_config() {
         json!({"allowedPaths":[text(&setup.config_dir)]}).to_string(),
     )
     .unwrap();
-    let mut mode = pirc_protocol::mode::default_chat();
-    mode.id = pirc_protocol::ModeId::new("custom-assistant").unwrap();
+    let mut mode = pirc_protocol::mode::default_work();
+    mode.id = pirc_protocol::ModeId::new("custom-mode").unwrap();
     mode.prompt = vec![ModePromptSection::Body];
     mode.body = "Frozen body".into();
+    mode.repository = false;
+    mode.workspace_memory = false;
+    mode.project_config = false;
     let config = load(
         &setup,
         &setup.workspace,
@@ -905,7 +772,7 @@ fn mode_configuration_symlink_cycles_fail_agent_loading_closed() {
             fs::create_dir(&modes).unwrap();
             symlink("chat.md", modes.join("chat.md")).unwrap();
         }
-        let mode = mode_json(false);
+        let mode = mode_json();
         let config_dir = text(&setup.config_dir);
         let error = load_agent_config(
             &text(&setup.workspace),

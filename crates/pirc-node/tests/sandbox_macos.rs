@@ -279,7 +279,6 @@ impl Fixture {
                 inference_socket,
                 protected_paths,
                 workspace_memory_file: None,
-                project_files_dir: None,
                 recovery: None,
             })
             .await
@@ -468,7 +467,6 @@ async fn opens_only_its_own_workspace_memory_ledger() {
             inference_socket: None,
             protected_paths: Vec::new(),
             workspace_memory_file: Some(ledger.clone()),
-            project_files_dir: None,
             recovery: None,
         })
         .await
@@ -504,79 +502,6 @@ async fn opens_only_its_own_workspace_memory_ledger() {
         fs::read_to_string(dir.join("other.jsonl")).unwrap(),
         "other\n"
     );
-}
-
-/// A chat project's files: readable, never writable, a file the node adds
-/// while the session runs is readable at once, and the rest of the
-/// project's directory (its instructions) stays closed.
-#[tokio::test]
-async fn reads_project_files_but_never_writes_them() {
-    let f = fixture("project-files");
-    let project = f.config.state_dir.join("chat/workspace_p");
-    let files = project.join("files");
-    fs::create_dir_all(&files).unwrap();
-    fs::write(files.join("a.txt"), "alpha").unwrap();
-    fs::write(project.join("instructions.md"), "secret").unwrap();
-    let session_dir = f.config.sessions_dir.join("pi_files");
-    fs::create_dir_all(&session_dir).unwrap();
-    let prepared = f
-        .sandbox
-        .prepare(PrepareInput {
-            grants: Vec::new(),
-            session_id: "pi_files".to_owned(),
-            workspace_root: f.workspace.clone(),
-            session_dir,
-            inference_socket: None,
-            protected_paths: Vec::new(),
-            workspace_memory_file: None,
-            project_files_dir: Some(files.clone()),
-            recovery: None,
-        })
-        .await
-        .unwrap();
-    let (files_text, project_text) = (files.display().to_string(), project.display().to_string());
-    let script = format!(
-        r#"[ "$(cat '{files_text}/a.txt')" = alpha ] || exit 1
-        ls '{files_text}' >/dev/null || exit 2
-        printf x 2>/dev/null >> '{files_text}/a.txt' && exit 3
-        touch '{files_text}/new.txt' 2>/dev/null && exit 4
-        rm -f '{files_text}/a.txt' 2>/dev/null; [ -f '{files_text}/a.txt' ] || exit 5
-        cat '{project_text}/instructions.md' 2>/dev/null && exit 6
-        echo ready
-        read line
-        [ "$(cat '{files_text}/b.txt')" = beta ] || exit 7
-        exit 0"#
-    );
-    let mut command = prepared.command().unwrap();
-    command
-        .args(["-c", &script])
-        .env_clear()
-        .env("PATH", "/usr/bin:/bin:/usr/sbin:/sbin")
-        .envs(prepared.env.iter().map(|(k, v)| (k, v)))
-        .current_dir(&f.workspace)
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .kill_on_drop(true);
-    let mut child = command.spawn().unwrap();
-    let mut stdout = BufReader::new(child.stdout.take().unwrap());
-    let mut line = String::new();
-    tokio::time::timeout(Duration::from_secs(30), stdout.read_line(&mut line))
-        .await
-        .unwrap()
-        .unwrap();
-    assert_eq!(line, "ready\n");
-    fs::write(files.join("b.txt"), "beta").unwrap();
-    let mut stdin = child.stdin.take().unwrap();
-    stdin.write_all(b"go\n").await.unwrap();
-    drop(stdin);
-    let status = tokio::time::timeout(Duration::from_secs(30), child.wait())
-        .await
-        .unwrap()
-        .unwrap();
-    prepared.cleanup();
-    assert_eq!(status.code(), Some(0));
-    assert_eq!(fs::read_to_string(files.join("a.txt")).unwrap(), "alpha");
-    assert!(!files.join("new.txt").exists());
 }
 
 #[tokio::test]

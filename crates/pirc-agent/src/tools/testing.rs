@@ -38,7 +38,6 @@ pub fn config(workspace: &str, features: Value) -> AgentConfig {
         role_dirs: Vec::new(),
         system_prompt: Vec::new(),
         mode: pirc_protocol::mode::default_work(),
-        project_files: None,
     }
 }
 

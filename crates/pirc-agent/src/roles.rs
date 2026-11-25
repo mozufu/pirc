@@ -1,5 +1,5 @@
 //! Roles (`agent/roles.ts`): named presets an agent picks for a child or a
-//! delegation instead of a model. A role is a markdown file `<name>.md`
+//! session instead of a model. A role is a markdown file `<name>.md`
 //! with front matter (`description`, `model`, `thinking`, `tools`) and the
 //! role instructions as its body, read from the built-in `general`, then
 //! `$PIRC_CONFIG_DIR/roles/`, then the workspace's `.pirc/roles/`.

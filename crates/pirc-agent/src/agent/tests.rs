@@ -23,7 +23,6 @@ fn mode_agent_with_ui(
     let agent = Agent::new(AgentOptions {
         config,
         capabilities: Default::default(),
-        project_instructions: None,
         role: None,
         store,
         emit: Rc::new(|_| {}),
@@ -161,14 +160,11 @@ async fn mode_default_off_survives_malformed_feature_settings() {
 }
 
 #[test]
-fn default_chat_keeps_management_commands_while_hiding_default_off_tools() {
+fn mode_features_hide_default_off_tools_but_keep_management_commands() {
     let dir = tempfile::tempdir().unwrap();
-    let agent = mode_agent(
-        dir.path(),
-        pirc_protocol::mode::default_chat(),
-        json!({}),
-        None,
-    );
+    let mut mode = pirc_protocol::mode::default_work();
+    mode.features_off = vec!["todo".into(), "background".into()];
+    let agent = mode_agent(dir.path(), mode, json!({}), None);
     let commands = agent
         .features
         .iter()
@@ -202,7 +198,13 @@ fn mode_tool_registry_matches_actual_registered_operation_names() {
     names.extend(calendar::registered_tool_names());
     names.extend(web_search::registered_tool_names());
     names.extend(pot::registered_tool_names());
-    names.extend(assistant::registered_tool_names(&agent));
+    for name in [
+        assistant::NOTE_TOOL,
+        assistant::PROPOSE_TOOL,
+        assistant::SEARCH_TOOL,
+    ] {
+        names.insert(name.to_owned());
+    }
     let declared = pirc_protocol::mode::TOOL_NAMES
         .iter()
         .map(|name| (*name).to_owned())
@@ -496,7 +498,6 @@ async fn the_agent_loop_sees_block_snapshots_and_the_running_calls_waits() {
                 store: SessionStore::open(dir.path().join("session"), &workspace).unwrap(),
                 config,
                 capabilities: Default::default(),
-                project_instructions: None,
                 role: None,
                 emit: Rc::new(|_| {}),
                 ui: Rc::new(crate::tools::testing::TestUi::default()),
@@ -746,7 +747,6 @@ impl ScriptedRun {
             store: SessionStore::open(dir.join("session"), &workspace).unwrap(),
             config,
             capabilities: Default::default(),
-            project_instructions: None,
             role: None,
             emit,
             ui: self.ui.clone(),

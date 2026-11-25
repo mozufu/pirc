@@ -3,13 +3,8 @@
 
 use serde_json::{Map, Value, json};
 
-pub const CAPABILITY_NAMES: [&str; 5] = [
-    "delegation",
-    "memory_search",
-    "remote_recall",
-    "schedules",
-    "web_search",
-];
+pub const CAPABILITY_NAMES: [&str; 4] =
+    ["memory_search", "remote_recall", "schedules", "web_search"];
 
 /// `Capabilities`: every flag, `false` only when the gateway said so.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -75,7 +70,6 @@ impl Capabilities {
 /// `capabilityForTool`.
 pub fn capability_for_tool(name: &str) -> Option<&'static str> {
     match name {
-        "delegate" | "delegation_status" => Some("delegation"),
         "memory_search" => Some("memory_search"),
         "schedule" => Some("schedules"),
         "web_search" => Some("web_search"),
@@ -89,12 +83,12 @@ mod tests {
 
     #[test]
     fn missing_flags_allow() {
-        let caps = Capabilities::from_value(&json!({ "web_search": false, "delegation": "no" }));
+        let caps = Capabilities::from_value(&json!({ "web_search": false, "memory_search": "no" }));
         assert!(!caps.allows("web_search"));
-        assert!(caps.allows("delegation"));
+        assert!(caps.allows("memory_search"));
         assert_eq!(
             caps.to_value(),
-            json!({ "version": 1, "delegation": true, "memory_search": true,
+            json!({ "version": 1, "memory_search": true,
                 "remote_recall": true, "schedules": true, "web_search": false })
         );
         assert_eq!(capability_for_tool("schedule"), Some("schedules"));

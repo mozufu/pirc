@@ -17,7 +17,7 @@ CREATE TABLE workspace_policy_versions (
 CREATE VIEW current_workspace_policies AS SELECT v.* FROM workspace_policy_versions v
  WHERE revision=(SELECT MAX(revision) FROM workspace_policy_versions WHERE workspace_id=v.workspace_id);
 CREATE TRIGGER binding_workspace_policy_insert AFTER INSERT ON workspaces BEGIN
- INSERT INTO workspace_policy_versions VALUES(NEW.id,1,'{"version":1,"delegation":true,"memory_search":true,"remote_recall":true,"schedules":true,"web_search":true,"delegation_approval":"always"}');
+ INSERT INTO workspace_policy_versions VALUES(NEW.id,1,'{"version":1,"memory_search":true,"remote_recall":true,"schedules":true,"web_search":true}');
 END;
 CREATE TRIGGER binding_workspace_policy_changed AFTER INSERT ON workspace_policy_versions
  WHEN NEW.revision>1 BEGIN
@@ -35,8 +35,8 @@ CREATE TRIGGER binding_capabilities_update AFTER UPDATE ON workspace_capabilitie
 END;
 CREATE TRIGGER binding_capabilities_delete AFTER DELETE ON workspace_capabilities BEGIN
  INSERT INTO workspace_policy_versions
- SELECT OLD.workspace_id,revision+1,'{"version":1,"delegation":true,"memory_search":true,"remote_recall":true,"schedules":true,"web_search":true,"delegation_approval":"always"}' FROM current_workspace_policies
- WHERE workspace_id=OLD.workspace_id AND EXISTS(SELECT 1 FROM workspaces WHERE id=OLD.workspace_id) AND policy_json IS NOT '{"version":1,"delegation":true,"memory_search":true,"remote_recall":true,"schedules":true,"web_search":true,"delegation_approval":"always"}';
+ SELECT OLD.workspace_id,revision+1,'{"version":1,"memory_search":true,"remote_recall":true,"schedules":true,"web_search":true}' FROM current_workspace_policies
+ WHERE workspace_id=OLD.workspace_id AND EXISTS(SELECT 1 FROM workspaces WHERE id=OLD.workspace_id) AND policy_json IS NOT '{"version":1,"memory_search":true,"remote_recall":true,"schedules":true,"web_search":true}';
 END;
 CREATE TABLE conversation_project_memberships (
  session_id TEXT PRIMARY KEY REFERENCES sessions(id) ON DELETE CASCADE,
@@ -53,15 +53,13 @@ CREATE VIEW conversation_membership_targets AS
  SELECT b.session_id,b.legacy_workspace_id AS source_workspace_id,
  CASE WHEN state.initialized=0 THEN 'unresolved'
       WHEN mode.mode_json IS NULL THEN 'mode_unavailable'
-      WHEN json_extract(mode.mode_json,'$.projects')=1
-       AND substr(w.id,1,length(w.host_id)+1)=w.host_id||':'
-       AND substr(w.id,length(w.host_id)+2)!='chats' THEN 'member'
+      WHEN json_extract(mode.mode_json,'$.repository')=1
+       AND substr(w.id,1,length(w.host_id)+1)=w.host_id||':' THEN 'member'
       ELSE 'none' END AS resolution,
  CASE WHEN mode.mode_json IS NULL THEN
         CASE WHEN previous.source_workspace_id=b.legacy_workspace_id THEN previous.project_workspace_id ELSE NULL END
-      WHEN json_extract(mode.mode_json,'$.projects')=1
-       AND substr(w.id,1,length(w.host_id)+1)=w.host_id||':'
-       AND substr(w.id,length(w.host_id)+2)!='chats' THEN w.id
+      WHEN json_extract(mode.mode_json,'$.repository')=1
+       AND substr(w.id,1,length(w.host_id)+1)=w.host_id||':' THEN w.id
       ELSE NULL END AS project_workspace_id
  FROM conversation_bindings b JOIN workspaces w ON w.id=b.legacy_workspace_id
  CROSS JOIN binding_catalog_state state

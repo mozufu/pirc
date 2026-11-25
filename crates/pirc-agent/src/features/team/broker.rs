@@ -473,9 +473,6 @@ pub struct TeamOptions {
     /// The parent session's approval mode (`read-only`, `auto`,
     /// `full-access`), which children follow.
     pub approval_mode: Option<Rc<dyn Fn() -> String>>,
-    /// The parent chat's frozen project instructions, so children follow
-    /// them too.
-    pub instructions: Option<Rc<dyn Fn() -> Result<String, String>>>,
     /// Children write under the parent session's lease.
     pub acquire_write: Option<TeamAcquireWrite>,
     /// A child's sandbox request, passed on (`relaySandboxRequest`).
@@ -1080,12 +1077,6 @@ impl Team {
         }
         if let Some(mode) = &self.options.approval_mode {
             line.insert("approvalMode".to_owned(), json!(mode()));
-        }
-        if let Some(instructions) = &self.options.instructions {
-            let instructions = instructions()?;
-            if !instructions.is_empty() {
-                line.insert("instructions".to_owned(), json!(instructions));
-            }
         }
         let mut role = Json::new();
         role.insert("name".to_owned(), json!(member.kind));

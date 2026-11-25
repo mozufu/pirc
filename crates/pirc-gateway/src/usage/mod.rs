@@ -151,15 +151,6 @@ pub fn attribute(
         ("pot", Some(pot))
     } else if let Some(schedule) = schedule {
         ("schedule", Some(schedule))
-    } else if let Some(delegation) = conn
-        .query_row(
-            "SELECT id FROM delegations WHERE target_session_id=?1 ORDER BY created_at DESC LIMIT 1",
-            [&session],
-            |r| r.get::<_, String>(0),
-        )
-        .optional()?
-    {
-        ("delegation", Some(delegation))
     } else {
         ("user", owner.clone())
     };

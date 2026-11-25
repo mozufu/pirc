@@ -261,7 +261,7 @@ struct InternalInput {
     workspace_id: String,
 }
 
-/// An empty session the Gateway itself starts (delegations, schedule runs),
+/// An empty session the Gateway itself starts (schedule runs, pot wakes),
 /// with no first-message admission: the Gateway delivers its own message next.
 pub(crate) async fn internal(node: Node, request: Request) -> ApiResult<Response> {
     let input: InternalInput = request.parse_body()?;

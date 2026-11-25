@@ -132,7 +132,7 @@ pub fn truncate_output(text: &str, max_bytes: usize) -> (String, bool) {
 /// `render(report, attached, untrusted, declined, hooks)`: text for the
 /// model: the returned value, console output and, when needed, what ran.
 /// When the script read web pages or search results, or text other sessions
-/// or agents wrote (memory notes, delegated results, team messages), what it
+/// or agents wrote (memory notes, team messages), what it
 /// produced is fenced as untrusted, as those capabilities' own text is: the
 /// script may pass that content on in its typed fields.
 fn render(

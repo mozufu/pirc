@@ -52,6 +52,16 @@ fn workspace_bodies() {
     }
 }
 
+fn per_session_mode(id: &str) -> pirc_protocol::Mode {
+    let mut mode = pirc_protocol::mode::default_work();
+    mode.id = ModeId::new(id).unwrap();
+    mode.workdir = pirc_protocol::mode::Workdir::PerSession;
+    mode.repository = false;
+    mode.workspace_memory = false;
+    mode.project_config = false;
+    mode
+}
+
 fn request(id: Option<&str>, body: Value) -> Request {
     Request {
         method: pirc_protocol::HttpMethod::Post,
@@ -234,15 +244,16 @@ async fn workspace_removal_check_is_read_only_and_uses_authoritative_node_state(
 }
 
 #[tokio::test]
-async fn workspace_removal_check_rejects_chat_projects_and_missing_workspaces() {
-    use pirc_protocol::mode::{default_chat, default_work};
+async fn workspace_removal_check_rejects_per_session_workspaces_and_missing_ones() {
     let (_dir, node) = workspace_test_node().await;
-    let mut chat = default_chat();
-    chat.id = ModeId::new("review").unwrap();
-    node.replace_modes(vec![default_work(), chat]).await;
+    node.replace_modes(vec![
+        pirc_protocol::mode::default_work(),
+        per_session_mode("review"),
+    ])
+    .await;
     let created = create_workspace(
         node.clone(),
-        request(None, json!({ "mode":"review", "displayName":"Project" })),
+        request(None, json!({ "mode":"review", "displayName":"Review" })),
     )
     .await
     .unwrap();
@@ -257,16 +268,7 @@ async fn workspace_removal_check_rejects_chat_projects_and_missing_workspaces() 
             .status,
         400
     );
-    let mut scratch = default_chat();
-    scratch.id = ModeId::new("review").unwrap();
-    scratch.projects = false;
-    scratch.assistant = pirc_protocol::mode::AssistantAccess::User;
-    node.replace_modes(vec![default_work(), scratch]).await;
-    assert!(
-        workspace_removal_check(node.clone(), request(Some(&id), json!({})))
-            .await
-            .is_ok()
-    );
+    // A workspace whose mode is unavailable may still be cleaned up.
     node.replace_modes(Vec::new()).await;
     assert!(
         workspace_removal_check(node.clone(), request(Some(&id), json!({})))
@@ -509,7 +511,7 @@ async fn chat_role_accepting_only_custom_or_no_modes_does_not_seed_chat() {
 async fn custom_modes_create_by_workdir_and_unavailable_sessions_are_read_only() {
     use pirc_config::Env;
     use pirc_protocol::NodeRole;
-    use pirc_protocol::mode::{default_chat, default_work};
+    use pirc_protocol::mode::default_work;
 
     // Keep the inference Unix-socket pathname below macOS SUN_LEN.
     let dir = tempfile::tempdir_in("/tmp").unwrap();
@@ -550,8 +552,7 @@ async fn custom_modes_create_by_workdir_and_unavailable_sessions_are_read_only()
             .code,
         "mode_unavailable"
     );
-    let mut mode = default_chat();
-    mode.id = ModeId::new("research").unwrap();
+    let mode = per_session_mode("research");
     node.replace_modes(vec![mode]).await;
     // A per-session mode works on a normal node, not only the chat role.
     let response = create_workspace(node.clone(), create()).await.unwrap();
@@ -611,9 +612,7 @@ async fn custom_modes_create_by_workdir_and_unavailable_sessions_are_read_only()
             .status,
         200
     );
-    let mut restored = default_chat();
-    restored.id = ModeId::new("research").unwrap();
-    node.replace_modes(vec![restored]).await;
+    node.replace_modes(vec![per_session_mode("research")]).await;
     // Conversely a saved repository must never become a full assistant
     // root merely because its mode file now uses per-session workdirs.
     assert_eq!(
@@ -624,13 +623,6 @@ async fn custom_modes_create_by_workdir_and_unavailable_sessions_are_read_only()
         .await
         .unwrap_err()
         .code,
-        "mode_unavailable"
-    );
-    assert_eq!(
-        read_instructions(node.clone(), request(Some(&repository_id), json!({})))
-            .await
-            .unwrap_err()
-            .code,
         "mode_unavailable"
     );
     node.replace_modes(Vec::new()).await;

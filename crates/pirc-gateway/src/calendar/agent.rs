@@ -413,7 +413,7 @@ fn propose(app: &AppState, context: &OpContext, draft: ProposalDraft<'_>) -> Api
     let request_hash = payload_hash(&request);
     let now = now_ms();
     sweep_expired(app, now)?;
-    let expires_at = now.saturating_add(app.config.delegation_ttl_ms as i64);
+    let expires_at = now.saturating_add(app.config.proposal_ttl_ms as i64);
     let proposal = {
         let conn = app.db.lock();
         require_propose(&conn, &context.user)?;

@@ -9,7 +9,7 @@
 //! runner code against. srt's settings (`srtSettings`) are rendered by the
 //! node's srt backend (`pirc_node::sandbox::srt`).
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
@@ -731,47 +731,6 @@ pub fn deny_write_around(dir: &str, keep: &[String]) -> Vec<String> {
         .collect()
 }
 
-const PROMPT_LINKS_ERROR: &str = "Cannot safely resolve prompt configuration symlinks";
-
-/// `promptWritePaths`: `file` and, through every symlink on its way (even
-/// a dangling one), where writes to it would land, so those stay
-/// protected. Errors other than a missing component fail the policy, as
-/// TS threw them (with Rust's texts).
-fn prompt_write_paths(file: &str, seen: &mut Vec<String>) -> Result<Vec<String>, String> {
-    let absolute = absolute(file);
-    if seen.contains(&absolute) || seen.len() >= 40 {
-        return Err(PROMPT_LINKS_ERROR.to_owned());
-    }
-    seen.push(absolute.clone());
-    let parts: Vec<&str> = absolute
-        .split('/')
-        .filter(|part| !part.is_empty())
-        .collect();
-    let mut cursor = PathBuf::from("/");
-    for (index, part) in parts.iter().enumerate() {
-        cursor.push(part);
-        match std::fs::symlink_metadata(&cursor) {
-            Ok(meta) if meta.file_type().is_symlink() => {
-                let link = std::fs::read_link(&cursor).map_err(|error| error.to_string())?;
-                let parent = cursor
-                    .parent()
-                    .map_or_else(|| "/".to_owned(), |p| p.display().to_string());
-                let target = resolve_path(
-                    &resolve_path(&parent, &link.to_string_lossy()),
-                    &parts[index + 1..].join("/"),
-                );
-                let mut out = vec![absolute];
-                out.extend(prompt_write_paths(&target, seen)?);
-                return Ok(out);
-            }
-            Ok(_) => {}
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => break,
-            Err(error) => return Err(error.to_string()),
-        }
-    }
-    Ok(vec![absolute])
-}
-
 /// What resolving a path crosses ([`walk_links`]).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct LinkWalk {
@@ -1074,13 +1033,6 @@ pub fn session_policy(input: &SessionPolicyInput) -> Result<SessionPolicy, Strin
         .chain(memory_file.iter().cloned())
         .chain(private_tmp_dirs.iter().cloned())
         .collect();
-    let mut prompt_paths = Vec::new();
-    for name in ["SOUL.md", "CHAT.md"] {
-        prompt_paths.extend(prompt_write_paths(
-            &join(&input.config_dir, name),
-            &mut Vec::new(),
-        )?);
-    }
     let mode_paths = mode_write_paths(&input.config_dir)?;
     let git_dir = Path::new(&workspace).join(".git").is_dir();
     let paths = PathPolicy {
@@ -1131,7 +1083,6 @@ pub fn session_policy(input: &SessionPolicyInput) -> Result<SessionPolicy, Strin
                 // User-managed global configuration stays read-only even under
                 // an allowed root.
                 .chain([real_resolve(&input.config_dir)])
-                .chain(prompt_paths)
                 .chain(mode_paths.iter().cloned())
                 .chain(resolve_all(&input.protected_paths))
                 .chain(sensitive)

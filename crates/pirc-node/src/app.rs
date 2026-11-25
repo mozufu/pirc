@@ -1,14 +1,12 @@
 //! The node's own routes (`node/app.ts`, all but the panels'). Owner:
 //! **core**.
 //!
-//! - Workspaces: `POST /api/workspaces` (chat projects on the chat node,
-//!   directories under `$HOME` elsewhere, never around the node's state or
-//!   a credential store), `DELETE /api/workspaces/:id` (chat projects only,
-//!   fenced, idempotent), `GET`/`PATCH /api/workspaces/:id/instructions`,
-//!   `GET`/`POST`/`DELETE /api/workspaces/:id/files` (`project_files`),
+//! - Workspaces: `POST /api/workspaces` (per-session workspaces on the chat
+//!   node, directories under `$HOME` elsewhere, never around the node's
+//!   state or a credential store),
+//!   `GET /api/workspaces/:id/removal-check`,
 //!   `GET /api/workspaces/:id/project-config`,
-//!   `POST /api/workspaces/:id/project-trust`; on the chat node
-//!   `GET /api/assistant/prompts`, `PUT /api/assistant/prompts/:name`.
+//!   `POST /api/workspaces/:id/project-trust`.
 //! - Sessions: `POST /api/sessions`, `DELETE /api/sessions/:id` (chat
 //!   only, fenced, idempotent), `PATCH /api/sessions/:id` (rename),
 //!   `GET /api/sessions/:id/snapshot`, `POST /api/sessions/:id/deliver`,
@@ -39,10 +37,8 @@ use pirc_config::NodeConfig;
 use pirc_protocol::mode::{ModeId, Workdir};
 use serde_json::{Map, Value, json};
 
-use crate::assistant_prompts::{self, PromptName};
 use crate::chat;
 use crate::error::{ApiError, ApiResult};
-use crate::project_files;
 use crate::router::{Body, Request, Response, Route, delete, get, parse, patch, post, put};
 use crate::runner::{CommandPayload, Delivery};
 use crate::services::Node;
@@ -51,22 +47,12 @@ use crate::store::{
 };
 use crate::util::{head16, hex, payload_hash, prefix_uuid, random_bytes, sha256_hex};
 
-/// Core's routes for this node's role (the assistant prompt routes exist on
-/// the chat node only).
-pub fn routes(config: &NodeConfig) -> Vec<Route> {
+/// Core's routes for this node's role.
+pub fn routes(_config: &NodeConfig) -> Vec<Route> {
     let deletions = Arc::new(Deletions::default());
-    let mut routes = vec![
+    let routes = vec![
         post("/api/workspaces", create_workspace),
         get("/api/workspaces/:id/removal-check", workspace_removal_check),
-        delete("/api/workspaces/:id", {
-            let deletions = deletions.clone();
-            move |node, request| delete_workspace(node, request, deletions.clone())
-        }),
-        get("/api/workspaces/:id/instructions", read_instructions),
-        patch("/api/workspaces/:id/instructions", write_instructions),
-        get("/api/workspaces/:id/files", list_project_files),
-        post("/api/workspaces/:id/files", upload_project_file),
-        delete("/api/workspaces/:id/files", remove_project_file),
         get("/api/workspaces/:id/project-config", project_config),
         post("/api/workspaces/:id/project-trust", project_trust),
         get(
@@ -202,20 +188,12 @@ pub fn routes(config: &NodeConfig) -> Vec<Route> {
             "/api/sessions/:id/interactions/:interactionId/answer",
             answer,
         ),
-        post(
-            "/api/sessions/:id/interactions/:interactionId/relayed-answer",
-            relayed_answer,
-        ),
         post("/api/sessions/:id/uploads", upload),
         get(
             "/api/sessions/:id/uploads/:uploadId/reference",
             crate::upload_origins::get_reference,
         ),
     ];
-    if config.chat() {
-        routes.push(get("/api/assistant/prompts", read_prompts));
-        routes.push(put("/api/assistant/prompts/:name", write_prompt));
-    }
     routes
 }
 
@@ -511,7 +489,7 @@ async fn create_workspace(node: Node, request: Request) -> ApiResult<Response> {
             )?
         }
     };
-    // Its roles, as registration reports them, for delegations.
+    // Its roles, as registration reports them.
     let mut body = serde_json::to_value(&workspace).unwrap_or_default();
     let details = crate::link::workspace_details(&node, vec![Some(canonical)]).await;
     if let Some((roles, repo)) = details.into_iter().next() {
@@ -530,13 +508,12 @@ async fn create_workspace(node: Node, request: Request) -> ApiResult<Response> {
 async fn workspace_removal_check(node: Node, request: Request) -> ApiResult<Response> {
     let db = node.db.lock();
     let workspace = db.get_workspace(param(&request, "id"))?;
-    let mode = node.mode(&workspace.mode).ok();
-    if workspace.id == "chats"
-        || workspace.mode.as_str() == "chat"
-        || mode.is_some_and(|mode| mode.projects || mode.full_assistant())
+    if node
+        .mode(&workspace.mode)
+        .is_ok_and(|mode| mode.workdir != Workdir::Workspace)
     {
         return Err(ApiError::bad_request(
-            "Only Work workspaces can be removed; chat projects use Delete project",
+            "Only repository workspaces can be removed",
         ));
     }
     let other: bool = db.query_row(
@@ -561,7 +538,7 @@ async fn workspace_removal_check(node: Node, request: Request) -> ApiResult<Resp
         })
     {
         return Err(ApiError::conflict(
-            "Stop active sessions and delegations before removing this workspace",
+            "Stop active sessions before removing this workspace",
         ));
     }
     crate::host_commands::resources::require_available(
@@ -571,248 +548,6 @@ async fn workspace_removal_check(node: Node, request: Request) -> ApiResult<Resp
     )?;
     Ok(Response::json(json!({ "idle": true })))
 }
-
-/// `chatProject`: the workspace, which must be a chat project.
-fn chat_project(node: &Node, request: &Request) -> ApiResult<Workspace> {
-    let workspace = node.db.lock().get_workspace(param(request, "id"))?;
-    if !node.workspace_mode(&workspace)?.project_instructions {
-        return Err(ApiError::bad_request(
-            "Only chat projects have instructions",
-        ));
-    }
-    Ok(workspace)
-}
-
-fn instructions(text: String) -> ApiResult<Response> {
-    Ok(Response::json(json!({
-        "instructions": { "text": text, "maxChars": chat::INSTRUCTIONS_MAX_CHARS }
-    })))
-}
-
-async fn read_instructions(node: Node, request: Request) -> ApiResult<Response> {
-    let workspace = chat_project(&node, &request)?;
-    let mode = node.workspace_mode(&workspace)?;
-    instructions(chat::read_project_instructions(&workspace, &mode))
-}
-
-/// `{text: string}`, strict.
-fn text_body(body: &Value) -> ApiResult<String> {
-    let map = object(body)?;
-    strict(map, &["text"])?;
-    map.get("text")
-        .and_then(Value::as_str)
-        .map(str::to_owned)
-        .ok_or_else(ApiError::invalid_input)
-}
-
-async fn write_instructions(node: Node, request: Request) -> ApiResult<Response> {
-    let workspace = chat_project(&node, &request)?;
-    let text = text_body(request.json())?;
-    let mode = node.workspace_mode(&workspace)?;
-    instructions(chat::write_project_instructions(&workspace, &text, &mode)?)
-}
-
-fn project_files_body(node: &Node, workspace: &Workspace) -> ApiResult<Value> {
-    let mode = node.workspace_mode(workspace)?;
-    let files: Vec<Value> = project_files::list(workspace, &mode)?
-        .iter()
-        .map(project_files::ProjectFile::json)
-        .collect();
-    Ok(json!({
-        "files": files,
-        "maxFiles": project_files::MAX_FILES,
-        "maxBytes": node.config.upload_max_bytes,
-    }))
-}
-
-/// `GET /api/workspaces/:id/files`: the project's files, by name.
-async fn list_project_files(node: Node, request: Request) -> ApiResult<Response> {
-    let workspace = node.db.lock().get_workspace(param(&request, "id"))?;
-    Ok(Response::json(project_files_body(&node, &workspace)?))
-}
-
-/// `POST /api/workspaces/:id/files?filename=…`, raw bytes: add or replace
-/// one file.
-async fn upload_project_file(node: Node, request: Request) -> ApiResult<Response> {
-    let workspace = node.db.lock().get_workspace(param(&request, "id"))?;
-    let Body::Raw { bytes, .. } = &request.body else {
-        return Err(ApiError::bad_request("Upload body must be raw bytes"));
-    };
-    if bytes.is_empty() || bytes.len() > node.config.upload_max_bytes {
-        return Err(ApiError::new(
-            413,
-            "payload_too_large",
-            "Upload exceeds configured limit",
-        ));
-    }
-    let query = request.query_object();
-    let filename = string(object(&query)?, "filename", false, 1, 1000)?;
-    let mode = node.workspace_mode(&workspace)?;
-    let file = project_files::write(&workspace, &filename, bytes, &mode)?;
-    // The project may have been fenced for deletion while the bytes were
-    // written: keep nothing then (its deletion removes the directory too).
-    if let Err(error) = node.db.lock().get_workspace(&workspace.id) {
-        if let Some(dir) = project_files::files_dir(&workspace, &mode) {
-            let _ = std::fs::remove_dir_all(dir);
-        }
-        return Err(error);
-    }
-    created(json!({ "file": file.json() }))
-}
-
-/// `DELETE /api/workspaces/:id/files?name=…`.
-async fn remove_project_file(node: Node, request: Request) -> ApiResult<Response> {
-    let workspace = node.db.lock().get_workspace(param(&request, "id"))?;
-    let query = request.query_object();
-    let name = string(object(&query)?, "name", false, 1, 1000)?;
-    let mode = node.workspace_mode(&workspace)?;
-    project_files::remove(&workspace, &name, &mode)?;
-    Ok(Response::empty(204))
-}
-
-/// `directoryWorkspace`: the workspace, which must be a directory.
-fn directory_workspace(node: &Node, request: &Request) -> ApiResult<Workspace> {
-    let workspace = node.db.lock().get_workspace(param(request, "id"))?;
-    if !node.workspace_mode(&workspace)?.project_config {
-        return Err(ApiError::bad_request(
-            "Only directory workspaces have a project config",
-        ));
-    }
-    Ok(workspace)
-}
-
-/// `projectSummary`: the project config's trust-relevant fields, their
-/// hash and whether the user trusted exactly them; or the config's error.
-fn project_summary(node: &Node, workspace: &Workspace) -> ApiResult<Map<String, Value>> {
-    use pirc_agent::config as agent;
-    let trusted_hash = node.db.lock().get_workspace_trust(&workspace.id)?;
-    let mut summary = Map::new();
-    match agent::read_project_config(&workspace.canonical_path) {
-        Ok(project) => {
-            let fields = agent::project_trust_fields(&project);
-            let hash = agent::project_trust_hash(&fields);
-            summary.insert("hooks".into(), fields.hooks.to_value());
-            summary.insert(
-                "env".into(),
-                Value::Object(
-                    fields
-                        .env
-                        .iter()
-                        .map(|(key, value)| (key.clone(), Value::from(value.as_str())))
-                        .collect(),
-                ),
-            );
-            summary.insert(
-                "allowedPaths".into(),
-                Value::from(fields.allowed_paths.clone()),
-            );
-            summary.insert(
-                "defaultModel".into(),
-                fields
-                    .default_model
-                    .as_ref()
-                    .map_or(Value::Null, |model| json!(model)),
-            );
-            summary.insert("hash".into(), Value::from(hash.as_str()));
-            summary.insert("trustedHash".into(), json!(trusted_hash));
-            summary.insert(
-                "trusted".into(),
-                Value::Bool(trusted_hash.as_deref() == Some(hash.as_str())),
-            );
-            summary.insert(
-                "empty".into(),
-                Value::Bool(agent::project_trust_empty(&fields)),
-            );
-        }
-        Err(error) => {
-            summary.insert("error".into(), Value::from(head16(&error, 2000)));
-            summary.insert("hash".into(), Value::Null);
-            summary.insert("trustedHash".into(), json!(trusted_hash));
-            summary.insert("trusted".into(), Value::Bool(false));
-            summary.insert("empty".into(), Value::Bool(true));
-        }
-    }
-    Ok(summary)
-}
-
-async fn project_config(node: Node, request: Request) -> ApiResult<Response> {
-    let workspace = directory_workspace(&node, &request)?;
-    Ok(Response::json(
-        json!({ "project": project_summary(&node, &workspace)? }),
-    ))
-}
-
-async fn project_trust(node: Node, request: Request) -> ApiResult<Response> {
-    let workspace = directory_workspace(&node, &request)?;
-    // `{trusted: true, hash: string}` or `{trusted: false}`, both strict.
-    let map = object(request.json())?;
-    let hash = match map.get("trusted") {
-        Some(Value::Bool(true)) => {
-            strict(map, &["trusted", "hash"])?;
-            Some(
-                map.get("hash")
-                    .and_then(Value::as_str)
-                    .ok_or_else(ApiError::invalid_input)?
-                    .to_owned(),
-            )
-        }
-        Some(Value::Bool(false)) => {
-            strict(map, &["trusted"])?;
-            None
-        }
-        _ => return Err(ApiError::invalid_input()),
-    };
-    let Some(hash) = hash else {
-        node.db
-            .lock()
-            .set_workspace_trust(&workspace.id, None, &request.user)?;
-        return Ok(Response::json(
-            json!({ "project": project_summary(&node, &workspace)? }),
-        ));
-    };
-    let Some(hash) = pirc_agent::config::parse_trust_hash(Some(&hash)) else {
-        return Err(ApiError::bad_request("hash must be a sha256 hex digest"));
-    };
-    let current = project_summary(&node, &workspace)?;
-    if let Some(error) = current.get("error").and_then(Value::as_str) {
-        return Err(ApiError::bad_request(format!(
-            "The project config is invalid: {error}"
-        )));
-    }
-    // Trust only what the user reviewed: the config may have changed since.
-    if current.get("hash").and_then(Value::as_str) != Some(hash.as_str()) {
-        return Err(ApiError::conflict(
-            "The project config changed since it was shown; review it again before trusting it",
-        ));
-    }
-    node.db
-        .lock()
-        .set_workspace_trust(&workspace.id, Some(&hash), &request.user)?;
-    Ok(Response::json(
-        json!({ "project": project_summary(&node, &workspace)? }),
-    ))
-}
-
-async fn read_prompts(node: Node, _request: Request) -> ApiResult<Response> {
-    let dir = &node.config.config_dir;
-    Ok(Response::json(json!({
-        "soul": assistant_prompts::inspect(dir, PromptName::Soul),
-        "chat": assistant_prompts::inspect(dir, PromptName::Chat),
-    })))
-}
-
-async fn write_prompt(node: Node, request: Request) -> ApiResult<Response> {
-    let name = match param(&request, "name") {
-        "soul" => PromptName::Soul,
-        "chat" => PromptName::Chat,
-        _ => return Err(ApiError::invalid_input()),
-    };
-    let text = text_body(request.json())?;
-    let prompt = assistant_prompts::write(&node.config.config_dir, name, &text)?;
-    Ok(Response::json(json!({ "prompt": prompt })))
-}
-
-// ---------- sessions ----------
 
 type Deletion = Shared<BoxFuture<'static, ApiResult<()>>>;
 
@@ -975,66 +710,6 @@ fn remove_tree(path: &Path) -> ApiResult<()> {
     }
 }
 
-/// Delete a chat project: every chat in it (as [`delete_session`] does),
-/// the uploads made in it, its browser profile, its directory
-/// (instructions included) and its row. Fenced first, so a retry after a
-/// failure or a restart finishes the same cleanup; the fenced project is
-/// no longer announced to the gateway.
-async fn delete_workspace(
-    node: Node,
-    request: Request,
-    deletions: Arc<Deletions>,
-) -> ApiResult<Response> {
-    let workspace_id = param(&request, "id").to_owned();
-    let user = request.user.clone();
-    let workspace = {
-        let db = node.db.lock();
-        if let Some(deletion) = db.workspace_deletion(&workspace_id)? {
-            if deletion.owner_user != user {
-                return Err(ApiError::forbidden("Project belongs to another user"));
-            }
-            if deletion.status == DeletionStatus::Deleted {
-                return Ok(Response::empty(204));
-            }
-        }
-        let workspace = db
-            .find_workspace(&workspace_id)?
-            .ok_or_else(|| ApiError::not_found("Workspace not found"))?;
-        if !node.workspace_mode(&workspace)?.projects
-            || workspace.id == pirc_config::CHAT_WORKSPACE_ID
-        {
-            return Err(ApiError::bad_request("Only chat projects can be deleted"));
-        }
-        db.begin_workspace_deletion(&workspace_id, &user)?;
-        workspace
-    };
-    let key = format!("workspace:{workspace_id}");
-    let task = {
-        let mut running = deletions.0.lock().unwrap_or_else(|p| p.into_inner());
-        running
-            .entry(key.clone())
-            .or_insert_with(|| {
-                let handle = tokio::spawn({
-                    let node = node.clone();
-                    let deletions = deletions.clone();
-                    async move {
-                        let _entry = DeletionEntry {
-                            deletions,
-                            session_id: key,
-                        };
-                        remove_project(&node, &workspace).await
-                    }
-                });
-                async move { handle.await.unwrap_or_else(|_| Err(ApiError::internal())) }
-                    .boxed()
-                    .shared()
-            })
-            .clone()
-    };
-    task.await?;
-    Ok(Response::empty(204))
-}
-
 /// An upload's storage name as the node makes them: `<48 hex>.bin`.
 pub(crate) fn storage_name(name: &str) -> bool {
     name.strip_suffix(".bin").is_some_and(|stem| {
@@ -1045,52 +720,127 @@ pub(crate) fn storage_name(name: &str) -> bool {
     })
 }
 
-async fn remove_project(node: &Node, workspace: &Workspace) -> ApiResult<()> {
-    // Checked before anything goes: only the directory the node allocated,
-    // `<state>/chat/<id>`, and only a non-empty id.
-    let directory = Path::new(&workspace.canonical_path);
-    let chat_root = node.config.state_dir.join("chat");
-    let chat_root = chat_root.canonicalize().unwrap_or(chat_root);
-    if workspace.id.is_empty()
-        || directory.parent() != Some(chat_root.as_path())
-        || directory.file_name() != Some(std::ffi::OsStr::new(&workspace.id))
-    {
-        crate::log::error(&format!(
-            "deleting workspace {}: unexpected directory {}",
-            workspace.id,
-            directory.display()
+/// `directoryWorkspace`: the workspace, which must be a directory.
+fn directory_workspace(node: &Node, request: &Request) -> ApiResult<Workspace> {
+    let workspace = node.db.lock().get_workspace(param(request, "id"))?;
+    if !node.workspace_mode(&workspace)?.project_config {
+        return Err(ApiError::bad_request(
+            "Only directory workspaces have a project config",
         ));
-        return Err(ApiError::internal());
     }
-    let user = node
-        .db
-        .lock()
-        .workspace_deletion(&workspace.id)?
-        .map(|deletion| deletion.owner_user)
-        .ok_or_else(ApiError::internal)?;
-    let sessions = node.db.lock().workspace_sessions(&workspace.id)?;
-    for session in sessions {
-        node.db.lock().begin_session_deletion(&session.id, &user)?;
-        remove_session(node, &session, workspace).await?;
-    }
-    let uploads = node.db.lock().workspace_uploads(&workspace.id)?;
-    for upload in uploads {
-        if !storage_name(&upload.storage_name) {
-            crate::log::error(&format!("upload {}: invalid storage name", upload.id));
-            return Err(ApiError::internal());
+    Ok(workspace)
+}
+
+/// `projectSummary`: the project config's trust-relevant fields, their
+/// hash and whether the user trusted exactly them; or the config's error.
+fn project_summary(node: &Node, workspace: &Workspace) -> ApiResult<Map<String, Value>> {
+    use pirc_agent::config as agent;
+    let trusted_hash = node.db.lock().get_workspace_trust(&workspace.id)?;
+    let mut summary = Map::new();
+    match agent::read_project_config(&workspace.canonical_path) {
+        Ok(project) => {
+            let fields = agent::project_trust_fields(&project);
+            let hash = agent::project_trust_hash(&fields);
+            summary.insert("hooks".into(), fields.hooks.to_value());
+            summary.insert(
+                "env".into(),
+                Value::Object(
+                    fields
+                        .env
+                        .iter()
+                        .map(|(key, value)| (key.clone(), Value::from(value.as_str())))
+                        .collect(),
+                ),
+            );
+            summary.insert(
+                "allowedPaths".into(),
+                Value::from(fields.allowed_paths.clone()),
+            );
+            summary.insert(
+                "defaultModel".into(),
+                fields
+                    .default_model
+                    .as_ref()
+                    .map_or(Value::Null, |model| json!(model)),
+            );
+            summary.insert("hash".into(), Value::from(hash.as_str()));
+            summary.insert("trustedHash".into(), json!(trusted_hash));
+            summary.insert(
+                "trusted".into(),
+                Value::Bool(trusted_hash.as_deref() == Some(hash.as_str())),
+            );
+            summary.insert(
+                "empty".into(),
+                Value::Bool(agent::project_trust_empty(&fields)),
+            );
         }
-        remove_tree(&node.config.uploads_dir.join(&upload.storage_name))?;
+        Err(error) => {
+            summary.insert("error".into(), Value::from(head16(&error, 2000)));
+            summary.insert("hash".into(), Value::Null);
+            summary.insert("trustedHash".into(), json!(trusted_hash));
+            summary.insert("trusted".into(), Value::Bool(false));
+            summary.insert("empty".into(), Value::Bool(true));
+        }
     }
-    remove_tree(
-        &node
-            .config
-            .browser
-            .profiles_dir
-            .join(crate::browser::manager::profile_name(&workspace.id)),
-    )?;
-    remove_tree(directory)?;
-    node.db.lock().finish_workspace_deletion(&workspace.id)?;
-    Ok(())
+    Ok(summary)
+}
+
+async fn project_config(node: Node, request: Request) -> ApiResult<Response> {
+    let workspace = directory_workspace(&node, &request)?;
+    Ok(Response::json(
+        json!({ "project": project_summary(&node, &workspace)? }),
+    ))
+}
+
+async fn project_trust(node: Node, request: Request) -> ApiResult<Response> {
+    let workspace = directory_workspace(&node, &request)?;
+    // `{trusted: true, hash: string}` or `{trusted: false}`, both strict.
+    let map = object(request.json())?;
+    let hash = match map.get("trusted") {
+        Some(Value::Bool(true)) => {
+            strict(map, &["trusted", "hash"])?;
+            Some(
+                map.get("hash")
+                    .and_then(Value::as_str)
+                    .ok_or_else(ApiError::invalid_input)?
+                    .to_owned(),
+            )
+        }
+        Some(Value::Bool(false)) => {
+            strict(map, &["trusted"])?;
+            None
+        }
+        _ => return Err(ApiError::invalid_input()),
+    };
+    let Some(hash) = hash else {
+        node.db
+            .lock()
+            .set_workspace_trust(&workspace.id, None, &request.user)?;
+        return Ok(Response::json(
+            json!({ "project": project_summary(&node, &workspace)? }),
+        ));
+    };
+    let Some(hash) = pirc_agent::config::parse_trust_hash(Some(&hash)) else {
+        return Err(ApiError::bad_request("hash must be a sha256 hex digest"));
+    };
+    let current = project_summary(&node, &workspace)?;
+    if let Some(error) = current.get("error").and_then(Value::as_str) {
+        return Err(ApiError::bad_request(format!(
+            "The project config is invalid: {error}"
+        )));
+    }
+    // Trust only what the user reviewed: the config may have changed since.
+    if current.get("hash").and_then(Value::as_str) != Some(hash.as_str()) {
+        return Err(ApiError::conflict(
+            "The project config changed since it was shown; review it again before trusting it",
+        ));
+    }
+    node.db
+        .lock()
+        .set_workspace_trust(&workspace.id, Some(&hash), &request.user)?;
+    Ok(Response::json(
+        json!({ "project": project_summary(&node, &workspace)? }),
+    ))
 }
 
 async fn rename_session(node: Node, request: Request) -> ApiResult<Response> {
@@ -1270,14 +1020,8 @@ fn delivery(body: &Value) -> ApiResult<Delivery> {
             && role.len() <= 40
             && chars.all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_' || c == '-')
     });
-    let ok = [
-        "assistant-delegation",
-        "assistant-delegation-update",
-        "scheduled-run",
-        "pot-wake",
-        "pot-instruction",
-    ]
-    .contains(&delivery.custom_type.as_str())
+    let ok = ["scheduled-run", "pot-wake", "pot-instruction"]
+        .contains(&delivery.custom_type.as_str())
         && (1..=100_000).contains(&length(&delivery.content))
         && role_ok
         && delivery
@@ -1294,8 +1038,8 @@ fn delivery(body: &Value) -> ApiResult<Delivery> {
     Ok(delivery)
 }
 
-/// The gateway pushes a message into a session: a delegated task, or news
-/// of one. No control lease is needed or taken.
+/// The gateway pushes a message into a session. No control lease is
+/// needed or taken.
 async fn deliver(node: Node, request: Request) -> ApiResult<Response> {
     let session = claim_mutable(&node, &request)?;
     let body = delivery(request.json())?;
@@ -1692,22 +1436,6 @@ async fn answer(node: Node, request: Request) -> ApiResult<Response> {
     node.db
         .lock()
         .validate_lease(&session.id, &client_id, generation)?;
-    answer_interaction(&node, &session, &interaction_id, answer).await
-}
-
-/// The gateway relays the session owner's answer from the chat that
-/// delegated this session's task, without a control lease (the gateway
-/// checks the user and the delegation; docs/architecture/security-decisions.md).
-/// Only a confirmation's yes or no.
-async fn relayed_answer(node: Node, request: Request) -> ApiResult<Response> {
-    let session = claim_mutable(&node, &request)?;
-    let interaction_id = param(&request, "interactionId").to_owned();
-    let map = object(request.json())?;
-    let answer = interaction_answer(map.get("answer").unwrap_or(&Value::Null))?;
-    let confirm = node.db.lock().get_interaction(&interaction_id)?.kind == "confirm";
-    if !confirm || !answer.get("confirmed").is_some_and(Value::is_boolean) {
-        return Err(ApiError::invalid_input());
-    }
     answer_interaction(&node, &session, &interaction_id, answer).await
 }
 

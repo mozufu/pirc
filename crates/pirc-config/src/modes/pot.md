@@ -12,18 +12,13 @@ features_on: []
 # null allows the node's normal tools; [] allows none.
 tools: null
 assistant: user
-delegate: false
-delegate_target: false
 schedule_scope: own
-project_instructions: false
-project_files: false
 project_config: false
 workspace_memory: false
 repository: false
 recap: false
 # Deleting a pot deletes its session; a pot whose session is gone gets a new one.
 delete_sessions: true
-projects: false
 # The Gateway supplies the pot's identity and handles its messages.
 pot: true
 ---

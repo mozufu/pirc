@@ -69,7 +69,7 @@ pub fn start(app: &AppState) {
     tick(app);
 
     tokio::spawn(run_timer(app.clone(), runtime.clone()));
-    let period = Duration::from_millis(app.config.delegation_ttl_ms.clamp(50, 30_000));
+    let period = Duration::from_millis(app.config.proposal_ttl_ms.clamp(50, 30_000));
     let sweeper = app.clone();
     tokio::spawn(async move {
         let mut interval = tokio::time::interval_at(tokio::time::Instant::now() + period, period);

@@ -87,12 +87,11 @@ fn string(arg: &Option<Arg>) -> Option<&str> {
 }
 
 /// The `configure` line: the public catalog with the node's inference
-/// transport, the chat policy, project instructions and a role.
+/// transport, the chat policy and a role.
 pub struct Configure {
     pub models: Models,
     pub persistence: Option<pirc_protocol::InferenceConfig>,
     pub capabilities: Capabilities,
-    pub instructions: Option<String>,
     pub role: Option<AgentRole>,
     /// A team child follows its parent session's approval mode.
     pub approval_mode: Option<crate::auto_mode::ApprovalMode>,
@@ -128,10 +127,6 @@ pub fn parse_configure(message: &Value) -> Result<Configure, String> {
     let models = crate::remote::parse_models(&models)?;
     let capabilities =
         Capabilities::from_value(message.get("capabilities").unwrap_or(&Value::Null));
-    let instructions = message
-        .get("instructions")
-        .and_then(Value::as_str)
-        .map(str::to_owned);
     let role = message.get("role").and_then(|role| {
         let name = role.get("name")?.as_str()?;
         Some(AgentRole {
@@ -166,7 +161,6 @@ pub fn parse_configure(message: &Value) -> Result<Configure, String> {
         models,
         persistence,
         capabilities,
-        instructions,
         role,
         approval_mode,
     })
@@ -287,7 +281,6 @@ async fn main(args: Vec<String>) -> Result<(), String> {
     let agent = Agent::new(AgentOptions {
         config,
         capabilities: configured.capabilities,
-        project_instructions: configured.instructions.filter(|text| !text.is_empty()),
         role: configured.role,
         store,
         emit: write.clone(),
@@ -491,12 +484,11 @@ mod tests {
     #[test]
     fn reads_the_configure_message() {
         let configure = parse_configure(&json!({ "type": "configure",
-            "capabilities": { "web_search": false }, "instructions": "Be brief",
+            "capabilities": { "web_search": false },
             "role": { "name": "reviewer", "instructions": 3, "models": ["a/*", 1, "b/c"] } }))
         .unwrap();
         assert!(configure.models.providers.is_empty());
         assert!(!configure.capabilities.allows("web_search"));
-        assert_eq!(configure.instructions.as_deref(), Some("Be brief"));
         assert_eq!(
             configure.role,
             Some(AgentRole {

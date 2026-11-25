@@ -1,9 +1,9 @@
 //! The `schedule.*` operations agents ask for (`daemon/agent-ops.ts`).
 //!
-//! Where a session's agent may schedule (docs/guides/schedules.md): an
-//! assistant chat in its own chat or any directory workspace it may
-//! delegate to; any other session only in its own workspace. A scheduled
-//! run may not start more work: no new schedules, resumes or runs from it.
+//! Where a session's agent may schedule (docs/guides/schedules.md): a mode
+//! with `schedule_scope: any` in any directory workspace; any other
+//! session only in its own workspace. A scheduled run may not start more
+//! work: no new schedules, resumes or runs from it.
 
 use rusqlite::Connection;
 use serde_json::{Value, json};

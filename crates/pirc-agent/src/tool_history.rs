@@ -8,8 +8,10 @@ use std::collections::{HashMap, HashSet};
 
 pub fn task_start(message: &Message) -> bool {
     matches!(message, Message::User { .. })
-        || matches!(message, Message::Custom {custom_type,..}
-            if matches!(custom_type.as_str(), "assistant-delegation" | "scheduled-run"))
+        || matches!(
+            message,
+            Message::Custom { custom_type, .. } if custom_type == "scheduled-run"
+        )
 }
 /// Calls are identified by their occurrence, because providers may reuse IDs
 /// after a completed group. An unfinished/unknown occurrence keeps its ID reserved.
@@ -389,7 +391,7 @@ mod tests {
         groups.message(&call("toolUse")).unwrap();
         groups
             .message(&Message::Custom {
-                custom_type: "assistant-delegation-update".into(),
+                custom_type: "custom-report".into(),
                 content: "report".into(),
                 display: true,
                 details: None,
@@ -403,7 +405,7 @@ mod tests {
     #[test]
     fn cut_points_keep_latest_admission_despite_interleaved_reports_and_open_tools() {
         let report = Message::Custom {
-            custom_type: "assistant-delegation-update".into(),
+            custom_type: "custom-report".into(),
             content: "report".into(),
             display: true,
             details: None,
@@ -581,13 +583,6 @@ mod recovery_tests {
             user(),
             Message::Custom {
                 custom_type: "scheduled-run".into(),
-                content: "next".into(),
-                display: true,
-                details: None,
-                timestamp: 1,
-            },
-            Message::Custom {
-                custom_type: "assistant-delegation".into(),
                 content: "next".into(),
                 display: true,
                 details: None,

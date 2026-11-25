@@ -16,9 +16,6 @@ use crate::{
     make_private_dir, upload_limit, valid_node_id,
 };
 
-/// Local id of the top-level chat workspace a chat node creates for
-/// uncategorized chats.
-pub const CHAT_WORKSPACE_ID: &str = "chats";
 /// The chat node's workspace that holds each pot's own session.
 pub const POTS_WORKSPACE_ID: &str = "pots";
 
@@ -188,7 +185,7 @@ impl NodeConfig {
         let workspaces = parse_workspaces(env)?;
         if role == NodeRole::Chat && !workspaces.is_empty() {
             return error(
-                "PIRC_WORKSPACES must be empty on the chat node (pirc-node chat): it hosts chat workspaces only",
+                "PIRC_WORKSPACES must be empty on the chat node (pirc-node chat): it hosts pots only",
             );
         }
         let modes = accepted_modes(env.get("PIRC_MODES"), role)?;
@@ -266,7 +263,7 @@ fn accepted_modes(value: Option<&str>, role: NodeRole) -> Result<Vec<ModeId>, Co
     let Some(value) = value else {
         return Ok(vec![
             ModeId::new(if role == NodeRole::Chat {
-                "chat"
+                "pot"
             } else {
                 "directory"
             })
@@ -671,7 +668,7 @@ mod tests {
     fn mode_acceptance_is_explicit_and_validated() {
         assert_eq!(
             accepted_modes(None, NodeRole::Chat).unwrap()[0].as_str(),
-            "chat"
+            "pot"
         );
         assert_eq!(
             accepted_modes(None, NodeRole::Node).unwrap()[0].as_str(),

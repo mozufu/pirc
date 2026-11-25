@@ -26,7 +26,7 @@
 //! | [`browser`] | `node/browser.ts`, `node/browser-hosts.ts`, `node/browser-extract.ts` (in-page helpers), `node/browser-executable.ts` (in `pirc_config::node`); Playwright 1.63.0 in `browser::engine` | M8 (manager, core, netio, locator) |
 //! | [`store`] | `database.ts` (node half), `schema.sql` | layout (open, rows), core (queries) |
 //! | [`services`], [`node`] | `buildNodeApp`, `startNode`, `node/main.ts` | core |
-//! | [`app`], [`chat`], [`assistant_prompts`] | `node/app.ts`, `node/chat.ts`, `assistant-prompts.ts`, `session-name.ts` | core |
+//! | [`app`], [`chat`] | `node/app.ts`, `node/chat.ts`, `session-name.ts` | core |
 //! | [`runner`] (`framing`, `reducer`) | `node/runner.ts`, `rpc-framing.ts`, `reducer.ts` | runner |
 //! | [`inference`] | `node/inference.ts` | runner |
 //! | [`write_broker`], [`agent_gateway`], [`branch_cache`], [`recap`] | the `node/` files of those names | runner |
@@ -44,7 +44,6 @@
 
 pub mod agent_gateway;
 pub mod app;
-pub mod assistant_prompts;
 pub mod branch_cache;
 pub mod browser;
 pub mod chat;
@@ -67,7 +66,6 @@ pub mod panels;
 pub mod persistence;
 pub mod private_dir;
 mod process_journal;
-pub mod project_files;
 pub mod recap;
 pub mod repo;
 pub mod router;

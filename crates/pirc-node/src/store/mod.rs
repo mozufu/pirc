@@ -509,7 +509,7 @@ pub trait Store {
         canonical_path: &str,
         mode: ModeId,
     ) -> ApiResult<Workspace>;
-    /// By display name; a chat project being deleted is left out.
+    /// By display name; a workspace being deleted is left out.
     fn list_workspaces(&self) -> ApiResult<Vec<Workspace>>;
     /// 404 "Workspace not found"; 409 while it is being deleted.
     fn get_workspace(&self, workspace_id: &str) -> ApiResult<Workspace>;
@@ -1223,7 +1223,7 @@ impl Store for Connection {
                 ));
                 return Err(ApiError::internal());
             }
-            // The gateway's schedule and delegation rows of TS's shared
+            // The gateway's schedule rows of TS's shared
             // database are not on a node.
             for table in ["interactions", "commands", "leases", "runs"] {
                 db.execute(

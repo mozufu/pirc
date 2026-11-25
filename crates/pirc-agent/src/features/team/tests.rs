@@ -22,7 +22,7 @@ fn children_inherit_the_frozen_mode_not_project_or_process_overrides() {
     let mut env = indexmap::IndexMap::from([
         (
             "PIRC_MODE".into(),
-            serde_json::to_string(&pirc_protocol::mode::default_chat()).unwrap(),
+            serde_json::to_string(&pirc_protocol::mode::default_work()).unwrap(),
         ),
         ("PIRC_WORKSPACE_KIND".into(), "chat".into()),
     ]);
@@ -302,7 +302,6 @@ fn fixture(mode: &str) -> Fixture {
         models: serde_json::from_value(json!({})).unwrap(),
         capabilities: Some(Rc::new(|| json!({ "version": 1 }))),
         approval_mode: Some(Rc::new(|| "read-only".to_owned())),
-        instructions: None,
         acquire_write: None,
         relay_sandbox: None,
         allowed_roots: Some({

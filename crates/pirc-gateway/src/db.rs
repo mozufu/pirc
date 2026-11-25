@@ -40,7 +40,7 @@ pub(crate) use sql_text_enum;
 /// `PRAGMA user_version` of the pirc 2 schema. Databases from earlier
 /// releases (any other version) are refused, never migrated: pirc 2 starts
 /// from fresh state.
-pub const SCHEMA_VERSION: i64 = 1115;
+pub const SCHEMA_VERSION: i64 = 1116;
 const SCHEMA: &str = concat!(
     include_str!("schema.sql"),
     include_str!("calendar/schema.sql"),
@@ -55,7 +55,6 @@ const SCHEMA: &str = concat!(
     include_str!("conversation_bindings/schema.sql"),
     include_str!("conversation_bindings/policies.sql"),
     include_str!("memory/provenance.sql"),
-    include_str!("memory/project_cleanup.sql"),
     include_str!("conversation_bindings/commands.sql"),
     include_str!("conversation_bindings/transitions.sql"),
     include_str!("conversation_bindings/transitions/receipts.sql"),
@@ -381,30 +380,10 @@ impl Session {
 #[serde(deny_unknown_fields)]
 pub struct Capabilities {
     pub version: Version1,
-    pub delegation: bool,
     pub memory_search: bool,
     pub remote_recall: bool,
     pub schedules: bool,
     pub web_search: bool,
-    /// When a delegation of this chat workspace waits for the user's card.
-    #[serde(default)]
-    pub delegation_approval: DelegationApproval,
-}
-
-/// A chat workspace's delegation approval policy
-/// (docs/guides/chat-projects.md#delegation).
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum DelegationApproval {
-    /// Every delegation waits for the user's card (the default, and what
-    /// existing installs keep).
-    #[default]
-    Always,
-    /// Starts at once unless the chat's context since the user's last
-    /// message holds content from outside (tool output, reports).
-    Untrusted,
-    /// Always starts at once.
-    Never,
 }
 
 /// The literal `1`.
@@ -433,12 +412,10 @@ impl Default for Capabilities {
     fn default() -> Self {
         Self {
             version: Version1,
-            delegation: true,
             memory_search: true,
             remote_recall: true,
             schedules: true,
             web_search: true,
-            delegation_approval: DelegationApproval::Always,
         }
     }
 }
@@ -451,8 +428,6 @@ pub struct CapabilitiesPatch {
     #[serde(default, rename = "version", deserialize_with = "crate::util::present")]
     pub _version: Option<Version1>,
     #[serde(default, deserialize_with = "crate::util::present")]
-    pub delegation: Option<bool>,
-    #[serde(default, deserialize_with = "crate::util::present")]
     pub memory_search: Option<bool>,
     #[serde(default, deserialize_with = "crate::util::present")]
     pub remote_recall: Option<bool>,
@@ -460,13 +435,10 @@ pub struct CapabilitiesPatch {
     pub schedules: Option<bool>,
     #[serde(default, deserialize_with = "crate::util::present")]
     pub web_search: Option<bool>,
-    #[serde(default, deserialize_with = "crate::util::present")]
-    pub delegation_approval: Option<DelegationApproval>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Capability {
-    Delegation,
     MemorySearch,
     RemoteRecall,
     Schedules,
@@ -476,7 +448,6 @@ pub enum Capability {
 impl Capability {
     pub fn name(self) -> &'static str {
         match self {
-            Self::Delegation => "delegation",
             Self::MemorySearch => "memory_search",
             Self::RemoteRecall => "remote_recall",
             Self::Schedules => "schedules",
@@ -486,7 +457,6 @@ impl Capability {
 
     fn of(self, policy: &Capabilities) -> bool {
         match self {
-            Self::Delegation => policy.delegation,
             Self::MemorySearch => policy.memory_search,
             Self::RemoteRecall => policy.remote_recall,
             Self::Schedules => policy.schedules,
@@ -532,16 +502,6 @@ pub enum SessionOrigin {
         schedule_id: String,
         title: String,
         due_at: i64,
-    },
-    #[serde(rename_all = "camelCase")]
-    Delegation {
-        delegation_id: String,
-        title: String,
-        from_session_id: String,
-        /// The delegation's status (`running`, `waiting_input`,
-        /// `completed`, `failed`): delegated sessions are left as they are
-        /// once their result is delivered, so the list says how they ended.
-        status: String,
     },
 }
 
@@ -647,7 +607,7 @@ pub trait Store {
         node_id: &str,
         repos: &[(String, Option<String>)],
     ) -> ApiResult<()>;
-    /// A chat project being deleted (or deleted) is left out.
+    /// A workspace being deleted (or deleted) is left out.
     fn list_workspaces(&self) -> ApiResult<Vec<Workspace>>;
     /// 404 "Workspace not found"; 409 while it is being deleted.
     fn get_workspace(&self, workspace_id: &str) -> ApiResult<Workspace>;
@@ -656,10 +616,11 @@ pub trait Store {
     fn workspace_deletion(&self, workspace_id: &str) -> ApiResult<Option<Deletion>>;
     /// Fence the project and every session in it (403 if one is another
     /// user's). Idempotent.
+    #[cfg(test)]
     fn begin_workspace_deletion(&self, workspace_id: &str, user: &str) -> ApiResult<()>;
     /// Ids of the sessions in a workspace.
     fn workspace_session_ids(&self, workspace_id: &str) -> ApiResult<Vec<String>>;
-    /// Chat projects being deleted (`deleting`), for their owner to finish.
+    /// Workspaces being deleted (`deleting`), for their owner to finish.
     fn deleting_workspaces(&self) -> ApiResult<Vec<Workspace>>;
     /// Workspaces visible to this user, including only their own private
     /// checkpoint continuations. Unclaimed checkpoint workspaces stay hidden.
@@ -791,10 +752,6 @@ fn finish_deletion(conn: &Connection, session_id: &str) -> ApiResult<()> {
         "DELETE FROM calendar_proposals WHERE session_id=?",
         [session_id],
     )?;
-    conn.execute(
-        "DELETE FROM delegations WHERE assistant_session_id=?",
-        [session_id],
-    )?;
     conn.execute("DELETE FROM sessions WHERE id=?", [session_id])?;
     conn.execute(
         "UPDATE session_deletions SET status='deleted' WHERE session_id=?",
@@ -920,11 +877,6 @@ impl Store for Connection {
                 if let Some(repo) = repo {
                     tx.execute(
                         "UPDATE memory_records SET repo=? WHERE workspace_id=? AND repo IS NULL AND status!='forgotten'",
-                        params![repo, id],
-                    )?;
-                    // Links made before the repository was known cover its clones from now on.
-                    tx.execute(
-                        "UPDATE project_links SET repo=? WHERE workspace_id=? AND repo IS NULL",
                         params![repo, id],
                     )?;
                 }
@@ -1063,6 +1015,7 @@ impl Store for Connection {
             .optional()?)
     }
 
+    #[cfg(test)]
     fn begin_workspace_deletion(&self, workspace_id: &str, user: &str) -> ApiResult<()> {
         atomic(self, |tx| {
             if tx.find_workspace(workspace_id)?.is_none() {
@@ -1147,14 +1100,10 @@ impl Store for Connection {
                     *field = value;
                 }
             };
-            set(&mut policy.delegation, patch.delegation);
             set(&mut policy.memory_search, patch.memory_search);
             set(&mut policy.remote_recall, patch.remote_recall);
             set(&mut policy.schedules, patch.schedules);
             set(&mut policy.web_search, patch.web_search);
-            if let Some(approval) = patch.delegation_approval {
-                policy.delegation_approval = approval;
-            }
             tx.execute(
             "INSERT INTO workspace_capabilities (workspace_id,policy_json) VALUES (?,?) ON CONFLICT(workspace_id) DO UPDATE SET policy_json=excluded.policy_json",
             params![workspace_id, json!(policy).to_string()],
@@ -1376,8 +1325,7 @@ impl Store for Connection {
         Ok(session)
     }
 
-    /// Sessions a schedule or a delegation started, with what started them
-    /// (the newest when a delegation follows up in the same session).
+    /// Sessions a schedule started, with what started them.
     fn session_origins(&self, owner_user: &str) -> ApiResult<Vec<(String, SessionOrigin)>> {
         let mut origins = Vec::new();
         let mut scheduled = self.prepare(
@@ -1390,22 +1338,6 @@ impl Store for Connection {
                     schedule_id: row.get(1)?,
                     due_at: row.get(2)?,
                     title: row.get(3)?,
-                },
-            ))
-        })? {
-            origins.push(row?);
-        }
-        let mut delegated = self.prepare(
-            "SELECT id, target_session_id, assistant_session_id, title, status FROM delegations WHERE owner_user=? AND target_session_id IS NOT NULL ORDER BY created_at",
-        )?;
-        for row in delegated.query_map([owner_user], |row| {
-            Ok((
-                row.get::<_, String>(1)?,
-                SessionOrigin::Delegation {
-                    delegation_id: row.get(0)?,
-                    from_session_id: row.get(2)?,
-                    title: row.get(3)?,
-                    status: row.get(4)?,
                 },
             ))
         })? {

@@ -100,43 +100,6 @@ fn days_from_civil(year: i64, month: i64, day: i64) -> i64 {
     era * 146_097 + of_era_days - 719_468
 }
 
-/// The date of a day since 1970-01-01.
-fn civil_from_days(days: i64) -> (i64, i64, i64) {
-    let days = days + 719_468;
-    let era = days.div_euclid(146_097);
-    let of_era = days - era * 146_097;
-    let year_of_era = (of_era - of_era / 1460 + of_era / 36_524 - of_era / 146_096) / 365;
-    let of_year = of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
-    let shifted = (5 * of_year + 2) / 153;
-    let day = of_year - (153 * shifted + 2) / 5 + 1;
-    let month = if shifted < 10 {
-        shifted + 3
-    } else {
-        shifted - 9
-    };
-    let year = year_of_era + era * 400 + i64::from(month <= 2);
-    (year, month, day)
-}
-
-/// Largest time a JavaScript `Date` holds, in ms either side of the epoch.
-const DATE_RANGE_MS: i64 = 8_640_000_000_000_000;
-
-/// "YYYY-MM-DD HH:MM" in local time (`localStamp` of the memory ledger).
-pub fn local_stamp(ms: i64) -> String {
-    if !(-DATE_RANGE_MS..=DATE_RANGE_MS).contains(&ms) {
-        return "????-??-?? ??:??".to_owned();
-    }
-    let unix = ms.div_euclid(1000);
-    let local = unix + offset_at(unix);
-    let (year, month, day) = civil_from_days(local.div_euclid(86_400));
-    let seconds = local.rem_euclid(86_400);
-    format!(
-        "{year}-{month:02}-{day:02} {:02}:{:02}",
-        seconds / 3600,
-        seconds % 3600 / 60
-    )
-}
-
 static ISO: LazyLock<regex_lite::Regex> = LazyLock::new(|| {
     regex_lite::Regex::new(
         r"^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?(Z|[+-]\d{2}:\d{2})?)?$",
@@ -257,7 +220,5 @@ mod tests {
         assert_eq!(parse_date("2026-02-29"), None);
         assert_eq!(parse_date("2024-02-29"), Some(1_709_164_800_000));
         assert_eq!(parse_date("1969-12-31T23:59:59.5Z"), Some(-500));
-        assert_eq!(local_stamp(0).len(), 16);
-        assert_eq!(local_stamp(i64::MAX), "????-??-?? ??:??");
     }
 }

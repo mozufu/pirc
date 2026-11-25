@@ -6,12 +6,12 @@
 //! The gateway keeps each user's schedules and one timer for the earliest
 //! due one. When one falls due it starts a new session in the schedule's
 //! workspace, delivers the prompt as a `scheduled-run` custom message
-//! (never the user's words), and follows the session like a delegation
-//! until it finishes, fails or waits for the user.
+//! (never the user's words), and follows the session until it finishes,
+//! fails or waits for the user.
 //!
 //! Nothing runs that the user did not allow:
 //! - schedules an agent proposes (or changes) wait for the user's approval
-//!   in that chat, like a delegation;
+//!   in that session;
 //! - a fire time the gateway slept through, or whose node was offline, is
 //!   recorded as a `missed` run and only runs when the user allows it;
 //! - a fire time while the previous run still goes is `skipped`.
@@ -967,7 +967,7 @@ impl Ctx<'_> {
             ));
         }
         let spec = self.resolve(user, input, None, resolve_workspace, false)?;
-        // A chat project with schedules disabled runs none, whoever creates them.
+        // A workspace with schedules disabled runs none, whoever creates them.
         self.conn
             .require_workspace_capability(&spec.workspace_id, Capability::Schedules)?;
         self.insert(user, &spec, None)
@@ -1175,7 +1175,7 @@ impl Ctx<'_> {
                 session.id,
                 schedule_id,
                 serde_json::to_string(spec).unwrap_or_default(),
-                at + self.app.config.delegation_ttl_ms as i64,
+                at + self.app.config.proposal_ttl_ms as i64,
                 at,
                 operation,
             ],

@@ -227,7 +227,7 @@ fn never_lets_a_chat_session_touch_its_projects_instructions() {
 }
 
 #[test]
-fn protects_global_prompt_configuration_inside_writable_roots_including_absent_files() {
+fn protects_global_configuration_inside_writable_roots_including_absent_files() {
     let d = layout();
     let config_dir = p(&d.tmp, "config");
     fs::create_dir(&config_dir).unwrap();
@@ -236,28 +236,9 @@ fn protects_global_prompt_configuration_inside_writable_roots_including_absent_f
     input.allowed_paths = vec![d.root.clone()];
     input.inference_socket = None;
     let paths = session_policy(&input).unwrap().paths;
-    for name in ["SOUL.md", "CHAT.md", "config.json"] {
-        assert!(read_allowed(&paths, &p(&config_dir, name)));
-        assert!(!write_allowed(&paths, &p(&config_dir, name)));
-    }
+    assert!(read_allowed(&paths, &p(&config_dir, "config.json")));
+    assert!(!write_allowed(&paths, &p(&config_dir, "config.json")));
     assert!(write_allowed(&paths, &p(&d.tmp, "ordinary.txt")));
-}
-
-#[test]
-fn protects_the_prospective_targets_of_dangling_managed_prompt_symlinks() {
-    let d = layout();
-    let config_dir = p(&d.tmp, "config");
-    fs::create_dir(&config_dir).unwrap();
-    for name in ["SOUL.md", "CHAT.md"] {
-        symlink(p(&d.workspace, name), p(&config_dir, name)).unwrap();
-    }
-    let mut input = input(&d, &d.workspace, json!({}));
-    input.config_dir = config_dir;
-    input.inference_socket = None;
-    let paths = session_policy(&input).unwrap().paths;
-    for name in ["SOUL.md", "CHAT.md"] {
-        assert!(!write_allowed(&paths, &p(&d.workspace, name)));
-    }
 }
 
 #[test]
@@ -474,18 +455,6 @@ fn lists_the_links_of_linked_deny_entries_without_serializing_them() {
         policy_for(&plain, &plain.workspace, json!({})).linked_denies,
         []
     );
-}
-
-#[test]
-fn refuses_prompt_symlink_loops() {
-    let d = layout();
-    let config_dir = p(&d.tmp, "config");
-    fs::create_dir(&config_dir).unwrap();
-    symlink(p(&config_dir, "CHAT.md"), p(&config_dir, "SOUL.md")).unwrap();
-    symlink(p(&config_dir, "SOUL.md"), p(&config_dir, "CHAT.md")).unwrap();
-    let mut input = input(&d, &d.workspace, json!({}));
-    input.config_dir = config_dir;
-    assert_eq!(session_policy(&input).unwrap_err(), PROMPT_LINKS_ERROR);
 }
 
 #[test]

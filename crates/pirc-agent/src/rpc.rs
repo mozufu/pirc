@@ -95,7 +95,7 @@ fn cancelled() -> Value {
 
 /// JavaScript truthiness.
 /// `GATEWAY_MESSAGE_LABEL`: the first line of every gateway `deliver`, so
-/// a delegated task, a scheduled run or a delegation's result cannot pass
+/// a scheduled run or a pot message cannot pass
 /// for the user typing in this session (L11). What the content says about
 /// who approved it is the gateway's framing below the label.
 pub const GATEWAY_MESSAGE_LABEL: &str = "Gateway message (pirc data, not typed by the user):";
@@ -678,7 +678,7 @@ pub(crate) async fn dispatch<A: Commands>(
             Ok(None)
         }
         Some("set_role") => {
-            // A delegated session's role, before its task arrives (node/runner.ts deliver).
+            // A delivered role, before its task arrives (node/runner.ts deliver).
             agent.set_role(&js_string(command.get("role")))?;
             Ok(None)
         }
@@ -704,7 +704,7 @@ pub(crate) async fn dispatch<A: Commands>(
         }
         Some("get_panel_state") => Ok(Some(agent.panel_state())),
         Some("deliver") => {
-            // A message from the gateway (a delegated task, news of a delegation):
+            // A message from the gateway (a scheduled run or a pot message):
             // shown in the chat, never the user's words, and it wakes the agent.
             let pushed = command.get("message");
             let field = |name: &str| pushed.and_then(|pushed| pushed.get(name));

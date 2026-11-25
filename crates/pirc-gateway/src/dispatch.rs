@@ -1,10 +1,10 @@
-//! Work the gateway starts in a node session on its own: a delegation or a
-//! scheduled run (`apps/gateway/src/daemon/session-dispatch.ts`). Both
+//! Work the gateway starts in a node session on its own: a scheduled run or
+//! a pot wake (`apps/gateway/src/daemon/session-dispatch.ts`). Both
 //! create and name a session on the node, deliver a custom message into it,
 //! and read the session back to learn whether it finished or waits for the
 //! user. Also the helpers both share: secret redaction
 //! (`agent/features/memory/redact.ts`) and workspace lookup by name
-//! (`resolveDirectoryWorkspace` in `daemon/delegations.ts`).
+//! (`resolveDirectoryWorkspace` in the former chat delegation code).
 
 use std::sync::LazyLock;
 
@@ -306,7 +306,7 @@ pub fn resolve_directory_workspace(app: &App, reference: &str) -> ApiResult<Work
         .into_iter()
         .filter(|workspace| {
             app.mode(&workspace.mode)
-                .is_some_and(|mode| mode.delegate_target)
+                .is_some_and(|mode| mode.repository)
                 && workspace.id.contains(':')
         })
         .collect();

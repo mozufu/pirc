@@ -34,7 +34,7 @@ pub struct Meta {
     pub suspension: &'static [&'static str],
     /// Returns web content: what a script returns is fenced as untrusted.
     pub untrusted: bool,
-    /// Returns text other sessions or agents wrote (memory notes, delegated
+    /// Returns text other sessions or agents wrote (memory notes, other
     /// results, team messages): what a script returns is fenced as data.
     pub agent_data: bool,
 }
@@ -163,14 +163,6 @@ pub fn capability_meta(name: &str) -> Meta {
             "always-confirm",
             &["approval"],
         ),
-        "delegate" => meta(
-            "delegation",
-            &["external", "write"],
-            "exclusive-write",
-            "always-confirm",
-            &["approval", "child"],
-        ),
-        "delegation_status" => agent_data(read("delegation", &["external"])),
         "schedule" => with_reads(
             meta(
                 "schedule",

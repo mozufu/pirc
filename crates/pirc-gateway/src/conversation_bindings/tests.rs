@@ -7,17 +7,12 @@ fn seed(conn: &Connection) {
     conn.sync_remote_workspaces(
         "node",
         &[
-            ("chats".into(), "Chats".into(), ModeId::new("chat").unwrap()),
-            (
-                "project".into(),
-                "Project".into(),
-                ModeId::new("chat").unwrap(),
-            ),
             (
                 "repo".into(),
                 "Repository".into(),
                 ModeId::new("directory").unwrap(),
             ),
+            ("pot".into(), "Pot".into(), ModeId::new("pot").unwrap()),
             (
                 "custom".into(),
                 "Custom".into(),
@@ -45,9 +40,8 @@ fn every_legacy_identity_has_a_durable_binding_without_private_session_details()
     let conn = db.lock();
     seed(&conn);
     for (workspace, mode) in [
-        ("chats", "chat"),
-        ("project", "chat"),
         ("repo", "directory"),
+        ("pot", "pot"),
         ("custom", "research"),
     ] {
         let session = create(&conn, workspace, workspace);
@@ -70,7 +64,7 @@ fn every_legacy_identity_has_a_durable_binding_without_private_session_details()
             session.binding
         );
     }
-    assert_eq!(conn.list_sessions().unwrap().len(), 4);
+    assert_eq!(conn.list_sessions().unwrap().len(), 3);
 }
 
 #[test]
@@ -205,7 +199,7 @@ fn failed_creation_and_deletion_leave_no_orphan_binding() {
     let conn = db.lock();
     seed(&conn);
     let result: crate::error::ApiResult<()> = atomic(&conn, |tx| {
-        create(tx, "project", "aborted");
+        create(tx, "repo", "aborted");
         Err(crate::error::ApiError::invalid_input())
     });
     assert!(result.is_err());
@@ -216,7 +210,7 @@ fn failed_creation_and_deletion_leave_no_orphan_binding() {
         .unwrap()
     };
     assert_eq!(count(), 0);
-    let session = create(&conn, "project", "kept");
+    let session = create(&conn, "repo", "kept");
     conn.begin_session_deletion(&session.id, "alice").unwrap();
     conn.finish_session_deletion(&session.id).unwrap();
     assert_eq!(count(), 0);

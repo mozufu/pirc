@@ -52,8 +52,6 @@ const INTERRUPTED_PARTIAL_CHARS: usize = 2000;
 pub struct AgentOptions {
     pub config: AgentConfig,
     pub capabilities: Capabilities,
-    /// A chat project's instructions from the node.
-    pub project_instructions: Option<String>,
     /// A role from the configure line.
     pub role: Option<AgentRole>,
     pub store: SessionStore,
@@ -152,7 +150,6 @@ pub struct StreamOptions {
 pub struct Agent {
     weak: Weak<Agent>,
     capabilities: RefCell<Capabilities>,
-    project_instructions: Option<String>,
     role: RefCell<Option<AgentRole>>,
     config: Rc<AgentConfig>,
     /// The gateway's live public catalog (`refreshModels` replaces it).
@@ -164,15 +161,6 @@ pub struct Agent {
     /// The approval mode the user chose for this session (or a team child
     /// got from its parent); `None` follows the node's default.
     approval_mode: Cell<Option<ApprovalMode>>,
-    /// Custom entries admitted during the current run that the user
-    /// approved as their own requests (a delegated task with
-    /// `details.asUserRequest`): auto mode's classifier reads them as user
-    /// requests until the run ends.
-    run_user_requests: RefCell<Vec<String>>,
-    /// The user's own words a delegated task carried (`details.userRequests`,
-    /// verified in their chat by its agent): the classifier reads them as
-    /// user requests until the run ends.
-    run_user_quotes: RefCell<Vec<String>>,
     /// The UI with dialogs linked to the operation that opens them.
     ui: Rc<dyn Ui>,
     has_ui: bool,
@@ -714,7 +702,6 @@ impl Agent {
             Agent {
                 weak: weak.clone(),
                 capabilities: RefCell::new(options.capabilities),
-                project_instructions: options.project_instructions,
                 role: RefCell::new(options.role),
                 models: RefCell::new(config.models.clone()),
                 config: config.clone(),
@@ -723,8 +710,6 @@ impl Agent {
                 hooks,
                 auto_mode: AutoMode::new(),
                 approval_mode: Cell::new(None),
-                run_user_requests: RefCell::new(Vec::new()),
-                run_user_quotes: RefCell::new(Vec::new()),
                 ui,
                 has_ui: options.has_ui,
                 emit_raw: options.emit,
@@ -1990,9 +1975,6 @@ impl Agent {
                 agent.ui.notify(&message, NotifyLevel::Error);
             }
             agent.running.set(false);
-            // The user's approval of a delegated task covered this run only.
-            agent.run_user_requests.borrow_mut().clear();
-            agent.run_user_quotes.borrow_mut().clear();
             *agent.controller.borrow_mut() = None;
             agent.run_active.set(false);
             agent.run_done.notify_waiters();
@@ -2108,27 +2090,7 @@ impl Agent {
     fn admit_item(&self, item: QueueItem) -> Result<(), String> {
         match item {
             QueueItem::Custom(message) => {
-                let id = self.append_message((*message).clone())?;
-                if let Message::Custom {
-                    custom_type,
-                    details: Some(details),
-                    ..
-                } = &*message
-                    && custom_type == "assistant-delegation"
-                {
-                    if details.get("asUserRequest") == Some(&Value::Bool(true)) {
-                        self.run_user_requests.borrow_mut().push(id);
-                    }
-                    if let Some(quotes) = details.get("userRequests").and_then(Value::as_array) {
-                        self.run_user_quotes.borrow_mut().extend(
-                            quotes
-                                .iter()
-                                .filter_map(Value::as_str)
-                                .filter(|quote| !quote.trim().is_empty())
-                                .map(str::to_owned),
-                        );
-                    }
-                }
+                self.append_message((*message).clone())?;
                 self.admitted(&message);
             }
             QueueItem::User { text, images } => {
@@ -3598,11 +3560,6 @@ impl Agent {
         self.role.borrow().clone()
     }
 
-    /// A chat project's instructions (the M5 feature reads them).
-    pub fn project_instructions(&self) -> Option<&str> {
-        self.project_instructions.as_deref()
-    }
-
     /// The current model reference.
     pub fn model_ref(&self) -> Option<(String, String)> {
         self.model_ref.borrow().clone()
@@ -3712,12 +3669,6 @@ impl AgentHost for Agent {
     }
     fn approval_mode(&self) -> ApprovalMode {
         Agent::approval_mode(self)
-    }
-    fn run_user_requests(&self) -> Vec<String> {
-        self.run_user_requests.borrow().clone()
-    }
-    fn run_user_quotes(&self) -> Vec<String> {
-        self.run_user_quotes.borrow().clone()
     }
 }
 
