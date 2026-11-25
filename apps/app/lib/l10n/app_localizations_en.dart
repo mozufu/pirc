@@ -358,4 +358,128 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get takeControl => 'Take control';
+
+  @override
+  String get dockGoal => 'Goal';
+
+  @override
+  String get dockTodo => 'Tasks';
+
+  @override
+  String dockQueue(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count queued messages',
+      one: '1 queued message',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get whenSteer => 'Steer';
+
+  @override
+  String get whenQueue => 'Queue';
+
+  @override
+  String get thinkingOff => 'Off';
+
+  @override
+  String get thinkingMinimal => 'Minimal';
+
+  @override
+  String get thinkingLow => 'Low';
+
+  @override
+  String get thinkingMedium => 'Medium';
+
+  @override
+  String get thinkingHigh => 'High';
+
+  @override
+  String get thinkingXhigh => 'Extra high';
+
+  @override
+  String get thinkingDefault => 'Default thinking';
+
+  @override
+  String get modelRow => 'Model';
+
+  @override
+  String get thinkingRow => 'Thinking';
+
+  @override
+  String get modelDefault => 'Default model';
+
+  @override
+  String get thinkingUnsupported => 'This model has no thinking levels';
+
+  @override
+  String get composerLocked => 'Take over to send messages';
+
+  @override
+  String get composerReadOnly => 'Another device controls this work';
+
+  @override
+  String get composerOffline => 'Offline. Your draft is kept.';
+
+  @override
+  String get composerHint => 'Message…';
+
+  @override
+  String get commandRejected => 'The work refused this message.';
+
+  @override
+  String get staleEnvironment =>
+      'The work\'s environment changed. Your draft is kept.';
+
+  @override
+  String get attach => 'Attach files';
+
+  @override
+  String get stopWork => 'Stop this work';
+
+  @override
+  String get send => 'Send';
+
+  @override
+  String get notSureArrived => 'Not sure it arrived';
+
+  @override
+  String get checkStatus => 'Check status';
+
+  @override
+  String get pickWorkspace => 'Choose a project';
+
+  @override
+  String get firstSending => 'Sending…';
+
+  @override
+  String get firstRefused => 'The first message was refused.';
+
+  @override
+  String get sendAgain => 'Send again';
+
+  @override
+  String get firstNotSent => 'Not sent.';
+
+  @override
+  String get newConversationEmpty =>
+      'Choose a project and write the first message.';
+
+  @override
+  String get noWorkspaces => 'No projects yet.';
+
+  @override
+  String hostOffline(String host) {
+    return '$host · offline';
+  }
+
+  @override
+  String get workspaceHostOffline => 'Its host is offline';
+
+  @override
+  String get workspaceUnavailable =>
+      'Its mode is not available on this Gateway';
 }

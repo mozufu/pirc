@@ -7,7 +7,9 @@ import 'package:pirc_ui/pirc_ui.dart';
 import '../l10n/app_localizations.dart';
 import 'router.dart';
 import 'shell/app_drawer.dart';
+import 'work/composer/composer.dart';
 import 'work/conversation_screen.dart';
+import 'work/new_conversation/new_conversation_screen.dart';
 import 'work/work_data.dart';
 import 'work/work_list_screen.dart';
 
@@ -23,6 +25,9 @@ class TabScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final shell = StatefulNavigationShell.maybeOf(context);
+    final desktop =
+        PircLayout.forWidth(MediaQuery.sizeOf(context).width) ==
+        PircLayout.desktop;
     final open = openItem;
     return PopScope(
       // Back closes the open item first (one-pane layouts show it alone).
@@ -61,18 +66,28 @@ class TabScreen extends ConsumerWidget {
             initialLocation: index == shell.currentIndex,
           ),
           list: switch (tab) {
-            AppTab.work => WorkListScreen(openId: open),
+            AppTab.work => WorkListScreen(
+              openId: open,
+              onNew: () => context.go('/work?open=$newConversationKey'),
+            ),
             _ => _TabList(tab: tab),
           },
           content: open == null
               ? null
               : switch (tab) {
+                  AppTab.work when open == newConversationKey =>
+                    NewConversationScreen(
+                      key: const ValueKey(newConversationKey),
+                      showBack: !desktop,
+                    ),
                   AppTab.work => ConversationScreen(
                     key: ValueKey(open),
                     sessionId: open,
-                    showBack:
-                        PircLayout.forWidth(MediaQuery.sizeOf(context).width) !=
-                        PircLayout.desktop,
+                    showBack: !desktop,
+                    parts: ConversationParts(
+                      bottom: (context, view) =>
+                          SessionComposer(sessionId: open, view: view),
+                    ),
                   ),
                   _ => _ItemPlaceholder(
                     key: ValueKey(open),

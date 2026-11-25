@@ -1,70 +1,14 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/work/conversation_screen.dart';
 import 'package:pirc_app/src/work/timeline.dart';
 import 'package:pirc_client/pirc_client.dart';
 
 import 'support/harness.dart';
-
-Map<String, Object?> _fixture(String name) =>
-    jsonDecode(File('../../fixtures/timeline/$name').readAsStringSync())
-        as Map<String, Object?>;
-
-/// A Gateway serving one session from a timeline fixture, with a lease
-/// holder the test sets.
-class _Session {
-  _Session(this.name) : fixture = _fixture(name) {
-    snapshot = fixture['snapshot']! as Map<String, Object?>;
-    id = (snapshot['session']! as Map)['id'] as String;
-  }
-
-  final String name;
-  final Map<String, Object?> fixture;
-  late Map<String, Object?> snapshot;
-  late final String id;
-
-  /// The lease the control route reports; null when nobody holds it.
-  Map<String, Object?>? lease;
-  int generation = 0;
-  bool heartbeatLost = false;
-
-  List<Object?> get events => fixture['events']! as List<Object?>;
-
-  FakeGateway install([FakeGateway? into]) {
-    final gateway = into ?? FakeGateway();
-    final base = '/api/sessions/$id';
-    gateway.json['GET /api/sessions'] = (_) => {
-      'sessions': [snapshot['session']],
-    };
-    gateway.json['GET $base/snapshot'] = (_) => snapshot;
-    gateway.json['GET $base/control'] = (_) => {'lease': lease};
-    gateway.json['POST $base/control/acquire'] = (request) {
-      final body = request.json! as Map;
-      if (lease != null &&
-          lease!['clientId'] != body['clientId'] &&
-          body['force'] != true) {
-        return apiError(409, 'lost_control', 'Another client has control');
-      }
-      lease = {
-        'clientId': body['clientId'],
-        'generation': ++generation,
-        'expiresAt': 0,
-      };
-      return {'lease': lease};
-    };
-    gateway.json['POST $base/control/heartbeat'] = (request) => heartbeatLost
-        ? apiError(409, 'lost_control', 'Another client has control')
-        : {'lease': lease};
-    gateway.json['POST $base/control/release'] = (_) => {'released': true};
-    return gateway;
-  }
-}
+import 'support/session_fixture.dart';
 
 Future<FakeGateway> _open(
   WidgetTester tester,
-  _Session session, {
+  FixtureSession session, {
   double width = 1300,
 }) async {
   final gateway = session.install();
@@ -86,7 +30,7 @@ void main() {
     'ptc-operations.json',
   ]) {
     appTest('$name replays into the screen', (tester) async {
-      final session = _Session(name);
+      final session = FixtureSession(name);
       final gateway = await _open(tester, session);
       final socket = _events(gateway);
       final watermark = session.snapshot['watermark']! as Map;
@@ -142,7 +86,7 @@ void main() {
   appTest('tool steps fold into a run card with failures marked', (
     tester,
   ) async {
-    final session = _Session('ptc-operations.json');
+    final session = FixtureSession('ptc-operations.json');
     final gateway = await _open(tester, session);
     for (final event in session.events) {
       _events(gateway).push(event);
@@ -155,7 +99,7 @@ void main() {
   appTest('a reset loads a new snapshot and resumes from its watermark', (
     tester,
   ) async {
-    final session = _Session('joined-mid-stream.json');
+    final session = FixtureSession('joined-mid-stream.json');
     final gateway = await _open(tester, session);
     final snapshots = gateway.sent('GET', '/api/sessions/s2/snapshot').length;
     _events(gateway).push({
@@ -172,7 +116,7 @@ void main() {
   });
 
   appTest('a dropped socket reconnects from the last event', (tester) async {
-    final session = _Session('joined-mid-stream.json');
+    final session = FixtureSession('joined-mid-stream.json');
     final gateway = await _open(tester, session);
     final first = _events(gateway);
     first.push(session.events.first);
@@ -186,7 +130,7 @@ void main() {
   });
 
   appTest('an event from another epoch loads a new snapshot', (tester) async {
-    final session = _Session('joined-mid-stream.json');
+    final session = FixtureSession('joined-mid-stream.json');
     final gateway = await _open(tester, session);
     final snapshots = gateway.sent('GET', '/api/sessions/s2/snapshot').length;
     _events(gateway).push({
@@ -206,7 +150,7 @@ void main() {
 
   group('control', () {
     appTest('a free lease is taken on open', (tester) async {
-      final session = _Session('joined-mid-stream.json');
+      final session = FixtureSession('joined-mid-stream.json');
       final gateway = await _open(tester, session);
       expect(
         gateway.sent('POST', '/api/sessions/s2/control/acquire'),
@@ -218,7 +162,7 @@ void main() {
     appTest('another holder makes it read-only; Take control forces', (
       tester,
     ) async {
-      final session = _Session('joined-mid-stream.json')
+      final session = FixtureSession('joined-mid-stream.json')
         ..lease = {'clientId': 'other-phone', 'generation': 4};
       final gateway = await _open(tester, session);
       expect(find.text('Controlled by another device'), findsOneWidget);
@@ -231,7 +175,7 @@ void main() {
     });
 
     appTest('losing the lease on a heartbeat shows the bar', (tester) async {
-      final session = _Session('joined-mid-stream.json');
+      final session = FixtureSession('joined-mid-stream.json');
       final gateway = await _open(tester, session);
       expect(find.byType(ControlBar), findsNothing);
       session
@@ -247,7 +191,7 @@ void main() {
     });
 
     appTest('closing the conversation releases the lease', (tester) async {
-      final session = _Session('joined-mid-stream.json');
+      final session = FixtureSession('joined-mid-stream.json');
       final gateway = await _open(tester, session, width: 375);
       await tester.tap(find.byTooltip('Back'));
       await tester.pumpAndSettle();
@@ -260,7 +204,7 @@ void main() {
   });
 
   appTest('a deleted session says so', (tester) async {
-    final session = _Session('joined-mid-stream.json');
+    final session = FixtureSession('joined-mid-stream.json');
     final gateway = await _open(tester, session);
     _events(gateway).push({
       'sessionId': 's2',
@@ -276,7 +220,7 @@ void main() {
   appTest('the top bar shows the project and the host; no back at 1300', (
     tester,
   ) async {
-    final session = _Session('joined-mid-stream.json');
+    final session = FixtureSession('joined-mid-stream.json');
     final gateway = session.install()
       ..json['GET /api/workspaces'] = (_) => {
         'workspaces': [

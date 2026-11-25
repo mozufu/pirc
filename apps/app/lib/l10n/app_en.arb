@@ -160,5 +160,56 @@
   "sessionFailed": "This work could not be loaded.",
   "partialOutputLost": "Some output was lost while reconnecting.",
   "controlledElsewhere": "Controlled by another device",
-  "takeControl": "Take control"
+  "takeControl": "Take control",
+  "dockGoal": "Goal",
+  "dockTodo": "Tasks",
+  "dockQueue": "{count, plural, =1{1 queued message} other{{count} queued messages}}",
+  "@dockQueue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "whenSteer": "Steer",
+  "whenQueue": "Queue",
+  "thinkingOff": "Off",
+  "thinkingMinimal": "Minimal",
+  "thinkingLow": "Low",
+  "thinkingMedium": "Medium",
+  "thinkingHigh": "High",
+  "thinkingXhigh": "Extra high",
+  "thinkingDefault": "Default thinking",
+  "modelRow": "Model",
+  "thinkingRow": "Thinking",
+  "modelDefault": "Default model",
+  "thinkingUnsupported": "This model has no thinking levels",
+  "composerLocked": "Take over to send messages",
+  "composerReadOnly": "Another device controls this work",
+  "composerOffline": "Offline. Your draft is kept.",
+  "composerHint": "Message…",
+  "commandRejected": "The work refused this message.",
+  "staleEnvironment": "The work's environment changed. Your draft is kept.",
+  "attach": "Attach files",
+  "stopWork": "Stop this work",
+  "send": "Send",
+  "notSureArrived": "Not sure it arrived",
+  "checkStatus": "Check status",
+  "pickWorkspace": "Choose a project",
+  "firstSending": "Sending…",
+  "firstRefused": "The first message was refused.",
+  "sendAgain": "Send again",
+  "firstNotSent": "Not sent.",
+  "newConversationEmpty": "Choose a project and write the first message.",
+  "noWorkspaces": "No projects yet.",
+  "hostOffline": "{host} · offline",
+  "@hostOffline": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "workspaceHostOffline": "Its host is offline",
+  "workspaceUnavailable": "Its mode is not available on this Gateway"
 }

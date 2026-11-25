@@ -338,6 +338,121 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get takeControl => '取得控制權';
+
+  @override
+  String get dockGoal => '目標';
+
+  @override
+  String get dockTodo => '任務';
+
+  @override
+  String dockQueue(int count) {
+    return '$count 則排隊中的訊息';
+  }
+
+  @override
+  String get whenSteer => '插話';
+
+  @override
+  String get whenQueue => '排隊';
+
+  @override
+  String get thinkingOff => '關閉';
+
+  @override
+  String get thinkingMinimal => '最少';
+
+  @override
+  String get thinkingLow => '低';
+
+  @override
+  String get thinkingMedium => '中';
+
+  @override
+  String get thinkingHigh => '高';
+
+  @override
+  String get thinkingXhigh => '最高';
+
+  @override
+  String get thinkingDefault => '預設思考';
+
+  @override
+  String get modelRow => '模型';
+
+  @override
+  String get thinkingRow => '思考';
+
+  @override
+  String get modelDefault => '預設模型';
+
+  @override
+  String get thinkingUnsupported => '這個模型沒有思考強度';
+
+  @override
+  String get composerLocked => '接管後才能輸入一般訊息';
+
+  @override
+  String get composerReadOnly => '由另一台裝置控制中';
+
+  @override
+  String get composerOffline => '離線中，草稿會保留。';
+
+  @override
+  String get composerHint => '輸入訊息…';
+
+  @override
+  String get commandRejected => '工作拒絕了這則訊息。';
+
+  @override
+  String get staleEnvironment => '工作的環境已變更，草稿已保留。';
+
+  @override
+  String get attach => '附加檔案';
+
+  @override
+  String get stopWork => '停止這個工作';
+
+  @override
+  String get send => '送出';
+
+  @override
+  String get notSureArrived => '不確定是否送達';
+
+  @override
+  String get checkStatus => '確認狀態';
+
+  @override
+  String get pickWorkspace => '選擇專案';
+
+  @override
+  String get firstSending => '送出中…';
+
+  @override
+  String get firstRefused => '第一則訊息被拒絕。';
+
+  @override
+  String get sendAgain => '再送一次';
+
+  @override
+  String get firstNotSent => '沒有送出。';
+
+  @override
+  String get newConversationEmpty => '選擇專案並寫下第一則訊息。';
+
+  @override
+  String get noWorkspaces => '還沒有專案。';
+
+  @override
+  String hostOffline(String host) {
+    return '$host · 離線';
+  }
+
+  @override
+  String get workspaceHostOffline => '主機離線';
+
+  @override
+  String get workspaceUnavailable => '這個 Gateway 沒有它的模式';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

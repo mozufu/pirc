@@ -310,4 +310,57 @@ void main() {
     expect(approval.model, 'claude-opus');
     expect(transport.requests.last.query, {'state': 'pending'});
   });
+
+  test('models, uploads and the first-send retry', () async {
+    final transport = FakeTransport(
+      onSend: (request) async => switch (request.path) {
+        '/api/models' => reply(200, {
+          'models': [
+            {
+              'provider': 'anthropic',
+              'id': 'opus',
+              'name': 'Opus',
+              'reasoning': true,
+            },
+            {'provider': 'local', 'id': 'small'},
+          ],
+        }),
+        '/api/sessions/s1/uploads' => reply(201, {
+          'upload': {'id': 'u1', 'mimeType': 'image/png'},
+        }),
+        _ => reply(200, {
+          'preparation': {'operationId': 'op1', 'state': 'sending'},
+        }),
+      },
+    );
+    final api = ApiClient(transport);
+    final models = await ModelsApi(api).list();
+    expect(models.first.reasoning, isTrue);
+    expect(models.last.name, 'small');
+    expect(models.last.reasoning, isFalse);
+    final id = await SessionsApi(
+      api,
+    ).upload('s1', [1, 2], filename: 'a b.png', contentType: 'image/png');
+    expect(id, 'u1');
+    final upload = transport.requests[1];
+    expect(upload.query, {'filename': 'a b.png'});
+    expect(upload.contentType, 'image/png');
+    expect(upload.bytes, [1, 2]);
+    await FirstSendClient(api).retry(
+      'op1',
+      retryId: 'r1',
+      previousCommandId: 'c1',
+      lease: const ControlLease(clientId: 'me', generation: 3),
+    );
+    expect(
+      transport.requests.last.path,
+      '/api/conversation-submissions/op1/retry',
+    );
+    expect(transport.requests.last.json, {
+      'retryId': 'r1',
+      'previousCommandId': 'c1',
+      'clientId': 'me',
+      'generation': 3,
+    });
+  });
 }

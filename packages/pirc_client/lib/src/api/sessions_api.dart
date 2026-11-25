@@ -1,4 +1,5 @@
 import '../api_client.dart';
+import '../transport/transport.dart';
 import '../json.dart';
 import '../models/session.dart';
 
@@ -33,6 +34,26 @@ class SessionsApi {
 
   /// The Gateway refuses this for modes that cannot delete sessions.
   Future<void> delete(String id) => api.delete(path(id));
+
+  /// Stores a file on the session's node; returns the upload ID for a
+  /// `prompt`'s `uploadIds`.
+  Future<String> upload(
+    String id,
+    List<int> bytes, {
+    required String filename,
+    String contentType = 'application/octet-stream',
+  }) async {
+    final reply = await api.json(
+      ApiRequest(
+        'POST',
+        '${path(id)}/uploads',
+        query: {'filename': filename},
+        bytes: bytes,
+        contentType: contentType,
+      ),
+    );
+    return text(field(field(reply, 'upload'), 'id')) ?? '';
+  }
 
   /// Clears the unread mark on every device.
   Future<void> markRead(String id) => api.post('${path(id)}/read');

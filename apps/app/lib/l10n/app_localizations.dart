@@ -728,6 +728,228 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Take control'**
   String get takeControl;
+
+  /// No description provided for @dockGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal'**
+  String get dockGoal;
+
+  /// No description provided for @dockTodo.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get dockTodo;
+
+  /// No description provided for @dockQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 queued message} other{{count} queued messages}}'**
+  String dockQueue(int count);
+
+  /// No description provided for @whenSteer.
+  ///
+  /// In en, this message translates to:
+  /// **'Steer'**
+  String get whenSteer;
+
+  /// No description provided for @whenQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get whenQueue;
+
+  /// No description provided for @thinkingOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get thinkingOff;
+
+  /// No description provided for @thinkingMinimal.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimal'**
+  String get thinkingMinimal;
+
+  /// No description provided for @thinkingLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get thinkingLow;
+
+  /// No description provided for @thinkingMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get thinkingMedium;
+
+  /// No description provided for @thinkingHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get thinkingHigh;
+
+  /// No description provided for @thinkingXhigh.
+  ///
+  /// In en, this message translates to:
+  /// **'Extra high'**
+  String get thinkingXhigh;
+
+  /// No description provided for @thinkingDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default thinking'**
+  String get thinkingDefault;
+
+  /// No description provided for @modelRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get modelRow;
+
+  /// No description provided for @thinkingRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking'**
+  String get thinkingRow;
+
+  /// No description provided for @modelDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default model'**
+  String get modelDefault;
+
+  /// No description provided for @thinkingUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This model has no thinking levels'**
+  String get thinkingUnsupported;
+
+  /// No description provided for @composerLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'Take over to send messages'**
+  String get composerLocked;
+
+  /// No description provided for @composerReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Another device controls this work'**
+  String get composerReadOnly;
+
+  /// No description provided for @composerOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline. Your draft is kept.'**
+  String get composerOffline;
+
+  /// No description provided for @composerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Message…'**
+  String get composerHint;
+
+  /// No description provided for @commandRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'The work refused this message.'**
+  String get commandRejected;
+
+  /// No description provided for @staleEnvironment.
+  ///
+  /// In en, this message translates to:
+  /// **'The work\'s environment changed. Your draft is kept.'**
+  String get staleEnvironment;
+
+  /// No description provided for @attach.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach files'**
+  String get attach;
+
+  /// No description provided for @stopWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop this work'**
+  String get stopWork;
+
+  /// No description provided for @send.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get send;
+
+  /// No description provided for @notSureArrived.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sure it arrived'**
+  String get notSureArrived;
+
+  /// No description provided for @checkStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Check status'**
+  String get checkStatus;
+
+  /// No description provided for @pickWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a project'**
+  String get pickWorkspace;
+
+  /// No description provided for @firstSending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending…'**
+  String get firstSending;
+
+  /// No description provided for @firstRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'The first message was refused.'**
+  String get firstRefused;
+
+  /// No description provided for @sendAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Send again'**
+  String get sendAgain;
+
+  /// No description provided for @firstNotSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sent.'**
+  String get firstNotSent;
+
+  /// No description provided for @newConversationEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a project and write the first message.'**
+  String get newConversationEmpty;
+
+  /// No description provided for @noWorkspaces.
+  ///
+  /// In en, this message translates to:
+  /// **'No projects yet.'**
+  String get noWorkspaces;
+
+  /// No description provided for @hostOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'{host} · offline'**
+  String hostOffline(String host);
+
+  /// No description provided for @workspaceHostOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Its host is offline'**
+  String get workspaceHostOffline;
+
+  /// No description provided for @workspaceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Its mode is not available on this Gateway'**
+  String get workspaceUnavailable;
 }
 
 class _AppLocalizationsDelegate

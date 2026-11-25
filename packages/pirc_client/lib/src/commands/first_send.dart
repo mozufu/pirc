@@ -105,6 +105,28 @@ class FirstSendClient {
   Future<Preparation> get(String operationId) async =>
       _preparation(await api.get(_path(operationId)));
 
+  /// "Send again" after a refused first message: a separate action with its
+  /// own [retryId], never an automatic resend.
+  Future<Preparation> retry(
+    String operationId, {
+    required String retryId,
+    required String previousCommandId,
+    required ControlLease lease,
+  }) async => _preparation(
+    await api.json(
+      ApiRequest.post(
+        _path(operationId, 'retry'),
+        json: {
+          'retryId': retryId,
+          'previousCommandId': previousCommandId,
+          'clientId': lease.clientId,
+          'generation': lease.generation,
+        },
+      ),
+      timeout: dispatchTimeout,
+    ),
+  );
+
   Future<Preparation> cancel(String operationId) async =>
       _preparation(await api.json(ApiRequest.delete(_path(operationId))));
 
