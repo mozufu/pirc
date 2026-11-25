@@ -1,0 +1,122 @@
+name: Client
+
+# The pirc 2 Flutter client (plans/client.md): the workspace packages and
+# apps/app. The old apps/android app is built by android.yml.
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/app/**
+      - packages/**
+      - pubspec.yaml
+      - pubspec.lock
+      - docs/design/tokens.json
+      - fixtures/timeline/**
+      - .github/workflows/client.yml
+  pull_request:
+    paths:
+      - apps/app/**
+      - packages/**
+      - pubspec.yaml
+      - pubspec.lock
+      - docs/design/tokens.json
+      - fixtures/timeline/**
+      - .github/workflows/client.yml
+  workflow_dispatch:
+
+concurrency:
+  group: client-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Analyze and default tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        member:
+          - packages/pirc_client
+          - packages/pirc_ui
+          - packages/pirc_render
+          - packages/pirc_render_document
+          - apps/app
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: flutter/flutter
+          ref: ad70ec4617166f1c38e5d2bfd388af71fda14f06
+          path: .flutter-sdk
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Add pinned Flutter SDK to PATH
+        run: echo "$GITHUB_WORKSPACE/.flutter-sdk/bin" >> "$GITHUB_PATH"
+
+      - name: Resolve the workspace
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: ${{ matrix.member }}
+        run: flutter analyze --no-pub
+
+      # The default suite: tests tagged tier3, node, fonts or device are
+      # skipped there (see dart_test.yaml) and reported as skipped.
+      - name: Default tests
+        working-directory: ${{ matrix.member }}
+        run: flutter test --no-pub
+
+  build:
+    name: Debug APKs and Web build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: flutter/flutter
+          ref: ad70ec4617166f1c38e5d2bfd388af71fda14f06
+          path: .flutter-sdk
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Add pinned Flutter SDK to PATH
+        run: echo "$GITHUB_WORKSPACE/.flutter-sdk/bin" >> "$GITHUB_PATH"
+
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
+
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
+
+      - name: Resolve the workspace
+        run: flutter pub get
+
+      # Both Android variants ship for every release (plans/client.md).
+      - name: Build the standard debug APK
+        working-directory: apps/app
+        run: flutter build apk --debug --no-pub --flavor standard --dart-define=PIRC_TAILSCALE=false
+
+      - name: Build the tailscale debug APK
+        working-directory: apps/app
+        run: flutter build apk --debug --no-pub --flavor tailscale --dart-define=PIRC_TAILSCALE=true
+
+      - name: Build for the Web
+        working-directory: apps/app
+        run: flutter build web --no-pub
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: pirc-app-debug
+          path: apps/app/build/app/outputs/flutter-apk/*.apk
+          if-no-files-found: error

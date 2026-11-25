@@ -8,6 +8,9 @@ on:
   pull_request:
     paths:
       - apps/android/**
+      - packages/**
+      - pubspec.yaml
+      - pubspec.lock
       - fixtures/**
       - .github/workflows/android.yml
   workflow_dispatch:
