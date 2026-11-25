@@ -35,6 +35,8 @@ android {
         create("tailscale") {
             dimension = "network"
             applicationIdSuffix = ".tailscale"
+            // M10: the embedded node's loopback proxy is plain HTTP; give this
+            // flavor its own network_security_config then, not before.
         }
     }
 

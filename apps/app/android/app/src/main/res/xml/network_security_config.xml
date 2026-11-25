@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- HTTPS only. Debug builds override this file to reach a local development gateway. -->
+<!-- Both flavors use this file. M10: the tailscale flavor's embedded node exposes a
+     loopback HTTP CONNECT proxy; allow cleartext to that loopback address only
+     there (a tailscale-flavor override), never in the standard flavor. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>
