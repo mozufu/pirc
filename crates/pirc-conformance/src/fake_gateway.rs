@@ -125,7 +125,7 @@ impl NodeLink {
             // These fixtures play a configured gateway, not a node-local
             // fallback. Real gateways always send the catalog next.
             let catalog = serde_json::json!({"type":"modes", "modes":[
-                pirc_protocol::mode::default_chat(), pirc_protocol::mode::default_work()
+                pirc_protocol::mode::default_work()
             ]});
             assert_gateway_frame(&catalog);
             self.socket
