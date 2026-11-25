@@ -17,7 +17,7 @@ acceptance, activation.
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
 | [M4 Pots backend](#m4-pots-backend)                           | complete | complete    |            | steps 0–13 done; 231 conformance tests on Linux             |
 | [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`               |
-| [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | 12: no files, instructions, delete preview (gone in 10b)    |
+| [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | finished after review; 12 rewritten; Memory panel removed   |
 | [M7 Pots screens](#m7-pots-screens)                           | complete |             |            |                                                             |
 | [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                             |
 | [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                          |
@@ -740,8 +740,12 @@ handover, which is M7.
    route; the data comes from the timeline. Reference: `live/artifacts.dart`.
    Done when: tests cover each state, the manual switch and the kept positions.
 10. **Work panels.** One container with `PanelTabs` (Files, Git, Terminal, Tasks,
-    Memory, Browser, then "More" for Context and Checkpoints). It loads a panel when
-    it opens and again when a `panel_changed` event names its section.
+    Browser, then "More" for Context and Checkpoints). It loads a panel when it
+    opens and again when a `panel_changed` event names its section. The agent names
+    only `context`, `background` and `team`, so Files, Git and Terminal read again on
+    every `panel_changed` and when a run settles. The Memory panel is removed: the
+    session memory it showed is gone from the backend, and workspace memory has no
+    client route.
     - 10a. _Files and Git_ (read only): `GET /api/sessions/:id/files[/content]` with
       a path bar; `git/status`, `git/diff`, `git/log` and `git/commits/:sha` with a
       diff view.
@@ -749,10 +753,12 @@ handover, which is M7.
       full-screen terminal on the stream WebSocket with `xterm`, always dark, with
       the extra key row. Create, type, resize and close need the control lease;
       without it the screen is read-only.
-    - 10c. _Tasks and Memory_: `GET …/panel/state` (background tasks, teammates,
-      memory), `…/panel/background/:taskId` and its `stop`.
+    - 10c. _Tasks_: `GET …/panel/state` (background tasks, teammates),
+      `…/panel/background/:taskId` and its `stop`.
     - 10d. _Browser_: the `…/browser/stream` WebSocket, take and return control, and
-      `…/browser/recording`.
+      `…/browser/recording`: the recordings named by the browser log load with
+      that route and open in another app through the share sheet (WebM does not
+      play in the app on every platform).
     - 10e. _Context and Checkpoints_ (default F): `GET …/panel/context`; the
       checkpoint list, preview, recovery job and "continue" routes under
       `…/checkpoints`. Recovery is a user action and needs the control lease.
@@ -774,16 +780,22 @@ handover, which is M7.
       Done when: tests cover preview, confirm, `plan_changed`, applying, the offline
       source and a second device that reads the result.
 12. **Projects (D4–D6, D19).** Opened from a group header (default G).
-    - This step starts after M4 step 10b, which removes the assistant-only chat
-      projects and the project links. It uses only the workspace routes that remain.
-    - Tabs: Conversations, Resources (`…/files`, `…/capabilities`) and Rules
-      (`…/instructions`, `…/project-config`, `…/project-trust`).
-    - "New project" uses `POST /api/workspaces`. "Delete project…" shows the preview
-      from `GET /api/workspaces/:id/deletion` and confirms with `POST`.
+    - M4 step 10b removed the assistant-only chat projects and the project links.
+      The backend no longer has project files, rule instructions
+      (`…/instructions`) or the delete preview (`GET|POST …/deletion`), so none of
+      them is built.
+    - Tabs: Conversations (the Work rows of that workspace; Back from a
+      conversation opened here returns to the project page), Resources (the
+      workspace capabilities, `GET|PATCH …/capabilities`) and Rules (the project
+      config, `GET …/project-config`, and its trust, `POST …/project-trust`),
+      shown only when the workspace's mode has `project_config`.
+    - "New project" uses `POST /api/workspaces` (a folder on a connected host).
+      "Remove project…" asks once and calls `DELETE /api/workspaces/:id`; an
+      offline host refuses it with `node_offline`, and the app offers to try again.
     - Not built: Notes and Board (marked as planned in D), and leaving a project
       (D17, D18), which has no route.
-      Done when: tests cover each tab, creation, the delete preview and a delete that
-      waits for an offline host.
+      Done when: tests cover each tab, creation, removal and a removal refused by an
+      offline host.
 13. **Calendar (D21–D30).**
     - Month, week, day and list views over `GET /api/calendar`; the time zone under
       the title; marks by shape (dot, bar, diamond, yellow diamond for missed).
@@ -802,7 +814,9 @@ handover, which is M7.
     - Pages: account and this device; model providers and the default model
       (`/api/providers*`, `/api/provider-auth/*`; a paired app needs the `providers`
       grant from step 15); memory (`/api/memory*`); notifications; calendar and
-      agent access; general (language, appearance, text size, time zone, start tab);
+      agent access; general (language, appearance, text size, time zone, start tab;
+      the time zone is this device's or a fixed UTC offset, kept on the device, and
+      the calendar reads, shows and creates in it);
       modes (read only, `GET /api/modes`); about (app and Gateway versions,
       licences).
     - Notifications show what `GET /api/push` reports, the push targets with
