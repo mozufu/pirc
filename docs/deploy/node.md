@@ -211,7 +211,7 @@ Do not edit files. Cite file:line evidence and mark anything unverified.
     "completionWaitMs": 60000
   },
   "features": {
-    "observationalMemory": { "model": { "provider": "openai", "id": "gpt-5-mini" } },
+    "workspaceMemory": { "model": { "provider": "openai", "id": "gpt-5-mini" } },
     "sessionTitle": { "model": { "provider": "openai", "id": "gpt-5-mini" } },
     "autoMode": {
       "mode": "auto",
@@ -237,7 +237,7 @@ Do not edit files. Cite file:line evidence and mark anything unverified.
 ```
 
 - `providers` and `defaultModel` do **not** belong here any more; they are ignored with a warning (models live on the [gateway](gateway.md#model-backends)). Legacy `roles` and `features.agentTeam.kinds` JSON settings are also ignored with a startup warning; move them to `$PIRC_CONFIG_DIR/roles/<name>.md`.
-- `features.*` is documented in the [tools and workflows guide](../guides/tools.md); `features.observationalMemory` in [`docs/architecture/observational-memory.md`](../architecture/observational-memory.md). Each feature object is validated as a whole: an invalid value resets that feature to its defaults.
+- `features.*` is documented in the [tools and workflows guide](../guides/tools.md); repository memory settings are in [`docs/architecture/observational-memory.md`](../architecture/observational-memory.md). Feature objects are validated individually; invalid control flags fail closed, and unknown keys are reported and ignored.
 - Hooks (`sessionStart`, `beforePrompt`, `beforeTool`, `afterTool`, `agentSettled`) receive JSON on stdin; a `beforeTool` hook exits `2` to block a call. They run inside the sandbox.
 - `features.autoMode.deny`: regular expressions (or `/re/flags`) for commands you never want run without asking. A match makes the action dangerous: the agent must ask you, and teammates and subagents are refused. It is checked before anything else, in every approval mode (full access included), against the raw command, each unquoted command, the package.json scripts, Makefile/justfile recipes and shell scripts a command runs, tty input to background tasks and `ptc` scripts (an operation inside a script is checked like the same direct call). An invalid pattern is matched as literal text and the session shows a warning.
 - `features.autoMode.mode`: the approval mode new sessions start in, `"auto"` (default), `"read-only"` or `"full-access"` (see the [tools guide](../guides/tools.md)); each session can switch its own in the web composer. The retired `enabled` still works with a warning: `false` means `full-access`, `true` means `auto`; `mode` wins when both are set.

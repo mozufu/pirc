@@ -9,6 +9,10 @@ User-facing changes are recorded here. See [release policy](docs/development/rel
 - Explicit pots Start in Web and Android: authorize a written instruction in a dedicated same-workspace execution conversation, with backend-attributed “From pots” messages, progress/results, takeover fences and execution-scoped Stop. Tracking and reading still never execute work; autonomous observation/dispatch remain unavailable.
 - Durable one-shot dispatch identities and fail-closed recovery. Uncertain sends are never automatically replayed; pending Stop is reconciled when its Node reconnects.
 
+### Changed
+
+- Remove the legacy per-session observational memory and its `features.observationalMemory` settings, panel state and commands. Session handoffs, repository memory (`features.workspaceMemory`), workspace search and `recall` remain; compaction uses the regular compaction thresholds.
+
 ### Fixed
 
 - Report failed or uncertain initial message admission truthfully, and allow Stop while admission hooks are pending. The complete first-send recovery flow is still in progress.

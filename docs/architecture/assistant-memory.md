@@ -9,7 +9,6 @@ and user workflows are in [Gateway and node](../development/gateway-and-node.md)
 
 | Layer                            | Storage                      | Readers and writers                                                                |
 | -------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------- |
-| Session observations/reflections | Node session ledger          | The session's memory workers; recall reads retained branch sources                 |
 | Workspace handoff notes          | Node workspace-memory ledger | Main coding sessions in that repository; not teammates/subagents                   |
 | USER                             | Gateway SQLite, per user     | Full-assistant modes propose changes; the user approves. Coding sessions read only |
 | MEMORY                           | Gateway SQLite, per user     | Full-assistant modes write notes directly; the user can review, restore and forget |
@@ -18,8 +17,7 @@ and user workflows are in [Gateway and node](../development/gateway-and-node.md)
 `pirc-node chat` hosts the `pots` workspace and each pot's own session, not
 directory workspaces. A pot session has its own node-managed working directory
 under `<stateDir>/chat/pots/sessions/<sessionId>/`; file tools and bash remain
-available. Session OM remains enabled independently of global memory.
-Repository work belongs on coding nodes.
+available. Repository work belongs on coding nodes.
 
 The gateway derives the session owner and enforces the workspace mode and
 capabilities on agent operations. Directory sessions may request USER context,
@@ -30,8 +28,8 @@ Origin is computed by code, not supplied by a model's account of where a fact
 came from. The assistant feature finds a proposed USER quote in actual `user`
 messages (with normalized matching), not tool results or custom messages. Notes
 carry origins and source entry IDs; a human origin requires a matching quote.
-Recall results are omitted from observer evidence rather than learned again.
-Gateway deliveries and team events remain data, not user instructions.
+Recall and history results are replayed evidence, not fresh repository
+sources. Gateway deliveries and team events remain data, not user instructions.
 
 Memory text is redacted before storage, on both the node and gateway. Redaction
 is best effort, not a guarantee that arbitrary secrets are detected.
@@ -137,7 +135,7 @@ Skills are configuration, not memory. `SKILL.md` directories load from
 skills reach chat sessions too; repository skills belong to that workspace and
 are labelled untrusted repository content. Only their names, descriptions and
 paths are listed initially; the model reads a skill on demand or the user loads
-`/skill:<name>`. Loaded skill text is not new observer evidence. Skill
+`/skill:<name>`. Loaded skill text is not new repository-memory evidence. Skill
 directories are protected from agent writes and are not synced from the
 gateway; install skills and required programs on the node that runs them.
 
@@ -155,8 +153,8 @@ See the [configuration reference](../development/gateway-and-node.md) and
 ## Implementation
 
 Memory operations and schemas live in `crates/pirc-gateway/src/memory.rs` and its
-submodules; agent-side memory is in
-`crates/pirc-agent/src/features/assistant/` and
-`crates/pirc-agent/src/features/memory/`. Workspace-memory ledgers and
-mirroring are in `crates/pirc-node/src/workspace_memory/` and
+submodules; agent-side memory is in `crates/pirc-agent/src/features/assistant/`.
+Workspace-memory ledgers and mirroring are in
+`crates/pirc-agent/src/features/memory/workspace.rs`,
+`crates/pirc-node/src/workspace_memory/` and
 `crates/pirc-gateway/src/memory_records.rs`.

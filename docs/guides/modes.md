@@ -166,7 +166,7 @@ read. The default Work section list preserves the former prompt text and
 section metadata.
 
 Selectable feature configuration keys are `sessionTitle`, `todo`,
-`observationalMemory`, `skills`, `browser`, `webSearch`, `schedules`,
+`workspaceMemory`, `skills`, `browser`, `webSearch`, `schedules`,
 `background`, `agentTeam`, and `goal`. These are not runtime hook names.
 `autoMode` is deliberately excluded: modes do not choose approvals. Explicit
 node `enabled: false` wins over mode defaults; explicit `enabled: true` can

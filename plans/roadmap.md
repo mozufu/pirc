@@ -15,7 +15,7 @@ acceptance, activation.
 | [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)         |
 | [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11   |
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
-| [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–10b done; 10c next, 11 in progress on a branch      |
+| [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–10b and 10c-2 done; 10c-1 and 11 in progress        |
 | [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`               |
 | [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | 12: no files, instructions, delete preview (gone in 10b)    |
 | [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |
@@ -129,13 +129,10 @@ and not patched in the meantime.
      few fail-closed tests that used downgrade helpers to drop the table directly.
    - `docs/deploy/upgrades.md`: pirc 2 needs fresh state directories.
      Deletes: about 3,000 lines.
-6. **Legacy observational-memory archive: moved to M4.** The module
-   `crates/pirc-agent/src/features/memory/` (~3,100 lines) is described as a
-   read-only archive, but its workspace ledger, panel and serializer are used by
-   the live workspace memory, memory mirror, runner and PTC
-   (`crates/pirc-node/src/workspace_memory.rs`, `memory_mirror.rs`,
-   `runner/`, `panels/`). Separating them is a memory redesign, done with the
-   per-pot memory in M4 step 10.
+6. **Legacy observational-memory archive: removed in M4 step 10c-2.** The legacy
+   per-session ledger, panel, serializer and settings are gone; the workspace
+   ledger, text/time helpers and mirroring that live workspace memory needs stay
+   in `crates/pirc-agent/src/features/memory/`.
 7. **Security defaults without a transition.**
    - The Gateway refuses to start without `PIRC_PROXY_SECRET` unless
      `PIRC_PROXY_SECRET_REQUIRED=false` is set; development scripts and
