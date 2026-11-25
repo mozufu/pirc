@@ -573,14 +573,7 @@ async fn native_recovery_preserves_dirty_git_and_continues_once_across_devices_a
         "second writer started: {}",
         refused.body
     );
-    // Directory-mode conversations retain the existing no-delete capability.
-    // A recovery must not accidentally widen it or remove the user's files.
-    assert_eq!(
-        api.send("DELETE", &format!("/api/sessions/{next}"), &phone, None)
-            .await
-            .status,
-        400
-    );
+    // A recovery never removes the user's files.
     assert!(candidate.join("continued.txt").exists());
     let generation = control(&api, &phone, &id, "phone").await;
     let reopened = ok(

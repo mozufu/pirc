@@ -205,6 +205,14 @@ async fn a_confirmed_drain_installs_the_reviewed_target_once_and_reopens_admissi
 #[tokio::test]
 async fn unproven_evidence_installs_only_after_acknowledging_its_exact_digest() {
     let mut f = Fixture::new("move", true, true).await;
+    // With kernel containment (a Linux host with its sandbox) the earlier run
+    // is proven contained, so there is nothing to acknowledge.
+    if f.node.sandbox.contains_descendants() {
+        let (status, installed) = f.install("move").await;
+        assert_eq!(status, 200, "{installed}");
+        f.node.close().await;
+        return;
+    }
     let (status, refused) = f.install("move").await;
     assert_eq!(status, 409);
     assert_eq!(refused["error"]["code"], "revocation_unconfirmed");
