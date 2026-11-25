@@ -47,4 +47,31 @@ void main() {
     );
     await expectLater(api.connect(), throwsA(isA<ClientUpgradeRequired>()));
   });
+
+  test('onFatal hears a 401 or 426 from any route, and nothing else', () async {
+    final heard = <PircException>[];
+    final statuses = {'/a': 401, '/b': 426, '/c': 403, '/d': 404, '/e': 200};
+    final api = ApiClient(
+      FakeTransport(
+        onSend: (request) async => reply(statuses[request.path]!, {
+          'error': {'code': 'x', 'message': 'm'},
+        }),
+      ),
+      onFatal: heard.add,
+    );
+    for (final path in statuses.keys) {
+      try {
+        await api.get(path);
+      } on ApiError {
+        // Each caller still gets its own error.
+      }
+    }
+    // A raw send (recordings, uploads) is covered too.
+    await api.send(const ApiRequest.get('/a'));
+    expect(heard.map((e) => e.runtimeType), [
+      PairingRequired,
+      ClientUpgradeRequired,
+      PairingRequired,
+    ]);
+  });
 }

@@ -9,17 +9,26 @@ import 'transport/transport.dart';
 
 /// JSON calls over a [Transport]: a time limit per request and typed errors.
 class ApiClient {
-  ApiClient(this.transport, {this.timeout = const Duration(seconds: 30)});
+  ApiClient(
+    this.transport, {
+    this.timeout = const Duration(seconds: 30),
+    this.onFatal,
+  });
 
   final Transport transport;
 
   /// How long one request may take before it fails with [RequestTimeout].
   final Duration timeout;
 
+  /// Called for every reply that means the whole connection is over: a 401
+  /// ([PairingRequired]) or a 426 ([ClientUpgradeRequired]), whatever the
+  /// route. The caller still gets the reply (or the thrown error).
+  final void Function(PircException error)? onFatal;
+
   /// Sends [request] and returns the reply whatever its status.
-  Future<ApiResponse> send(ApiRequest request, {Duration? timeout}) {
+  Future<ApiResponse> send(ApiRequest request, {Duration? timeout}) async {
     final limit = timeout ?? this.timeout;
-    return transport
+    final response = await transport
         .send(request)
         .timeout(
           limit,
@@ -27,6 +36,13 @@ class ApiClient {
             '${request.method} ${request.path} took over $limit',
           ),
         );
+    if (onFatal != null && !response.ok) {
+      final error = errorFor(response);
+      if (error is PairingRequired || error is ClientUpgradeRequired) {
+        onFatal!(error!);
+      }
+    }
+    return response;
   }
 
   /// Sends [request]; throws the typed [ApiError] for a non-2xx reply.
