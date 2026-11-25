@@ -83,10 +83,10 @@ class HandoverTo {
 
 /// One item of a handover with its fit at the receiver.
 @immutable
-class HandoverItem {
-  const HandoverItem({required this.item, this.fit = 'ok', this.reason});
+class HandoverEntry {
+  const HandoverEntry({required this.item, this.fit = 'ok', this.reason});
 
-  factory HandoverItem.fromJson(Object? json) => HandoverItem(
+  factory HandoverEntry.fromJson(Object? json) => HandoverEntry(
     item: HeldItem.fromJson(json),
     fit: str(field(json, 'fit')) ?? 'ok',
     reason: str(field(json, 'reason')),
@@ -125,7 +125,7 @@ class Handover {
     revision: number(field(json, 'revision')) ?? 0,
     items: [
       for (final item in array(field(json, 'items')) ?? const [])
-        HandoverItem.fromJson(item),
+        HandoverEntry.fromJson(item),
     ],
     createdAt: number(field(json, 'createdAt')) ?? 0,
     appliedAt: number(field(json, 'appliedAt')),
@@ -146,7 +146,7 @@ class Handover {
 
   /// Sent back with confirm.
   final int revision;
-  final List<HandoverItem> items;
+  final List<HandoverEntry> items;
   final int createdAt;
   final int? appliedAt;
 }
