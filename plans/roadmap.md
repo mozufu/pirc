@@ -16,7 +16,7 @@ acceptance, activation.
 | [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11   |
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
 | [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–4 done                                              |
-| [M5 Client foundation](#m5-client-foundation)                 | complete | in progress |            | steps detailed                                              |
+| [M5 Client foundation](#m5-client-foundation)                 | complete | in progress |            | steps 1–3 done (`f81ba7fd`…`4697e62e`)                      |
 | [M6 Work and settings screens](#m6-work-and-settings-screens) | outline  |             |            |                                                             |
 | [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |
 | [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                             |
@@ -284,8 +284,10 @@ the backend milestones. Flutter comes from the Nix shell (`nix develop`, Flutter
       among those files (the held-image gate, media boxes) move into `rendering/`.
    2. _Inject localization and theme._ `rendering/render_l10n.dart` gives the package
       its own `tr(source, [values])` with the same signature, which calls an
-      injectable `RenderLocalizations` delegate (default: English with parameter
-      substitution); the 82 files change only their import. The old app installs
+      injectable `RenderLocalizations` delegate; the 82 files change only their
+      import. The package owns an en/zh-TW catalog of its 958 strings
+      (`lib/src/l10n/*.json`, `tool/generate_l10n.dart`; 23 have Chinese source
+      text), and its default delegate reads `RenderL10n.language`. The old app installs
       a delegate backed by `AppI18n` in `main()` and in `test/flutter_test_config.dart`.
       The seven `PircColors` users read a `RenderColors` `ThemeExtension` instead.
    3. _Move._ `git mv apps/android/lib/rendering packages/pirc_render/lib/src`; the
@@ -295,21 +297,30 @@ the backend milestones. Flutter comes from the Nix shell (`nix develop`, Flutter
       licence asset that `licenses.dart` registers moves with the code and is read as
       `packages/pirc_render/assets/…`. Renderer tests that import no `live/` code move to
       `packages/pirc_render/test`.
-   4. _Tier 3 behind interfaces._ Script hooks, Canvas, computed-style export and the
-      dialog top layer move out of `native_html.dart` into
-      `packages/pirc_render_document`, which depends on `pirc_render` and plugs in
-      through a `DocumentRuntime` interface (null for chat). The `live/document_*`
+   4. _Tier 3 behind interfaces._ Canvas drawing and pointer input, the computed-style
+      export and script form submission move into `packages/pirc_render_document`,
+      which depends on `pirc_render` and plugs in through `RenderHost.documentRuntime`
+      (null for chat: a `<canvas>` stays blank, script submissions are refused). The
+      computed-style spec type, the canvas sizing layout and the canvas limits stay in
+      `pirc_render`. The dialog top-layer layout and the script callbacks remain in
+      `native_html.dart`: they are inline, attribute-driven layout paths without
+      imports of their own, and are split when M8 rebuilds the document code. The `live/document_*`
       files and their Kotlin counterparts stay in `apps/android`: they depend on the
       old Gateway client and are rebuilt on `pirc_client` in M8. A default-suite test
       walks the transitive imports of `package:pirc_render/pirc_render.dart` and fails
       if a tier-3 file is reachable.
    5. _Web compile._ Replace `dart:io` in `native_raster_images.dart` with a
       conditional import, and the 64-bit `ByteData` accessors in
-      `mermaid/mindmap_cose.dart` with two 32-bit reads. Pin `flutter_math_fork` to an
-      exact version, with a comment that 42 imports use its internals.
+      `mermaid/mindmap_cose.dart` with two 32-bit reads, and the integer literal in
+      `html_input_sizing.dart` that JavaScript cannot represent. Pin
+      `flutter_math_fork` to an exact version, with a comment that 42 imports use its
+      internals. A throwaway `flutter build web` of `NativeMarkdown` compiles.
+      Renderer tests that read Chromium captures still read them from
+      `apps/android/tool/parity/fixtures/`; M8 moves those fixtures.
       Done when: `pirc_render` analyzes with no `apps/android` import; the import-graph
       test passes; the moved fast tests pass; `apps/android` analyzes.
-3. **Client package** (`pirc_client`, pure Dart so `dart test` runs it).
+3. **Client package** (`pirc_client`, pure Dart; inside the Flutter workspace its
+   tests run with `flutter test`, because `dart test` refuses to resolve there).
    - API models for the capability document, session snapshot, events, command
      results and errors, written against the Gateway routes on `main` (M2.1–M2.4),
      not against the old clients.
