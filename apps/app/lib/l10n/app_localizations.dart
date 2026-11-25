@@ -1028,6 +1028,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Allow full access'**
   String get approvalFullAccessConfirm;
+
+  /// No description provided for @notSentByYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sent by you'**
+  String get notSentByYou;
+
+  /// No description provided for @potCoordinates.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} coordinates this work. You can answer its questions or stop it; take over to send instructions.'**
+  String potCoordinates(String name);
+
+  /// No description provided for @takeOver.
+  ///
+  /// In en, this message translates to:
+  /// **'Take over'**
+  String get takeOver;
+
+  /// No description provided for @takenOver.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} sends no more instructions here.'**
+  String takenOver(String name);
 }
 
 class _AppLocalizationsDelegate

@@ -497,6 +497,22 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get approvalFullAccessConfirm => '允許完全存取';
+
+  @override
+  String get notSentByYou => '不是你直接傳的訊息';
+
+  @override
+  String potCoordinates(String name) {
+    return '由 $name 協調中。你可以回答問題或停止；要直接下指令請先接管。';
+  }
+
+  @override
+  String get takeOver => '接管';
+
+  @override
+  String takenOver(String name) {
+    return '$name 不會再對這個工作下指令。';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

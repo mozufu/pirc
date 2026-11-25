@@ -174,7 +174,7 @@ class _SessionComposerState extends ConsumerState<SessionComposer> {
                       Flexible(
                         child: TextButton(
                           key: const Key('model-button'),
-                          onPressed: mine && online
+                          onPressed: canWrite
                               ? () => showModelSheet(
                                   context,
                                   provider: state.selectedModelProvider,

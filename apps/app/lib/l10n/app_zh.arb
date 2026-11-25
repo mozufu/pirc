@@ -154,5 +154,9 @@
   "approvalFullAccess": "完全存取",
   "approvalMode": "核准模式",
   "approvalFullAccessWarning": "agent 可以不經詢問執行任何指令、修改任何檔案。只在你信任的工作使用。",
-  "approvalFullAccessConfirm": "允許完全存取"
+  "approvalFullAccessConfirm": "允許完全存取",
+  "notSentByYou": "不是你直接傳的訊息",
+  "potCoordinates": "由 {name} 協調中。你可以回答問題或停止；要直接下指令請先接管。",
+  "takeOver": "接管",
+  "takenOver": "{name} 不會再對這個工作下指令。"
 }

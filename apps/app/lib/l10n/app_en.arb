@@ -238,5 +238,23 @@
   "approvalFullAccess": "Full access",
   "approvalMode": "Approval mode",
   "approvalFullAccessWarning": "The agent may run any command and change any file without asking. Use this only for work you trust.",
-  "approvalFullAccessConfirm": "Allow full access"
+  "approvalFullAccessConfirm": "Allow full access",
+  "notSentByYou": "Not sent by you",
+  "potCoordinates": "{name} coordinates this work. You can answer its questions or stop it; take over to send instructions.",
+  "@potCoordinates": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "takeOver": "Take over",
+  "takenOver": "{name} sends no more instructions here.",
+  "@takenOver": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

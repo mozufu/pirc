@@ -526,4 +526,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get approvalFullAccessConfirm => 'Allow full access';
+
+  @override
+  String get notSentByYou => 'Not sent by you';
+
+  @override
+  String potCoordinates(String name) {
+    return '$name coordinates this work. You can answer its questions or stop it; take over to send instructions.';
+  }
+
+  @override
+  String get takeOver => 'Take over';
+
+  @override
+  String takenOver(String name) {
+    return '$name sends no more instructions here.';
+  }
 }
