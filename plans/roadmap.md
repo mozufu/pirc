@@ -17,7 +17,7 @@ acceptance, activation.
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
 | [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–8a and 9a done; 11 in progress on a branch          |
 | [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`               |
-| [M6 Work and settings screens](#m6-work-and-settings-screens) | outline  |             |            |                                                             |
+| [M6 Work and settings screens](#m6-work-and-settings-screens) | complete |             |            | 16 steps; defaults A–H accepted 2026-11-25                  |
 | [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |
 | [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                             |
 | [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                          |
@@ -509,13 +509,288 @@ the backend milestones. Flutter comes from the Nix shell (`nix develop`, Flutter
 
 ## M6 Work and settings screens
 
-Outline (detailed before start): pairing and connection; Work tab (filters, project
-grouping); work conversation (task bar, From line, take over, first-send, composer,
-model sheet, tool cards, approvals, questions, artifacts with manual version switch);
-work panels (files, Git, terminal, tasks, memory, browser, context, checkpoints);
-environment switching; projects; calendar; settings (account, AI providers and
-models, memory, notifications, general, data, about); devices and pairing; the
-management approval screen.
+Specification: [client.md](client.md) and the design handoff
+([E](../docs/design/design-spec-pots.md), [D](../docs/design/design-spec-D.md),
+[C](../docs/design/design-spec-C.md), [components](../docs/design/components.md),
+[rules](../docs/design/design-rules.md)). Route formats are in
+[gateway-and-node.md](../docs/development/gateway-and-node.md). The work touches
+`apps/app`, `packages/pirc_client` and `packages/pirc_ui`; it changes no backend
+code. Steps 1–7 run in order. Steps 8–15 can run in parallel after step 6.
+
+Code goes in these places. API calls for one route family go in one file under
+`packages/pirc_client/lib/src/api/` (new). Widgets that more than one screen uses go
+in `packages/pirc_ui/lib/src/components/` (new), with the names from
+[components.md](../docs/design/components.md). Screens and their Riverpod providers
+go in `apps/app/lib/src/<area>/`. Every new string is added to `app_en.arb` and
+`app_zh.arb` in the same commit. Client tests use `FakeTransport` from
+`packages/pirc_client/test/support/fakes.dart`.
+
+The old clients are the reference for behavior that the design does not describe:
+`apps/android/lib/live/` and `apps/web/src/lib/`. They are read, not ported file by
+file ([client.md](client.md#state)).
+
+**Defaults the owner accepted on 2026-11-25.** The design leaves these points open
+or gives two answers.
+
+- **A. Token storage.** `flutter_secure_storage` holds the device token on Android
+  and macOS until M8 adds the Keystore channel. Web has no token.
+- **B. Updates of the Work list.** Lists read again on the hints of the
+  `/api/hints` WebSocket, which needs no session (step 2).
+- **C. Panels, artifacts and the task sheet at 900 and wider.** They use rule C: the
+  right pane at 1200 and wider; they replace the middle at 900–1199; they are a full
+  page below 900. The right pane holds one kind of content at a time.
+- **D. Stop.** The composer has a secondary button "Stop this work", as in E36. The
+  main button is always Send.
+- **E. Tasks.** The backend has no task model yet
+  ([contracts](../docs/architecture/contracts.md#open-acceptance-gaps)). M6 shows the
+  goal, todo list and queue that the snapshot already holds. The D "send to" choice
+  (D8) and the task detail sheet (D9) are not built.
+- **F. Context and checkpoints panels.** Both are built as simple read-only pages,
+  reached from a "More" entry after the six panel tabs. This answers the carried-over
+  Context inspector item.
+- **G. Entry to a project.** A tap on a project group header in the Work tab opens
+  the project page.
+- **H. Management approval screen.** M6 builds the screen. M9 only makes the Web
+  build the served one.
+
+The design uses 接管 for "take over a work session". 接手 means the receiver of a pot
+handover, which is M7.
+
+1. **Fill the gaps in `pirc_client`.**
+   - `Session` gains `origin` (kind `schedule`) and `writeLease`. The `delegation`
+     kind is not mapped: M4 step 10b removes delegations. `Capabilities` gains a
+     `pots` getter.
+   - `HintMessage.types` gains `pots_changed`, `threads_changed`,
+     `approvals_changed`, `activity_changed` and `budget_requests_changed`. Today
+     these frames are dropped.
+   - `pi_messages.dart` maps `customType: "pot-instruction"` to a message with the
+     pot's name and ID from `details` (`potName`, `potId`, `workId`,
+     `instructionId`). The old `pots-dispatch` case is deleted.
+   - `policy.dart` `errorFor` maps `409 environment_required` and `409 taken_over`
+     to typed errors.
+   - `ApiClient` gains `patch`, `put` and `delete` helpers. `TransportConfig` gains
+     an optional callback that returns the management grant; the transport sends it
+     as `x-pirc-management` only to `/api/devices*`, `/api/providers*` and
+     `/api/provider-auth/*`.
+     Done when: unit tests cover each item, and a safety test shows that the grant
+     header is never sent to another path.
+     Deletes: the `pots-dispatch` mapping.
+2. **Storage, pairing and connection** (`apps/app/lib/src/connection/`).
+   - Add `shared_preferences` (language, appearance, text size, start tab, Gateway
+     URL) and `flutter_secure_storage` (device token, default A). The app's
+     `TokenStore` reads the secure store. Check the macOS sandbox build first: M5
+     added no Keychain entitlement.
+   - Pairing uses the current v1 flow: the user pastes a
+     `pirc://pair?url=<origin>&token=<token>` link. The page shows "checking",
+     "not valid" and "paired". It calls `ApiClient.connect()` before it saves the
+     token. The QR scanner and the `pirc` URL scheme come in M8. The Web build has no
+     pairing page.
+   - Providers: `connectionProvider` (the transport, `ApiClient`, capabilities and
+     account) and `connectionStateProvider`. `PairingRequired` (401 or close code
+     4401 on the event socket) clears the token and opens the pairing page.
+     `ClientUpgradeRequired` shows a blocking "update the app" page.
+   - Hints (default B): `pirc_client` gains a `HintStream` for the `/api/hints`
+     WebSocket, with the reconnect rules of `SessionEventStream`. The Gateway replays
+     nothing, so each list reads again after every connect and reconnect. Close code
+     1013 means that the client was too slow; the stream connects again.
+   - Shared state widgets: the offline banner ("Offline. What you see may be out of
+     date."), "Reconnecting…" and the reconnect overlay that shows no buttons until
+     the state is known (C § states, `StatesD`).
+     Done when: tests cover pairing (valid, wrong link, 401, 426), token removal on
+     4401, saved language and appearance after a restart, and `HintStream` (a hint
+     arrives, a reconnect asks for a new read, close code 1013).
+3. **Drawer and shell (E21).** The ☰ button opens a drawer that pushes the page
+   (widths 310, 396 and 412). It shows the connection state, one row for each host
+   from `GET /api/nodes`, the Settings entry and the light/dark switch. The user row
+   shows the account name only; usage is M7. Tab badges are yellow.
+   Done when: widget tests at 375, 700, 1000 and 1300 wide show the drawer open and
+   closed, and the drawer keeps the selected tab.
+4. **Work tab (E2–E4).**
+   - Data: `GET /api/sessions`, `GET /api/workspaces`, `GET /api/pot-works` and
+     `GET /api/model-approvals?state=pending`, loaded again on `sessions_changed`,
+     `pots_changed` and `approvals_changed` hints from `HintStream`. A session is
+     "opened by a pot" when a pot work has its `sessionId`; the session itself has
+     no pot field.
+   - Filters: All; Needs you (`runStatus` is `waiting_input`, plus pending model
+     approvals); Running (`runStatus` is `running`); Mine (no pot work and no
+     `origin`); Opened by pots. Each filter shows its note from `PhoneE`.
+   - Rows have no avatar. Line 1: name, "From <pot>" or the schedule title, and the
+     time. Line 2: host and state, with a symbol and text. Sessions are grouped by
+     workspace under a header with a folder icon, the name and the count; the search
+     field filters names and project names on the device.
+   - Row actions: rename, pin, settle (`PATCH /api/sessions/:id`), delete
+     (`DELETE`), and mark read (`POST /api/sessions/:id/read`) when a session opens.
+   - A model approval row is shown but does not open; the approval sheet (E25) is
+     M7.
+     Done when: tests cover each filter, the grouping, each hint and each row
+     action; golden images at the four widths, light and dark.
+5. **Work conversation, reading.**
+   - A `SessionController` for one open session (under 500 lines): snapshot,
+     `SessionEventStream`, `reduceEvent`, a new snapshot on `SnapshotNeeded`, and
+     the control lease with `LeaseHeartbeat` tied to app visibility.
+   - Top bar: back (not at 1200 and wider), the name, the environment line (state
+     dot, project, host) and the panel button.
+   - Timeline: a reversed `ListView`. User and assistant messages use
+     `NativeMarkdown` in document style, without bubbles. Tool calls are grouped in a
+     `RunCard` ("n tool steps", failures marked with ✕ and text). System notices use
+     `SystemEvent`.
+   - Scrolling follows new output only when the view is at the bottom; otherwise a
+     "New content ↓" or "A question waits for you ↓" button shows.
+   - Control: when another client holds the lease, the composer is read-only and
+     shows "Controlled by <name>" with "Take control" (`acquire` with `force`).
+     Done when: tests replay `fixtures/timeline/` into the screen, cover reset and
+     reconnect, and cover lease loss and take control.
+6. **Composer, first-send and the model sheet.**
+   - Composer (`ComposerDock`): attachment button, model button, steer or queue
+     choice (`steer`, `follow_up`), Send, and "Stop this work" while a run is active
+     (default D). `stop` returns the cleared queue text to the draft. Drafts are kept
+     per session in app storage and are never sent automatically.
+   - Commands go through `CommandSender` with `session.binding`. On
+     `stale_environment` the draft stays and the screen loads a new snapshot. An
+     uncertain command shows "Not sure it arrived" with "Check status"
+     (`CommandSender.resolve`); it is never sent again (N8).
+   - New conversation (D2, D3): the "new" button opens a draft with a workspace
+     sheet that lists hosts and workspaces. A host that is offline shows the reason
+     and cannot be picked. The first Send runs `FirstSendClient.send`. The draft is
+     not in the Work list until it is accepted. States: "sending", "not sure it
+     arrived" with "Check status" (`receipt`), and "refused" with "Send again" as a
+     separate action (`retry`). A first-send journal in app storage lets the app
+     check an open operation after a restart.
+   - Attachments: `POST /api/sessions/:id/uploads`, or the first-send attachment
+     route for a new conversation. The file pickers are native and come in M8; M6
+     uses the Flutter `file_selector` plugin.
+   - Model sheet (C option 3): two rows, "Model" and "Thinking", each with a
+     sub-list. Data from `GET /api/models`. Changes are the `set_model` and
+     `set_thinking` commands. A model without thinking disables the row. The goal,
+     todo list and queue show above the composer (default E).
+     Done when: tests cover each command, the stale binding, the uncertain state,
+     every first-send state and a restart with an open operation.
+7. **Questions and approvals.** `QuestionCard` for the four interaction kinds
+   (`select`, `confirm`, `input`, `editor`), answered with
+   `POST /api/sessions/:id/interactions/:interactionId/answer`. States: waiting,
+   sending, answered (one summary line), expired (no buttons), and "control is on
+   another device" (Send disabled, with "Take control"). An answer from another
+   device turns the card into "handled elsewhere". The approval mode control sends
+   `set_approval_mode`. A `relay.*` interaction needs no lease.
+   Done when: tests cover each kind and each state, and two clients that answer the
+   same question.
+8. **The From line and take over (E36).**
+   - A `pot-instruction` message shows a "From <pot>" tag above the instruction and
+     a source line under it ("Not sent by you"). The name comes from the message
+     `details`, never from the text.
+   - While the pot work's `state` is `open`, a dark bar says that the pot
+     coordinates the work, with a 接管 button. The composer then accepts only
+     answers to questions and Stop; its hint says "Take over to send messages". The
+     Gateway does not refuse a user command before a take-over, so the app applies
+     this rule.
+   - 接管 calls `POST /api/pot-works/:id/take-over` with the work ID, not the
+     session ID. After success a plain banner says that the pot sends no more
+     instructions here. `409 taken_over` from a second device is treated as success.
+     Back returns to the screen the user came from.
+     Done when: tests cover both states, the composer rule, the 409 case and a
+     `pots_changed` hint that arrives from another device.
+9. **Artifacts.** `pirc-artifact` result blocks in a message become a `ResultCard`
+   (kind, version, state, title, summary; copy, share, open). `ResultReader` opens
+   in the place default C gives. A newer version shows a note with a "Switch to vN"
+   button; the reader never switches by itself, and each version keeps its own
+   reading position (P1, 3A). States: generating, done, newer version, failed (the
+   last good version stays), not supported (Markdown text). There is no artifact
+   route; the data comes from the timeline. Reference: `live/artifacts.dart`.
+   Done when: tests cover each state, the manual switch and the kept positions.
+10. **Work panels.** One container with `PanelTabs` (Files, Git, Terminal, Tasks,
+    Memory, Browser, then "More" for Context and Checkpoints). It loads a panel when
+    it opens and again when a `panel_changed` event names its section.
+    - 10a. _Files and Git_ (read only): `GET /api/sessions/:id/files[/content]` with
+      a path bar; `git/status`, `git/diff`, `git/log` and `git/commits/:sha` with a
+      diff view.
+    - 10b. _Terminal_: the list (`GET|POST …/terminals`, `…/close`) and the
+      full-screen terminal on the stream WebSocket with `xterm`, always dark, with
+      the extra key row. Create, type, resize and close need the control lease;
+      without it the screen is read-only.
+    - 10c. _Tasks and Memory_: `GET …/panel/state` (background tasks, teammates,
+      memory), `…/panel/background/:taskId` and its `stop`.
+    - 10d. _Browser_: the `…/browser/stream` WebSocket, take and return control, and
+      `…/browser/recording`.
+    - 10e. _Context and Checkpoints_ (default F): `GET …/panel/context`; the
+      checkpoint list, preview, recovery job and "continue" routes under
+      `…/checkpoints`. Recovery is a user action and needs the control lease.
+      Done when: each panel has tests for loading, empty, offline, failed and
+      read-only, and the container has tests at the four widths.
+11. **Environment switching (D10–D13).** Shown only when
+    `features.environmentSwitching` is usable.
+    - The workspace sheet opens from the environment line: host, folders with their
+      rights (`GET …/environment`, `GET|POST …/grants`, `…/grants/:id/revoke`) and
+      the current state.
+    - "Switch host…" creates a preview (`POST …/environment-transitions/previews`
+      with `targetWorkspaceId` and `expectedBinding`) and shows what stops, what
+      stays and what the target lacks. Cancel changes nothing. Confirm, acknowledge,
+      cancel and reauthorize use the routes of
+      [contracts § 7](../docs/architecture/contracts.md#7-transition-read-model-and-recovery).
+    - While a transition is active a banner shows its steps, and the composer keeps
+      the draft and sends nothing. When the source host is offline the banner says
+      that nothing starts on the target before the source confirms.
+      Done when: tests cover preview, confirm, `plan_changed`, applying, the offline
+      source and a second device that reads the result.
+12. **Projects (D4–D6, D19).** Opened from a group header (default G).
+    - This step starts after M4 step 10b, which removes the assistant-only chat
+      projects and the project links. It uses only the workspace routes that remain.
+    - Tabs: Conversations, Resources (`…/files`, `…/capabilities`) and Rules
+      (`…/instructions`, `…/project-config`, `…/project-trust`).
+    - "New project" uses `POST /api/workspaces`. "Delete project…" shows the preview
+      from `GET /api/workspaces/:id/deletion` and confirms with `POST`.
+    - Not built: Notes and Board (marked as planned in D), and leaving a project
+      (D17, D18), which has no route.
+      Done when: tests cover each tab, creation, the delete preview and a delete that
+      waits for an offline host.
+13. **Calendar (D21–D30).**
+    - Month, week, day and list views over `GET /api/calendar`; the time zone under
+      the title; marks by shape (dot, bar, diamond, yellow diamond for missed).
+    - Personal events: `POST|PATCH|DELETE /api/calendar/events`, with the repeat
+      scope sheet (this one, this and later, the series). A drag opens a draft; only
+      Save changes the event.
+    - Agent tasks: `/api/schedules` (create, edit, delete, run,
+      `runs/:runId/dismiss`). A missed run is never run again without a choice. A
+      task whose target is gone is shown as paused, and Save stays disabled until a
+      new target is picked.
+    - Agent access: `GET|PATCH /api/calendar/permissions`. A change proposal in a
+      conversation is a `QuestionCard` with the before and after values.
+      Done when: tests cover the four views, each event form, the three repeat
+      scopes, a missed run and a paused task.
+14. **Settings (E22).** Opened from the drawer; content is at most 720 wide.
+    - Pages: account and this device; model providers and the default model
+      (`/api/providers*`, `/api/provider-auth/*`; a paired app needs the `providers`
+      grant from step 15); memory (`/api/memory*`); notifications; calendar and
+      agent access; general (language, appearance, text size, time zone, start tab);
+      modes (read only, `GET /api/modes`); about (app and Gateway versions,
+      licences).
+    - Notifications show what `GET /api/push` reports, the push targets with
+      Remove, and "Send test". The three levels of D20 and the quiet hours need a
+      Gateway setting that does not exist; they move to M8 with push.
+    - "Unpair this device…" removes the token and local data after a confirmation.
+    - A row is shown only when it does something. The pots row and the usage row
+      are M7.
+      Done when: each page has tests for loading, failed and the main action.
+15. **Devices and the management approval screen.**
+    - App side (`native_management_access.dart` is the reference): create a request
+      with a SHA-256 challenge and a capability list, show the address to open in a
+      browser, poll the request, claim it with the verifier, and keep the grant in
+      memory only. The grant is dropped when it expires, when the user unpairs and
+      when the app stops.
+    - Devices page: list (`devices:read`), revoke (`devices:revoke`) and "Pair a new
+      device" (`devices:pair`), which shows the link and its QR code one time, with
+      the lifetime of the new device.
+    - Approval screen (default H): the route `/?nativeManagement=<id>` in the Web
+      build. It shows the device name, each capability with its own text, the pairing
+      lifetime for `devices:pair`, and Approve and Deny. The Gateway accepts these
+      two calls only from a browser identity, so the route does not exist in the
+      Android and macOS builds.
+      Done when: tests cover the whole grant flow, expiry, denial, each device
+      action without its grant, and the approval screen for every capability.
+16. **Close the milestone.** Golden images of every M6 screen at phone, tablet
+    portrait, tablet landscape and desktop widths, light and dark, compared with
+    `docs/design/screenshots/`. A test checks that `app_en.arb` and `app_zh.arb`
+    have the same keys. The placeholder classes in `tab_screen.dart` for Work,
+    Calendar and Settings are deleted. Update the status table.
 
 ## M7 Pots screens
 
@@ -590,10 +865,10 @@ that commit.
 - **M8** Pairing credential lifetime: rotation before the 30-day expiry versus
   re-pairing, with a near-expiry warning (A7); decided by pairing v2. (old README
   § Existing work 3; mobile.md § Distribution decisions)
-- **M6** Decide whether the native Context inspector is built (work panels include
-  context). (old README § Existing work 3)
+- **M6** The native Context inspector is built as a read-only panel (M6 step 10e).
+  (old README § Existing work 3)
 - **M6** Read-only Settings → Modes page listing each mode, its source file and its
-  validation warnings, which today are only logged. (modes.md § Phase 3)
+  validation warnings, which today are only logged (M6 step 14). (modes.md § Phase 3)
 - **M9** Browser acceptance of the approval-mode picker and warning, and of project
   deletion including recovery after a real Node disconnect; installed-PWA Web Push on
   a real iPhone; iOS Safari keyboard and safe areas. (old README § Manual validation)
