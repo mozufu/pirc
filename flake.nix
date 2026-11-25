@@ -67,6 +67,7 @@
                   "universal"
                   "android"
                   "web"
+                  "macos"
                 ];
               })
             ])
