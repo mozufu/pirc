@@ -1748,6 +1748,390 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue in a new conversation'**
   String get checkpointsContinue;
+
+  /// No description provided for @settingsGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get settingsGeneral;
+
+  /// No description provided for @textSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Text size'**
+  String get textSize;
+
+  /// No description provided for @textSmall.
+  ///
+  /// In en, this message translates to:
+  /// **'Small'**
+  String get textSmall;
+
+  /// No description provided for @textDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get textDefault;
+
+  /// No description provided for @textLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Large'**
+  String get textLarge;
+
+  /// No description provided for @textLarger.
+  ///
+  /// In en, this message translates to:
+  /// **'Larger'**
+  String get textLarger;
+
+  /// No description provided for @startTab.
+  ///
+  /// In en, this message translates to:
+  /// **'When the app opens'**
+  String get startTab;
+
+  /// No description provided for @settingsAccount.
+  ///
+  /// In en, this message translates to:
+  /// **'Account and this device'**
+  String get settingsAccount;
+
+  /// No description provided for @accountName.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountName;
+
+  /// No description provided for @accountGateway.
+  ///
+  /// In en, this message translates to:
+  /// **'Gateway'**
+  String get accountGateway;
+
+  /// No description provided for @unpair.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpair this device…'**
+  String get unpair;
+
+  /// No description provided for @unpairTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpair this device?'**
+  String get unpairTitle;
+
+  /// No description provided for @unpairBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The device token and the drafts on this device are removed. Pairing again needs a new link.'**
+  String get unpairBody;
+
+  /// No description provided for @unpairConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpair'**
+  String get unpairConfirm;
+
+  /// No description provided for @settingsAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get settingsAbout;
+
+  /// No description provided for @aboutApp.
+  ///
+  /// In en, this message translates to:
+  /// **'App version'**
+  String get aboutApp;
+
+  /// No description provided for @aboutGateway.
+  ///
+  /// In en, this message translates to:
+  /// **'Gateway version'**
+  String get aboutGateway;
+
+  /// No description provided for @aboutLicences.
+  ///
+  /// In en, this message translates to:
+  /// **'Licences'**
+  String get aboutLicences;
+
+  /// No description provided for @settingsAi.
+  ///
+  /// In en, this message translates to:
+  /// **'AI'**
+  String get settingsAi;
+
+  /// No description provided for @settingsProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'Model providers and default model'**
+  String get settingsProviders;
+
+  /// No description provided for @settingsMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory'**
+  String get settingsMemory;
+
+  /// No description provided for @settingsModes.
+  ///
+  /// In en, this message translates to:
+  /// **'Modes'**
+  String get settingsModes;
+
+  /// No description provided for @settingsNotificationsAndAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications and access'**
+  String get settingsNotificationsAndAccess;
+
+  /// No description provided for @settingsNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get settingsNotifications;
+
+  /// No description provided for @settingsCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar and agent access'**
+  String get settingsCalendar;
+
+  /// No description provided for @accessProvidersReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Changing model providers needs a short approval from a browser.'**
+  String get accessProvidersReason;
+
+  /// No description provided for @providersDefaultModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default model'**
+  String get providersDefaultModel;
+
+  /// No description provided for @providersList.
+  ///
+  /// In en, this message translates to:
+  /// **'Providers'**
+  String get providersList;
+
+  /// No description provided for @providersRow.
+  ///
+  /// In en, this message translates to:
+  /// **'{api} · {count} models'**
+  String providersRow(String api, int count);
+
+  /// No description provided for @providersReplaceKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace the API key'**
+  String get providersReplaceKey;
+
+  /// No description provided for @providersRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get providersRemove;
+
+  /// No description provided for @providersAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a provider'**
+  String get providersAdd;
+
+  /// No description provided for @providersAccounts.
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts'**
+  String get providersAccounts;
+
+  /// No description provided for @providersConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in'**
+  String get providersConnected;
+
+  /// No description provided for @providersNotConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Not signed in'**
+  String get providersNotConnected;
+
+  /// No description provided for @providersSignOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get providersSignOut;
+
+  /// No description provided for @providersSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get providersSignIn;
+
+  /// No description provided for @providersApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get providersApiKey;
+
+  /// No description provided for @providersPreset.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider'**
+  String get providersPreset;
+
+  /// No description provided for @providersId.
+  ///
+  /// In en, this message translates to:
+  /// **'Name on this Gateway'**
+  String get providersId;
+
+  /// No description provided for @providersModelsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} models found'**
+  String providersModelsFound(int count);
+
+  /// No description provided for @providersFindModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Find models'**
+  String get providersFindModels;
+
+  /// No description provided for @providersSignInTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to {name}'**
+  String providersSignInTo(String name);
+
+  /// No description provided for @providersConsent.
+  ///
+  /// In en, this message translates to:
+  /// **'I accept this provider\'s terms for use through pirc.'**
+  String get providersConsent;
+
+  /// No description provided for @providersOpenAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Open this address and sign in:'**
+  String get providersOpenAddress;
+
+  /// No description provided for @providersSignedIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in.'**
+  String get providersSignedIn;
+
+  /// No description provided for @memoryRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get memoryRestore;
+
+  /// No description provided for @memoryForget.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget'**
+  String get memoryForget;
+
+  /// No description provided for @memoryProposals.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for your answer'**
+  String get memoryProposals;
+
+  /// No description provided for @memoryReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get memoryReject;
+
+  /// No description provided for @memoryApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get memoryApprove;
+
+  /// No description provided for @memoryAboutYou.
+  ///
+  /// In en, this message translates to:
+  /// **'About you'**
+  String get memoryAboutYou;
+
+  /// No description provided for @memoryNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing yet.'**
+  String get memoryNone;
+
+  /// No description provided for @memoryNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get memoryNotes;
+
+  /// No description provided for @memoryRemoved.
+  ///
+  /// In en, this message translates to:
+  /// **'Removed'**
+  String get memoryRemoved;
+
+  /// No description provided for @pushTargets.
+  ///
+  /// In en, this message translates to:
+  /// **'Where notifications go'**
+  String get pushTargets;
+
+  /// No description provided for @pushNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No device receives notifications yet.'**
+  String get pushNone;
+
+  /// No description provided for @pushFailing.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery is failing'**
+  String get pushFailing;
+
+  /// No description provided for @pushSendTest.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a test'**
+  String get pushSendTest;
+
+  /// No description provided for @pushSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent to {count} targets.'**
+  String pushSent(int count);
+
+  /// No description provided for @calendarAllowRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents may read the calendar'**
+  String get calendarAllowRead;
+
+  /// No description provided for @calendarAllowPropose.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents may propose changes'**
+  String get calendarAllowPropose;
+
+  /// No description provided for @calendarAllowProposeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Each change waits for your answer in the conversation.'**
+  String get calendarAllowProposeNote;
+
+  /// No description provided for @modesNoWarnings.
+  ///
+  /// In en, this message translates to:
+  /// **'The Gateway does not report mode files or their warnings yet; see its log.'**
+  String get modesNoWarnings;
 }
 
 class _AppLocalizationsDelegate

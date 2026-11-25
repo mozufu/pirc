@@ -6,7 +6,10 @@ import 'connection/connection.dart';
 import 'connection/connection_screens.dart';
 import 'preferences.dart';
 import 'settings/devices_page.dart';
-import 'settings_screen.dart';
+import 'settings/basic_pages.dart';
+import 'settings/more_pages.dart';
+import 'settings/providers_page.dart';
+import 'settings/settings_screen.dart';
 import 'tab_screen.dart';
 
 /// The four tabs, in rail and tab-bar order.
@@ -98,10 +101,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           requestId: state.uri.queryParameters['nativeManagement'] ?? '',
         ),
       ),
-      GoRoute(
-        path: '/settings/devices',
-        builder: (context, state) => const DevicesPage(),
-      ),
+      for (final (path, page) in [
+        ('devices', const DevicesPage()),
+        ('general', const GeneralPage()),
+        ('account', const AccountPage()),
+        ('about', const AboutPage()),
+        ('providers', const ProvidersPage()),
+        ('memory', const MemoryPage()),
+        ('notifications', const NotificationsPage()),
+        ('calendar', const CalendarAccessPage()),
+        ('modes', const ModesPage()),
+      ])
+        GoRoute(path: '/settings/$path', builder: (context, state) => page),
       GoRoute(
         path: '/upgrade',
         builder: (context, state) => const UpgradeScreen(),

@@ -526,5 +526,100 @@
   },
   "checkpointsPreviewAction": "Preview",
   "checkpointsRecover": "Recover",
-  "checkpointsContinue": "Continue in a new conversation"
+  "checkpointsContinue": "Continue in a new conversation",
+  "settingsGeneral": "General",
+  "textSize": "Text size",
+  "textSmall": "Small",
+  "textDefault": "Default",
+  "textLarge": "Large",
+  "textLarger": "Larger",
+  "startTab": "When the app opens",
+  "settingsAccount": "Account and this device",
+  "accountName": "Account",
+  "accountGateway": "Gateway",
+  "unpair": "Unpair this device…",
+  "unpairTitle": "Unpair this device?",
+  "unpairBody": "The device token and the drafts on this device are removed. Pairing again needs a new link.",
+  "unpairConfirm": "Unpair",
+  "settingsAbout": "About",
+  "aboutApp": "App version",
+  "aboutGateway": "Gateway version",
+  "aboutLicences": "Licences",
+  "settingsAi": "AI",
+  "settingsProviders": "Model providers and default model",
+  "settingsMemory": "Memory",
+  "settingsModes": "Modes",
+  "settingsNotificationsAndAccess": "Notifications and access",
+  "settingsNotifications": "Notifications",
+  "settingsCalendar": "Calendar and agent access",
+  "accessProvidersReason": "Changing model providers needs a short approval from a browser.",
+  "providersDefaultModel": "Default model",
+  "providersList": "Providers",
+  "providersRow": "{api} · {count} models",
+  "@providersRow": {
+    "placeholders": {
+      "api": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "providersReplaceKey": "Replace the API key",
+  "providersRemove": "Remove",
+  "providersAdd": "Add a provider",
+  "providersAccounts": "Accounts",
+  "providersConnected": "Signed in",
+  "providersNotConnected": "Not signed in",
+  "providersSignOut": "Sign out",
+  "providersSignIn": "Sign in",
+  "providersApiKey": "API key",
+  "providersPreset": "Provider",
+  "providersId": "Name on this Gateway",
+  "providersModelsFound": "{count} models found",
+  "@providersModelsFound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "providersFindModels": "Find models",
+  "providersSignInTo": "Sign in to {name}",
+  "@providersSignInTo": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "providersConsent": "I accept this provider's terms for use through pirc.",
+  "providersOpenAddress": "Open this address and sign in:",
+  "providersSignedIn": "Signed in.",
+  "memoryRestore": "Restore",
+  "memoryForget": "Forget",
+  "memoryProposals": "Waiting for your answer",
+  "memoryReject": "Reject",
+  "memoryApprove": "Approve",
+  "memoryAboutYou": "About you",
+  "memoryNone": "Nothing yet.",
+  "memoryNotes": "Notes",
+  "memoryRemoved": "Removed",
+  "pushTargets": "Where notifications go",
+  "pushNone": "No device receives notifications yet.",
+  "pushFailing": "Delivery is failing",
+  "pushSendTest": "Send a test",
+  "pushSent": "Sent to {count} targets.",
+  "@pushSent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "calendarAllowRead": "Agents may read the calendar",
+  "calendarAllowPropose": "Agents may propose changes",
+  "calendarAllowProposeNote": "Each change waits for your answer in the conversation.",
+  "modesNoWarnings": "The Gateway does not report mode files or their warnings yet; see its log."
 }

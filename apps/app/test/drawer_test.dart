@@ -93,7 +93,7 @@ void main() {
     await tester.tap(find.text('Settings'));
     await tester.pumpAndSettle();
     expect(container.read(drawerOpenProvider), isFalse);
-    expect(find.text('Language'), findsOneWidget);
+    expect(find.text('General'), findsOneWidget);
   });
 
   testWidgets('the drawer keeps the selected tab across a resize', (

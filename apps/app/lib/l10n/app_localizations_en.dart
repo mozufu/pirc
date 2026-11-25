@@ -939,4 +939,209 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checkpointsContinue => 'Continue in a new conversation';
+
+  @override
+  String get settingsGeneral => 'General';
+
+  @override
+  String get textSize => 'Text size';
+
+  @override
+  String get textSmall => 'Small';
+
+  @override
+  String get textDefault => 'Default';
+
+  @override
+  String get textLarge => 'Large';
+
+  @override
+  String get textLarger => 'Larger';
+
+  @override
+  String get startTab => 'When the app opens';
+
+  @override
+  String get settingsAccount => 'Account and this device';
+
+  @override
+  String get accountName => 'Account';
+
+  @override
+  String get accountGateway => 'Gateway';
+
+  @override
+  String get unpair => 'Unpair this device…';
+
+  @override
+  String get unpairTitle => 'Unpair this device?';
+
+  @override
+  String get unpairBody =>
+      'The device token and the drafts on this device are removed. Pairing again needs a new link.';
+
+  @override
+  String get unpairConfirm => 'Unpair';
+
+  @override
+  String get settingsAbout => 'About';
+
+  @override
+  String get aboutApp => 'App version';
+
+  @override
+  String get aboutGateway => 'Gateway version';
+
+  @override
+  String get aboutLicences => 'Licences';
+
+  @override
+  String get settingsAi => 'AI';
+
+  @override
+  String get settingsProviders => 'Model providers and default model';
+
+  @override
+  String get settingsMemory => 'Memory';
+
+  @override
+  String get settingsModes => 'Modes';
+
+  @override
+  String get settingsNotificationsAndAccess => 'Notifications and access';
+
+  @override
+  String get settingsNotifications => 'Notifications';
+
+  @override
+  String get settingsCalendar => 'Calendar and agent access';
+
+  @override
+  String get accessProvidersReason =>
+      'Changing model providers needs a short approval from a browser.';
+
+  @override
+  String get providersDefaultModel => 'Default model';
+
+  @override
+  String get providersList => 'Providers';
+
+  @override
+  String providersRow(String api, int count) {
+    return '$api · $count models';
+  }
+
+  @override
+  String get providersReplaceKey => 'Replace the API key';
+
+  @override
+  String get providersRemove => 'Remove';
+
+  @override
+  String get providersAdd => 'Add a provider';
+
+  @override
+  String get providersAccounts => 'Accounts';
+
+  @override
+  String get providersConnected => 'Signed in';
+
+  @override
+  String get providersNotConnected => 'Not signed in';
+
+  @override
+  String get providersSignOut => 'Sign out';
+
+  @override
+  String get providersSignIn => 'Sign in';
+
+  @override
+  String get providersApiKey => 'API key';
+
+  @override
+  String get providersPreset => 'Provider';
+
+  @override
+  String get providersId => 'Name on this Gateway';
+
+  @override
+  String providersModelsFound(int count) {
+    return '$count models found';
+  }
+
+  @override
+  String get providersFindModels => 'Find models';
+
+  @override
+  String providersSignInTo(String name) {
+    return 'Sign in to $name';
+  }
+
+  @override
+  String get providersConsent =>
+      'I accept this provider\'s terms for use through pirc.';
+
+  @override
+  String get providersOpenAddress => 'Open this address and sign in:';
+
+  @override
+  String get providersSignedIn => 'Signed in.';
+
+  @override
+  String get memoryRestore => 'Restore';
+
+  @override
+  String get memoryForget => 'Forget';
+
+  @override
+  String get memoryProposals => 'Waiting for your answer';
+
+  @override
+  String get memoryReject => 'Reject';
+
+  @override
+  String get memoryApprove => 'Approve';
+
+  @override
+  String get memoryAboutYou => 'About you';
+
+  @override
+  String get memoryNone => 'Nothing yet.';
+
+  @override
+  String get memoryNotes => 'Notes';
+
+  @override
+  String get memoryRemoved => 'Removed';
+
+  @override
+  String get pushTargets => 'Where notifications go';
+
+  @override
+  String get pushNone => 'No device receives notifications yet.';
+
+  @override
+  String get pushFailing => 'Delivery is failing';
+
+  @override
+  String get pushSendTest => 'Send a test';
+
+  @override
+  String pushSent(int count) {
+    return 'Sent to $count targets.';
+  }
+
+  @override
+  String get calendarAllowRead => 'Agents may read the calendar';
+
+  @override
+  String get calendarAllowPropose => 'Agents may propose changes';
+
+  @override
+  String get calendarAllowProposeNote =>
+      'Each change waits for your answer in the conversation.';
+
+  @override
+  String get modesNoWarnings =>
+      'The Gateway does not report mode files or their warnings yet; see its log.';
 }

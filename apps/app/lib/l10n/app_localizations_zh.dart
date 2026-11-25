@@ -899,6 +899,206 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get checkpointsContinue => '在新對話繼續';
+
+  @override
+  String get settingsGeneral => '一般';
+
+  @override
+  String get textSize => '文字大小';
+
+  @override
+  String get textSmall => '小';
+
+  @override
+  String get textDefault => '預設';
+
+  @override
+  String get textLarge => '大';
+
+  @override
+  String get textLarger => '更大';
+
+  @override
+  String get startTab => '打開 App 時';
+
+  @override
+  String get settingsAccount => '帳號與這台裝置';
+
+  @override
+  String get accountName => '帳號';
+
+  @override
+  String get accountGateway => 'Gateway';
+
+  @override
+  String get unpair => '取消配對這台裝置…';
+
+  @override
+  String get unpairTitle => '取消配對這台裝置？';
+
+  @override
+  String get unpairBody => '這台裝置的權杖和草稿會被移除。重新配對需要新的連結。';
+
+  @override
+  String get unpairConfirm => '取消配對';
+
+  @override
+  String get settingsAbout => '關於';
+
+  @override
+  String get aboutApp => 'App 版本';
+
+  @override
+  String get aboutGateway => 'Gateway 版本';
+
+  @override
+  String get aboutLicences => '授權';
+
+  @override
+  String get settingsAi => 'AI';
+
+  @override
+  String get settingsProviders => '模型供應商與預設模型';
+
+  @override
+  String get settingsMemory => '記憶';
+
+  @override
+  String get settingsModes => '模式';
+
+  @override
+  String get settingsNotificationsAndAccess => '通知與權限';
+
+  @override
+  String get settingsNotifications => '通知';
+
+  @override
+  String get settingsCalendar => '行事曆與 agent 權限';
+
+  @override
+  String get accessProvidersReason => '變更模型供應商需要先在瀏覽器短暫核准。';
+
+  @override
+  String get providersDefaultModel => '預設模型';
+
+  @override
+  String get providersList => '供應商';
+
+  @override
+  String providersRow(String api, int count) {
+    return '$api · $count 個模型';
+  }
+
+  @override
+  String get providersReplaceKey => '更換 API key';
+
+  @override
+  String get providersRemove => '移除';
+
+  @override
+  String get providersAdd => '新增供應商';
+
+  @override
+  String get providersAccounts => '帳號';
+
+  @override
+  String get providersConnected => '已登入';
+
+  @override
+  String get providersNotConnected => '未登入';
+
+  @override
+  String get providersSignOut => '登出';
+
+  @override
+  String get providersSignIn => '登入';
+
+  @override
+  String get providersApiKey => 'API key';
+
+  @override
+  String get providersPreset => '供應商';
+
+  @override
+  String get providersId => '在這個 Gateway 的名稱';
+
+  @override
+  String providersModelsFound(int count) {
+    return '找到 $count 個模型';
+  }
+
+  @override
+  String get providersFindModels => '尋找模型';
+
+  @override
+  String providersSignInTo(String name) {
+    return '登入 $name';
+  }
+
+  @override
+  String get providersConsent => '我同意這個供應商透過 pirc 使用的條款。';
+
+  @override
+  String get providersOpenAddress => '開啟這個網址並登入：';
+
+  @override
+  String get providersSignedIn => '已登入。';
+
+  @override
+  String get memoryRestore => '還原';
+
+  @override
+  String get memoryForget => '忘記';
+
+  @override
+  String get memoryProposals => '等你回答';
+
+  @override
+  String get memoryReject => '拒絕';
+
+  @override
+  String get memoryApprove => '核准';
+
+  @override
+  String get memoryAboutYou => '關於你';
+
+  @override
+  String get memoryNone => '還沒有。';
+
+  @override
+  String get memoryNotes => '筆記';
+
+  @override
+  String get memoryRemoved => '已移除';
+
+  @override
+  String get pushTargets => '通知送到哪裡';
+
+  @override
+  String get pushNone => '還沒有裝置接收通知。';
+
+  @override
+  String get pushFailing => '傳送失敗';
+
+  @override
+  String get pushSendTest => '送出測試通知';
+
+  @override
+  String pushSent(int count) {
+    return '已送到 $count 個目標。';
+  }
+
+  @override
+  String get calendarAllowRead => 'agent 可以讀取行事曆';
+
+  @override
+  String get calendarAllowPropose => 'agent 可以提議變更';
+
+  @override
+  String get calendarAllowProposeNote => '每個變更都會在對話中等你回答。';
+
+  @override
+  String get modesNoWarnings => 'Gateway 目前不回報模式檔案和警告，請看它的記錄。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
