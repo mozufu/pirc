@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pirc_app/src/calendar/calendar_screen.dart';
 import 'package:pirc_app/src/connection/connection.dart';
 import 'package:pirc_app/src/connection/hints.dart';
 import 'package:pirc_app/src/connection/pairing.dart';
@@ -207,7 +208,12 @@ void main() {
       expect(again.read(languageProvider), 'zh-TW');
       expect(again.read(themeModeProvider), ThemeMode.dark);
       expect(again.read(textScaleProvider), 1.15);
-      expect(find.text('沒有排程'), findsOneWidget, reason: 'opens on Calendar');
+      expect(
+        find.byType(CalendarScreen),
+        findsOneWidget,
+        reason: 'opens on Calendar',
+      );
+      expect(find.text('月'), findsOneWidget, reason: 'in Chinese');
     },
   );
 }

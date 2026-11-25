@@ -1255,4 +1255,150 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get envBlockedResource =>
       'A folder or resource is missing on the target.';
+
+  @override
+  String get scopeOccurrence => 'This one';
+
+  @override
+  String get scopeFollowing => 'This and later ones';
+
+  @override
+  String get scopeSeries => 'The whole series';
+
+  @override
+  String get eventNew => 'New event';
+
+  @override
+  String get eventEdit => 'Edit';
+
+  @override
+  String get eventTitle => 'Title';
+
+  @override
+  String get eventAllDay => 'All day';
+
+  @override
+  String get eventStart => 'Starts (YYYY-MM-DD)';
+
+  @override
+  String get eventTime => 'Time (HH:mm)';
+
+  @override
+  String get eventEnd => 'Ends (YYYY-MM-DD)';
+
+  @override
+  String get eventRepeat => 'Repeat';
+
+  @override
+  String get repeatNone => 'Does not repeat';
+
+  @override
+  String get repeatDaily => 'Every day';
+
+  @override
+  String get repeatWeekly => 'Every week';
+
+  @override
+  String get repeatMonthly => 'Every month';
+
+  @override
+  String get repeatYearly => 'Every year';
+
+  @override
+  String get eventLocation => 'Place';
+
+  @override
+  String get eventNotes => 'Notes';
+
+  @override
+  String get taskNew => 'New agent task';
+
+  @override
+  String get taskEdit => 'Edit task';
+
+  @override
+  String get taskPrompt => 'What the agent does';
+
+  @override
+  String get taskPickTarget => 'Choose a project';
+
+  @override
+  String get taskRepeats => 'Repeats';
+
+  @override
+  String get taskCron => 'When (cron)';
+
+  @override
+  String get taskCronHelp => 'minute hour day month weekday, e.g. 0 9 * * 1-5';
+
+  @override
+  String get taskAt => 'When';
+
+  @override
+  String get calendarNew => 'New';
+
+  @override
+  String get calendarPrevious => 'Previous';
+
+  @override
+  String get calendarNext => 'Next';
+
+  @override
+  String get viewMonth => 'Month';
+
+  @override
+  String get viewWeek => 'Week';
+
+  @override
+  String get viewDay => 'Day';
+
+  @override
+  String get viewList => 'List';
+
+  @override
+  String get calendarToday => 'Today';
+
+  @override
+  String get taskMissed => 'Missed';
+
+  @override
+  String get taskMark => 'Agent task';
+
+  @override
+  String get taskPlanned => 'Planned';
+
+  @override
+  String get taskDone => 'Done';
+
+  @override
+  String get calendarItemGone =>
+      'This item is not in the shown range any more.';
+
+  @override
+  String get eventDeleteTitle => 'Delete this event?';
+
+  @override
+  String get eventRepeats => 'Repeats';
+
+  @override
+  String get taskAllowRun => 'Run it now';
+
+  @override
+  String get taskDismiss => 'Dismiss';
+
+  @override
+  String get taskTargetGone =>
+      'Paused: its project is gone. Edit it and pick a new one.';
+
+  @override
+  String get taskPaused => 'Paused';
+
+  @override
+  String get taskRunNow => 'Run now';
+
+  @override
+  String get taskResume => 'Resume';
+
+  @override
+  String get taskPause => 'Pause';
 }

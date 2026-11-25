@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pirc_app/src/calendar/calendar_screen.dart';
 import 'package:pirc_app/src/preferences.dart';
 import 'package:pirc_app/src/render_bridge.dart';
 import 'package:pirc_app/src/router.dart';
@@ -70,7 +71,7 @@ void main() {
     await _pump(tester, width: 1300, location: '/activity?open=s1');
     await tester.tap(find.text('Calendar'));
     await tester.pumpAndSettle();
-    expect(find.text('Nothing scheduled'), findsOneWidget);
+    expect(find.byType(CalendarScreen), findsOneWidget);
     await tester.tap(find.text('Activity'));
     await tester.pumpAndSettle();
     expect(find.text('Item s1'), findsOneWidget);

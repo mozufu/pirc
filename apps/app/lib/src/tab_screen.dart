@@ -5,6 +5,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
 import '../l10n/app_localizations.dart';
+import 'calendar/calendar_detail.dart';
+import 'calendar/calendar_screen.dart';
 import 'router.dart';
 import 'shell/app_drawer.dart';
 import 'work/new_conversation/new_conversation_screen.dart';
@@ -73,6 +75,7 @@ class TabScreen extends ConsumerWidget {
               openId: open,
               onNew: () => context.go('/work?open=$newConversationKey'),
             ),
+            AppTab.calendar => const CalendarScreen(),
             _ => _TabList(tab: tab),
           },
           content: open == null
@@ -86,6 +89,11 @@ class TabScreen extends ConsumerWidget {
                   AppTab.work => WorkConversation(
                     key: ValueKey(open),
                     sessionId: open,
+                    showBack: !desktop,
+                  ),
+                  AppTab.calendar => CalendarDetail(
+                    key: ValueKey(open),
+                    itemId: open,
                     showBack: !desktop,
                   ),
                   _ => _ItemPlaceholder(

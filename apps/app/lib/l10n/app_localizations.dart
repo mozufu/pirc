@@ -2330,6 +2330,294 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A folder or resource is missing on the target.'**
   String get envBlockedResource;
+
+  /// No description provided for @scopeOccurrence.
+  ///
+  /// In en, this message translates to:
+  /// **'This one'**
+  String get scopeOccurrence;
+
+  /// No description provided for @scopeFollowing.
+  ///
+  /// In en, this message translates to:
+  /// **'This and later ones'**
+  String get scopeFollowing;
+
+  /// No description provided for @scopeSeries.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole series'**
+  String get scopeSeries;
+
+  /// No description provided for @eventNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New event'**
+  String get eventNew;
+
+  /// No description provided for @eventEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get eventEdit;
+
+  /// No description provided for @eventTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get eventTitle;
+
+  /// No description provided for @eventAllDay.
+  ///
+  /// In en, this message translates to:
+  /// **'All day'**
+  String get eventAllDay;
+
+  /// No description provided for @eventStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts (YYYY-MM-DD)'**
+  String get eventStart;
+
+  /// No description provided for @eventTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Time (HH:mm)'**
+  String get eventTime;
+
+  /// No description provided for @eventEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends (YYYY-MM-DD)'**
+  String get eventEnd;
+
+  /// No description provided for @eventRepeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat'**
+  String get eventRepeat;
+
+  /// No description provided for @repeatNone.
+  ///
+  /// In en, this message translates to:
+  /// **'Does not repeat'**
+  String get repeatNone;
+
+  /// No description provided for @repeatDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Every day'**
+  String get repeatDaily;
+
+  /// No description provided for @repeatWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Every week'**
+  String get repeatWeekly;
+
+  /// No description provided for @repeatMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Every month'**
+  String get repeatMonthly;
+
+  /// No description provided for @repeatYearly.
+  ///
+  /// In en, this message translates to:
+  /// **'Every year'**
+  String get repeatYearly;
+
+  /// No description provided for @eventLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Place'**
+  String get eventLocation;
+
+  /// No description provided for @eventNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get eventNotes;
+
+  /// No description provided for @taskNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New agent task'**
+  String get taskNew;
+
+  /// No description provided for @taskEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit task'**
+  String get taskEdit;
+
+  /// No description provided for @taskPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'What the agent does'**
+  String get taskPrompt;
+
+  /// No description provided for @taskPickTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a project'**
+  String get taskPickTarget;
+
+  /// No description provided for @taskRepeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats'**
+  String get taskRepeats;
+
+  /// No description provided for @taskCron.
+  ///
+  /// In en, this message translates to:
+  /// **'When (cron)'**
+  String get taskCron;
+
+  /// No description provided for @taskCronHelp.
+  ///
+  /// In en, this message translates to:
+  /// **'minute hour day month weekday, e.g. 0 9 * * 1-5'**
+  String get taskCronHelp;
+
+  /// No description provided for @taskAt.
+  ///
+  /// In en, this message translates to:
+  /// **'When'**
+  String get taskAt;
+
+  /// No description provided for @calendarNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get calendarNew;
+
+  /// No description provided for @calendarPrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get calendarPrevious;
+
+  /// No description provided for @calendarNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get calendarNext;
+
+  /// No description provided for @viewMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Month'**
+  String get viewMonth;
+
+  /// No description provided for @viewWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get viewWeek;
+
+  /// No description provided for @viewDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get viewDay;
+
+  /// No description provided for @viewList.
+  ///
+  /// In en, this message translates to:
+  /// **'List'**
+  String get viewList;
+
+  /// No description provided for @calendarToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get calendarToday;
+
+  /// No description provided for @taskMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed'**
+  String get taskMissed;
+
+  /// No description provided for @taskMark.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent task'**
+  String get taskMark;
+
+  /// No description provided for @taskPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get taskPlanned;
+
+  /// No description provided for @taskDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get taskDone;
+
+  /// No description provided for @calendarItemGone.
+  ///
+  /// In en, this message translates to:
+  /// **'This item is not in the shown range any more.'**
+  String get calendarItemGone;
+
+  /// No description provided for @eventDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this event?'**
+  String get eventDeleteTitle;
+
+  /// No description provided for @eventRepeats.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeats'**
+  String get eventRepeats;
+
+  /// No description provided for @taskAllowRun.
+  ///
+  /// In en, this message translates to:
+  /// **'Run it now'**
+  String get taskAllowRun;
+
+  /// No description provided for @taskDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get taskDismiss;
+
+  /// No description provided for @taskTargetGone.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused: its project is gone. Edit it and pick a new one.'**
+  String get taskTargetGone;
+
+  /// No description provided for @taskPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get taskPaused;
+
+  /// No description provided for @taskRunNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Run now'**
+  String get taskRunNow;
+
+  /// No description provided for @taskResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get taskResume;
+
+  /// No description provided for @taskPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get taskPause;
 }
 
 class _AppLocalizationsDelegate

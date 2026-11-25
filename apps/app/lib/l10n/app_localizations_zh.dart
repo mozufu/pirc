@@ -1200,6 +1200,150 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get envBlockedResource => '目標缺少資料夾或資源。';
+
+  @override
+  String get scopeOccurrence => '只有這一次';
+
+  @override
+  String get scopeFollowing => '這次和之後';
+
+  @override
+  String get scopeSeries => '整個系列';
+
+  @override
+  String get eventNew => '新事件';
+
+  @override
+  String get eventEdit => '編輯';
+
+  @override
+  String get eventTitle => '標題';
+
+  @override
+  String get eventAllDay => '整天';
+
+  @override
+  String get eventStart => '開始（YYYY-MM-DD）';
+
+  @override
+  String get eventTime => '時間（HH:mm）';
+
+  @override
+  String get eventEnd => '結束（YYYY-MM-DD）';
+
+  @override
+  String get eventRepeat => '重複';
+
+  @override
+  String get repeatNone => '不重複';
+
+  @override
+  String get repeatDaily => '每天';
+
+  @override
+  String get repeatWeekly => '每週';
+
+  @override
+  String get repeatMonthly => '每月';
+
+  @override
+  String get repeatYearly => '每年';
+
+  @override
+  String get eventLocation => '地點';
+
+  @override
+  String get eventNotes => '備註';
+
+  @override
+  String get taskNew => '新 agent 任務';
+
+  @override
+  String get taskEdit => '編輯任務';
+
+  @override
+  String get taskPrompt => 'agent 要做的事';
+
+  @override
+  String get taskPickTarget => '選擇專案';
+
+  @override
+  String get taskRepeats => '重複';
+
+  @override
+  String get taskCron => '時間（cron）';
+
+  @override
+  String get taskCronHelp => '分 時 日 月 星期，例如 0 9 * * 1-5';
+
+  @override
+  String get taskAt => '時間';
+
+  @override
+  String get calendarNew => '新增';
+
+  @override
+  String get calendarPrevious => '上一段';
+
+  @override
+  String get calendarNext => '下一段';
+
+  @override
+  String get viewMonth => '月';
+
+  @override
+  String get viewWeek => '週';
+
+  @override
+  String get viewDay => '日';
+
+  @override
+  String get viewList => '清單';
+
+  @override
+  String get calendarToday => '今天';
+
+  @override
+  String get taskMissed => '已錯過';
+
+  @override
+  String get taskMark => 'agent 任務';
+
+  @override
+  String get taskPlanned => '預定';
+
+  @override
+  String get taskDone => '完成';
+
+  @override
+  String get calendarItemGone => '這個項目已不在顯示的範圍內。';
+
+  @override
+  String get eventDeleteTitle => '刪除這個事件？';
+
+  @override
+  String get eventRepeats => '重複';
+
+  @override
+  String get taskAllowRun => '現在執行';
+
+  @override
+  String get taskDismiss => '略過';
+
+  @override
+  String get taskTargetGone => '已暫停：它的專案已不存在。請編輯並選擇新的專案。';
+
+  @override
+  String get taskPaused => '已暫停';
+
+  @override
+  String get taskRunNow => '立即執行';
+
+  @override
+  String get taskResume => '繼續';
+
+  @override
+  String get taskPause => '暫停';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
