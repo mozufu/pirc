@@ -256,5 +256,41 @@
         "type": "String"
       }
     }
-  }
+  },
+  "resultGenerating": "Generating…",
+  "resultFailed": "Failed",
+  "resultReadSoFar": "Read what is ready",
+  "resultOpen": "Open",
+  "copy": "Copy",
+  "copied": "Copied",
+  "share": "Share",
+  "close": "Close",
+  "resultMissing": "This result is no longer in the conversation.",
+  "resultVersions": "Versions",
+  "resultNewer": "Version {version} is ready.",
+  "@resultNewer": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "resultSwitch": "Switch to v{version}",
+  "@resultSwitch": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "resultFailedShowingLast": "Version {version} failed. The last good version is shown.",
+  "@resultFailedShowingLast": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "resultNoColumns": "This table has no columns.",
+  "resultUnsupported": "This kind of result is shown as its summary."
 }

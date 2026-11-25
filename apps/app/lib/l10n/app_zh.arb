@@ -158,5 +158,20 @@
   "notSentByYou": "不是你直接傳的訊息",
   "potCoordinates": "由 {name} 協調中。你可以回答問題或停止；要直接下指令請先接管。",
   "takeOver": "接管",
-  "takenOver": "{name} 不會再對這個工作下指令。"
+  "takenOver": "{name} 不會再對這個工作下指令。",
+  "resultGenerating": "生成中…",
+  "resultFailed": "失敗",
+  "resultReadSoFar": "閱讀已產生內容",
+  "resultOpen": "開啟",
+  "copy": "複製",
+  "copied": "已複製",
+  "share": "分享",
+  "close": "關閉",
+  "resultMissing": "這個成果已不在對話中。",
+  "resultVersions": "版本",
+  "resultNewer": "v{version} 已完成。",
+  "resultSwitch": "切換到 v{version}",
+  "resultFailedShowingLast": "v{version} 生成失敗，顯示最後可用的版本。",
+  "resultNoColumns": "這個表格沒有欄位。",
+  "resultUnsupported": "這種成果以摘要顯示。"
 }

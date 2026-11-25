@@ -9,16 +9,20 @@ import 'router.dart';
 import 'shell/app_drawer.dart';
 import 'work/new_conversation/new_conversation_screen.dart';
 import 'work/work_conversation.dart';
+import 'work/work_side.dart';
 import 'work/work_data.dart';
 import 'work/work_list_screen.dart';
 
 /// One tab in the adaptive frame. Lists and items are placeholders until
 /// M6/M7 fill them; the frame, routing and layouts are final.
 class TabScreen extends ConsumerWidget {
-  const TabScreen({super.key, required this.tab, this.openItem});
+  const TabScreen({super.key, required this.tab, this.openItem, this.side});
 
   final AppTab tab;
   final String? openItem;
+
+  /// What the side pane shows (`result:<id>`, `panel:<section>`).
+  final String? side;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -90,6 +94,10 @@ class TabScreen extends ConsumerWidget {
                     onBack: () => context.go(tab.path),
                   ),
                 },
+          side: tab == AppTab.work && open != null && side != null
+              ? workSide(context, open, side!)
+              : null,
+          sideFullPage: true,
           placeholder: _Empty(text: l10n.nothingOpen),
         ),
       ),

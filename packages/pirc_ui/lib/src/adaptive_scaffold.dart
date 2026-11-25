@@ -82,6 +82,7 @@ class AdaptiveScaffold extends StatefulWidget {
     this.placeholder,
     this.contentMaxWidth = 760,
     this.trailing,
+    this.sideFullPage = false,
   });
 
   final List<PircDestination> destinations;
@@ -105,6 +106,10 @@ class AdaptiveScaffold extends StatefulWidget {
 
   /// Shown at the end of the rail (for example a settings button).
   final Widget? trailing;
+
+  /// Rule C (panels, results, the task sheet): below 900 the side pane is a
+  /// full page instead of a 440-wide panel.
+  final bool sideFullPage;
 
   @override
   State<AdaptiveScaffold> createState() => _AdaptiveScaffoldState();
@@ -167,7 +172,7 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
               children: [
                 _pane(_listKey, widget.list, visible: !hasContent),
                 _pane(_contentKey, content, visible: hasContent),
-                if (layout == PircLayout.compact)
+                if (layout == PircLayout.compact || widget.sideFullPage)
                   _pane(_sideKey, side, visible: hasSide)
                 else
                   Positioned(

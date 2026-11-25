@@ -1052,6 +1052,96 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} sends no more instructions here.'**
   String takenOver(String name);
+
+  /// No description provided for @resultGenerating.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating…'**
+  String get resultGenerating;
+
+  /// No description provided for @resultFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get resultFailed;
+
+  /// No description provided for @resultReadSoFar.
+  ///
+  /// In en, this message translates to:
+  /// **'Read what is ready'**
+  String get resultReadSoFar;
+
+  /// No description provided for @resultOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get resultOpen;
+
+  /// No description provided for @copy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get copy;
+
+  /// No description provided for @copied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get copied;
+
+  /// No description provided for @share.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get share;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @resultMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'This result is no longer in the conversation.'**
+  String get resultMissing;
+
+  /// No description provided for @resultVersions.
+  ///
+  /// In en, this message translates to:
+  /// **'Versions'**
+  String get resultVersions;
+
+  /// No description provided for @resultNewer.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} is ready.'**
+  String resultNewer(int version);
+
+  /// No description provided for @resultSwitch.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to v{version}'**
+  String resultSwitch(int version);
+
+  /// No description provided for @resultFailedShowingLast.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} failed. The last good version is shown.'**
+  String resultFailedShowingLast(int version);
+
+  /// No description provided for @resultNoColumns.
+  ///
+  /// In en, this message translates to:
+  /// **'This table has no columns.'**
+  String get resultNoColumns;
+
+  /// No description provided for @resultUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This kind of result is shown as its summary.'**
+  String get resultUnsupported;
 }
 
 class _AppLocalizationsDelegate

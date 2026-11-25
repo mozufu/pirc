@@ -513,6 +513,57 @@ class AppLocalizationsZh extends AppLocalizations {
   String takenOver(String name) {
     return '$name 不會再對這個工作下指令。';
   }
+
+  @override
+  String get resultGenerating => '生成中…';
+
+  @override
+  String get resultFailed => '失敗';
+
+  @override
+  String get resultReadSoFar => '閱讀已產生內容';
+
+  @override
+  String get resultOpen => '開啟';
+
+  @override
+  String get copy => '複製';
+
+  @override
+  String get copied => '已複製';
+
+  @override
+  String get share => '分享';
+
+  @override
+  String get close => '關閉';
+
+  @override
+  String get resultMissing => '這個成果已不在對話中。';
+
+  @override
+  String get resultVersions => '版本';
+
+  @override
+  String resultNewer(int version) {
+    return 'v$version 已完成。';
+  }
+
+  @override
+  String resultSwitch(int version) {
+    return '切換到 v$version';
+  }
+
+  @override
+  String resultFailedShowingLast(int version) {
+    return 'v$version 生成失敗，顯示最後可用的版本。';
+  }
+
+  @override
+  String get resultNoColumns => '這個表格沒有欄位。';
+
+  @override
+  String get resultUnsupported => '這種成果以摘要顯示。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

@@ -542,4 +542,56 @@ class AppLocalizationsEn extends AppLocalizations {
   String takenOver(String name) {
     return '$name sends no more instructions here.';
   }
+
+  @override
+  String get resultGenerating => 'Generating…';
+
+  @override
+  String get resultFailed => 'Failed';
+
+  @override
+  String get resultReadSoFar => 'Read what is ready';
+
+  @override
+  String get resultOpen => 'Open';
+
+  @override
+  String get copy => 'Copy';
+
+  @override
+  String get copied => 'Copied';
+
+  @override
+  String get share => 'Share';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get resultMissing => 'This result is no longer in the conversation.';
+
+  @override
+  String get resultVersions => 'Versions';
+
+  @override
+  String resultNewer(int version) {
+    return 'Version $version is ready.';
+  }
+
+  @override
+  String resultSwitch(int version) {
+    return 'Switch to v$version';
+  }
+
+  @override
+  String resultFailedShowingLast(int version) {
+    return 'Version $version failed. The last good version is shown.';
+  }
+
+  @override
+  String get resultNoColumns => 'This table has no columns.';
+
+  @override
+  String get resultUnsupported =>
+      'This kind of result is shown as its summary.';
 }

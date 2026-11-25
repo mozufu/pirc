@@ -69,6 +69,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     child: TabScreen(
                       tab: tab,
                       openItem: state.uri.queryParameters['open'],
+                      side: state.uri.queryParameters['side'],
                     ),
                   ),
                 ),

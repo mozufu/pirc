@@ -7,6 +7,7 @@ import 'composer/composer_controller.dart';
 import 'conversation_screen.dart';
 import 'pot_bar.dart';
 import 'questions.dart';
+import 'result_reader.dart';
 import 'session_controller.dart';
 import 'work_data.dart';
 
@@ -34,7 +35,9 @@ class WorkConversation extends ConsumerWidget {
       showBack: showBack,
       parts: ConversationParts(
         banner: (context, view) => PotBar(sessionId: sessionId),
-        messageBuilder: potInstructionEntry,
+        messageBuilder: (context, message) =>
+            potInstructionEntry(context, message) ??
+            artifactEntry(sessionId)(context, message),
         footer: (context, view) => questionCards(sessionId, view),
         actions: (context, view) => [
           ApprovalModeButton(
