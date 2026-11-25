@@ -4,12 +4,16 @@
 /// the `dart:io` one by conditional import.
 library;
 
+export 'src/api/activity_api.dart';
 export 'src/api/calendar_api.dart';
 export 'src/api/clients_api.dart';
+export 'src/api/decisions_api.dart';
 export 'src/api/device_api.dart';
 export 'src/api/directory_api.dart';
 export 'src/api/environment_api.dart';
+export 'src/api/images_api.dart';
 export 'src/api/management_api.dart';
+export 'src/api/me_api.dart';
 export 'src/api/memory_api.dart';
 export 'src/api/modes_api.dart';
 export 'src/api/models_api.dart';
@@ -17,6 +21,8 @@ export 'src/api/pots_api.dart';
 export 'src/api/providers_api.dart';
 export 'src/api/push_api.dart';
 export 'src/api/sessions_api.dart';
+export 'src/api/threads_api.dart';
+export 'src/api/usage_api.dart';
 export 'src/api_client.dart';
 export 'src/commands/command_sender.dart';
 export 'src/commands/control.dart';

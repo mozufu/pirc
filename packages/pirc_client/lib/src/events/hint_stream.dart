@@ -46,6 +46,7 @@ const hintKinds = {
   'activity',
   'budgetRequests',
   'notifications',
+  'causalRoots',
 };
 
 /// The `/api/hints` socket: change hints without a session. It reconnects

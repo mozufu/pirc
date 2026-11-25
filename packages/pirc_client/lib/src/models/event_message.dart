@@ -85,6 +85,7 @@ class HintMessage extends EventMessage {
     'activity_changed',
     'budget_requests_changed',
     'notifications_changed',
+    'causal_roots_changed',
   };
 
   final String type;
