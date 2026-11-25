@@ -256,7 +256,11 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
                               shape: const StadiumBorder(),
                             ),
                             child: Text(
-                              '${_model?.name ?? l10n.modelDefault} · ${thinkingLabel(l10n, _thinking)}',
+                              [
+                                _model?.name ?? l10n.modelDefault,
+                                if (_thinking != null)
+                                  thinkingLabel(l10n, _thinking),
+                              ].join(' · '),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),

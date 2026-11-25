@@ -189,8 +189,13 @@ class _SessionComposerState extends ConsumerState<SessionComposer> {
                             shape: const StadiumBorder(),
                           ),
                           child: Text(
-                            '${model?.name ?? state.selectedModelId ?? l10n.modelDefault}'
-                            ' · ${thinkingLabel(l10n, state.thinkingLevel)}',
+                            [
+                              model?.name ??
+                                  state.selectedModelId ??
+                                  l10n.modelDefault,
+                              if (state.thinkingLevel != null)
+                                thinkingLabel(l10n, state.thinkingLevel),
+                            ].join(' · '),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
