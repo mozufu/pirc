@@ -53,6 +53,9 @@ pub struct Message {
     pub seq: i64,
     pub author_kind: String,
     pub author_id: Option<String>,
+    /// A deleted author pot's name.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub author_name: Option<String>,
     pub body: String,
     pub mentions: Vec<String>,
     pub all: bool,
@@ -311,6 +314,7 @@ fn message_row(row: &Row) -> rusqlite::Result<Message> {
         card: row
             .get::<_, Option<String>>(9)?
             .and_then(|card| serde_json::from_str(&card).ok()),
+        author_name: row.get(10)?,
     })
 }
 
@@ -324,7 +328,7 @@ pub fn messages(
     get(conn, owner, thread_id)?;
     let mut page: Vec<Message> = conn
         .prepare(
-            "SELECT id,thread_id,seq,author_kind,author_id,body,mentions_json,all_mention,created_at,card_json
+            "SELECT id,thread_id,seq,author_kind,author_id,body,mentions_json,all_mention,created_at,card_json,author_name
              FROM messages WHERE thread_id=?1 AND seq<?2 ORDER BY seq DESC LIMIT ?3",
         )?
         .query_map(params![thread_id, before.unwrap_or(i64::MAX), PAGE], message_row)?
@@ -390,7 +394,7 @@ fn append(
 /// One message by id (callers have checked the owner).
 pub fn message(conn: &Connection, id: &str) -> ApiResult<Message> {
     Ok(conn.query_row(
-        "SELECT id,thread_id,seq,author_kind,author_id,body,mentions_json,all_mention,created_at,card_json FROM messages WHERE id=?1",
+        "SELECT id,thread_id,seq,author_kind,author_id,body,mentions_json,all_mention,created_at,card_json,author_name FROM messages WHERE id=?1",
         [id],
         message_row,
     )?)

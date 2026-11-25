@@ -21,7 +21,8 @@ project_config: false
 workspace_memory: false
 repository: false
 recap: false
-delete_sessions: false
+# Deleting a pot deletes its session; a pot whose session is gone gets a new one.
+delete_sessions: true
 projects: false
 # The Gateway supplies the pot's identity and handles its messages.
 pot: true

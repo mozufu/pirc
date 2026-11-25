@@ -9,6 +9,7 @@ pub mod delivery;
 pub mod handover;
 pub mod observe;
 pub mod ops;
+pub mod retire;
 pub mod runtime;
 pub mod store;
 pub mod threads;

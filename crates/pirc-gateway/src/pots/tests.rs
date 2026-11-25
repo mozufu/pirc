@@ -4196,16 +4196,16 @@ mod handover {
     use super::*;
     use rusqlite::params;
 
-    struct World {
-        db: Db,
-        a: String,
-        b: String,
+    pub(super) struct World {
+        pub(super) db: Db,
+        pub(super) a: String,
+        pub(super) b: String,
         work_here: String,
         work_elsewhere: String,
-        group: String,
+        pub(super) group: String,
     }
 
-    fn world() -> World {
+    pub(super) fn world() -> World {
         let db = db();
         let (a, b, work_here, work_elsewhere, group) = {
             let mut conn = db.lock();
@@ -4459,5 +4459,204 @@ mod handover {
             .status,
             400
         );
+    }
+}
+
+mod retire {
+    use super::super::retire::{self, Mode, Plan, Retire};
+    use super::super::threads;
+    use super::*;
+    use rusqlite::params;
+
+    fn targets(b: &str) -> Vec<retire::ItemTarget> {
+        serde_json::from_value(json!([
+            { "kind": "work", "ref": "w-here", "to": { "kind": "pot", "potId": b } },
+        ]))
+        .unwrap()
+    }
+
+    fn count(conn: &rusqlite::Connection, sql: &str) -> i64 {
+        conn.query_row(sql, [], |r| r.get(0)).unwrap()
+    }
+
+    #[test]
+    fn the_preview_shows_every_item_and_changes_nothing() {
+        let w = super::handover::world();
+        let conn = w.db.lock();
+        let mut chosen: Vec<retire::ItemTarget> = serde_json::from_value(json!([
+            { "kind": "work", "ref": "w-here", "to": { "kind": "pot", "potId": w.b } },
+            { "kind": "work", "ref": "w-else", "to": { "kind": "pot", "potId": w.b } },
+        ]))
+        .unwrap();
+        let activity_before = count(&conn, "SELECT count(*) FROM pot_activity");
+        let shown = retire::preview(
+            &conn,
+            "alice",
+            &w.a,
+            &Plan {
+                mode: Mode::Delete,
+                targets: chosen.clone(),
+            },
+        )
+        .unwrap();
+        let items = shown["items"].as_array().unwrap();
+        assert_eq!(items.len(), 6);
+        let fit = |r: &str| items.iter().find(|i| i["ref"] == r).unwrap()["fit"].clone();
+        assert_eq!(fit("w-here"), "ok");
+        assert_eq!(fit("w-else"), "stop");
+        assert_eq!(fit("r1"), "stop", "no target: the reminder is cancelled");
+        assert!(
+            shown["stops"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|s| s.as_str().unwrap().contains("deleted"))
+        );
+        assert_eq!(count(&conn, "SELECT count(*) FROM pot_handovers"), 0);
+        assert_eq!(
+            count(&conn, "SELECT count(*) FROM pot_activity"),
+            activity_before
+        );
+        // A target must name something the pot holds.
+        chosen.push(
+            serde_json::from_value(
+                json!({ "kind": "work", "ref": "nope", "to": { "kind": "user" } }),
+            )
+            .unwrap(),
+        );
+        assert_eq!(
+            retire::preview(
+                &conn,
+                "alice",
+                &w.a,
+                &Plan {
+                    mode: Mode::Delete,
+                    targets: chosen
+                }
+            )
+            .unwrap_err()
+            .status,
+            400
+        );
+    }
+
+    #[test]
+    fn archiving_hands_over_drops_the_rest_and_stops_wakes() {
+        let w = super::handover::world();
+        let mut conn = w.db.lock();
+        let direct = threads::direct(&conn, "alice", &w.a).unwrap();
+        threads::post_user(&conn, "alice", &direct.id, "Still there?", vec![], false).unwrap();
+        let revision = read(&conn, "alice", &w.a).unwrap().revision;
+        let stale = Retire {
+            mode: Mode::Archive,
+            revision: revision + 1,
+            targets: vec![],
+        };
+        assert_eq!(
+            retire::retire(&mut conn, "alice", &w.a, stale)
+                .unwrap_err()
+                .code,
+            "revision_conflict"
+        );
+        let done = retire::retire(
+            &mut conn,
+            "alice",
+            &w.a,
+            Retire {
+                mode: Mode::Archive,
+                revision,
+                targets: targets(&w.b),
+            },
+        )
+        .unwrap();
+        assert_eq!(done.woken, vec![w.b.clone()]);
+        assert_eq!(done.result["pot"]["state"], "archived");
+        let pot_of = |id: &str| -> String {
+            conn.query_row("SELECT pot_id FROM pot_works WHERE id=?1", [id], |r| {
+                r.get(0)
+            })
+            .unwrap()
+        };
+        assert_eq!(pot_of("w-here"), w.b);
+        let state: String = conn
+            .query_row("SELECT state FROM pot_works WHERE id='w-else'", [], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(state, "taken_over", "no target: the user takes it");
+        assert_eq!(count(&conn, "SELECT count(*) FROM pot_reminders"), 0);
+        assert_eq!(
+            threads::get(&conn, "alice", &w.group).unwrap().host_pot_id,
+            None
+        );
+        let failed: String = conn
+            .query_row("SELECT state FROM pot_wakes WHERE pot_id=?1", [&w.a], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(failed, "failed");
+        // Responsibilities without a target stay with the archived pot.
+        assert_eq!(
+            read(&conn, "alice", &w.a)
+                .unwrap()
+                .input
+                .work
+                .responsibilities
+                .len(),
+            2
+        );
+    }
+
+    #[test]
+    fn a_deleted_pot_leaves_its_name_on_what_outlives_it() {
+        let w = super::handover::world();
+        let mut conn = w.db.lock();
+        let direct = threads::direct(&conn, "alice", &w.a).unwrap();
+        conn.execute(
+            "INSERT INTO pot_wakes(id,pot_id,owner_user,source,thread_id,content,state,reply,created_at)
+             VALUES('wk','{a}','alice','user',?1,'hi','settled','Hello from Tester',0)"
+                .replace("{a}", &w.a)
+                .as_str(),
+            params![direct.id],
+        )
+        .unwrap();
+        threads::post_reply(&conn, "wk").unwrap().unwrap();
+        let revision = read(&conn, "alice", &w.a).unwrap().revision;
+        let done = retire::retire(
+            &mut conn,
+            "alice",
+            &w.a,
+            Retire {
+                mode: Mode::Delete,
+                revision,
+                targets: vec![],
+            },
+        )
+        .unwrap();
+        assert_eq!(done.result["deleted"], true);
+        assert_eq!(read(&conn, "alice", &w.a).unwrap_err().status, 404);
+        let thread = threads::get(&conn, "alice", &direct.id).unwrap();
+        assert_eq!((thread.name.as_str(), thread.pots.len()), ("Tester", 0));
+        let messages = threads::messages(&conn, "alice", &direct.id, None).unwrap();
+        assert_eq!(messages[0].author_name.as_deref(), Some("Tester"));
+        let kinds: Vec<(Option<String>, String, String)> = conn
+            .prepare("SELECT pot_id, pot_name, kind FROM pot_activity WHERE pot_name='Tester' ORDER BY rowid")
+            .unwrap()
+            .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(
+            kinds.last().unwrap(),
+            &(None, "Tester".to_owned(), "deleted".to_owned())
+        );
+        // Retention removes the thread later; live pots' threads stay.
+        let later = crate::util::now_ms() + 91 * 86_400_000;
+        assert_eq!(retire::sweep(&conn, later).unwrap(), 1);
+        assert_eq!(
+            threads::get(&conn, "alice", &direct.id).unwrap_err().status,
+            404
+        );
+        assert!(threads::get(&conn, "alice", &w.group).is_ok());
     }
 }

@@ -414,6 +414,9 @@ pub fn start(app: &crate::app::AppState) {
             if let Err(error) = sweep(&app.db.lock(), now_ms()) {
                 crate::log::warn(&format!("pot activity retention: {error}"));
             }
+            if let Err(error) = super::retire::sweep(&app.db.lock(), now_ms()) {
+                crate::log::warn(&format!("deleted pots' threads retention: {error}"));
+            }
         }
     });
 }

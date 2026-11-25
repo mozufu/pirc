@@ -129,14 +129,15 @@ CREATE TABLE threads (
  avatar_color INTEGER CHECK(avatar_color IS NULL OR avatar_color BETWEEN 1 AND 5),
  host_pot_id TEXT REFERENCES pots(id) ON DELETE SET NULL,
  project_id TEXT,
- -- The direct thread's pot, or a pot DM's two pots in order.
- pot_a TEXT REFERENCES pots(id) ON DELETE CASCADE,
- pot_b TEXT REFERENCES pots(id) ON DELETE CASCADE,
+ -- The direct thread's pot, or a pot DM's two pots in order. Cleared when a
+ -- pot is deleted: the thread stays, named, until the retention removes it.
+ pot_a TEXT REFERENCES pots(id) ON DELETE SET NULL,
+ pot_b TEXT REFERENCES pots(id) ON DELETE SET NULL,
  last_seq INTEGER NOT NULL DEFAULT 0,
  created_at INTEGER NOT NULL,
  updated_at INTEGER NOT NULL,
- CHECK(kind!='direct' OR (pot_a IS NOT NULL AND pot_b IS NULL)),
- CHECK(kind!='pot_dm' OR (pot_a IS NOT NULL AND pot_b IS NOT NULL AND pot_a<pot_b)),
+ CHECK(kind!='direct' OR pot_b IS NULL),
+ CHECK(kind!='pot_dm' OR pot_a IS NULL OR pot_b IS NULL OR pot_a<pot_b),
  CHECK(kind!='group' OR (pot_a IS NULL AND pot_b IS NULL))
 );
 CREATE UNIQUE INDEX threads_direct ON threads(owner_user, pot_a) WHERE kind='direct';
@@ -153,6 +154,8 @@ CREATE TABLE messages (
  seq INTEGER NOT NULL,
  author_kind TEXT NOT NULL CHECK(author_kind IN ('user','pot','system')),
  author_id TEXT,
+ -- The author pot's name, kept once the pot is deleted.
+ author_name TEXT,
  body TEXT NOT NULL CHECK(length(body) BETWEEN 1 AND 32768),
  mentions_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(mentions_json)),
  all_mention INTEGER NOT NULL DEFAULT 0 CHECK(all_mention IN (0,1)),

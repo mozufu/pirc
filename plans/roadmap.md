@@ -9,20 +9,20 @@ acceptance, activation.
 
 ## Status
 
-| Milestone                                                     | Design   | Code        | Acceptance | Notes                                                         |
-| ------------------------------------------------------------- | -------- | ----------- | ---------- | ------------------------------------------------------------- |
-| [M0 Unify the working tree](#m0-unify-the-working-tree)       | complete | complete    | n/a        | `e1a08db9`, `162c113b`                                        |
-| [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)           |
-| [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11     |
-| [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4   |
-| [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–8a and 9 done; 8b, 10b and 11 in progress on branches |
-| [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`                 |
-| [M6 Work and settings screens](#m6-work-and-settings-screens) | complete |             |            | 16 steps; defaults A–H accepted 2026-11-25                    |
-| [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                               |
-| [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                               |
-| [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                            |
-| [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                                                               |
-| [M11 Release](#m11-release)                                   | outline  |             |            |                                                               |
+| Milestone                                                     | Design   | Code        | Acceptance | Notes                                                              |
+| ------------------------------------------------------------- | -------- | ----------- | ---------- | ------------------------------------------------------------------ |
+| [M0 Unify the working tree](#m0-unify-the-working-tree)       | complete | complete    | n/a        | `e1a08db9`, `162c113b`                                             |
+| [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)                |
+| [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11          |
+| [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4        |
+| [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–8a, 9 and 10a done; 8b, 10b and 11 in progress on branches |
+| [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`                      |
+| [M6 Work and settings screens](#m6-work-and-settings-screens) | complete |             |            | 16 steps; defaults A–H accepted 2026-11-25                         |
+| [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                                    |
+| [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                                    |
+| [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                                 |
+| [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                                                                    |
+| [M11 Release](#m11-release)                                   | outline  |             |            |                                                                    |
 
 "Outline" milestones get their detailed steps written (rule P12) before they start,
 using what the earlier milestones produced.
@@ -322,46 +322,40 @@ evidence?)` (L1 `obs_observations`, one per pot and event, only for events that
      Done when: the pots.md acceptance case (two pots observing one event: two L1
      rows, one L2 notification, one L3 dispatch) passes, plus scope, exclusion and
      lead tests.
-10. **Handover, delete and the old assistant.**
-    - 10a. _Handover, archive and delete_ (pots.md, Handover…; code in
-      `pots/handover.rs` and `pots/retire.rs`).
-      - Items of a pot: responsibilities, pending reminders, open works it
-        coordinates, groups it hosts. Fit against the receiver at proposal and again
-        at apply: to a pot, a work is `ok` only with a `write` location for it and
-        the `work` reach, a host role only for a member, a responsibility is
-        `narrowed` when the receiver's reach is lower; to the user, works are taken
-        over and the rest `stop`s. Nothing grants permissions.
-      - `pot_handovers` (from, to pot or user, proposed by user or pot, reason,
-        state `proposed`/`applied`/`rejected`, revision) and `pot_handover_items`
-        (kind, ref, label, fit, reason). `POST /api/handovers` (the user),
-        `handover_propose` (`pot.handover.propose`, a `handover` card), `GET
+10. **Handover, delete and the old assistant.** - 10a. _Handover, archive and delete_ (pots.md, Handover…; code in
+    `pots/handover.rs` and `pots/retire.rs`). - Items of a pot: responsibilities, pending reminders, open works it
+    coordinates, groups it hosts. Fit against the receiver at proposal and again
+    at apply: to a pot, a work is `ok` only with a `write` location for it and
+    the `work` reach, a host role only for a member, a responsibility is
+    `narrowed` when the receiver's reach is lower; to the user, works are taken
+    over and the rest `stop`s. Nothing grants permissions. - `pot_handovers` (from, to pot or user, proposed by user or pot, reason,
+    state `proposed`/`applied`/`rejected`, revision) and `pot_handover_items`
+    (kind, ref, label, fit, reason). `POST /api/handovers` (the user),
+    `handover_propose` (`pot.handover.propose`, a `handover` card), `GET
 /api/handovers`, `POST …/{id}/confirm` with the revision, `…/reject`.
-        Applying moves what fits, wakes the receiver (`handover`), logs `assign`.
-        Loop-guard rule 1: a pot may not hand an item to a pot that held it within
-        `handback_cooldown_s`; the user may.
-      - Retire: `POST /api/pots/{id}/retire/preview` and `…/retire` with the mode
-        (`archive` or `delete`), the revision and a target per item (pot, user or
-        none), applied in order: hand over, drop what has no target, fail queued
-        wakes, then archive, or delete the pot's session and the pot. Rows that
-        outlive a deleted pot keep its name: activity (already), its messages
-        (`author_name`), its direct and DM threads (named, with the pot reference
-        cleared); they expire with the owner's activity retention.
-    - 10b. _Remove the assistant chat mode and delegations_ (parallel to 8b and 9;
-      no `crates/pirc-conformance` edits): the `chat` mode (`chat.md`,
-      `default_chat`, the `chats` workspace and top-level chats), `SOUL.md`/`CHAT.md`
-      and `/api/assistant/prompts` (Gateway and Node, `assistant_prompts.rs`),
-      assistant-only chat projects and project links, delegations (`delegations.rs`,
-      the `delegate`/`delegation_status` tools, the `assistant-delegation*` delivery
-      types, the mode's `delegate`/`delegate_target`), and the clients' routes for
-      them. The chat node stays as the pot host: the `assistant_node` claim remains
-      (renamed later if useful). User memory and the legacy session memory stay for
-      10c. Conformance tests of removed features are deleted after the rewrite
-      (step 11) lands.
-    - 10c. _Pot memory and the legacy memory_: pots get their own memory store keyed
-      by pot (P8; recall never crosses pots), replacing the user-memory tools in the
-      pot mode; then the legacy session observational memory in
-      `crates/pirc-agent/src/features/memory/` is removed (keep what workspace
-      memory uses; delete `docs/architecture/legacy-observational-memory.md`).
+    Applying moves what fits, wakes the receiver (`handover`), logs `assign`.
+    Loop-guard rule 1: a pot may not hand an item to a pot that held it within
+    `handback_cooldown_s`; the user may. - Retire: `POST /api/pots/{id}/retire/preview` and `…/retire` with the mode
+    (`archive` or `delete`), the revision and a target per item (pot, user or
+    none), applied in order: hand over, drop what has no target, fail queued
+    wakes, then archive, or delete the pot's session and the pot. Rows that
+    outlive a deleted pot keep its name: activity (already), its messages
+    (`author_name`), its direct and DM threads (named, with the pot reference
+    cleared); they expire with the owner's activity retention. - 10b. _Remove the assistant chat mode and delegations_ (parallel to 8b and 9;
+    no `crates/pirc-conformance` edits): the `chat` mode (`chat.md`,
+    `default_chat`, the `chats` workspace and top-level chats), `SOUL.md`/`CHAT.md`
+    and `/api/assistant/prompts` (Gateway and Node, `assistant_prompts.rs`),
+    assistant-only chat projects and project links, delegations (`delegations.rs`,
+    the `delegate`/`delegation_status` tools, the `assistant-delegation*` delivery
+    types, the mode's `delegate`/`delegate_target`), and the clients' routes for
+    them. The chat node stays as the pot host: the `assistant_node` claim remains
+    (renamed later if useful). User memory and the legacy session memory stay for
+    10c. Conformance tests of removed features are deleted after the rewrite
+    (step 11) lands. - 10c. _Pot memory and the legacy memory_: pots get their own memory store keyed
+    by pot (P8; recall never crosses pots), replacing the user-memory tools in the
+    pot mode; then the legacy session observational memory in
+    `crates/pirc-agent/src/features/memory/` is removed (keep what workspace
+    memory uses; delete `docs/architecture/legacy-observational-memory.md`).
 11. **Conformance rewrite** (parallel to every other step; touches only
     `crates/pirc-conformance` and `scripts/conformance-accounting.ts`). A harness
     helper starts a conversation through first-send (prepare, accept, materialize,

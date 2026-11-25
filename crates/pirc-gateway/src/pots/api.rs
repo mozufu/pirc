@@ -25,7 +25,6 @@ pub fn routes() -> Router<AppState> {
         .route("/api/pots/{id}", get(read).patch(update))
         .route("/api/pots/{id}/pause", post(pause))
         .route("/api/pots/{id}/resume", post(resume))
-        .route("/api/pots/{id}/archive", post(archive))
         .route("/api/pots/{id}/restore", post(restore))
         .route("/api/pots/{id}/thread", get(direct_thread))
         .route("/api/threads", get(list_threads).post(create_group))
@@ -36,6 +35,8 @@ pub fn routes() -> Router<AppState> {
         )
         .route("/api/activity", get(list_activity))
         .route("/api/pots/{id}/held", get(held_items))
+        .route("/api/pots/{id}/retire/preview", post(retire_preview))
+        .route("/api/pots/{id}/retire", post(retire_pot))
         .route("/api/handovers", get(list_handovers).post(create_handover))
         .route("/api/handovers/{id}", get(read_handover))
         .route("/api/handovers/{id}/confirm", post(confirm_handover))
@@ -207,15 +208,6 @@ async fn resume(
     body: ReqBody,
 ) -> ApiResult<axum::Json<Value>> {
     transition(&app, &identity, &id, body, PotState::Active).await
-}
-
-async fn archive(
-    State(app): State<AppState>,
-    Extension(identity): Extension<Identity>,
-    Path(id): Path<String>,
-    body: ReqBody,
-) -> ApiResult<axum::Json<Value>> {
-    transition(&app, &identity, &id, body, PotState::Archived).await
 }
 
 async fn restore(
@@ -610,4 +602,81 @@ async fn reject_handover(
     let handover = super::handover::reject(&app.db.lock(), &identity.user, &id)?;
     app.pots_changed(&identity.user);
     Ok(axum::Json(json!({ "handover": handover })))
+}
+
+async fn retire_preview(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+    ReqBody(body): ReqBody,
+) -> ApiResult<axum::Json<Value>> {
+    let plan: super::retire::Plan = body.parse()?;
+    Ok(axum::Json(super::retire::preview(
+        &app.db.lock(),
+        &identity.user,
+        &id,
+        &plan,
+    )?))
+}
+
+async fn retire_pot(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+    ReqBody(body): ReqBody,
+) -> ApiResult<axum::Json<Value>> {
+    let input: super::retire::Retire = body.parse()?;
+    let retired = super::retire::retire(&mut app.db.lock(), &identity.user, &id, input)?;
+    for pot in &retired.woken {
+        super::runtime::kick(&app, &identity.user, pot);
+    }
+    if let Some(session) = &retired.session_id {
+        delete_pot_session(&app, &identity.user, session).await;
+    }
+    app.pots_changed(&identity.user);
+    app.threads_changed(&identity.user);
+    app.activity_changed(&identity.user);
+    Ok(axum::Json(retired.result))
+}
+
+/// A deleted pot's session goes too; a node that cannot be reached leaves it
+/// marked as being deleted.
+async fn delete_pot_session(app: &AppState, owner: &str, session_id: &str) {
+    let session = match app.db.lock().get_session(session_id) {
+        Ok(session) => session,
+        Err(_) => return,
+    };
+    if let Err(error) = app.db.lock().begin_session_deletion(session_id, owner) {
+        crate::log::warn(&format!("pot session {session_id}: {}", error.message));
+        return;
+    }
+    let (Some(node), Some(remote)) = (&session.node_id, &session.pi_session_id) else {
+        return;
+    };
+    let deleted = crate::dispatch::node_request(
+        app,
+        node,
+        owner,
+        pirc_protocol::HttpMethod::Delete,
+        format!(
+            "/api/sessions/{}",
+            crate::routes::urlencoding_component(remote)
+        ),
+        None,
+    )
+    .await;
+    if let Err(failure) = deleted {
+        crate::log::warn(&format!("pot session {session_id}: {}", failure.0));
+        return;
+    }
+    let conn = app.db.lock();
+    let finished = crate::db::atomic(&conn, |conn| {
+        app.forget_session_memory(conn, owner, session_id)?;
+        conn.finish_session_deletion(session_id)
+    });
+    if let Err(error) = finished {
+        crate::log::warn(&format!("pot session {session_id}: {}", error.message));
+    }
+    app.events.forget(session_id);
+    app.sessions_changed(Some(owner));
 }
