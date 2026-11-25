@@ -1,0 +1,1 @@
+Choose your thinking level for the next wakes: off, minimal, low, medium, high or xhigh. This works only when the user left your thinking on automatic; otherwise the user's level stays. The new level applies from your next wake, not the current one. Give a short `reason`; the change is logged.

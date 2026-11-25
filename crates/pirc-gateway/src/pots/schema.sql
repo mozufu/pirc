@@ -241,3 +241,26 @@ CREATE TABLE pot_work_instructions (
  created_at INTEGER NOT NULL
 );
 CREATE INDEX pot_work_instructions_work ON pot_work_instructions(work_id, created_at);
+-- Reminders a pot sets for itself (plans/pots.md, Autonomy): a row becomes a
+-- `reminder` wake at its due time, at most once.
+CREATE TABLE pot_reminders (
+ id TEXT PRIMARY KEY,
+ pot_id TEXT NOT NULL REFERENCES pots(id) ON DELETE CASCADE,
+ owner_user TEXT NOT NULL,
+ note TEXT NOT NULL CHECK(length(note) BETWEEN 1 AND 4000),
+ due_at INTEGER NOT NULL,
+ state TEXT NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','delivered')),
+ wake_id TEXT,
+ created_at INTEGER NOT NULL
+);
+CREATE INDEX pot_reminders_due ON pot_reminders(state, due_at) WHERE state='pending';
+CREATE INDEX pot_reminders_pot ON pot_reminders(pot_id, state);
+-- The model and thinking level last applied to a pot's session, so a wake
+-- only sets them when they differ (plans/pots.md, Runtime).
+CREATE TABLE pot_session_settings (
+ pot_id TEXT PRIMARY KEY REFERENCES pots(id) ON DELETE CASCADE,
+ provider TEXT NOT NULL,
+ model TEXT NOT NULL,
+ thinking TEXT NOT NULL,
+ updated_at INTEGER NOT NULL
+);

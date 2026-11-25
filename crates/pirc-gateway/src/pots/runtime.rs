@@ -35,6 +35,8 @@ pub enum Source {
     Dm,
     Approval,
     Handover,
+    Reminder,
+    Review,
 }
 
 impl Source {
@@ -45,6 +47,8 @@ impl Source {
             Self::Dm => "dm",
             Self::Approval => "approval",
             Self::Handover => "handover",
+            Self::Reminder => "reminder",
+            Self::Review => "review",
         }
     }
 }
@@ -77,6 +81,9 @@ pub fn enqueue(conn: &Connection, owner: &str, pot_id: &str, wake: NewWake) -> A
             now_ms(),
         ],
     )?;
+    if wake.source != Source::Review {
+        super::autonomy::engage(conn, pot_id)?;
+    }
     Ok(id)
 }
 
@@ -146,6 +153,7 @@ async fn ensure_session(app: &AppState, owner: &str, pot_id: &str) -> Result<Ses
             params![session.id, pot_id],
         )
         .map_err(|e| e.to_string())?;
+    super::autonomy::clear_applied(&app.db.lock(), pot_id).map_err(|e| e.message)?;
     Ok(session)
 }
 
@@ -208,11 +216,19 @@ pub async fn pump(app: &AppState, owner: &str, pot_id: &str) -> ApiResult<()> {
             return Ok(());
         }
     };
-    let message = json!({ "customType": "pot-wake", "content": content, "details": details });
+    let settings = super::autonomy::wake_settings(&app.db.lock(), owner, pot_id)?;
+    let mut message = json!({ "customType": "pot-wake", "content": content, "details": details });
+    if let Some((model, thinking)) = &settings {
+        message["model"] = json!({ "provider": model.provider, "id": model.model });
+        message["thinking"] = json!(thinking);
+    }
     let sent = super::delivery::send(app, &session, owner, message).await;
     let conn = app.db.lock();
     match sent {
         Sent::Delivered => {
+            if let Some((model, thinking)) = &settings {
+                super::autonomy::mark_applied(&conn, pot_id, model, thinking)?;
+            }
             conn.execute(
                 "UPDATE pot_wakes SET state='delivered',delivered_at=?2,error=NULL WHERE id=?1",
                 params![id, now_ms()],
@@ -371,7 +387,18 @@ pub fn start(app: &AppState) {
     let app = app.clone();
     tokio::spawn(async move {
         loop {
-            let pots = pending(&app.db.lock()).unwrap_or_default();
+            let mut pots = pending(&app.db.lock()).unwrap_or_default();
+            match super::autonomy::sweep(&app.db.lock()) {
+                Ok(woken) => {
+                    for (owner, _) in &woken {
+                        app.activity_changed(owner);
+                    }
+                    pots.extend(woken);
+                }
+                Err(error) => crate::log::warn(&format!("pot autonomy: {}", error.message)),
+            }
+            pots.sort();
+            pots.dedup();
             for (owner, pot_id) in pots {
                 if let Err(error) = check(&app, &owner, &pot_id).await {
                     crate::log::warn(&format!("pot {pot_id}: {}", error.message));

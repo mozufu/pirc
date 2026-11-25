@@ -906,6 +906,663 @@ mod runtime {
             .count();
         assert_eq!(sends_after, sends_before);
     }
+
+    #[tokio::test]
+    async fn wakes_carry_the_pots_model_and_thinking_only_when_they_change() {
+        let (app, _dir, fake, pot) = setup();
+        let first = wake(&app, &pot, "First");
+        runtime::check(&app, "alice", &pot).await.unwrap();
+        let delivered = fake.delivered.lock().unwrap().clone().unwrap();
+        assert_eq!(delivered["model"]["provider"], "oauth:anthropic");
+        assert_eq!(delivered["model"]["id"], "claude-fable-5");
+        assert_eq!(delivered["thinking"], "medium");
+
+        // The same settings are not sent again.
+        let second = wake(&app, &pot, "Second");
+        *fake.stage.lock().unwrap() = Stage::Answered;
+        runtime::check(&app, "alice", &pot).await.unwrap();
+        assert_eq!(
+            runtime::wake(&app.db.lock(), &first).unwrap().state,
+            "settled"
+        );
+        let delivered = fake.delivered.lock().unwrap().clone().unwrap();
+        assert_eq!(delivered["details"]["wakeId"], second.as_str());
+        assert_eq!(delivered.get("model"), None);
+        assert_eq!(delivered.get("thinking"), None);
+
+        // A new level is applied from the next wake.
+        super::super::autonomy::set_thinking(
+            &app.db.lock(),
+            "alice",
+            &pot,
+            "high",
+            "a harder task",
+        )
+        .unwrap();
+        let third = wake(&app, &pot, "Third");
+        runtime::check(&app, "alice", &pot).await.unwrap();
+        let delivered = fake.delivered.lock().unwrap().clone().unwrap();
+        assert_eq!(delivered["details"]["wakeId"], third.as_str());
+        assert_eq!(delivered["thinking"], "high");
+
+        // A reported fallback applies on the next wake too.
+        let main = super::super::store::ModelChoice {
+            provider: "oauth:anthropic".into(),
+            model: "claude-fable-5".into(),
+        };
+        let fallback = super::super::store::ModelChoice {
+            provider: "work-openai".into(),
+            model: "gpt-5".into(),
+        };
+        super::super::autonomy::record_fallback(
+            &app.db.lock(),
+            "alice",
+            &pot,
+            &main,
+            &fallback,
+            "rate limited",
+        )
+        .unwrap();
+        let fourth = wake(&app, &pot, "Fourth");
+        runtime::check(&app, "alice", &pot).await.unwrap();
+        let delivered = fake.delivered.lock().unwrap().clone().unwrap();
+        assert_eq!(delivered["details"]["wakeId"], fourth.as_str());
+        assert_eq!(delivered["model"]["id"], "gpt-5");
+    }
+
+    #[tokio::test]
+    async fn a_paused_pot_takes_its_review_and_reminder_after_resume() {
+        let (app, _dir, fake, pot) = setup();
+        super::set_state(
+            &mut app.db.lock(),
+            "alice",
+            &pot,
+            1,
+            super::PotState::Paused,
+        )
+        .unwrap();
+        let note = "Check the deployment";
+        super::super::autonomy::create_reminder(
+            &app.db.lock(),
+            "alice",
+            &pot,
+            now_ms() + 60_000,
+            note,
+        )
+        .unwrap();
+        app.db
+            .lock()
+            .execute(
+                "UPDATE pot_reminders SET due_at=?2 WHERE pot_id=?1",
+                rusqlite::params![pot, now_ms() - 1],
+            )
+            .unwrap();
+        // A review is due as well, but a paused pot gets neither yet.
+        app.db
+            .lock()
+            .execute(
+                "UPDATE pot_runtime SET autonomy_interval_s=3600,last_engaged_at=?2,
+                  next_review_at=?3 WHERE pot_id=?1",
+                rusqlite::params![pot, now_ms() - 3_600_000, now_ms() - 1],
+            )
+            .unwrap();
+        assert_eq!(
+            super::super::autonomy::sweep(&app.db.lock()).unwrap(),
+            vec![("alice".to_owned(), pot.clone())],
+            "the reminder waits as a wake; the review waits for the resume"
+        );
+        let reviews: i64 = app
+            .db
+            .lock()
+            .query_row(
+                "SELECT count(*) FROM pot_wakes WHERE pot_id=?1 AND source='review'",
+                [&pot],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(reviews, 0);
+        runtime::check(&app, "alice", &pot).await.unwrap();
+        assert!(fake.requests.lock().unwrap().is_empty());
+
+        super::set_state(
+            &mut app.db.lock(),
+            "alice",
+            &pot,
+            2,
+            super::PotState::Active,
+        )
+        .unwrap();
+        runtime::check(&app, "alice", &pot).await.unwrap();
+        let delivered = fake.delivered.lock().unwrap().clone().unwrap();
+        assert_eq!(delivered["details"]["source"], "reminder");
+        assert_eq!(delivered["content"], note);
+
+        // The reminder engagement moved the review timer; make a review due
+        // again and it arrives after the reminder settled.
+        *fake.stage.lock().unwrap() = Stage::Answered;
+        runtime::check(&app, "alice", &pot).await.unwrap();
+        app.db
+            .lock()
+            .execute(
+                "UPDATE pot_runtime SET last_engaged_at=?2,next_review_at=?3 WHERE pot_id=?1",
+                rusqlite::params![pot, now_ms() - 7_200_000, now_ms() - 3_600_000],
+            )
+            .unwrap();
+        assert!(
+            !super::super::autonomy::sweep(&app.db.lock())
+                .unwrap()
+                .is_empty()
+        );
+        runtime::check(&app, "alice", &pot).await.unwrap();
+        let review = fake.delivered.lock().unwrap().clone().unwrap();
+        assert_eq!(review["details"]["source"], "review");
+    }
+}
+
+mod autonomy {
+    use super::super::autonomy::{self, MAX_PENDING_REMINDERS};
+    use super::super::ops::{self, Op};
+    use super::super::runtime::{self, NewWake, Source};
+    use super::super::store::ModelChoice;
+    use super::{db, input};
+    use crate::agent_ops::OpContext;
+    use crate::app::AppState;
+    use crate::db::Store;
+    use crate::error::ApiResult;
+    use crate::test_support::app_with_models;
+    use crate::util::now_ms;
+    use rusqlite::params;
+    use serde_json::{Value, json};
+
+    fn pot(conn: &mut rusqlite::Connection) -> String {
+        super::create(conn, "alice", input("Tester")).unwrap().id
+    }
+
+    fn wakes(conn: &rusqlite::Connection, pot: &str) -> Vec<(String, String, String)> {
+        conn.prepare(
+            "SELECT source,content,state FROM pot_wakes WHERE pot_id=?1 ORDER BY created_at,rowid",
+        )
+        .unwrap()
+        .query_map([pot], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+        .unwrap()
+        .collect::<Result<_, _>>()
+        .unwrap()
+    }
+
+    fn activities(conn: &rusqlite::Connection, pot: &str) -> Vec<(String, String)> {
+        conn.prepare("SELECT kind,summary FROM pot_activity WHERE pot_id=?1 ORDER BY at,rowid")
+            .unwrap()
+            .query_map([pot], |r| Ok((r.get(0)?, r.get(1)?)))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap()
+    }
+
+    fn review_times(conn: &rusqlite::Connection, pot: &str) -> (Option<i64>, Option<i64>) {
+        conn.query_row(
+            "SELECT last_engaged_at,next_review_at FROM pot_runtime WHERE pot_id=?1",
+            [pot],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn a_due_review_wakes_the_pot_and_reschedules() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = pot(&mut conn);
+        // The first sweep starts the 2-day default; it is not due yet.
+        assert!(autonomy::sweep(&conn).unwrap().is_empty());
+        let (_, next) = review_times(&conn, &pot);
+        assert!(next.unwrap() > now_ms());
+
+        conn.execute(
+            "UPDATE pot_runtime SET autonomy_interval_s=3600,last_engaged_at=?2,
+              next_review_at=?3 WHERE pot_id=?1",
+            params![pot, now_ms() - 7_200_000, now_ms() - 3_600_000],
+        )
+        .unwrap();
+        assert_eq!(
+            autonomy::sweep(&conn).unwrap(),
+            vec![("alice".to_owned(), pot.clone())]
+        );
+        let queued = wakes(&conn, &pot);
+        assert_eq!(
+            (queued[0].0.as_str(), queued[0].2.as_str()),
+            ("review", "queued")
+        );
+        assert!(
+            activities(&conn, &pot)
+                .iter()
+                .any(|(kind, _)| kind == "review")
+        );
+        let (_, next) = review_times(&conn, &pot);
+        assert!(next.unwrap() > now_ms());
+        // One review at a time: the next sweep adds nothing.
+        assert!(autonomy::sweep(&conn).unwrap().is_empty());
+        assert_eq!(wakes(&conn, &pot).len(), 1);
+    }
+
+    #[test]
+    fn reviews_wait_for_the_interval_and_stay_off_when_unset() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = pot(&mut conn);
+        conn.execute(
+            "UPDATE pot_runtime SET autonomy_interval_s=3600,last_engaged_at=?2,
+              next_review_at=?3 WHERE pot_id=?1",
+            params![pot, now_ms(), now_ms() + 3_600_000],
+        )
+        .unwrap();
+        assert!(autonomy::sweep(&conn).unwrap().is_empty());
+        // Off: no schedule, no wake even long after the old one.
+        conn.execute(
+            "UPDATE pot_runtime SET autonomy_interval_s=NULL,next_review_at=NULL WHERE pot_id=?1",
+            [&pot],
+        )
+        .unwrap();
+        assert!(autonomy::sweep(&conn).unwrap().is_empty());
+        assert!(wakes(&conn, &pot).is_empty());
+    }
+
+    #[test]
+    fn a_non_review_wake_counts_as_engagement() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = pot(&mut conn);
+        conn.execute(
+            "UPDATE pot_runtime SET autonomy_interval_s=3600,last_engaged_at=?2,
+              next_review_at=?3 WHERE pot_id=?1",
+            params![pot, now_ms() - 7_200_000, now_ms() - 3_600_000],
+        )
+        .unwrap();
+        runtime::enqueue(
+            &conn,
+            "alice",
+            &pot,
+            NewWake {
+                source: Source::User,
+                thread_id: None,
+                causal_root: None,
+                content: "Hello",
+                details: json!({}),
+            },
+        )
+        .unwrap();
+        let (engaged, next) = review_times(&conn, &pot);
+        assert!(engaged.unwrap() >= now_ms() - 1_000);
+        assert!(next.unwrap() > now_ms() + 3_500_000);
+        // A review is not engagement: it does not move the timer.
+        let before = review_times(&conn, &pot);
+        conn.execute(
+            "UPDATE pot_wakes SET state='settled' WHERE pot_id=?1 AND source='user'",
+            [&pot],
+        )
+        .unwrap();
+        runtime::enqueue(
+            &conn,
+            "alice",
+            &pot,
+            NewWake {
+                source: Source::Review,
+                thread_id: None,
+                causal_root: None,
+                content: "Review",
+                details: json!({}),
+            },
+        )
+        .unwrap();
+        assert_eq!(review_times(&conn, &pot), before);
+    }
+
+    #[test]
+    fn a_due_reminder_becomes_one_reminder_wake_and_limits_hold() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = pot(&mut conn);
+        let at = now_ms() + 60_000;
+        let made =
+            autonomy::create_reminder(&conn, "alice", &pot, at, "Check the deployment").unwrap();
+        let reminder = made["id"].as_str().unwrap().to_owned();
+        assert!(
+            activities(&conn, &pot)
+                .iter()
+                .any(|(kind, summary)| kind == "reminder_set"
+                    && summary.contains("Check the deployment"))
+        );
+        assert!(autonomy::sweep(&conn).unwrap().is_empty(), "not due yet");
+
+        conn.execute(
+            "UPDATE pot_reminders SET due_at=?2 WHERE id=?1",
+            params![reminder, now_ms() - 1],
+        )
+        .unwrap();
+        assert_eq!(
+            autonomy::sweep(&conn).unwrap(),
+            vec![("alice".to_owned(), pot.clone())]
+        );
+        let queued = wakes(&conn, &pot);
+        assert_eq!(
+            (queued[0].0.as_str(), queued[0].1.as_str()),
+            ("reminder", "Check the deployment")
+        );
+        let state: String = conn
+            .query_row(
+                "SELECT state FROM pot_reminders WHERE id=?1",
+                [&reminder],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(state, "delivered");
+        assert!(autonomy::sweep(&conn).unwrap().is_empty(), "only once");
+
+        // Invalid times.
+        assert_eq!(
+            autonomy::create_reminder(&conn, "alice", &pot, now_ms() - 1, "Past")
+                .unwrap_err()
+                .code,
+            "invalid_input"
+        );
+        assert_eq!(
+            autonomy::create_reminder(
+                &conn,
+                "alice",
+                &pot,
+                now_ms() + 366 * 86_400_000,
+                "Too far",
+            )
+            .unwrap_err()
+            .code,
+            "invalid_input"
+        );
+        // At most 50 pending.
+        for index in 0..MAX_PENDING_REMINDERS {
+            autonomy::create_reminder(
+                &conn,
+                "alice",
+                &pot,
+                now_ms() + 60_000,
+                &format!("Reminder {index}"),
+            )
+            .unwrap();
+        }
+        assert_eq!(
+            autonomy::create_reminder(&conn, "alice", &pot, now_ms() + 60_000, "One more")
+                .unwrap_err()
+                .code,
+            "limit_reached"
+        );
+    }
+
+    fn context(app: &AppState, session: &crate::db::Session) -> OpContext {
+        let mut mode = pirc_protocol::mode::default_work();
+        mode.pot = true;
+        OpContext {
+            session: session.clone(),
+            workspace: app.db.lock().get_workspace("node:repo").unwrap(),
+            mode,
+            user: "alice".to_owned(),
+        }
+    }
+
+    async fn op(app: &AppState, context: &OpContext, name: &str, args: Value) -> ApiResult<Value> {
+        let parsed = ops::parse_op(name, &args)
+            .expect("a pot operation")
+            .expect("valid arguments");
+        ops::run_op(app, context, parsed).await
+    }
+
+    #[tokio::test]
+    async fn the_pot_operations_change_its_own_settings_and_log_them() {
+        let (app, _dir) = app_with_models(json!({}));
+        super::db_setup(&app.db.lock());
+        let mut created = input("Tester");
+        created.permissions.work_locations.clear();
+        created.models.work_models.clear();
+        created.permissions.reach = super::Reach::Observe;
+        let pot = super::create(&mut app.db.lock(), "alice", created)
+            .unwrap()
+            .id;
+        let session = app
+            .db
+            .lock()
+            .create_session("node:repo", "node://node/s1", "node", "s1", "alice")
+            .unwrap();
+        app.db
+            .lock()
+            .execute(
+                "UPDATE pot_runtime SET session_id=?1 WHERE pot_id=?2",
+                params![session.id, pot],
+            )
+            .unwrap();
+        let context = context(&app, &session);
+
+        let saved = op(
+            &app,
+            &context,
+            "pot.autonomy.set",
+            json!({ "intervalS": 7200, "reason": "a deadline" }),
+        )
+        .await
+        .unwrap();
+        assert_eq!(saved["intervalS"], 7200);
+        let read = super::read(&app.db.lock(), "alice", &pot).unwrap();
+        assert_eq!(
+            (read.revision, read.input.autonomy.interval_s),
+            (2, Some(7200))
+        );
+        let log = activities(&app.db.lock(), &pot);
+        assert!(
+            log.iter().any(|(kind, summary)| kind == "autonomy_changed"
+                && summary.contains("a deadline")),
+            "{log:?}"
+        );
+        assert_eq!(
+            op(
+                &app,
+                &context,
+                "pot.autonomy.set",
+                json!({ "intervalS": 60, "reason": "too often" })
+            )
+            .await
+            .unwrap_err()
+            .code,
+            "invalid_input"
+        );
+        let off = op(
+            &app,
+            &context,
+            "pot.autonomy.set",
+            json!({ "intervalS": null, "reason": "quiet" }),
+        )
+        .await
+        .unwrap();
+        assert!(off["intervalS"].is_null());
+        assert!(off["nextReviewAt"].is_null());
+
+        let thinking = op(
+            &app,
+            &context,
+            "pot.thinking.set",
+            json!({ "level": "high", "reason": "hard work" }),
+        )
+        .await
+        .unwrap();
+        assert_eq!(thinking["level"], "high");
+        let level: String = app
+            .db
+            .lock()
+            .query_row(
+                "SELECT thinking FROM pot_runtime WHERE pot_id=?1",
+                [&pot],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(level, "high");
+        assert!(
+            activities(&app.db.lock(), &pot)
+                .iter()
+                .any(|(kind, summary)| kind == "thinking_adjust" && summary.contains("hard work"))
+        );
+        app.db
+            .lock()
+            .execute(
+                "UPDATE pot_runtime SET thinking_auto=0 WHERE pot_id=?1",
+                [&pot],
+            )
+            .unwrap();
+        assert_eq!(
+            op(
+                &app,
+                &context,
+                "pot.thinking.set",
+                json!({ "level": "low", "reason": "try" })
+            )
+            .await
+            .unwrap_err()
+            .code,
+            "thinking_fixed"
+        );
+        app.db
+            .lock()
+            .execute(
+                "UPDATE pot_runtime SET thinking_auto=1 WHERE pot_id=?1",
+                [&pot],
+            )
+            .unwrap();
+
+        let reminder = op(
+            &app,
+            &context,
+            "pot.reminder.create",
+            json!({ "at": now_ms() + 60_000, "note": "Check the deploy" }),
+        )
+        .await
+        .unwrap();
+        assert!(reminder["id"].as_str().unwrap().starts_with("rem"));
+        assert_eq!(
+            op(
+                &app,
+                &context,
+                "pot.reminder.create",
+                json!({ "at": now_ms() - 1, "note": "Past" })
+            )
+            .await
+            .unwrap_err()
+            .code,
+            "invalid_input"
+        );
+
+        let main = ModelChoice {
+            provider: read.input.models.main.provider.clone(),
+            model: read.input.models.main.model.clone(),
+        };
+        let fallback = ModelChoice {
+            provider: read.input.models.fallbacks[0].provider.clone(),
+            model: read.input.models.fallbacks[0].model.clone(),
+        };
+        let moved = op(
+            &app,
+            &context,
+            "pot.fallback",
+            json!({
+                "from": { "provider": main.provider.clone(), "model": main.model.clone() },
+                "to": { "provider": fallback.provider.clone(), "model": fallback.model.clone() },
+                "reason": "rate limited"
+            }),
+        )
+        .await
+        .unwrap();
+        assert_eq!(moved["activeFallback"], 1);
+        assert!(
+            activities(&app.db.lock(), &pot)
+                .iter()
+                .any(|(kind, summary)| kind == "fallback" && summary.contains("rate limited"))
+        );
+        // A fallback never moves backwards.
+        assert_eq!(
+            op(
+                &app,
+                &context,
+                "pot.fallback",
+                json!({
+                    "from": { "provider": fallback.provider.clone(), "model": fallback.model.clone() },
+                    "to": { "provider": main.provider.clone(), "model": main.model.clone() },
+                    "reason": "back"
+                })
+            )
+            .await
+            .unwrap_err()
+            .code,
+            "invalid_input"
+        );
+        let view = ops::context(&app.db.lock(), "alice", &session.id).unwrap();
+        assert_eq!(view["models"]["main"]["model"], main.model.as_str());
+        assert_eq!(view["models"]["activeFallback"], 1);
+        assert_eq!(view["models"]["thinking"], "high");
+        assert_eq!(view["models"]["thinkingAuto"], true);
+        // Without a session mapping the asking session is no pot.
+        app.db
+            .lock()
+            .execute(
+                "UPDATE pot_runtime SET session_id=NULL WHERE pot_id=?1",
+                [&pot],
+            )
+            .unwrap();
+        assert_eq!(
+            op(
+                &app,
+                &context,
+                "pot.autonomy.set",
+                json!({ "intervalS": 3600, "reason": "x" })
+            )
+            .await
+            .unwrap_err()
+            .code,
+            "not_a_pot"
+        );
+    }
+
+    #[test]
+    fn the_operations_parse_their_arguments() {
+        assert!(matches!(
+            ops::parse_op(
+                "pot.autonomy.set",
+                &json!({ "intervalS": null, "reason": "x" })
+            ),
+            Some(Ok(Op::AutonomySet(_)))
+        ));
+        assert!(matches!(
+            ops::parse_op("pot.reminder.create", &json!({ "at": 1, "note": "x" })),
+            Some(Ok(Op::ReminderCreate(_)))
+        ));
+        assert!(matches!(
+            ops::parse_op(
+                "pot.thinking.set",
+                &json!({ "level": "high", "reason": "x" })
+            ),
+            Some(Ok(Op::ThinkingSet(_)))
+        ));
+        assert!(matches!(
+            ops::parse_op(
+                "pot.fallback",
+                &json!({
+                    "from": { "provider": "p", "model": "a" },
+                    "to": { "provider": "p", "model": "b" }
+                })
+            ),
+            Some(Ok(Op::Fallback(_)))
+        ));
+        assert!(matches!(
+            ops::parse_op("pot.autonomy.set", &json!({ "intervalS": 60 })),
+            Some(Ok(_))
+        ));
+        assert!(matches!(
+            ops::parse_op("pot.reminder.create", &json!({ "at": "tomorrow" })),
+            Some(Err(()))
+        ));
+    }
 }
 
 mod threads {

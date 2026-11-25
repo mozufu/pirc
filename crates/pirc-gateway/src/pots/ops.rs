@@ -16,6 +16,10 @@ pub enum Op {
     WorkOpen(super::work::Open),
     WorkSend(WorkSend),
     WorkStatus(WorkStatus),
+    AutonomySet(AutonomySet),
+    ReminderCreate(ReminderCreate),
+    ThinkingSet(ThinkingSet),
+    Fallback(Fallback),
 }
 
 #[derive(serde::Deserialize)]
@@ -41,6 +45,56 @@ pub struct Send {
     body: String,
     #[serde(default)]
     mentions: Vec<String>,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct AutonomySet {
+    /// Seconds between reviews; null (or absent) turns them off.
+    interval_s: Option<i64>,
+    #[serde(default)]
+    reason: String,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ReminderCreate {
+    /// When to be woken, Unix epoch milliseconds.
+    at: i64,
+    note: String,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ThinkingSet {
+    level: String,
+    #[serde(default)]
+    reason: String,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Fallback {
+    from: ModelName,
+    to: ModelName,
+    #[serde(default)]
+    reason: String,
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ModelName {
+    provider: String,
+    model: String,
+}
+
+impl ModelName {
+    fn choice(&self) -> super::store::ModelChoice {
+        super::store::ModelChoice {
+            provider: self.provider.clone(),
+            model: self.model.clone(),
+        }
+    }
 }
 
 /// `None`: not a pot operation; `Some(Err)`: invalid arguments.
@@ -72,6 +126,26 @@ pub fn parse_op(op: &str, args: &Value) -> Option<Result<Op, ()>> {
         "pot.work.status" => Some(
             serde_json::from_value(args.clone())
                 .map(Op::WorkStatus)
+                .map_err(|_| ()),
+        ),
+        "pot.autonomy.set" => Some(
+            serde_json::from_value::<AutonomySet>(args.clone())
+                .map(Op::AutonomySet)
+                .map_err(|_| ()),
+        ),
+        "pot.reminder.create" => Some(
+            serde_json::from_value::<ReminderCreate>(args.clone())
+                .map(Op::ReminderCreate)
+                .map_err(|_| ()),
+        ),
+        "pot.thinking.set" => Some(
+            serde_json::from_value::<ThinkingSet>(args.clone())
+                .map(Op::ThinkingSet)
+                .map_err(|_| ()),
+        ),
+        "pot.fallback" => Some(
+            serde_json::from_value::<Fallback>(args.clone())
+                .map(Op::Fallback)
                 .map_err(|_| ()),
         ),
         _ => None,
@@ -139,6 +213,11 @@ fn permission_summary(pot: &Pot) -> String {
 pub fn context(conn: &Connection, owner: &str, session_id: &str) -> ApiResult<Value> {
     let pot = pot_of_session(conn, owner, session_id)?;
     let work = &pot.input.work;
+    let active_fallback: i64 = conn.query_row(
+        "SELECT active_fallback FROM pot_runtime WHERE pot_id=?1",
+        [&pot.id],
+        |r| r.get(0),
+    )?;
     Ok(json!({
         "pot": {
             "id": pot.id,
@@ -148,6 +227,13 @@ pub fn context(conn: &Connection, owner: &str, session_id: &str) -> ApiResult<Va
             "workDescription": work.description,
             "responsibilities": work.responsibilities,
             "permissions": permission_summary(&pot),
+        },
+        "models": {
+            "main": pot.input.models.main,
+            "fallbacks": pot.input.models.fallbacks,
+            "activeFallback": active_fallback,
+            "thinking": pot.input.models.thinking,
+            "thinkingAuto": pot.input.models.thinking_auto,
         },
         "user": { "name": owner },
     }))
@@ -163,6 +249,69 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
     }
     match op {
         Op::Context => self::context(&app.db.lock(), &context.user, &context.session.id),
+        Op::AutonomySet(set) => {
+            let result = {
+                let conn = app.db.lock();
+                let pot = pot_of_session(&conn, &context.user, &context.session.id)?;
+                super::autonomy::set_autonomy(
+                    &conn,
+                    &context.user,
+                    &pot.id,
+                    set.interval_s,
+                    &set.reason,
+                )?
+            };
+            app.pots_changed(&context.user);
+            app.activity_changed(&context.user);
+            Ok(result)
+        }
+        Op::ReminderCreate(reminder) => {
+            let result = {
+                let conn = app.db.lock();
+                let pot = pot_of_session(&conn, &context.user, &context.session.id)?;
+                super::autonomy::create_reminder(
+                    &conn,
+                    &context.user,
+                    &pot.id,
+                    reminder.at,
+                    &reminder.note,
+                )?
+            };
+            app.activity_changed(&context.user);
+            Ok(result)
+        }
+        Op::ThinkingSet(set) => {
+            let result = {
+                let conn = app.db.lock();
+                let pot = pot_of_session(&conn, &context.user, &context.session.id)?;
+                super::autonomy::set_thinking(
+                    &conn,
+                    &context.user,
+                    &pot.id,
+                    &set.level,
+                    &set.reason,
+                )?
+            };
+            app.pots_changed(&context.user);
+            app.activity_changed(&context.user);
+            Ok(result)
+        }
+        Op::Fallback(fallback) => {
+            let result = {
+                let conn = app.db.lock();
+                let pot = pot_of_session(&conn, &context.user, &context.session.id)?;
+                super::autonomy::record_fallback(
+                    &conn,
+                    &context.user,
+                    &pot.id,
+                    &fallback.from.choice(),
+                    &fallback.to.choice(),
+                    &fallback.reason,
+                )?
+            };
+            app.activity_changed(&context.user);
+            Ok(result)
+        }
         Op::Send(send) => {
             let (message, woken) = {
                 let conn = app.db.lock();

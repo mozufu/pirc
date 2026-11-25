@@ -20,6 +20,7 @@ use crate::tools::Tool;
 /// How long a run waits for the pot's identity before it fails to start.
 const CONTEXT_TIMEOUT: Duration = Duration::from_secs(15);
 
+pub(crate) mod autonomy;
 mod send;
 mod work;
 
@@ -89,7 +90,7 @@ pub fn identity_section(context: &Value) -> Result<PromptSection, String> {
     ))
 }
 
-async fn load(signal: &AbortSignal) -> Result<PromptSection, String> {
+async fn load(agent: &Rc<Agent>, signal: &AbortSignal) -> Result<PromptSection, String> {
     let gateway = process_gateway().ok_or("this pot has no Gateway connection")?;
     let timeout = AbortController::child_of(signal);
     let timer = {
@@ -105,6 +106,7 @@ async fn load(signal: &AbortSignal) -> Result<PromptSection, String> {
         .await;
     timer.abort();
     let context = answer.map_err(|error| error.message().to_owned())?;
+    autonomy::remember_models(agent, &context);
     identity_section(&context)
 }
 
@@ -112,6 +114,9 @@ async fn load(signal: &AbortSignal) -> Result<PromptSection, String> {
 #[cfg(test)]
 pub(crate) fn registered_tool_names() -> Vec<String> {
     [
+        autonomy::REMIND_ME_TOOL,
+        autonomy::SET_AUTONOMY_TOOL,
+        autonomy::SET_THINKING_TOOL,
         send::SEND_TOOL,
         work::OPEN_TOOL,
         work::SEND_TOOL,
@@ -128,7 +133,12 @@ impl Feature for PotFeature {
 
     fn tools(&self, agent: &Rc<Agent>) -> Vec<Rc<dyn Tool>> {
         if process_gateway().is_some() && agent.config().mode().pot {
-            let mut tools = vec![send::tool()];
+            let mut tools = vec![
+                autonomy::set_autonomy_tool(),
+                autonomy::remind_me_tool(),
+                autonomy::set_thinking_tool(),
+                send::tool(),
+            ];
             tools.extend(work::tools());
             tools
         } else {
@@ -155,7 +165,7 @@ impl Feature for PotFeature {
             if !agent.config().mode().pot {
                 return Ok(None);
             }
-            let section = load(signal)
+            let section = load(agent, signal)
                 .await
                 .map_err(|error| format!("Your pot identity could not be loaded: {error}"))?;
             Ok(Some(BeforeStart {

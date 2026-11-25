@@ -204,6 +204,8 @@ pub struct Agent {
     pub(crate) usage_context: RefCell<Option<compaction::UsageContext>>,
     closed: Cell<bool>,
     model_ref: RefCell<Option<(String, String)>>,
+    /// The model chain a pot's `pot.context` reported, main first.
+    pot_models: RefCell<Option<Vec<(String, String)>>>,
     thinking: Cell<ThinkingLevel>,
     session_name: RefCell<Option<String>>,
     name_source: Cell<Option<NameSource>>,
@@ -747,6 +749,7 @@ impl Agent {
                 usage_context: RefCell::new(None),
                 closed: Cell::new(false),
                 model_ref: RefCell::new(None),
+                pot_models: RefCell::new(None),
                 thinking: Cell::new(ThinkingLevel::Medium),
                 session_name: RefCell::new(None),
                 name_source: Cell::new(None),
@@ -1306,6 +1309,11 @@ impl Agent {
         Ok(())
     }
 
+    /// The pot's models (`pot.context`): the main one, then its fallbacks.
+    pub(crate) fn set_pot_models(&self, models: Vec<(String, String)>) {
+        *self.pot_models.borrow_mut() = Some(models);
+    }
+
     /// `restrictTools`: keep only the named capabilities.
     fn restrict_tools(&self, names: &[String]) {
         let ignored: Vec<&String> = names
@@ -1380,8 +1388,16 @@ impl Agent {
     }
 
     /// `nextFallback`: the next catalog model after the current one along
-    /// the role's model patterns.
+    /// the role's model patterns. A pot has its own chain from `pot.context`
+    /// instead.
     fn next_fallback(&self) -> Option<(String, String)> {
+        if self.config.mode().pot {
+            let models = self.pot_models.borrow().clone()?;
+            return crate::features::pot::autonomy::next_model(
+                &models,
+                self.model_ref.borrow().as_ref(),
+            );
+        }
         let patterns = self.role.borrow().as_ref()?.models.clone()?;
         if patterns.is_empty() {
             return None;
@@ -1415,13 +1431,19 @@ impl Agent {
         let Some((provider, id)) = self.next_fallback() else {
             return Ok(false);
         };
-        let from = self
-            .model_ref
-            .borrow()
+        let previous = self.model_ref.borrow().clone();
+        let from = previous
             .as_ref()
             .map_or_else(|| "none".to_owned(), |(p, m)| format!("{p}/{m}"));
         self.set_model(&provider, &id)?;
         let (reason, _) = slice16(reason, 200);
+        if self.config.mode().pot {
+            crate::features::pot::autonomy::report_fallback(
+                previous.as_ref(),
+                &(provider.clone(), id.clone()),
+                &reason,
+            );
+        }
         self.ui.notify(
             &format!("Model {from} failed ({reason}); switching to {provider}/{id}"),
             NotifyLevel::Warning,
