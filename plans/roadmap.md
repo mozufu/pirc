@@ -278,8 +278,34 @@ that a session can only act as itself.
    - 8b. _Causal roots and the loop guard_ (after 6b and 8a): `causal_roots` with
      depth/fan-out and root budgets carried by every wake, DM and work start; the
      loop guard of [pots.md](pots.md#loop-guard) with its four tests.
-9. **Observation and de-duplication** (L0–L3): observed sources feed `obs_events`,
-   per-pot `obs_observations`, lead/merged notifications, one dispatch per purpose.
+9. **Observation and de-duplication** (L0–L3 of [pots.md](pots.md#observation-and-de-duplication);
+   code in `pots/observe.rs`, tools in `features/pot/observe.rs`).
+   - 9a. _Events and observations._ `obs_events` (L0: owner, source kind and ref,
+     condition, occurrence; unique; no content) and `obs_targets` (which pots an
+     event reached, and whether through a lead scope). Session sources: a run that
+     finishes or starts waiting for the user (the live-activity transitions in
+     `node_events.rs`) in a session the pot observes directly, through its
+     workspace or through its project. Never the pot's own session, any pot's own
+     session, or work the pot coordinates. Each matched active pot with reach
+     `observe` or `work` gets an `event` wake. Tools `observe_note(eventId, note,
+evidence?)` (L1 `obs_observations`, one per pot and event, only for events that
+     reached the pot) and `observe_read(eventId)` (the session's name, run status
+     and last answer, read only).
+   - 9b. _More sources._ Schedule runs that finished (scope `schedules`, all or one
+     schedule) and calendar events starting within 30 minutes (scope `calendar`),
+     polled every 30 seconds; the L0 unique key makes polling idempotent.
+   - 9c. _Notifications and dispatch._ `observe_note(…, notify: true)` creates the
+     event's single L2 `obs_notifications` row: from the lead pot when the event
+     reached one through a lead scope (others' notes are attached, they cannot
+     notify), otherwise one merged notification listing every observer's note.
+     `GET /api/observation-notifications?state=`, `POST …/{id}/read`,
+     `notifications_changed` hints, logged `forwarded_to_user`. L3: `work_open`
+     with `eventId` claims the purpose (target workspace, `work_open`, event) in
+     `obs_dispatches`; a second pot is refused with who handles it and may add
+     notes; a failed start or a take-over releases the claim.
+     Done when: the pots.md acceptance case (two pots observing one event: two L1
+     rows, one L2 notification, one L3 dispatch) passes, plus scope, exclusion and
+     lead tests.
 10. **Handover, archive and delete**, then **remove the old assistant**: chat mode,
     `assistant_node` claim semantics (the chat node stays as the pot host),
     `SOUL.md`/`CHAT.md` routes, assistant-only chat projects, the assistant tools that
