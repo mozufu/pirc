@@ -15,7 +15,6 @@ use serde_json::json;
 async fn agent_sandbox_prompt() {
     for (name, env, args) in [
         ("coding", vec![("PIRC_SANDBOX", "srt")], vec![]),
-        ("chat", vec![("PIRC_SANDBOX", "srt")], vec![]),
         ("unsandboxed", vec![("PIRC_SANDBOX", "none")], vec![]),
         (
             "without bash",
@@ -32,12 +31,6 @@ async fn agent_sandbox_prompt() {
             env.into_iter()
                 .map(|(key, value)| (key.to_owned(), value.to_owned())),
         );
-        if name == "chat" {
-            options.env.push((
-                "PIRC_MODE".into(),
-                serde_json::to_string(&pirc_protocol::mode::default_chat()).unwrap(),
-            ));
-        }
         let Some(mut agent) = AgentRun::start(options).await else {
             return;
         };

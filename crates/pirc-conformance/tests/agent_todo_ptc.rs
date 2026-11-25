@@ -178,26 +178,3 @@ async fn agent_todo_tool_after_restart() {
         feature_support::without_ptc_progress(r.into_value())
     );
 }
-
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
-#[tokio::test(flavor = "multi_thread")]
-async fn agent_todo_tool_in_chat() {
-    let mut options = AgentOptions::default().features("todo");
-    options.env.push((
-        "PIRC_MODE".to_owned(),
-        serde_json::to_string(&pirc_protocol::mode::default_chat()).unwrap(),
-    ));
-    let Some(mut agent) = AgentRun::start(options).await else {
-        return;
-    };
-    let mut r = Recorder::new(&agent);
-    agent.push([
-        calls(vec![ptc("t1", "todo", json!({ "action": "list" }))]),
-        text("ok"),
-    ]);
-    turn(&mut agent, &mut r, "not available", "list").await;
-    insta::assert_json_snapshot!(
-        "agent_todo_tool_in_chat",
-        feature_support::without_ptc_progress(r.into_value())
-    );
-}

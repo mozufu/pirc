@@ -1,15 +1,12 @@
 //! Admission binds browser/device intent to the configured environment. This
 //! does not prove active sandbox revocation after a command has been admitted.
-use pirc_conformance::{
-    CHATS_WORKSPACE_ID, Cluster, FirstSend, GatewayOptions, HOST, browser_headers,
-};
+use pirc_conformance::{Cluster, FirstSend, GatewayOptions, HOST, WORKSPACE_ID, browser_headers};
 use serde_json::json;
 
 #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn browser_and_paired_device_keep_intent_across_policy_changes() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
-        chat_node: true,
         agent_core_only: true,
         ..Default::default()
     })
@@ -20,7 +17,7 @@ async fn browser_and_paired_device_keep_intent_across_policy_changes() {
     let api = cluster.api();
     let web = browser_headers();
     let started = FirstSend::new(&api, &web)
-        .workspace(CHATS_WORKSPACE_ID)
+        .workspace(WORKSPACE_ID)
         .start_idle()
         .await;
     let base = started.base;
@@ -53,7 +50,7 @@ async fn browser_and_paired_device_keep_intent_across_policy_changes() {
     let changed = api
         .send(
             "PATCH",
-            &format!("/api/workspaces/{CHATS_WORKSPACE_ID}/capabilities"),
+            &format!("/api/workspaces/{WORKSPACE_ID}/capabilities"),
             &web,
             Some(json!({"capabilities":{"web_search":false}})),
         )
@@ -195,7 +192,6 @@ async fn policy_change_after_gateway_admission_prevents_node_dispatch_and_surviv
         .connect_node_via(
             gate.port,
             pirc_conformance::NodeOptions {
-                chat_node: true,
                 agent_core_only: true,
                 ..Default::default()
             },
@@ -204,7 +200,7 @@ async fn policy_change_after_gateway_admission_prevents_node_dispatch_and_surviv
     let api = cluster.api();
     let headers = browser_headers();
     let started = FirstSend::new(&api, &headers)
-        .workspace(CHATS_WORKSPACE_ID)
+        .workspace(WORKSPACE_ID)
         .start_idle()
         .await;
     let base = started.base;
@@ -228,7 +224,7 @@ async fn policy_change_after_gateway_admission_prevents_node_dispatch_and_surviv
     let changed = api
         .send(
             "PATCH",
-            &format!("/api/workspaces/{CHATS_WORKSPACE_ID}/capabilities"),
+            &format!("/api/workspaces/{WORKSPACE_ID}/capabilities"),
             &headers,
             Some(json!({"capabilities":{"web_search":false}})),
         )

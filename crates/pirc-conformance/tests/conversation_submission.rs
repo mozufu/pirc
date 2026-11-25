@@ -1,14 +1,9 @@
 //! Real Gateway + Node proof for durable acceptance/attachment materialization.
 //! No model is called. Command admission/client adoption remain separate gates.
-use pirc_conformance::{
-    CHATS_WORKSPACE_ID, Cluster, GatewayOptions, HOST, Response, browser_headers,
-};
+use pirc_conformance::{Cluster, GatewayOptions, HOST, Response, WORKSPACE_ID, browser_headers};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use std::{
-    fs,
-    time::{Duration, Instant},
-};
+use std::fs;
 fn ok(response: Response, status: u16) -> Value {
     assert_eq!(response.status, status, "{}", response.body);
     response.body
@@ -23,7 +18,6 @@ fn files(path: &std::path::Path) -> Vec<std::path::PathBuf> {
 #[tokio::test(flavor = "multi_thread")]
 async fn accepted_intent_and_attachment_survive_both_hosts_restarting_without_execution() {
     let Some(mut cluster) = Cluster::start_with(GatewayOptions {
-        chat_node: true,
         agent_core_only: true,
         ..Default::default()
     })
@@ -51,7 +45,7 @@ async fn accepted_intent_and_attachment_survive_both_hosts_restarting_without_ex
     ];
     let path = "/api/conversation-submissions/native-draft";
     let content = b"{\"native\":true}\n";
-    let manifest = json!({"operationId":"native-draft","submission":{"workspaceId":CHATS_WORKSPACE_ID,"message":"Keep this accepted message","attachments":[{"id":"json-file","name":"native.json","mimeType":"application/json","byteSize":content.len(),"sha256":format!("{:x}",Sha256::digest(content))}]}});
+    let manifest = json!({"operationId":"native-draft","submission":{"workspaceId":WORKSPACE_ID,"message":"Keep this accepted message","attachments":[{"id":"json-file","name":"native.json","mimeType":"application/json","byteSize":content.len(),"sha256":format!("{:x}",Sha256::digest(content))}]}});
     let prepared = ok(
         api.send(
             "POST",
@@ -146,68 +140,5 @@ async fn accepted_intent_and_attachment_survive_both_hosts_restarting_without_ex
     assert_eq!(rejected.status, 409);
     assert_eq!(rejected.body["error"]["code"], "first_message_pending");
     assert!(cluster.llm.requests().is_empty());
-    // The normal Chat deletion path cleans both hosts and delayed retries cannot revive it.
-    ok(
-        api.send(
-            "DELETE",
-            &format!("/api/sessions/{session}"),
-            &headers,
-            None,
-        )
-        .await,
-        204,
-    );
-    assert!(files(&uploads).is_empty());
-    let deleted = ok(api.send("GET", path, &headers, None).await, 200);
-    assert_eq!(deleted["preparation"]["state"], "cancelled");
-    assert_eq!(deleted["preparation"]["accepted"], true);
-    assert!(deleted["preparation"].get("submission").is_none());
-    assert_eq!(
-        ok(
-            api.send("POST", &format!("{path}/accept"), &headers, None)
-                .await,
-            202
-        )["preparation"]["state"],
-        "cancelled"
-    );
-    assert_eq!(
-        ok(
-            api.send("POST", &format!("{path}/materialize"), &headers, None)
-                .await,
-            200
-        )["preparation"]["state"],
-        "cancelled"
-    );
-    let mut changed = manifest;
-    changed["submission"]["message"] = json!("different input");
-    assert_eq!(
-        api.send(
-            "POST",
-            "/api/conversation-submissions/prepare",
-            &headers,
-            Some(changed)
-        )
-        .await
-        .status,
-        409
-    );
-    cluster.restart_gateway(true).await;
-    let deadline = Instant::now() + Duration::from_secs(5);
-    loop {
-        let state = ok(api.send("GET", path, &headers, None).await, 200);
-        if state["preparation"]["cleanupPending"] == false {
-            break;
-        }
-        assert!(Instant::now() < deadline, "startup cleanup did not finish");
-        tokio::time::sleep(Duration::from_millis(20)).await;
-    }
-    assert!(
-        !cluster
-            .dir
-            .path()
-            .join("gateway-state/submission-staging")
-            .join(&session)
-            .exists()
-    );
     assert!(cluster.llm.requests().is_empty());
 }

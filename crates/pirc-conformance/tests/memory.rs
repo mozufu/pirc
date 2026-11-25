@@ -281,7 +281,7 @@ async fn offline(api: &Api, node: &str) {
     panic!("{node} stayed online");
 }
 
-#[ignore = "pirc 2: assistant chat mode is removed with the feature in M4.10"]
+#[ignore = "pirc 2: replaced by pot memory (M4.10c)"]
 #[tokio::test(flavor = "multi_thread")]
 async fn memory() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

@@ -74,44 +74,6 @@ async fn agent_project_config() {
     r.session(&agent);
     insta::assert_json_snapshot!("agent_project_config", r.into_value());
 }
-
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
-#[tokio::test(flavor = "multi_thread")]
-async fn agent_chat_prompts() {
-    let Some(mut agent) = AgentRun::start(AgentOptions {
-        env: vec![
-            ("PIRC_WRITE_BROKER".to_owned(), "1".to_owned()),
-            (
-                "PIRC_MODE".to_owned(),
-                serde_json::to_string(&pirc_protocol::mode::default_chat()).unwrap(),
-            ),
-        ],
-        files: vec![
-            file("AGENTS.md", "Coding rules that a chat ignores."),
-            file(
-                "../config/AGENTS.md",
-                "Node coding rules that a chat ignores.",
-            ),
-            file(
-                "../config/SOUL.md",
-                "  You are Juniper.\r\nSpeak plainly.\r\n",
-            ),
-            file("../config/CHAT.md", "Chat rules: no emoji."),
-        ],
-        ..AgentOptions::default()
-    })
-    .await
-    else {
-        return;
-    };
-    let mut r = Recorder::new(&agent);
-    let startup = command(&mut agent, json!({ "type": "get_state" })).await;
-    r.note("startup and state", json!(startup));
-    agent.push([ModelReply::Text("Hello.".to_owned())]);
-    turn(&mut agent, &mut r, "prompt", "Hi").await;
-    insta::assert_json_snapshot!("agent_chat_prompts", r.into_value());
-}
-
 /// A session file as the TS agent wrote it, with an entry type this
 /// version does not know and a damaged line.
 fn old_session() -> String {

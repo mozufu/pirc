@@ -13,23 +13,16 @@ use feature_support::{Masker, command, notified, then, tools, turn};
 use pirc_conformance::{AgentOptions, AgentRun, ModelReply, Recorder};
 use serde_json::{Value, json};
 
-fn gateway_env(chat: bool) -> Vec<(String, String)> {
-    let mut env = vec![
+fn gateway_env() -> Vec<(String, String)> {
+    vec![
         ("PIRC_WRITE_BROKER".to_owned(), "1".to_owned()),
         ("PIRC_GATEWAY".to_owned(), "1".to_owned()),
-    ];
-    if chat {
-        env.push((
-            "PIRC_MODE".to_owned(),
-            serde_json::to_string(&pirc_protocol::mode::default_chat()).unwrap(),
-        ));
-    }
-    env
+    ]
 }
 
 fn options(features: &str, config: Value) -> AgentOptions {
     AgentOptions {
-        env: gateway_env(false),
+        env: gateway_env(),
         config,
         ..AgentOptions::default()
     }
@@ -268,55 +261,4 @@ async fn agent_cron() {
     turn(&mut agent, &mut m, &mut r, "docs", "Show the schedule tool").await;
     assert_eq!(agent.pending_requests(), 0);
     insta::assert_json_snapshot!("agent_cron", r.into_value());
-}
-
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
-#[tokio::test(flavor = "multi_thread")]
-async fn agent_cron_in_chat() {
-    let Some(mut agent) = AgentRun::start(
-        AgentOptions {
-            env: gateway_env(true),
-            ..AgentOptions::default()
-        }
-        .features("schedules"),
-    )
-    .await
-    else {
-        return;
-    };
-    let mut r = Recorder::new(&agent);
-    let mut m = Masker::new();
-    // A chat asks the gateway for its current capabilities first.
-    agent.answers.lock().unwrap().gateway.insert(
-        "assistant.context".to_owned(),
-        ok(json!({ "capabilities": { "version": 1, "schedules": false } })),
-    );
-    command(&mut agent, &mut m, &mut r, "schedules off", "/cron").await;
-    then(
-        &mut agent,
-        &mut m,
-        &mut r,
-        "schedules off: notice",
-        |line| notified(line, "disabled"),
-    )
-    .await;
-    {
-        let mut answers = agent.answers.lock().unwrap();
-        answers.gateway.insert(
-            "assistant.context".to_owned(),
-            ok(json!({ "capabilities": { "version": 1 } })),
-        );
-        answers.gateway.insert(
-            "schedule.list".to_owned(),
-            ok(json!({ "schedules": [brief()], "timezone": "Asia/Taipei" })),
-        );
-    }
-    command(&mut agent, &mut m, &mut r, "schedules on", "/cron").await;
-    then(&mut agent, &mut m, &mut r, "schedules on: notice", |line| {
-        notified(line, "CI check")
-    })
-    .await;
-    let state = agent.call(json!({ "type": "get_state" })).await;
-    m.note(&mut r, "state", state);
-    insta::assert_json_snapshot!("agent_cron_in_chat", r.into_value());
 }

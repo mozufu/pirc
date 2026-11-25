@@ -1,7 +1,7 @@
 //! Paired clients Stop an unallocated first input through real Gateway/Node
 //! processes. No live Web page/event connection or native management grant is present.
 use pirc_conformance::{
-    CHATS_WORKSPACE_ID, Cluster, GatewayOptions, HOST, Reply, Response, browser_headers,
+    Cluster, GatewayOptions, HOST, Reply, Response, WORKSPACE_ID, browser_headers,
 };
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -39,7 +39,6 @@ async fn device(cluster: &Cluster, name: &str) -> (Vec<(&'static str, String)>, 
 #[tokio::test(flavor = "multi_thread")]
 async fn unmapped_stop_survives_offline_takeover_restart_and_allows_only_explicit_new_work() {
     let Some(mut cluster) = Cluster::start_with(GatewayOptions {
-        chat_node: true,
         agent_core_only: true,
         ..Default::default()
     })
@@ -51,7 +50,7 @@ async fn unmapped_stop_survives_offline_takeover_restart_and_allows_only_explici
     let (first, _) = device(&cluster, "phone-stop").await;
     let (second, second_id) = device(&cluster, "other-device-stop").await;
     let bytes = b"original first-input file stays available\n";
-    let manifest = json!({"operationId":"pending-stop","submission":{"workspaceId":CHATS_WORKSPACE_ID,"message":"Never execute this old first input","attachments":[{"id":"original-file","name":"notes.txt","mimeType":"text/plain","byteSize":bytes.len(),"sha256":format!("{:x}",Sha256::digest(bytes))}]}});
+    let manifest = json!({"operationId":"pending-stop","submission":{"workspaceId":WORKSPACE_ID,"message":"Never execute this old first input","attachments":[{"id":"original-file","name":"notes.txt","mimeType":"text/plain","byteSize":bytes.len(),"sha256":format!("{:x}",Sha256::digest(bytes))}]}});
     let path = "/api/conversation-submissions/pending-stop";
     let preparation = ok(
         api.send(

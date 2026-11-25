@@ -48,8 +48,8 @@ async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() 
     let Some(mut node) = LoneNode::start_with(
         gateway.port(),
         NodeOptions {
-            chat_node: true,
             agent_core_only: true,
+            chat_node: false,
             env: vec![("PIRC_BROWSER", "false".into())],
             second_workspace: false,
         },
@@ -83,7 +83,7 @@ async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() 
             req(
                 "POST",
                 "/api/session-creations/internal",
-                json!({"workspaceId":"chats"}),
+                json!({"workspaceId":"test"}),
             ),
         )
         .await;
@@ -115,7 +115,7 @@ async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() 
         "POST",
         &format!("{base}/execution-fences/preflight"),
         json!({
-            "expectedWorkspaceId":"chats", "expectedRunnerEpoch":epoch, "targetWorkspaceId":"chats"
+            "expectedWorkspaceId":"test", "expectedRunnerEpoch":epoch, "targetWorkspaceId":"test"
         }),
     );
     let preflight = link
@@ -131,7 +131,7 @@ async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() 
     let acceptance = req(
         "POST",
         &format!("{base}/execution-fences"),
-        json!({"intent":{"operationId":"move-1","planHash":"a".repeat(64),"expectedWorkspaceId":"chats","expectedRunnerEpoch":epoch,"preflight":{"targetWorkspaceId":"chats","evidenceHash":preflight["data"]["body"]["evidenceHash"]}},"clientId":"phone","generation":generation}),
+        json!({"intent":{"operationId":"move-1","planHash":"a".repeat(64),"expectedWorkspaceId":"test","expectedRunnerEpoch":epoch,"preflight":{"targetWorkspaceId":"test","evidenceHash":preflight["data"]["body"]["evidenceHash"]}},"clientId":"phone","generation":generation}),
     );
     // Once acceptance commits, discard that result. A hard restart must not reopen admission.
     link.send(&json!({"type":"request","requestId":"lost-acceptance","data":acceptance.clone()}))
@@ -169,7 +169,7 @@ async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() 
     let mut conflicting = req(
         "POST",
         &format!("{base}/execution-fences"),
-        json!({"intent":{"operationId":"move-1","planHash":"b".repeat(64),"expectedWorkspaceId":"chats","expectedRunnerEpoch":epoch},"clientId":"phone","generation":generation}),
+        json!({"intent":{"operationId":"move-1","planHash":"b".repeat(64),"expectedWorkspaceId":"test","expectedRunnerEpoch":epoch},"clientId":"phone","generation":generation}),
     );
     let conflict = link.request("changed-plan", conflicting.clone()).await;
     assert_eq!(conflict["data"]["status"], 409, "{conflict}");
@@ -250,16 +250,7 @@ async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() 
         after["data"]["body"]["history"],
         before["data"]["body"]["history"]
     );
-    assert_eq!(after["data"]["body"]["session"]["workspaceId"], "chats");
-    let deleted = link
-        .request("delete", req("DELETE", &base, Value::Null))
-        .await;
-    assert_eq!(deleted["data"]["status"], 204, "{deleted}");
-    assert_eq!(
-        link.request("tombstone", req("GET", &status_path, Value::Null))
-            .await["data"]["body"]["transition"]["state"],
-        "deleted"
-    );
+    assert_eq!(after["data"]["body"]["session"]["workspaceId"], "test");
 }
 
 #[ignore = "pirc 2: transition drain of a terminal needs an isolated-terminal backend; this fixture provides host terminals only"]
@@ -269,8 +260,8 @@ async fn terminal_stream_reports_the_fence_while_a_peer_remains_interactive() {
     let Some(_node) = LoneNode::start_with(
         gateway.port(),
         NodeOptions {
-            chat_node: true,
             agent_core_only: true,
+            chat_node: false,
             env: vec![
                 ("PIRC_BROWSER", "false".into()),
                 ("PIRC_TERMINAL_SHELL", "/bin/sh".into()),
@@ -290,7 +281,7 @@ async fn terminal_stream_reports_the_fence_while_a_peer_remains_interactive() {
                 req(
                     "POST",
                     "/api/session-creations/internal",
-                    json!({"workspaceId":"chats"}),
+                    json!({"workspaceId":"test"}),
                 ),
             )
             .await;
@@ -331,7 +322,7 @@ async fn terminal_stream_reports_the_fence_while_a_peer_remains_interactive() {
     }
     let (_, base, epoch, generation) = &sessions[0];
     let accepted=link.request("terminal-fence",req("POST",&format!("{base}/execution-fences"),json!({"intent":{
-        "operationId":"terminal-fence","planHash":"a".repeat(64),"expectedWorkspaceId":"chats","expectedRunnerEpoch":epoch},
+        "operationId":"terminal-fence","planHash":"a".repeat(64),"expectedWorkspaceId":"test","expectedRunnerEpoch":epoch},
         "clientId":"phone","generation":generation}))).await;
     assert_eq!(accepted["data"]["status"], 200, "{accepted}");
     for command in [
@@ -408,8 +399,8 @@ async fn terminal_observation_survives_restart_and_an_unknown_shell_blocks_delet
         let Some(mut node) = LoneNode::start_with(
             gateway.port(),
             NodeOptions {
-                chat_node: true,
                 agent_core_only: true,
+                chat_node: false,
                 env: vec![
                     ("PIRC_BROWSER", "false".into()),
                     ("PIRC_TERMINAL_SHELL", "/bin/sh".into()),
@@ -426,7 +417,7 @@ async fn terminal_observation_survives_restart_and_an_unknown_shell_blocks_delet
                 req(
                     "POST",
                     "/api/session-creations/internal",
-                    json!({"workspaceId":"chats"}),
+                    json!({"workspaceId":"test"}),
                 ),
             )
             .await;
@@ -476,7 +467,7 @@ async fn terminal_observation_survives_restart_and_an_unknown_shell_blocks_delet
             "POST",
             &format!("{base}/execution-fences"),
             json!({"intent":{
-            "operationId":"terminal-reboot","planHash":"b".repeat(64),"expectedWorkspaceId":"chats","expectedRunnerEpoch":epoch},
+            "operationId":"terminal-reboot","planHash":"b".repeat(64),"expectedWorkspaceId":"test","expectedRunnerEpoch":epoch},
             "clientId":"phone","generation":generation}),
         );
         let accepted = link.request("accept", acceptance.clone()).await;
@@ -553,8 +544,8 @@ async fn in_flight_git_panel_stops_on_fence_and_peer_file_reads_survive() {
     let Some(node) = LoneNode::start_with(
         gateway.port(),
         NodeOptions {
-            chat_node: false,
             agent_core_only: true,
+            chat_node: false,
             env: vec![("PIRC_BROWSER", "false".into())],
             second_workspace: false,
         },

@@ -1,7 +1,7 @@
 //! Real Gateway/Node metadata is identical for Web and paired-device HTTP.
 //! This is saved content provenance, not proof of filesystem mount revocation.
 use pirc_conformance::{
-    Api, CHATS_WORKSPACE_ID, Cluster, FirstSend, GatewayOptions, HOST, browser_headers,
+    Api, Cluster, FirstSend, GatewayOptions, HOST, WORKSPACE_ID, browser_headers,
 };
 use serde_json::json;
 
@@ -10,7 +10,7 @@ static NEXT_OPERATION: std::sync::atomic::AtomicUsize = std::sync::atomic::Atomi
 async fn create(api: &Api) -> String {
     let operation = NEXT_OPERATION.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     FirstSend::browser(api)
-        .workspace(CHATS_WORKSPACE_ID)
+        .workspace(WORKSPACE_ID)
         .operation(format!("first-{operation}"))
         .start_idle()
         .await
@@ -20,7 +20,6 @@ async fn create(api: &Api) -> String {
 #[tokio::test(flavor = "multi_thread")]
 async fn saved_upload_origin_is_shared_across_devices_and_survives_restart() {
     let Some(mut cluster) = Cluster::start_with(GatewayOptions {
-        chat_node: true,
         agent_core_only: true,
         ..Default::default()
     })
@@ -51,7 +50,7 @@ async fn saved_upload_origin_is_shared_across_devices_and_survives_restart() {
     assert_eq!(r["provenance"], "recorded");
     assert_eq!(r["scope"], "workspace");
     assert_eq!(r["origin"]["sessionId"], first);
-    assert_eq!(r["origin"]["workspaceId"], CHATS_WORKSPACE_ID);
+    assert_eq!(r["origin"]["workspaceId"], WORKSPACE_ID);
     assert!(r.get("storageName").is_none());
     assert!(r.get("ownerUser").is_none());
     let pair = api
@@ -79,19 +78,5 @@ async fn saved_upload_origin_is_shared_across_devices_and_survives_restart() {
     let after = cluster.api().send("GET", &path, &phone, None).await;
     assert_eq!(after.status, 200, "{}", after.body);
     assert_eq!(after.body, reference.body);
-    let removed = cluster
-        .api()
-        .send("DELETE", &format!("/api/sessions/{first}"), &web, None)
-        .await;
-    assert_eq!(removed.status, 204, "{}", removed.body);
-    // Ordinary workspace-scoped uploads retain their existing lifetime after a
-    // source chat is deleted. The now-private origin is not exposed or reassigned.
-    let retained = cluster.api().send("GET", &path, &phone, None).await;
-    assert_eq!(retained.status, 200, "{}", retained.body);
-    assert!(retained.body["reference"]["origin"]["sessionId"].is_null());
-    assert_eq!(
-        retained.body["reference"]["origin"]["workspaceId"],
-        CHATS_WORKSPACE_ID
-    );
     assert!(cluster.llm.requests().is_empty());
 }

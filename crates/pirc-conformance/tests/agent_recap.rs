@@ -173,38 +173,18 @@ async fn agent_recap() {
 #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_recap_unavailable() {
-    let gateway = |kind: Option<&str>| {
-        let mut env = vec![
+    let gateway = || {
+        vec![
             ("PIRC_WRITE_BROKER".to_owned(), "1".to_owned()),
             ("PIRC_GATEWAY".to_owned(), "1".to_owned()),
-        ];
-        if let Some(kind) = kind {
-            let mode = if kind == "chat" {
-                pirc_protocol::mode::default_chat()
-            } else {
-                pirc_protocol::mode::default_work()
-            };
-            env.push((
-                "PIRC_MODE".to_owned(),
-                serde_json::to_string(&mode).unwrap(),
-            ));
-        }
-        env
+        ]
     };
     for (name, options) in [
         ("no gateway", AgentOptions::default().features("recap")),
         (
-            "chat",
-            AgentOptions {
-                env: gateway(Some("chat")),
-                ..AgentOptions::default()
-            }
-            .features("recap"),
-        ),
-        (
             "headless",
             AgentOptions {
-                env: gateway(None),
+                env: gateway(),
                 args: vec!["--headless".to_owned()],
                 ..AgentOptions::default()
             }

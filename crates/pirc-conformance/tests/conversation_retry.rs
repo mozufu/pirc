@@ -18,8 +18,8 @@ async fn rejected_first_attempt_retries_in_the_same_session_with_the_same_file_a
     let Some(mut node) = LoneNode::start_with(
         gateway.port(),
         NodeOptions {
-            chat_node: true,
             agent_core_only: true,
+            chat_node: false,
             env: vec![("PIRC_BROWSER", "false".into())],
             second_workspace: false,
         },
@@ -27,7 +27,7 @@ async fn rejected_first_attempt_retries_in_the_same_session_with_the_same_file_a
         return;
     };
     let mut link = register(&gateway, json!({"providers":{}})).await;
-    let create = json!({"method":"POST","url":"/api/session-creations","user":USER,"payload":{"operationId":"retry-first","workspaceId":"chats","submissionHash":"a".repeat(64)}});
+    let create = json!({"method":"POST","url":"/api/session-creations","user":USER,"payload":{"operationId":"retry-first","workspaceId":"test","submissionHash":"a".repeat(64)}});
     let made = link.request("create", create.clone()).await;
     assert_eq!(made["data"]["status"], 200, "{made}");
     let session = made["data"]["body"]["creation"]["sessionId"]

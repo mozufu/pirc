@@ -99,8 +99,6 @@ expression: t.into_value()
   {
     "body": {
       "capabilities": {
-        "delegation": true,
-        "delegation_approval": "always",
         "memory_search": true,
         "remote_recall": true,
         "schedules": true,
@@ -117,30 +115,32 @@ expression: t.into_value()
   },
   {
     "body": {
-      "error": {
-        "code": "invalid_input",
-        "message": "Invalid request"
+      "capabilities": {
+        "memory_search": true,
+        "remote_recall": true,
+        "schedules": true,
+        "version": 1,
+        "web_search": false
       }
     },
     "headers": {
       "content-type": "application/json"
     },
     "request": "PATCH /api/workspaces/test:ws/capabilities",
-    "status": 400,
+    "status": 200,
     "step": "change them"
   },
   {
     "body": {
-      "error": {
-        "code": "invalid_input",
-        "message": "Only chat projects have instructions"
-      }
+      "error": "Not Found",
+      "message": "Route GET:/api/workspaces/test:ws/instructions not found",
+      "statusCode": 404
     },
     "headers": {
       "content-type": "application/json"
     },
     "request": "GET /api/workspaces/test:ws/instructions",
-    "status": 400,
+    "status": 404,
     "step": "a directory workspace has no instructions"
   },
   {
@@ -308,7 +308,6 @@ expression: t.into_value()
   },
   {
     "body": {
-      "delegations": [],
       "history": [],
       "interactions": [
         {

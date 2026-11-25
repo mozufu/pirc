@@ -701,30 +701,28 @@ expression: t.into_value()
   },
   {
     "body": {
-      "error": {
-        "code": "invalid_input",
-        "message": "Only chat projects have instructions"
-      }
+      "error": "Not Found",
+      "message": "Route GET:/api/workspaces/test%3Atest/instructions not found",
+      "statusCode": 404
     },
     "headers": {
       "content-type": "application/json"
     },
     "request": "GET /api/workspaces/test%3Atest/instructions",
-    "status": 400,
+    "status": 404,
     "step": "instructions of a directory workspace: 400"
   },
   {
     "body": {
-      "error": {
-        "code": "node_offline",
-        "message": "The chat node is offline or not registered"
-      }
+      "error": "Not Found",
+      "message": "Route GET:/api/assistant/prompts not found",
+      "statusCode": 404
     },
     "headers": {
       "content-type": "application/json"
     },
     "request": "GET /api/assistant/prompts",
-    "status": 503,
+    "status": 404,
     "step": "assistant prompts without a chat node: 503"
   },
   {

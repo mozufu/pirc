@@ -87,33 +87,6 @@ async fn work_notes_refresh_and_disappear_on_revocation_without_activating_a_led
             .any(|e| e["customType"] == "om.workspace.snapshot")
     );
 }
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
-#[tokio::test(flavor = "multi_thread")]
-async fn chat_cannot_load_repository_memory_even_with_explicit_enable() {
-    let options = AgentOptions {
-        env: vec![
-            ("PIRC_GATEWAY".into(), "1".into()),
-            (
-                "PIRC_MODE".into(),
-                serde_json::to_string(&pirc_protocol::mode::default_chat()).unwrap(),
-            ),
-        ],
-        config: json!({"features":{"workspaceMemory":{"enabled":true}}}),
-        ..Default::default()
-    }
-    .features("workspace-memory");
-    let Some(mut agent) = AgentRun::start(options).await else {
-        return;
-    };
-    agent.answers.lock().unwrap().gateway.insert("workspace.context".into(),json!({"ok":true,"result":{"items":[{"id":"aaaaaaaaaaaa","content":"Forbidden Work note"}]}}));
-    turn(&mut agent, "Hello").await;
-    assert!(
-        !agent.take_requests()[0]["systemPrompt"]
-            .as_str()
-            .unwrap()
-            .contains("Forbidden Work note")
-    );
-}
 // Keep type imports checked alongside the feature's wire fixture shape.
 const _: fn(Value) -> Value = |v| v;
 #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]

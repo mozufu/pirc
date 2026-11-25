@@ -171,21 +171,6 @@ async fn agent_team_settings() {
         "disabled",
     )
     .await;
-    let mut chat = options();
-    chat.env.push((
-        "PIRC_MODE".to_owned(),
-        serde_json::to_string(&pirc_protocol::mode::default_chat()).unwrap(),
-    ));
-    offered(chat, &mut r, "in a chat").await;
-    let mut chat = AgentOptions {
-        config: json!({ "features": { "agentTeam": { "enabled": true } } }),
-        ..options()
-    };
-    chat.env.push((
-        "PIRC_MODE".to_owned(),
-        serde_json::to_string(&pirc_protocol::mode::default_chat()).unwrap(),
-    ));
-    offered(chat, &mut r, "in a chat, enabled").await;
     insta::assert_json_snapshot!("agent_team_settings", r.into_value());
 }
 

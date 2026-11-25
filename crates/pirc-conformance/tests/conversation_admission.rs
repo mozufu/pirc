@@ -1,9 +1,7 @@
 //! Dedicated first-send endpoint through real Gateway, Node and Agent processes.
 //! Paired requests need neither a browser connection nor a management grant.
 use pirc_conformance::Reply;
-use pirc_conformance::{
-    CHATS_WORKSPACE_ID, Cluster, GatewayOptions, HOST, Response, browser_headers,
-};
+use pirc_conformance::{Cluster, GatewayOptions, HOST, Response, WORKSPACE_ID, browser_headers};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::time::{Duration, Instant};
@@ -13,7 +11,6 @@ fn ok(response: Response, status: u16) -> Value {
 }
 async fn setup(with_attachment: bool) -> Option<(Cluster, Vec<(&'static str, String)>, String)> {
     let cluster = Cluster::start_with(GatewayOptions {
-        chat_node: true,
         agent_core_only: true,
         ..Default::default()
     })
@@ -43,7 +40,7 @@ async fn setup(with_attachment: bool) -> Option<(Cluster, Vec<(&'static str, Str
     } else {
         json!([])
     };
-    let prepared=ok(api.send("POST","/api/conversation-submissions/prepare",&headers,Some(json!({"operationId":"native-first","submission":{"workspaceId":CHATS_WORKSPACE_ID,"message":"Exact first text","model":{"provider":"fake","id":"fake-model"},"thinking":"low","attachments":attachments}}))).await,200);
+    let prepared=ok(api.send("POST","/api/conversation-submissions/prepare",&headers,Some(json!({"operationId":"native-first","submission":{"workspaceId":WORKSPACE_ID,"message":"Exact first text","model":{"provider":"fake","id":"fake-model"},"thinking":"low","attachments":attachments}}))).await,200);
     if with_attachment {
         ok(
             api.send_bytes(

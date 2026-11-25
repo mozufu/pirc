@@ -23,7 +23,7 @@ fn create(base: &str, op: &str, epoch: &Value, generation: &Value) -> Value {
     req(
         "POST",
         &format!("{base}/execution-fences"),
-        json!({"intent":{"operationId":op,"planHash":"a".repeat(64),"expectedWorkspaceId":"chats","expectedRunnerEpoch":epoch},"clientId":"phone","generation":generation}),
+        json!({"intent":{"operationId":op,"planHash":"a".repeat(64),"expectedWorkspaceId":"test","expectedRunnerEpoch":epoch},"clientId":"phone","generation":generation}),
     )
 }
 fn void(base: &str, op: &str) -> Value {
@@ -56,8 +56,8 @@ async fn a_voided_operation_is_refused_when_the_delayed_create_arrives_even_afte
     let Some(mut node) = LoneNode::start_with(
         gateway.port(),
         NodeOptions {
-            chat_node: true,
             agent_core_only: true,
+            chat_node: false,
             env: vec![("PIRC_BROWSER", "false".into())],
             second_workspace: false,
         },
@@ -81,7 +81,7 @@ async fn a_voided_operation_is_refused_when_the_delayed_create_arrives_even_afte
             req(
                 "POST",
                 "/api/session-creations/internal",
-                json!({"workspaceId":"chats"}),
+                json!({"workspaceId":"test"}),
             ),
         )
         .await;
@@ -130,7 +130,7 @@ async fn a_voided_operation_is_refused_when_the_delayed_create_arrives_even_afte
                 req(
                     "POST",
                     &format!("{base}/execution-fences/preflight"),
-                    json!({"expectedWorkspaceId":"chats","expectedRunnerEpoch":epoch,"targetWorkspaceId":"chats"}),
+                    json!({"expectedWorkspaceId":"test","expectedRunnerEpoch":epoch,"targetWorkspaceId":"test"}),
                 ),
             )
             .await;

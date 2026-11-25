@@ -25,7 +25,6 @@ async fn a_voided_first_message_is_refused_when_the_delayed_original_arrives_eve
     let Some(mut node) = LoneNode::start_with(
         gateway.port(),
         NodeOptions {
-            chat_node: true,
             agent_core_only: true,
             env: vec![("PIRC_BROWSER", "false".into())],
             ..Default::default()
@@ -44,7 +43,7 @@ async fn a_voided_first_message_is_refused_when_the_delayed_original_arrives_eve
         capabilities["data"]["body"]["canVoidInitialAdmission"],
         true
     );
-    let create = json!({"method":"POST","url":"/api/session-creations","user":USER,"payload":{"operationId":"void-first","workspaceId":"chats","submissionHash":"a".repeat(64)}});
+    let create = json!({"method":"POST","url":"/api/session-creations","user":USER,"payload":{"operationId":"void-first","workspaceId":"test","submissionHash":"a".repeat(64)}});
     let created = link.request("create", create.clone()).await;
     assert_eq!(created["data"]["status"], 200, "{created}");
     let session = created["data"]["body"]["creation"]["sessionId"]

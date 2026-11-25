@@ -224,13 +224,8 @@ expression: t.into_value()
     "observed": {
       "request": "GET /api/workspaces/test/instructions",
       "response": {
-        "body": {
-          "error": {
-            "code": "invalid_input",
-            "message": "Only chat projects have instructions"
-          }
-        },
-        "status": 400
+        "body": "<no such route>",
+        "status": 404
       }
     },
     "step": "instructions of a directory workspace: the node's 400"
@@ -239,13 +234,8 @@ expression: t.into_value()
     "observed": {
       "request": "PATCH /api/workspaces/test/instructions",
       "response": {
-        "body": {
-          "error": {
-            "code": "invalid_input",
-            "message": "Only chat projects have instructions"
-          }
-        },
-        "status": 400
+        "body": "<no such route>",
+        "status": 404
       }
     },
     "step": "set instructions of a directory workspace: 400"

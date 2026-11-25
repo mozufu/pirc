@@ -267,29 +267,6 @@ async fn agent_goal_off() {
             goal_options(json!({ "features": { "goal": { "enabled": false } } })),
         ),
         (
-            "chat",
-            AgentOptions {
-                env: vec![
-                    ("PIRC_WRITE_BROKER".to_owned(), "1".to_owned()),
-                    ("PIRC_MODE".to_owned(), serde_json::to_string(&pirc_protocol::mode::default_chat()).unwrap()),
-                ],
-                ..AgentOptions::default()
-            }
-            .features("goal"),
-        ),
-        (
-            "chat with goals on",
-            AgentOptions {
-                env: vec![
-                    ("PIRC_WRITE_BROKER".to_owned(), "1".to_owned()),
-                    ("PIRC_MODE".to_owned(), serde_json::to_string(&pirc_protocol::mode::default_chat()).unwrap()),
-                ],
-                config: json!({ "features": { "goal": { "enabled": true, "defaultMaxRounds": 1 } } }),
-                ..AgentOptions::default()
-            }
-            .features("goal"),
-        ),
-        (
             "unusable settings",
             goal_options(json!({ "features": { "goal": { "minBlockedRounds": 500,
                 "defaultMaxRounds": 1 } } })),
@@ -312,8 +289,7 @@ async fn agent_goal_off() {
         command(&mut agent, &mut m, &mut r, "set", "/goal set Something").await;
         if name == "unusable settings" {
             // Defaults instead: no round limit.
-            then(&mut agent, &mut m, &mut r, "the round streams", streaming)
-            .await;
+            then(&mut agent, &mut m, &mut r, "the round streams", streaming).await;
             let response = agent.call(json!({ "type": "abort" })).await;
             m.note(&mut r, "abort", response);
             then(&mut agent, &mut m, &mut r, "paused", |line| {

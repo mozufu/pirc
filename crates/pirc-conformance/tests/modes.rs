@@ -2,7 +2,7 @@
 //! this security scenario does not depend on platform-specific snapshots.
 
 use pirc_conformance::{Cluster, FirstSend, GatewayOptions, Reply, browser_headers};
-use pirc_protocol::mode::{AssistantAccess, ModeId, PromptSection, ScheduleScope, default_chat};
+use pirc_protocol::mode::{AssistantAccess, ModeId, PromptSection, ScheduleScope, default_work};
 use serde_json::{Value, json};
 use std::time::Duration;
 
@@ -21,14 +21,15 @@ async fn custom_mode_catalog_prompt_capabilities_and_removal() {
     let api = cluster.api();
     let headers = browser_headers();
     let dir = cluster.dir.path().join("gateway-config/modes");
-    let mut mode = default_chat();
+    let mut mode = default_work();
+    mode.description = "A restricted custom mode.".into();
     mode.id = ModeId::new("research").unwrap();
     mode.label = "Research".into();
     mode.assistant = AssistantAccess::User;
-    mode.delegate = false;
     mode.schedule_scope = ScheduleScope::Own;
-    mode.project_files = false;
-    mode.project_instructions = false;
+    mode.project_config = false;
+    mode.workspace_memory = false;
+    mode.repository = false;
     mode.prompt = vec![PromptSection::Body];
     mode.body = "CUSTOM-MODE-PROMPT-SECTION".into();
     mode.tools = Some(vec!["read".into()]);
@@ -60,10 +61,11 @@ async fn custom_mode_catalog_prompt_capabilities_and_removal() {
     .expect("catalog reload");
     assert!(cluster.gateway_log().contains("broken.md"));
 
+    let home = cluster.dir.path().join("node-home");
+    std::fs::create_dir_all(home.join("research")).unwrap();
     let workspace = api.send("POST", "/api/workspaces", &headers,
-        Some(json!({"nodeId":pirc_conformance::NODE_ID,"mode":"research","displayName":"Research"}))).await;
+        Some(json!({"nodeId":pirc_conformance::NODE_ID,"mode":"research","path":"~/research","displayName":"Research"}))).await;
     assert_eq!(workspace.status, 201, "{}", workspace.body);
-    assert_eq!(workspace.body["workspace"]["kind"], "chat");
     assert_eq!(workspace.body["workspace"]["mode"], "research");
     let workspace_id = workspace.body["workspace"]["id"].as_str().unwrap();
     let started = FirstSend::new(&api, &headers)
@@ -127,18 +129,6 @@ async fn custom_mode_catalog_prompt_capabilities_and_removal() {
             );
         }
     }
-    // A browser cannot invoke a capability simply because this mode uses a
-    // per-session working directory like Chat.
-    let files = api
-        .send(
-            "GET",
-            &format!("/api/workspaces/{workspace_id}/files"),
-            &headers,
-            None,
-        )
-        .await;
-    assert!((400..500).contains(&files.status), "{}", files.body);
-
     std::fs::remove_file(dir.join("research.md")).unwrap();
     cluster.reload_gateway();
     tokio::time::timeout(Duration::from_secs(15), async {

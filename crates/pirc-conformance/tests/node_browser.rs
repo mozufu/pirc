@@ -756,10 +756,10 @@ await call('browser_record', {{ action: 'pause' }});"#,
 #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_browser_close() {
-    let Some(mut b) = start(true, &[]).await else {
+    let Some(mut b) = start(false, &[]).await else {
         return;
     };
-    let (session, generation) = b.session("chats").await;
+    let (session, generation) = b.session("test").await;
     let mut v = Viewer::open(&mut b.gw, "close-1", &session).await;
     v.wait(&mut b.gw, kind("log")).await;
     b.gw.prompt(&session, &generation, "close-1", "Open a page")

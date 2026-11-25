@@ -2010,7 +2010,6 @@ expression: s.t.into_value()
   },
   {
     "body": {
-      "delegations": [],
       "history": [],
       "interactions": [
         {

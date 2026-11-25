@@ -16,12 +16,12 @@ export type Tally = { passed: number; failed: number; ignored: number; suites: n
 
 /**
  * Fewer passes than this means the suite did not run. Lower it only when tests are
- * removed on purpose. The first-send rewrite (plans/roadmap.md M4.11) restored the
- * suite above 250 passes; the remaining declared ignores are the assistant chat
- * mode, the live Web/native-client acceptance runs and terminal scenarios that need
- * an isolated-terminal backend.
+ * removed on purpose. M4.10 removed the assistant chat mode, chat projects,
+ * delegations and assistant-memory tests, so the first-send rewrite (M4.11) runs
+ * the remaining suite. The declared ignores are the live Web/native-client
+ * acceptance runs and terminal scenarios that need an isolated-terminal backend.
  */
-export const MIN_PASSED = 263;
+export const MIN_PASSED = 228;
 
 /** The sum of every `test result:` line of a `cargo test` output. */
 export function tally(output: string): Tally {

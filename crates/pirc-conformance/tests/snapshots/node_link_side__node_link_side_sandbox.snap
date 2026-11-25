@@ -1,6 +1,5 @@
 ---
 source: crates/pirc-conformance/tests/node_link_side.rs
-assertion_line: 1181
 expression: t.into_value()
 ---
 [
@@ -117,8 +116,6 @@ expression: t.into_value()
           "denyWrite": [
             "<tmp>/workspace/.pirc",
             "<tmp>/node-config",
-            "<tmp>/node-config/SOUL.md",
-            "<tmp>/node-config/CHAT.md",
             "<tmp>/node-config/modes",
             "<tmp>/node-state/sessions/pi_<uuid:5>",
             "<tmp>/node-state/workspace-memory/<hex16:1>.jsonl",

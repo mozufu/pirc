@@ -1,6 +1,6 @@
 //! Same first message/session/files across known rejection and real host restarts.
 use pirc_conformance::{
-    CHATS_WORKSPACE_ID, Cluster, GatewayOptions, HOST, Reply, Response, USER, browser_headers,
+    Cluster, GatewayOptions, HOST, Reply, Response, USER, WORKSPACE_ID, browser_headers,
 };
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -36,7 +36,6 @@ async fn lease(cluster: &Cluster, headers: &[(&str, String)], session: &str) -> 
 #[tokio::test(flavor = "multi_thread")]
 async fn paired_retry_reuses_the_same_conversation_and_file_and_survives_both_hosts_restarting() {
     let Some(mut cluster) = Cluster::start_with(GatewayOptions {
-        chat_node: true,
         agent_core_only: true,
         node_env: vec![("PIRC_AGENT_COMMAND", "{run_dir}/agent-for-retry".into())],
         ..Default::default()
@@ -72,7 +71,7 @@ async fn paired_retry_reuses_the_same_conversation_and_file_and_survives_both_ho
     );
     let other = headers(other["token"].as_str().unwrap());
     let bytes = b"Original attachment remains available\n";
-    let prepared=ok(cluster.api().send("POST","/api/conversation-submissions/prepare",&device,Some(json!({"operationId":"first","submission":{"workspaceId":CHATS_WORKSPACE_ID,"message":"Retained first message after known refusal","model":{"provider":"fake","id":"fake-model"},"thinking":"low","attachments":[{"id":"file","name":"retained.txt","mimeType":"text/plain","byteSize":bytes.len(),"sha256":format!("{:x}",Sha256::digest(bytes))}]}}))).await,200);
+    let prepared=ok(cluster.api().send("POST","/api/conversation-submissions/prepare",&device,Some(json!({"operationId":"first","submission":{"workspaceId":WORKSPACE_ID,"message":"Retained first message after known refusal","model":{"provider":"fake","id":"fake-model"},"thinking":"low","attachments":[{"id":"file","name":"retained.txt","mimeType":"text/plain","byteSize":bytes.len(),"sha256":format!("{:x}",Sha256::digest(bytes))}]}}))).await,200);
     let session = prepared["preparation"]["sessionId"]
         .as_str()
         .unwrap()

@@ -1135,26 +1135,14 @@ async fn node_link_side_sandbox() {
         "activity: waiting, with the workspace's write lease",
         leased,
     );
-    // Declined through the gateway-only route that answers a delegated
-    // session's confirmation relayed to its chat: no lease, yes or no only.
-    let relayed_url =
-        answer_url(&created["event"]["data"]["id"]).replace("/answer", "/relayed-answer");
-    let not_a_confirmation = gw
-        .ask(
-            "POST",
-            &relayed_url,
-            Some(json!({ "answer": { "value": "yes" } })),
-        )
-        .await;
-    assert_eq!(
-        not_a_confirmation["data"]["status"], 400,
-        "{not_a_confirmation}"
-    );
+    // Declined through the ordinary answer route.
+    let relayed_url = answer_url(&created["event"]["data"]["id"]);
     let relayed = gw
         .ask(
             "POST",
             &relayed_url,
-            Some(json!({ "answer": { "confirmed": false } })),
+            Some(json!({ "clientId": "browser", "generation": generation,
+                "answer": { "confirmed": false } })),
         )
         .await;
     assert_eq!(relayed["data"]["status"], 200, "{relayed}");
