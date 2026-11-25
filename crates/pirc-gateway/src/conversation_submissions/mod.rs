@@ -348,7 +348,14 @@ async fn prepare(
         {
             return Err(ApiError::not_found("Workspace not found"));
         }
-        app.require_mode(&workspace)?;
+        if app.require_mode(&workspace)?.pot {
+            // Pots' sessions are allocated by the Gateway for each pot only.
+            return Err(ApiError::new(
+                400,
+                "invalid_input",
+                "Conversations cannot start in the pots workspace; talk to a pot in its thread",
+            ));
+        }
         if let Some(model) = &input.submission.model {
             let models = app.models();
             if !models

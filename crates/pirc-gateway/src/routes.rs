@@ -231,6 +231,8 @@ pub async fn list_workspaces(
         .list_workspaces_for_user(&identity.user)?
         .into_iter()
         .filter(|workspace| workspace.id.contains(':'))
+        // The pots' workspace holds the pots' own sessions, never the user's.
+        .filter(|workspace| !app.mode(&workspace.mode).is_some_and(|mode| mode.pot))
         .map(|workspace| public_workspace(&app, &workspace))
         .collect();
     // A project whose deletion did not finish stays listed, for its owner to finish it.

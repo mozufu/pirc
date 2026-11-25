@@ -1487,6 +1487,31 @@ mod runtime {
                 .any(|s| s["id"] == session.as_str()),
             "{listed}"
         );
+        // Nor its workspace, and nobody starts a conversation there.
+        let (_, workspaces) =
+            crate::test_support::call(&app, "GET", "/api/workspaces", Some("alice"), None, None)
+                .await;
+        assert!(
+            !workspaces["workspaces"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|w| w["id"] == "chat:pots"),
+            "{workspaces}"
+        );
+        let prepared = json!({ "operationId": "op-pots-1", "submission": { "workspaceId": "chat:pots",
+            "message": "hi", "attachments": [] } });
+        let (status, refused) = crate::test_support::call(
+            &app,
+            "POST",
+            "/api/conversation-submissions/prepare",
+            Some("alice"),
+            None,
+            Some(prepared),
+        )
+        .await;
+        assert_eq!(status, 400, "{refused}");
+        assert!(refused.to_string().contains("pots workspace"), "{refused}");
     }
 
     #[tokio::test]
