@@ -32,6 +32,7 @@ pub enum Source {
     User,
     Group,
     Dm,
+    Approval,
 }
 
 impl Source {
@@ -40,6 +41,7 @@ impl Source {
             Self::User => "user",
             Self::Group => "group",
             Self::Dm => "dm",
+            Self::Approval => "approval",
         }
     }
 }

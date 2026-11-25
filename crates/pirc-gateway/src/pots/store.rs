@@ -257,7 +257,7 @@ pub struct Pot {
     pub input: PotInput,
 }
 
-const THINKING: [&str; 6] = ["off", "minimal", "low", "medium", "high", "xhigh"];
+pub const THINKING: [&str; 6] = ["off", "minimal", "low", "medium", "high", "xhigh"];
 
 impl PotInput {
     /// Shape and limits only; whether models, workspaces and peers exist is

@@ -1,7 +1,8 @@
 //! Hint frames for `/api/events` sockets that opt in (`directory=1`,
-//! `memory=1`, `schedules=1`, `sessions=1`): sent outside the session's
-//! sequence and never replayed, so clients that treat an unknown event as a
-//! reset are unaffected (`daemon/app.ts`).
+//! `memory=1`, `schedules=1`, `sessions=1`, `pots=1`, `threads=1`,
+//! `approvals=1`): sent outside the session's sequence and never replayed, so
+//! clients that treat an unknown event as a reset are unaffected
+//! (`daemon/app.ts`).
 
 use std::collections::HashMap;
 use std::hash::Hash;
@@ -81,6 +82,8 @@ pub struct Hints {
     pub pots: Arc<Listeners<String>>,
     /// The owner's threads or their messages changed (`threads=1`).
     pub threads: Arc<Listeners<String>>,
+    /// The owner's model approvals changed (`approvals=1`).
+    pub approvals: Arc<Listeners<String>>,
 }
 
 impl Hints {
@@ -92,6 +95,7 @@ impl Hints {
             sessions: Listeners::new(),
             pots: Listeners::new(),
             threads: Listeners::new(),
+            approvals: Listeners::new(),
         }
     }
 }

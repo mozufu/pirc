@@ -166,7 +166,7 @@ fn open_events(
         .filter(|id| !id.is_empty())
         .ok_or_else(ApiError::invalid_input)?;
     let cursor = single(&query, "cursor")?;
-    let mut flags = [false; 6];
+    let mut flags = [false; 7];
     for (index, name) in [
         "directory",
         "memory",
@@ -174,6 +174,7 @@ fn open_events(
         "sessions",
         "pots",
         "threads",
+        "approvals",
     ]
     .iter()
     .enumerate()
@@ -256,7 +257,10 @@ fn open_events(
         hints.push(app.hints.pots.add(user.clone(), hint("pots_changed")));
     }
     if flags[5] {
-        hints.push(app.hints.threads.add(user, hint("threads_changed")));
+        hints.push(app.hints.threads.add(user.clone(), hint("threads_changed")));
+    }
+    if flags[6] {
+        hints.push(app.hints.approvals.add(user, hint("approvals_changed")));
     }
     Ok(EventSocket {
         _subscription: subscription,

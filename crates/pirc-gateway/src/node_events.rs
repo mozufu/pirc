@@ -48,6 +48,10 @@ impl App {
         self.hints.threads.notify(&user.to_owned());
     }
 
+    pub fn approvals_changed(&self, user: &str) {
+        self.hints.approvals.notify(&user.to_owned());
+    }
+
     pub fn schedules_changed(&self, user: &str) {
         self.hints.schedules.notify(&user.to_owned());
     }

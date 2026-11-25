@@ -1069,3 +1069,489 @@ mod threads {
         assert!(threads::list(&conn, "bob").unwrap().is_empty());
     }
 }
+
+mod approvals {
+    use super::super::approvals::{self, Answer, ApprovalState, Decision, NewApproval};
+    use super::super::threads;
+    use super::*;
+
+    fn ask() -> NewApproval {
+        NewApproval {
+            work_title: "Nightly release".into(),
+            workspace_id: "node:repo".into(),
+            provider: "oauth:anthropic".into(),
+            model: "claude-opus-5".into(),
+            thinking: Some("high".into()),
+            reason: "The release notes need a careful read".into(),
+            estimate_micros: 2_000_000,
+            remaining_micros: Some(20_000_000),
+        }
+    }
+
+    fn allow() -> Answer {
+        Answer {
+            answer: Decision::AllowOnce,
+            reason: None,
+        }
+    }
+
+    fn deny(reason: Option<&str>) -> Answer {
+        Answer {
+            answer: Decision::Deny,
+            reason: reason.map(str::to_owned),
+        }
+    }
+
+    #[test]
+    fn only_ask_work_models_need_an_approval() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        // A direct work model starts immediately; it is not an approval.
+        let direct = NewApproval {
+            model: "claude-fable-5".into(),
+            ..ask()
+        };
+        let error = approvals::request(&conn, "alice", &pot.id, direct).unwrap_err();
+        assert_eq!((error.status, error.code), (400, "invalid_input"));
+        // Models outside the pot's work models are refused the same way.
+        let mut main = ask();
+        main.model = "gpt-5".into();
+        main.provider = "work-openai".into();
+        let error = approvals::request(&conn, "alice", &pot.id, main).unwrap_err();
+        assert_eq!((error.status, error.code), (400, "invalid_input"));
+        let mut unknown = ask();
+        unknown.model = "claude-unknown".into();
+        assert_eq!(
+            approvals::request(&conn, "alice", &pot.id, unknown)
+                .unwrap_err()
+                .status,
+            400
+        );
+        // An archived pot asks nothing.
+        set_state(&mut conn, "alice", &pot.id, 1, PotState::Archived).unwrap();
+        let error = approvals::request(&conn, "alice", &pot.id, ask()).unwrap_err();
+        assert_eq!((error.status, error.code), (409, "pot_archived"));
+    }
+
+    #[test]
+    fn allow_once_is_consumed_by_exactly_one_start() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        let first = approvals::request(&conn, "alice", &pot.id, ask()).unwrap();
+        assert_eq!(first.state, ApprovalState::Pending);
+        assert_eq!(first.thinking.as_deref(), Some("high"));
+        assert_eq!(first.estimate_micros, 2_000_000);
+        assert_eq!(first.remaining_micros, Some(20_000_000));
+        let answered = approvals::answer(&mut conn, "alice", &first.id, allow()).unwrap();
+        assert_eq!(answered.state, ApprovalState::AllowedOnce);
+        assert!(answered.answered_at.is_some());
+        approvals::consume(
+            &conn,
+            "alice",
+            &first.id,
+            &pot.id,
+            "oauth:anthropic",
+            "claude-opus-5",
+        )
+        .unwrap();
+        let used = approvals::read(&conn, "alice", &first.id).unwrap();
+        assert_eq!(used.state, ApprovalState::Used);
+        assert!(used.used_at.is_some());
+        // The one start took the allow; a second is refused and needs a new one.
+        assert_eq!(
+            approvals::consume(
+                &conn,
+                "alice",
+                &first.id,
+                &pot.id,
+                "oauth:anthropic",
+                "claude-opus-5"
+            )
+            .unwrap_err()
+            .code,
+            "already_answered"
+        );
+        let second = approvals::request(&conn, "alice", &pot.id, ask()).unwrap();
+        assert_ne!(second.id, first.id);
+        assert_eq!(
+            approvals::list(&conn, "alice", Some(ApprovalState::Pending)).unwrap(),
+            vec![second]
+        );
+    }
+
+    #[test]
+    fn the_wrong_pot_or_model_cannot_consume_an_allow() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        let other = create(&mut conn, "alice", input("Researcher")).unwrap();
+        let approval = approvals::request(&conn, "alice", &pot.id, ask()).unwrap();
+        approvals::answer(&mut conn, "alice", &approval.id, allow()).unwrap();
+        let consume = |owner: &str, pot: &str, provider: &str, model: &str| {
+            approvals::consume(&conn, owner, &approval.id, pot, provider, model)
+        };
+        assert_eq!(
+            consume("alice", &other.id, "oauth:anthropic", "claude-opus-5")
+                .unwrap_err()
+                .code,
+            "approval_mismatch"
+        );
+        assert_eq!(
+            consume("alice", &pot.id, "oauth:anthropic", "claude-fable-5")
+                .unwrap_err()
+                .code,
+            "approval_mismatch"
+        );
+        assert_eq!(
+            consume("alice", &pot.id, "work-openai", "claude-opus-5")
+                .unwrap_err()
+                .code,
+            "approval_mismatch"
+        );
+        assert_eq!(
+            consume("bob", &pot.id, "oauth:anthropic", "claude-opus-5")
+                .unwrap_err()
+                .status,
+            404
+        );
+        assert_eq!(
+            approvals::read(&conn, "alice", &approval.id).unwrap().state,
+            ApprovalState::AllowedOnce
+        );
+        consume("alice", &pot.id, "oauth:anthropic", "claude-opus-5").unwrap();
+    }
+
+    #[test]
+    fn a_denied_approval_cannot_be_consumed() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        let approval = approvals::request(&conn, "alice", &pot.id, ask()).unwrap();
+        approvals::answer(&mut conn, "alice", &approval.id, deny(None)).unwrap();
+        assert_eq!(
+            approvals::consume(
+                &conn,
+                "alice",
+                &approval.id,
+                &pot.id,
+                "oauth:anthropic",
+                "claude-opus-5"
+            )
+            .unwrap_err()
+            .code,
+            "already_answered"
+        );
+        assert_eq!(
+            approvals::read(&conn, "alice", &approval.id).unwrap().state,
+            ApprovalState::Denied
+        );
+    }
+
+    #[test]
+    fn a_denial_reason_is_a_system_message_and_every_answer_wakes_the_pot() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        let thread = threads::direct(&conn, "alice", &pot.id).unwrap();
+        let approval = approvals::request(&conn, "alice", &pot.id, ask()).unwrap();
+        approvals::answer(
+            &mut conn,
+            "alice",
+            &approval.id,
+            deny(Some("Too expensive this month")),
+        )
+        .unwrap();
+        let page = threads::messages(&conn, "alice", &thread.id, None).unwrap();
+        let notice = page.last().unwrap();
+        assert_eq!((notice.seq, notice.author_kind.as_str()), (1, "system"));
+        assert_eq!(notice.author_id, None);
+        assert!(notice.body.contains("Nightly release"), "{}", notice.body);
+        assert!(
+            notice.body.contains("Too expensive this month"),
+            "{}",
+            notice.body
+        );
+        let wake = |conn: &rusqlite::Connection| -> (String, String, serde_json::Value) {
+            let (source, content, details): (String, String, String) = conn
+                .query_row(
+                    "SELECT source,content,details_json FROM pot_wakes WHERE pot_id=?1
+                     ORDER BY rowid DESC LIMIT 1",
+                    [&pot.id],
+                    |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+                )
+                .unwrap();
+            (source, content, serde_json::from_str(&details).unwrap())
+        };
+        let (source, content, details) = wake(&conn);
+        assert_eq!(source, "approval");
+        assert!(content.contains("Nightly release"), "{content}");
+        assert!(content.contains("claude-opus-5"), "{content}");
+        assert!(
+            content.contains("denied with the reason: Too expensive this month"),
+            "{content}"
+        );
+        assert_eq!(details["approvalId"], approval.id.as_str());
+        assert_eq!(details["state"], "denied");
+        // A plain denial and an allow also wake the pot.
+        let plain = approvals::request(&conn, "alice", &pot.id, ask()).unwrap();
+        approvals::answer(&mut conn, "alice", &plain.id, deny(None)).unwrap();
+        assert!(wake(&conn).1.contains("denied"));
+        let allowed = approvals::request(&conn, "alice", &pot.id, ask()).unwrap();
+        approvals::answer(&mut conn, "alice", &allowed.id, allow()).unwrap();
+        let (source, content, details) = wake(&conn);
+        assert_eq!(source, "approval");
+        assert!(content.contains("allowed once"), "{content}");
+        assert_eq!(details["approvalId"], allowed.id.as_str());
+        assert_eq!(details["state"], "allowed_once");
+        // Only the one reason was posted; answers without text add no messages.
+        assert_eq!(
+            threads::messages(&conn, "alice", &thread.id, None)
+                .unwrap()
+                .len(),
+            1
+        );
+    }
+
+    #[test]
+    fn an_approval_is_answered_once_and_only_by_its_owner() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        let approval = approvals::request(&conn, "alice", &pot.id, ask()).unwrap();
+        approvals::answer(&mut conn, "alice", &approval.id, deny(None)).unwrap();
+        let error = approvals::answer(&mut conn, "alice", &approval.id, allow()).unwrap_err();
+        assert_eq!((error.status, error.code), (409, "already_answered"));
+        // Another owner can neither see nor answer it.
+        assert!(approvals::list(&conn, "bob", None).unwrap().is_empty());
+        assert_eq!(
+            approvals::read(&conn, "bob", &approval.id)
+                .unwrap_err()
+                .status,
+            404
+        );
+        assert_eq!(
+            approvals::answer(&mut conn, "bob", &approval.id, allow())
+                .unwrap_err()
+                .status,
+            404
+        );
+        assert_eq!(
+            approvals::request(&conn, "bob", &pot.id, ask())
+                .unwrap_err()
+                .status,
+            404
+        );
+        assert_eq!(
+            approvals::answer(&mut conn, "alice", "appr-missing", allow())
+                .unwrap_err()
+                .status,
+            404
+        );
+    }
+
+    #[test]
+    fn pending_approvals_are_capped_and_listed_newest_first() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        let mut ids = Vec::new();
+        for _ in 0..approvals::MAX_PENDING {
+            ids.push(
+                approvals::request(&conn, "alice", &pot.id, ask())
+                    .unwrap()
+                    .id,
+            );
+        }
+        let error = approvals::request(&conn, "alice", &pot.id, ask()).unwrap_err();
+        assert_eq!((error.status, error.code), (409, "limit_reached"));
+        let pending = approvals::list(&conn, "alice", Some(ApprovalState::Pending)).unwrap();
+        assert_eq!(
+            pending.iter().map(|a| a.id.as_str()).collect::<Vec<_>>(),
+            ids.iter().rev().map(String::as_str).collect::<Vec<_>>()
+        );
+        // Answering frees a slot.
+        approvals::answer(&mut conn, "alice", &ids[0], deny(None)).unwrap();
+        approvals::request(&conn, "alice", &pot.id, ask()).unwrap();
+    }
+
+    mod http {
+        use super::*;
+        use crate::test_support::{app_with_models, call};
+        use serde_json::Value;
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicBool, Ordering};
+
+        fn app() -> (crate::app::AppState, tempfile::TempDir) {
+            let (app, dir) = app_with_models(json!({
+                "oauth:anthropic": { "api": "anthropic-messages", "baseUrl": "https://api.anthropic.com",
+                    "models": [{ "id": "claude-fable-5" }, { "id": "claude-opus-5" }] },
+                "work-openai": { "api": "openai-responses", "baseUrl": "https://api.openai.com/v1",
+                    "apiKey": "k", "models": [{ "id": "gpt-5" }] }
+            }));
+            super::db_setup(&app.db.lock());
+            (app, dir)
+        }
+
+        async fn create_pot(app: &crate::app::AppState) -> String {
+            let body = serde_json::to_value(input("Tester")).unwrap();
+            let (status, created) =
+                call(app, "POST", "/api/pots", Some("alice"), None, Some(body)).await;
+            assert_eq!(status, 201, "{created}");
+            created["pot"]["id"].as_str().unwrap().to_owned()
+        }
+
+        #[tokio::test]
+        async fn approvals_are_listed_and_answered_over_http() {
+            let (app, _dir) = app();
+            let pot = create_pot(&app).await;
+            let fired = Arc::new(AtomicBool::new(false));
+            let flag = fired.clone();
+            let _hint = app.hints.approvals.add(
+                "alice".into(),
+                Arc::new(move || flag.store(true, Ordering::SeqCst)),
+            );
+            let approval = app.request_approval("alice", &pot, ask()).unwrap();
+            assert!(fired.swap(false, Ordering::SeqCst), "request hints");
+            let path = "/api/model-approvals?state=pending";
+            let (status, listed) = call(&app, "GET", path, Some("alice"), None, None).await;
+            assert_eq!(status, 200, "{listed}");
+            assert_eq!(listed["approvals"][0]["id"], approval.id.as_str());
+            assert_eq!(listed["approvals"][0]["model"], "claude-opus-5");
+            assert_eq!(listed["approvals"][0]["estimateMicros"], 2_000_000);
+            assert_eq!(
+                call(
+                    &app,
+                    "GET",
+                    "/api/model-approvals?state=unknown",
+                    Some("alice"),
+                    None,
+                    None
+                )
+                .await
+                .0,
+                400
+            );
+            assert!(
+                call(&app, "GET", "/api/model-approvals", Some("bob"), None, None)
+                    .await
+                    .1["approvals"]
+                    .as_array()
+                    .unwrap()
+                    .is_empty()
+            );
+
+            let answer = format!("/api/model-approvals/{}/answer", approval.id);
+            // Unknown fields and a reason with allow_once are refused.
+            assert_eq!(
+                call(
+                    &app,
+                    "POST",
+                    &answer,
+                    Some("alice"),
+                    None,
+                    Some(json!({ "answer": "deny", "approval": "x" }))
+                )
+                .await
+                .0,
+                400
+            );
+            assert_eq!(
+                call(
+                    &app,
+                    "POST",
+                    &answer,
+                    Some("alice"),
+                    None,
+                    Some(json!({ "answer": "allow_once", "reason": "why not" }))
+                )
+                .await
+                .0,
+                400
+            );
+            assert_eq!(
+                call(
+                    &app,
+                    "POST",
+                    &answer,
+                    Some("bob"),
+                    None,
+                    Some(json!({ "answer": "deny" }))
+                )
+                .await
+                .0,
+                404
+            );
+
+            let (status, answered) = call(
+                &app,
+                "POST",
+                &answer,
+                Some("alice"),
+                None,
+                Some(json!({ "answer": "deny", "reason": "Not this month" })),
+            )
+            .await;
+            assert_eq!(status, 200, "{answered}");
+            assert_eq!(answered["approval"]["state"], "denied");
+            assert_eq!(answered["approval"]["denyReason"], "Not this month");
+            assert!(fired.swap(false, Ordering::SeqCst), "answer hints");
+            // Answering twice is a conflict.
+            let (status, error) = call(
+                &app,
+                "POST",
+                &answer,
+                Some("alice"),
+                None,
+                Some(json!({ "answer": "allow_once" })),
+            )
+            .await;
+            assert_eq!(
+                (status, error["error"]["code"].as_str()),
+                (409, Some("already_answered"))
+            );
+            let (_, pending) = call(&app, "GET", path, Some("alice"), None, None).await;
+            assert_eq!(pending["approvals"], Value::Array(Vec::new()));
+            let (_, denied) = call(
+                &app,
+                "GET",
+                "/api/model-approvals?state=denied",
+                Some("alice"),
+                None,
+                None,
+            )
+            .await;
+            assert_eq!(denied["approvals"].as_array().unwrap().len(), 1);
+            // The denial reason is a system message in the pot's thread.
+            let (_, thread) = call(
+                &app,
+                "GET",
+                &format!("/api/pots/{pot}/thread"),
+                Some("alice"),
+                None,
+                None,
+            )
+            .await;
+            let (_, page) = call(
+                &app,
+                "GET",
+                &format!(
+                    "/api/threads/{}/messages",
+                    thread["thread"]["id"].as_str().unwrap()
+                ),
+                Some("alice"),
+                None,
+                None,
+            )
+            .await;
+            assert_eq!(page["messages"][0]["authorKind"], "system");
+            assert!(
+                page["messages"][0]["body"]
+                    .as_str()
+                    .unwrap()
+                    .contains("Not this month")
+            );
+        }
+    }
+}

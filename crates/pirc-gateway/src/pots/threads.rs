@@ -163,6 +163,13 @@ pub fn direct(conn: &Connection, owner: &str, pot_id: &str) -> ApiResult<Thread>
     get(conn, owner, &id)
 }
 
+/// A Gateway notice in the pot's direct thread (`author_kind='system'`), such
+/// as the reason a model approval was denied. It wakes no one.
+pub fn post_system(conn: &Connection, owner: &str, pot_id: &str, body: &str) -> ApiResult<Message> {
+    let thread = direct(conn, owner, pot_id)?;
+    append(conn, &thread, &Author::System, body, &[], false, None)
+}
+
 /// The DM thread between two pots, made on first use.
 fn pot_dm(conn: &Connection, owner: &str, a: &str, b: &str) -> ApiResult<Thread> {
     let (a, b) = if a < b { (a, b) } else { (b, a) };
@@ -267,6 +274,8 @@ pub fn messages(
 pub enum Author<'a> {
     User,
     Pot(&'a str),
+    /// A Gateway notice in a thread, such as an approval's denial reason.
+    System,
 }
 
 fn append(
@@ -285,6 +294,7 @@ fn append(
     let (kind, id) = match author {
         Author::User => ("user", None),
         Author::Pot(pot) => ("pot", Some(*pot)),
+        Author::System => ("system", None),
     };
     let seq = conn.query_row(
         "UPDATE threads SET last_seq=last_seq+1,updated_at=?2 WHERE id=?1 RETURNING last_seq",
@@ -331,6 +341,7 @@ fn wake_text(
     let who = match author {
         Author::User => format!("the user ({owner})"),
         Author::Pot(pot) => format!("pot {}", pot_name(conn, pot)),
+        Author::System => "the Gateway".to_owned(),
     };
     let place = match thread.kind.as_str() {
         "direct" => "your direct conversation with the user".to_owned(),
@@ -344,7 +355,7 @@ fn wake_text(
 fn addressees(thread: &Thread, author: &Author, mentions: &[String], all: bool) -> Vec<String> {
     let sender = match author {
         Author::Pot(pot) => Some(*pot),
-        Author::User => None,
+        Author::User | Author::System => None,
     };
     let mut woken: Vec<String> = match thread.kind.as_str() {
         "direct" | "pot_dm" => thread.pots.clone(),

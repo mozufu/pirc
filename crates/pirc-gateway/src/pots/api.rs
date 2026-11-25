@@ -1,6 +1,7 @@
-//! `/api/pots`: create, read, update and pause pots, and the owner's pot
-//! settings (plans/pots.md, API sketch). Device tokens may use these like a
-//! browser; every query is scoped to the signed-in owner.
+//! `/api/pots`: create, read, update and pause pots, the owner's pot
+//! settings, threads, and model approvals (plans/pots.md, API sketch). Device
+//! tokens may use these like a browser; every query is scoped to the signed-in
+//! owner.
 
 use axum::Router;
 use axum::extract::{Extension, Path, State};
@@ -8,6 +9,7 @@ use axum::routing::{get, post};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+use super::approvals::{self, Answer, ApprovalState};
 use super::store::{self, Pot, PotInput, PotPatch, PotState, Settings};
 use super::threads;
 use crate::app::{AppState, ReqBody};
@@ -30,6 +32,8 @@ pub fn routes() -> Router<AppState> {
             "/api/threads/{id}/messages",
             get(list_messages).post(post_message),
         )
+        .route("/api/model-approvals", get(list_approvals))
+        .route("/api/model-approvals/{id}/answer", post(answer_approval))
 }
 
 /// Models must be ones the Gateway serves; locations workspaces the owner sees.
@@ -287,4 +291,41 @@ async fn post_message(
         axum::http::StatusCode::CREATED,
         axum::Json(json!({ "message": message, "woken": woken })),
     ))
+}
+
+#[derive(Deserialize)]
+struct ApprovalFilter {
+    state: Option<String>,
+}
+
+async fn list_approvals(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    axum::extract::Query(filter): axum::extract::Query<ApprovalFilter>,
+) -> ApiResult<axum::Json<Value>> {
+    let state = match filter.state.as_deref() {
+        None => None,
+        Some(value) => Some(ApprovalState::parse(value).ok_or_else(|| {
+            ApiError::new(
+                400,
+                "invalid_input",
+                "state is pending, allowed_once, denied or used",
+            )
+        })?),
+    };
+    let approvals = approvals::list(&app.db.lock(), &identity.user, state)?;
+    Ok(axum::Json(json!({ "approvals": approvals })))
+}
+
+async fn answer_approval(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+    ReqBody(body): ReqBody,
+) -> ApiResult<axum::Json<Value>> {
+    let input: Answer = body.parse()?;
+    let approval = approvals::answer(&mut app.db.lock(), &identity.user, &id, input)?;
+    app.approvals_changed(&identity.user);
+    super::runtime::kick(&app, &identity.user, &approval.pot_id);
+    Ok(axum::Json(json!({ "approval": approval })))
 }

@@ -161,3 +161,30 @@ CREATE TABLE messages (
  UNIQUE(thread_id, seq),
  CHECK(all_mention=0 OR author_kind='user')
 );
+-- A pot's request to start work with an `ask` model (plans/pots.md, Models
+-- for work). "allow once" covers exactly one start, then the row is used.
+CREATE TABLE model_approvals (
+ id TEXT PRIMARY KEY,
+ owner_user TEXT NOT NULL,
+ pot_id TEXT NOT NULL REFERENCES pots(id) ON DELETE CASCADE,
+ work_title TEXT NOT NULL CHECK(length(work_title) BETWEEN 1 AND 200),
+ -- Where the work would run.
+ workspace_id TEXT NOT NULL CHECK(length(workspace_id) BETWEEN 1 AND 256),
+ provider TEXT NOT NULL CHECK(length(provider) BETWEEN 1 AND 100),
+ model TEXT NOT NULL CHECK(length(model) BETWEEN 1 AND 200),
+ thinking TEXT CHECK(thinking IS NULL OR thinking IN ('off','minimal','low','medium','high','xhigh')),
+ -- The pot's reason for this start.
+ reason TEXT NOT NULL DEFAULT '' CHECK(length(reason)<=2000),
+ estimate_micros INTEGER NOT NULL DEFAULT 0 CHECK(estimate_micros>=0),
+ remaining_micros INTEGER CHECK(remaining_micros IS NULL OR remaining_micros>=0),
+ state TEXT NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','allowed_once','denied','used')),
+ deny_reason TEXT CHECK(deny_reason IS NULL OR length(deny_reason)<=2000),
+ created_at INTEGER NOT NULL,
+ answered_at INTEGER,
+ used_at INTEGER,
+ CHECK(deny_reason IS NULL OR state='denied'),
+ CHECK(answered_at IS NULL OR state!='pending'),
+ CHECK(used_at IS NULL OR state='used')
+);
+CREATE INDEX model_approvals_owner ON model_approvals(owner_user, state, created_at DESC);
+CREATE INDEX model_approvals_pot_pending ON model_approvals(pot_id, state) WHERE state='pending';
