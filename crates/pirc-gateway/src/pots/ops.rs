@@ -267,6 +267,9 @@ pub fn context(conn: &Connection, owner: &str, session_id: &str) -> ApiResult<Va
             "thinkingAuto": pot.input.models.thinking_auto,
         },
         "user": { "name": owner },
+        // Where the pot reaches the user when a wake has no reply thread
+        // (reviews, reminders, observations).
+        "directThreadId": super::threads::direct(conn, owner, &pot.id)?.id,
     }))
 }
 

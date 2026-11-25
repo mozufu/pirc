@@ -84,6 +84,14 @@ pub fn identity_section(context: &Value) -> Result<PromptSection, String> {
     if !user.is_empty() {
         out.push_str(&format!("\n\nThe user is {user}."));
     }
+    let thread = text(context, "directThreadId");
+    if !thread.is_empty() {
+        out.push_str(&format!(
+            "\n\nYour direct conversation with the user is thread {thread}. When a wake has no \
+             reply thread (a review, a reminder or an observation), reach the user there with \
+             message_send, and only when it is worth their attention."
+        ));
+    }
     Ok(PromptSection::new(
         "pot:identity",
         "Pot identity",

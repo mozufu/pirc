@@ -1107,6 +1107,8 @@ fn the_context_is_the_asking_sessions_pot_only() {
     assert_eq!(context["pot"]["id"], pot.id.as_str());
     assert_eq!(context["pot"]["name"], "Tester");
     assert_eq!(context["pot"]["personality"], "Calm and exact.");
+    let direct = super::threads::direct(&conn, "alice", &pot.id).unwrap();
+    assert_eq!(context["directThreadId"], direct.id.as_str());
     let summary = context["pot"]["permissions"].as_str().unwrap();
     assert!(summary.contains("start work"), "{summary}");
     assert!(summary.contains("node:repo (write)"), "{summary}");

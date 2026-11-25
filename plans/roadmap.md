@@ -15,7 +15,7 @@ acceptance, activation.
 | [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)         |
 | [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11   |
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
-| [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–6 done; 7, 8a and 11 in progress on branches        |
+| [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–8a and 9a done; 11 in progress on a branch        |
 | [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`               |
 | [M6 Work and settings screens](#m6-work-and-settings-screens) | outline  |             |            |                                                             |
 | [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |

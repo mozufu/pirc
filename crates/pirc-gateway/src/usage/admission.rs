@@ -353,6 +353,19 @@ pub fn finish(app: &AppState, reservation: &Reservation, message: &AssistantMess
 
 /// Keep a reservation whose request was stopped or timed out as an unknown
 /// charge; it still counts toward its windows.
+/// The request never left (refused after admission): its reservation goes.
+pub fn cancel(app: &AppState, reservation: Option<&Reservation>) {
+    let Some(reservation) = reservation else {
+        return;
+    };
+    if let Err(error) = app.db.lock().execute(
+        "DELETE FROM budget_reservations WHERE id=?1 AND state='held'",
+        [&reservation.id],
+    ) {
+        crate::log::warn(&format!("budget reservation {}: {error}", reservation.id));
+    }
+}
+
 pub fn keep_unknown(app: &AppState, reservation: Option<&Reservation>) {
     if let Some(reservation) = reservation {
         settle(app, reservation, None);

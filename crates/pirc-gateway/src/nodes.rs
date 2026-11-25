@@ -1342,10 +1342,28 @@ fn start_inference(
     node_session: String,
 ) {
     let key = (node_id.to_owned(), request_id.clone());
+    // A pot's request is admitted before it leaves, holding an upper bound
+    // against its pot and owner caps until the answer is recorded. Done
+    // before the link state is locked: admission takes the database lock.
+    let reservation = match crate::usage::admission::begin(app, node_id, &node_session, &request) {
+        Ok(reservation) => reservation,
+        Err(error) => {
+            let code = if error.code == "budget_exhausted" {
+                "budget_exhausted"
+            } else {
+                "inference_failed"
+            };
+            if !send_inference(link, &request_id, model_error(code)) {
+                link.close(1013, "inference buffer limit");
+            }
+            return;
+        }
+    };
     let mut state = app.nodes.lock();
     // A duplicate ID must never replace or route into another active stream.
     if state.inferences.contains_key(&key) {
         drop(state);
+        crate::usage::admission::cancel(app, reservation.as_ref());
         return link.close(1008, "duplicate inference request");
     }
     let per_node = state
@@ -1359,28 +1377,12 @@ fn start_inference(
         || request_bytes > INFERENCE_REQUEST_MAX_BYTES
     {
         drop(state);
+        crate::usage::admission::cancel(app, reservation.as_ref());
         if !send_inference(link, &request_id, model_error("limit_exceeded")) {
             link.close(1013, "inference buffer limit");
         }
         return;
     }
-    // A pot's request is admitted before it leaves, holding an upper bound
-    // against its pot and owner caps until the answer is recorded.
-    let reservation = match crate::usage::admission::begin(app, node_id, &node_session, &request) {
-        Ok(reservation) => reservation,
-        Err(error) => {
-            drop(state);
-            let code = if error.code == "budget_exhausted" {
-                "budget_exhausted"
-            } else {
-                "inference_failed"
-            };
-            if !send_inference(link, &request_id, model_error(code)) {
-                link.close(1013, "inference buffer limit");
-            }
-            return;
-        }
-    };
     // Registered before the task can finish, under the same lock.
     let (stop, stopped) = oneshot::channel::<()>();
     let task = tokio::spawn({
