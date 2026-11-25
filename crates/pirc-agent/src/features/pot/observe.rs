@@ -32,6 +32,36 @@ fn describe_note(_: &Value) -> String {
 }
 
 fn describe_read(result: &Value) -> String {
+    if result["gone"] == true {
+        return "What the event was about no longer exists.".to_owned();
+    }
+    let run = &result["scheduleRun"];
+    if run.is_object() {
+        let title = run["title"].as_str().unwrap_or("the schedule");
+        let status = run["status"].as_str().unwrap_or("unknown");
+        return match run["result"].as_str() {
+            Some(text) if !text.is_empty() => {
+                format!("A run of \"{title}\" ended: {status}.\n\n{text}")
+            }
+            _ => format!("A run of \"{title}\" ended: {status}."),
+        };
+    }
+    let event = &result["calendarEvent"];
+    if event.is_object() {
+        let mut out = format!(
+            "\"{}\" from {} to {} ({}).",
+            event["title"].as_str().unwrap_or("?"),
+            event["start"].as_str().unwrap_or("?"),
+            event["end"].as_str().unwrap_or("?"),
+            event["timezone"].as_str().unwrap_or("?"),
+        );
+        for key in ["location", "description"] {
+            if let Some(text) = event[key].as_str().filter(|t| !t.is_empty()) {
+                out.push_str(&format!("\n{key}: {text}"));
+            }
+        }
+        return out;
+    }
     let name = result["session"]["name"].as_str().unwrap_or("the session");
     let run = result["run"].as_str().unwrap_or("unknown");
     match result["lastAnswer"].as_str() {
@@ -132,5 +162,17 @@ mod tests {
             &json!({ "session": { "name": "Nightly" }, "run": "running", "lastAnswer": null }),
         );
         assert_eq!(empty, "\"Nightly\" (run running) has no answer yet.");
+        let run = describe_read(
+            &json!({ "scheduleRun": { "title": "Backup", "status": "failed", "result": "Disk full" } }),
+        );
+        assert_eq!(run, "A run of \"Backup\" ended: failed.\n\nDisk full");
+        let event = describe_read(
+            &json!({ "calendarEvent": { "title": "Standup", "start": "2026-11-26T09:00",
+            "end": "2026-11-26T09:15", "timezone": "Asia/Taipei", "location": "Room 1", "description": "" } }),
+        );
+        assert_eq!(
+            event,
+            "\"Standup\" from 2026-11-26T09:00 to 2026-11-26T09:15 (Asia/Taipei).\nlocation: Room 1"
+        );
     }
 }

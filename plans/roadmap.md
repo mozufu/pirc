@@ -307,8 +307,8 @@ that a session can only act as itself.
 evidence?)` (L1 `obs_observations`, one per pot and event, only for events that
      reached the pot) and `observe_read(eventId)` (the session's name, run status
      and last answer, read only).
-   - 9b. _More sources._ Schedule runs that finished (scope `schedules`, all or one
-     schedule) and calendar events starting within 30 minutes (scope `calendar`),
+   - 9b. _More sources._ Schedule runs that finished (scope `schedules`, all of the
+     owner's schedules) and calendar events starting within 30 minutes (scope `calendar`),
      polled every 30 seconds; the L0 unique key makes polling idempotent.
    - 9c. _Notifications and dispatch._ `observe_note(…, notify: true)` creates the
      event's single L2 `obs_notifications` row: from the lead pot when the event

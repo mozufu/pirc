@@ -3789,6 +3789,81 @@ mod observe {
     }
 
     #[test]
+    fn schedule_runs_and_calendar_events_are_polled_once_each() {
+        let db = db();
+        let mut conn = db.lock();
+        let mut watcher = input("Watcher");
+        watcher.permissions.observe = vec![
+            serde_json::from_value(json!({ "kind": "schedules", "ref": "" })).unwrap(),
+            serde_json::from_value(json!({ "kind": "calendar", "lead": true })).unwrap(),
+        ];
+        let watcher = create(&mut conn, "alice", watcher).unwrap().id;
+        let now = crate::util::now_ms();
+        for (id, title) in [("sched-1", "Backup"), ("sched-2", "Report")] {
+            conn.execute(
+                "INSERT INTO schedules(id,owner_user,workspace_id,title,prompt,timezone,status,created_at,updated_at)
+                 VALUES(?1,'alice','node:repo',?2,'p','UTC','active',0,0)",
+                params![id, title],
+            )
+            .unwrap();
+        }
+        let run = |id: &str, schedule: &str, status: &str, finished: i64| {
+            conn.execute(
+                "INSERT INTO schedule_runs(id,schedule_id,owner_user,due_at,status,finished_at,created_at)
+                 VALUES(?1,?2,'alice',0,?3,?4,0)",
+                params![id, schedule, status, finished],
+            )
+            .unwrap();
+        };
+        run("run-1", "sched-1", "failed", now - 60_000);
+        run("run-2", "sched-2", "completed", now - 60_000);
+        run("run-3", "sched-1", "running", now - 60_000);
+        run("run-old", "sched-1", "failed", now - 3_600_000);
+        // A calendar event that starts in ten minutes, and one tomorrow.
+        let local = |offset: i64| {
+            chrono::DateTime::from_timestamp_millis(now + offset)
+                .unwrap()
+                .format("%Y-%m-%dT%H:%M")
+                .to_string()
+        };
+        for (key, start) in [("soon", 10 * 60_000), ("later", 24 * 3_600_000)] {
+            let spec: crate::calendar::Spec = serde_json::from_value(json!({
+                "title": format!("Standup {key}"), "start": local(start), "end": local(start + 30 * 60_000),
+                "timezone": "UTC",
+            }))
+            .unwrap();
+            crate::calendar::create(&conn, "alice", key, &spec, now).unwrap();
+        }
+        let mut woken = observe::poll(&conn, now).unwrap();
+        woken.sort();
+        let mut expected = vec![
+            ("alice".to_owned(), watcher.clone()), // run-1
+            ("alice".to_owned(), watcher.clone()), // run-2
+            ("alice".to_owned(), watcher.clone()), // the standup
+        ];
+        expected.sort();
+        assert_eq!(woken, expected);
+        let conditions: Vec<String> = conn
+            .prepare("SELECT condition_key FROM obs_events ORDER BY condition_key")
+            .unwrap()
+            .query_map([], |r| r.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(conditions, ["run_completed", "run_failed", "starting_soon"]);
+        // Polling again finds nothing new.
+        assert!(observe::poll(&conn, now + 30_000).unwrap().is_empty());
+        let lead: bool = conn
+            .query_row(
+                "SELECT t.lead FROM obs_targets t JOIN obs_events e ON e.id=t.event_id WHERE e.source_kind='calendar'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert!(lead, "the calendar scope is led");
+    }
+
+    #[test]
     fn a_project_scope_reaches_its_members_sessions() {
         let (db, lead, _other, _session) = setup();
         let mut conn = db.lock();
