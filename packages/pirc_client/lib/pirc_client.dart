@@ -5,6 +5,7 @@
 library;
 
 export 'src/api/directory_api.dart';
+export 'src/api/management_api.dart';
 export 'src/api/models_api.dart';
 export 'src/api/pots_api.dart';
 export 'src/api/sessions_api.dart';

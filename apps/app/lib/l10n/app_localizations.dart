@@ -1142,6 +1142,612 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This kind of result is shown as its summary.'**
   String get resultUnsupported;
+
+  /// No description provided for @accessNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval needed'**
+  String get accessNeeded;
+
+  /// No description provided for @accessOpenInBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Open this address in a browser where you are signed in, and approve:'**
+  String get accessOpenInBrowser;
+
+  /// No description provided for @accessRequestExpires.
+  ///
+  /// In en, this message translates to:
+  /// **'The request expires at {time}.'**
+  String accessRequestExpires(String time);
+
+  /// No description provided for @accessDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'The request was denied.'**
+  String get accessDenied;
+
+  /// No description provided for @accessExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'The request or the access expired.'**
+  String get accessExpired;
+
+  /// No description provided for @accessAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask for access'**
+  String get accessAsk;
+
+  /// No description provided for @settingsDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Devices'**
+  String get settingsDevices;
+
+  /// No description provided for @accessDevicesReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Listing and removing paired devices needs a short approval from a browser.'**
+  String get accessDevicesReason;
+
+  /// No description provided for @deviceLastUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Last used {time}'**
+  String deviceLastUsed(String time);
+
+  /// No description provided for @deviceRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get deviceRevoke;
+
+  /// No description provided for @deviceRevokeNeedsAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Removing a device needs access to remove devices.'**
+  String get deviceRevokeNeedsAccess;
+
+  /// No description provided for @devicePair.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair a new device'**
+  String get devicePair;
+
+  /// No description provided for @accessPairReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing a new device needs a short approval from a browser.'**
+  String get accessPairReason;
+
+  /// No description provided for @deviceRevokeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}?'**
+  String deviceRevokeTitle(String name);
+
+  /// No description provided for @deviceRevokeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'It can no longer reach this Gateway until it is paired again.'**
+  String get deviceRevokeBody;
+
+  /// No description provided for @devicePaired.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is ready'**
+  String devicePaired(String name);
+
+  /// No description provided for @devicePairOnce.
+  ///
+  /// In en, this message translates to:
+  /// **'This link and code are shown only once. Open the link on the new device or scan the code.'**
+  String get devicePairOnce;
+
+  /// No description provided for @deviceExpires.
+  ///
+  /// In en, this message translates to:
+  /// **'The new device works until {time} unless it is renewed.'**
+  String deviceExpires(String time);
+
+  /// No description provided for @done.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get done;
+
+  /// No description provided for @deviceName.
+  ///
+  /// In en, this message translates to:
+  /// **'Device name'**
+  String get deviceName;
+
+  /// No description provided for @devicePairAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair'**
+  String get devicePairAction;
+
+  /// No description provided for @capabilityProviders.
+  ///
+  /// In en, this message translates to:
+  /// **'Change model providers and their credentials'**
+  String get capabilityProviders;
+
+  /// No description provided for @capabilityDevicesRead.
+  ///
+  /// In en, this message translates to:
+  /// **'See the list of paired devices'**
+  String get capabilityDevicesRead;
+
+  /// No description provided for @capabilityDevicesRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove paired devices'**
+  String get capabilityDevicesRevoke;
+
+  /// No description provided for @capabilityDevicesPair.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair new devices that can use this Gateway'**
+  String get capabilityDevicesPair;
+
+  /// No description provided for @approvalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{device} asks for access'**
+  String approvalTitle(String device);
+
+  /// No description provided for @approvalPairingLifetime.
+  ///
+  /// In en, this message translates to:
+  /// **'Each new device works for {idle} days without use and at most {max} days.'**
+  String approvalPairingLifetime(int idle, int max);
+
+  /// No description provided for @approvalGrantLifetime.
+  ///
+  /// In en, this message translates to:
+  /// **'The access lasts 15 minutes and only on that device.'**
+  String get approvalGrantLifetime;
+
+  /// No description provided for @approvalApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved. Go back to the app.'**
+  String get approvalApproved;
+
+  /// No description provided for @approvalDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied.'**
+  String get approvalDenied;
+
+  /// No description provided for @approvalNotPending.
+  ///
+  /// In en, this message translates to:
+  /// **'This request is no longer waiting.'**
+  String get approvalNotPending;
+
+  /// No description provided for @approvalDeny.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny'**
+  String get approvalDeny;
+
+  /// No description provided for @approvalApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get approvalApprove;
+
+  /// No description provided for @approvalMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'This request does not exist or has expired.'**
+  String get approvalMissing;
+
+  /// No description provided for @panelsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Panels'**
+  String get panelsTitle;
+
+  /// No description provided for @panelMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get panelMore;
+
+  /// No description provided for @panelFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Files'**
+  String get panelFiles;
+
+  /// No description provided for @panelGit.
+  ///
+  /// In en, this message translates to:
+  /// **'Git'**
+  String get panelGit;
+
+  /// No description provided for @panelTerminal.
+  ///
+  /// In en, this message translates to:
+  /// **'Terminal'**
+  String get panelTerminal;
+
+  /// No description provided for @panelTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get panelTasks;
+
+  /// No description provided for @panelMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory'**
+  String get panelMemory;
+
+  /// No description provided for @panelBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Browser'**
+  String get panelBrowser;
+
+  /// No description provided for @panelContext.
+  ///
+  /// In en, this message translates to:
+  /// **'Context'**
+  String get panelContext;
+
+  /// No description provided for @panelCheckpoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Checkpoints'**
+  String get panelCheckpoints;
+
+  /// No description provided for @panelOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline. This panel loads when the Gateway is reachable.'**
+  String get panelOffline;
+
+  /// No description provided for @panelHostOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'The host is offline.'**
+  String get panelHostOffline;
+
+  /// No description provided for @panelFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This panel could not be loaded.'**
+  String get panelFailed;
+
+  /// No description provided for @panelReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Read only: another device controls this work.'**
+  String get panelReadOnly;
+
+  /// No description provided for @panelsOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Panels'**
+  String get panelsOpen;
+
+  /// No description provided for @filesRoot.
+  ///
+  /// In en, this message translates to:
+  /// **'Root'**
+  String get filesRoot;
+
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
+  /// No description provided for @filesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'This folder is empty.'**
+  String get filesEmpty;
+
+  /// No description provided for @filesImageTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'This image is too large to show.'**
+  String get filesImageTooLarge;
+
+  /// No description provided for @filesBinary.
+  ///
+  /// In en, this message translates to:
+  /// **'This file is not text.'**
+  String get filesBinary;
+
+  /// No description provided for @panelTruncated.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the first part is shown.'**
+  String get panelTruncated;
+
+  /// No description provided for @gitNoDiff.
+  ///
+  /// In en, this message translates to:
+  /// **'No changes.'**
+  String get gitNoDiff;
+
+  /// No description provided for @gitChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes'**
+  String get gitChanges;
+
+  /// No description provided for @gitHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get gitHistory;
+
+  /// No description provided for @gitNoCommits.
+  ///
+  /// In en, this message translates to:
+  /// **'No commits yet.'**
+  String get gitNoCommits;
+
+  /// No description provided for @gitClean.
+  ///
+  /// In en, this message translates to:
+  /// **'No changes.'**
+  String get gitClean;
+
+  /// No description provided for @gitNotRepo.
+  ///
+  /// In en, this message translates to:
+  /// **'This folder is not a Git repository.'**
+  String get gitNotRepo;
+
+  /// No description provided for @gitDetached.
+  ///
+  /// In en, this message translates to:
+  /// **'No branch'**
+  String get gitDetached;
+
+  /// No description provided for @gitAheadBehind.
+  ///
+  /// In en, this message translates to:
+  /// **'{upstream} · {ahead} ahead · {behind} behind'**
+  String gitAheadBehind(String upstream, int ahead, int behind);
+
+  /// No description provided for @tasksEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No background tasks or teammates.'**
+  String get tasksEmpty;
+
+  /// No description provided for @tasksBackground.
+  ///
+  /// In en, this message translates to:
+  /// **'Background tasks'**
+  String get tasksBackground;
+
+  /// No description provided for @tasksTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'Teammates'**
+  String get tasksTeam;
+
+  /// No description provided for @tasksStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get tasksStop;
+
+  /// No description provided for @tasksNoOutput.
+  ///
+  /// In en, this message translates to:
+  /// **'No output yet.'**
+  String get tasksNoOutput;
+
+  /// No description provided for @memoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing remembered yet.'**
+  String get memoryEmpty;
+
+  /// No description provided for @memoryCounts.
+  ///
+  /// In en, this message translates to:
+  /// **'{observations} observations · {reflections} reflections'**
+  String memoryCounts(int observations, int reflections);
+
+  /// No description provided for @memoryOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory is off for this work.'**
+  String get memoryOff;
+
+  /// No description provided for @memoryReflections.
+  ///
+  /// In en, this message translates to:
+  /// **'Reflections'**
+  String get memoryReflections;
+
+  /// No description provided for @memoryObservations.
+  ///
+  /// In en, this message translates to:
+  /// **'Observations'**
+  String get memoryObservations;
+
+  /// No description provided for @contextEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Send a message first to see its context.'**
+  String get contextEmpty;
+
+  /// No description provided for @contextUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'About {used} of {window} tokens'**
+  String contextUsage(int used, int window);
+
+  /// No description provided for @contextTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'About {count} tokens'**
+  String contextTokens(int count);
+
+  /// No description provided for @contextTools.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tools'**
+  String contextTools(int count);
+
+  /// No description provided for @terminalStarting.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting…'**
+  String get terminalStarting;
+
+  /// No description provided for @terminalNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New terminal'**
+  String get terminalNew;
+
+  /// No description provided for @terminalsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No terminals.'**
+  String get terminalsEmpty;
+
+  /// No description provided for @terminalExited.
+  ///
+  /// In en, this message translates to:
+  /// **'Exited ({code})'**
+  String terminalExited(String code);
+
+  /// No description provided for @terminalClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close terminal'**
+  String get terminalClose;
+
+  /// No description provided for @terminalReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Read only: take control to type here.'**
+  String get terminalReadOnly;
+
+  /// No description provided for @browserUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'The browser is not available on this host.'**
+  String get browserUnavailable;
+
+  /// No description provided for @browserEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No browser is open for this work.'**
+  String get browserEmpty;
+
+  /// No description provided for @browserReturn.
+  ///
+  /// In en, this message translates to:
+  /// **'Return control'**
+  String get browserReturn;
+
+  /// No description provided for @browserTake.
+  ///
+  /// In en, this message translates to:
+  /// **'Take control'**
+  String get browserTake;
+
+  /// No description provided for @browserStopRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop recording'**
+  String get browserStopRecording;
+
+  /// No description provided for @browserRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get browserRecord;
+
+  /// No description provided for @browserAgentWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent waits for you.'**
+  String get browserAgentWaiting;
+
+  /// No description provided for @browserNoFrame.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the page…'**
+  String get browserNoFrame;
+
+  /// No description provided for @browserType.
+  ///
+  /// In en, this message translates to:
+  /// **'Type and press Enter'**
+  String get browserType;
+
+  /// No description provided for @checkpointsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No checkpoints yet.'**
+  String get checkpointsEmpty;
+
+  /// No description provided for @checkpointsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Checkpoints are off for this project.'**
+  String get checkpointsOff;
+
+  /// No description provided for @checkpointsFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} files · {coverage}'**
+  String checkpointsFiles(int count, String coverage);
+
+  /// No description provided for @checkpointsPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get checkpointsPreview;
+
+  /// No description provided for @checkpointsPreviewBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{bytes} bytes copied · {excluded} left out'**
+  String checkpointsPreviewBody(int bytes, int excluded);
+
+  /// No description provided for @checkpointsJob.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovery: {state}'**
+  String checkpointsJob(String state);
+
+  /// No description provided for @checkpointsPreviewAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get checkpointsPreviewAction;
+
+  /// No description provided for @checkpointsRecover.
+  ///
+  /// In en, this message translates to:
+  /// **'Recover'**
+  String get checkpointsRecover;
+
+  /// No description provided for @checkpointsContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue in a new conversation'**
+  String get checkpointsContinue;
 }
 
 class _AppLocalizationsDelegate

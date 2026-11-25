@@ -594,4 +594,349 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get resultUnsupported =>
       'This kind of result is shown as its summary.';
+
+  @override
+  String get accessNeeded => 'Approval needed';
+
+  @override
+  String get accessOpenInBrowser =>
+      'Open this address in a browser where you are signed in, and approve:';
+
+  @override
+  String accessRequestExpires(String time) {
+    return 'The request expires at $time.';
+  }
+
+  @override
+  String get accessDenied => 'The request was denied.';
+
+  @override
+  String get accessExpired => 'The request or the access expired.';
+
+  @override
+  String get accessAsk => 'Ask for access';
+
+  @override
+  String get settingsDevices => 'Devices';
+
+  @override
+  String get accessDevicesReason =>
+      'Listing and removing paired devices needs a short approval from a browser.';
+
+  @override
+  String deviceLastUsed(String time) {
+    return 'Last used $time';
+  }
+
+  @override
+  String get deviceRevoke => 'Remove';
+
+  @override
+  String get deviceRevokeNeedsAccess =>
+      'Removing a device needs access to remove devices.';
+
+  @override
+  String get devicePair => 'Pair a new device';
+
+  @override
+  String get accessPairReason =>
+      'Pairing a new device needs a short approval from a browser.';
+
+  @override
+  String deviceRevokeTitle(String name) {
+    return 'Remove $name?';
+  }
+
+  @override
+  String get deviceRevokeBody =>
+      'It can no longer reach this Gateway until it is paired again.';
+
+  @override
+  String devicePaired(String name) {
+    return '$name is ready';
+  }
+
+  @override
+  String get devicePairOnce =>
+      'This link and code are shown only once. Open the link on the new device or scan the code.';
+
+  @override
+  String deviceExpires(String time) {
+    return 'The new device works until $time unless it is renewed.';
+  }
+
+  @override
+  String get done => 'Done';
+
+  @override
+  String get deviceName => 'Device name';
+
+  @override
+  String get devicePairAction => 'Pair';
+
+  @override
+  String get capabilityProviders =>
+      'Change model providers and their credentials';
+
+  @override
+  String get capabilityDevicesRead => 'See the list of paired devices';
+
+  @override
+  String get capabilityDevicesRevoke => 'Remove paired devices';
+
+  @override
+  String get capabilityDevicesPair =>
+      'Pair new devices that can use this Gateway';
+
+  @override
+  String approvalTitle(String device) {
+    return '$device asks for access';
+  }
+
+  @override
+  String approvalPairingLifetime(int idle, int max) {
+    return 'Each new device works for $idle days without use and at most $max days.';
+  }
+
+  @override
+  String get approvalGrantLifetime =>
+      'The access lasts 15 minutes and only on that device.';
+
+  @override
+  String get approvalApproved => 'Approved. Go back to the app.';
+
+  @override
+  String get approvalDenied => 'Denied.';
+
+  @override
+  String get approvalNotPending => 'This request is no longer waiting.';
+
+  @override
+  String get approvalDeny => 'Deny';
+
+  @override
+  String get approvalApprove => 'Approve';
+
+  @override
+  String get approvalMissing => 'This request does not exist or has expired.';
+
+  @override
+  String get panelsTitle => 'Panels';
+
+  @override
+  String get panelMore => 'More';
+
+  @override
+  String get panelFiles => 'Files';
+
+  @override
+  String get panelGit => 'Git';
+
+  @override
+  String get panelTerminal => 'Terminal';
+
+  @override
+  String get panelTasks => 'Tasks';
+
+  @override
+  String get panelMemory => 'Memory';
+
+  @override
+  String get panelBrowser => 'Browser';
+
+  @override
+  String get panelContext => 'Context';
+
+  @override
+  String get panelCheckpoints => 'Checkpoints';
+
+  @override
+  String get panelOffline =>
+      'Offline. This panel loads when the Gateway is reachable.';
+
+  @override
+  String get panelHostOffline => 'The host is offline.';
+
+  @override
+  String get panelFailed => 'This panel could not be loaded.';
+
+  @override
+  String get panelReadOnly => 'Read only: another device controls this work.';
+
+  @override
+  String get panelsOpen => 'Panels';
+
+  @override
+  String get filesRoot => 'Root';
+
+  @override
+  String get refresh => 'Refresh';
+
+  @override
+  String get filesEmpty => 'This folder is empty.';
+
+  @override
+  String get filesImageTooLarge => 'This image is too large to show.';
+
+  @override
+  String get filesBinary => 'This file is not text.';
+
+  @override
+  String get panelTruncated => 'Only the first part is shown.';
+
+  @override
+  String get gitNoDiff => 'No changes.';
+
+  @override
+  String get gitChanges => 'Changes';
+
+  @override
+  String get gitHistory => 'History';
+
+  @override
+  String get gitNoCommits => 'No commits yet.';
+
+  @override
+  String get gitClean => 'No changes.';
+
+  @override
+  String get gitNotRepo => 'This folder is not a Git repository.';
+
+  @override
+  String get gitDetached => 'No branch';
+
+  @override
+  String gitAheadBehind(String upstream, int ahead, int behind) {
+    return '$upstream · $ahead ahead · $behind behind';
+  }
+
+  @override
+  String get tasksEmpty => 'No background tasks or teammates.';
+
+  @override
+  String get tasksBackground => 'Background tasks';
+
+  @override
+  String get tasksTeam => 'Teammates';
+
+  @override
+  String get tasksStop => 'Stop';
+
+  @override
+  String get tasksNoOutput => 'No output yet.';
+
+  @override
+  String get memoryEmpty => 'Nothing remembered yet.';
+
+  @override
+  String memoryCounts(int observations, int reflections) {
+    return '$observations observations · $reflections reflections';
+  }
+
+  @override
+  String get memoryOff => 'Memory is off for this work.';
+
+  @override
+  String get memoryReflections => 'Reflections';
+
+  @override
+  String get memoryObservations => 'Observations';
+
+  @override
+  String get contextEmpty => 'Send a message first to see its context.';
+
+  @override
+  String contextUsage(int used, int window) {
+    return 'About $used of $window tokens';
+  }
+
+  @override
+  String contextTokens(int count) {
+    return 'About $count tokens';
+  }
+
+  @override
+  String contextTools(int count) {
+    return '$count tools';
+  }
+
+  @override
+  String get terminalStarting => 'Starting…';
+
+  @override
+  String get terminalNew => 'New terminal';
+
+  @override
+  String get terminalsEmpty => 'No terminals.';
+
+  @override
+  String terminalExited(String code) {
+    return 'Exited ($code)';
+  }
+
+  @override
+  String get terminalClose => 'Close terminal';
+
+  @override
+  String get terminalReadOnly => 'Read only: take control to type here.';
+
+  @override
+  String get browserUnavailable => 'The browser is not available on this host.';
+
+  @override
+  String get browserEmpty => 'No browser is open for this work.';
+
+  @override
+  String get browserReturn => 'Return control';
+
+  @override
+  String get browserTake => 'Take control';
+
+  @override
+  String get browserStopRecording => 'Stop recording';
+
+  @override
+  String get browserRecord => 'Record';
+
+  @override
+  String get browserAgentWaiting => 'The agent waits for you.';
+
+  @override
+  String get browserNoFrame => 'Waiting for the page…';
+
+  @override
+  String get browserType => 'Type and press Enter';
+
+  @override
+  String get checkpointsEmpty => 'No checkpoints yet.';
+
+  @override
+  String get checkpointsOff => 'Checkpoints are off for this project.';
+
+  @override
+  String checkpointsFiles(int count, String coverage) {
+    return '$count files · $coverage';
+  }
+
+  @override
+  String get checkpointsPreview => 'Preview';
+
+  @override
+  String checkpointsPreviewBody(int bytes, int excluded) {
+    return '$bytes bytes copied · $excluded left out';
+  }
+
+  @override
+  String checkpointsJob(String state) {
+    return 'Recovery: $state';
+  }
+
+  @override
+  String get checkpointsPreviewAction => 'Preview';
+
+  @override
+  String get checkpointsRecover => 'Recover';
+
+  @override
+  String get checkpointsContinue => 'Continue in a new conversation';
 }

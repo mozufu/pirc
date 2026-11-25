@@ -126,4 +126,11 @@ class _WebEventSocket implements EventSocket {
       _socket.close();
     }
   }
+
+  @override
+  void send(Object? message) {
+    if (_socket.readyState == web.WebSocket.OPEN) {
+      _socket.send(jsonEncode(message).toJS);
+    }
+  }
 }

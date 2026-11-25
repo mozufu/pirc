@@ -116,6 +116,9 @@ abstract interface class EventSocket {
   String? get closeReason;
 
   Future<void> close([int? code, String? reason]);
+
+  /// Sends one JSON frame (terminal and browser streams).
+  void send(Object? message);
 }
 
 /// HTTP and the event socket, one implementation per platform.

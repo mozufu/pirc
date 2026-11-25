@@ -20,8 +20,10 @@ dependencies:
   pirc_client:
   pirc_render:
   pirc_ui:
+  qr_flutter: ^4.1.0
   share_plus: ^13.3.1
   shared_preferences: ^2.5.6
+  xterm: ^4.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'connection/connection.dart';
 import 'connection/connection_screens.dart';
 import 'preferences.dart';
+import 'settings/devices_page.dart';
 import 'settings_screen.dart';
 import 'tab_screen.dart';
 
@@ -53,6 +54,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final here = state.matchedLocation;
       if (gate != null) return here == gate ? null : gate;
       if (_gatePaths.contains(here)) return ref.read(startTabProvider);
+      // `/` is only the Web build's management approval screen.
+      if (here == '/' &&
+          !(ref.read(isWebProvider) &&
+              state.uri.queryParameters.containsKey('nativeManagement'))) {
+        return ref.read(startTabProvider);
+      }
       return null;
     },
     routes: [
@@ -84,6 +91,16 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/pair',
         builder: (context, state) => const PairingScreen(),
+      ),
+      GoRoute(
+        path: '/',
+        builder: (context, state) => ManagementApprovalScreen(
+          requestId: state.uri.queryParameters['nativeManagement'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: '/settings/devices',
+        builder: (context, state) => const DevicesPage(),
       ),
       GoRoute(
         path: '/upgrade',

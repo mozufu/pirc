@@ -147,4 +147,9 @@ class _IoEventSocket implements EventSocket {
   @override
   Future<void> close([int? code, String? reason]) =>
       _socket.close(code, reason);
+
+  @override
+  void send(Object? message) {
+    if (_socket.readyState == WebSocket.open) _socket.add(jsonEncode(message));
+  }
 }

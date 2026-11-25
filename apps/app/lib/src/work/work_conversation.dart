@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../l10n/app_localizations.dart';
 import 'composer/composer.dart';
 import 'composer/composer_controller.dart';
 import 'conversation_screen.dart';
+import 'panels/panel_container.dart';
 import 'pot_bar.dart';
 import 'questions.dart';
 import 'result_reader.dart';
@@ -40,6 +43,19 @@ class WorkConversation extends ConsumerWidget {
             artifactEntry(sessionId)(context, message),
         footer: (context, view) => questionCards(sessionId, view),
         actions: (context, view) => [
+          IconButton(
+            tooltip: l10n.panelsOpen,
+            icon: const Icon(LucideIcons.panelRight),
+            onPressed: () => context.go(
+              Uri(
+                path: '/work',
+                queryParameters: {
+                  'open': sessionId,
+                  'side': panelSide(PanelSection.files),
+                },
+              ).toString(),
+            ),
+          ),
           ApprovalModeButton(
             mode: view.state?.approvalMode,
             enabled: view.control == ControlState.mine && !coordinated,

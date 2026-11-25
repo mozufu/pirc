@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../l10n/app_localizations.dart';
@@ -29,6 +30,11 @@ class SettingsScreen extends ConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 720),
           child: ListView(
             children: [
+              ListTile(
+                leading: const Icon(LucideIcons.smartphone),
+                title: Text(l10n.settingsDevices),
+                onTap: () => context.push('/settings/devices'),
+              ),
               ListTile(title: Text(l10n.language)),
               choice(
                 l10n.languageSystem,

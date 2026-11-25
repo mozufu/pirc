@@ -564,6 +564,341 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get resultUnsupported => '這種成果以摘要顯示。';
+
+  @override
+  String get accessNeeded => '需要核准';
+
+  @override
+  String get accessOpenInBrowser => '在已登入的瀏覽器開啟這個網址並核准：';
+
+  @override
+  String accessRequestExpires(String time) {
+    return '請求在 $time 過期。';
+  }
+
+  @override
+  String get accessDenied => '請求被拒絕。';
+
+  @override
+  String get accessExpired => '請求或存取權已過期。';
+
+  @override
+  String get accessAsk => '請求存取';
+
+  @override
+  String get settingsDevices => '裝置';
+
+  @override
+  String get accessDevicesReason => '列出和移除已配對的裝置，需要先在瀏覽器短暫核准。';
+
+  @override
+  String deviceLastUsed(String time) {
+    return '上次使用 $time';
+  }
+
+  @override
+  String get deviceRevoke => '移除';
+
+  @override
+  String get deviceRevokeNeedsAccess => '移除裝置需要移除裝置的存取權。';
+
+  @override
+  String get devicePair => '配對新裝置';
+
+  @override
+  String get accessPairReason => '配對新裝置需要先在瀏覽器短暫核准。';
+
+  @override
+  String deviceRevokeTitle(String name) {
+    return '移除 $name？';
+  }
+
+  @override
+  String get deviceRevokeBody => '重新配對前，它無法再連到這個 Gateway。';
+
+  @override
+  String devicePaired(String name) {
+    return '$name 已就緒';
+  }
+
+  @override
+  String get devicePairOnce => '這個連結和條碼只顯示一次。在新裝置開啟連結或掃描條碼。';
+
+  @override
+  String deviceExpires(String time) {
+    return '新裝置在 $time 前可用，除非更新。';
+  }
+
+  @override
+  String get done => '完成';
+
+  @override
+  String get deviceName => '裝置名稱';
+
+  @override
+  String get devicePairAction => '配對';
+
+  @override
+  String get capabilityProviders => '變更模型供應商與憑證';
+
+  @override
+  String get capabilityDevicesRead => '查看已配對的裝置';
+
+  @override
+  String get capabilityDevicesRevoke => '移除已配對的裝置';
+
+  @override
+  String get capabilityDevicesPair => '配對可以使用這個 Gateway 的新裝置';
+
+  @override
+  String approvalTitle(String device) {
+    return '$device 請求存取';
+  }
+
+  @override
+  String approvalPairingLifetime(int idle, int max) {
+    return '每台新裝置閒置 $idle 天後失效，最長 $max 天。';
+  }
+
+  @override
+  String get approvalGrantLifetime => '存取權維持 15 分鐘，只在那台裝置有效。';
+
+  @override
+  String get approvalApproved => '已核准，請回到 App。';
+
+  @override
+  String get approvalDenied => '已拒絕。';
+
+  @override
+  String get approvalNotPending => '這個請求已不在等待中。';
+
+  @override
+  String get approvalDeny => '拒絕';
+
+  @override
+  String get approvalApprove => '核准';
+
+  @override
+  String get approvalMissing => '這個請求不存在或已過期。';
+
+  @override
+  String get panelsTitle => '面板';
+
+  @override
+  String get panelMore => '更多';
+
+  @override
+  String get panelFiles => '檔案';
+
+  @override
+  String get panelGit => 'Git';
+
+  @override
+  String get panelTerminal => '終端';
+
+  @override
+  String get panelTasks => 'Tasks';
+
+  @override
+  String get panelMemory => '記憶';
+
+  @override
+  String get panelBrowser => '瀏覽器';
+
+  @override
+  String get panelContext => 'Context';
+
+  @override
+  String get panelCheckpoints => '檢查點';
+
+  @override
+  String get panelOffline => '離線中，連上 Gateway 後才會載入這個面板。';
+
+  @override
+  String get panelHostOffline => '主機離線。';
+
+  @override
+  String get panelFailed => '無法載入這個面板。';
+
+  @override
+  String get panelReadOnly => '唯讀：另一台裝置控制著這個工作。';
+
+  @override
+  String get panelsOpen => '面板';
+
+  @override
+  String get filesRoot => '根目錄';
+
+  @override
+  String get refresh => '重新整理';
+
+  @override
+  String get filesEmpty => '這個資料夾是空的。';
+
+  @override
+  String get filesImageTooLarge => '圖片太大，無法顯示。';
+
+  @override
+  String get filesBinary => '這不是文字檔。';
+
+  @override
+  String get panelTruncated => '只顯示前面一部分。';
+
+  @override
+  String get gitNoDiff => '沒有變更。';
+
+  @override
+  String get gitChanges => '變更';
+
+  @override
+  String get gitHistory => '歷史';
+
+  @override
+  String get gitNoCommits => '還沒有提交。';
+
+  @override
+  String get gitClean => '沒有變更。';
+
+  @override
+  String get gitNotRepo => '這個資料夾不是 Git 倉庫。';
+
+  @override
+  String get gitDetached => '沒有分支';
+
+  @override
+  String gitAheadBehind(String upstream, int ahead, int behind) {
+    return '$upstream · 領先 $ahead · 落後 $behind';
+  }
+
+  @override
+  String get tasksEmpty => '沒有背景任務或隊友。';
+
+  @override
+  String get tasksBackground => '背景任務';
+
+  @override
+  String get tasksTeam => '隊友';
+
+  @override
+  String get tasksStop => '停止';
+
+  @override
+  String get tasksNoOutput => '還沒有輸出。';
+
+  @override
+  String get memoryEmpty => '還沒有記住任何事。';
+
+  @override
+  String memoryCounts(int observations, int reflections) {
+    return '$observations 則觀察 · $reflections 則反思';
+  }
+
+  @override
+  String get memoryOff => '這個工作沒有開啟記憶。';
+
+  @override
+  String get memoryReflections => '反思';
+
+  @override
+  String get memoryObservations => '觀察';
+
+  @override
+  String get contextEmpty => '先送出訊息才能查看 context。';
+
+  @override
+  String contextUsage(int used, int window) {
+    return '約 $used / $window tokens';
+  }
+
+  @override
+  String contextTokens(int count) {
+    return '約 $count tokens';
+  }
+
+  @override
+  String contextTools(int count) {
+    return '$count 個工具';
+  }
+
+  @override
+  String get terminalStarting => '啟動中…';
+
+  @override
+  String get terminalNew => '新終端';
+
+  @override
+  String get terminalsEmpty => '沒有終端。';
+
+  @override
+  String terminalExited(String code) {
+    return '已結束（$code）';
+  }
+
+  @override
+  String get terminalClose => '關閉終端';
+
+  @override
+  String get terminalReadOnly => '唯讀：取得控制權才能輸入。';
+
+  @override
+  String get browserUnavailable => '這台主機沒有瀏覽器。';
+
+  @override
+  String get browserEmpty => '這個工作沒有開啟瀏覽器。';
+
+  @override
+  String get browserReturn => '交還控制';
+
+  @override
+  String get browserTake => '取得控制';
+
+  @override
+  String get browserStopRecording => '停止錄影';
+
+  @override
+  String get browserRecord => '錄影';
+
+  @override
+  String get browserAgentWaiting => 'agent 在等你。';
+
+  @override
+  String get browserNoFrame => '等待頁面…';
+
+  @override
+  String get browserType => '輸入後按 Enter';
+
+  @override
+  String get checkpointsEmpty => '還沒有檢查點。';
+
+  @override
+  String get checkpointsOff => '這個專案沒有開啟檢查點。';
+
+  @override
+  String checkpointsFiles(int count, String coverage) {
+    return '$count 個檔案 · $coverage';
+  }
+
+  @override
+  String get checkpointsPreview => '預覽';
+
+  @override
+  String checkpointsPreviewBody(int bytes, int excluded) {
+    return '複製 $bytes bytes · 略過 $excluded 個';
+  }
+
+  @override
+  String checkpointsJob(String state) {
+    return '復原：$state';
+  }
+
+  @override
+  String get checkpointsPreviewAction => '預覽';
+
+  @override
+  String get checkpointsRecover => '復原';
+
+  @override
+  String get checkpointsContinue => '在新對話繼續';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

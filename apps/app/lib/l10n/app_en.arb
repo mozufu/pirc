@@ -292,5 +292,239 @@
     }
   },
   "resultNoColumns": "This table has no columns.",
-  "resultUnsupported": "This kind of result is shown as its summary."
+  "resultUnsupported": "This kind of result is shown as its summary.",
+  "accessNeeded": "Approval needed",
+  "accessOpenInBrowser": "Open this address in a browser where you are signed in, and approve:",
+  "accessRequestExpires": "The request expires at {time}.",
+  "@accessRequestExpires": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "accessDenied": "The request was denied.",
+  "accessExpired": "The request or the access expired.",
+  "accessAsk": "Ask for access",
+  "settingsDevices": "Devices",
+  "accessDevicesReason": "Listing and removing paired devices needs a short approval from a browser.",
+  "deviceLastUsed": "Last used {time}",
+  "@deviceLastUsed": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceRevoke": "Remove",
+  "deviceRevokeNeedsAccess": "Removing a device needs access to remove devices.",
+  "devicePair": "Pair a new device",
+  "accessPairReason": "Pairing a new device needs a short approval from a browser.",
+  "deviceRevokeTitle": "Remove {name}?",
+  "@deviceRevokeTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceRevokeBody": "It can no longer reach this Gateway until it is paired again.",
+  "devicePaired": "{name} is ready",
+  "@devicePaired": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "devicePairOnce": "This link and code are shown only once. Open the link on the new device or scan the code.",
+  "deviceExpires": "The new device works until {time} unless it is renewed.",
+  "@deviceExpires": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "done": "Done",
+  "deviceName": "Device name",
+  "devicePairAction": "Pair",
+  "capabilityProviders": "Change model providers and their credentials",
+  "capabilityDevicesRead": "See the list of paired devices",
+  "capabilityDevicesRevoke": "Remove paired devices",
+  "capabilityDevicesPair": "Pair new devices that can use this Gateway",
+  "approvalTitle": "{device} asks for access",
+  "@approvalTitle": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalPairingLifetime": "Each new device works for {idle} days without use and at most {max} days.",
+  "@approvalPairingLifetime": {
+    "placeholders": {
+      "idle": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "approvalGrantLifetime": "The access lasts 15 minutes and only on that device.",
+  "approvalApproved": "Approved. Go back to the app.",
+  "approvalDenied": "Denied.",
+  "approvalNotPending": "This request is no longer waiting.",
+  "approvalDeny": "Deny",
+  "approvalApprove": "Approve",
+  "approvalMissing": "This request does not exist or has expired.",
+  "panelsTitle": "Panels",
+  "panelMore": "More",
+  "panelFiles": "Files",
+  "panelGit": "Git",
+  "panelTerminal": "Terminal",
+  "panelTasks": "Tasks",
+  "panelMemory": "Memory",
+  "panelBrowser": "Browser",
+  "panelContext": "Context",
+  "panelCheckpoints": "Checkpoints",
+  "panelOffline": "Offline. This panel loads when the Gateway is reachable.",
+  "panelHostOffline": "The host is offline.",
+  "panelFailed": "This panel could not be loaded.",
+  "panelReadOnly": "Read only: another device controls this work.",
+  "panelsOpen": "Panels",
+  "filesRoot": "Root",
+  "refresh": "Refresh",
+  "filesEmpty": "This folder is empty.",
+  "filesImageTooLarge": "This image is too large to show.",
+  "filesBinary": "This file is not text.",
+  "panelTruncated": "Only the first part is shown.",
+  "gitNoDiff": "No changes.",
+  "gitChanges": "Changes",
+  "gitHistory": "History",
+  "gitNoCommits": "No commits yet.",
+  "gitClean": "No changes.",
+  "gitNotRepo": "This folder is not a Git repository.",
+  "gitDetached": "No branch",
+  "gitAheadBehind": "{upstream} · {ahead} ahead · {behind} behind",
+  "@gitAheadBehind": {
+    "placeholders": {
+      "upstream": {
+        "type": "String"
+      },
+      "ahead": {
+        "type": "int"
+      },
+      "behind": {
+        "type": "int"
+      }
+    }
+  },
+  "tasksEmpty": "No background tasks or teammates.",
+  "tasksBackground": "Background tasks",
+  "tasksTeam": "Teammates",
+  "tasksStop": "Stop",
+  "tasksNoOutput": "No output yet.",
+  "memoryEmpty": "Nothing remembered yet.",
+  "memoryCounts": "{observations} observations · {reflections} reflections",
+  "@memoryCounts": {
+    "placeholders": {
+      "observations": {
+        "type": "int"
+      },
+      "reflections": {
+        "type": "int"
+      }
+    }
+  },
+  "memoryOff": "Memory is off for this work.",
+  "memoryReflections": "Reflections",
+  "memoryObservations": "Observations",
+  "contextEmpty": "Send a message first to see its context.",
+  "contextUsage": "About {used} of {window} tokens",
+  "@contextUsage": {
+    "placeholders": {
+      "used": {
+        "type": "int"
+      },
+      "window": {
+        "type": "int"
+      }
+    }
+  },
+  "contextTokens": "About {count} tokens",
+  "@contextTokens": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "contextTools": "{count} tools",
+  "@contextTools": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "terminalStarting": "Starting…",
+  "terminalNew": "New terminal",
+  "terminalsEmpty": "No terminals.",
+  "terminalExited": "Exited ({code})",
+  "@terminalExited": {
+    "placeholders": {
+      "code": {
+        "type": "String"
+      }
+    }
+  },
+  "terminalClose": "Close terminal",
+  "terminalReadOnly": "Read only: take control to type here.",
+  "browserUnavailable": "The browser is not available on this host.",
+  "browserEmpty": "No browser is open for this work.",
+  "browserReturn": "Return control",
+  "browserTake": "Take control",
+  "browserStopRecording": "Stop recording",
+  "browserRecord": "Record",
+  "browserAgentWaiting": "The agent waits for you.",
+  "browserNoFrame": "Waiting for the page…",
+  "browserType": "Type and press Enter",
+  "checkpointsEmpty": "No checkpoints yet.",
+  "checkpointsOff": "Checkpoints are off for this project.",
+  "checkpointsFiles": "{count} files · {coverage}",
+  "@checkpointsFiles": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "coverage": {
+        "type": "String"
+      }
+    }
+  },
+  "checkpointsPreview": "Preview",
+  "checkpointsPreviewBody": "{bytes} bytes copied · {excluded} left out",
+  "@checkpointsPreviewBody": {
+    "placeholders": {
+      "bytes": {
+        "type": "int"
+      },
+      "excluded": {
+        "type": "int"
+      }
+    }
+  },
+  "checkpointsJob": "Recovery: {state}",
+  "@checkpointsJob": {
+    "placeholders": {
+      "state": {
+        "type": "String"
+      }
+    }
+  },
+  "checkpointsPreviewAction": "Preview",
+  "checkpointsRecover": "Recover",
+  "checkpointsContinue": "Continue in a new conversation"
 }

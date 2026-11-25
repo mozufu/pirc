@@ -71,6 +71,9 @@ class FakeEventSocket implements EventSocket {
   String? get closeReason => null;
 
   @override
+  void send(Object? message) => sent.add(message);
+
+  @override
   Future<void> close([int? code, String? reason]) async {
     closedByClient = true;
     _closeCode ??= code ?? 1005;

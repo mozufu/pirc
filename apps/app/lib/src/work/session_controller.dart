@@ -39,6 +39,7 @@ class SessionView {
     this.events = EventConnectionState.idle,
     this.partialOutputLost = false,
     this.deleted = false,
+    this.panels = const {},
   });
 
   /// The timeline; null until the first snapshot.
@@ -54,6 +55,10 @@ class SessionView {
   /// The session was deleted elsewhere.
   final bool deleted;
 
+  /// A counter per panel section (`memory`, `git`, `checkpoints`, …) that
+  /// moves on each `panel_changed` naming it: open panels read again.
+  final Map<String, int> panels;
+
   SessionView copyWith({
     SessionState? state,
     Object? error,
@@ -63,6 +68,7 @@ class SessionView {
     EventConnectionState? events,
     bool? partialOutputLost,
     bool? deleted,
+    Map<String, int>? panels,
   }) => SessionView(
     state: state ?? this.state,
     error: error,
@@ -71,6 +77,7 @@ class SessionView {
     events: events ?? this.events,
     partialOutputLost: partialOutputLost ?? this.partialOutputLost,
     deleted: deleted ?? this.deleted,
+    panels: panels ?? this.panels,
   );
 }
 
@@ -171,9 +178,16 @@ class SessionController extends Notifier<SessionView> {
         final current = state.state;
         if (current == null) return;
         final envelope = normalizeEvent(event.raw);
-        if (envelope.event is SessionDeleted) {
-          state = state.copyWith(deleted: true);
-          return;
+        switch (envelope.event) {
+          case SessionDeleted():
+            state = state.copyWith(deleted: true);
+            return;
+          case PanelChanged(:final sections):
+            _bumpPanels(sections);
+          case CheckpointsChanged():
+            _bumpPanels(const ['checkpoints']);
+          default:
+            break;
         }
         final next = reduceEvent(current, envelope);
         state = state.copyWith(state: next);
@@ -193,6 +207,13 @@ class SessionController extends Notifier<SessionView> {
         ref.read(connectionProvider.notifier).report(error);
     }
   }
+
+  void _bumpPanels(List<String> sections) => state = state.copyWith(
+    panels: {
+      ...state.panels,
+      for (final section in sections) section: (state.panels[section] ?? 0) + 1,
+    },
+  );
 
   Future<void> _takeControlIfFree() async {
     try {
