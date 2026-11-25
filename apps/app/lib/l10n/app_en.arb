@@ -621,5 +621,45 @@
   "calendarAllowRead": "Agents may read the calendar",
   "calendarAllowPropose": "Agents may propose changes",
   "calendarAllowProposeNote": "Each change waits for your answer in the conversation.",
-  "modesNoWarnings": "The Gateway does not report mode files or their warnings yet; see its log."
+  "modesNoWarnings": "The Gateway does not report mode files or their warnings yet; see its log.",
+  "transitionTitle": "Switching hosts",
+  "transitionCancelled": "The switch was cancelled; the work stays where it was.",
+  "transitionStopping": "Stopping work on the current host",
+  "transitionRevoking": "Confirming its access is removed",
+  "transitionPreparing": "Preparing the new host",
+  "transitionSwitched": "Switched",
+  "transitionSourceOffline": "The current host is offline. Nothing starts on the new host before it confirms.",
+  "transitionNeedsAck": "Some access could not be proven removed. Review it to continue.",
+  "transitionNeedsAuthority": "The permission to switch expired. Renew it to continue.",
+  "transitionUncertain": "Not sure the last step arrived. Waiting for the host.",
+  "transitionPlanChanged": "The plan changed. Preview the switch again.",
+  "transitionAcknowledge": "Continue anyway",
+  "transitionReauthorize": "Renew permission",
+  "transitionCancel": "Cancel the switch",
+  "composerTransitioning": "Switching hosts. Your draft is kept.",
+  "envFolders": "Folders and their rights",
+  "envRead": "Read",
+  "envWrite": "Read and write",
+  "envDeny": "No access",
+  "envRevoke": "Remove",
+  "envAddFolder": "Add a folder",
+  "envFolderPath": "Folder path on the host",
+  "envSwitch": "Switch host…",
+  "envSwitchTo": "Switch to",
+  "envPreviewTitle": "Switch to {target}?",
+  "@envPreviewTitle": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "envPreviewStops": "Running work, terminals and the browser stop on the current host.",
+  "envPreviewStays": "The conversation, its tasks and your drafts stay. Files are not copied.",
+  "envConfirm": "Switch",
+  "envBlockedCrossNode": "Moving to another host is not available yet.",
+  "envBlockedPendingWork": "Work is still running here.",
+  "envBlockedNode": "The host is offline or cannot do this.",
+  "envBlockedUnchanged": "This is the current environment.",
+  "envBlockedResource": "A folder or resource is missing on the target."
 }

@@ -2132,6 +2132,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The Gateway does not report mode files or their warnings yet; see its log.'**
   String get modesNoWarnings;
+
+  /// No description provided for @transitionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switching hosts'**
+  String get transitionTitle;
+
+  /// No description provided for @transitionCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'The switch was cancelled; the work stays where it was.'**
+  String get transitionCancelled;
+
+  /// No description provided for @transitionStopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping work on the current host'**
+  String get transitionStopping;
+
+  /// No description provided for @transitionRevoking.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirming its access is removed'**
+  String get transitionRevoking;
+
+  /// No description provided for @transitionPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing the new host'**
+  String get transitionPreparing;
+
+  /// No description provided for @transitionSwitched.
+  ///
+  /// In en, this message translates to:
+  /// **'Switched'**
+  String get transitionSwitched;
+
+  /// No description provided for @transitionSourceOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'The current host is offline. Nothing starts on the new host before it confirms.'**
+  String get transitionSourceOffline;
+
+  /// No description provided for @transitionNeedsAck.
+  ///
+  /// In en, this message translates to:
+  /// **'Some access could not be proven removed. Review it to continue.'**
+  String get transitionNeedsAck;
+
+  /// No description provided for @transitionNeedsAuthority.
+  ///
+  /// In en, this message translates to:
+  /// **'The permission to switch expired. Renew it to continue.'**
+  String get transitionNeedsAuthority;
+
+  /// No description provided for @transitionUncertain.
+  ///
+  /// In en, this message translates to:
+  /// **'Not sure the last step arrived. Waiting for the host.'**
+  String get transitionUncertain;
+
+  /// No description provided for @transitionPlanChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'The plan changed. Preview the switch again.'**
+  String get transitionPlanChanged;
+
+  /// No description provided for @transitionAcknowledge.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue anyway'**
+  String get transitionAcknowledge;
+
+  /// No description provided for @transitionReauthorize.
+  ///
+  /// In en, this message translates to:
+  /// **'Renew permission'**
+  String get transitionReauthorize;
+
+  /// No description provided for @transitionCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel the switch'**
+  String get transitionCancel;
+
+  /// No description provided for @composerTransitioning.
+  ///
+  /// In en, this message translates to:
+  /// **'Switching hosts. Your draft is kept.'**
+  String get composerTransitioning;
+
+  /// No description provided for @envFolders.
+  ///
+  /// In en, this message translates to:
+  /// **'Folders and their rights'**
+  String get envFolders;
+
+  /// No description provided for @envRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get envRead;
+
+  /// No description provided for @envWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Read and write'**
+  String get envWrite;
+
+  /// No description provided for @envDeny.
+  ///
+  /// In en, this message translates to:
+  /// **'No access'**
+  String get envDeny;
+
+  /// No description provided for @envRevoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get envRevoke;
+
+  /// No description provided for @envAddFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a folder'**
+  String get envAddFolder;
+
+  /// No description provided for @envFolderPath.
+  ///
+  /// In en, this message translates to:
+  /// **'Folder path on the host'**
+  String get envFolderPath;
+
+  /// No description provided for @envSwitch.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch host…'**
+  String get envSwitch;
+
+  /// No description provided for @envSwitchTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to'**
+  String get envSwitchTo;
+
+  /// No description provided for @envPreviewTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to {target}?'**
+  String envPreviewTitle(String target);
+
+  /// No description provided for @envPreviewStops.
+  ///
+  /// In en, this message translates to:
+  /// **'Running work, terminals and the browser stop on the current host.'**
+  String get envPreviewStops;
+
+  /// No description provided for @envPreviewStays.
+  ///
+  /// In en, this message translates to:
+  /// **'The conversation, its tasks and your drafts stay. Files are not copied.'**
+  String get envPreviewStays;
+
+  /// No description provided for @envConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch'**
+  String get envConfirm;
+
+  /// No description provided for @envBlockedCrossNode.
+  ///
+  /// In en, this message translates to:
+  /// **'Moving to another host is not available yet.'**
+  String get envBlockedCrossNode;
+
+  /// No description provided for @envBlockedPendingWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Work is still running here.'**
+  String get envBlockedPendingWork;
+
+  /// No description provided for @envBlockedNode.
+  ///
+  /// In en, this message translates to:
+  /// **'The host is offline or cannot do this.'**
+  String get envBlockedNode;
+
+  /// No description provided for @envBlockedUnchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the current environment.'**
+  String get envBlockedUnchanged;
+
+  /// No description provided for @envBlockedResource.
+  ///
+  /// In en, this message translates to:
+  /// **'A folder or resource is missing on the target.'**
+  String get envBlockedResource;
 }
 
 class _AppLocalizationsDelegate

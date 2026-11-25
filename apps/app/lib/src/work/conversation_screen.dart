@@ -19,6 +19,7 @@ class ConversationParts {
     this.footer,
     this.messageBuilder,
     this.actions,
+    this.onTitleTap,
   });
 
   /// Under the timeline (the composer).
@@ -33,6 +34,9 @@ class ConversationParts {
 
   /// Top bar actions (the panel button).
   final List<Widget> Function(BuildContext context, SessionView view)? actions;
+
+  /// A tap on the name and environment line (the workspace sheet).
+  final VoidCallback? onTitleTap;
 }
 
 /// A work conversation: top bar, the timeline and what is below it.
@@ -96,7 +100,13 @@ class ConversationScreen extends ConsumerWidget {
               )
             : null,
         centerTitle: true,
-        title: session == null ? null : _Title(session: session),
+        title: session == null
+            ? null
+            : InkWell(
+                key: const Key('environment-line'),
+                onTap: parts.onTitleTap,
+                child: _Title(session: session),
+              ),
         actions: state == null ? null : parts.actions?.call(context, view),
       ),
       body: Column(

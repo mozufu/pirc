@@ -1144,4 +1144,115 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get modesNoWarnings =>
       'The Gateway does not report mode files or their warnings yet; see its log.';
+
+  @override
+  String get transitionTitle => 'Switching hosts';
+
+  @override
+  String get transitionCancelled =>
+      'The switch was cancelled; the work stays where it was.';
+
+  @override
+  String get transitionStopping => 'Stopping work on the current host';
+
+  @override
+  String get transitionRevoking => 'Confirming its access is removed';
+
+  @override
+  String get transitionPreparing => 'Preparing the new host';
+
+  @override
+  String get transitionSwitched => 'Switched';
+
+  @override
+  String get transitionSourceOffline =>
+      'The current host is offline. Nothing starts on the new host before it confirms.';
+
+  @override
+  String get transitionNeedsAck =>
+      'Some access could not be proven removed. Review it to continue.';
+
+  @override
+  String get transitionNeedsAuthority =>
+      'The permission to switch expired. Renew it to continue.';
+
+  @override
+  String get transitionUncertain =>
+      'Not sure the last step arrived. Waiting for the host.';
+
+  @override
+  String get transitionPlanChanged =>
+      'The plan changed. Preview the switch again.';
+
+  @override
+  String get transitionAcknowledge => 'Continue anyway';
+
+  @override
+  String get transitionReauthorize => 'Renew permission';
+
+  @override
+  String get transitionCancel => 'Cancel the switch';
+
+  @override
+  String get composerTransitioning => 'Switching hosts. Your draft is kept.';
+
+  @override
+  String get envFolders => 'Folders and their rights';
+
+  @override
+  String get envRead => 'Read';
+
+  @override
+  String get envWrite => 'Read and write';
+
+  @override
+  String get envDeny => 'No access';
+
+  @override
+  String get envRevoke => 'Remove';
+
+  @override
+  String get envAddFolder => 'Add a folder';
+
+  @override
+  String get envFolderPath => 'Folder path on the host';
+
+  @override
+  String get envSwitch => 'Switch host…';
+
+  @override
+  String get envSwitchTo => 'Switch to';
+
+  @override
+  String envPreviewTitle(String target) {
+    return 'Switch to $target?';
+  }
+
+  @override
+  String get envPreviewStops =>
+      'Running work, terminals and the browser stop on the current host.';
+
+  @override
+  String get envPreviewStays =>
+      'The conversation, its tasks and your drafts stay. Files are not copied.';
+
+  @override
+  String get envConfirm => 'Switch';
+
+  @override
+  String get envBlockedCrossNode =>
+      'Moving to another host is not available yet.';
+
+  @override
+  String get envBlockedPendingWork => 'Work is still running here.';
+
+  @override
+  String get envBlockedNode => 'The host is offline or cannot do this.';
+
+  @override
+  String get envBlockedUnchanged => 'This is the current environment.';
+
+  @override
+  String get envBlockedResource =>
+      'A folder or resource is missing on the target.';
 }

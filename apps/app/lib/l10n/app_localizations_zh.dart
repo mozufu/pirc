@@ -1099,6 +1099,107 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get modesNoWarnings => 'Gateway 目前不回報模式檔案和警告，請看它的記錄。';
+
+  @override
+  String get transitionTitle => '切換主機中';
+
+  @override
+  String get transitionCancelled => '已取消切換，工作留在原處。';
+
+  @override
+  String get transitionStopping => '停止原主機上的工作';
+
+  @override
+  String get transitionRevoking => '確認已撤銷原本的權限';
+
+  @override
+  String get transitionPreparing => '準備新主機';
+
+  @override
+  String get transitionSwitched => '已切換';
+
+  @override
+  String get transitionSourceOffline => '原主機離線。原主機確認前，新主機上不會開始任何事。';
+
+  @override
+  String get transitionNeedsAck => '有些權限無法證明已撤銷，請檢查後再繼續。';
+
+  @override
+  String get transitionNeedsAuthority => '切換的授權已過期，請更新後繼續。';
+
+  @override
+  String get transitionUncertain => '不確定上一步是否送達，正在等主機。';
+
+  @override
+  String get transitionPlanChanged => '計畫已變更，請重新預覽。';
+
+  @override
+  String get transitionAcknowledge => '仍然繼續';
+
+  @override
+  String get transitionReauthorize => '更新授權';
+
+  @override
+  String get transitionCancel => '取消切換';
+
+  @override
+  String get composerTransitioning => '切換主機中，草稿已保留。';
+
+  @override
+  String get envFolders => '資料夾與權限';
+
+  @override
+  String get envRead => '唯讀';
+
+  @override
+  String get envWrite => '讀寫';
+
+  @override
+  String get envDeny => '不可存取';
+
+  @override
+  String get envRevoke => '移除';
+
+  @override
+  String get envAddFolder => '加入資料夾';
+
+  @override
+  String get envFolderPath => '主機上的資料夾路徑';
+
+  @override
+  String get envSwitch => '切換主機…';
+
+  @override
+  String get envSwitchTo => '切換到';
+
+  @override
+  String envPreviewTitle(String target) {
+    return '切換到 $target？';
+  }
+
+  @override
+  String get envPreviewStops => '原主機上執行中的工作、終端和瀏覽器會停止。';
+
+  @override
+  String get envPreviewStays => '對話、任務和草稿會保留。檔案不會複製。';
+
+  @override
+  String get envConfirm => '切換';
+
+  @override
+  String get envBlockedCrossNode => '還不能移到另一台主機。';
+
+  @override
+  String get envBlockedPendingWork => '這裡還有工作在執行。';
+
+  @override
+  String get envBlockedNode => '主機離線或不支援。';
+
+  @override
+  String get envBlockedUnchanged => '這就是目前的環境。';
+
+  @override
+  String get envBlockedResource => '目標缺少資料夾或資源。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

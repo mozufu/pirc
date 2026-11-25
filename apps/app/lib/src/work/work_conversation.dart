@@ -6,7 +6,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../l10n/app_localizations.dart';
 import 'composer/composer.dart';
 import 'composer/composer_controller.dart';
+import '../connection/connection.dart';
 import 'conversation_screen.dart';
+import 'environment/environment_controller.dart';
+import 'environment/environment_ui.dart';
 import 'panels/panel_container.dart';
 import 'pot_bar.dart';
 import 'questions.dart';
@@ -33,11 +36,32 @@ class WorkConversation extends ConsumerWidget {
     // not refuse a user command first, so the app applies this rule.
     final coordinated =
         ref.watch(potWorkOfSessionProvider(sessionId))?.open ?? false;
+    // Environment switching only where the Gateway offers it.
+    final switching = ref.watch(
+      connectionProvider.select(
+        (s) => s.connection?.capabilities.environmentSwitching.usable ?? false,
+      ),
+    );
+    final transitioning =
+        switching &&
+        ref.watch(
+          environmentProvider(sessionId).select((e) => e.transitioning),
+        );
     return ConversationScreen(
       sessionId: sessionId,
       showBack: showBack,
       parts: ConversationParts(
-        banner: (context, view) => PotBar(sessionId: sessionId),
+        banner: (context, view) => Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            PotBar(sessionId: sessionId),
+            if (switching) EnvironmentBanner(sessionId: sessionId),
+          ],
+        ),
+        onTitleTap: switching
+            ? () => showWorkspaceSheet(context, ref, sessionId)
+            : null,
         messageBuilder: (context, message) =>
             potInstructionEntry(context, message) ??
             artifactEntry(sessionId)(context, message),
@@ -67,8 +91,10 @@ class WorkConversation extends ConsumerWidget {
         bottom: (context, view) => SessionComposer(
           sessionId: sessionId,
           view: view,
-          messagesAllowed: !coordinated,
-          lockedHint: l10n.composerLocked,
+          messagesAllowed: !coordinated && !transitioning,
+          lockedHint: transitioning
+              ? l10n.composerTransitioning
+              : l10n.composerLocked,
         ),
       ),
     );
