@@ -39,6 +39,15 @@ class ApiClient {
   Future<Object?> post(String path, [Object? body]) =>
       json(ApiRequest.post(path, json: body ?? const <String, Object?>{}));
 
+  Future<Object?> patch(String path, [Object? body]) =>
+      json(ApiRequest.patch(path, json: body ?? const <String, Object?>{}));
+
+  Future<Object?> put(String path, [Object? body]) =>
+      json(ApiRequest.put(path, json: body ?? const <String, Object?>{}));
+
+  Future<Object?> delete(String path, {Map<String, String> query = const {}}) =>
+      json(ApiRequest.delete(path, query: query));
+
   /// `GET /api/capabilities`.
   Future<Capabilities> capabilities() async =>
       Capabilities.fromJson(await get('/api/capabilities'));

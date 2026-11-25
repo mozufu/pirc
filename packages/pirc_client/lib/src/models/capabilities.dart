@@ -64,6 +64,7 @@ class Capabilities {
   final Map<String, Feature> features;
 
   Feature get firstSend => features['firstSend'] ?? const Feature();
+  Feature get pots => features['pots'] ?? const Feature();
   Feature get environmentSwitching =>
       features['environmentSwitching'] ?? const Feature();
 }

@@ -58,6 +58,20 @@ class AccountChanged extends ApiError {
     : super(409, 'account_changed', message, details: details);
 }
 
+/// 409 `environment_required`: a command other than Stop did not name the
+/// environment it expects (a client bug; the draft stays).
+class EnvironmentRequired extends ApiError {
+  const EnvironmentRequired(String message, {Object? details})
+    : super(409, 'environment_required', message, details: details);
+}
+
+/// 409 `taken_over`: the user took the pot work over; for a take-over that
+/// another device already made, this is success.
+class TakenOver extends ApiError {
+  const TakenOver(String message, {Object? details})
+    : super(409, 'taken_over', message, details: details);
+}
+
 /// The request did not complete: no connection, a dropped connection or a
 /// timeout. Whether the gateway acted on it is unknown.
 class TransportException extends PircException {

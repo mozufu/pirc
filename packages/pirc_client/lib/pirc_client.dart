@@ -27,7 +27,7 @@ export 'src/timeline/reducer.dart';
 export 'src/timeline/snapshot_state.dart';
 export 'src/timeline/types.dart';
 export 'src/transport/create_transport.dart';
-export 'src/transport/policy.dart' show errorFor, checked;
+export 'src/transport/policy.dart' show errorFor, checked, isManagementPath;
 export 'src/transport/transport.dart';
 
 /// The Gateway API version this client speaks (`GET /api/capabilities`).

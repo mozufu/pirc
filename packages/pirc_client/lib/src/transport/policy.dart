@@ -11,13 +11,41 @@ import 'transport.dart';
 const clientHeader = 'X-Pirc-Client';
 const requestHeader = 'X-Pirc-Request';
 const accountHeader = 'x-pirc-account';
+const managementHeader = 'x-pirc-management';
+
+/// Whether [path] is a route that needs the management grant: the same rule
+/// the Gateway uses (`/api/devices`, `/api/providers`, `/api/provider-auth`,
+/// exactly or followed by `/`, raw or percent-decoded).
+bool isManagementPath(String path) {
+  String decoded;
+  try {
+    decoded = Uri.decodeComponent(path);
+  } on ArgumentError {
+    decoded = path;
+  }
+  return [path, decoded].any(
+    (candidate) =>
+        const ['/api/devices', '/api/providers', '/api/provider-auth'].any((
+          prefix,
+        ) {
+          if (!candidate.startsWith(prefix)) return false;
+          final rest = candidate.substring(prefix.length);
+          return rest.isEmpty || rest.startsWith('/');
+        }),
+  );
+}
 
 /// Headers every request carries (no credentials; adapters add those).
 Map<String, String> policyHeaders(ApiRequest request, TransportConfig config) {
   final account = config.account?.call();
+  // The grant goes only to the routes that need it, never anywhere else.
+  final grant = isManagementPath(request.path)
+      ? config.managementGrant?.call()
+      : null;
   return {
     clientHeader: clientHeaderValue(),
     if (request.isStateChanging) requestHeader: '1',
+    if (grant != null && grant.isNotEmpty) managementHeader: grant,
     if (account != null && account.isNotEmpty)
       accountHeader: Uri.encodeComponent(account),
     if (request.json != null) 'Content-Type': 'application/json',
@@ -104,6 +132,10 @@ ApiError? errorFor(ApiResponse response) {
         return LostControl(message, details: details);
       case 'account_changed':
         return AccountChanged(message, details: details);
+      case 'environment_required':
+        return EnvironmentRequired(message, details: details);
+      case 'taken_over':
+        return TakenOver(message, details: details);
     }
   }
   return ApiError(

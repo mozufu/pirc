@@ -153,23 +153,23 @@ void main() {
     expect(reduced.messages, same(state.messages));
   });
 
-  test('only the reserved pots custom type carries trusted provenance', () {
+  test('only the reserved pot custom type carries trusted provenance', () {
     const content = '<b>literal instruction</b>';
     Map<String, Object?> raw(String role, String type) => {
       'role': role,
       'customType': type,
       'content': content,
-      'details': {'actor': 'pots'},
+      'details': {'potId': 'p1', 'potName': 'Tester'},
     };
-    final trusted = piMessage(raw('custom', 'pots-dispatch'), now: _clock)!;
+    final trusted = piMessage(raw('custom', 'pot-instruction'), now: _clock)!;
     expect(trusted.role, 'system');
-    expect(trusted.systemKind, 'pots');
-    expect(trusted.label, 'From pots');
+    expect(trusted.systemKind, 'pot-instruction');
+    expect(trusted.label, 'Tester');
     expect(trusted.content, content);
     for (final role in ['user', 'assistant', 'custom']) {
       final ordinary = piMessage(raw(role, 'ordinary-extension'), now: _clock)!;
-      expect(ordinary.systemKind, isNot('pots'));
-      expect(ordinary.label, isNot('From pots'));
+      expect(ordinary.systemKind, isNot('pot-instruction'));
+      expect(ordinary.pot, isNull);
     }
   });
 }

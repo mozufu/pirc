@@ -21,6 +21,8 @@ class Session {
     this.createdAt = 0,
     this.updatedAt = 0,
     this.binding,
+    this.origin,
+    this.writeLease = false,
   });
 
   factory Session.fromJson(Object? json) => Session(
@@ -38,6 +40,8 @@ class Session {
     createdAt: number(field(json, 'createdAt')) ?? 0,
     updatedAt: number(field(json, 'updatedAt')) ?? 0,
     binding: ExpectedBinding.maybe(field(json, 'binding')),
+    origin: SessionOrigin.maybe(field(json, 'origin')),
+    writeLease: truthy(field(json, 'writeLease')),
   );
 
   final String id;
@@ -59,6 +63,12 @@ class Session {
   /// Durable environment identity; commands echo it as `expectedBinding`.
   final ExpectedBinding? binding;
 
+  /// What started the session when the user did not; null for the user's own.
+  final SessionOrigin? origin;
+
+  /// Some client holds the control lease (`writeLease` in session lists).
+  final bool writeLease;
+
   bool get pinned => pinnedAt != null;
   bool get settled => settledAt != null;
 
@@ -77,5 +87,35 @@ class Session {
     createdAt: createdAt,
     updatedAt: updatedAt,
     binding: binding,
+    origin: origin,
+    writeLease: writeLease,
   );
+}
+
+/// What started a session other than the user. Only schedules are mapped:
+/// other kinds (the old delegations) are ignored.
+@immutable
+class SessionOrigin {
+  const SessionOrigin.schedule({
+    required this.scheduleId,
+    required this.title,
+    this.dueAt,
+  });
+
+  static SessionOrigin? maybe(Object? json) {
+    if (str(field(json, 'kind')) != 'schedule') return null;
+    final scheduleId = text(field(json, 'scheduleId'));
+    if (scheduleId == null) return null;
+    return SessionOrigin.schedule(
+      scheduleId: scheduleId,
+      title: str(field(json, 'title')) ?? '',
+      dueAt: number(field(json, 'dueAt')),
+    );
+  }
+
+  /// Always `schedule` today.
+  String get kind => 'schedule';
+  final String scheduleId;
+  final String title;
+  final int? dueAt;
 }

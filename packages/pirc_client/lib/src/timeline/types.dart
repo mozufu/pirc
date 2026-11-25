@@ -181,6 +181,7 @@ class Message {
     this.meta,
     this.entryId,
     this.branches = const [],
+    this.pot,
   });
 
   final String id;
@@ -204,7 +205,7 @@ class Message {
   final List<InlineImage> images;
 
   /// For system entries: notice, compaction, branch, bash, custom, team,
-  /// background, pots.
+  /// background, pot-instruction.
   final String? systemKind;
 
   /// For notices and bash runs: info, warning, error.
@@ -213,6 +214,10 @@ class Message {
   final String? meta;
   final String? entryId;
   final List<MessageBranch> branches;
+
+  /// For `pot-instruction` entries: which pot sent the instruction, from the
+  /// message's `details` (never from its text).
+  final PotInstruction? pot;
 
   /// `null` arguments keep the current value.
   Message copyWith({
@@ -241,7 +246,23 @@ class Message {
     meta: meta,
     entryId: entryId,
     branches: branches,
+    pot: pot,
   );
+}
+
+/// The sender of a `pot-instruction` message (`details` of the message).
+class PotInstruction {
+  const PotInstruction({
+    required this.potId,
+    required this.potName,
+    this.workId,
+    this.instructionId,
+  });
+
+  final String potId;
+  final String potName;
+  final String? workId;
+  final String? instructionId;
 }
 
 class RunState {

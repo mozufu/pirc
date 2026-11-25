@@ -79,6 +79,12 @@ class HintMessage extends EventMessage {
     'memory_changed',
     'schedules_changed',
     'sessions_changed',
+    'pots_changed',
+    'threads_changed',
+    'approvals_changed',
+    'activity_changed',
+    'budget_requests_changed',
+    'notifications_changed',
   };
 
   final String type;

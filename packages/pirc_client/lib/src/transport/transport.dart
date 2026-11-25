@@ -20,7 +20,12 @@ class ApiRequest {
     : this('GET', path, query: query);
   const ApiRequest.post(String path, {Object? json})
     : this('POST', path, json: json);
-  const ApiRequest.delete(String path) : this('DELETE', path);
+  const ApiRequest.delete(String path, {Map<String, String> query = const {}})
+    : this('DELETE', path, query: query);
+  const ApiRequest.patch(String path, {Object? json})
+    : this('PATCH', path, json: json);
+  const ApiRequest.put(String path, {Object? json})
+    : this('PUT', path, json: json);
   const ApiRequest.putBytes(
     String path,
     List<int> bytes, {
@@ -83,13 +88,22 @@ class StaticTokenStore implements TokenStore {
 /// What both adapters share.
 @immutable
 class TransportConfig {
-  const TransportConfig({required this.baseUri, this.account});
+  const TransportConfig({
+    required this.baseUri,
+    this.account,
+    this.managementGrant,
+  });
 
   /// The gateway origin (`https://pirc.example`); on the web, the page origin.
   final Uri baseUri;
 
   /// The signed-in account, sent as `x-pirc-account` when known.
   final String? Function()? account;
+
+  /// The management grant, held in memory only. It is sent as
+  /// `x-pirc-management` to `/api/devices*`, `/api/providers*` and
+  /// `/api/provider-auth/*` and never to another path.
+  final String? Function()? managementGrant;
 }
 
 /// An open `/api/events` socket.

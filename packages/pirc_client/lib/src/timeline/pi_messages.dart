@@ -246,16 +246,35 @@ Message? piMessage(Object? json, {String? id, Now now = systemNow}) {
 Message? _custom(Map<String, Object?> raw, String id, int createdAt) {
   if (raw['display'] == false) return null;
   final type = text(raw['customType']);
-  // Backend-reserved provenance. Never infer it from content or details.actor.
-  if (type == 'pots-dispatch') {
-    return Message(
-      id: id,
-      role: 'system',
-      systemKind: 'pots',
-      label: 'From pots',
-      content: contentText(raw['content']),
-      createdAt: createdAt,
-    );
+  // Backend-reserved provenance: the pot comes from `details`, which only the
+  // gateway writes for this type. Never infer it from the text.
+  if (type == 'pot-instruction') {
+    final details = raw['details'];
+    final potId = text(field(details, 'potId'));
+    final potName = str(field(details, 'potName'));
+    if (potId != null && potName != null && potName.isNotEmpty) {
+      final body = contentText(raw['content']);
+      // The gateway prefixes the text it gives the model; the tag says it.
+      final preamble =
+          'Instruction from $potName, a pot coordinating this work for the '
+          'user:\n\n';
+      return Message(
+        id: id,
+        role: 'system',
+        systemKind: 'pot-instruction',
+        label: potName,
+        content: body.startsWith(preamble)
+            ? body.substring(preamble.length)
+            : body,
+        createdAt: createdAt,
+        pot: PotInstruction(
+          potId: potId,
+          potName: potName,
+          workId: text(field(details, 'workId')),
+          instructionId: text(field(details, 'instructionId')),
+        ),
+      );
+    }
   }
   final team = type == 'agent-team';
   final background =
