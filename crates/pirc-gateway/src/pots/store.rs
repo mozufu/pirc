@@ -789,6 +789,10 @@ pub struct Settings {
     pub loop_fanout: u32,
     pub loop_no_progress_wakes: u32,
     pub loop_no_progress_messages: u32,
+    /// Rate ceilings: delivery waits while a pair or root is over them.
+    pub loop_pair_messages_minute: u32,
+    pub loop_pair_messages_hour: u32,
+    pub loop_root_wakes_minute: u32,
     pub handback_cooldown_s: u32,
     #[serde(default)]
     pub revision: i64,
@@ -802,7 +806,9 @@ pub fn settings(conn: &Connection, owner: &str) -> ApiResult<Settings> {
     Ok(conn.query_row(
         "SELECT cap_money_month_micros,cap_tokens_day,on_exhausted,activity_retention_days,
           count_subscription_money,loop_depth,loop_fanout,loop_no_progress_wakes,
-          loop_no_progress_messages,handback_cooldown_s,revision FROM pot_settings WHERE owner_user=?1",
+          loop_no_progress_messages,loop_pair_messages_minute,loop_pair_messages_hour,
+          loop_root_wakes_minute,handback_cooldown_s,revision
+         FROM pot_settings WHERE owner_user=?1",
         [owner],
         |r| {
             Ok(Settings {
@@ -815,8 +821,11 @@ pub fn settings(conn: &Connection, owner: &str) -> ApiResult<Settings> {
                 loop_fanout: r.get(6)?,
                 loop_no_progress_wakes: r.get(7)?,
                 loop_no_progress_messages: r.get(8)?,
-                handback_cooldown_s: r.get(9)?,
-                revision: r.get(10)?,
+                loop_pair_messages_minute: r.get(9)?,
+                loop_pair_messages_hour: r.get(10)?,
+                loop_root_wakes_minute: r.get(11)?,
+                handback_cooldown_s: r.get(12)?,
+                revision: r.get(13)?,
             })
         },
     )?)
@@ -831,8 +840,9 @@ pub fn update_settings(conn: &mut Connection, owner: &str, next: Settings) -> Ap
     let changed = tx.execute(
         "UPDATE pot_settings SET cap_money_month_micros=?1,cap_tokens_day=?2,on_exhausted=?3,
           activity_retention_days=?4,count_subscription_money=?5,loop_depth=?6,loop_fanout=?7,
-          loop_no_progress_wakes=?8,loop_no_progress_messages=?9,handback_cooldown_s=?10,
-          revision=revision+1 WHERE owner_user=?11",
+          loop_no_progress_wakes=?8,loop_no_progress_messages=?9,
+          loop_pair_messages_minute=?10,loop_pair_messages_hour=?11,loop_root_wakes_minute=?12,
+          handback_cooldown_s=?13,revision=revision+1 WHERE owner_user=?14",
         params![
             next.cap_money_month_micros as i64,
             next.cap_tokens_day as i64,
@@ -843,6 +853,9 @@ pub fn update_settings(conn: &mut Connection, owner: &str, next: Settings) -> Ap
             next.loop_fanout,
             next.loop_no_progress_wakes,
             next.loop_no_progress_messages,
+            next.loop_pair_messages_minute,
+            next.loop_pair_messages_hour,
+            next.loop_root_wakes_minute,
             next.handback_cooldown_s,
             owner,
         ],

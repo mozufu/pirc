@@ -64,6 +64,10 @@ impl App {
         self.hints.budget_requests.notify(&user.to_owned());
     }
 
+    pub fn causal_roots_changed(&self, user: &str) {
+        self.hints.causal_roots.notify(&user.to_owned());
+    }
+
     pub fn schedules_changed(&self, user: &str) {
         self.hints.schedules.notify(&user.to_owned());
     }
@@ -301,6 +305,13 @@ impl App {
                 let _ = conn.mark_session_activity(session_id);
                 observed.push((session_id.clone(), finished));
             }
+            if finished && let Err(error) = crate::pots::roots::work_run_finished(&conn, session_id)
+            {
+                crate::log::warn(&format!(
+                    "loop guard work progress for {session_id}: {}",
+                    error.message
+                ));
+            }
             if let Ok(session) = conn.get_session(session_id)
                 && let Some(owner) = session.owner_user
                 && !owners.contains(&owner)
@@ -310,6 +321,7 @@ impl App {
         }
         for owner in owners {
             self.sessions_changed(Some(&owner));
+            self.causal_roots_changed(&owner);
         }
         let occurrence = crate::util::now_ms().to_string();
         for (session_id, finished) in observed {

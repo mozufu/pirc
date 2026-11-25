@@ -634,6 +634,14 @@ pub fn apply(
                 source: Source::Handover,
                 thread_id: Some(&thread.id),
                 causal_root: None,
+                depth: 0,
+                from_pot: None,
+                caused_by: None,
+                purpose: super::guard::purpose(
+                    &format!("pot:{pot_id}"),
+                    "handover",
+                    &format!("handover:{id}"),
+                ),
                 content: &format!(
                     "The user handed you these from {}:\n{}\n\nYou act on them with your own permissions.",
                     from.input.profile.name,

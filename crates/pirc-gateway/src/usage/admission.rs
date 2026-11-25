@@ -31,6 +31,8 @@ pub struct Reservation {
     pub pot_id: String,
     pub node_id: String,
     pub node_session: String,
+    /// The causal root this request charges, when it belongs to one.
+    pub root_id: Option<String>,
     pub windows: Windows,
     pub money_micros: i64,
     pub tokens: i64,
@@ -150,6 +152,7 @@ pub fn reserve(
     let tx = rusqlite::Transaction::new_unchecked(conn, TransactionBehavior::Immediate)?;
     // A request can no longer be alive after the inference timeout; keep its
     // upper bound as an unknown charge instead of blocking the window.
+    crate::pots::roots::expire_stale(&tx, now_ms() - STALE_MS)?;
     tx.execute(
         "UPDATE budget_reservations
          SET state='charged',actual_money_micros=money_micros,actual_tokens=tokens,settled_at=?1
@@ -236,6 +239,19 @@ pub fn reserve(
             }));
         }
     }
+    // The causal root's budget covers every child of the root; holding in the
+    // same transaction is what stops two parallel children overspending it.
+    if let Some(root_id) = &reservation.root_id
+        && let Some(exhaustion) = crate::pots::roots::hold(
+            &tx,
+            root_id,
+            &reservation.id,
+            reservation.money_micros,
+            reservation.tokens,
+        )?
+    {
+        return Ok(Some(exhaustion));
+    }
     tx.execute(
         "INSERT INTO budget_reservations(id,owner_user,pot_id,node_id,node_session,
            month_start,month_end,day_start,day_end,money_micros,tokens,
@@ -274,7 +290,7 @@ pub fn begin(
     node_session: &str,
     request: &InferenceRequest,
 ) -> crate::error::ApiResult<Option<Reservation>> {
-    let (who, windows, caps) = {
+    let (who, windows, caps, root_id) = {
         let db = app.db.lock();
         let who = usage::attribute(&db, node_id, node_session)?;
         if who.actor_kind != "pot" {
@@ -285,7 +301,11 @@ pub fn begin(
         };
         let windows = budget::windows(&app.config.timezone, now_ms());
         let caps = budget::caps(&db, &owner, &pot_id)?;
-        (who, windows, caps)
+        let root_id = match &who.session {
+            Some(session) => crate::pots::roots::session_root(&db, &owner, &pot_id, session)?,
+            None => None,
+        };
+        (who, windows, caps, root_id)
     };
     let owner = who.owner.expect("checked above");
     let pot_id = who.actor_id.expect("checked above");
@@ -303,6 +323,7 @@ pub fn begin(
         pot_id: pot_id.clone(),
         node_id: node_id.to_owned(),
         node_session: node_session.to_owned(),
+        root_id,
         windows,
         money_micros: bound.money_micros,
         tokens: bound.tokens,
@@ -358,11 +379,26 @@ pub fn cancel(app: &AppState, reservation: Option<&Reservation>) {
     let Some(reservation) = reservation else {
         return;
     };
-    if let Err(error) = app.db.lock().execute(
+    let removed = app.db.lock().execute(
         "DELETE FROM budget_reservations WHERE id=?1 AND state='held'",
         [&reservation.id],
-    ) {
-        crate::log::warn(&format!("budget reservation {}: {error}", reservation.id));
+    );
+    match removed {
+        Ok(1) => {
+            if let Some(root_id) = &reservation.root_id {
+                crate::pots::roots::release(
+                    &app.db.lock(),
+                    &reservation.id,
+                    root_id,
+                    reservation.money_micros,
+                    reservation.tokens,
+                );
+            }
+        }
+        Ok(_) => {}
+        Err(error) => {
+            crate::log::warn(&format!("budget reservation {}: {error}", reservation.id));
+        }
     }
 }
 
@@ -380,7 +416,7 @@ fn settle(app: &AppState, reservation: &Reservation, usage: Option<&Usage>) {
     };
     let result = {
         let db = app.db.lock();
-        db.execute(
+        let changed = db.execute(
             "UPDATE budget_reservations
              SET state=?1,actual_money_micros=?2,actual_tokens=?3,settled_at=?4
              WHERE id=?5 AND state='held'",
@@ -391,7 +427,24 @@ fn settle(app: &AppState, reservation: &Reservation, usage: Option<&Usage>) {
                 now_ms(),
                 reservation.id,
             ],
-        )
+        );
+        if changed.as_ref().is_ok_and(|changed| *changed == 1)
+            && let Some(root_id) = &reservation.root_id
+        {
+            crate::pots::roots::settle(
+                &db,
+                &reservation.id,
+                root_id,
+                reservation.money_micros,
+                reservation.tokens,
+                money,
+                tokens,
+            )
+            .unwrap_or_else(|error| {
+                crate::log::warn(&format!("root {root_id} settlement: {error}"));
+            });
+        }
+        changed
     };
     if let Err(error) = result {
         crate::log::warn(&format!("could not settle budget reservation: {error}"));
@@ -473,6 +526,7 @@ mod tests {
             pot_id: "pot".into(),
             node_id: "node".into(),
             node_session: "remote".into(),
+            root_id: None,
             windows: budget::windows("UTC", 0),
             money_micros: 0,
             tokens: 100,

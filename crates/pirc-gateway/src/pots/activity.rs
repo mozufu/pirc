@@ -120,6 +120,9 @@ pub struct Refs {
     /// A budget request id, or the key of a logged exhaustion window.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub budget: Option<String>,
+    /// A causal root (`plans/pots.md`, Budgets and the causal root).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub root: Option<String>,
 }
 
 /// One activity to record.

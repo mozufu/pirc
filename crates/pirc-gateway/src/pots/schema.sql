@@ -95,6 +95,10 @@ CREATE TABLE pot_settings (
  loop_fanout INTEGER NOT NULL DEFAULT 4 CHECK(loop_fanout BETWEEN 1 AND 16),
  loop_no_progress_wakes INTEGER NOT NULL DEFAULT 12 CHECK(loop_no_progress_wakes BETWEEN 2 AND 1000),
  loop_no_progress_messages INTEGER NOT NULL DEFAULT 30 CHECK(loop_no_progress_messages BETWEEN 2 AND 10000),
+ -- Rate ceilings: delivery waits while a pair or root is over them.
+ loop_pair_messages_minute INTEGER NOT NULL DEFAULT 12 CHECK(loop_pair_messages_minute BETWEEN 1 AND 1000),
+ loop_pair_messages_hour INTEGER NOT NULL DEFAULT 120 CHECK(loop_pair_messages_hour BETWEEN 1 AND 100000),
+ loop_root_wakes_minute INTEGER NOT NULL DEFAULT 20 CHECK(loop_root_wakes_minute BETWEEN 1 AND 1000),
  handback_cooldown_s INTEGER NOT NULL DEFAULT 3600 CHECK(handback_cooldown_s BETWEEN 0 AND 604800),
  revision INTEGER NOT NULL DEFAULT 1
 );
@@ -107,6 +111,13 @@ CREATE TABLE pot_wakes (
  source TEXT NOT NULL CHECK(source IN ('user','group','dm','event','approval','handover','reminder','review','budget')),
  thread_id TEXT,
  causal_root TEXT,
+ -- The root's first wake is depth 0; each pot message or work start adds one.
+ depth INTEGER NOT NULL DEFAULT 0 CHECK(depth>=0),
+ -- The pot whose message caused this wake, and that wake's id (fan-out).
+ from_pot TEXT,
+ caused_by TEXT,
+ -- Structured purpose (target, action, source) for repeated-purpose detection.
+ purpose_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(purpose_json)),
  content TEXT NOT NULL CHECK(length(content) BETWEEN 1 AND 100000),
  details_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(details_json)),
  state TEXT NOT NULL DEFAULT 'queued' CHECK(state IN ('queued','delivering','delivered','settled','failed')),
@@ -178,6 +189,9 @@ CREATE TABLE model_approvals (
  provider TEXT NOT NULL CHECK(length(provider) BETWEEN 1 AND 100),
  model TEXT NOT NULL CHECK(length(model) BETWEEN 1 AND 200),
  thinking TEXT CHECK(thinking IS NULL OR thinking IN ('off','minimal','low','medium','high','xhigh')),
+ -- The causal root of the wake that asked, so the answer continues it.
+ causal_root TEXT,
+ depth INTEGER NOT NULL DEFAULT 0 CHECK(depth>=0),
  -- The pot's reason for this start.
  reason TEXT NOT NULL DEFAULT '' CHECK(length(reason)<=2000),
  estimate_micros INTEGER NOT NULL DEFAULT 0 CHECK(estimate_micros>=0),
@@ -229,6 +243,8 @@ CREATE TABLE pot_works (
  provider TEXT NOT NULL,
  model TEXT NOT NULL,
  thinking TEXT,
+ -- The root that started this work; its session's requests charge it.
+ causal_root TEXT,
  -- taken_over: the user took it; the pot may no longer send into it.
  state TEXT NOT NULL DEFAULT 'open' CHECK(state IN ('open','taken_over')),
  created_at INTEGER NOT NULL,
@@ -240,6 +256,8 @@ CREATE INDEX pot_works_owner ON pot_works(owner_user, created_at DESC);
 CREATE TABLE pot_work_instructions (
  id TEXT PRIMARY KEY,
  work_id TEXT NOT NULL REFERENCES pot_works(id) ON DELETE CASCADE,
+ -- The root of the wake that sent it (work keeps charging its start root).
+ causal_root TEXT,
  body TEXT NOT NULL CHECK(length(body) BETWEEN 1 AND 32768),
  state TEXT NOT NULL CHECK(state IN ('sending','delivered','refused','uncertain')),
  error TEXT,
@@ -281,6 +299,9 @@ CREATE TABLE budget_requests (
  amount_micros INTEGER CHECK(amount_micros IS NULL OR amount_micros>=0),
  tokens INTEGER CHECK(tokens IS NULL OR tokens>=0),
  reason TEXT NOT NULL DEFAULT '' CHECK(length(reason)<=2000),
+ -- The causal root of the wake that asked; the answer continues it.
+ causal_root TEXT,
+ depth INTEGER NOT NULL DEFAULT 0 CHECK(depth>=0),
  state TEXT NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','approved','approved_amount','denied')),
  approved_amount_micros INTEGER CHECK(approved_amount_micros IS NULL OR approved_amount_micros>=0),
  approved_tokens INTEGER CHECK(approved_tokens IS NULL OR approved_tokens>=0),
@@ -381,3 +402,58 @@ CREATE TABLE pot_handover_items (
  PRIMARY KEY(handover_id, kind, ref)
 );
 CREATE INDEX pot_handover_items_key ON pot_handover_items(item_key);
+-- One causal root per user message, observed event, autonomy review or
+-- reminder (plans/pots.md, Budgets and the causal root): every wake, pot
+-- message, work start and model request it causes shares its depth and
+-- fan-out limits and its budget. New work never resets its accounting.
+CREATE TABLE causal_roots (
+ id TEXT PRIMARY KEY,
+ owner_user TEXT NOT NULL,
+ origin_kind TEXT NOT NULL CHECK(origin_kind IN ('user_message','event','review','reminder')),
+ origin_ref TEXT NOT NULL,
+ -- Where the user sees it: the message's thread, else the initiator's direct thread.
+ thread_id TEXT,
+ initiator_pot TEXT NOT NULL REFERENCES pots(id) ON DELETE CASCADE,
+ depth_limit INTEGER NOT NULL CHECK(depth_limit BETWEEN 1 AND 16),
+ fanout_limit INTEGER NOT NULL CHECK(fanout_limit BETWEEN 1 AND 16),
+ budget_money_micros INTEGER NOT NULL DEFAULT 0 CHECK(budget_money_micros>=0),
+ budget_tokens INTEGER NOT NULL DEFAULT 0 CHECK(budget_tokens>=0),
+ spent_money_micros INTEGER NOT NULL DEFAULT 0 CHECK(spent_money_micros>=0),
+ spent_tokens INTEGER NOT NULL DEFAULT 0 CHECK(spent_tokens>=0),
+ reserved_money_micros INTEGER NOT NULL DEFAULT 0 CHECK(reserved_money_micros>=0),
+ reserved_tokens INTEGER NOT NULL DEFAULT 0 CHECK(reserved_tokens>=0),
+ state TEXT NOT NULL DEFAULT 'active' CHECK(state IN ('active','suspended','stopped')),
+ -- Why the loop guard suspended it, and since when delivery has waited.
+ suspend_reason TEXT,
+ suspended_at INTEGER,
+ blocked_since INTEGER,
+ last_progress_at INTEGER NOT NULL,
+ created_at INTEGER NOT NULL
+);
+CREATE INDEX causal_roots_owner ON causal_roots(owner_user, created_at DESC);
+-- What a root caused, for the loop guard: wakes and messages count towards
+-- the no-progress streak and the rate ceilings; progress rows only explain it.
+CREATE TABLE causal_root_events (
+ id TEXT PRIMARY KEY,
+ root_id TEXT NOT NULL REFERENCES causal_roots(id) ON DELETE CASCADE,
+ at INTEGER NOT NULL,
+ kind TEXT NOT NULL CHECK(kind IN ('wake','message','progress')),
+ -- The wake's receiver, or the message's sender.
+ pot_id TEXT NOT NULL,
+ -- The other pot of the pair (a wake's sender, a message's receiver).
+ peer_pot_id TEXT,
+ purpose_json TEXT NOT NULL DEFAULT '{}' CHECK(json_valid(purpose_json))
+);
+CREATE INDEX causal_root_events_root ON causal_root_events(root_id, at);
+CREATE INDEX causal_root_events_pair ON causal_root_events(pot_id, peer_pot_id, at);
+-- The root each held model reservation belongs to (plans/usage.md, Budget
+-- admission): a restart or a timed-out request must still reconcile the
+-- root's reserved budget with its spent budget.
+CREATE TABLE root_reservations (
+ reservation_id TEXT PRIMARY KEY,
+ root_id TEXT NOT NULL REFERENCES causal_roots(id) ON DELETE CASCADE,
+ money_micros INTEGER NOT NULL CHECK(money_micros>=0),
+ tokens INTEGER NOT NULL CHECK(tokens>=0),
+ created_at INTEGER NOT NULL
+);
+CREATE INDEX root_reservations_root ON root_reservations(root_id);

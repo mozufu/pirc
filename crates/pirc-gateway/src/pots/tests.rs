@@ -237,6 +237,10 @@ fn settings_have_finite_defaults_and_range_checks() {
     assert_eq!(defaults.cap_money_month_micros, 0);
     assert_eq!(defaults.activity_retention_days, 90);
     assert_eq!(defaults.loop_no_progress_wakes, 12);
+    assert_eq!(defaults.loop_no_progress_messages, 30);
+    assert_eq!(defaults.loop_pair_messages_minute, 12);
+    assert_eq!(defaults.loop_pair_messages_hour, 120);
+    assert_eq!(defaults.loop_root_wakes_minute, 20);
     assert!(!defaults.count_subscription_money);
     let mut next = defaults.clone();
     next.cap_money_month_micros = 50_000_000;
@@ -472,6 +476,10 @@ mod exhaustion {
                 source: Source::User,
                 thread_id: None,
                 causal_root: None,
+                depth: 0,
+                from_pot: None,
+                caused_by: None,
+                purpose: json!({}),
                 content: "Please look at this",
                 details: json!({}),
             },
@@ -642,6 +650,101 @@ mod http {
             .await
             .0,
             404
+        );
+    }
+
+    #[tokio::test]
+    async fn causal_roots_are_read_resumed_and_stopped_by_their_owner_only() {
+        let (app, _dir) = app();
+        let pot = create_pot(&app).await;
+        let (_, thread) = call(
+            &app,
+            "GET",
+            &format!("/api/pots/{pot}/thread"),
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        let thread_id = thread["thread"]["id"].as_str().unwrap().to_owned();
+        let (status, posted) = call(
+            &app,
+            "POST",
+            &format!("/api/threads/{thread_id}/messages"),
+            Some("alice"),
+            None,
+            Some(json!({ "body": "Go" })),
+        )
+        .await;
+        assert_eq!(status, 201, "{posted}");
+        let root_id: String = app
+            .db
+            .lock()
+            .query_row(
+                "SELECT id FROM causal_roots WHERE initiator_pot=?1",
+                [&pot],
+                |r| r.get(0),
+            )
+            .unwrap();
+        let path = format!("/api/causal-roots/{root_id}");
+        let (status, read) = call(&app, "GET", &path, Some("alice"), None, None).await;
+        assert_eq!(status, 200, "{read}");
+        assert_eq!(read["causalRoot"]["originKind"], "user_message");
+        assert_eq!(read["causalRoot"]["state"], "active");
+        assert_eq!(
+            call(&app, "GET", &path, Some("bob"), None, None).await.0,
+            404
+        );
+        // Only a suspension is resumable.
+        app.db
+            .lock()
+            .execute(
+                "UPDATE causal_roots SET state='suspended' WHERE id=?1",
+                [&root_id],
+            )
+            .unwrap();
+        let (status, resumed) = call(
+            &app,
+            "POST",
+            &format!("{path}/resume"),
+            Some("alice"),
+            None,
+            Some(json!({})),
+        )
+        .await;
+        assert_eq!(status, 200, "{resumed}");
+        assert_eq!(resumed["causalRoot"]["state"], "active");
+        let (status, stopped) = call(
+            &app,
+            "POST",
+            &format!("{path}/stop"),
+            Some("alice"),
+            None,
+            Some(json!({})),
+        )
+        .await;
+        assert_eq!(status, 200, "{stopped}");
+        assert_eq!(stopped["causalRoot"]["state"], "stopped");
+        let wake: String = app
+            .db
+            .lock()
+            .query_row("SELECT state FROM pot_wakes WHERE pot_id=?1", [&pot], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(wake, "failed");
+        assert_eq!(
+            call(
+                &app,
+                "POST",
+                &format!("{path}/resume"),
+                Some("alice"),
+                None,
+                Some(json!({})),
+            )
+            .await
+            .0,
+            409
         );
     }
 
@@ -1292,6 +1395,10 @@ mod runtime {
                 source: Source::User,
                 thread_id: Some("thread-1"),
                 causal_root: None,
+                depth: 0,
+                from_pot: None,
+                caused_by: None,
+                purpose: json!({}),
                 content: text,
                 details: json!({ "from": "user" }),
             },
@@ -1707,6 +1814,10 @@ mod autonomy {
                 source: Source::User,
                 thread_id: None,
                 causal_root: None,
+                depth: 0,
+                from_pot: None,
+                caused_by: None,
+                purpose: json!({}),
                 content: "Hello",
                 details: json!({}),
             },
@@ -1730,6 +1841,10 @@ mod autonomy {
                 source: Source::Review,
                 thread_id: None,
                 causal_root: None,
+                depth: 0,
+                from_pot: None,
+                caused_by: None,
+                purpose: json!({}),
                 content: "Review",
                 details: json!({}),
             },
@@ -2121,11 +2236,12 @@ mod threads {
             threads::direct(&conn, "bob", &tester).unwrap_err().status,
             404
         );
-        let (message, woken) =
+        let posted =
             threads::post_user(&conn, "alice", &thread.id, "How did it go?", vec![], false)
                 .unwrap();
+        let message = posted.message;
         assert_eq!((message.seq, message.author_kind.as_str()), (1, "user"));
-        assert_eq!(woken, vec![tester.clone()]);
+        assert_eq!(posted.woken, vec![tester.clone()]);
         let wakes = queued(&conn, &tester);
         assert_eq!(wakes[0].0, "user");
         assert!(wakes[0].1.ends_with("How did it go?"), "{}", wakes[0].1);
@@ -2194,7 +2310,7 @@ mod threads {
         let post = |body: &str, mentions: Vec<String>, all: bool| {
             let mut woken = threads::post_user(&conn, "alice", &group.id, body, mentions, all)
                 .unwrap()
-                .1;
+                .woken;
             woken.sort();
             woken
         };
@@ -2238,7 +2354,7 @@ mod threads {
 
         // A pot's mention wakes only members its and their DM rules allow,
         // and a pot can never address everyone.
-        let (_, woken) = threads::post_pot(
+        let posted = threads::post_pot(
             &conn,
             "alice",
             &host,
@@ -2248,8 +2364,8 @@ mod threads {
             None,
         )
         .unwrap();
-        assert_eq!(woken, vec![member.clone()]);
-        let (_, woken) = threads::post_pot(
+        assert_eq!(posted.woken, vec![member.clone()]);
+        let posted = threads::post_pot(
             &conn,
             "alice",
             &host,
@@ -2259,7 +2375,7 @@ mod threads {
             None,
         )
         .unwrap();
-        assert!(woken.is_empty());
+        assert!(posted.woken.is_empty());
         assert_eq!(
             threads::post_pot(
                 &conn,
@@ -2388,11 +2504,12 @@ mod threads {
                 Some("root-1"),
             )
         };
-        let (message, woken) = send(&talker, &open).unwrap();
-        assert_eq!(woken, vec![open.clone()]);
+        let posted = send(&talker, &open).unwrap();
+        assert_eq!(posted.woken, vec![open.clone()]);
         assert_eq!(queued(&conn, &open)[0].0, "dm");
         // The DM thread is the same both ways, and the user cannot post in it.
-        let (back, _) = send(&open, &talker).unwrap();
+        let message = posted.message;
+        let back = send(&open, &talker).unwrap().message;
         assert_eq!(back.thread_id, message.thread_id);
         assert_eq!(
             threads::post_user(&conn, "alice", &message.thread_id, "x", vec![], false)
@@ -3721,6 +3838,23 @@ mod observe {
         let mut expected = vec![(lead.clone(), true), (other.clone(), false)];
         expected.sort();
         assert_eq!(targets(&conn, &event), expected);
+        // One root for the fact, initiated by the lead pot; both wakes share it.
+        let roots: Vec<(String, String, String)> = conn
+            .prepare(
+                "SELECT w.causal_root,r.origin_kind,r.initiator_pot FROM pot_wakes w
+                 JOIN causal_roots r ON r.id=w.causal_root
+                 WHERE json_extract(w.details_json,'$.eventId')=?1 ORDER BY w.pot_id",
+            )
+            .unwrap()
+            .query_map([&event], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(roots.len(), 2);
+        assert_eq!(roots[0].0, roots[1].0);
+        assert_eq!(roots[0].1, "event");
+        assert_eq!(roots[0].2, lead);
+        assert_eq!(roots[1].2, lead);
         // The same fact again is already known; another occurrence is new.
         assert!(
             observe::emit_session(&conn, &session, SessionCondition::RunFinished, "1")
@@ -4047,6 +4181,595 @@ mod observe {
     }
 }
 
+mod roots {
+    use super::super::autonomy;
+    use super::super::roots::{self, Origin, State};
+    use super::super::runtime::{self, NewWake, Source};
+    use super::*;
+    use crate::usage::admission;
+    use crate::util::now_ms;
+    use pirc_protocol::ThinkingLevel;
+
+    #[test]
+    fn a_root_starts_with_its_origins_limits_and_the_remaining_budget() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        let mut owner = settings(&conn, "alice").unwrap();
+        owner.cap_money_month_micros = 300_000;
+        owner.cap_tokens_day = 40_000;
+        owner.loop_depth = 3;
+        owner.loop_fanout = 2;
+        update_settings(&mut conn, "alice", owner).unwrap();
+        let root = roots::start(
+            &conn,
+            "alice",
+            &pot.id,
+            Origin::UserMessage,
+            "message-1",
+            None,
+        )
+        .unwrap();
+        assert_eq!(root.origin_kind, Origin::UserMessage);
+        assert_eq!(root.origin_ref, "message-1");
+        assert_eq!((root.depth_limit, root.fanout_limit), (3, 2));
+        // The pot has 20M/500k; the owner's tighter limits cap the root.
+        assert_eq!(root.budget_money_micros, 300_000);
+        assert_eq!(root.budget_tokens, 40_000);
+        assert_eq!(root.state, State::Active);
+        assert_eq!(root.initiator_pot, pot.id);
+        assert_eq!(roots::read(&conn, "bob", &root.id).unwrap_err().status, 404);
+    }
+
+    #[test]
+    fn reviews_and_reminders_start_roots_of_their_own() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        autonomy::create_reminder(&conn, "alice", &pot.id, now_ms() + 60_000, "check").unwrap();
+        conn.execute(
+            "UPDATE pot_reminders SET due_at=?1 WHERE pot_id=?2",
+            rusqlite::params![now_ms() - 1, pot.id],
+        )
+        .unwrap();
+        autonomy::sweep(&conn).unwrap();
+        let (root, kind): (String, String) = conn
+            .query_row(
+                "SELECT w.causal_root,r.origin_kind FROM pot_wakes w
+                 JOIN causal_roots r ON r.id=w.causal_root
+                 WHERE w.pot_id=?1 AND w.source='reminder'",
+                [&pot.id],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(kind, "reminder");
+        assert!(
+            roots::read(&conn, "alice", &root)
+                .unwrap()
+                .origin_ref
+                .starts_with("rem_")
+        );
+        conn.execute(
+            "UPDATE pot_wakes SET state='settled' WHERE pot_id=?1 AND source='reminder'",
+            [&pot.id],
+        )
+        .unwrap();
+        conn.execute(
+            "UPDATE pot_runtime SET autonomy_interval_s=3600,last_engaged_at=?1,next_review_at=?2
+             WHERE pot_id=?3",
+            rusqlite::params![now_ms() - 7_200_000, now_ms() - 1, pot.id],
+        )
+        .unwrap();
+        autonomy::sweep(&conn).unwrap();
+        let kind: String = conn
+            .query_row(
+                "SELECT r.origin_kind FROM pot_wakes w JOIN causal_roots r ON r.id=w.causal_root
+                 WHERE w.pot_id=?1 AND w.source='review'",
+                [&pot.id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(kind, "review");
+    }
+
+    #[test]
+    fn parallel_children_cannot_overspend_the_root() {
+        let (app, _dir) = crate::test_support::app_with_models(json!({
+            "work-anthropic": { "api": "anthropic-messages", "piProvider": "anthropic",
+                "baseUrl": "https://api.anthropic.com", "apiKey": "key",
+                "models": [{ "id": "claude-fable-5" }] }
+        }));
+        let (a, b) = {
+            let mut conn = app.db.lock();
+            conn.sync_remote_workspaces(
+                "node",
+                &[(
+                    "repo".into(),
+                    "Repo".into(),
+                    pirc_protocol::ModeId::new("directory").unwrap(),
+                )],
+            )
+            .unwrap();
+            let a = create(&mut conn, "alice", input("A")).unwrap();
+            let b = create(&mut conn, "alice", input("B")).unwrap();
+            for (pot, remote) in [(&a, "remote-a"), (&b, "remote-b")] {
+                let session = conn
+                    .create_session(
+                        "node:repo",
+                        &format!("node://node/{remote}"),
+                        "node",
+                        remote,
+                        "alice",
+                    )
+                    .unwrap()
+                    .id;
+                conn.execute(
+                    "UPDATE pot_runtime SET session_id=?1 WHERE pot_id=?2",
+                    rusqlite::params![session, pot.id],
+                )
+                .unwrap();
+            }
+            (a, b)
+        };
+        let root = roots::start(
+            &app.db.lock(),
+            "alice",
+            &a.id,
+            Origin::UserMessage,
+            "m",
+            None,
+        )
+        .unwrap();
+        // Both pots are children of the same root, each with its own wake in
+        // flight (one root, two parallel sessions).
+        for pot in [&a.id, &b.id] {
+            runtime::enqueue(
+                &app.db.lock(),
+                "alice",
+                pot,
+                NewWake {
+                    source: Source::User,
+                    thread_id: None,
+                    causal_root: Some(&root.id),
+                    depth: 0,
+                    from_pot: None,
+                    caused_by: None,
+                    purpose: json!({}),
+                    content: "go",
+                    details: json!({}),
+                },
+            )
+            .unwrap();
+            assert!(
+                runtime::claim_next(&app.db.lock(), "alice", pot, "UTC")
+                    .unwrap()
+                    .is_some()
+            );
+        }
+        let request = pirc_protocol::InferenceRequest {
+            purpose: Default::default(),
+            provider_name: "work-anthropic".into(),
+            model_id: "claude-fable-5".into(),
+            system_prompt: "x".repeat(400),
+            messages: Vec::new(),
+            tools: Vec::new(),
+            thinking: ThinkingLevel::Off,
+            session_id: "agent-chosen".into(),
+            max_tokens: Some(100),
+            tool_choice: None,
+        };
+        let bound_tokens = admission::input_bound(&request) + 100;
+        app.db
+            .lock()
+            .execute(
+                "UPDATE causal_roots SET budget_money_micros=1000000000,budget_tokens=?2 WHERE id=?1",
+                rusqlite::params![root.id, bound_tokens + bound_tokens / 2],
+            )
+            .unwrap();
+        let first = admission::begin(&app, "node", "remote-a", &request)
+            .unwrap()
+            .expect("a pot request");
+        assert_eq!(first.root_id.as_deref(), Some(root.id.as_str()));
+        let error = admission::begin(&app, "node", "remote-b", &request).unwrap_err();
+        assert_eq!((error.status, error.code), (402, "budget_exhausted"));
+        let details = error.details.expect("details");
+        assert_eq!(details["scope"], "root");
+        assert_eq!(details["unit"], "tokens");
+        // Refunding the canceled child frees the room again.
+        admission::cancel(&app, Some(&first));
+        assert!(
+            admission::begin(&app, "node", "remote-b", &request)
+                .unwrap()
+                .is_some()
+        );
+    }
+}
+
+mod guard {
+    use super::super::runtime;
+    use super::super::threads::{self, Card, GroupInput, Target};
+    use super::super::{guard, roots};
+    use super::*;
+    use rusqlite::OptionalExtension;
+
+    fn pot(conn: &mut rusqlite::Connection, name: &str) -> String {
+        let mut input = input(name);
+        input.permissions.dm.send = DmRule::All;
+        input.permissions.dm.receive = DmRule::All;
+        create(conn, "alice", input).unwrap().id
+    }
+
+    fn group(conn: &rusqlite::Connection, host: &str, members: &[String]) -> String {
+        threads::create_group(
+            conn,
+            "alice",
+            GroupInput {
+                name: "Room".into(),
+                avatar_color: None,
+                host_pot_id: host.to_owned(),
+                member_pot_ids: members.to_vec(),
+                project_id: None,
+            },
+        )
+        .unwrap()
+        .id
+    }
+
+    fn settings_with(conn: &mut rusqlite::Connection, change: impl FnOnce(&mut Settings)) {
+        let mut settings = settings(conn, "alice").unwrap();
+        change(&mut settings);
+        update_settings(conn, "alice", settings).unwrap();
+    }
+
+    fn last_root(conn: &rusqlite::Connection) -> roots::Root {
+        let id: String = conn
+            .query_row(
+                "SELECT id FROM causal_roots WHERE owner_user='alice'
+                 ORDER BY created_at DESC, rowid DESC LIMIT 1",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        roots::read(conn, "alice", &id).unwrap()
+    }
+
+    fn claim(conn: &rusqlite::Connection, pot: &str) -> Option<String> {
+        runtime::claim_next(conn, "alice", pot, "UTC").unwrap()
+    }
+
+    /// The pot's in-flight wake is done; the next queued one may be claimed.
+    fn settle(conn: &rusqlite::Connection, pot: &str) {
+        conn.execute(
+            "UPDATE pot_wakes SET state='settled',settled_at=?2
+             WHERE pot_id=?1 AND state IN ('delivering','delivered')",
+            rusqlite::params![pot, crate::util::now_ms()],
+        )
+        .unwrap();
+    }
+
+    fn queued_wake(conn: &rusqlite::Connection, pot: &str) -> Option<String> {
+        conn.query_row(
+            "SELECT id FROM pot_wakes WHERE pot_id=?1 AND state='queued'
+             ORDER BY created_at, rowid LIMIT 1",
+            [pot],
+            |r| r.get(0),
+        )
+        .optional()
+        .unwrap()
+    }
+
+    /// A group @all starts one root and wakes every member.
+    fn start(conn: &mut rusqlite::Connection, host: &str, others: &[String]) -> String {
+        let room = group(conn, host, others);
+        threads::post_user(conn, "alice", &room, "Start", vec![], true).unwrap();
+        assert!(claim(conn, host).is_some());
+        for other in others {
+            assert!(claim(conn, other).is_some());
+        }
+        last_root(conn).id
+    }
+
+    #[test]
+    fn a_chain_stops_at_the_depth_limit_and_says_so() {
+        let db = db();
+        let mut conn = db.lock();
+        settings_with(&mut conn, |settings| settings.loop_depth = 2);
+        let a = pot(&mut conn, "A");
+        let b = pot(&mut conn, "B");
+        let c = pot(&mut conn, "C");
+        let d = pot(&mut conn, "D");
+        let direct = threads::direct(&conn, "alice", &a).unwrap();
+        threads::post_user(&conn, "alice", &direct.id, "Go", vec![], false).unwrap();
+        assert!(claim(&conn, &a).is_some());
+
+        let ab =
+            threads::post_pot(&conn, "alice", &a, Target::Pot(&b), "To B", vec![], None).unwrap();
+        assert_eq!(ab.woken, vec![b.clone()]);
+        assert!(ab.refused.is_empty());
+        assert!(claim(&conn, &b).is_some());
+
+        let bc =
+            threads::post_pot(&conn, "alice", &b, Target::Pot(&c), "To C", vec![], None).unwrap();
+        assert_eq!(bc.woken, vec![c.clone()]);
+        assert!(claim(&conn, &c).is_some());
+
+        // The third hop is past the root's depth limit: the message is stored,
+        // no wake is queued, and the sender sees why in the thread.
+        let cd =
+            threads::post_pot(&conn, "alice", &c, Target::Pot(&d), "To D", vec![], None).unwrap();
+        assert!(cd.woken.is_empty());
+        assert_eq!(cd.refused.len(), 1);
+        assert_eq!(cd.refused[0].code, "wake_depth");
+        assert!(cd.refused[0].reason.contains("depth limit (2)"));
+        assert!(queued_wake(&conn, &d).is_none());
+        let page = threads::messages(&conn, "alice", &cd.message.thread_id, None).unwrap();
+        assert!(page.iter().any(|m| m.body == "To D"), "stored");
+        assert!(
+            page.iter()
+                .any(|m| m.author_kind == "system" && m.body.contains("depth limit")),
+            "{page:?}"
+        );
+        let logged: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM pot_activity WHERE owner_user='alice' AND kind='loop_guard'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(logged, 1);
+    }
+
+    #[test]
+    fn one_wake_cannot_exceed_the_fan_out_limit() {
+        let db = db();
+        let mut conn = db.lock();
+        settings_with(&mut conn, |settings| settings.loop_fanout = 2);
+        let a = pot(&mut conn, "A");
+        let b = pot(&mut conn, "B");
+        let c = pot(&mut conn, "C");
+        let d = pot(&mut conn, "D");
+        let room = group(&conn, &a, &[b.clone(), c.clone(), d.clone()]);
+        threads::post_user(&conn, "alice", &room, "Start", vec![], true).unwrap();
+        assert!(claim(&conn, &a).is_some());
+
+        let posted = threads::post_pot(
+            &conn,
+            "alice",
+            &a,
+            Target::Thread(&room),
+            "B C D, look",
+            vec![b.clone(), c.clone(), d.clone()],
+            None,
+        )
+        .unwrap();
+        assert_eq!(posted.woken.len(), 2);
+        assert_eq!(posted.refused.len(), 1);
+        assert_eq!(posted.refused[0].code, "wake_fanout");
+        assert!(posted.refused[0].reason.contains("fan-out limit (2)"));
+        let page = threads::messages(&conn, "alice", &room, None).unwrap();
+        assert!(
+            page.iter()
+                .any(|m| m.author_kind == "system" && m.body.contains("fan-out limit"))
+        );
+    }
+
+    /// A and B exchange DMs turn by turn; each turn delivers one wake.
+    fn exchange(
+        conn: &mut rusqlite::Connection,
+        a: &str,
+        b: &str,
+        turns: usize,
+        progress_every: Option<usize>,
+    ) -> String {
+        let root = start(conn, a, &[b.to_owned()]);
+        let mut sender_a = true;
+        for turn in 1..=turns {
+            let (from, to) = if sender_a { (a, b) } else { (b, a) };
+            threads::post_pot(
+                conn,
+                "alice",
+                from,
+                Target::Pot(to),
+                &format!("turn {turn}"),
+                vec![],
+                None,
+            )
+            .unwrap();
+            // Suspended by this turn: nothing more is delivered.
+            let state: String = conn
+                .query_row("SELECT state FROM causal_roots WHERE id=?1", [&root], |r| {
+                    r.get(0)
+                })
+                .unwrap();
+            if state == "suspended" {
+                return root;
+            }
+            // Deliver the wake just queued: the previous one is done.
+            settle(conn, to);
+            let claimed = claim(conn, to);
+            assert!(claimed.is_some(), "turn {turn}: {to} was not woken");
+            if let Some(every) = progress_every
+                && turn % every == 0
+            {
+                guard::progress(conn, &root, to, "work_run").unwrap();
+            }
+            sender_a = !sender_a;
+        }
+        root
+    }
+
+    #[test]
+    fn a_dm_exchange_without_progress_is_suspended_at_the_threshold() {
+        let db = db();
+        let mut conn = db.lock();
+        settings_with(&mut conn, |settings| {
+            settings.loop_depth = 16;
+            settings.loop_no_progress_wakes = 5;
+            settings.loop_no_progress_messages = 1000;
+        });
+        let a = pot(&mut conn, "A");
+        let b = pot(&mut conn, "B");
+        // Two initial wakes plus three turns reach five wakes with no progress.
+        let root = exchange(&mut conn, &a, &b, 3, None);
+        let root = roots::read(&conn, "alice", &root).unwrap();
+        assert_eq!(root.state, roots::State::Suspended);
+        assert!(
+            root.suspend_reason
+                .as_deref()
+                .is_some_and(|reason| reason.contains("without progress")),
+            "{:?}",
+            root.suspend_reason
+        );
+        // One card where the root started (the group), and one activity row.
+        let thread = root.thread_id.as_deref().unwrap();
+        let page = threads::messages(&conn, "alice", thread, None).unwrap();
+        assert!(page.iter().any(|message| {
+            message.card
+                == Some(Card::LoopGuard {
+                    root_id: root.id.clone(),
+                })
+        }));
+        let logged: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM pot_activity WHERE owner_user='alice'
+                   AND kind='loop_guard' AND causal_root=?1",
+                [&root.id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(logged, 1);
+    }
+
+    #[test]
+    fn enough_wakes_without_progress_suspend_the_root() {
+        let db = db();
+        let mut conn = db.lock();
+        settings_with(&mut conn, |settings| {
+            settings.loop_no_progress_wakes = 5;
+            settings.loop_no_progress_messages = 1000;
+        });
+        let host = pot(&mut conn, "Host");
+        let members: Vec<String> = (0..5)
+            .map(|index| pot(&mut conn, &format!("Member {index}")))
+            .collect();
+        let room = group(&conn, &host, &members);
+        threads::post_user(&conn, "alice", &room, "Everyone", vec![], true).unwrap();
+        let root = last_root(&conn);
+        assert_eq!(root.state, roots::State::Suspended);
+        assert!(
+            root.suspend_reason
+                .as_deref()
+                .is_some_and(|reason| reason.contains("5 wakes without progress")),
+            "{:?}",
+            root.suspend_reason
+        );
+    }
+
+    #[test]
+    fn a_long_exchange_with_progress_every_few_turns_is_not_suspended() {
+        let db = db();
+        let mut conn = db.lock();
+        settings_with(&mut conn, |settings| {
+            settings.loop_depth = 16;
+            settings.loop_no_progress_wakes = 10;
+            settings.loop_no_progress_messages = 1000;
+        });
+        let a = pot(&mut conn, "A");
+        let b = pot(&mut conn, "B");
+        let root = exchange(&mut conn, &a, &b, 10, Some(2));
+        let root = roots::read(&conn, "alice", &root).unwrap();
+        assert_eq!(root.state, roots::State::Active);
+        assert_eq!(root.wakes_since_progress, 0, "progress resets the streak");
+    }
+
+    #[test]
+    fn a_suspended_root_wakes_nothing_until_the_user_resumes_it() {
+        let db = db();
+        let mut conn = db.lock();
+        settings_with(&mut conn, |settings| {
+            settings.loop_depth = 16;
+            settings.loop_no_progress_wakes = 4;
+            settings.loop_no_progress_messages = 1000;
+        });
+        let a = pot(&mut conn, "A");
+        let b = pot(&mut conn, "B");
+        let root = exchange(&mut conn, &a, &b, 2, None);
+        assert_eq!(
+            roots::read(&conn, "alice", &root).unwrap().state,
+            roots::State::Suspended
+        );
+        // Another message still stores and queues, but nothing is delivered;
+        // and no pot operation can lift the suspension.
+        threads::post_pot(&conn, "alice", &a, Target::Pot(&b), "again", vec![], None).unwrap();
+        settle(&conn, &b);
+        assert!(claim(&conn, &b).is_none());
+        assert!(
+            crate::pots::ops::parse_op("pot.causal_root.resume", &json!({})).is_none(),
+            "pots have no operation to resume a root"
+        );
+        assert_eq!(
+            roots::read(&conn, "alice", &root).unwrap().state,
+            roots::State::Suspended
+        );
+        // Only the user's resume does.
+        let resumed = roots::resume(&conn, "alice", &root).unwrap();
+        assert_eq!(resumed.state, roots::State::Active);
+        assert_eq!(resumed.wakes_since_progress, 0);
+        assert!(claim(&conn, &b).is_some(), "the queued wake delivers again");
+    }
+
+    #[test]
+    fn stopping_a_root_fails_its_queued_wakes() {
+        let db = db();
+        let mut conn = db.lock();
+        let a = pot(&mut conn, "A");
+        let direct = threads::direct(&conn, "alice", &a).unwrap();
+        threads::post_user(&conn, "alice", &direct.id, "Go", vec![], false).unwrap();
+        let root = last_root(&conn);
+        let wake = queued_wake(&conn, &a).unwrap();
+        let stopped = roots::stop(&conn, "alice", &root.id).unwrap();
+        assert_eq!(stopped.state, roots::State::Stopped);
+        let state: String = conn
+            .query_row("SELECT state FROM pot_wakes WHERE id=?1", [&wake], |r| {
+                r.get(0)
+            })
+            .unwrap();
+        assert_eq!(state, "failed");
+        assert!(claim(&conn, &a).is_none());
+        assert_eq!(
+            roots::resume(&conn, "alice", &root.id).unwrap_err().code,
+            "root_stopped"
+        );
+    }
+
+    #[test]
+    fn a_wake_carries_its_root_and_depth() {
+        let db = db();
+        let mut conn = db.lock();
+        let a = pot(&mut conn, "A");
+        let b = pot(&mut conn, "B");
+        let root = start(&mut conn, &a, std::slice::from_ref(&b));
+        let (from, depth): (String, i64) = conn
+            .query_row(
+                "SELECT causal_root,depth FROM pot_wakes WHERE pot_id=?1 AND state='delivering'",
+                [&a],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!((from.as_str(), depth), (root.as_str(), 0));
+        threads::post_pot(&conn, "alice", &a, Target::Pot(&b), "next", vec![], None).unwrap();
+        let (child, depth): (String, i64) = conn
+            .query_row(
+                "SELECT causal_root,depth FROM pot_wakes WHERE pot_id=?1
+                 ORDER BY created_at DESC, rowid DESC LIMIT 1",
+                [&b],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!((child.as_str(), depth), (root.as_str(), 1));
+    }
+}
+
 mod hints {
     use crate::test_support::app_with_models;
     use futures_util::StreamExt;
@@ -4101,22 +4824,27 @@ mod hints {
     async fn a_hint_socket_needs_no_session_and_hears_only_its_owner() {
         let (app, _dir) = app_with_models(json!({}));
         let address = serve(app.clone()).await;
-        let mut alice = connect(address, "pots=1&threads=1", "alice").await;
+        let mut alice = connect(address, "pots=1&threads=1&causalRoots=1", "alice").await;
         // Give the server a moment to subscribe before the first hint.
         tokio::time::sleep(std::time::Duration::from_millis(100)).await;
         app.pots_changed("bob");
+        app.causal_roots_changed("bob");
         app.approvals_changed("alice");
         app.threads_changed("alice");
         app.pots_changed("alice");
+        app.causal_roots_changed("alice");
         let mut kinds = Vec::new();
-        for _ in 0..2 {
+        for _ in 0..3 {
             let Message::Text(text) = next(&mut alice).await else {
                 panic!("a text frame")
             };
             let frame: Value = serde_json::from_str(&text).unwrap();
             kinds.push(frame["type"].as_str().unwrap().to_owned());
         }
-        assert_eq!(kinds, ["threads_changed", "pots_changed"]);
+        assert_eq!(
+            kinds,
+            ["threads_changed", "pots_changed", "causal_roots_changed"]
+        );
 
         // Asking for nothing, or for something unknown, closes the socket.
         for query in ["", "pots=1&sessionId=s1", "pots=yes"] {

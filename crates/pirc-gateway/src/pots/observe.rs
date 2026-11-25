@@ -130,6 +130,28 @@ fn emit(
     let mut details = details;
     details["eventId"] = json!(id);
     details["condition"] = json!(fact.condition);
+    // One root per fact: every pot the event reaches shares its budget and
+    // depth. A lead scope's pot initiates it, otherwise the first target.
+    let initiator = targets
+        .iter()
+        .find(|(_, lead)| *lead)
+        .or_else(|| targets.first())
+        .map(|(pot, _)| pot.clone())
+        .expect("targets is not empty");
+    let root = super::roots::start(
+        conn,
+        fact.owner,
+        &initiator,
+        super::roots::Origin::Event,
+        &id,
+        None,
+    )?
+    .id;
+    let purpose = super::guard::purpose(
+        &format!("event:{}", fact.source_ref),
+        "event",
+        &format!("event:{id}"),
+    );
     let mut woken = Vec::new();
     for (pot, lead) in targets {
         conn.execute(
@@ -143,7 +165,11 @@ fn emit(
             NewWake {
                 source: Source::Event,
                 thread_id: None,
-                causal_root: None,
+                causal_root: Some(&root),
+                depth: 0,
+                from_pot: None,
+                caused_by: None,
+                purpose: purpose.clone(),
                 content: &text,
                 details: details.clone(),
             },
@@ -344,6 +370,12 @@ pub fn on_session(app: &App, session_id: &str, condition: SessionCondition, occu
             return;
         }
     };
+    let mut owners: Vec<&str> = woken.iter().map(|(owner, _)| owner.as_str()).collect();
+    owners.sort();
+    owners.dedup();
+    for owner in owners {
+        app.causal_roots_changed(owner);
+    }
     if let Some(runtime) = app.slots.get::<Runtime>() {
         for kick in woken {
             let _ = runtime.kicks.send(kick);

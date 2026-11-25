@@ -27,6 +27,16 @@ const UNSEEN_LIMIT_MS: i64 = 10 * 60_000;
 /// How often every pot with pending wakes is looked at again.
 const SWEEP: Duration = Duration::from_secs(30);
 
+/// A claimed wake: id, source, content, details, causal root and sender.
+type QueuedWake = (
+    String,
+    String,
+    String,
+    String,
+    Option<String>,
+    Option<String>,
+);
+
 /// Where a wake came from.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Source {
@@ -61,18 +71,71 @@ impl Source {
 pub struct NewWake<'a> {
     pub source: Source,
     pub thread_id: Option<&'a str>,
+    /// The causal root this wake belongs to (`roots::start`).
     pub causal_root: Option<&'a str>,
+    /// Hops from the root: 0 for the origin's own wake.
+    pub depth: i64,
+    /// The pot whose message caused it, when one did.
+    pub from_pot: Option<&'a str>,
+    /// The wake whose handling caused it, for the fan-out limit.
+    pub caused_by: Option<&'a str>,
+    /// Structured target, action and source for repeated-purpose detection.
+    pub purpose: Value,
     pub content: &'a str,
     pub details: Value,
 }
 
 /// Queue a wake for the owner's pot; it is delivered by [`kick`] or the sweep.
+/// A wake past its root's depth or fan-out limit is refused with a clear error
+/// instead of being queued; the caller still stores what it was doing.
 pub fn enqueue(conn: &Connection, owner: &str, pot_id: &str, wake: NewWake) -> ApiResult<String> {
     store::read(conn, owner, pot_id)?;
+    if let Some(root_id) = wake.causal_root {
+        let root: Option<(i64, i64, String)> = conn
+            .query_row(
+                "SELECT depth_limit,fanout_limit,state FROM causal_roots WHERE id=?1",
+                [root_id],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+            )
+            .optional()?;
+        if let Some((depth_limit, fanout_limit, state)) = root {
+            if state == "stopped" {
+                return Err(ApiError::new(
+                    409,
+                    "root_stopped",
+                    "This causal root was stopped; nothing more is delivered for it",
+                ));
+            }
+            if wake.depth > depth_limit {
+                return Err(ApiError::new(
+                    409,
+                    "wake_depth",
+                    format!("The causal root reached its depth limit ({depth_limit})"),
+                ));
+            }
+            if let Some(parent) = wake.caused_by {
+                let children: i64 = conn.query_row(
+                    "SELECT count(*) FROM pot_wakes WHERE caused_by=?1",
+                    [parent],
+                    |r| r.get(0),
+                )?;
+                if children >= fanout_limit {
+                    return Err(ApiError::new(
+                        409,
+                        "wake_fanout",
+                        format!(
+                            "This wake would exceed the causal root's fan-out limit ({fanout_limit})"
+                        ),
+                    ));
+                }
+            }
+        }
+    }
     let id = new_id("wake");
     conn.execute(
-        "INSERT INTO pot_wakes(id,pot_id,owner_user,source,thread_id,causal_root,content,details_json,created_at)
-         VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9)",
+        "INSERT INTO pot_wakes(id,pot_id,owner_user,source,thread_id,causal_root,depth,from_pot,
+           caused_by,purpose_json,content,details_json,created_at)
+         VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13)",
         params![
             id,
             pot_id,
@@ -80,11 +143,21 @@ pub fn enqueue(conn: &Connection, owner: &str, pot_id: &str, wake: NewWake) -> A
             wake.source.as_str(),
             wake.thread_id,
             wake.causal_root,
+            wake.depth,
+            wake.from_pot,
+            wake.caused_by,
+            wake.purpose.to_string(),
             wake.content,
             wake.details.to_string(),
             now_ms(),
         ],
     )?;
+    if let Some(root_id) = wake.causal_root
+        && let Err(error) =
+            super::guard::note_wake(conn, root_id, pot_id, wake.from_pot, &wake.purpose)
+    {
+        crate::log::warn(&format!("loop guard for root {root_id}: {}", error.message));
+    }
     if wake.source != Source::Review {
         super::autonomy::engage(conn, pot_id)?;
     }
@@ -173,20 +246,40 @@ fn claim(
     if pot.state != PotState::Active {
         return Ok(None);
     }
-    let next: Option<(String, String, String, String)> = conn
+    // A suspended or stopped root delivers nothing: its wakes stay queued.
+    let next: Option<QueuedWake> = conn
         .query_row(
-            "SELECT id,source,content,details_json FROM pot_wakes
-             WHERE pot_id=?1 AND state='queued' ORDER BY created_at, rowid LIMIT 1",
+            "SELECT w.id,w.source,w.content,w.details_json,w.causal_root,w.from_pot
+             FROM pot_wakes w
+             WHERE w.pot_id=?1 AND w.state='queued'
+               AND (w.causal_root IS NULL
+                 OR EXISTS(SELECT 1 FROM causal_roots r
+                           WHERE r.id=w.causal_root AND r.state='active'))
+             ORDER BY w.created_at, w.rowid LIMIT 1",
             [pot_id],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+            |r| {
+                Ok((
+                    r.get(0)?,
+                    r.get(1)?,
+                    r.get(2)?,
+                    r.get(3)?,
+                    r.get(4)?,
+                    r.get(5)?,
+                ))
+            },
         )
         .optional()?;
-    let Some((id, source, content, details)) = next else {
+    let Some((id, source, content, details, root, from_pot)) = next else {
         return Ok(None);
     };
     // An exhausted pot's model wakes wait; the answer to its budget request
     // still reaches it so it learns the user's decision.
     if source != "budget" && super::budget::wake_blocked(conn, owner, pot_id, zone)? {
+        return Ok(None);
+    }
+    // Rate ceilings delay delivery: the oldest wake stays queued until the
+    // root or the pair is allowed again.
+    if super::guard::delivery_blocked(conn, root.as_deref(), from_pot.as_deref(), pot_id)? {
         return Ok(None);
     }
     let claimed = conn.execute(
@@ -317,6 +410,7 @@ pub async fn check(app: &AppState, owner: &str, pot_id: &str) -> ApiResult<()> {
                 )?;
                 if super::threads::post_reply(&conn, &id)?.is_some() {
                     app.threads_changed(owner);
+                    app.causal_roots_changed(owner);
                 }
                 true
             }
@@ -414,6 +508,7 @@ pub fn start(app: &AppState) {
                 Ok(woken) => {
                     for (owner, _) in &woken {
                         app.activity_changed(owner);
+                        app.causal_roots_changed(owner);
                     }
                     pots.extend(woken);
                 }

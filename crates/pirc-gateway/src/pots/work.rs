@@ -48,11 +48,13 @@ pub struct Work {
     pub provider: String,
     pub model: String,
     pub thinking: Option<String>,
+    /// The causal root that started it; its session's requests charge it.
+    pub causal_root: Option<String>,
     pub state: String,
     pub created_at: i64,
 }
 
-const SELECT: &str = "SELECT id,pot_id,session_id,workspace_id,title,provider,model,thinking,state,created_at FROM pot_works";
+const SELECT: &str = "SELECT id,pot_id,session_id,workspace_id,title,provider,model,thinking,causal_root,state,created_at FROM pot_works";
 
 fn work_row(r: &Row) -> rusqlite::Result<Work> {
     Ok(Work {
@@ -64,8 +66,9 @@ fn work_row(r: &Row) -> rusqlite::Result<Work> {
         provider: r.get(5)?,
         model: r.get(6)?,
         thinking: r.get(7)?,
-        state: r.get(8)?,
-        created_at: r.get(9)?,
+        causal_root: r.get(8)?,
+        state: r.get(9)?,
+        created_at: r.get(10)?,
     })
 }
 
@@ -261,13 +264,17 @@ async fn instruct(
     model: Option<Value>,
 ) -> ApiResult<Value> {
     let instruction_id = new_id("instr");
-    let session = {
+    let (root, session) = {
         let conn = app.db.lock();
+        let handling = super::roots::handling(&conn, owner, &work.pot_id)?;
+        let root = handling.root.or_else(|| work.causal_root.clone());
         conn.execute(
-            "INSERT INTO pot_work_instructions(id,work_id,body,state,created_at) VALUES(?1,?2,?3,'sending',?4)",
-            params![instruction_id, work.id, text, now_ms()],
+            "INSERT INTO pot_work_instructions(id,work_id,causal_root,body,state,created_at)
+             VALUES(?1,?2,?3,?4,'sending',?5)",
+            params![instruction_id, work.id, root, text, now_ms()],
         )?;
-        conn.get_session(&work.session_id)?
+        let session = conn.get_session(&work.session_id)?;
+        (root, session)
     };
     let mut message = instruction_message(&work.pot_id, pot_name, &work.id, &instruction_id, text);
     if let Some(model) = model {
@@ -312,8 +319,10 @@ async fn instruct(
         .toward(Counterpart::WorkSession(work.session_id.clone()))
         .refs(Refs {
             session: Some(work.session_id.clone()),
+            root: root.clone(),
             ..Refs::default()
-        }),
+        })
+        .root(root.as_deref()),
     )?;
     app.activity_changed(owner);
     Ok(json!({ "instructionId": instruction_id, "delivery": state, "error": error }))
@@ -405,9 +414,13 @@ pub async fn open(app: &App, owner: &str, pot_id: &str, input: Open) -> ApiResul
         let conn = app.db.lock();
         let id = new_id("work");
         let stamp = now_ms();
+        // Work inherits the root and one more depth of the wake being handled;
+        // its session's requests charge that root from now on.
+        let handling = super::roots::handling(&conn, owner, pot_id)?;
+        let causal_root = handling.root;
         conn.execute(
-            "INSERT INTO pot_works(id,owner_user,pot_id,session_id,workspace_id,title,provider,model,thinking,created_at,updated_at)
-             VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?10)",
+            "INSERT INTO pot_works(id,owner_user,pot_id,session_id,workspace_id,title,provider,model,thinking,causal_root,created_at,updated_at)
+             VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?11)",
             params![
                 id,
                 owner,
@@ -418,6 +431,7 @@ pub async fn open(app: &App, owner: &str, pot_id: &str, input: Open) -> ApiResul
                 plan.provider,
                 plan.model,
                 plan.thinking,
+                causal_root,
                 stamp
             ],
         )?;
@@ -433,8 +447,10 @@ pub async fn open(app: &App, owner: &str, pot_id: &str, input: Open) -> ApiResul
             .refs(Refs {
                 session: Some(session.id.clone()),
                 approval: consumed.clone(),
+                root: causal_root.clone(),
                 ..Refs::default()
-            }),
+            })
+            .root(causal_root.as_deref()),
         )?;
         if let Some(dispatch) = &dispatch {
             super::observe::dispatch_started(&conn, dispatch, &id)?;
@@ -571,6 +587,14 @@ pub fn take_over(conn: &Connection, owner: &str, work_id: &str) -> ApiResult<Wor
             source: Source::Handover,
             thread_id: Some(&thread.id),
             causal_root: None,
+            depth: 0,
+            from_pot: None,
+            caused_by: None,
+            purpose: super::guard::purpose(
+                &format!("work:{}", work.id),
+                "take_over",
+                &format!("work:{}", work.id),
+            ),
             content: &format!(
                 "The user took over the work \"{}\". Do not send into it any more; \
                  its session stays readable with work_status.",

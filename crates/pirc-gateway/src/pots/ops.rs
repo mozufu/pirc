@@ -364,7 +364,7 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
             Ok(result)
         }
         Op::Send(send) => {
-            let (message, woken) = {
+            let posted = {
                 let conn = app.db.lock();
                 let pot = pot_of_session(&conn, &context.user, &context.session.id)?;
                 let target = match (&send.to_pot, &send.thread_id) {
@@ -382,12 +382,17 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
                     None,
                 )?
             };
-            for pot in &woken {
+            for pot in &posted.woken {
                 super::runtime::kick(app, &context.user, pot);
             }
             app.threads_changed(&context.user);
             app.activity_changed(&context.user);
-            Ok(json!({ "message": message, "woken": woken }))
+            app.causal_roots_changed(&context.user);
+            Ok(json!({
+                "message": posted.message,
+                "woken": posted.woken,
+                "refused": posted.refused,
+            }))
         }
         Op::WorkOpen(input) => {
             let pot = pot_of_session(&app.db.lock(), &context.user, &context.session.id)?;
@@ -408,6 +413,8 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
             let conn = app.db.lock();
             let pot = pot_of_session(&conn, &context.user, &context.session.id)?;
             let noted = super::observe::note(&conn, &context.user, &pot.id, note)?;
+            // New evidence is progress for the root the pot is handling.
+            super::roots::progress(&conn, &context.user, &pot.id, "observation")?;
             let push = match (&noted.notification_id, noted.notified) {
                 (Some(id), true) => Some(super::observe::push_message(&conn, id)?),
                 _ => None,
@@ -416,6 +423,7 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
             if noted.notification_id.is_some() {
                 app.notifications_changed(&context.user);
             }
+            app.causal_roots_changed(&context.user);
             if let Some(message) = push {
                 app.activity_changed(&context.user);
                 crate::push::notify(app, &context.user, message);

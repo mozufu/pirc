@@ -77,6 +77,8 @@ pub fn windows(zone: &str, now: i64) -> Windows {
 pub enum Scope {
     Pot,
     Owner,
+    /// The causal root this request belongs to.
+    Root,
 }
 
 impl Scope {
@@ -84,6 +86,7 @@ impl Scope {
         match self {
             Self::Pot => "pot",
             Self::Owner => "owner",
+            Self::Root => "root",
         }
     }
 }
@@ -336,6 +339,7 @@ pub fn note_exhausted(
                 match exhaustion.scope {
                     Scope::Pot => "Its",
                     Scope::Owner => "The owner's",
+                    Scope::Root => "The causal root's",
                 },
                 exhaustion.unit.as_str()
             ),
@@ -702,9 +706,11 @@ pub fn request(
         ));
     }
     let id = new_id("budget");
+    let handling = super::roots::handling(&tx, owner, pot_id)?;
     tx.execute(
-        "INSERT INTO budget_requests(id,owner_user,pot_id,window,amount_micros,tokens,reason,state,created_at)
-         VALUES(?1,?2,?3,?4,?5,?6,?7,'pending',?8)",
+        "INSERT INTO budget_requests(id,owner_user,pot_id,window,amount_micros,tokens,reason,
+           causal_root,depth,state,created_at)
+         VALUES(?1,?2,?3,?4,?5,?6,?7,?9,?10,'pending',?8)",
         params![
             id,
             owner,
@@ -714,6 +720,8 @@ pub fn request(
             input.tokens.map(|v| v as i64),
             input.reason,
             now_ms(),
+            handling.root,
+            handling.depth,
         ],
     )?;
     let ask = input.describe();
@@ -873,6 +881,15 @@ pub fn answer(
         )
     };
     threads::post_system(&tx, owner, &request.pot_id, &system)?;
+    // The answer continues the root of the wake that asked, at its depth.
+    let (root, depth): (Option<String>, i64) = tx.query_row(
+        "SELECT causal_root,depth FROM budget_requests WHERE id=?1",
+        [id],
+        |r| Ok((r.get(0)?, r.get(1)?)),
+    )?;
+    if let Some(root_id) = &root {
+        super::guard::progress(&tx, root_id, &request.pot_id, "budget_answered")?;
+    }
     let thread = threads::direct(&tx, owner, &request.pot_id)?;
     runtime::enqueue(
         &tx,
@@ -881,7 +898,15 @@ pub fn answer(
         NewWake {
             source: Source::Budget,
             thread_id: Some(&thread.id),
-            causal_root: None,
+            causal_root: root.as_deref(),
+            depth,
+            from_pot: None,
+            caused_by: None,
+            purpose: super::guard::purpose(
+                &format!("pot:{}", request.pot_id),
+                "budget_answer",
+                &request.id,
+            ),
             content: &wake,
             details: json!({
                 "budgetRequestId": request.id,

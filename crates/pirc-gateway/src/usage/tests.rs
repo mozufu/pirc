@@ -461,6 +461,7 @@ fn reservation(
         pot_id: pot.into(),
         node_id: "node".into(),
         node_session: "remote".into(),
+        root_id: None,
         windows,
         money_micros: money,
         tokens,

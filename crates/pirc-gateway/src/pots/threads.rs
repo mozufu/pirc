@@ -81,6 +81,8 @@ pub enum Card {
     Work { work_id: String, session_id: String },
     /// `GET /api/handovers/{handoverId}`: a pot proposes a handover.
     Handover { handover_id: String },
+    /// `GET /api/causal-roots/{rootId}`: the loop guard suspended the root.
+    LoopGuard { root_id: String },
 }
 
 fn thread_row(row: &Row) -> rusqlite::Result<Thread> {
@@ -217,8 +219,25 @@ pub fn post_card(
             |r| r.get(0),
         )
         .optional()?;
-    let thread = match current {
-        Some(id) => get(conn, owner, &id)?,
+    post_card_in(conn, owner, pot_id, current.as_deref(), body, card)
+}
+
+/// [`post_card`] in a named thread (a causal root's thread), else the pot's
+/// direct thread.
+pub fn post_card_in(
+    conn: &Connection,
+    owner: &str,
+    pot_id: &str,
+    thread_id: Option<&str>,
+    body: &str,
+    card: Card,
+) -> ApiResult<Message> {
+    let thread = match thread_id {
+        Some(id) => match get(conn, owner, id) {
+            Ok(thread) => thread,
+            Err(error) if error.status == 404 => direct(conn, owner, pot_id)?,
+            Err(error) => return Err(error),
+        },
         None => direct(conn, owner, pot_id)?,
     };
     append(
@@ -448,7 +467,26 @@ fn addressees(thread: &Thread, author: &Author, mentions: &[String], all: bool) 
     woken
 }
 
-/// The user posts in a thread; returns the message and the pots to kick.
+/// A pot that was not woken, and why, for the sender's notice.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Refused {
+    pub pot_id: String,
+    pub code: String,
+    pub reason: String,
+}
+
+/// A posted message: what was stored, who was woken, who was not and why.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Posted {
+    pub message: Message,
+    pub woken: Vec<String>,
+    pub refused: Vec<Refused>,
+}
+
+/// The user posts in a thread. A user message starts a causal root that every
+/// wake it causes, and everything those wakes cause, inherits.
 pub fn post_user(
     conn: &Connection,
     owner: &str,
@@ -456,7 +494,7 @@ pub fn post_user(
     body: &str,
     mentions: Vec<String>,
     all: bool,
-) -> ApiResult<(Message, Vec<String>)> {
+) -> ApiResult<Posted> {
     let thread = get(conn, owner, thread_id)?;
     if thread.kind == "pot_dm" {
         return Err(ApiError::new(
@@ -482,12 +520,38 @@ pub fn post_user(
         None,
     )?;
     let woken = addressees(&thread, &Author::User, &mentions, all);
+    // The host leads a group; otherwise the first addressee is the root's
+    // initiating pot and its remaining budget caps the root.
+    let initiator = thread
+        .host_pot_id
+        .clone()
+        .filter(|host| woken.contains(host))
+        .or_else(|| woken.first().cloned());
+    let root = match initiator {
+        Some(pot) => Some(
+            super::roots::start(
+                conn,
+                owner,
+                &pot,
+                super::roots::Origin::UserMessage,
+                &message.id,
+                Some(&thread.id),
+            )?
+            .id,
+        ),
+        None => None,
+    };
     let text = wake_text(conn, owner, &thread, &Author::User, &message.body);
     let source = if thread.kind == "group" {
         Source::Group
     } else {
         Source::User
     };
+    let purpose = super::guard::purpose(
+        &format!("thread:{}", thread.id),
+        "user_message",
+        &format!("message:{}", message.id),
+    );
     for pot in &woken {
         runtime::enqueue(
             conn,
@@ -496,13 +560,21 @@ pub fn post_user(
             NewWake {
                 source,
                 thread_id: Some(&thread.id),
-                causal_root: None,
+                causal_root: root.as_deref(),
+                depth: 0,
+                from_pot: None,
+                caused_by: None,
+                purpose: purpose.clone(),
                 content: &text,
                 details: json!({ "threadId": thread.id, "messageId": message.id }),
             },
         )?;
     }
-    Ok((message, woken))
+    Ok(Posted {
+        message,
+        woken,
+        refused: Vec::new(),
+    })
 }
 
 /// Whether `from` may message `to` under both pots' rules.
@@ -538,7 +610,8 @@ pub enum Target<'a> {
 }
 
 /// A pot sends a message. In a group, mentions wake only members the DM rules
-/// allow; a pot can never address everyone.
+/// allow; a pot can never address everyone. The message inherits the root and
+/// depth+1 of the wake the pot is handling; every message it causes does too.
 pub fn post_pot(
     conn: &Connection,
     owner: &str,
@@ -547,7 +620,12 @@ pub fn post_pot(
     body: &str,
     mentions: Vec<String>,
     causal_root: Option<&str>,
-) -> ApiResult<(Message, Vec<String>)> {
+) -> ApiResult<Posted> {
+    let handling = super::roots::handling(conn, owner, from)?;
+    let root = causal_root
+        .map(str::to_owned)
+        .or_else(|| handling.root.clone());
+    let depth = handling.depth + 1;
     let thread = match target {
         Target::Pot(to) => {
             if to == from {
@@ -566,7 +644,7 @@ pub fn post_pot(
                         ),
                     )
                     .toward(Counterpart::Pot(to.to_owned()))
-                    .root(causal_root),
+                    .root(root.as_deref()),
                 )?;
                 return Err(ApiError::new(
                     403,
@@ -599,9 +677,17 @@ pub fn post_pot(
         body,
         &mentions,
         false,
-        causal_root,
+        root.as_deref(),
         None,
     )?;
+    // A message the user reads is progress; a pot DM is part of a possible
+    // no-progress exchange and counts as a message.
+    if let Some(root_id) = &root
+        && matches!(thread.kind.as_str(), "direct" | "group")
+        && let Err(error) = super::guard::progress(conn, root_id, from, "message")
+    {
+        crate::log::warn(&format!("loop guard progress: {}", error.message));
+    }
     let preview: String = message
         .body
         .lines()
@@ -638,42 +724,119 @@ pub fn post_pot(
                 message: Some(message.id.clone()),
                 ..Refs::default()
             })
-            .root(causal_root),
+            .root(root.as_deref()),
     )?;
     let mut woken = Vec::new();
+    let mut refused = Vec::new();
     for pot in addressees(&thread, &author, &mentions, false) {
         // In a group, only a mention wakes another pot, and only if allowed.
         if thread.kind == "group" && (mentions.is_empty() || !dm_allowed(conn, owner, from, &pot)?)
         {
             continue;
         }
-        woken.push(pot);
-    }
-    if thread.kind == "direct" {
-        // A pot writing in its own direct thread notifies the user, wakes no one.
-        woken.clear();
-    }
-    let text = wake_text(conn, owner, &thread, &author, &message.body);
-    let source = if thread.kind == "group" {
-        Source::Group
-    } else {
-        Source::Dm
-    };
-    for pot in &woken {
-        runtime::enqueue(
+        if thread.kind == "direct" {
+            // A pot writing in its own direct thread notifies the user, wakes no one.
+            continue;
+        }
+        let action = if thread.kind == "group" {
+            "group_message"
+        } else {
+            "dm"
+        };
+        let purpose = super::guard::purpose(
+            &format!("pot:{pot}"),
+            action,
+            &format!("root:{}", root.as_deref().unwrap_or("")),
+        );
+        if let Some(root_id) = &root
+            && thread.kind == "pot_dm"
+            && let Err(error) = super::guard::note_message(conn, root_id, from, &pot, &purpose)
+        {
+            crate::log::warn(&format!("loop guard message: {}", error.message));
+        }
+        let text = wake_text(conn, owner, &thread, &author, &message.body);
+        let source = if thread.kind == "group" {
+            Source::Group
+        } else {
+            Source::Dm
+        };
+        let wake = runtime::enqueue(
             conn,
             owner,
-            pot,
+            &pot,
             NewWake {
                 source,
                 thread_id: Some(&thread.id),
-                causal_root,
+                causal_root: root.as_deref(),
+                depth,
+                from_pot: Some(from),
+                caused_by: handling.wake_id.as_deref(),
+                purpose,
                 content: &text,
                 details: json!({ "threadId": thread.id, "messageId": message.id, "fromPot": from }),
             },
+        );
+        match wake {
+            Ok(_) => woken.push(pot),
+            Err(error) if error.status == 409 => {
+                let refused_pot = Refused {
+                    pot_id: pot,
+                    code: error.code.to_owned(),
+                    reason: error.message.clone(),
+                };
+                activity::log(
+                    conn,
+                    owner,
+                    from,
+                    Entry::new(
+                        Kind::LoopGuard,
+                        format!(
+                            "Did not wake {}: {}",
+                            pot_name(conn, &refused_pot.pot_id),
+                            refused_pot.reason
+                        ),
+                    )
+                    .toward(Counterpart::Pot(refused_pot.pot_id.clone()))
+                    .refs(Refs {
+                        thread: Some(thread.id.clone()),
+                        message: Some(message.id.clone()),
+                        root: root.clone(),
+                        ..Refs::default()
+                    })
+                    .root(root.as_deref()),
+                )?;
+                refused.push(refused_pot);
+            }
+            Err(error) => return Err(error),
+        }
+    }
+    if !refused.is_empty() {
+        let lines: Vec<String> = refused
+            .iter()
+            .map(|refused| {
+                format!(
+                    "{} was not woken: {}",
+                    pot_name(conn, &refused.pot_id),
+                    refused.reason
+                )
+            })
+            .collect();
+        append(
+            conn,
+            &thread,
+            &Author::System,
+            &format!("Not everything here was woken.\n\n{}", lines.join("\n")),
+            &[],
+            false,
+            root.as_deref(),
+            None,
         )?;
     }
-    Ok((message, woken))
+    Ok(Posted {
+        message,
+        woken,
+        refused,
+    })
 }
 
 /// A settled wake's answer becomes the pot's message in the wake's thread.
@@ -685,15 +848,26 @@ pub fn post_reply(conn: &Connection, wake_id: &str) -> ApiResult<Option<Message>
         Option<String>,
         Option<String>,
         Option<String>,
+        String,
     );
     let found: Option<Settled> = conn
         .query_row(
-            "SELECT owner_user,pot_id,thread_id,reply,causal_root FROM pot_wakes WHERE id=?1 AND state='settled'",
+            "SELECT owner_user,pot_id,thread_id,reply,causal_root,purpose_json
+             FROM pot_wakes WHERE id=?1 AND state='settled'",
             [wake_id],
-            |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
+            |r| {
+                Ok((
+                    r.get(0)?,
+                    r.get(1)?,
+                    r.get(2)?,
+                    r.get(3)?,
+                    r.get(4)?,
+                    r.get(5)?,
+                ))
+            },
         )
         .optional()?;
-    let Some((owner, pot, Some(thread_id), Some(reply), root)) = found else {
+    let Some((owner, pot, Some(thread_id), Some(reply), root, purpose)) = found else {
         return Ok(None);
     };
     if reply.trim().is_empty() {
@@ -706,7 +880,7 @@ pub fn post_reply(conn: &Connection, wake_id: &str) -> ApiResult<Option<Message>
         Err(error) => return Err(error),
     };
     let reply: String = reply.chars().take(MAX_BODY / 4).collect();
-    Ok(Some(append(
+    let message = append(
         conn,
         &thread,
         &Author::Pot(&pot),
@@ -715,5 +889,30 @@ pub fn post_reply(conn: &Connection, wake_id: &str) -> ApiResult<Option<Message>
         false,
         root.as_deref(),
         None,
-    )?))
+    )?;
+    if let Some(root_id) = &root {
+        // A reply the user reads is progress; a reply into a pot DM is another
+        // message in a possible no-progress exchange.
+        let result = if matches!(thread.kind.as_str(), "direct" | "group") {
+            super::guard::progress(conn, root_id, &pot, "reply")
+        } else {
+            let peer = thread
+                .pots
+                .iter()
+                .find(|candidate| *candidate != &pot)
+                .map(String::as_str)
+                .unwrap_or("");
+            let purpose: serde_json::Value =
+                serde_json::from_str(&purpose).unwrap_or_else(|_| json!({}));
+            if peer.is_empty() {
+                Ok(())
+            } else {
+                super::guard::note_message(conn, root_id, &pot, peer, &purpose)
+            }
+        };
+        if let Err(error) = result {
+            crate::log::warn(&format!("loop guard reply: {}", error.message));
+        }
+    }
+    Ok(Some(message))
 }

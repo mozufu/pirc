@@ -1,6 +1,7 @@
 //! Hint frames for `/api/events` sockets that opt in (`directory=1`,
 //! `memory=1`, `schedules=1`, `sessions=1`, `pots=1`, `threads=1`,
-//! `approvals=1`, `activity=1`): sent outside the session's sequence and never replayed, so
+//! `approvals=1`, `activity=1`, `budgetRequests=1`, `notifications=1`,
+//! `causalRoots=1`): sent outside the session's sequence and never replayed, so
 //! clients that treat an unknown event as a reset are unaffected
 //! (`daemon/app.ts`).
 
@@ -90,6 +91,8 @@ pub struct Hints {
     pub budget_requests: Arc<Listeners<String>>,
     /// The owner's observation notifications changed (`notifications=1`).
     pub notifications: Arc<Listeners<String>>,
+    /// One of the owner's causal roots changed (`causalRoots=1`).
+    pub causal_roots: Arc<Listeners<String>>,
 }
 
 impl Hints {
@@ -105,6 +108,7 @@ impl Hints {
             activity: Listeners::new(),
             budget_requests: Listeners::new(),
             notifications: Listeners::new(),
+            causal_roots: Listeners::new(),
         }
     }
 }

@@ -406,6 +406,15 @@ fn due_reminders(conn: &Connection) -> ApiResult<Vec<(String, String)>> {
             [&id],
         )?;
         if claimed == 1 {
+            let root = super::roots::start(
+                &tx,
+                &owner,
+                &pot_id,
+                super::roots::Origin::Reminder,
+                &id,
+                None,
+            )?
+            .id;
             let wake = runtime::enqueue(
                 &tx,
                 &owner,
@@ -413,7 +422,15 @@ fn due_reminders(conn: &Connection) -> ApiResult<Vec<(String, String)>> {
                 NewWake {
                     source: Source::Reminder,
                     thread_id: None,
-                    causal_root: None,
+                    causal_root: Some(&root),
+                    depth: 0,
+                    from_pot: None,
+                    caused_by: None,
+                    purpose: super::guard::purpose(
+                        &format!("pot:{pot_id}"),
+                        "reminder",
+                        &format!("reminder:{id}"),
+                    ),
                     content: &note,
                     details: json!({ "reminderId": id, "dueAt": at }),
                 },
@@ -483,6 +500,15 @@ fn due_reviews(conn: &Connection) -> ApiResult<Vec<(String, String)>> {
         let interval_s = interval;
         let at = now + interval_s * 1000;
         let tx = conn.unchecked_transaction()?;
+        let root = super::roots::start(
+            &tx,
+            &owner,
+            &pot_id,
+            super::roots::Origin::Review,
+            &format!("review:{pot_id}:{scheduled}"),
+            None,
+        )?
+        .id;
         runtime::enqueue(
             &tx,
             &owner,
@@ -490,7 +516,15 @@ fn due_reviews(conn: &Connection) -> ApiResult<Vec<(String, String)>> {
             NewWake {
                 source: Source::Review,
                 thread_id: None,
-                causal_root: None,
+                causal_root: Some(&root),
+                depth: 0,
+                from_pot: None,
+                caused_by: None,
+                purpose: super::guard::purpose(
+                    &format!("pot:{pot_id}"),
+                    "review",
+                    &format!("root:{root}"),
+                ),
                 content: &format!(
                     "It has been {}. Review your responsibilities and any work you started; \
                      do anything useful that is due. You may keep, shorten or turn off these \

@@ -59,6 +59,9 @@ pub fn routes() -> Router<AppState> {
             "/api/budget-requests/{id}/answer",
             post(answer_budget_request),
         )
+        .route("/api/causal-roots/{id}", get(read_causal_root))
+        .route("/api/causal-roots/{id}/resume", post(resume_causal_root))
+        .route("/api/causal-roots/{id}/stop", post(stop_causal_root))
 }
 
 /// Models must be ones the Gateway serves; locations workspaces the owner sees.
@@ -318,7 +321,7 @@ async fn post_message(
     ReqBody(body): ReqBody,
 ) -> ApiResult<(axum::http::StatusCode, axum::Json<Value>)> {
     let input: NewMessage = body.parse()?;
-    let (message, woken) = threads::post_user(
+    let posted = threads::post_user(
         &app.db.lock(),
         &identity.user,
         &id,
@@ -326,13 +329,18 @@ async fn post_message(
         input.mentions,
         input.all,
     )?;
-    for pot in &woken {
+    for pot in &posted.woken {
         super::runtime::kick(&app, &identity.user, pot);
     }
     app.threads_changed(&identity.user);
+    app.causal_roots_changed(&identity.user);
     Ok((
         axum::http::StatusCode::CREATED,
-        axum::Json(json!({ "message": message, "woken": woken })),
+        axum::Json(json!({
+            "message": posted.message,
+            "woken": posted.woken,
+            "refused": posted.refused,
+        })),
     ))
 }
 
@@ -370,6 +378,7 @@ async fn answer_approval(
     let approval = approvals::answer(&mut app.db.lock(), &identity.user, &id, input)?;
     app.approvals_changed(&identity.user);
     app.activity_changed(&identity.user);
+    app.causal_roots_changed(&identity.user);
     super::runtime::kick(&app, &identity.user, &approval.pot_id);
     Ok(axum::Json(json!({ "approval": approval })))
 }
@@ -467,6 +476,7 @@ async fn answer_budget_request(
     app.budget_requests_changed(&identity.user);
     app.threads_changed(&identity.user);
     app.activity_changed(&identity.user);
+    app.causal_roots_changed(&identity.user);
     super::runtime::kick(&app, &identity.user, &request.pot_id);
     Ok(axum::Json(json!({ "budgetRequest": request })))
 }
@@ -679,4 +689,45 @@ async fn delete_pot_session(app: &AppState, owner: &str, session_id: &str) {
     }
     app.events.forget(session_id);
     app.sessions_changed(Some(owner));
+}
+
+async fn read_causal_root(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+) -> ApiResult<axum::Json<Value>> {
+    let root = super::roots::read(&app.db.lock(), &identity.user, &id)?;
+    Ok(axum::Json(json!({ "causalRoot": root })))
+}
+
+/// The user resumes a suspended root; its queued wakes may deliver again.
+async fn resume_causal_root(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+) -> ApiResult<axum::Json<Value>> {
+    let (root, pots) = {
+        let conn = app.db.lock();
+        let root = super::roots::resume(&conn, &identity.user, &id)?;
+        let pots = super::roots::queued_pots(&conn, &id)?;
+        (root, pots)
+    };
+    for pot in &pots {
+        super::runtime::kick(&app, &identity.user, pot);
+    }
+    app.causal_roots_changed(&identity.user);
+    app.activity_changed(&identity.user);
+    Ok(axum::Json(json!({ "causalRoot": root, "kicked": pots })))
+}
+
+/// The user stops a root; its queued wakes fail. A pot cannot do either.
+async fn stop_causal_root(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+) -> ApiResult<axum::Json<Value>> {
+    let root = super::roots::stop(&app.db.lock(), &identity.user, &id)?;
+    app.causal_roots_changed(&identity.user);
+    app.activity_changed(&identity.user);
+    Ok(axum::Json(json!({ "causalRoot": root })))
 }

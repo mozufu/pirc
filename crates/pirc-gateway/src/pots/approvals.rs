@@ -232,11 +232,12 @@ pub fn request(
         }));
     }
     let id = new_id("appr");
+    let handling = super::roots::handling(conn, owner, pot_id)?;
     // The limit is part of the one insert: no count-then-insert race.
     let inserted = conn.execute(
         "INSERT INTO model_approvals(id,owner_user,pot_id,work_title,workspace_id,provider,model,
-          thinking,reason,estimate_micros,remaining_micros,state,created_at)
-         SELECT ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,'pending',?12
+          thinking,reason,estimate_micros,remaining_micros,causal_root,depth,state,created_at)
+         SELECT ?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?14,?15,'pending',?12
          WHERE (SELECT count(*) FROM model_approvals WHERE pot_id=?3 AND state='pending') < ?13",
         params![
             id,
@@ -255,6 +256,8 @@ pub fn request(
                 .transpose()?,
             now_ms(),
             MAX_PENDING,
+            handling.root,
+            handling.depth,
         ],
     )?;
     if inserted != 1 {
@@ -395,6 +398,15 @@ pub fn answer(conn: &mut Connection, owner: &str, id: &str, answer: Answer) -> A
             ),
         )?;
     }
+    // The answer continues the root of the wake that asked, at its depth.
+    let (root, depth): (Option<String>, i64) = tx.query_row(
+        "SELECT causal_root,depth FROM model_approvals WHERE id=?1",
+        [id],
+        |r| Ok((r.get(0)?, r.get(1)?)),
+    )?;
+    if let Some(root_id) = &root {
+        super::guard::progress(&tx, root_id, &approval.pot_id, "approval_answered")?;
+    }
     let thread = threads::direct(&tx, owner, &approval.pot_id)?;
     runtime::enqueue(
         &tx,
@@ -403,7 +415,15 @@ pub fn answer(conn: &mut Connection, owner: &str, id: &str, answer: Answer) -> A
         NewWake {
             source: Source::Approval,
             thread_id: Some(&thread.id),
-            causal_root: None,
+            causal_root: root.as_deref(),
+            depth,
+            from_pot: None,
+            caused_by: None,
+            purpose: super::guard::purpose(
+                &format!("pot:{}", approval.pot_id),
+                "approval_answer",
+                &format!("approval:{}", approval.id),
+            ),
             content: &answer_text(&approval),
             details: json!({
                 "approvalId": approval.id,
