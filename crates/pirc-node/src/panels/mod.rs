@@ -19,7 +19,6 @@ pub mod inspect;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
-use pirc_agent::session_store::EntryData;
 use pirc_agent::tools::js::{len16, string_of, truthy};
 use pirc_protocol::RECORDING_CHUNK_BYTES;
 use regex_lite::Regex;
@@ -483,98 +482,27 @@ fn task_id(request: &Request) -> ApiResult<String> {
 // ---------------------------------------------------------------------------
 // panel state and context
 
-/// `GET .../panel/state`: memory from the session file (so it works while
-/// the agent is stopped), plus live feature state when the agent runs.
-/// Every failure of the live part or the configuration is swallowed.
+/// `GET .../panel/state`: live feature state when the agent runs.
+/// Every failure of the live part is swallowed.
 async fn panel_state(node: &Node, local: &Local) -> ApiResult<Value> {
     let runner = node.runners.get(&local.session.id);
     let mut live = Map::new();
-    let mut context_window: Option<u64> = None;
     if let Some(runner) = runner.as_ref().filter(|runner| runner.alive()) {
-        let command = |kind: &str| {
-            let mut command = Map::new();
-            command.insert("type".into(), json!(kind));
-            command
-        };
-        let (panel, state) = tokio::join!(
-            runner.request(command("get_panel_state")),
-            runner.request(command("get_state")),
-        );
-        if let Ok(panel) = panel
+        let mut command = Map::new();
+        command.insert("type".into(), json!("get_panel_state"));
+        if let Ok(panel) = runner.request(command).await
             && truthy(panel.get("success"))
             && let Some(Value::Object(data)) = panel.get("data")
         {
             live = data.clone();
         }
-        if let Ok(state) = state
-            && truthy(state.get("success"))
-        {
-            context_window = state
-                .get("data")
-                .and_then(|data| data.pointer("/model/contextWindow"))
-                .and_then(Value::as_f64)
-                .map(|window| window as u64);
-        }
     }
-    let branch = access::run(|| {
-        node.branches
-            .read(Path::new(&local.session.private_session_path))
-            .map_err(|error| {
-                crate::log::error(&format!("session branch: {error}"));
-                ApiError::internal()
-            })
-    })?;
-    let mut features = Map::new();
-    let env = |name: &str| node.env.get(name).map(str::to_owned);
-    // An invalid configuration falls back to the defaults.
-    if let Ok(config) = access::run(|| {
-        Ok(pirc_agent::config::load_agent_config(
-            &local.root.to_string_lossy(),
-            node.models.current(),
-            &env,
-        ))
-    })? {
-        features = config.features.clone();
-        // A stopped agent: the session's current model decides a ratio-mode
-        // threshold.
-        if context_window.is_none() {
-            let change = branch.iter().rev().find_map(|entry| match &entry.data {
-                EntryData::ModelChange { provider, model_id } => {
-                    Some((provider.clone(), model_id.clone()))
-                }
-                _ => None,
-            });
-            let reference = change.or_else(|| {
-                config
-                    .default_model
-                    .as_ref()
-                    .map(|model| (model.provider.clone(), model.id.clone()))
-            });
-            context_window = reference.and_then(|(provider, id)| {
-                config
-                    .models
-                    .providers
-                    .get(&provider)?
-                    .models
-                    .iter()
-                    .find(|model| model.id == id)
-                    .map(|model| model.context_window)
-            });
-        }
-    }
-    let memory = pirc_agent::features::memory::panel::memory_panel(
-        &branch,
-        &pirc_agent::features::memory::config::memory_config_from(&features),
-        context_window,
-    );
     let or = |key: &str, fallback: Value| match live.get(key) {
         None | Some(Value::Null) => fallback,
         Some(value) => value.clone(),
     };
     Ok(json!({
         "agentRunning": runner.is_some_and(|runner| runner.alive()),
-        "memory": memory,
-        "memoryRuntime": or("memoryRuntime", Value::Null),
         "workspaceMemory":or("workspaceMemory",Value::Null),
         "backgroundTasks": or("backgroundTasks", json!([])),
         "team": or("team", json!({ "agents": [] })),

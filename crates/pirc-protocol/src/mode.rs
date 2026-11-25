@@ -101,7 +101,6 @@ pub struct ModeUi {
 pub const FEATURE_NAMES: &[&str] = &[
     "sessionTitle",
     "todo",
-    "observationalMemory",
     "workspaceMemory",
     "skills",
     "browser",

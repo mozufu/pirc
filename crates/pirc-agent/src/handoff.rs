@@ -61,7 +61,7 @@ impl State {
             &mut self.next_steps,
         ] {
             for f in group {
-                f.text = crate::features::memory::serialize::neutralize_headers(
+                f.text = crate::features::memory::text::neutralize_headers(
                     &crate::redact::redact_secrets(&f.text),
                 );
             }
@@ -496,7 +496,7 @@ fn sources_with_groups(
                 entry_id: e.id.clone(),
                 role,
                 timestamp: e.timestamp,
-                text: crate::features::memory::serialize::neutralize_headers(
+                text: crate::features::memory::text::neutralize_headers(
                     &crate::redact::redact_secrets(&text),
                 ),
                 derived,

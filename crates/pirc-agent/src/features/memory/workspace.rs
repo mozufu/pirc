@@ -1,8 +1,8 @@
-//! Workspace-level observational memory (`features/memory/workspace.ts`):
-//! durable session memory (reflections and high/critical observations) is
-//! promoted into one append-only ledger per repository (shared by all git
-//! worktrees), and frozen into the system prompt of new main sessions as a
-//! cross-session handoff.
+//! Workspace-level memory ledgers: one append-only JSONL file per repository
+//! (shared by all git worktrees), mirrored to the gateway and read for recall.
+//! New repository knowledge is written through the versioned journal by the
+//! workspace-memory feature; this module reads the ledger format, including
+//! lines older versions wrote.
 
 use std::collections::HashSet;
 use std::io::Write as _;
@@ -15,10 +15,53 @@ use indexmap::IndexMap;
 use serde_json::{Map, Value, json};
 use sha2::{Digest, Sha256};
 
-use super::ledger::Relevance;
+use crate::handoff;
 use crate::messages::js as mjs;
-use crate::session_store::{SessionEntry, read_session_branch};
+use crate::session_store::read_session_branch;
 use crate::tools::js;
+
+/// `Relevance`, in `RELEVANCES` order.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Relevance {
+    Low,
+    Medium,
+    High,
+    Critical,
+}
+
+/// `RELEVANCES`.
+pub const RELEVANCES: [&str; 4] = ["low", "medium", "high", "critical"];
+
+impl Relevance {
+    pub fn parse(value: Option<&Value>) -> Option<Self> {
+        Some(match value?.as_str()? {
+            "low" => Self::Low,
+            "medium" => Self::Medium,
+            "high" => Self::High,
+            "critical" => Self::Critical,
+            _ => return None,
+        })
+    }
+
+    pub fn as_str(self) -> &'static str {
+        RELEVANCES[self.index()]
+    }
+
+    /// `RELEVANCES.indexOf(relevance)`.
+    pub fn index(self) -> usize {
+        self as usize
+    }
+}
+
+/// `hashId`: the first 12 hex digits of the content's SHA-256, as a
+/// workspace item id.
+pub fn hash_id(content: &str) -> String {
+    Sha256::digest(content.as_bytes())
+        .iter()
+        .take(6)
+        .map(|b| format!("{b:02x}"))
+        .collect()
+}
 
 /// Session entry: session memory ids already considered for promotion.
 pub const WS_PROMOTED: &str = "om.workspace.promoted";
@@ -68,8 +111,8 @@ pub struct WorkspaceItem {
     pub timestamp: String,
     pub session_id: String,
     pub session_dir: String,
-    /// Session observation/reflection ids this item was distilled from
-    /// (recallable).
+    /// Session memory ids an older ledger line cited; kept so old lines still
+    /// read, while recall answers from `sources` instead.
     pub source_memory_ids: Vec<Value>,
     pub git: Option<GitState>,
     pub token_count: f64,
@@ -707,11 +750,7 @@ pub type Recalled = (String, String);
 
 /// `recallFromWorkspace`: forgotten ids answer without their content or
 /// sources; ids the workspace never recorded (or cleared) are `None`.
-pub fn recall_from_workspace(
-    fold: &WorkspaceFold,
-    id: &str,
-    recall_in_branch: impl Fn(&[SessionEntry], &str) -> Recalled,
-) -> Result<Option<Recalled>, String> {
+pub fn recall_from_workspace(fold: &WorkspaceFold, id: &str) -> Result<Option<Recalled>, String> {
     if fold.forgotten.contains_key(id) {
         return Ok(Some((
             format!(
@@ -721,16 +760,14 @@ pub fn recall_from_workspace(
         )));
     }
     match fold.items.get(id) {
-        Some(item) => recall_workspace_item(item, recall_in_branch).map(Some),
+        Some(item) => recall_workspace_item(item).map(Some),
         None => Ok(None),
     }
 }
 
-/// `recallWorkspaceItem`: through its source session (read-only).
-pub fn recall_workspace_item(
-    item: &WorkspaceItem,
-    recall_in_branch: impl Fn(&[SessionEntry], &str) -> Recalled,
-) -> Result<Recalled, String> {
+/// `recallWorkspaceItem`: the note, plus the original source entries its
+/// journal line cites when that session is still readable.
+pub fn recall_workspace_item(item: &WorkspaceItem) -> Result<Recalled, String> {
     let header = format!(
         "Workspace memory:\n{}\nFrom session {}{}.",
         workspace_item_line(item),
@@ -740,6 +777,17 @@ pub fn recall_workspace_item(
             .map(|git| format!(" at {} in {}", git_label(Some(git)), git.worktree))
             .unwrap_or_default()
     );
+    let ids: Vec<&str> = item
+        .raw
+        .get("sources")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|source| source.get("entryId").and_then(Value::as_str))
+        .collect();
+    if ids.is_empty() {
+        return Ok((header, "ok".to_owned()));
+    }
     let branch = read_session_branch(Path::new(&item.session_dir))?;
     if branch.is_empty() {
         return Ok((
@@ -747,18 +795,20 @@ pub fn recall_workspace_item(
             "source_unavailable".to_owned(),
         ));
     }
-    let mut parts = vec![header];
-    let mut ok = 0;
-    for source in &item.source_memory_ids {
-        let (text, status) = recall_in_branch(&branch, &js::string_of(source));
-        if status == "ok" || status == "partial" {
-            ok += 1;
-        }
-        parts.push(text);
+    let sources: Vec<String> = handoff::sources(&branch)
+        .into_iter()
+        .filter(|source| ids.contains(&source.entry_id.as_str()))
+        .map(|source| source.text)
+        .collect();
+    if sources.is_empty() {
+        return Ok((
+            format!("{header}\n\nNo source entries are available for this memory."),
+            "source_unavailable".to_owned(),
+        ));
     }
     Ok((
-        parts.join("\n\n"),
-        if ok > 0 { "ok" } else { "source_unavailable" }.to_owned(),
+        format!("{header}\n\nSources:\n{}", sources.join("\n\n")),
+        "ok".to_owned(),
     ))
 }
 

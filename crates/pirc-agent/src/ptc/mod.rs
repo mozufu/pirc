@@ -22,7 +22,7 @@ use pirc_protocol::{Message, UserBlock};
 use serde_json::{Map, Value, json};
 
 use crate::agent::{Agent, OperationOptions, OperationStage, ScriptCapabilities};
-use crate::features::memory::serialize::{BASH_NETWORK, fetches_network};
+use crate::features::memory::text::{BASH_NETWORK, fetches_network};
 use crate::host::AgentHost;
 use crate::session_store::{EntryData, PTC_STORE_ENTRY};
 use crate::tools::{Tool, ToolContext, ToolResult, ToolSpec, js, spec_tool};

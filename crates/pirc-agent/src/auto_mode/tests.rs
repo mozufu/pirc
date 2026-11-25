@@ -853,44 +853,27 @@ fn reads_classifier_settings_and_choices() {
         AutoModeSettings::default()
     );
 
-    // `prefers its own models, then observational memory models`.
+    // Only auto mode's own models; the session model is appended later.
     let ids = |value: Value| -> Vec<String> {
         classifier_choices(&features(value))
             .into_iter()
             .map(|choice| choice.id)
             .collect()
     };
-    let om = json!({
-        "model": { "provider": "a", "id": "m" },
-        "fallbackModels": [{ "provider": "b", "id": "n" }],
-        "enabled": false,
-    });
-    assert_eq!(ids(json!({ "observationalMemory": om })), ["m", "n"]);
     assert_eq!(
-        ids(
-            json!({ "observationalMemory": om, "autoMode": { "model": { "provider": "c", "id": "x" } } })
-        ),
+        ids(json!({ "autoMode": { "model": { "provider": "c", "id": "x" } } })),
         ["x"]
     );
     assert_eq!(
-        ids(
-            json!({ "observationalMemory": om, "autoMode": { "fallbackModels": [{ "provider": "c", "id": "y" }] } })
-        ),
+        ids(json!({ "autoMode": { "fallbackModels": [{ "provider": "c", "id": "y" }] } })),
         ["y"]
     );
-    // Broken auto-mode settings fall back to memory's models.
-    assert_eq!(
-        ids(json!({ "observationalMemory": om, "autoMode": { "model": { "provider": "c" } } })),
-        ["m", "n"]
-    );
+    // Broken auto-mode settings do not borrow models from other features.
+    assert!(ids(json!({ "autoMode": { "model": { "provider": "c" } } })).is_empty());
     assert!(ids(json!({})).is_empty());
-    assert!(ids(json!({ "observationalMemory": { "model": { "id": "m" } } })).is_empty());
-    assert!(ids(json!({ "observationalMemory": "on" })).is_empty());
-    assert_eq!(
-        ids(
-            json!({ "observationalMemory": { "fallbackModels": [{ "provider": "a", "id": "z" }] } })
-        ),
-        ["z"]
+    assert!(
+        ids(json!({ "observationalMemory": { "model": { "provider": "a", "id": "m" } } }))
+            .is_empty()
     );
 }
 

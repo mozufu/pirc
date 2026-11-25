@@ -606,24 +606,6 @@ fn next_job(view: &View, state: &Snapshot, catchup: bool) -> ApiResult<Value> {
                 }
             }
         }
-        let legacy = pirc_agent::features::memory::ledger::fold_ledger(&branch);
-        let forgotten_observations: HashSet<_> = legacy
-            .reflections
-            .iter()
-            .filter(|r| state.legacy_forgotten.contains(&r.id))
-            .flat_map(|r| r.supporting_observation_ids.iter())
-            .collect();
-        for observation in &legacy.observations {
-            if state.legacy_forgotten.contains(&observation.id)
-                || forgotten_observations.contains(&observation.id)
-            {
-                for id in &observation.source_entry_ids {
-                    if let Some(admission) = history.origins.get(id) {
-                        revoked.insert(*admission);
-                    }
-                }
-            }
-        }
         blocked_sources |= history.blocked.iter().any(|at| {
             *at < upper
                 && (catchup || boundary.is_none_or(|boundary| *at > boundary))
@@ -900,7 +882,7 @@ fn mutation(view: &View, args: &Value, state: &Snapshot, action: &str) -> ApiRes
                 if refs.iter().any(|r| state.tombstones.contains(r)) {
                     continue;
                 }
-                let content = pirc_agent::features::memory::serialize::neutralize_headers(
+                let content = pirc_agent::features::memory::text::neutralize_headers(
                     &pirc_agent::redact::redact_secrets(text),
                 );
                 if state.items.iter().any(|i| {
@@ -915,7 +897,7 @@ fn mutation(view: &View, args: &Value, state: &Snapshot, action: &str) -> ApiRes
                 if !used.insert(id.clone()) {
                     return Err(ApiError::invalid_input());
                 }
-                frame.add.push(json!({"id":id,"content":content,"relevance":"high","timestamp":pirc_agent::features::memory::ledger::local_stamp_now(),"sessionId":sid,"sessionDir":row.private_session_path,"sourceMemoryIds":[],"sources":refs,"tokenCount":content.len().div_ceil(4)}));
+                frame.add.push(json!({"id":id,"content":content,"relevance":"high","timestamp":pirc_agent::features::memory::time::local_stamp_now(),"sessionId":sid,"sessionDir":row.private_session_path,"sourceMemoryIds":[],"sources":refs,"tokenCount":content.len().div_ceil(4)}));
             }
             frame.receipt = Some(Receipt {
                 job_id: job.into(),
@@ -992,14 +974,6 @@ pub fn execute(view: &View, op: &str, args: &Value) -> ApiResult<Value> {
                 .ok_or_else(|| ApiError::not_found("Source not found"))?;
             let branch = view.source(row)?;
             let mut texts = vec![item["content"].as_str().unwrap_or("").into()];
-            for id in item["sourceMemoryIds"]
-                .as_array()
-                .into_iter()
-                .flatten()
-                .filter_map(Value::as_str)
-            {
-                texts.push(pirc_agent::features::memory::recall(&branch, id).0);
-            }
             if let Some(refs) = item["sources"].as_array() {
                 let ids: HashSet<_> = refs.iter().filter_map(|r| r["entryId"].as_str()).collect();
                 texts.extend(

@@ -106,7 +106,7 @@ impl Setup {
 }
 
 fn item(content: &str, dir: &str) -> Value {
-    json!({"id":pirc_agent::features::memory::ledger::hash_id(content),"content":content,"relevance":"high","timestamp":"2026-10-22 10:00","sessionId":"agent-internal-id","sessionDir":dir,"sourceMemoryIds":[],"tokenCount":10})
+    json!({"id":pirc_agent::features::memory::workspace::hash_id(content),"content":content,"relevance":"high","timestamp":"2026-10-22 10:00","sessionId":"agent-internal-id","sessionDir":dir,"sourceMemoryIds":[],"tokenCount":10})
 }
 fn line(value: Value) -> String {
     format!("{value}\n")

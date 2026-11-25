@@ -70,95 +70,6 @@ fn mode_configures_every_feature_without_removing_diagnostics() {
     }
 }
 
-#[tokio::test]
-async fn disabled_memory_keeps_status_notifications_after_init() {
-    for disabled_by_mode in [false, true] {
-        let dir = tempfile::tempdir().unwrap();
-        let mut mode = pirc_protocol::mode::default_work();
-        let features = if disabled_by_mode {
-            mode.features_off.push("observationalMemory".into());
-            json!({})
-        } else {
-            json!({"observationalMemory": {"enabled": false}})
-        };
-        let (agent, ui) = mode_agent_with_ui(dir.path(), mode, features, None);
-        agent.init().await.unwrap();
-        assert!(agent.get_tool("recall").is_some());
-        let memory = agent
-            .features
-            .iter()
-            .find(|feature| feature.name() == "observational-memory")
-            .expect("disabled memory must retain its status commands");
-        assert!(
-            memory
-                .commands()
-                .iter()
-                .any(|command| command.name == "om:status")
-        );
-        memory
-            .run_command(&agent, "om:status", String::new())
-            .await
-            .unwrap();
-        assert!(
-            ui.notes
-                .borrow()
-                .iter()
-                .any(|note| note.starts_with("Session handoffs:"))
-        );
-    }
-}
-
-#[tokio::test]
-async fn mode_default_off_survives_malformed_feature_settings() {
-    for mode_disabled in [false, true] {
-        for explicit in [None, Some(true), Some(false)] {
-            let dir = tempfile::tempdir().unwrap();
-            let mut mode = pirc_protocol::mode::default_work();
-            if mode_disabled {
-                mode.features_off = vec!["observationalMemory".into(), "sessionTitle".into()];
-            }
-            // Both validators reset the whole configuration on bad fields,
-            // including an explicit false. Preserve that legacy fallback
-            // outside a default-off mode without letting it bypass the mode.
-            let mut features = json!({
-                "observationalMemory": {"fallbackModels": [{"provider": "missing-id"}]},
-                "sessionTitle": {"maxAttempts": 0}
-            });
-            if let Some(enabled) = explicit {
-                features["observationalMemory"]["enabled"] = json!(enabled);
-                features["sessionTitle"]["enabled"] = json!(enabled);
-            }
-            let (agent, ui) = mode_agent_with_ui(dir.path(), mode, features, None);
-            agent.init().await.unwrap();
-            let enabled = explicit != Some(false) && (!mode_disabled || explicit == Some(true));
-            assert_eq!(
-                crate::features::memory::memory_config(&agent).enabled,
-                enabled
-            );
-            assert_eq!(
-                crate::features::title::title_settings(&agent).enabled,
-                !mode_disabled || explicit == Some(true)
-            );
-            assert!(agent.get_tool("recall").is_some());
-            let memory = agent
-                .features
-                .iter()
-                .find(|feature| feature.name() == "observational-memory")
-                .unwrap();
-            memory
-                .run_command(&agent, "om:status", String::new())
-                .await
-                .unwrap();
-            assert!(
-                ui.notes
-                    .borrow()
-                    .iter()
-                    .any(|note| note.starts_with("Session handoffs:"))
-            );
-        }
-    }
-}
-
 #[test]
 fn mode_features_hide_default_off_tools_but_keep_management_commands() {
     let dir = tempfile::tempdir().unwrap();
@@ -1108,8 +1019,8 @@ fn parses_slash_commands() {
         Some(("goal".to_owned(), "finish it".to_owned()))
     );
     assert_eq!(
-        parsed("/om:status"),
-        Some(("om:status".to_owned(), String::new()))
+        parsed("/om:workspace view"),
+        Some(("om:workspace".to_owned(), "view".to_owned()))
     );
     assert_eq!(
         parsed("/Todo\u{3000}a\nb"),

@@ -1065,7 +1065,7 @@ async fn recall_workspace_memory(node: Node, request: Request) -> ApiResult<Resp
     if !hex_id(ledger_key, 16) || !hex_id(id, 12) {
         return Err(ApiError::invalid_input());
     }
-    use pirc_agent::features::memory::{recall, workspace};
+    use pirc_agent::features::memory::workspace;
     let ledger = workspace::WorkspaceLedger::new(
         node.config
             .workspace_memory_dir
@@ -1093,7 +1093,7 @@ async fn recall_workspace_memory(node: Node, request: Request) -> ApiResult<Resp
         readable = owner.as_deref() == Some(request.user.as_str());
     }
     let result = if readable {
-        workspace::recall_from_workspace(&fold, id, recall).map_err(|error| {
+        workspace::recall_from_workspace(&fold, id).map_err(|error| {
             crate::log::error(&format!("workspace memory {ledger_key}: {error}"));
             ApiError::internal()
         })?

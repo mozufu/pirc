@@ -1604,7 +1604,7 @@ impl Agent {
     }
 
     /// `tryCommand`: run `/name args` if a feature registered it (names may
-    /// be namespaced, e.g. `om:status`); true when handled.
+    /// be namespaced, e.g. `om:workspace`); true when handled.
     fn try_command(self: &Rc<Self>, text: &str) -> bool {
         let Some((name, args)) = parse_command(text) else {
             return false;
@@ -2243,8 +2243,7 @@ impl Agent {
             self.system_prompt(),
             self.tool_specs(),
             self.branch().last().map(|e| &e.id),
-            self.config.features.get("compaction"),
-            self.config.features.get("observationalMemory")
+            self.config.features.get("compaction")
         ])
         .to_string()
     }
@@ -2327,38 +2326,7 @@ impl Agent {
         let budget = compaction::main_budget(self, &resolved, &settings);
         let basis = compaction::request_identity(&resolved, &budget);
         let used = compaction::input_tokens(self);
-        let memory = crate::features::memory::memory_config(self);
-        let explicit = self
-            .config
-            .features
-            .get("observationalMemory")
-            .and_then(Value::as_object)
-            .is_some_and(|m| {
-                [
-                    "compactAfterTokens",
-                    "compactAfterTokensMode",
-                    "compactAfterTokensRatio",
-                ]
-                .iter()
-                .any(|k| m.contains_key(*k))
-            });
-        let threshold = if explicit
-            && memory.enabled
-            && !memory.passive
-            && self
-                .config
-                .features
-                .get("compaction")
-                .and_then(|v| v.get("reserveTokens"))
-                .is_none()
-        {
-            budget.input.min(crate::features::memory::compact_threshold(
-                &memory,
-                Some(budget.window),
-            ))
-        } else {
-            budget.input
-        };
+        let threshold = budget.input;
         if used <= threshold {
             return Ok(());
         }
@@ -2481,33 +2449,6 @@ impl Agent {
             .collect()
     }
 
-    /// The memory a folded compaction (observational memory) shows, when
-    /// its summary is among the request's `messages`.
-    fn memory_tokens(&self, messages: &[Message]) -> u64 {
-        let branch = self.store.borrow().branch();
-        let Some(compaction) = branch
-            .iter()
-            .rev()
-            .find(|entry| matches!(entry.data, EntryData::Compaction { .. }))
-        else {
-            return 0;
-        };
-        let EntryData::Compaction {
-            summary, details, ..
-        } = &compaction.data
-        else {
-            return 0;
-        };
-        let shown = messages.iter().any(|message| {
-            matches!(message, Message::CompactionSummary { summary: shown, timestamp, .. }
-                if shown == summary && *timestamp == compaction.timestamp)
-        });
-        if !shown || !crate::features::memory::ledger::is_folded_details(details.as_ref()) {
-            return 0;
-        }
-        crate::features::memory::panel::visible_memory_tokens(&branch) as u64
-    }
-
     /// `stream`: one model call with retries and role fallbacks; emits
     /// the streaming events.
     pub async fn stream(
@@ -2582,7 +2523,6 @@ impl Agent {
                     &request_prompt,
                 )]
             };
-            let memory_tokens = self.memory_tokens(&messages);
             let snapshot = context::capture_context(ContextInput {
                 sections: &shown,
                 tools: &tools,
@@ -2590,7 +2530,7 @@ impl Agent {
                 provider: &resolved.provider_name,
                 model_id: &resolved.model.id,
                 context_window: Some(resolved.model.context_window).filter(|window| *window > 0),
-                memory_tokens,
+                memory_tokens: 0,
                 capabilities: Some(self.registry.summaries(&self.available_tools())),
             });
             let snapshot_id = snapshot.get("id").cloned();

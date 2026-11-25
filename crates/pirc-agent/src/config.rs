@@ -2,8 +2,8 @@
 //! the workspace's `.pirc/config.json` (trust-gated), the system prompt's
 //! files, path policy and limits. Providers come from the gateway.
 
-mod memory;
 pub mod schema;
+mod workspace_memory;
 
 use std::path::Path;
 
@@ -20,7 +20,7 @@ use crate::roles::{RoleDir, RolePreset};
 use crate::session_store::{EntryData, SessionEntry};
 use schema::{Checker, PathPart};
 
-pub use memory::{memory_config_warning, memory_settings_valid};
+pub use workspace_memory::workspace_memory_config_warning;
 
 /// One hook (`hookSchema`).
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -580,7 +580,7 @@ pub fn load_agent_config(
     if untrusted && !child {
         warnings.push(untrusted_project_warning(&fields));
     }
-    if let Some(warning) = memory_config_warning(&global.features) {
+    if let Some(warning) = workspace_memory_config_warning(&global.features) {
         warnings.push(warning);
     }
     if !child && crate::auto_mode::uses_retired_enabled(&global.features) {

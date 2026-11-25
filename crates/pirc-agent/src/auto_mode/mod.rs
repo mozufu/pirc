@@ -6,10 +6,10 @@
 //!    write / danger, or `unknown`. The user's deny-list
 //!    (`features.autoMode.deny`) is matched first and always means danger.
 //! 2. `unknown` actions go to a model classifier ([`classifier`]; models
-//!    from `features.autoMode`, else observational memory's, then the
-//!    session model). It sees the human's recent requests and critical
-//!    observational-memory notes the human is the source of, never tool
-//!    output. If no model answers, the action is treated as a write.
+//!    from `features.autoMode`, then the session model). It sees the
+//!    human's recent requests and the session handoff facts the human is the
+//!    source of, never tool output. If no model answers, the action is
+//!    treated as a write.
 //! 3. `danger` needs a human: with a UI the user confirms; headless agents
 //!    are refused.
 //! 4. Anything that may write takes the node's write lease first: only the
@@ -89,11 +89,10 @@ pub struct AutoModeSettings {
     /// Send statically unclear actions to a model; false treats them as
     /// writes. Auto mode only.
     pub use_model: bool,
-    /// Show the classifier critical observational-memory notes (the
-    /// human's earlier constraints and decisions).
+    /// Show the classifier the session handoff facts (the human's earlier
+    /// constraints and decisions).
     pub use_memory: bool,
-    /// Classifier model; defaults to observational memory's model, then
-    /// the session model.
+    /// Classifier model; defaults to the session model.
     pub model: Option<ModelChoice>,
     pub fallback_models: Vec<ModelChoice>,
     pub timeout_ms: u64,
@@ -223,38 +222,15 @@ pub fn auto_mode_use_model(features: &Map<String, Value>) -> bool {
     auto_mode_settings(features).use_model
 }
 
-/// `classifierChoices`: auto mode's own models, else observational
-/// memory's (the session model is appended later).
+/// `classifierChoices`: auto mode's own models (the session model is
+/// appended later).
 pub fn classifier_choices(features: &Map<String, Value>) -> Vec<ModelChoice> {
     let settings = auto_mode_settings(features);
-    if settings.model.is_some() || !settings.fallback_models.is_empty() {
-        return settings
-            .model
-            .into_iter()
-            .chain(settings.fallback_models)
-            .collect();
-    }
-    // `memoryModels.safeParse(features.observationalMemory ?? {})`.
-    let memory = match features.get("observationalMemory") {
-        None | Some(Value::Null) => return Vec::new(),
-        Some(Value::Object(memory)) => memory,
-        Some(_) => return Vec::new(),
-    };
-    let model = match memory.get("model") {
-        None => None,
-        Some(value) => match model_choice(value) {
-            Some(choice) => Some(choice),
-            None => return Vec::new(),
-        },
-    };
-    let fallbacks = match memory.get("fallbackModels") {
-        None => Vec::new(),
-        Some(value) => match model_choices(value) {
-            Some(choices) => choices,
-            None => return Vec::new(),
-        },
-    };
-    model.into_iter().chain(fallbacks).collect()
+    settings
+        .model
+        .into_iter()
+        .chain(settings.fallback_models)
+        .collect()
 }
 
 /// `autoModeDeny(features)`: the user's deny-list, read on its own so a

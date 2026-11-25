@@ -21,8 +21,8 @@ use pirc_protocol::Message;
 use pirc_protocol::mode::AssistantAccess;
 use serde_json::{Map, Value, json};
 
-use super::memory::ledger::local_stamp;
-use super::memory::serialize::{entry_origin, started_capabilities, user_text};
+use super::memory::text::{entry_origin, started_capabilities, user_text};
+use super::memory::time::local_stamp;
 use crate::LocalBoxFuture;
 use crate::agent::Agent;
 use crate::capabilities::Capabilities;

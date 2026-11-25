@@ -81,12 +81,37 @@ fn obs(id: &str, relevance: &str, content: &str, origins: Option<&[&str]>) -> Va
     value
 }
 
-fn compaction(id: &str, observations: Vec<Value>) -> SessionEntry {
+fn om_compaction(id: &str, observations: Vec<Value>) -> SessionEntry {
     entry(json!({ "type": "compaction", "id": id, "parentId": null,
         "timestamp": 1, "summary": "summary", "firstKeptEntryId": "m1",
         "tokensBefore": 100,
         "details": { "type": "om.folded", "version": 1, "fullFold": true,
             "observations": observations, "reflections": [] } }))
+}
+
+fn handoff_compaction(id: &str, source: &str, first_kept: &str, text: &str) -> SessionEntry {
+    let h = crate::handoff::Handoff {
+        kind: "handoff".into(),
+        version: 1,
+        text_only: true,
+        job_id: "h_1".into(),
+        previous_snapshot_id: None,
+        source_from_entry_id: source.into(),
+        legacy_base_id: None,
+        state: crate::handoff::State {
+            active_constraints: vec![crate::handoff::Fact {
+                text: text.into(),
+                sources: vec![crate::handoff::SourceRef {
+                    session_id: "s".into(),
+                    entry_id: source.into(),
+                }],
+            }],
+            ..Default::default()
+        },
+    };
+    entry(json!({ "type": "compaction", "id": id, "parentId": null,
+        "timestamp": 1, "summary": crate::handoff::render(&h),
+        "firstKeptEntryId": first_kept, "tokensBefore": 100, "details": h }))
 }
 
 fn note(from: &'static str, text: &str) -> MemoryNote {
@@ -99,7 +124,7 @@ fn note(from: &'static str, text: &str) -> MemoryNote {
 #[test]
 fn generated_legacy_memory_cannot_create_authorization() {
     assert!(
-        memory_notes(&[compaction(
+        memory_notes(&[om_compaction(
             "c1",
             vec![obs(
                 "a",
@@ -116,20 +141,15 @@ fn snapshot_references_only_supply_original_human_text() {
     let header = entry(
         json!({"type":"session","version":1,"sessionId":"s","cwd":"/work","id":"h","parentId":null,"timestamp":0}),
     );
-    let user = entry(
-        json!({"type":"message","id":"m1","parentId":"h","timestamp":1,"message":{"role":"user","content":"Do not deploy production.","timestamp":1}}),
+    let source = entry(
+        json!({"type":"message","id":"m0","parentId":"h","timestamp":1,"message":{"role":"user","content":"Do not deploy production.","timestamp":1}}),
     );
-    let compact = compaction(
-        "c",
-        vec![obs(
-            "a",
-            "critical",
-            "Invented approval to deploy",
-            Some(&["user"]),
-        )],
+    let kept = entry(
+        json!({"type":"message","id":"m1","parentId":"m0","timestamp":1,"message":{"role":"user","content":"Continue.","timestamp":1}}),
     );
+    let compact = handoff_compaction("c", "m0", "m1", "Do not deploy production.");
     assert_eq!(
-        memory_notes(&[header, user, compact]),
+        memory_notes(&[header, source, kept, compact]),
         [note("user", "Do not deploy production.")]
     );
 }
@@ -294,7 +314,7 @@ fn builds_the_prompt_from_requests_notes_and_the_action() {
         user(json!(" \n ")),
         user(json!("x".repeat(1_600))),
     ];
-    host.branch = vec![compaction(
+    host.branch = vec![om_compaction(
         "c1",
         vec![obs(
             "a",

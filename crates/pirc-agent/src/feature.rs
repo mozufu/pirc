@@ -75,7 +75,7 @@ pub struct CompactContext<'a> {
 /// model.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct FeatureCommand {
-    /// May be namespaced (`om:status`). Owned when a feature makes its
+    /// May be namespaced (`om:workspace`). Owned when a feature makes its
     /// commands from data (`skill:<name>` for each installed skill).
     pub name: Cow<'static, str>,
     pub description: Cow<'static, str>,

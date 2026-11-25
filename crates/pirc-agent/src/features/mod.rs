@@ -32,7 +32,6 @@ pub(crate) fn config_key(name: &str) -> Option<&'static str> {
     match name {
         "session-title" => Some("sessionTitle"),
         "todo" => Some("todo"),
-        "observational-memory" => Some("observationalMemory"),
         "workspace-memory" => Some("workspaceMemory"),
         "skills" => Some("skills"),
         "browser" => Some("browser"),
@@ -56,7 +55,6 @@ pub fn builtin_features() -> Vec<Rc<dyn Feature>> {
         // Chat sessions only: the project's instructions, before USER/MEMORY.
         // Agents started in a role: the role's instructions.
         role::feature(),
-        memory::feature(),
         workspace_memory::feature(),
         // Chat sessions only: the user's memory, held by the gateway.
         assistant::feature(),
@@ -151,7 +149,6 @@ mod tests {
                 "todo",
                 "compact",
                 "role",
-                "observational-memory",
                 "workspace-memory",
                 "assistant",
                 "pot",

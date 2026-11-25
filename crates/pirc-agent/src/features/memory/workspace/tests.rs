@@ -6,10 +6,6 @@ use pirc_protocol::{Message, UserContent};
 use serde_json::json;
 
 use super::*;
-use crate::features::memory::ledger::OBS_RECORDED;
-use crate::features::memory::ledger::hash_id;
-use crate::features::memory::ledger::tests::obs;
-use crate::features::memory::recall;
 use crate::session_store::{EntryData, SessionStore};
 
 fn tmp() -> (tempfile::TempDir, String) {
@@ -325,7 +321,7 @@ fn renders_within_budget_preferring_relevant_and_recent_items() {
 }
 
 #[test]
-fn recalls_a_workspace_item_through_its_source_session() {
+fn recalls_a_workspace_item_with_its_original_sources() {
     let (_dir, dir) = tmp();
     let mut store = SessionStore::open(dir.clone().into(), &dir).unwrap();
     let message = store
@@ -334,21 +330,19 @@ fn recalls_a_workspace_item_through_its_source_session() {
             timestamp: crate::now_ms(),
         }))
         .unwrap();
-    let observation = obs("User chose sqlite", &message.id, "high");
-    store
-        .append(EntryData::Custom {
-            custom_type: OBS_RECORDED.to_owned(),
-            data: json!({ "observations": [observation], "coversUpToId": message.id }),
-        })
-        .unwrap();
-    let source = json!({ "sessionDir": dir, "sourceMemoryIds": [observation["id"]] });
+    let source =
+        json!({ "sessionDir": dir, "sources": [{ "sessionId": "s", "entryId": message.id }] });
     let kept = WorkspaceItem::parse(&item("Chose sqlite", source.clone())).unwrap();
-    let (text, status) = recall_workspace_item(&kept, recall).unwrap();
+    let (text, status) = recall_workspace_item(&kept).unwrap();
     assert_eq!(status, "ok");
     assert!(text.contains("We chose sqlite over postgres."));
-    let gone = WorkspaceItem::parse(&item("gone", json!({}))).unwrap();
+    let gone = WorkspaceItem::parse(&item(
+        "gone",
+        json!({ "sessionDir": "/nonexistent", "sources": [{ "sessionId": "s", "entryId": message.id }] }),
+    ))
+    .unwrap();
     assert_eq!(
-        recall_workspace_item(&gone, recall).unwrap().1,
+        recall_workspace_item(&gone).unwrap().1,
         "source_unavailable"
     );
     // Through the fold: superseded items still recall, forgotten ones
@@ -360,21 +354,15 @@ fn recalls_a_workspace_item_through_its_source_session() {
         json!({ "type": "retired", "at": 3, "ids": [dropped["id"]], "reason": "forgotten" }),
     ]));
     assert_eq!(
-        recall_from_workspace(&fold, &kept.id, recall)
-            .unwrap()
-            .unwrap()
-            .1,
+        recall_from_workspace(&fold, &kept.id).unwrap().unwrap().1,
         "ok"
     );
-    let (text, status) = recall_from_workspace(&fold, dropped["id"].as_str().unwrap(), recall)
+    let (text, status) = recall_from_workspace(&fold, dropped["id"].as_str().unwrap())
         .unwrap()
         .unwrap();
     assert_eq!(status, "forgotten");
     assert!(!text.contains("sqlite"));
-    assert_eq!(
-        recall_from_workspace(&fold, "ffffffffffff", recall).unwrap(),
-        None
-    );
+    assert_eq!(recall_from_workspace(&fold, "ffffffffffff").unwrap(), None);
 }
 
 #[test]

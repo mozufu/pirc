@@ -224,31 +224,14 @@ pub fn memory_notes(branch: &[SessionEntry]) -> Vec<MemoryNote> {
     let Some(snapshot) = crate::handoff::valid_snapshots(branch).last().copied() else {
         return vec![];
     };
-    let ids: HashSet<String> = if let Some(h) = crate::handoff::details(snapshot) {
-        h.state
-            .facts()
-            .flat_map(|f| f.sources.iter().map(|s| s.entry_id.clone()))
-            .collect()
-    } else if let EntryData::Compaction {
-        details: Some(details),
-        ..
-    } = &snapshot.data
-    {
-        details["observations"]
-            .as_array()
-            .into_iter()
-            .flatten()
-            .flat_map(|o| {
-                o["sourceEntryIds"]
-                    .as_array()
-                    .into_iter()
-                    .flatten()
-                    .filter_map(|id| id.as_str().map(str::to_owned))
-            })
-            .collect()
-    } else {
-        HashSet::new()
+    let Some(h) = crate::handoff::details(snapshot) else {
+        return vec![];
     };
+    let ids: HashSet<String> = h
+        .state
+        .facts()
+        .flat_map(|f| f.sources.iter().map(|s| s.entry_id.clone()))
+        .collect();
     let mut out = Vec::new();
     let mut chars = 0;
     for entry in branch.iter().rev() {

@@ -541,11 +541,11 @@ fn adds_skill_locations_as_readable_protected_configuration() {
 }
 
 #[test]
-fn warns_about_memory_settings_at_load() {
+fn warns_about_workspace_memory_settings_at_load() {
     let setup = workspace_with(json!({}));
     fs::write(
         setup.config_dir.join("config.json"),
-        json!({"features": {"observationalMemory": {"enabled": false, "oldOption": "private-value"}}})
+        json!({"features": {"workspaceMemory": {"enabled": false, "oldOption": "private-value"}}})
             .to_string(),
     )
     .unwrap();
