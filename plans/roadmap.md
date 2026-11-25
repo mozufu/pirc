@@ -15,7 +15,7 @@ acceptance, activation.
 | [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)         |
 | [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11   |
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
-| [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–10 done; 11 in progress on a branch                 |
+| [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | complete (224 conformance tests on Linux)                   |
 | [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`               |
 | [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | 12: no files, instructions, delete preview (gone in 10b)    |
 | [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |
@@ -360,14 +360,13 @@ evidence?)` (L1 `obs_observations`, one per pot and event, only for events that
         memory in `crates/pirc-agent/src/features/memory/` (keep what workspace
         memory uses) and delete `docs/architecture/legacy-observational-memory.md`.
 
-11. **Conformance rewrite** (parallel to every other step; touches only
-    `crates/pirc-conformance` and `scripts/conformance-accounting.ts`). A harness
-    helper starts a conversation through first-send (prepare, accept, materialize,
-    dispatch, wait for the run); every test marked `#[ignore = "pirc 2: …"]` is
-    rewritten on it, except tests of the assistant chat mode, which step 10 deletes
-    with the feature. Snapshots are re-recorded on Linux (a temporary branch
-    workflow) and reviewed: only session-creation differences may change. The
-    passing floor goes back above 250.
+11. **Conformance rewrite.** Done: a harness helper starts conversations through
+    first-send (`crates/pirc-conformance/src/first_send.rs`); the 83 set-aside tests
+    run on it; tests of the features removed in step 10 are deleted. Linux run: 224
+    passed, 0 failed, 10 ignored (5 live-client acceptance runs, the Gateway user
+    memory replaced by pot memory, 4 terminal cases that need an isolated-terminal
+    backend). The passing floor is 224: the removed features took about 40 passing
+    tests with them.
 
 ---
 
