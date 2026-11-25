@@ -261,6 +261,323 @@ fn settings_have_finite_defaults_and_range_checks() {
     assert_eq!(settings(&conn, "bob").unwrap().cap_money_month_micros, 0);
 }
 
+mod budget {
+    use super::super::budget::{self, Answer, Decision, RequestInput, RequestState, Window};
+    use super::super::threads;
+    use super::*;
+
+    fn ask_money(amount: u64) -> RequestInput {
+        RequestInput {
+            amount_micros: Some(amount),
+            tokens: None,
+            window: Window::Month,
+            reason: "The nightly work needs a longer review".into(),
+        }
+    }
+
+    fn ask_tokens(tokens: u64) -> RequestInput {
+        RequestInput {
+            amount_micros: None,
+            tokens: Some(tokens),
+            window: Window::Day,
+            reason: String::new(),
+        }
+    }
+
+    fn answer(decision: Decision, amount: Option<u64>) -> Answer {
+        Answer {
+            answer: decision,
+            amount,
+        }
+    }
+
+    #[test]
+    fn a_budget_request_is_asked_once_answered_and_raises_only_that_window() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        let request = budget::request(&mut conn, "alice", &pot.id, ask_money(1_000_000)).unwrap();
+        assert_eq!(request.state, RequestState::Pending);
+        assert_eq!(request.amount_micros, Some(1_000_000));
+        assert_eq!(request.window, Window::Month);
+        // It is a system message in the pot's direct thread.
+        let thread = threads::direct(&conn, "alice", &pot.id).unwrap();
+        let messages = threads::messages(&conn, "alice", &thread.id, None).unwrap();
+        let last = messages.last().unwrap();
+        assert_eq!(last.author_kind, "system");
+        assert!(last.body.contains("Budget request"));
+        assert!(last.body.contains("The nightly work needs a longer review"));
+        // One open request per pot, and owners are separate.
+        let error = budget::request(&mut conn, "alice", &pot.id, ask_money(5)).unwrap_err();
+        assert_eq!(error.code, "budget_request_open");
+        assert!(budget::list(&conn, "bob", None).unwrap().is_empty());
+        assert_eq!(
+            budget::answer(&mut conn, "bob", &request.id, answer(Decision::Deny, None))
+                .unwrap_err()
+                .status,
+            404
+        );
+        // A denial blocks the same window until the user writes to the pot.
+        let denied = budget::answer(
+            &mut conn,
+            "alice",
+            &request.id,
+            answer(Decision::Deny, None),
+        )
+        .unwrap();
+        assert_eq!(denied.state, RequestState::Denied);
+        let error = budget::request(&mut conn, "alice", &pot.id, ask_money(1_000_000)).unwrap_err();
+        assert_eq!(error.code, "budget_request_denied");
+        // Another window is still allowed.
+        let day = budget::request(&mut conn, "alice", &pot.id, ask_tokens(5_000)).unwrap();
+        assert_eq!(day.window, Window::Day);
+        budget::answer(&mut conn, "alice", &day.id, answer(Decision::Deny, None)).unwrap();
+        // The user's new message in the direct thread unlocks it.
+        threads::post_user(&conn, "alice", &thread.id, "Go ahead", Vec::new(), false).unwrap();
+        let again = budget::request(&mut conn, "alice", &pot.id, ask_money(1_000_000)).unwrap();
+        // Approve a different amount: the cap rises by exactly that, once.
+        let error = budget::answer(
+            &mut conn,
+            "alice",
+            &again.id,
+            answer(Decision::ApproveAmount, None),
+        )
+        .unwrap_err();
+        assert_eq!(error.code, "invalid_input");
+        let approved = budget::answer(
+            &mut conn,
+            "alice",
+            &again.id,
+            answer(Decision::ApproveAmount, Some(250_000)),
+        )
+        .unwrap();
+        assert_eq!(approved.state, RequestState::ApprovedAmount);
+        assert_eq!(approved.approved_amount_micros, Some(250_000));
+        let pot = read(&conn, "alice", &pot.id).unwrap();
+        assert_eq!(
+            pot.input.permissions.budget_money_month_micros,
+            20_000_000 + 250_000
+        );
+        // Answering twice is a conflict; every answer wakes the pot.
+        assert_eq!(
+            budget::answer(
+                &mut conn,
+                "alice",
+                &again.id,
+                answer(Decision::Approve, None)
+            )
+            .unwrap_err()
+            .code,
+            "already_answered"
+        );
+        let source: String = conn
+            .query_row(
+                "SELECT source FROM pot_wakes WHERE pot_id=?1 ORDER BY created_at DESC,rowid DESC LIMIT 1",
+                [&pot.id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(source, "budget");
+        let kinds: Vec<String> = conn
+            .prepare("SELECT kind FROM pot_activity WHERE pot_id=?1 ORDER BY rowid")
+            .unwrap()
+            .query_map([&pot.id], |r| r.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(
+            kinds
+                .iter()
+                .filter(|kind| kind.as_str() == "budget_request")
+                .count(),
+            6
+        );
+    }
+
+    #[test]
+    fn an_approved_request_raises_that_pots_cap_and_clamps_at_its_own_window() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        let tokens = budget::request(&mut conn, "alice", &pot.id, ask_tokens(50_000)).unwrap();
+        let approved = budget::answer(
+            &mut conn,
+            "alice",
+            &tokens.id,
+            answer(Decision::Approve, None),
+        )
+        .unwrap();
+        assert_eq!(approved.state, RequestState::Approved);
+        assert_eq!(approved.approved_tokens, Some(50_000));
+        let pot = read(&conn, "alice", &pot.id).unwrap();
+        assert_eq!(pot.input.permissions.budget_tokens_day, 550_000);
+        assert_eq!(pot.input.permissions.budget_money_month_micros, 20_000_000);
+        // Approving answers no longer pending.
+        assert!(
+            budget::list(&conn, "alice", Some(RequestState::Pending))
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn a_request_rejects_mismatched_amounts_and_reasons() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        let cases = [
+            RequestInput {
+                amount_micros: Some(5),
+                tokens: Some(5),
+                window: Window::Month,
+                reason: String::new(),
+            },
+            RequestInput {
+                amount_micros: Some(5),
+                tokens: None,
+                window: Window::Day,
+                reason: String::new(),
+            },
+            RequestInput {
+                amount_micros: None,
+                tokens: Some(5),
+                window: Window::Month,
+                reason: String::new(),
+            },
+            RequestInput {
+                amount_micros: Some(0),
+                tokens: None,
+                window: Window::Month,
+                reason: String::new(),
+            },
+        ];
+        for case in cases {
+            let error = budget::request(&mut conn, "alice", &pot.id, case).unwrap_err();
+            assert_eq!(error.code, "invalid_input");
+        }
+        assert!(budget::list(&conn, "alice", None).unwrap().is_empty());
+    }
+}
+
+mod exhaustion {
+    use super::super::runtime::{self, NewWake, Source};
+    use super::*;
+
+    fn wake(conn: &rusqlite::Connection, pot: &str) -> String {
+        runtime::enqueue(
+            conn,
+            "alice",
+            pot,
+            NewWake {
+                source: Source::User,
+                thread_id: None,
+                causal_root: None,
+                content: "Please look at this",
+                details: json!({}),
+            },
+        )
+        .unwrap()
+    }
+
+    fn owner_caps(conn: &rusqlite::Connection, money: u64, tokens: u64) {
+        conn.execute(
+            "INSERT INTO pot_settings(owner_user,cap_money_month_micros,cap_tokens_day)
+             VALUES('alice',?1,?2)
+             ON CONFLICT(owner_user) DO UPDATE SET
+               cap_money_month_micros=?1,cap_tokens_day=?2",
+            rusqlite::params![money as i64, tokens as i64],
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn a_pot_at_its_cap_waits_and_resumes_after_a_raise() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        owner_caps(&conn, 100_000_000, 100_000_000);
+        conn.execute(
+            "UPDATE pot_permissions SET budget_money_month_micros=0,budget_tokens_day=0 WHERE pot_id=?1",
+            [&pot.id],
+        )
+        .unwrap();
+        let wake = wake(&conn, &pot.id);
+        assert_eq!(
+            runtime::claim_next(&conn, "alice", &pot.id, "UTC").unwrap(),
+            None,
+            "an exhausted pot's model wake waits"
+        );
+        // The sweep looks again, but the exhaustion is logged once per window.
+        assert_eq!(
+            runtime::claim_next(&conn, "alice", &pot.id, "UTC").unwrap(),
+            None
+        );
+        let rows: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM pot_activity WHERE kind='budget_exhausted'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(rows, 1);
+        // A user-approved raise lets the queued wake through.
+        conn.execute(
+            "UPDATE pot_permissions SET budget_money_month_micros=1000000,budget_tokens_day=1000000 WHERE pot_id=?1",
+            [&pot.id],
+        )
+        .unwrap();
+        assert_eq!(
+            runtime::claim_next(&conn, "alice", &pot.id, "UTC").unwrap(),
+            Some(wake)
+        );
+    }
+
+    #[test]
+    fn owner_exhaustion_stops_every_pots_wakes_until_it_is_raised() {
+        let db = db();
+        let mut conn = db.lock();
+        let first = create(&mut conn, "alice", input("First")).unwrap();
+        let second = create(&mut conn, "alice", input("Second")).unwrap();
+        owner_caps(&conn, 1, 100_000_000);
+        conn.execute(
+            "UPDATE pot_settings SET on_exhausted='pause_all' WHERE owner_user='alice'",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO usage_events(at,owner_user,node_id,node_session,actor_kind,actor_id,provider,
+               model,auth_kind,input_tokens,output_tokens,cache_read_tokens,cache_write_tokens,
+               cost_micros,outcome)
+             VALUES(?1,'alice','node','past','pot',?2,'work-anthropic','claude-fable-5','api_key',
+               1,0,0,0,5,'ok')",
+            rusqlite::params![crate::util::now_ms(), first.id],
+        )
+        .unwrap();
+        wake(&conn, &first.id);
+        wake(&conn, &second.id);
+        assert_eq!(
+            runtime::claim_next(&conn, "alice", &first.id, "UTC").unwrap(),
+            None
+        );
+        assert_eq!(
+            runtime::claim_next(&conn, "alice", &second.id, "UTC").unwrap(),
+            None,
+            "an owner-wide cap stops every pot, not only the one that spent"
+        );
+        owner_caps(&conn, 100_000_000, 100_000_000);
+        assert!(
+            runtime::claim_next(&conn, "alice", &first.id, "UTC")
+                .unwrap()
+                .is_some()
+        );
+        assert!(
+            runtime::claim_next(&conn, "alice", &second.id, "UTC")
+                .unwrap()
+                .is_some()
+        );
+    }
+}
+
 mod http {
     use crate::test_support::{app_with_models, call};
     use serde_json::{Value, json};
@@ -278,6 +595,13 @@ mod http {
 
     fn body() -> Value {
         serde_json::to_value(super::input("Tester")).unwrap()
+    }
+
+    async fn create_pot(app: &crate::app::AppState) -> String {
+        let (status, created) =
+            call(app, "POST", "/api/pots", Some("alice"), None, Some(body())).await;
+        assert_eq!(status, 201, "{created}");
+        created["pot"]["id"].as_str().unwrap().to_owned()
     }
 
     #[tokio::test]
@@ -597,6 +921,157 @@ mod http {
         let (_, capabilities) =
             call(&app, "GET", "/api/capabilities", Some("alice"), None, None).await;
         assert_eq!(capabilities["features"]["pots"]["enabled"], true);
+    }
+
+    #[tokio::test]
+    async fn budget_requests_are_listed_and_answered_over_http() {
+        use crate::pots::budget::{self, RequestInput, Window};
+        use std::sync::Arc;
+        use std::sync::atomic::{AtomicBool, Ordering};
+
+        let (app, _dir) = app();
+        let pot = create_pot(&app).await;
+        let fired = Arc::new(AtomicBool::new(false));
+        let flag = fired.clone();
+        let _hint = app.hints.budget_requests.add(
+            "alice".into(),
+            Arc::new(move || flag.store(true, Ordering::SeqCst)),
+        );
+        let request = budget::request(
+            &mut app.db.lock(),
+            "alice",
+            &pot,
+            RequestInput {
+                amount_micros: Some(1_500_000),
+                tokens: None,
+                window: Window::Month,
+                reason: "More review time".into(),
+            },
+        )
+        .unwrap();
+        // A store write alone sends no hint; the answer route does.
+        assert!(!fired.swap(false, Ordering::SeqCst));
+        let path = "/api/budget-requests?state=pending";
+        let (status, listed) = call(&app, "GET", path, Some("alice"), None, None).await;
+        assert_eq!(status, 200, "{listed}");
+        assert_eq!(listed["budgetRequests"][0]["id"], request.id.as_str());
+        assert_eq!(listed["budgetRequests"][0]["amountMicros"], 1_500_000);
+        assert_eq!(
+            call(
+                &app,
+                "GET",
+                "/api/budget-requests?state=unknown",
+                Some("alice"),
+                None,
+                None
+            )
+            .await
+            .0,
+            400
+        );
+        assert!(
+            call(&app, "GET", "/api/budget-requests", Some("bob"), None, None)
+                .await
+                .1["budgetRequests"]
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
+        let answer = format!("/api/budget-requests/{}/answer", request.id);
+        assert_eq!(
+            call(
+                &app,
+                "POST",
+                &answer,
+                Some("alice"),
+                None,
+                Some(json!({ "answer": "approve", "budget": 1 }))
+            )
+            .await
+            .0,
+            400
+        );
+        assert_eq!(
+            call(
+                &app,
+                "POST",
+                &answer,
+                Some("alice"),
+                None,
+                Some(json!({ "answer": "approve_amount" }))
+            )
+            .await
+            .0,
+            400
+        );
+        assert_eq!(
+            call(
+                &app,
+                "POST",
+                &answer,
+                Some("bob"),
+                None,
+                Some(json!({ "answer": "deny" }))
+            )
+            .await
+            .0,
+            404
+        );
+        let (status, answered) = call(
+            &app,
+            "POST",
+            &answer,
+            Some("alice"),
+            None,
+            Some(json!({ "answer": "approve_amount", "amount": 2_000_000 })),
+        )
+        .await;
+        assert_eq!(status, 200, "{answered}");
+        assert_eq!(answered["budgetRequest"]["state"], "approved_amount");
+        assert_eq!(answered["budgetRequest"]["approvedAmountMicros"], 2_000_000);
+        assert!(fired.swap(false, Ordering::SeqCst), "answer hints");
+        let (_, updated) = call(
+            &app,
+            "GET",
+            &format!("/api/pots/{pot}"),
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        assert_eq!(
+            updated["pot"]["permissions"]["budgetMoneyMonthMicros"],
+            20_000_000 + 2_000_000
+        );
+        let (_, pending) = call(&app, "GET", path, Some("alice"), None, None).await;
+        assert_eq!(pending["budgetRequests"], Value::Array(Vec::new()));
+        // The answer is a system message in the pot's direct thread.
+        let (_, thread) = call(
+            &app,
+            "GET",
+            &format!("/api/pots/{pot}/thread"),
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        let (_, page) = call(
+            &app,
+            "GET",
+            &format!(
+                "/api/threads/{}/messages",
+                thread["thread"]["id"].as_str().unwrap()
+            ),
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        assert!(page["messages"].as_array().unwrap().iter().any(|message| {
+            message["body"]
+                .as_str()
+                .is_some_and(|body| body.contains("approved"))
+        }));
     }
 }
 

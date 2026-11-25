@@ -21,6 +21,7 @@ use crate::tools::Tool;
 const CONTEXT_TIMEOUT: Duration = Duration::from_secs(15);
 
 pub(crate) mod autonomy;
+mod budget;
 mod send;
 mod work;
 
@@ -121,6 +122,8 @@ pub(crate) fn registered_tool_names() -> Vec<String> {
         work::OPEN_TOOL,
         work::SEND_TOOL,
         work::STATUS_TOOL,
+        budget::STATUS_TOOL,
+        budget::REQUEST_TOOL,
     ]
     .map(str::to_owned)
     .to_vec()
@@ -140,6 +143,8 @@ impl Feature for PotFeature {
                 send::tool(),
             ];
             tools.extend(work::tools());
+            tools.push(budget::status_tool());
+            tools.push(budget::request_tool());
             tools
         } else {
             Vec::new()

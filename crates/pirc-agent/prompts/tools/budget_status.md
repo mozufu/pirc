@@ -1,0 +1,1 @@
+Read your budget: the money you have left this month, the tokens you have left today, the reservations already held by requests in flight, and the owner-wide remainder. Use it to plan before spending, for example before opening work or starting a long turn. This tool only reads; it changes nothing.

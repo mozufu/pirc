@@ -1364,6 +1364,23 @@ fn start_inference(
         }
         return;
     }
+    // A pot's request is admitted before it leaves, holding an upper bound
+    // against its pot and owner caps until the answer is recorded.
+    let reservation = match crate::usage::admission::begin(app, node_id, &node_session, &request) {
+        Ok(reservation) => reservation,
+        Err(error) => {
+            drop(state);
+            let code = if error.code == "budget_exhausted" {
+                "budget_exhausted"
+            } else {
+                "inference_failed"
+            };
+            if !send_inference(link, &request_id, model_error(code)) {
+                link.close(1013, "inference buffer limit");
+            }
+            return;
+        }
+    };
     // Registered before the task can finish, under the same lock.
     let (stop, stopped) = oneshot::channel::<()>();
     let task = tokio::spawn({
@@ -1400,7 +1417,10 @@ fn start_inference(
                 .run(app.backends.as_ref(), &request, &key.0, &mut on_delta);
             tokio::select! {
                 biased;
-                _ = stopped => finish(model_error("limit_exceeded")),
+                _ = stopped => {
+                    crate::usage::admission::keep_unknown(&app, reservation.as_ref());
+                    finish(model_error("limit_exceeded"))
+                }
                 message = run => {
                     crate::usage::record(
                         &app,
@@ -1409,6 +1429,9 @@ fn start_inference(
                         &request,
                         &message,
                     );
+                    if let Some(reservation) = &reservation {
+                        crate::usage::admission::finish(&app, reservation, &message);
+                    }
                     if message.stop_reason == pirc_protocol::StopReason::Error {
                         // Already a fixed classification (status included
                         // when known), never an upstream body.
@@ -1427,6 +1450,7 @@ fn start_inference(
                         "inference for node {} timed out: {}/{}",
                         key.0, request.provider_name, request.model_id
                     ));
+                    crate::usage::admission::keep_unknown(&app, reservation.as_ref());
                     finish(model_error("timeout"));
                 }
             }

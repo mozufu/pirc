@@ -20,6 +20,8 @@ pub enum Op {
     ReminderCreate(ReminderCreate),
     ThinkingSet(ThinkingSet),
     Fallback(Fallback),
+    BudgetStatus,
+    BudgetRequest(super::budget::RequestInput),
 }
 
 #[derive(serde::Deserialize)]
@@ -146,6 +148,17 @@ pub fn parse_op(op: &str, args: &Value) -> Option<Result<Op, ()>> {
         "pot.fallback" => Some(
             serde_json::from_value::<Fallback>(args.clone())
                 .map(Op::Fallback)
+                .map_err(|_| ()),
+        ),
+        "pot.budget.status" => Some(
+            args.as_object()
+                .filter(|a| a.is_empty())
+                .map(|_| Op::BudgetStatus)
+                .ok_or(()),
+        ),
+        "pot.budget.request" => Some(
+            serde_json::from_value::<super::budget::RequestInput>(args.clone())
+                .map(Op::BudgetRequest)
                 .map_err(|_| ()),
         ),
         _ => None,
@@ -356,6 +369,19 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
         Op::WorkStatus(status) => {
             let pot = pot_of_session(&app.db.lock(), &context.user, &context.session.id)?;
             super::work::status(app, &context.user, &pot.id, &status.session_id).await
+        }
+        Op::BudgetStatus => {
+            let conn = app.db.lock();
+            let pot = pot_of_session(&conn, &context.user, &context.session.id)?;
+            super::budget::status_for(&conn, &context.user, &pot.id, &app.config.timezone)
+        }
+        Op::BudgetRequest(input) => {
+            let pot_id = {
+                let conn = app.db.lock();
+                pot_of_session(&conn, &context.user, &context.session.id)?.id
+            };
+            let request = super::budget::request_with_hints(app, &context.user, &pot_id, input)?;
+            Ok(json!({ "request": request }))
         }
     }
 }

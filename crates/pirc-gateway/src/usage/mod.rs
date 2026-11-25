@@ -3,6 +3,7 @@
 //! whose runner capability admitted the request, never from what the agent
 //! claims; prices come from the pinned model catalog.
 
+pub mod admission;
 pub mod api;
 
 use rusqlite::{Connection, OptionalExtension, params};
@@ -137,7 +138,18 @@ pub fn attribute(
             |r| r.get(0),
         )
         .optional()?;
-    let (actor_kind, actor_id) = if let Some(schedule) = schedule {
+    // A pot's own session, or a work session it opened, is charged to the pot.
+    let (actor_kind, actor_id) = if let Some(pot) = conn
+        .query_row(
+            "SELECT pot_id FROM pot_runtime WHERE session_id=?1
+             UNION SELECT pot_id FROM pot_works WHERE session_id=?1 LIMIT 1",
+            [&session],
+            |r| r.get::<_, String>(0),
+        )
+        .optional()?
+    {
+        ("pot", Some(pot))
+    } else if let Some(schedule) = schedule {
         ("schedule", Some(schedule))
     } else if let Some(delegation) = conn
         .query_row(

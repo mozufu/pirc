@@ -264,3 +264,28 @@ CREATE TABLE pot_session_settings (
  thinking TEXT NOT NULL,
  updated_at INTEGER NOT NULL
 );
+-- A pot's ask for more budget (plans/pots.md, Budgets and the causal root):
+-- money for the current month or tokens for the current day. One request per
+-- pot may be open; a denial blocks that window until the user writes in the
+-- pot's direct thread. Approving raises the pot's cap for that window only.
+CREATE TABLE budget_requests (
+ id TEXT PRIMARY KEY,
+ owner_user TEXT NOT NULL,
+ pot_id TEXT NOT NULL REFERENCES pots(id) ON DELETE CASCADE,
+ window TEXT NOT NULL CHECK(window IN ('month','day')),
+ amount_micros INTEGER CHECK(amount_micros IS NULL OR amount_micros>=0),
+ tokens INTEGER CHECK(tokens IS NULL OR tokens>=0),
+ reason TEXT NOT NULL DEFAULT '' CHECK(length(reason)<=2000),
+ state TEXT NOT NULL DEFAULT 'pending' CHECK(state IN ('pending','approved','approved_amount','denied')),
+ approved_amount_micros INTEGER CHECK(approved_amount_micros IS NULL OR approved_amount_micros>=0),
+ approved_tokens INTEGER CHECK(approved_tokens IS NULL OR approved_tokens>=0),
+ created_at INTEGER NOT NULL,
+ answered_at INTEGER,
+ CHECK((amount_micros IS NULL) != (tokens IS NULL)),
+ CHECK(window!='month' OR (amount_micros IS NOT NULL AND amount_micros>0)),
+ CHECK(window!='day' OR (tokens IS NOT NULL AND tokens>0)),
+ CHECK(answered_at IS NULL OR state!='pending'),
+ CHECK(state='pending' OR approved_amount_micros IS NOT NULL OR approved_tokens IS NOT NULL OR state='denied')
+);
+CREATE INDEX budget_requests_owner ON budget_requests(owner_user, state, created_at DESC);
+CREATE UNIQUE INDEX budget_requests_open ON budget_requests(pot_id) WHERE state='pending';

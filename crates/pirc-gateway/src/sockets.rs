@@ -166,7 +166,7 @@ fn open_events(
         .filter(|id| !id.is_empty())
         .ok_or_else(ApiError::invalid_input)?;
     let cursor = single(&query, "cursor")?;
-    let mut flags = [false; 8];
+    let mut flags = [false; 9];
     for (index, name) in [
         "directory",
         "memory",
@@ -176,6 +176,7 @@ fn open_events(
         "threads",
         "approvals",
         "activity",
+        "budgetRequests",
     ]
     .iter()
     .enumerate()
@@ -265,6 +266,13 @@ fn open_events(
             app.hints
                 .approvals
                 .add(user.clone(), hint("approvals_changed")),
+        );
+    }
+    if flags[8] {
+        hints.push(
+            app.hints
+                .budget_requests
+                .add(user.clone(), hint("budget_requests_changed")),
         );
     }
     if flags[7] {

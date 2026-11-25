@@ -38,6 +38,7 @@ pub fn inference_error_message(code: InferenceErrorCode) -> &'static str {
         InferenceErrorCode::Timeout => "Inference request timed out",
         InferenceErrorCode::Cancelled => "Inference request cancelled",
         InferenceErrorCode::InferenceFailed => "Model inference failed",
+        InferenceErrorCode::BudgetExhausted => "The pot's budget is exhausted",
     }
 }
 

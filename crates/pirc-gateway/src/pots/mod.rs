@@ -4,6 +4,7 @@ pub mod activity;
 pub mod api;
 pub mod approvals;
 pub mod autonomy;
+pub mod budget;
 pub mod delivery;
 pub mod ops;
 pub mod runtime;

@@ -219,4 +219,6 @@ pub enum InferenceErrorCode {
     Timeout,
     Cancelled,
     InferenceFailed,
+    /// The request would exceed a pot's or its owner's budget cap.
+    BudgetExhausted,
 }

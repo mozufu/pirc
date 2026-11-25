@@ -117,6 +117,9 @@ pub struct Refs {
     pub approval: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub handover: Option<String>,
+    /// A budget request id, or the key of a logged exhaustion window.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub budget: Option<String>,
 }
 
 /// One activity to record.

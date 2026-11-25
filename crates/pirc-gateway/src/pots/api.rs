@@ -10,6 +10,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 use super::approvals::{self, Answer, ApprovalState};
+use super::budget::{self, RequestState};
 use super::store::{self, Pot, PotInput, PotPatch, PotState, Settings};
 use super::threads;
 use crate::app::{AppState, ReqBody};
@@ -38,6 +39,11 @@ pub fn routes() -> Router<AppState> {
         .route("/api/pots/{id}/view", get(pot_view))
         .route("/api/model-approvals", get(list_approvals))
         .route("/api/model-approvals/{id}/answer", post(answer_approval))
+        .route("/api/budget-requests", get(list_budget_requests))
+        .route(
+            "/api/budget-requests/{id}/answer",
+            post(answer_budget_request),
+        )
 }
 
 /// Models must be ones the Gateway serves; locations workspaces the owner sees.
@@ -394,4 +400,43 @@ async fn take_over_work(
     app.pots_changed(&identity.user);
     super::runtime::kick(&app, &identity.user, &work.pot_id);
     Ok(axum::Json(json!({ "work": work })))
+}
+
+#[derive(Deserialize)]
+struct BudgetFilter {
+    state: Option<String>,
+}
+
+async fn list_budget_requests(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    axum::extract::Query(filter): axum::extract::Query<BudgetFilter>,
+) -> ApiResult<axum::Json<Value>> {
+    let state = match filter.state.as_deref() {
+        None => None,
+        Some(value) => Some(RequestState::parse(value).ok_or_else(|| {
+            ApiError::new(
+                400,
+                "invalid_input",
+                "state is pending, approved, approved_amount or denied",
+            )
+        })?),
+    };
+    let requests = budget::list(&app.db.lock(), &identity.user, state)?;
+    Ok(axum::Json(json!({ "budgetRequests": requests })))
+}
+
+async fn answer_budget_request(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+    ReqBody(body): ReqBody,
+) -> ApiResult<axum::Json<Value>> {
+    let input: budget::Answer = body.parse()?;
+    let request = budget::answer(&mut app.db.lock(), &identity.user, &id, input)?;
+    app.budget_requests_changed(&identity.user);
+    app.threads_changed(&identity.user);
+    app.activity_changed(&identity.user);
+    super::runtime::kick(&app, &identity.user, &request.pot_id);
+    Ok(axum::Json(json!({ "budgetRequest": request })))
 }

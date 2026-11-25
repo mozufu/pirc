@@ -37,6 +37,7 @@ pub enum Source {
     Handover,
     Reminder,
     Review,
+    Budget,
 }
 
 impl Source {
@@ -49,6 +50,7 @@ impl Source {
             Self::Handover => "handover",
             Self::Reminder => "reminder",
             Self::Review => "review",
+            Self::Budget => "budget",
         }
     }
 }
@@ -163,6 +165,7 @@ fn claim(
     conn: &Connection,
     owner: &str,
     pot_id: &str,
+    zone: &str,
 ) -> ApiResult<Option<(String, String, Value)>> {
     let pot = store::read(conn, owner, pot_id)?;
     if pot.state != PotState::Active {
@@ -179,6 +182,11 @@ fn claim(
     let Some((id, source, content, details)) = next else {
         return Ok(None);
     };
+    // An exhausted pot's model wakes wait; the answer to its budget request
+    // still reaches it so it learns the user's decision.
+    if source != "budget" && super::budget::wake_blocked(conn, owner, pot_id, zone)? {
+        return Ok(None);
+    }
     let claimed = conn.execute(
         "UPDATE pot_wakes SET state='delivering' WHERE id=?1 AND state='queued'
          AND NOT EXISTS(SELECT 1 FROM pot_wakes WHERE pot_id=?2 AND state IN ('delivering','delivered'))",
@@ -200,9 +208,21 @@ fn claim(
     Ok(Some((id, content, details)))
 }
 
+/// Claim the pot's next wake, for budget tests that must not need a Node.
+#[cfg(test)]
+pub fn claim_next(
+    conn: &Connection,
+    owner: &str,
+    pot_id: &str,
+    zone: &str,
+) -> ApiResult<Option<String>> {
+    Ok(claim(conn, owner, pot_id, zone)?.map(|(id, _, _)| id))
+}
+
 /// Deliver the pot's next wake if nothing is in flight.
 pub async fn pump(app: &AppState, owner: &str, pot_id: &str) -> ApiResult<()> {
-    let Some((id, content, details)) = claim(&app.db.lock(), owner, pot_id)? else {
+    let Some((id, content, details)) = claim(&app.db.lock(), owner, pot_id, &app.config.timezone)?
+    else {
         return Ok(());
     };
     let session = match ensure_session(app, owner, pot_id).await {
