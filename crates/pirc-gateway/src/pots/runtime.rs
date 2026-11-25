@@ -38,6 +38,7 @@ pub enum Source {
     Reminder,
     Review,
     Budget,
+    Event,
 }
 
 impl Source {
@@ -51,6 +52,7 @@ impl Source {
             Self::Reminder => "reminder",
             Self::Review => "review",
             Self::Budget => "budget",
+            Self::Event => "event",
         }
     }
 }

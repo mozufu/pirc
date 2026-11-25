@@ -289,3 +289,34 @@ CREATE TABLE budget_requests (
 );
 CREATE INDEX budget_requests_owner ON budget_requests(owner_user, state, created_at DESC);
 CREATE UNIQUE INDEX budget_requests_open ON budget_requests(pot_id) WHERE state='pending';
+-- L0: one row per observed fact, no content (plans/pots.md, Observation and
+-- de-duplication).
+CREATE TABLE obs_events (
+ id TEXT PRIMARY KEY,
+ owner_user TEXT NOT NULL,
+ source_kind TEXT NOT NULL CHECK(source_kind IN ('session','schedule_run','calendar')),
+ source_ref TEXT NOT NULL,
+ condition_key TEXT NOT NULL,
+ occurrence_key TEXT NOT NULL,
+ source_revision TEXT,
+ created_at INTEGER NOT NULL,
+ UNIQUE(owner_user, source_kind, source_ref, condition_key, occurrence_key)
+);
+CREATE INDEX obs_events_created ON obs_events(created_at);
+-- The pots an event reached, and whether through a scope they lead.
+CREATE TABLE obs_targets (
+ event_id TEXT NOT NULL REFERENCES obs_events(id) ON DELETE CASCADE,
+ pot_id TEXT NOT NULL REFERENCES pots(id) ON DELETE CASCADE,
+ lead INTEGER NOT NULL DEFAULT 0 CHECK(lead IN (0,1)),
+ PRIMARY KEY(event_id, pot_id)
+);
+-- L1: each pot's own note on an event, never merged.
+CREATE TABLE obs_observations (
+ id TEXT PRIMARY KEY,
+ pot_id TEXT NOT NULL REFERENCES pots(id) ON DELETE CASCADE,
+ event_id TEXT NOT NULL REFERENCES obs_events(id) ON DELETE CASCADE,
+ note TEXT NOT NULL CHECK(length(note) BETWEEN 1 AND 4000),
+ evidence_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(evidence_json)),
+ created_at INTEGER NOT NULL,
+ UNIQUE(pot_id, event_id)
+);

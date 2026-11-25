@@ -22,6 +22,7 @@ const CONTEXT_TIMEOUT: Duration = Duration::from_secs(15);
 
 pub(crate) mod autonomy;
 mod budget;
+mod observe;
 mod send;
 mod work;
 
@@ -124,6 +125,8 @@ pub(crate) fn registered_tool_names() -> Vec<String> {
         work::STATUS_TOOL,
         budget::STATUS_TOOL,
         budget::REQUEST_TOOL,
+        observe::NOTE_TOOL,
+        observe::READ_TOOL,
     ]
     .map(str::to_owned)
     .to_vec()
@@ -145,6 +148,7 @@ impl Feature for PotFeature {
             tools.extend(work::tools());
             tools.push(budget::status_tool());
             tools.push(budget::request_tool());
+            tools.extend(observe::tools());
             tools
         } else {
             Vec::new()

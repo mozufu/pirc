@@ -236,5 +236,6 @@ pub fn start(app: &AppState) -> Result<(), String> {
     crate::calendar::reminders::start(app);
     crate::pots::runtime::start(app);
     crate::pots::activity::start(app);
+    crate::pots::observe::start(app);
     Ok(())
 }

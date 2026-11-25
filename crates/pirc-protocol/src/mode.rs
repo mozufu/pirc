@@ -161,6 +161,8 @@ pub const TOOL_NAMES: &[&str] = &[
     "memory_propose_user",
     "memory_search",
     "message_send",
+    "observe_note",
+    "observe_read",
     "read",
     "recall",
     "remind_me",

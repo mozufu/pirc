@@ -62,6 +62,8 @@ prompts!(
     memory_propose_user,
     memory_search,
     message_send,
+    observe_note,
+    observe_read,
     ptc,
     ptc_docs,
     read,

@@ -1,0 +1,1 @@
+Record what you notice about an event you were woken for: your own note and, optionally, references that support it. One note per event; other pots keep their own notes and yours is never merged into theirs. Observing is not acting: an observation alone starts no work.

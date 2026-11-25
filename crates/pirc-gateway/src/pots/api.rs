@@ -11,10 +11,11 @@ use serde_json::{Value, json};
 
 use super::approvals::{self, Answer, ApprovalState};
 use super::budget::{self, RequestState};
-use super::store::{self, Pot, PotInput, PotPatch, PotState, Settings};
+use super::store::{self, Pot, PotInput, PotPatch, PotState, ScopeKind, Settings};
 use super::threads;
 use crate::app::{AppState, ReqBody};
 use crate::auth::Identity;
+use crate::db::Store;
 use crate::error::{ApiError, ApiResult};
 
 pub fn routes() -> Router<AppState> {
@@ -70,6 +71,30 @@ fn check(app: &AppState, identity: &Identity, input: &PotInput) -> ApiResult<()>
     }
     for location in &input.permissions.work_locations {
         crate::routes::require_workspace_visible(app, identity, &location.workspace_id)?;
+    }
+    for scope in &input.permissions.observe {
+        match scope.kind {
+            ScopeKind::Workspace | ScopeKind::Project if !scope.r#ref.is_empty() => {
+                app.db.lock().get_workspace(&scope.r#ref)?;
+                crate::routes::require_workspace_visible(app, identity, &scope.r#ref)?;
+            }
+            ScopeKind::Session => {
+                let owned = app
+                    .db
+                    .lock()
+                    .get_session(&scope.r#ref)
+                    .ok()
+                    .is_some_and(|s| s.owner_user.as_deref() == Some(identity.user.as_str()));
+                if !owned {
+                    return Err(ApiError::new(
+                        400,
+                        "invalid_input",
+                        "An observed session must be one of yours",
+                    ));
+                }
+            }
+            _ => {}
+        }
     }
     Ok(())
 }

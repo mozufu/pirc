@@ -22,6 +22,14 @@ pub enum Op {
     Fallback(Fallback),
     BudgetStatus,
     BudgetRequest(super::budget::RequestInput),
+    ObserveNote(super::observe::Note),
+    ObserveRead(ObserveRead),
+}
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ObserveRead {
+    event_id: String,
 }
 
 #[derive(serde::Deserialize)]
@@ -159,6 +167,16 @@ pub fn parse_op(op: &str, args: &Value) -> Option<Result<Op, ()>> {
         "pot.budget.request" => Some(
             serde_json::from_value::<super::budget::RequestInput>(args.clone())
                 .map(Op::BudgetRequest)
+                .map_err(|_| ()),
+        ),
+        "pot.observe.note" => Some(
+            serde_json::from_value(args.clone())
+                .map(Op::ObserveNote)
+                .map_err(|_| ()),
+        ),
+        "pot.observe.read" => Some(
+            serde_json::from_value(args.clone())
+                .map(Op::ObserveRead)
                 .map_err(|_| ()),
         ),
         _ => None,
@@ -365,6 +383,16 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
                 &send.instruction,
             )
             .await
+        }
+        Op::ObserveNote(note) => {
+            let conn = app.db.lock();
+            let pot = pot_of_session(&conn, &context.user, &context.session.id)?;
+            let observation = super::observe::note(&conn, &context.user, &pot.id, note)?;
+            Ok(json!({ "observation": observation }))
+        }
+        Op::ObserveRead(read) => {
+            let pot = pot_of_session(&app.db.lock(), &context.user, &context.session.id)?;
+            super::observe::read(app, &context.user, &pot.id, &read.event_id).await
         }
         Op::WorkStatus(status) => {
             let pot = pot_of_session(&app.db.lock(), &context.user, &context.session.id)?;

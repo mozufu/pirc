@@ -6,6 +6,7 @@ pub mod approvals;
 pub mod autonomy;
 pub mod budget;
 pub mod delivery;
+pub mod observe;
 pub mod ops;
 pub mod runtime;
 pub mod store;

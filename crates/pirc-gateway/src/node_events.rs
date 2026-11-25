@@ -281,6 +281,7 @@ impl App {
         sessions.sort();
         sessions.dedup();
         let mut owners = Vec::new();
+        let mut observed = Vec::new();
         for session_id in sessions {
             let a = before.get(session_id).copied().unwrap_or_default();
             let b = next.get(session_id).copied().unwrap_or_default();
@@ -294,6 +295,7 @@ impl App {
             let conn = self.db.lock();
             if finished || asks {
                 let _ = conn.mark_session_activity(session_id);
+                observed.push((session_id.clone(), finished));
             }
             if let Ok(session) = conn.get_session(session_id)
                 && let Some(owner) = session.owner_user
@@ -304,6 +306,15 @@ impl App {
         }
         for owner in owners {
             self.sessions_changed(Some(&owner));
+        }
+        let occurrence = crate::util::now_ms().to_string();
+        for (session_id, finished) in observed {
+            let condition = if finished {
+                crate::pots::observe::SessionCondition::RunFinished
+            } else {
+                crate::pots::observe::SessionCondition::WaitingInput
+            };
+            crate::pots::observe::on_session(self, &session_id, condition, &occurrence);
         }
     }
 }

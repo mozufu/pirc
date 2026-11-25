@@ -605,6 +605,23 @@ mod http {
     }
 
     #[tokio::test]
+    async fn observe_scopes_must_be_the_owners_own() {
+        let (app, _dir) = app();
+        let mut pot = body();
+        pot["permissions"]["observe"] = json!([{ "kind": "session", "ref": "someone-elses" }]);
+        let (status, error) = call(&app, "POST", "/api/pots", Some("alice"), None, Some(pot)).await;
+        assert_eq!(status, 400, "{error}");
+        let mut pot = body();
+        pot["permissions"]["observe"] = json!([{ "kind": "workspace", "ref": "node:hidden" }]);
+        assert_ne!(
+            call(&app, "POST", "/api/pots", Some("alice"), None, Some(pot))
+                .await
+                .0,
+            201
+        );
+    }
+
+    #[tokio::test]
     async fn the_owner_reads_activity_and_a_pots_view_over_http() {
         let (app, _dir) = app();
         let (_, created) = call(&app, "POST", "/api/pots", Some("alice"), None, Some(body())).await;
@@ -3466,5 +3483,223 @@ mod work {
             )
             .unwrap();
         assert_eq!(wake, "handover");
+    }
+}
+
+mod observe {
+    use super::super::observe::{self, Note, SessionCondition};
+    use super::*;
+    use rusqlite::params;
+
+    fn setup() -> (Db, String, String, String) {
+        let db = db();
+        let (lead, other, session) = {
+            let mut conn = db.lock();
+            conn.sync_remote_workspaces(
+                "node",
+                &[
+                    (
+                        "repo".into(),
+                        "Repo".into(),
+                        pirc_protocol::ModeId::new("directory").unwrap(),
+                    ),
+                    (
+                        "proj".into(),
+                        "Proj".into(),
+                        pirc_protocol::ModeId::new("directory").unwrap(),
+                    ),
+                ],
+            )
+            .unwrap();
+            // Tester leads the workspace scope; Helper observes it without leading.
+            let lead = create(&mut conn, "alice", input("Tester")).unwrap().id;
+            let mut helper = input("Helper");
+            helper.permissions.observe[0].lead = false;
+            let other = create(&mut conn, "alice", helper).unwrap().id;
+            let session = conn
+                .create_session("node:repo", "node://node/r1", "node", "r1", "alice")
+                .unwrap()
+                .id;
+            (lead, other, session)
+        };
+        (db, lead, other, session)
+    }
+
+    fn targets(conn: &rusqlite::Connection, event: &str) -> Vec<(String, bool)> {
+        conn.prepare("SELECT pot_id, lead FROM obs_targets WHERE event_id=?1 ORDER BY pot_id")
+            .unwrap()
+            .query_map([event], |r| Ok((r.get(0)?, r.get(1)?)))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap()
+    }
+
+    fn event_of(conn: &rusqlite::Connection, pot: &str) -> String {
+        conn.query_row(
+            "SELECT json_extract(details_json,'$.eventId') FROM pot_wakes WHERE pot_id=?1 AND source='event' ORDER BY rowid DESC",
+            [pot],
+            |r| r.get(0),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn an_observed_fact_is_recorded_once_and_wakes_each_observer() {
+        let (db, lead, other, session) = setup();
+        let conn = db.lock();
+        let woken =
+            observe::emit_session(&conn, &session, SessionCondition::RunFinished, "1").unwrap();
+        assert_eq!(woken.len(), 2);
+        let event = event_of(&conn, &lead);
+        assert_eq!(event_of(&conn, &other), event, "one L0 row for both");
+        let mut expected = vec![(lead.clone(), true), (other.clone(), false)];
+        expected.sort();
+        assert_eq!(targets(&conn, &event), expected);
+        // The same fact again is already known; another occurrence is new.
+        assert!(
+            observe::emit_session(&conn, &session, SessionCondition::RunFinished, "1")
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(
+            observe::emit_session(&conn, &session, SessionCondition::WaitingInput, "2")
+                .unwrap()
+                .len(),
+            2
+        );
+        let events: i64 = conn
+            .query_row("SELECT count(*) FROM obs_events", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(events, 2);
+        // Each pot keeps its own note, once; a pot the event did not reach cannot note it.
+        let note = |pot: &str, text: &str| {
+            observe::note(
+                &conn,
+                "alice",
+                pot,
+                Note {
+                    event_id: event.clone(),
+                    note: text.into(),
+                    evidence: vec![],
+                },
+            )
+        };
+        note(&lead, "Build broke on main").unwrap();
+        note(&other, "Flaky test again").unwrap();
+        assert_eq!(note(&lead, "again").unwrap_err().code, "already_noted");
+        let notes: i64 = conn
+            .query_row("SELECT count(*) FROM obs_observations", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(notes, 2, "never merged");
+        drop(conn);
+        let mut conn = db.lock();
+        let outsider = create(&mut conn, "alice", input("Outsider")).unwrap().id;
+        assert_eq!(
+            observe::note(
+                &conn,
+                "alice",
+                &outsider,
+                Note {
+                    event_id: event.clone(),
+                    note: "x".into(),
+                    evidence: vec![]
+                }
+            )
+            .unwrap_err()
+            .status,
+            404
+        );
+        assert_eq!(
+            observe::note(
+                &conn,
+                "bob",
+                &lead,
+                Note {
+                    event_id: event,
+                    note: "x".into(),
+                    evidence: vec![]
+                }
+            )
+            .unwrap_err()
+            .status,
+            404
+        );
+    }
+
+    #[test]
+    fn pots_never_observe_pot_sessions_their_own_work_or_beyond_their_scope() {
+        let (db, lead, other, session) = setup();
+        let mut conn = db.lock();
+        // Work the lead coordinates reaches only the other observer.
+        conn.execute(
+            "INSERT INTO pot_works(id,owner_user,pot_id,session_id,workspace_id,title,provider,model,created_at,updated_at)
+             VALUES('w1','alice',?1,?2,'node:repo','Fix','p','m',0,0)",
+            params![lead, session],
+        )
+        .unwrap();
+        let woken =
+            observe::emit_session(&conn, &session, SessionCondition::RunFinished, "1").unwrap();
+        assert_eq!(woken, vec![("alice".to_owned(), other.clone())]);
+        // A pot's own session reaches nobody.
+        conn.execute(
+            "UPDATE pot_runtime SET session_id=?1 WHERE pot_id=?2",
+            params![session, other],
+        )
+        .unwrap();
+        assert!(
+            observe::emit_session(&conn, &session, SessionCondition::RunFinished, "2")
+                .unwrap()
+                .is_empty()
+        );
+        conn.execute("UPDATE pot_runtime SET session_id=NULL", [])
+            .unwrap();
+        conn.execute("DELETE FROM pot_works", []).unwrap();
+        // Paused pots, and pots that may only answer, are not reached.
+        set_state(&mut conn, "alice", &lead, 1, PotState::Paused).unwrap();
+        conn.execute(
+            "UPDATE pot_permissions SET reach='answer' WHERE pot_id=?1",
+            [&other],
+        )
+        .unwrap();
+        assert!(
+            observe::emit_session(&conn, &session, SessionCondition::RunFinished, "3")
+                .unwrap()
+                .is_empty()
+        );
+        // Another owner's session in the same workspace reaches no pot of alice's.
+        set_state(&mut conn, "alice", &lead, 2, PotState::Active).unwrap();
+        let bobs = conn
+            .create_session("node:repo", "node://node/r2", "node", "r2", "bob")
+            .unwrap()
+            .id;
+        assert!(
+            observe::emit_session(&conn, &bobs, SessionCondition::RunFinished, "1")
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn a_project_scope_reaches_its_members_sessions() {
+        let (db, lead, _other, _session) = setup();
+        let mut conn = db.lock();
+        let mut watcher = input("Watcher");
+        watcher.permissions.observe =
+            vec![serde_json::from_value(json!({ "kind": "project", "ref": "node:proj" })).unwrap()];
+        let watcher = create(&mut conn, "alice", watcher).unwrap().id;
+        let member = conn
+            .create_session("node:proj", "node://node/r3", "node", "r3", "alice")
+            .unwrap()
+            .id;
+        conn.execute(
+            "UPDATE conversation_project_memberships SET project_workspace_id='node:proj', resolution='member'
+             WHERE session_id=?1",
+            [&member],
+        )
+        .unwrap();
+        let woken =
+            observe::emit_session(&conn, &member, SessionCondition::WaitingInput, "1").unwrap();
+        assert_eq!(woken, vec![("alice".to_owned(), watcher)]);
+        assert!(!woken.iter().any(|(_, pot)| pot == &lead));
     }
 }
