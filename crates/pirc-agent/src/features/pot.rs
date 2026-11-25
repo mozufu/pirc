@@ -105,7 +105,7 @@ async fn load(signal: &AbortSignal) -> Result<PromptSection, String> {
     identity_section(&context)
 }
 
-pub const SEND_TOOL: &str = "pot_send";
+pub const SEND_TOOL: &str = "message_send";
 
 struct SendTool {
     spec: ToolSpec,

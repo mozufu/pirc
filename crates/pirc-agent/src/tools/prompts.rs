@@ -59,7 +59,7 @@ prompts!(
     memory_note,
     memory_propose_user,
     memory_search,
-    pot_send,
+    message_send,
     ptc,
     ptc_docs,
     read,
