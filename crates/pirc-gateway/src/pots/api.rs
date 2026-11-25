@@ -36,11 +36,14 @@ pub fn routes() -> Router<AppState> {
         )
         .route("/api/activity", get(list_activity))
         .route("/api/pot-works", get(list_works))
+        .route("/api/pot-works/{id}", get(read_work))
         .route("/api/pot-works/{id}/take-over", post(take_over_work))
         .route("/api/pots/{id}/view", get(pot_view))
         .route("/api/model-approvals", get(list_approvals))
+        .route("/api/model-approvals/{id}", get(read_approval))
         .route("/api/model-approvals/{id}/answer", post(answer_approval))
         .route("/api/budget-requests", get(list_budget_requests))
+        .route("/api/budget-requests/{id}", get(read_budget_request))
         .route(
             "/api/budget-requests/{id}/answer",
             post(answer_budget_request),
@@ -463,5 +466,32 @@ async fn answer_budget_request(
     app.threads_changed(&identity.user);
     app.activity_changed(&identity.user);
     super::runtime::kick(&app, &identity.user, &request.pot_id);
+    Ok(axum::Json(json!({ "budgetRequest": request })))
+}
+
+async fn read_work(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+) -> ApiResult<axum::Json<Value>> {
+    let work = super::work::read(&app.db.lock(), &identity.user, &id)?;
+    Ok(axum::Json(json!({ "work": work })))
+}
+
+async fn read_approval(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+) -> ApiResult<axum::Json<Value>> {
+    let approval = approvals::read(&app.db.lock(), &identity.user, &id)?;
+    Ok(axum::Json(json!({ "approval": approval })))
+}
+
+async fn read_budget_request(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+) -> ApiResult<axum::Json<Value>> {
+    let request = budget::read(&app.db.lock(), &identity.user, &id)?;
     Ok(axum::Json(json!({ "budgetRequest": request })))
 }

@@ -166,27 +166,7 @@ fn open_events(
         .filter(|id| !id.is_empty())
         .ok_or_else(ApiError::invalid_input)?;
     let cursor = single(&query, "cursor")?;
-    let mut flags = [false; 9];
-    for (index, name) in [
-        "directory",
-        "memory",
-        "schedules",
-        "sessions",
-        "pots",
-        "threads",
-        "approvals",
-        "activity",
-        "budgetRequests",
-    ]
-    .iter()
-    .enumerate()
-    {
-        match single(&query, name)? {
-            None => {}
-            Some("1") => flags[index] = true,
-            Some(_) => return Err(ApiError::invalid_input()),
-        }
-    }
+    let flags = hint_flags(&query)?;
     let session = app.claim(&identity, session_id)?.session;
     let cursor = cursor_from(cursor)?;
     let max = app.config.websocket_max_buffered_bytes;
@@ -233,51 +213,7 @@ fn open_events(
             send_frame(&outbox, max, json!({ "type": kind }).to_string(), watermark);
         }) as crate::hints::Hint
     };
-    let user = identity.user.clone();
-    let mut hints = Vec::new();
-    if flags[0] {
-        hints.push(app.hints.directory.add((), hint("directory_changed")));
-    }
-    if flags[1] {
-        hints.push(app.hints.memory.add(user.clone(), hint("memory_changed")));
-    }
-    if flags[2] {
-        hints.push(
-            app.hints
-                .schedules
-                .add(user.clone(), hint("schedules_changed")),
-        );
-    }
-    if flags[3] {
-        hints.push(
-            app.hints
-                .sessions
-                .add(user.clone(), hint("sessions_changed")),
-        );
-    }
-    if flags[4] {
-        hints.push(app.hints.pots.add(user.clone(), hint("pots_changed")));
-    }
-    if flags[5] {
-        hints.push(app.hints.threads.add(user.clone(), hint("threads_changed")));
-    }
-    if flags[6] {
-        hints.push(
-            app.hints
-                .approvals
-                .add(user.clone(), hint("approvals_changed")),
-        );
-    }
-    if flags[8] {
-        hints.push(
-            app.hints
-                .budget_requests
-                .add(user.clone(), hint("budget_requests_changed")),
-        );
-    }
-    if flags[7] {
-        hints.push(app.hints.activity.add(user, hint("activity_changed")));
-    }
+    let hints = subscribe_hints(app, &identity.user, &flags, hint);
     Ok(EventSocket {
         _subscription: subscription,
         _hints: hints,
@@ -293,6 +229,176 @@ fn track_device(app: &AppState, identity: &Identity, outbox: &Arc<Outbox>) -> Op
         device_id,
         Box::new(move || outbox.close(4401, "device token revoked or expired")),
     ))
+}
+
+/// The change hints a socket asked for (`directory=1`, `pots=1`, …).
+type HintFlags = [bool; 9];
+
+const HINT_NAMES: [&str; 9] = [
+    "directory",
+    "memory",
+    "schedules",
+    "sessions",
+    "pots",
+    "threads",
+    "approvals",
+    "activity",
+    "budgetRequests",
+];
+
+fn hint_flags(query: &std::collections::HashMap<String, Vec<String>>) -> ApiResult<HintFlags> {
+    let mut flags = [false; 9];
+    for (index, name) in HINT_NAMES.iter().enumerate() {
+        match single(query, name)? {
+            None => {}
+            Some("1") => flags[index] = true,
+            Some(_) => return Err(ApiError::invalid_input()),
+        }
+    }
+    Ok(flags)
+}
+
+/// Subscribe the asked-for hints; `make` builds the frame sender for a kind.
+fn subscribe_hints(
+    app: &AppState,
+    user: &str,
+    flags: &HintFlags,
+    make: impl Fn(&'static str) -> crate::hints::Hint,
+) -> Vec<HintGuard> {
+    let user = user.to_owned();
+    let mut hints = Vec::new();
+    if flags[0] {
+        hints.push(app.hints.directory.add((), make("directory_changed")));
+    }
+    if flags[1] {
+        hints.push(app.hints.memory.add(user.clone(), make("memory_changed")));
+    }
+    if flags[2] {
+        hints.push(
+            app.hints
+                .schedules
+                .add(user.clone(), make("schedules_changed")),
+        );
+    }
+    if flags[3] {
+        hints.push(
+            app.hints
+                .sessions
+                .add(user.clone(), make("sessions_changed")),
+        );
+    }
+    if flags[4] {
+        hints.push(app.hints.pots.add(user.clone(), make("pots_changed")));
+    }
+    if flags[5] {
+        hints.push(app.hints.threads.add(user.clone(), make("threads_changed")));
+    }
+    if flags[6] {
+        hints.push(
+            app.hints
+                .approvals
+                .add(user.clone(), make("approvals_changed")),
+        );
+    }
+    if flags[8] {
+        hints.push(
+            app.hints
+                .budget_requests
+                .add(user.clone(), make("budget_requests_changed")),
+        );
+    }
+    if flags[7] {
+        hints.push(app.hints.activity.add(user, make("activity_changed")));
+    }
+    hints
+}
+
+// ---- /api/hints ----------------------------------------------------------
+
+/// Change hints without a session (`/api/hints?pots=1&threads=1…`): screens
+/// that list things (pots, threads, activity) learn when to read them again.
+/// Frames are `{ "type": "<kind>_changed" }`; nothing is replayed, so a client
+/// reads its lists again after every (re)connect.
+pub async fn hints(
+    State(app): State<AppState>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    uri: Uri,
+    upgrade: Result<WebSocketUpgrade, WebSocketUpgradeRejection>,
+) -> Response {
+    let Ok(upgrade) = upgrade else {
+        return websocket_required();
+    };
+    upgrade
+        .max_message_size(EVENTS_MESSAGE_MAX_BYTES)
+        .on_upgrade(move |socket| run_hints(app, peer, headers, uri, socket))
+}
+
+struct HintSocket {
+    _hints: Vec<HintGuard>,
+    _tracked: Option<Tracked>,
+}
+
+fn open_hints(
+    app: &AppState,
+    peer: &SocketAddr,
+    headers: &HeaderMap,
+    uri: &Uri,
+    outbox: &Arc<Outbox>,
+) -> ApiResult<HintSocket> {
+    let identity = app.validate(peer, headers, uri, &axum::http::Method::GET, true)?;
+    let query = query_map(uri);
+    if query.keys().any(|key| !HINT_NAMES.contains(&key.as_str())) {
+        return Err(ApiError::invalid_input());
+    }
+    let flags = hint_flags(&query)?;
+    if !flags.contains(&true) {
+        return Err(ApiError::new(
+            400,
+            "invalid_input",
+            "Ask for at least one hint",
+        ));
+    }
+    let max = app.config.websocket_max_buffered_bytes;
+    let hint = |kind: &'static str| {
+        let outbox = outbox.clone();
+        Arc::new(move || {
+            if !outbox.is_open() {
+                return;
+            }
+            // Too far behind: close, and the client reads everything again.
+            if outbox.buffered() > max {
+                outbox.close(1013, "resync required");
+                return;
+            }
+            outbox.send(json!({ "type": kind }).to_string());
+        }) as crate::hints::Hint
+    };
+    Ok(HintSocket {
+        _hints: subscribe_hints(app, &identity.user, &flags, hint),
+        _tracked: track_device(app, &identity, outbox),
+    })
+}
+
+async fn run_hints(
+    app: AppState,
+    peer: SocketAddr,
+    headers: HeaderMap,
+    uri: Uri,
+    socket: WebSocket,
+) {
+    let (outbox, mut stream) = Outbox::start(socket);
+    let opened = open_hints(&app, &peer, &headers, &uri, &outbox);
+    if let Err(error) = &opened {
+        outbox.close(close_code(error), &close_reason(&error.message));
+    }
+    receive(&outbox, &mut stream, |received| {
+        if matches!(received, Received::TooLarge) {
+            outbox.close(1009, "message too large");
+        }
+    })
+    .await;
+    drop(opened);
 }
 
 // ---- terminal and browser streams --------------------------------------------

@@ -264,6 +264,26 @@ pub fn request(
             "This pot has the most pending approvals allowed",
         ));
     }
+    let model = match &input.thinking {
+        Some(thinking) => format!("{}/{} (thinking {thinking})", input.provider, input.model),
+        None => format!("{}/{}", input.provider, input.model),
+    };
+    let body = match input.reason.as_str() {
+        "" => format!("Asks to use {model} for \"{}\".", input.work_title),
+        reason => format!(
+            "Asks to use {model} for \"{}\".\n\nReason: {reason}",
+            input.work_title
+        ),
+    };
+    threads::post_card(
+        conn,
+        owner,
+        pot_id,
+        &body,
+        threads::Card::ModelApproval {
+            approval_id: id.clone(),
+        },
+    )?;
     activity::log(
         conn,
         owner,

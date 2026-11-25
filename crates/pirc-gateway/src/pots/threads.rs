@@ -57,6 +57,25 @@ pub struct Message {
     pub mentions: Vec<String>,
     pub all: bool,
     pub created_at: i64,
+    /// A Gateway card on a system message; the client reads the item by id.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub card: Option<Card>,
+}
+
+/// What a card points at. The item's own route has its current state.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "kind",
+    rename_all = "snake_case",
+    rename_all_fields = "camelCase"
+)]
+pub enum Card {
+    /// `GET /api/model-approvals/{approvalId}`.
+    ModelApproval { approval_id: String },
+    /// `GET /api/budget-requests/{requestId}`.
+    BudgetRequest { request_id: String },
+    /// `GET /api/pot-works/{workId}`; the work session is `sessionId`.
+    Work { work_id: String, session_id: String },
 }
 
 fn thread_row(row: &Row) -> rusqlite::Result<Thread> {
@@ -172,7 +191,41 @@ pub fn direct(conn: &Connection, owner: &str, pot_id: &str) -> ApiResult<Thread>
 /// as the reason a model approval was denied. It wakes no one.
 pub fn post_system(conn: &Connection, owner: &str, pot_id: &str, body: &str) -> ApiResult<Message> {
     let thread = direct(conn, owner, pot_id)?;
-    append(conn, &thread, &Author::System, body, &[], false, None)
+    append(conn, &thread, &Author::System, body, &[], false, None, None)
+}
+
+/// A card from the Gateway about something the pot did, in the thread of the
+/// wake it is handling (so a group that asked sees it there), or else in the
+/// pot's direct thread. It wakes no one.
+pub fn post_card(
+    conn: &Connection,
+    owner: &str,
+    pot_id: &str,
+    body: &str,
+    card: Card,
+) -> ApiResult<Message> {
+    let current: Option<String> = conn
+        .query_row(
+            "SELECT w.thread_id FROM pot_wakes w JOIN threads t ON t.id=w.thread_id
+             WHERE w.pot_id=?1 AND w.owner_user=?2 AND w.state IN ('delivering','delivered')",
+            params![pot_id, owner],
+            |r| r.get(0),
+        )
+        .optional()?;
+    let thread = match current {
+        Some(id) => get(conn, owner, &id)?,
+        None => direct(conn, owner, pot_id)?,
+    };
+    append(
+        conn,
+        &thread,
+        &Author::System,
+        body,
+        &[],
+        false,
+        None,
+        Some(&card),
+    )
 }
 
 /// The DM thread between two pots, made on first use.
@@ -253,6 +306,9 @@ fn message_row(row: &Row) -> rusqlite::Result<Message> {
         mentions: serde_json::from_str(&mentions).unwrap_or_default(),
         all: row.get(7)?,
         created_at: row.get(8)?,
+        card: row
+            .get::<_, Option<String>>(9)?
+            .and_then(|card| serde_json::from_str(&card).ok()),
     })
 }
 
@@ -266,7 +322,7 @@ pub fn messages(
     get(conn, owner, thread_id)?;
     let mut page: Vec<Message> = conn
         .prepare(
-            "SELECT id,thread_id,seq,author_kind,author_id,body,mentions_json,all_mention,created_at
+            "SELECT id,thread_id,seq,author_kind,author_id,body,mentions_json,all_mention,created_at,card_json
              FROM messages WHERE thread_id=?1 AND seq<?2 ORDER BY seq DESC LIMIT ?3",
         )?
         .query_map(params![thread_id, before.unwrap_or(i64::MAX), PAGE], message_row)?
@@ -283,6 +339,7 @@ pub enum Author<'a> {
     System,
 }
 
+#[allow(clippy::too_many_arguments)]
 fn append(
     conn: &Connection,
     thread: &Thread,
@@ -291,6 +348,7 @@ fn append(
     mentions: &[String],
     all: bool,
     causal_root: Option<&str>,
+    card: Option<&Card>,
 ) -> ApiResult<Message> {
     let body = body.trim();
     if body.is_empty() || body.len() > MAX_BODY {
@@ -308,8 +366,8 @@ fn append(
     )?;
     let message_id = new_id("msg");
     conn.execute(
-        "INSERT INTO messages(id,thread_id,seq,author_kind,author_id,body,mentions_json,all_mention,causal_root,created_at)
-         VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)",
+        "INSERT INTO messages(id,thread_id,seq,author_kind,author_id,body,mentions_json,all_mention,causal_root,created_at,card_json)
+         VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)",
         params![
             message_id,
             thread.id,
@@ -321,6 +379,7 @@ fn append(
             all,
             causal_root,
             now_ms(),
+            card.map(|card| serde_json::to_string(card).expect("cards serialize")),
         ],
     )?;
     message(conn, &message_id)
@@ -329,7 +388,7 @@ fn append(
 /// One message by id (callers have checked the owner).
 pub fn message(conn: &Connection, id: &str) -> ApiResult<Message> {
     Ok(conn.query_row(
-        "SELECT id,thread_id,seq,author_kind,author_id,body,mentions_json,all_mention,created_at FROM messages WHERE id=?1",
+        "SELECT id,thread_id,seq,author_kind,author_id,body,mentions_json,all_mention,created_at,card_json FROM messages WHERE id=?1",
         [id],
         message_row,
     )?)
@@ -406,7 +465,16 @@ pub fn post_user(
     if mentions.iter().any(|m| !thread.pots.contains(m)) {
         return Err(invalid("Mentions must be members of the thread"));
     }
-    let message = append(conn, &thread, &Author::User, body, &mentions, all, None)?;
+    let message = append(
+        conn,
+        &thread,
+        &Author::User,
+        body,
+        &mentions,
+        all,
+        None,
+        None,
+    )?;
     let woken = addressees(&thread, &Author::User, &mentions, all);
     let text = wake_text(conn, owner, &thread, &Author::User, &message.body);
     let source = if thread.kind == "group" {
@@ -518,7 +586,16 @@ pub fn post_pot(
         return Err(invalid("Mentions are for groups"));
     }
     let author = Author::Pot(from);
-    let message = append(conn, &thread, &author, body, &mentions, false, causal_root)?;
+    let message = append(
+        conn,
+        &thread,
+        &author,
+        body,
+        &mentions,
+        false,
+        causal_root,
+        None,
+    )?;
     let preview: String = message
         .body
         .lines()
@@ -631,5 +708,6 @@ pub fn post_reply(conn: &Connection, wake_id: &str) -> ApiResult<Option<Message>
         &[],
         false,
         root.as_deref(),
+        None,
     )?))
 }

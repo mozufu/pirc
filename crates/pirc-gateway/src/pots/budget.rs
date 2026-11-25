@@ -721,7 +721,15 @@ pub fn request(
         "" => format!("Budget request: {ask}."),
         reason => format!("Budget request: {ask}.\n\nReason: {reason}"),
     };
-    threads::post_system(&tx, owner, pot_id, &body)?;
+    threads::post_card(
+        &tx,
+        owner,
+        pot_id,
+        &body,
+        threads::Card::BudgetRequest {
+            request_id: id.clone(),
+        },
+    )?;
     activity::log(
         &tx,
         owner,

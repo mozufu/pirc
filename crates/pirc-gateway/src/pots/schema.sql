@@ -158,6 +158,8 @@ CREATE TABLE messages (
  all_mention INTEGER NOT NULL DEFAULT 0 CHECK(all_mention IN (0,1)),
  causal_root TEXT,
  created_at INTEGER NOT NULL,
+ -- A Gateway card (approval, budget request, work): a typed system message.
+ card_json TEXT CHECK(card_json IS NULL OR (json_valid(card_json) AND author_kind='system')),
  UNIQUE(thread_id, seq),
  CHECK(all_mention=0 OR author_kind='user')
 );

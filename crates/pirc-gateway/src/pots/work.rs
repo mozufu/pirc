@@ -79,6 +79,17 @@ pub fn list(conn: &Connection, owner: &str, pot_id: Option<&str>) -> ApiResult<V
         .collect::<Result<_, _>>()?)
 }
 
+/// One of the owner's pot-coordinated works.
+pub fn read(conn: &Connection, owner: &str, id: &str) -> ApiResult<Work> {
+    conn.query_row(
+        &format!("{SELECT} WHERE id=?1 AND owner_user=?2"),
+        params![id, owner],
+        work_row,
+    )
+    .optional()?
+    .ok_or_else(|| ApiError::not_found("Work not found"))
+}
+
 /// The pot's work in `session_id`; another pot's work is not found.
 fn pot_work(conn: &Connection, owner: &str, pot_id: &str, session_id: &str) -> ApiResult<Work> {
     conn.query_row(
@@ -388,6 +399,16 @@ pub async fn open(app: &App, owner: &str, pot_id: &str, input: Open) -> ApiResul
                 approval: consumed.clone(),
                 ..Refs::default()
             }),
+        )?;
+        super::threads::post_card(
+            &conn,
+            owner,
+            pot_id,
+            &format!("Opened \"{title}\" in {}.", plan.workspace.id),
+            super::threads::Card::Work {
+                work_id: id.clone(),
+                session_id: session.id.clone(),
+            },
         )?;
         conn.query_row(&format!("{SELECT} WHERE id=?1"), [&id], work_row)?
     };

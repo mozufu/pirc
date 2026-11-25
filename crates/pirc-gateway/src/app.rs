@@ -349,6 +349,7 @@ pub fn router(app: AppState) -> Router {
         .merge(crate::conversation_bindings::transitions::router())
         .route("/node/connect", get(sockets::node_connect))
         .route("/api/events", get(sockets::events))
+        .route("/api/hints", get(sockets::hints))
         .route(
             "/api/sessions/{id}/terminals/{terminal_id}/stream",
             get(sockets::terminal_stream),

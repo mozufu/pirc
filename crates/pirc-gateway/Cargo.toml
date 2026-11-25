@@ -49,6 +49,7 @@ pirc-providers = { path = "../pirc-providers" }
 # The project-file test lets the Node's own code do the write.
 pirc-node = { path = "../pirc-node" }
 tempfile = "3"
+tokio-tungstenite = { version = "0.30", default-features = false, features = ["connect", "handshake"] }
 tower = { version = "0.5", features = ["util"] }
 
 [lints]

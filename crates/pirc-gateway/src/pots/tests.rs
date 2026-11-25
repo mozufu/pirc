@@ -2236,6 +2236,70 @@ mod threads {
     }
 
     #[test]
+    fn a_card_lands_in_the_thread_of_the_wake_being_handled() {
+        let db = db();
+        let mut conn = db.lock();
+        let host = pot(&mut conn, "Host", DmRule::All, DmRule::All);
+        let member = pot(&mut conn, "Member", DmRule::All, DmRule::All);
+        let group = threads::create_group(
+            &conn,
+            "alice",
+            GroupInput {
+                name: "Release".into(),
+                avatar_color: None,
+                host_pot_id: host.clone(),
+                member_pot_ids: vec![member],
+                project_id: None,
+            },
+        )
+        .unwrap();
+        let card = || threads::Card::BudgetRequest {
+            request_id: "b1".into(),
+        };
+        // No wake in hand: the pot's direct thread.
+        let quiet = threads::post_card(&conn, "alice", &host, "Budget request", card()).unwrap();
+        assert_eq!(
+            quiet.thread_id,
+            threads::direct(&conn, "alice", &host).unwrap().id
+        );
+        // Handling a group message: the group.
+        threads::post_user(&conn, "alice", &group.id, "Ship it", vec![], false).unwrap();
+        conn.execute(
+            "UPDATE pot_wakes SET state='delivered' WHERE pot_id=?1",
+            [&host],
+        )
+        .unwrap();
+        let shown = threads::post_card(&conn, "alice", &host, "Budget request", card()).unwrap();
+        assert_eq!(shown.thread_id, group.id);
+        assert_eq!(
+            (shown.author_kind.as_str(), shown.card.clone()),
+            ("system", Some(card()))
+        );
+        let json = serde_json::to_value(&shown).unwrap();
+        assert_eq!(
+            json["card"],
+            json!({ "kind": "budget_request", "requestId": "b1" })
+        );
+        // A card never wakes anyone.
+        let queued: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM pot_wakes WHERE state='queued'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(queued, 0);
+        // Only system messages carry cards.
+        assert!(
+            conn.execute(
+                "UPDATE messages SET card_json='{}' WHERE author_kind='user'",
+                []
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
     fn a_direct_thread_is_made_even_at_the_thread_limit() {
         let db = db();
         let mut conn = db.lock();
@@ -2505,8 +2569,16 @@ mod approvals {
         )
         .unwrap();
         let page = threads::messages(&conn, "alice", &thread.id, None).unwrap();
+        // The request's card comes first, pointing at the approval.
+        assert_eq!(
+            page[0].card,
+            Some(threads::Card::ModelApproval {
+                approval_id: approval.id.clone()
+            })
+        );
         let notice = page.last().unwrap();
-        assert_eq!((notice.seq, notice.author_kind.as_str()), (1, "system"));
+        assert_eq!((notice.seq, notice.author_kind.as_str()), (2, "system"));
+        assert_eq!(notice.card, None);
         assert_eq!(notice.author_id, None);
         assert!(notice.body.contains("Nightly release"), "{}", notice.body);
         assert!(
@@ -2546,12 +2618,13 @@ mod approvals {
         assert!(content.contains("allowed once"), "{content}");
         assert_eq!(details["approvalId"], allowed.id.as_str());
         assert_eq!(details["state"], "allowed_once");
-        // Only the one reason was posted; answers without text add no messages.
+        // Three request cards and the one reason; answers without text add
+        // no messages.
         assert_eq!(
             threads::messages(&conn, "alice", &thread.id, None)
                 .unwrap()
                 .len(),
-            1
+            4
         );
     }
 
@@ -2661,6 +2734,16 @@ mod approvals {
             assert_eq!(listed["approvals"][0]["id"], approval.id.as_str());
             assert_eq!(listed["approvals"][0]["model"], "claude-opus-5");
             assert_eq!(listed["approvals"][0]["estimateMicros"], 2_000_000);
+            let one = format!("/api/model-approvals/{}", approval.id);
+            let (status, read) = call(&app, "GET", &one, Some("alice"), None, None).await;
+            assert_eq!(
+                (status, read["approval"]["id"].as_str()),
+                (200, Some(approval.id.as_str()))
+            );
+            assert_eq!(
+                call(&app, "GET", &one, Some("bob"), None, None).await.0,
+                404
+            );
             assert_eq!(
                 call(
                     &app,
@@ -2786,9 +2869,10 @@ mod approvals {
                 None,
             )
             .await;
-            assert_eq!(page["messages"][0]["authorKind"], "system");
+            assert_eq!(page["messages"][0]["card"]["kind"], "model_approval");
+            assert_eq!(page["messages"][1]["authorKind"], "system");
             assert!(
-                page["messages"][0]["body"]
+                page["messages"][1]["body"]
                     .as_str()
                     .unwrap()
                     .contains("Not this month")
@@ -3274,6 +3358,29 @@ mod work {
             activity_kinds(&app)[1..],
             ["work_opened", "work_instruction"]
         );
+        let thread = crate::pots::threads::direct(&app.db.lock(), "alice", &pot).unwrap();
+        let cards =
+            crate::pots::threads::messages(&app.db.lock(), "alice", &thread.id, None).unwrap();
+        let work_id = opened["work"]["id"].as_str().unwrap();
+        assert_eq!(
+            cards[0].card,
+            Some(crate::pots::threads::Card::Work {
+                work_id: work_id.to_owned(),
+                session_id: session.clone(),
+            })
+        );
+        assert_eq!(
+            work::read(&app.db.lock(), "alice", work_id)
+                .unwrap()
+                .session_id,
+            session
+        );
+        assert_eq!(
+            work::read(&app.db.lock(), "bob", work_id)
+                .unwrap_err()
+                .status,
+            404
+        );
         // Status follows the last instruction to its answer.
         let status = work::status(&app, "alice", &pot, &session).await.unwrap();
         assert_eq!(status["run"], "working");
@@ -3703,5 +3810,87 @@ mod observe {
             observe::emit_session(&conn, &member, SessionCondition::WaitingInput, "1").unwrap();
         assert_eq!(woken, vec![("alice".to_owned(), watcher)]);
         assert!(!woken.iter().any(|(_, pot)| pot == &lead));
+    }
+}
+
+mod hints {
+    use crate::test_support::app_with_models;
+    use futures_util::StreamExt;
+    use serde_json::{Value, json};
+    use tokio_tungstenite::tungstenite::{Message, client::IntoClientRequest};
+
+    async fn serve(app: crate::app::AppState) -> std::net::SocketAddr {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let router = crate::app::router(app);
+        tokio::spawn(async move {
+            axum::serve(
+                listener,
+                router.into_make_service_with_connect_info::<std::net::SocketAddr>(),
+            )
+            .await
+            .unwrap();
+        });
+        address
+    }
+
+    async fn connect(
+        address: std::net::SocketAddr,
+        query: &str,
+        user: &str,
+    ) -> tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>
+    {
+        let mut request = format!("ws://{address}/api/hints?{query}")
+            .into_client_request()
+            .unwrap();
+        let headers = request.headers_mut();
+        headers.insert("host", "a.example".parse().unwrap());
+        headers.insert("origin", "https://a.example".parse().unwrap());
+        headers.insert("x-pirc-user", user.parse().unwrap());
+        headers.insert(crate::capabilities::HEADER, "test/2".parse().unwrap());
+        tokio_tungstenite::connect_async(request).await.unwrap().0
+    }
+
+    async fn next(
+        socket: &mut tokio_tungstenite::WebSocketStream<
+            tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
+        >,
+    ) -> Message {
+        tokio::time::timeout(std::time::Duration::from_secs(5), socket.next())
+            .await
+            .expect("a frame in time")
+            .unwrap()
+            .unwrap()
+    }
+
+    #[tokio::test]
+    async fn a_hint_socket_needs_no_session_and_hears_only_its_owner() {
+        let (app, _dir) = app_with_models(json!({}));
+        let address = serve(app.clone()).await;
+        let mut alice = connect(address, "pots=1&threads=1", "alice").await;
+        // Give the server a moment to subscribe before the first hint.
+        tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+        app.pots_changed("bob");
+        app.approvals_changed("alice");
+        app.threads_changed("alice");
+        app.pots_changed("alice");
+        let mut kinds = Vec::new();
+        for _ in 0..2 {
+            let Message::Text(text) = next(&mut alice).await else {
+                panic!("a text frame")
+            };
+            let frame: Value = serde_json::from_str(&text).unwrap();
+            kinds.push(frame["type"].as_str().unwrap().to_owned());
+        }
+        assert_eq!(kinds, ["threads_changed", "pots_changed"]);
+
+        // Asking for nothing, or for something unknown, closes the socket.
+        for query in ["", "pots=1&sessionId=s1", "pots=yes"] {
+            let mut socket = connect(address, query, "alice").await;
+            match next(&mut socket).await {
+                Message::Close(Some(frame)) => assert_ne!(u16::from(frame.code), 1000, "{query}"),
+                other => panic!("{query}: expected a close, got {other:?}"),
+            }
+        }
     }
 }
