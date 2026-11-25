@@ -13,6 +13,8 @@ Future<void> main() async {
   final preferences = await SharedPreferences.getInstance();
   runApp(
     ProviderScope(
+      // Lists read again on hints and offer "Try again"; no timed retries.
+      retry: noRetry,
       overrides: [sharedPreferencesProvider.overrideWithValue(preferences)],
       child: const PircApp(),
     ),

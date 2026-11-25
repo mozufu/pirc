@@ -64,5 +64,74 @@
     }
   },
   "switchToLight": "Switch to light",
-  "switchToDark": "Switch to dark"
+  "switchToDark": "Switch to dark",
+  "workSubtitle": "By project",
+  "searchWork": "Search work and projects",
+  "filterAll": "All",
+  "filterNeedsYou": "Needs you",
+  "filterRunning": "Running",
+  "filterMine": "Mine",
+  "filterPots": "Opened by pots",
+  "noteNeedsYou": "Work that needs your answer, approval or review. Reading it is not handling it: a row leaves only when it is handled.",
+  "notePots": "A pot coordinates the work it opens. You can answer, stop or take it over.",
+  "noteMine": "Only the work you opened.",
+  "groupCount": "{count}",
+  "@groupCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noProject": "No project",
+  "fromPot": "From {name}",
+  "@fromPot": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "fromYou": "You",
+  "stateWaiting": "Waiting for your answer",
+  "stateRunning": "Running",
+  "stateQueued": "Queued",
+  "stateStopping": "Stopping…",
+  "stateIdle": "Idle",
+  "stateSettled": "Settled",
+  "approvalWaiting": "Not started · waiting for you to approve {model}",
+  "@approvalWaiting": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "needsYouPill": "Needs you",
+  "yesterday": "Yesterday",
+  "pinned": "Pinned",
+  "moreActions": "More actions",
+  "actionRename": "Rename",
+  "actionPin": "Pin",
+  "actionUnpin": "Unpin",
+  "actionSettle": "Settle",
+  "actionUnsettle": "Reopen",
+  "actionDelete": "Delete…",
+  "deleteWorkTitle": "Delete this work?",
+  "deleteWorkBody": "Its conversation is deleted. This cannot be undone.",
+  "delete": "Delete",
+  "cancel": "Cancel",
+  "save": "Save",
+  "actionFailed": "That did not work: {message}",
+  "@actionFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "emptyFilter": "Nothing here.",
+  "listFailed": "The list could not be loaded.",
+  "retry": "Try again",
+  "newConversation": "New conversation"
 }

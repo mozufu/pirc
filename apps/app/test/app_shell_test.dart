@@ -16,7 +16,13 @@ Future<ProviderContainer> _pump(
   WidgetTester tester, {
   required double width,
   String location = '/chat',
-}) => pumpApp(tester, gateway: FakeGateway(), width: width, location: location);
+}) => pumpApp(
+  tester,
+  gateway: FakeGateway()
+    ..json['GET /api/sessions'] = (_) => {'sessions': <Object?>[]},
+  width: width,
+  location: location,
+);
 
 Future<void> _resize(WidgetTester tester, double width) async {
   tester.view.physicalSize = Size(width, 900);

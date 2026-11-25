@@ -3,6 +3,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pirc_client/pirc_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Failed providers are not retried on a timer: lists read again on hints
+/// and offer "Try again".
+Duration? noRetry(int retryCount, Object error) => null;
+
 /// App settings that are not secret (language, appearance, text size, start
 /// tab, Gateway URL). `main` overrides this with the loaded instance.
 final sharedPreferencesProvider = Provider<SharedPreferences>(

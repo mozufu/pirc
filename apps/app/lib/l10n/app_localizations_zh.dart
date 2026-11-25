@@ -164,6 +164,137 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get switchToDark => '切換成深色';
+
+  @override
+  String get workSubtitle => '依專案';
+
+  @override
+  String get searchWork => '搜尋工作與專案';
+
+  @override
+  String get filterAll => '全部';
+
+  @override
+  String get filterNeedsYou => '需要你';
+
+  @override
+  String get filterRunning => '執行中';
+
+  @override
+  String get filterMine => '我開的';
+
+  @override
+  String get filterPots => 'pots 開的';
+
+  @override
+  String get noteNeedsYou => '要你回答、核准或驗收的工作。已讀不等於已處理，處理完才會離開。';
+
+  @override
+  String get notePots => 'pots 開的工作由它協調；你可以回答、停止或接管。';
+
+  @override
+  String get noteMine => '只看你自己開的工作。';
+
+  @override
+  String groupCount(int count) {
+    return '$count 個';
+  }
+
+  @override
+  String get noProject => '沒有專案';
+
+  @override
+  String fromPot(String name) {
+    return 'From $name';
+  }
+
+  @override
+  String get fromYou => '你';
+
+  @override
+  String get stateWaiting => '等你回答';
+
+  @override
+  String get stateRunning => '執行中';
+
+  @override
+  String get stateQueued => '排隊中';
+
+  @override
+  String get stateStopping => '停止中…';
+
+  @override
+  String get stateIdle => '閒置';
+
+  @override
+  String get stateSettled => '已結束';
+
+  @override
+  String approvalWaiting(String model) {
+    return '還沒開始 · 等你核准 $model';
+  }
+
+  @override
+  String get needsYouPill => '待你';
+
+  @override
+  String get yesterday => '昨天';
+
+  @override
+  String get pinned => '已釘選';
+
+  @override
+  String get moreActions => '更多動作';
+
+  @override
+  String get actionRename => '重新命名';
+
+  @override
+  String get actionPin => '釘選';
+
+  @override
+  String get actionUnpin => '取消釘選';
+
+  @override
+  String get actionSettle => '結束';
+
+  @override
+  String get actionUnsettle => '重新開啟';
+
+  @override
+  String get actionDelete => '刪除…';
+
+  @override
+  String get deleteWorkTitle => '刪除這個工作？';
+
+  @override
+  String get deleteWorkBody => '對話會被刪除，無法復原。';
+
+  @override
+  String get delete => '刪除';
+
+  @override
+  String get cancel => '取消';
+
+  @override
+  String get save => '儲存';
+
+  @override
+  String actionFailed(String message) {
+    return '沒有完成：$message';
+  }
+
+  @override
+  String get emptyFilter => '這裡沒有工作。';
+
+  @override
+  String get listFailed => '無法載入列表。';
+
+  @override
+  String get retry => '重試';
+
+  @override
+  String get newConversation => '新對話';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

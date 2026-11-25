@@ -175,4 +175,138 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get switchToDark => 'Switch to dark';
+
+  @override
+  String get workSubtitle => 'By project';
+
+  @override
+  String get searchWork => 'Search work and projects';
+
+  @override
+  String get filterAll => 'All';
+
+  @override
+  String get filterNeedsYou => 'Needs you';
+
+  @override
+  String get filterRunning => 'Running';
+
+  @override
+  String get filterMine => 'Mine';
+
+  @override
+  String get filterPots => 'Opened by pots';
+
+  @override
+  String get noteNeedsYou =>
+      'Work that needs your answer, approval or review. Reading it is not handling it: a row leaves only when it is handled.';
+
+  @override
+  String get notePots =>
+      'A pot coordinates the work it opens. You can answer, stop or take it over.';
+
+  @override
+  String get noteMine => 'Only the work you opened.';
+
+  @override
+  String groupCount(int count) {
+    return '$count';
+  }
+
+  @override
+  String get noProject => 'No project';
+
+  @override
+  String fromPot(String name) {
+    return 'From $name';
+  }
+
+  @override
+  String get fromYou => 'You';
+
+  @override
+  String get stateWaiting => 'Waiting for your answer';
+
+  @override
+  String get stateRunning => 'Running';
+
+  @override
+  String get stateQueued => 'Queued';
+
+  @override
+  String get stateStopping => 'Stopping…';
+
+  @override
+  String get stateIdle => 'Idle';
+
+  @override
+  String get stateSettled => 'Settled';
+
+  @override
+  String approvalWaiting(String model) {
+    return 'Not started · waiting for you to approve $model';
+  }
+
+  @override
+  String get needsYouPill => 'Needs you';
+
+  @override
+  String get yesterday => 'Yesterday';
+
+  @override
+  String get pinned => 'Pinned';
+
+  @override
+  String get moreActions => 'More actions';
+
+  @override
+  String get actionRename => 'Rename';
+
+  @override
+  String get actionPin => 'Pin';
+
+  @override
+  String get actionUnpin => 'Unpin';
+
+  @override
+  String get actionSettle => 'Settle';
+
+  @override
+  String get actionUnsettle => 'Reopen';
+
+  @override
+  String get actionDelete => 'Delete…';
+
+  @override
+  String get deleteWorkTitle => 'Delete this work?';
+
+  @override
+  String get deleteWorkBody =>
+      'Its conversation is deleted. This cannot be undone.';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String actionFailed(String message) {
+    return 'That did not work: $message';
+  }
+
+  @override
+  String get emptyFilter => 'Nothing here.';
+
+  @override
+  String get listFailed => 'The list could not be loaded.';
+
+  @override
+  String get retry => 'Try again';
+
+  @override
+  String get newConversation => 'New conversation';
 }

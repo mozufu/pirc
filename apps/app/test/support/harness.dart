@@ -195,6 +195,7 @@ Future<ProviderContainer> pumpApp(
   SharedPreferences.setMockInitialValues(state.prefs);
   final preferences = await SharedPreferences.getInstance();
   final container = ProviderContainer(
+    retry: noRetry,
     overrides: [
       sharedPreferencesProvider.overrideWithValue(preferences),
       secretStoreProvider.overrideWithValue(state.secrets),

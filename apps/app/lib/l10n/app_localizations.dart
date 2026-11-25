@@ -404,6 +404,252 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Switch to dark'**
   String get switchToDark;
+
+  /// No description provided for @workSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'By project'**
+  String get workSubtitle;
+
+  /// No description provided for @searchWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Search work and projects'**
+  String get searchWork;
+
+  /// No description provided for @filterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get filterAll;
+
+  /// No description provided for @filterNeedsYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get filterNeedsYou;
+
+  /// No description provided for @filterRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get filterRunning;
+
+  /// No description provided for @filterMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Mine'**
+  String get filterMine;
+
+  /// No description provided for @filterPots.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened by pots'**
+  String get filterPots;
+
+  /// No description provided for @noteNeedsYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Work that needs your answer, approval or review. Reading it is not handling it: a row leaves only when it is handled.'**
+  String get noteNeedsYou;
+
+  /// No description provided for @notePots.
+  ///
+  /// In en, this message translates to:
+  /// **'A pot coordinates the work it opens. You can answer, stop or take it over.'**
+  String get notePots;
+
+  /// No description provided for @noteMine.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the work you opened.'**
+  String get noteMine;
+
+  /// No description provided for @groupCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}'**
+  String groupCount(int count);
+
+  /// No description provided for @noProject.
+  ///
+  /// In en, this message translates to:
+  /// **'No project'**
+  String get noProject;
+
+  /// No description provided for @fromPot.
+  ///
+  /// In en, this message translates to:
+  /// **'From {name}'**
+  String fromPot(String name);
+
+  /// No description provided for @fromYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get fromYou;
+
+  /// No description provided for @stateWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for your answer'**
+  String get stateWaiting;
+
+  /// No description provided for @stateRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Running'**
+  String get stateRunning;
+
+  /// No description provided for @stateQueued.
+  ///
+  /// In en, this message translates to:
+  /// **'Queued'**
+  String get stateQueued;
+
+  /// No description provided for @stateStopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Stopping…'**
+  String get stateStopping;
+
+  /// No description provided for @stateIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Idle'**
+  String get stateIdle;
+
+  /// No description provided for @stateSettled.
+  ///
+  /// In en, this message translates to:
+  /// **'Settled'**
+  String get stateSettled;
+
+  /// No description provided for @approvalWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Not started · waiting for you to approve {model}'**
+  String approvalWaiting(String model);
+
+  /// No description provided for @needsYouPill.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get needsYouPill;
+
+  /// No description provided for @yesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get yesterday;
+
+  /// No description provided for @pinned.
+  ///
+  /// In en, this message translates to:
+  /// **'Pinned'**
+  String get pinned;
+
+  /// No description provided for @moreActions.
+  ///
+  /// In en, this message translates to:
+  /// **'More actions'**
+  String get moreActions;
+
+  /// No description provided for @actionRename.
+  ///
+  /// In en, this message translates to:
+  /// **'Rename'**
+  String get actionRename;
+
+  /// No description provided for @actionPin.
+  ///
+  /// In en, this message translates to:
+  /// **'Pin'**
+  String get actionPin;
+
+  /// No description provided for @actionUnpin.
+  ///
+  /// In en, this message translates to:
+  /// **'Unpin'**
+  String get actionUnpin;
+
+  /// No description provided for @actionSettle.
+  ///
+  /// In en, this message translates to:
+  /// **'Settle'**
+  String get actionSettle;
+
+  /// No description provided for @actionUnsettle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reopen'**
+  String get actionUnsettle;
+
+  /// No description provided for @actionDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete…'**
+  String get actionDelete;
+
+  /// No description provided for @deleteWorkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this work?'**
+  String get deleteWorkTitle;
+
+  /// No description provided for @deleteWorkBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Its conversation is deleted. This cannot be undone.'**
+  String get deleteWorkBody;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @actionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That did not work: {message}'**
+  String actionFailed(String message);
+
+  /// No description provided for @emptyFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here.'**
+  String get emptyFilter;
+
+  /// No description provided for @listFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The list could not be loaded.'**
+  String get listFailed;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get retry;
+
+  /// No description provided for @newConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'New conversation'**
+  String get newConversation;
 }
 
 class _AppLocalizationsDelegate

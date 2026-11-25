@@ -257,4 +257,57 @@ void main() {
       expect(transport.requests[1].json, {'name': 'New', 'settled': false});
     });
   });
+
+  test('pots, works and pending approvals are read', () async {
+    final transport = FakeTransport(
+      onSend: (request) async => switch (request.path) {
+        '/api/pots' => reply(200, {
+          'pots': [
+            {
+              'id': 'p1',
+              'state': 'paused',
+              'profile': {'name': 'Tester', 'avatarColor': 3},
+            },
+          ],
+        }),
+        '/api/pot-works' => reply(200, {
+          'works': [
+            {
+              'id': 'w1',
+              'potId': 'p1',
+              'sessionId': 's1',
+              'workspaceId': 'n:w',
+              'title': 'Check',
+              'state': 'open',
+            },
+          ],
+        }),
+        '/api/pot-works/w1/take-over' => reply(200, {
+          'work': {'id': 'w1', 'potId': 'p1', 'state': 'taken_over'},
+        }),
+        _ => reply(200, {
+          'approvals': [
+            {
+              'id': 'a1',
+              'potId': 'p1',
+              'workTitle': 'Compare',
+              'workspaceId': 'n:w',
+              'model': 'claude-opus',
+              'state': 'pending',
+            },
+          ],
+        }),
+      },
+    );
+    final pots = PotsApi(ApiClient(transport));
+    final pot = (await pots.pots()).single;
+    expect((pot.name, pot.state, pot.avatarColor), ('Tester', 'paused', 3));
+    final work = (await pots.works()).single;
+    expect(work.open, isTrue);
+    expect(work.sessionId, 's1');
+    expect((await pots.takeOver('w1')).open, isFalse);
+    final approval = (await pots.approvals(state: 'pending')).single;
+    expect(approval.model, 'claude-opus');
+    expect(transport.requests.last.query, {'state': 'pending'});
+  });
 }

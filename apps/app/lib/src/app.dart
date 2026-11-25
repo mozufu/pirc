@@ -19,6 +19,7 @@ class PircApp extends ConsumerWidget {
     ref.watch(hintsProvider);
     final textScale = ref.watch(textScaleProvider);
     return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       routerConfig: ref.watch(routerProvider),
       theme: appTheme(Brightness.light),

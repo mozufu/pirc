@@ -7,6 +7,8 @@ import 'package:pirc_ui/pirc_ui.dart';
 import '../l10n/app_localizations.dart';
 import 'router.dart';
 import 'shell/app_drawer.dart';
+import 'work/work_data.dart';
+import 'work/work_list_screen.dart';
 
 /// One tab in the adaptive frame. Lists and items are placeholders until
 /// M6/M7 fill them; the frame, routing and layouts are final.
@@ -38,7 +40,11 @@ class TabScreen extends ConsumerWidget {
               icon: LucideIcons.messageCircle,
               label: l10n.tabChat,
             ),
-            PircDestination(icon: LucideIcons.briefcase, label: l10n.tabWork),
+            PircDestination(
+              icon: LucideIcons.briefcase,
+              label: l10n.tabWork,
+              badge: ref.watch(workBadgeProvider),
+            ),
             PircDestination(
               icon: LucideIcons.activity,
               label: l10n.tabActivity,
@@ -53,7 +59,10 @@ class TabScreen extends ConsumerWidget {
             index,
             initialLocation: index == shell.currentIndex,
           ),
-          list: _TabList(tab: tab),
+          list: switch (tab) {
+            AppTab.work => WorkListScreen(openId: open),
+            _ => _TabList(tab: tab),
+          },
           content: open == null
               ? null
               : _ItemPlaceholder(
