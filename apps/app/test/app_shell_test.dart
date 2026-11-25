@@ -114,26 +114,23 @@ void main() {
   });
 
   test('the renderer gets every color name it reads', () {
+    // Every `colors['…']` the renderer reads, from its source.
+    final names = <String>{};
+    for (final file
+        in Directory('../../packages/pirc_render/lib')
+            .listSync(recursive: true)
+            .whereType<File>()
+            .where((f) => f.path.endsWith('.dart'))) {
+      for (final match in RegExp(
+        r"colors\['([a-zA-Z.-]+)'\]",
+      ).allMatches(file.readAsStringSync())) {
+        names.add(match[1]!);
+      }
+    }
+    expect(names, contains('web.bg-subtle'));
     for (final brightness in Brightness.values) {
       final colors = renderColors(brightness).values;
-      for (final name in [
-        'accent.default',
-        'border.default',
-        'code.bg',
-        'code.head',
-        'code.text',
-        'line.default',
-        'line.hairline',
-        'line.strong',
-        'status.danger',
-        'surface.subtle',
-        'text.muted',
-        'text.primary',
-        'text.secondary',
-        'web.bg',
-        'web.line',
-        'web.muted',
-      ]) {
+      for (final name in names) {
         expect(colors, contains(name), reason: '$brightness $name');
       }
     }

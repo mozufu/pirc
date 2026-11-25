@@ -9,6 +9,12 @@ const _renderAliases = {
   'web.bg': 'surface.page',
   'web.line': 'line.hairline',
   'web.muted': 'text.muted',
+  'web.bg-hover': 'fill.hover',
+  'web.bg-subtle': 'surface.subtle',
+  'web.code-bg': 'code.bg',
+  'web.code-head': 'text.muted',
+  'web.code-ink': 'code.text',
+  'web.line-dark': 'line.strong',
 };
 
 /// The renderer's colors for [brightness], from the design tokens.
