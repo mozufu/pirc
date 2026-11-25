@@ -23,6 +23,7 @@ Future<FakeGateway> _page(
   void Function(FakeGateway g) routes, {
   List<String> granted = const [],
   bool settle = true,
+  bool web = false,
 }) async {
   final gateway = FakeGateway();
   routes(gateway);
@@ -31,6 +32,7 @@ Future<FakeGateway> _page(
     gateway: gateway,
     location: '/settings/$path',
     settle: settle,
+    web: web,
     overrides: [
       if (granted.isNotEmpty)
         managementAccessProvider.overrideWith(() => _Granted(granted)),
@@ -110,6 +112,14 @@ void main() {
         g.sent('DELETE', '/api/providers/oauth%3Aanthropic'),
         hasLength(1),
       );
+    });
+
+    appTest('on the Web the browser needs no grant', (tester) async {
+      await _page(tester, 'providers', (g) {
+        g.json['GET /api/providers'] = (_) => _snapshot;
+      }, web: true);
+      expect(find.text('Approval needed'), findsNothing);
+      expect(find.text('OpenRouter'), findsOneWidget);
     });
 
     appTest('failed', (tester) async {

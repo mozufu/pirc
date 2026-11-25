@@ -22,7 +22,12 @@ class AccessState {
     this.capabilities = const [],
     this.expiresAt,
     this.error,
+    this.browser = false,
   });
+
+  /// The Web build: the browser's own identity manages devices and
+  /// providers, so no grant is asked for or needed.
+  const AccessState.browser() : this(browser: true);
 
   final AccessPhase phase;
   final ManagementRequest? request;
@@ -36,9 +41,11 @@ class AccessState {
   /// When the grant (or the request) expires, local time.
   final DateTime? expiresAt;
   final String? error;
+  final bool browser;
 
   bool covers(String capability) =>
-      phase == AccessPhase.granted && capabilities.contains(capability);
+      browser ||
+      (phase == AccessPhase.granted && capabilities.contains(capability));
 }
 
 /// How often a waiting request is read; tests shorten it.
@@ -61,6 +68,7 @@ class ManagementAccess extends Notifier<AccessState> {
 
   @override
   AccessState build() {
+    if (ref.watch(isWebProvider)) return const AccessState.browser();
     ref.onDispose(_stopTimers);
     // The connection drops the grant on unpair or a new pairing.
     ref.listen(managementGrantProvider, (_, grant) {
