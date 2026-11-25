@@ -339,6 +339,90 @@ void main() {
         });
       },
     );
+
+    test('a control read names the holder; absent means unknown', () {
+      final named = ControlLease.fromJson({
+        'clientId': 'other-phone',
+        'generation': 4,
+        'holder': {'name': 'Pixel 9', 'kind': 'device'},
+      });
+      expect(named.holder?.name, 'Pixel 9');
+      expect(named.holder?.kind, 'device');
+      expect(ControlLease.fromJson({'clientId': 'x'}).holder, isNull);
+    });
+
+    test('acquire and heartbeat send clientName when set', () async {
+      final transport = FakeTransport(
+        onSend: (request) async => reply(200, {
+          'lease': {
+            'clientId': 'client-1',
+            'generation': 4,
+            'holder': {'name': 'Office iMac', 'kind': 'browser'},
+          },
+        }),
+      );
+      final client = ControlLeaseClient(ApiClient(transport));
+      final lease = await client.acquire(
+        's1',
+        clientId: 'client-1',
+        clientName: 'Office iMac',
+      );
+      expect(_body(transport.requests.last), {
+        'clientId': 'client-1',
+        'clientName': 'Office iMac',
+      });
+      expect(lease.holder?.name, 'Office iMac');
+      expect(lease.holder?.kind, 'browser');
+
+      await client.heartbeat('s1', lease, clientName: 'Office iMac');
+      expect(
+        _route(transport.requests.last),
+        'POST /api/sessions/s1/control/heartbeat',
+      );
+      expect(_body(transport.requests.last), {
+        'clientId': 'client-1',
+        'generation': 4,
+        'clientName': 'Office iMac',
+      });
+    });
+
+    test('without a name, acquire and heartbeat leave it out', () async {
+      final transport = FakeTransport(
+        onSend: (request) async => reply(200, {
+          'lease': {'clientId': 'client-1', 'generation': 1},
+        }),
+      );
+      final client = ControlLeaseClient(ApiClient(transport));
+      final lease = await client.acquire('s1', clientId: 'client-1');
+      expect(_body(transport.requests.last), {'clientId': 'client-1'});
+      await client.heartbeat('s1', lease);
+      expect(_body(transport.requests.last), {
+        'clientId': 'client-1',
+        'generation': 1,
+      });
+    });
+
+    test('the heartbeat carries the name and follows a rename', () {
+      fakeAsync((async) {
+        final transport = FakeTransport(
+          onSend: (request) async => reply(200, {
+            'lease': {'clientId': 'client-1', 'generation': 4},
+          }),
+        );
+        final heartbeat = LeaseHeartbeat(
+          ControlLeaseClient(ApiClient(transport)),
+          's1',
+          _lease,
+          clientName: 'Office iMac',
+        )..start();
+        async.elapse(const Duration(seconds: 10));
+        expect(_body(transport.requests.single)['clientName'], 'Office iMac');
+        heartbeat.clientName = 'Studio iMac';
+        async.elapse(const Duration(seconds: 10));
+        expect(_body(transport.requests.last)['clientName'], 'Studio iMac');
+        heartbeat.stop();
+      });
+    });
   });
 
   group('first send', () {

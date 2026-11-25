@@ -19,28 +19,35 @@ class ControlLeaseClient {
       ControlLease.fromReply(await api.get(_path(sessionId)));
 
   /// Takes control for [clientId]. [force] takes it from another client.
+  /// [clientName] names a browser; the Gateway keeps it (1 to 60 characters).
   Future<ControlLease> acquire(
     String sessionId, {
     required String clientId,
     int? generation,
     bool force = false,
+    String? clientName,
   }) async => _lease(
     await api.post(_path(sessionId, 'acquire'), {
       'clientId': clientId,
       'generation': ?generation,
       if (force) 'force': true,
+      'clientName': ?clientName,
     }),
   );
 
   /// Extends [lease]; throws [LostControl] when another client took over.
-  Future<ControlLease> heartbeat(String sessionId, ControlLease lease) async =>
-      _lease(
-        await api.post(_path(sessionId, 'heartbeat'), {
-          'clientId': lease.clientId,
-          'generation': lease.generation,
-        }),
-        fallback: lease,
-      );
+  Future<ControlLease> heartbeat(
+    String sessionId,
+    ControlLease lease, {
+    String? clientName,
+  }) async => _lease(
+    await api.post(_path(sessionId, 'heartbeat'), {
+      'clientId': lease.clientId,
+      'generation': lease.generation,
+      'clientName': ?clientName,
+    }),
+    fallback: lease,
+  );
 
   Future<void> release(String sessionId, ControlLease lease) => api.post(
     _path(sessionId, 'release'),
@@ -65,6 +72,7 @@ class LeaseHeartbeat {
     this._lease, {
     this._visible = true,
     this.onLost,
+    this.clientName,
   });
 
   static const visibleInterval = Duration(seconds: 10);
@@ -75,6 +83,9 @@ class LeaseHeartbeat {
 
   /// Called once when another client took control.
   final void Function(LostControl error)? onLost;
+
+  /// The browser name sent with each heartbeat; set it after a rename.
+  String? clientName;
 
   ControlLease _lease;
   bool _visible;
@@ -106,7 +117,11 @@ class LeaseHeartbeat {
     if (_beating) return;
     _beating = true;
     try {
-      _lease = await client.heartbeat(sessionId, _lease);
+      _lease = await client.heartbeat(
+        sessionId,
+        _lease,
+        clientName: clientName,
+      );
     } on LostControl catch (error) {
       stop();
       onLost?.call(error);

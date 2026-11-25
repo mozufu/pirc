@@ -2,6 +2,23 @@ import 'package:meta/meta.dart';
 
 import '../json.dart';
 
+/// Who holds the control lease, as `GET …/control` names it: a paired device
+/// by its device record or a browser by the name it sent (else its user agent).
+@immutable
+class ControlHolder {
+  const ControlHolder({required this.name, required this.kind});
+
+  factory ControlHolder.fromJson(Object? json) => ControlHolder(
+    name: str(field(json, 'name')) ?? '',
+    kind: str(field(json, 'kind')) ?? '',
+  );
+
+  final String name;
+
+  /// `device` (a paired app) or `browser`.
+  final String kind;
+}
+
 /// Who may drive a session (`GET /api/sessions/{id}/control`). TTL 30 s.
 @immutable
 class ControlLease {
@@ -10,6 +27,7 @@ class ControlLease {
     required this.generation,
     this.expiresAt,
     this.expired = false,
+    this.holder,
   });
 
   factory ControlLease.fromJson(Object? json) => ControlLease(
@@ -17,6 +35,9 @@ class ControlLease {
     generation: number(field(json, 'generation')) ?? 0,
     expiresAt: number(field(json, 'expiresAt')),
     expired: field(json, 'expired') == true,
+    holder: field(json, 'holder') == null
+        ? null
+        : ControlHolder.fromJson(field(json, 'holder')),
   );
 
   /// The `lease` field of a control reply; null when nobody holds control.
@@ -29,4 +50,15 @@ class ControlLease {
   final int generation;
   final int? expiresAt;
   final bool expired;
+
+  /// The holder's name; null on older Gateways or before it is resolved.
+  final ControlHolder? holder;
+
+  ControlLease copyWith({ControlHolder? holder}) => ControlLease(
+    clientId: clientId,
+    generation: generation,
+    expiresAt: expiresAt,
+    expired: expired,
+    holder: holder ?? this.holder,
+  );
 }

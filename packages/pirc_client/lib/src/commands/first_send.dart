@@ -137,6 +137,7 @@ class FirstSendClient {
     required String clientId,
     Map<String, List<int>> attachments = const {},
     String? expectedOwner,
+    String? clientName,
   }) async {
     await prepare(
       operationId: operationId,
@@ -158,7 +159,11 @@ class FirstSendClient {
     if (sessionId == null) {
       throw const ApiError(502, 'invalid_preparation', 'No session created');
     }
-    final lease = await control.acquire(sessionId, clientId: clientId);
+    final lease = await control.acquire(
+      sessionId,
+      clientId: clientId,
+      clientName: clientName,
+    );
     try {
       return FirstSendDispatched(await dispatch(operationId, lease), lease);
     } on ApiError catch (error) {

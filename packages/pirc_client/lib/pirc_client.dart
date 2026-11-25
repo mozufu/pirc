@@ -5,6 +5,8 @@
 library;
 
 export 'src/api/calendar_api.dart';
+export 'src/api/clients_api.dart';
+export 'src/api/device_api.dart';
 export 'src/api/directory_api.dart';
 export 'src/api/environment_api.dart';
 export 'src/api/management_api.dart';
