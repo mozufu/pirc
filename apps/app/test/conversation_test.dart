@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/work/conversation_screen.dart';
 import 'package:pirc_app/src/work/timeline.dart';
@@ -159,59 +160,45 @@ void main() {
         gateway.sent('POST', '/api/sessions/s2/control/acquire'),
         hasLength(1),
       );
-      expect(find.byType(ControlBar), findsNothing);
     });
 
-    appTest('another holder makes it read-only; Take control forces', (
-      tester,
-    ) async {
+    appTest('another holder keeps the composer usable', (tester) async {
       final session = FixtureSession('joined-mid-stream.json')
         ..lease = {'clientId': 'other-phone', 'generation': 4};
       final gateway = await _open(tester, session);
-      expect(find.text('Controlled by another device'), findsOneWidget);
+      final field = tester.widget<TextField>(
+        find.byKey(const Key('composer-field')),
+      );
+      expect(field.enabled, isTrue);
+      expect(find.text('Take control'), findsNothing);
       expect(gateway.sent('POST', '/api/sessions/s2/control/acquire'), isEmpty);
-      await tester.tap(find.text('Take control'));
-      await tester.pumpAndSettle();
-      final acquire = gateway.sent('POST', '/api/sessions/s2/control/acquire');
-      expect((acquire.single.json! as Map)['force'], isTrue);
-      expect(find.byType(ControlBar), findsNothing);
     });
 
-    appTest('the holder is named when the Gateway names it', (tester) async {
-      final session = FixtureSession('joined-mid-stream.json')
-        ..lease = {
-          'clientId': 'other-phone',
-          'generation': 4,
-          'holder': {'name': 'Pixel 9', 'kind': 'device'},
-        };
-      await _open(tester, session);
-      expect(find.text('Controlled by Pixel 9'), findsOneWidget);
-      expect(find.text('Controlled by another device'), findsNothing);
-    });
-
-    appTest('an unnamed holder is resolved with GET /api/clients', (
+    appTest('a control_changed event gives the new holder notice', (
       tester,
     ) async {
-      final session = FixtureSession('joined-mid-stream.json')
-        ..lease = {'clientId': 'other-phone', 'generation': 4};
-      final gateway = session.install();
-      session.gateway = gateway;
-      gateway.json['GET /api/clients'] = (_) => {
-        'clients': [
-          {
-            'clientId': 'other-phone',
-            'name': 'Office iMac',
-            'kind': 'browser',
-            'lastSeenAt': 1,
-          },
-        ],
-      };
-      await pumpApp(tester, gateway: gateway, location: '/work?open=s2');
-      expect(gateway.sent('GET', '/api/clients'), hasLength(1));
-      expect(find.text('Controlled by Office iMac'), findsOneWidget);
+      final session = FixtureSession('joined-mid-stream.json');
+      final gateway = await _open(tester, session);
+      _events(gateway).push({
+        'sessionId': 's2',
+        'epoch': 1,
+        'sequence': 99,
+        'type': 'control_changed',
+        'timestamp': 1,
+        'data': {
+          'clientId': 'other-phone',
+          'holder': {'name': 'Pixel 9', 'kind': 'device', 'lastActionAt': 1700},
+        },
+      });
+      await tester.pumpAndSettle();
+      expect(find.text('Continued on Pixel 9'), findsOneWidget);
+      final field = tester.widget<TextField>(
+        find.byKey(const Key('composer-field')),
+      );
+      expect(field.enabled, isTrue);
     });
 
-    appTest('a control event with only a clientId resolves its name', (
+    appTest('a control_changed event without a holder resolves its name', (
       tester,
     ) async {
       final session = FixtureSession('joined-mid-stream.json');
@@ -220,8 +207,8 @@ void main() {
         'clients': [
           {
             'clientId': 'other-phone',
-            'name': 'Pixel 9',
-            'kind': 'device',
+            'name': 'Office iMac',
+            'kind': 'browser',
             'lastSeenAt': 2,
           },
         ],
@@ -230,18 +217,49 @@ void main() {
         'sessionId': 's2',
         'epoch': 1,
         'sequence': 99,
-        'type': 'control_updated',
+        'type': 'control_changed',
         'timestamp': 1,
-        'data': {'clientId': 'other-phone', 'generation': 5},
+        'data': {'clientId': 'other-phone', 'holder': null},
       });
       await tester.pumpAndSettle();
-      expect(find.text('Controlled by Pixel 9'), findsOneWidget);
+      expect(gateway.sent('GET', '/api/clients'), hasLength(1));
+      expect(find.text('Continued on Office iMac'), findsOneWidget);
     });
 
-    appTest('losing the lease on a heartbeat shows the bar', (tester) async {
+    appTest('releasing control clears the notice', (tester) async {
       final session = FixtureSession('joined-mid-stream.json');
       final gateway = await _open(tester, session);
-      expect(find.byType(ControlBar), findsNothing);
+      final socket = _events(gateway);
+      socket.push({
+        'sessionId': 's2',
+        'epoch': 1,
+        'sequence': 98,
+        'type': 'control_changed',
+        'timestamp': 1,
+        'data': {
+          'clientId': 'other-phone',
+          'holder': {'name': 'Pixel 9', 'kind': 'device', 'lastActionAt': 1},
+        },
+      });
+      await tester.pumpAndSettle();
+      expect(find.text('Continued on Pixel 9'), findsOneWidget);
+      socket.push({
+        'sessionId': 's2',
+        'epoch': 1,
+        'sequence': 99,
+        'type': 'control_changed',
+        'timestamp': 1,
+        'data': {'clientId': null, 'holder': null},
+      });
+      await tester.pumpAndSettle();
+      expect(find.text('Continued on Pixel 9'), findsNothing);
+    });
+
+    appTest('losing the lease on a heartbeat keeps the composer usable', (
+      tester,
+    ) async {
+      final session = FixtureSession('joined-mid-stream.json');
+      final gateway = await _open(tester, session);
       session
         ..heartbeatLost = true
         ..lease = {'clientId': 'other-phone', 'generation': 9};
@@ -251,7 +269,10 @@ void main() {
         gateway.sent('POST', '/api/sessions/s2/control/heartbeat'),
         hasLength(1),
       );
-      expect(find.text('Controlled by another device'), findsOneWidget);
+      final field = tester.widget<TextField>(
+        find.byKey(const Key('composer-field')),
+      );
+      expect(field.enabled, isTrue);
     });
 
     appTest('closing the conversation releases the lease', (tester) async {

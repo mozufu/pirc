@@ -168,6 +168,23 @@
       }
     }
   },
+  "continuedOn": "Continued on {name}",
+  "@continuedOn": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "takeoverConfirm": "{name} was just working here. Send anyway?",
+  "@takeoverConfirm": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "anotherDevice": "Another device",
   "takeControl": "Take control",
   "dockGoal": "Goal",
   "dockTodo": "Tasks",
@@ -222,6 +239,36 @@
   "workspaceUnavailable": "Its mode is not available on this Gateway",
   "handledElsewhere": "{title} · handled on another device",
   "@handledElsewhere": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "answeredOn": "Answered on {name} · {time}",
+  "@answeredOn": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "answeredOnName": "Answered on {name}",
+  "@answeredOnName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "questionAnswered": "Answered",
+  "questionWithdrawn": "Withdrawn",
+  "questionStale": "Ended when the session restarted",
+  "questionEnded": "{title} · ended",
+  "@questionEnded": {
     "placeholders": {
       "title": {
         "type": "String"

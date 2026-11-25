@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show mapEquals;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -10,35 +11,26 @@ import '../../l10n/app_localizations.dart';
 import '../connection/connection.dart';
 import '../connection/data.dart';
 import '../format.dart';
+import 'client_names.dart';
 import 'session_controller.dart';
-
-/// What happened to a question that left the pending list.
-@immutable
-class ResolvedQuestion {
-  const ResolvedQuestion(
-    this.interaction, {
-    this.summary,
-    this.elsewhere = false,
-  });
-  final Interaction interaction;
-
-  /// This device's answer in one line.
-  final String? summary;
-
-  /// Another device answered it.
-  final bool elsewhere;
-}
 
 @immutable
 class QuestionsState {
   const QuestionsState({
     this.sending = const {},
-    this.resolved = const {},
+    this.answers = const {},
+    this.ended = const {},
     this.errors = const {},
   });
 
   final Set<String> sending;
-  final Map<String, ResolvedQuestion> resolved;
+
+  /// This device's answer in one line, until the snapshot reports the end.
+  final Map<String, String> answers;
+
+  /// Questions that left an older snapshot without an end status: the one
+  /// neutral fallback, used only when the backend does not say.
+  final Map<String, Interaction> ended;
   final Map<String, String> errors;
 }
 
@@ -48,9 +40,9 @@ final questionsProvider = NotifierProvider.autoDispose
     );
 
 /// Answers questions with
-/// `POST /api/sessions/:id/interactions/:interactionId/answer`, which always
-/// needs the control lease. A pending question that disappears without this
-/// device's answer was "handled elsewhere".
+/// `POST /api/sessions/:id/interactions/:interactionId/answer`: any device may
+/// answer without control, and the node keeps the first answer. Snapshots
+/// carry how each question ended, so nothing is guessed from disappearance.
 class QuestionsController extends Notifier<QuestionsState> {
   QuestionsController(this.sessionId);
   final String sessionId;
@@ -66,6 +58,8 @@ class QuestionsController extends Notifier<QuestionsState> {
         for (final i in ref.read(provider).state?.interactions ?? const [])
           if (i.status == 'pending') i.id: i,
       });
+    final interactions = ref.read(provider).state?.interactions ?? const [];
+    _resolveNames(interactions);
     ref.listen(
       provider.select((view) => view.state?.interactions),
       (_, next) => _seen(next ?? const []),
@@ -74,58 +68,77 @@ class QuestionsController extends Notifier<QuestionsState> {
   }
 
   void _seen(List<Interaction> interactions) {
-    final now = {
+    final current = {
       for (final i in interactions)
         if (i.status == 'pending') i.id: i,
     };
-    final resolved = Map.of(state.resolved);
+    final ended = Map.of(state.ended);
     for (final MapEntry(:key, :value) in _pending.entries) {
-      if (!now.containsKey(key) && !resolved.containsKey(key)) {
-        resolved[key] = ResolvedQuestion(value, elsewhere: true);
+      // A snapshot from an older Gateway says no status: only then fall back
+      // to a neutral "ended" line when the question disappears.
+      if (!current.containsKey(key) && !value.statusKnown) {
+        ended[key] = value;
       }
     }
+    ended.removeWhere((id, _) => current.containsKey(id));
     _pending
       ..clear()
-      ..addAll(now);
-    if (resolved.length != state.resolved.length) {
+      ..addAll(current);
+    _resolveNames(interactions);
+    if (!mapEquals(ended, state.ended)) {
       state = QuestionsState(
         sending: state.sending,
-        resolved: resolved,
+        answers: state.answers,
+        ended: ended,
         errors: state.errors,
       );
     }
   }
 
-  /// Sends [answer]; [summary] is the one line the answered card shows.
+  /// The names of answering clients come from the cached client list.
+  void _resolveNames(List<Interaction> interactions) {
+    final me = ref.read(clientIdProvider);
+    for (final i in interactions) {
+      if (i.answeredBy case final by? when by != me) {
+        unawaited(ref.read(clientNamesProvider.notifier).resolve(by));
+      }
+    }
+  }
+
+  /// Sends [answer]; [summary] is the one line this device's card shows.
   Future<void> answer(
     Interaction interaction,
     Map<String, Object?> answer,
     String summary,
   ) async {
     final api = ref.read(apiProvider);
-    final lease = ref
-        .read(sessionControllerProvider(sessionId).notifier)
-        .heldLease;
-    if (api == null || lease == null) return;
+    if (api == null) return;
     state = QuestionsState(
       sending: {...state.sending, interaction.id},
-      resolved: state.resolved,
+      answers: state.answers,
+      ended: state.ended,
       errors: {...state.errors}..remove(interaction.id),
     );
     String? error;
+    var stale = false;
     try {
       await api.post(
         '/api/sessions/${Uri.encodeComponent(sessionId)}/interactions/'
         '${Uri.encodeComponent(interaction.id)}/answer',
-        {
-          'clientId': lease.clientId,
-          'generation': lease.generation,
-          'answer': answer,
-        },
+        {'clientId': ref.read(clientIdProvider), 'answer': answer},
       );
-    } on LostControl {
-      ref.read(sessionControllerProvider(sessionId).notifier).lostControl();
-      error = 'lost_control';
+    } on ApiError catch (e) {
+      if (e.code == 'stale_interaction') {
+        // Another device answered first, or the runner restarted. The fresh
+        // snapshot says how it really ended; that is not an error.
+        stale = true;
+        unawaited(
+          ref.read(sessionControllerProvider(sessionId).notifier).reload(),
+        );
+      } else {
+        ref.read(connectionProvider.notifier).report(e);
+        error = e.message;
+      }
     } on PircException catch (e) {
       // A fatal error (pairing gone, app too old) is handled app-wide; the
       // question still did not get its answer.
@@ -134,12 +147,10 @@ class QuestionsController extends Notifier<QuestionsState> {
     }
     state = QuestionsState(
       sending: {...state.sending}..remove(interaction.id),
-      resolved: error == null
-          ? {
-              ...state.resolved,
-              interaction.id: ResolvedQuestion(interaction, summary: summary),
-            }
-          : state.resolved,
+      answers: error == null && !stale
+          ? {...state.answers, interaction.id: summary}
+          : state.answers,
+      ended: state.ended,
       errors: error == null
           ? state.errors
           : {...state.errors, interaction.id: error},
@@ -147,69 +158,155 @@ class QuestionsController extends Notifier<QuestionsState> {
   }
 }
 
-/// The question cards below the last message: pending ones, then the ones
-/// answered here (one line) or elsewhere.
-List<Widget> questionCards(String sessionId, SessionView view) => [
-  for (final interaction in view.state?.interactions ?? const <Interaction>[])
-    if (interaction.status == 'pending')
-      QuestionCard(
-        key: ValueKey('q-${interaction.id}'),
-        sessionId: sessionId,
-        interaction: interaction,
-      ),
-  _Resolved(sessionId: sessionId),
+/// The question cards below the last message: pending ones, then how each
+/// ended as the backend reports it.
+List<Widget> questionCards(String sessionId) => [
+  _QuestionList(sessionId: sessionId),
 ];
 
-class _Resolved extends ConsumerWidget {
-  const _Resolved({required this.sessionId});
+class _QuestionList extends ConsumerWidget {
+  const _QuestionList({required this.sessionId});
   final String sessionId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final interactions =
+        ref.watch(sessionControllerProvider(sessionId)).state?.interactions ??
+        const <Interaction>[];
+    final questions = ref.watch(questionsProvider(sessionId));
+    final cards = <Widget>[];
+    final resolved = <Widget>[];
+    for (final interaction in interactions) {
+      if (interaction.status == 'pending') {
+        final summary = questions.answers[interaction.id];
+        if (summary != null) {
+          resolved.add(
+            _ResolvedLine(interaction: interaction, summary: summary),
+          );
+        } else {
+          cards.add(
+            QuestionCard(
+              key: ValueKey('q-${interaction.id}'),
+              sessionId: sessionId,
+              interaction: interaction,
+            ),
+          );
+        }
+      } else {
+        resolved.add(
+          _ResolvedLine(
+            interaction: interaction,
+            summary: questions.answers[interaction.id],
+          ),
+        );
+      }
+    }
+    for (final interaction in questions.ended.values) {
+      if (!interactions.any((it) => it.id == interaction.id)) {
+        resolved.add(_ResolvedLine(interaction: interaction));
+      }
+    }
+    if (cards.isEmpty && resolved.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [...cards, ...resolved],
+    );
+  }
+}
+
+/// One ended question: the normal answered line for this device's answer,
+/// otherwise how and where it ended.
+class _ResolvedLine extends ConsumerWidget {
+  const _ResolvedLine({required this.interaction, this.summary});
+  final Interaction interaction;
+  final String? summary;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final colors = PircColorTokens.of(context);
-    final resolved = ref.watch(questionsProvider(sessionId)).resolved.values;
-    if (resolved.isEmpty) return const SizedBox.shrink();
     final text = Theme.of(context).textTheme.bodySmall;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (final item in resolved)
-          Padding(
-            padding: const EdgeInsets.only(top: PircSpacing.stackXs),
-            child: Row(
+    final by = interaction.answeredBy;
+    final name = by == null ? null : ref.watch(clientNamesProvider)[by]?.name;
+    final mine = by != null && by == ref.read(clientIdProvider);
+    final combined =
+        summary != null || (mine && interaction.status == 'answered');
+    final time = interaction.resolvedAt;
+    final watcher = by == null ? null : ref.read(clockProvider)();
+    final String status;
+    final IconData icon;
+    final Color color;
+    if (summary != null) {
+      status = '${interaction.title} · $summary';
+      icon = LucideIcons.check;
+      color = colors['status.success'];
+    } else {
+      switch (interaction.status) {
+        case 'answered' when mine:
+          status = '${interaction.title} · ${l10n.questionAnswered}';
+          icon = LucideIcons.check;
+          color = colors['status.success'];
+        case 'answered':
+          final who = name == null || name.isEmpty ? l10n.anotherDevice : name;
+          status = time != null && time > 0
+              ? l10n.answeredOn(who, clockTime(context, time, now: watcher))
+              : l10n.answeredOnName(who);
+          icon = LucideIcons.monitorSmartphone;
+          color = colors['text.muted'];
+        case 'cancelled':
+          status = l10n.questionWithdrawn;
+          icon = LucideIcons.x;
+          color = colors['text.muted'];
+        case 'expired':
+          status = l10n.questionExpired;
+          icon = LucideIcons.clock;
+          color = colors['text.muted'];
+        case 'stale':
+          status = l10n.questionStale;
+          icon = LucideIcons.refreshCw;
+          color = colors['text.muted'];
+        default:
+          status = l10n.questionEnded(interaction.title);
+          icon = LucideIcons.circleHelp;
+          color = colors['text.muted'];
+      }
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: PircSpacing.stackXs),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: PircSpacing.stackXs),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  item.elsewhere
-                      ? LucideIcons.monitorSmartphone
-                      : LucideIcons.check,
-                  size: 14,
-                  color: item.elsewhere
-                      ? colors['text.muted']
-                      : colors['status.success'],
-                ),
-                const SizedBox(width: PircSpacing.stackXs),
-                Expanded(
-                  child: Text(
-                    item.elsewhere
-                        ? l10n.handledElsewhere(item.interaction.title)
-                        : '${item.interaction.title} · ${item.summary}',
+                if (!combined)
+                  Text(
+                    interaction.title,
                     style: text,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                Text(
+                  status,
+                  style: text,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-/// `c-int`: a question from the agent. States: waiting, sending, expired
-/// (no buttons) and "control is on another device" (Send disabled, with
-/// "Take control"). Kinds: select, confirm, input, editor.
+/// `c-int`: a question from the agent. Any device may answer; states are
+/// waiting, sending and expired (no buttons). Kinds: select, confirm, input,
+/// editor.
 class QuestionCard extends ConsumerStatefulWidget {
   const QuestionCard({
     super.key,
@@ -272,20 +369,10 @@ class _QuestionCardState extends ConsumerState<QuestionCard> {
     final colors = PircColorTokens.of(context);
     final text = Theme.of(context).textTheme;
     final questions = ref.watch(questionsProvider(widget.sessionId));
-    final view = ref.watch(sessionControllerProvider(widget.sessionId));
     final sending = questions.sending.contains(_q.id);
     final expired = _expired;
-    final controlled = view.control == ControlState.mine;
-    final enabled = controlled && !sending && !expired;
-    final holder = view.lease?.holder?.name;
-    final elsewhere = holder == null || holder.isEmpty
-        ? l10n.controlledElsewhere
-        : l10n.controlledByName(holder);
-    final error = switch (questions.errors[_q.id]) {
-      null => null,
-      'lost_control' => elsewhere,
-      final message => message,
-    };
+    final enabled = !sending && !expired;
+    final error = questions.errors[_q.id];
 
     Widget body;
     Map<String, Object?>? answer;
@@ -368,13 +455,6 @@ class _QuestionCardState extends ConsumerState<QuestionCard> {
           style: text.bodySmall?.copyWith(color: colors['text.warning']),
         ),
       const Spacer(),
-      if (!expired && !controlled)
-        TextButton(
-          onPressed: () => ref
-              .read(sessionControllerProvider(widget.sessionId).notifier)
-              .takeControl(force: true),
-          child: Text(l10n.takeControl),
-        ),
       if (!expired && _q.kind == 'confirm') ...[
         OutlinedButton(
           onPressed: enabled
@@ -444,8 +524,6 @@ class _QuestionCardState extends ConsumerState<QuestionCard> {
                       Text(_q.title, style: text.titleMedium),
                       if (_q.description?.isNotEmpty ?? false)
                         Text(_q.description!, style: text.bodySmall),
-                      if (!controlled && !expired)
-                        Text(elsewhere, style: text.bodySmall),
                     ],
                   ),
                 ),

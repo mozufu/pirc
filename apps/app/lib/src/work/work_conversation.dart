@@ -65,7 +65,7 @@ class WorkConversation extends ConsumerWidget {
         messageBuilder: (context, message) =>
             potInstructionEntry(context, message) ??
             artifactEntry(sessionId)(context, message),
-        footer: (context, view) => questionCards(sessionId, view),
+        footer: (context, view) => questionCards(sessionId),
         actions: (context, view) => [
           IconButton(
             tooltip: l10n.panelsOpen,

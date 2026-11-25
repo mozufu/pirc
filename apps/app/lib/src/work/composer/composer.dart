@@ -51,6 +51,29 @@ class _SessionComposerState extends ConsumerState<SessionComposer> {
     super.dispose();
   }
 
+  Future<bool> _confirmTakeover(BuildContext context, String name) async {
+    final l10n = AppLocalizations.of(context);
+    final holder = name.isEmpty ? l10n.anotherDevice : name;
+    final send = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.takeoverConfirm(holder)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            key: const Key('send-anyway'),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.send),
+          ),
+        ],
+      ),
+    );
+    return send == true;
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -70,15 +93,16 @@ class _SessionComposerState extends ConsumerState<SessionComposer> {
     final online =
         ref.watch(appConnectionStateProvider) == AppConnectionState.online;
     final mine = widget.view.control == ControlState.mine;
-    final canWrite = mine && online && widget.messagesAllowed;
+    // Sending takes control for this device; only an explicit-control action
+    // (model, thinking) waits for the lease.
+    final canWrite = online && widget.messagesAllowed;
+    final canCommand = canWrite && mine;
     final hasText =
         composer.draft.trim().isNotEmpty || composer.attachments.isNotEmpty;
     final canSend =
         canWrite && hasText && !composer.sending && composer.uncertain == null;
     final hint = !widget.messagesAllowed
         ? widget.lockedHint ?? l10n.composerLocked
-        : !mine
-        ? l10n.composerReadOnly
         : !online
         ? l10n.composerOffline
         : l10n.composerHint;
@@ -174,7 +198,7 @@ class _SessionComposerState extends ConsumerState<SessionComposer> {
                       Flexible(
                         child: TextButton(
                           key: const Key('model-button'),
-                          onPressed: canWrite
+                          onPressed: canCommand
                               ? () => showModelSheet(
                                   context,
                                   provider: state.selectedModelProvider,
@@ -214,7 +238,7 @@ class _SessionComposerState extends ConsumerState<SessionComposer> {
                           message: l10n.stopWork,
                           child: TextButton.icon(
                             key: const Key('stop-button'),
-                            onPressed: mine && online ? actions.stop : null,
+                            onPressed: online ? actions.stop : null,
                             icon: const Icon(LucideIcons.square, size: 14),
                             label: Text(l10n.stopWork),
                           ),
@@ -228,7 +252,11 @@ class _SessionComposerState extends ConsumerState<SessionComposer> {
                           disabledForegroundColor: colors['text.faint'],
                         ),
                         onPressed: canSend
-                            ? () => actions.send(runActive: active)
+                            ? () => actions.send(
+                                runActive: active,
+                                confirmTakeover: (name) =>
+                                    _confirmTakeover(context, name),
+                              )
                             : null,
                         icon: composer.sending
                             ? const SizedBox.square(

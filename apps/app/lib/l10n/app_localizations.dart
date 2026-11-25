@@ -729,6 +729,24 @@ abstract class AppLocalizations {
   /// **'Controlled by {name}'**
   String controlledByName(String name);
 
+  /// No description provided for @continuedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Continued on {name}'**
+  String continuedOn(String name);
+
+  /// No description provided for @takeoverConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was just working here. Send anyway?'**
+  String takeoverConfirm(String name);
+
+  /// No description provided for @anotherDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Another device'**
+  String get anotherDevice;
+
   /// No description provided for @takeControl.
   ///
   /// In en, this message translates to:
@@ -962,6 +980,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{title} · handled on another device'**
   String handledElsewhere(String title);
+
+  /// No description provided for @answeredOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Answered on {name} · {time}'**
+  String answeredOn(String name, String time);
+
+  /// No description provided for @answeredOnName.
+  ///
+  /// In en, this message translates to:
+  /// **'Answered on {name}'**
+  String answeredOnName(String name);
+
+  /// No description provided for @questionAnswered.
+  ///
+  /// In en, this message translates to:
+  /// **'Answered'**
+  String get questionAnswered;
+
+  /// No description provided for @questionWithdrawn.
+  ///
+  /// In en, this message translates to:
+  /// **'Withdrawn'**
+  String get questionWithdrawn;
+
+  /// No description provided for @questionStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Ended when the session restarted'**
+  String get questionStale;
+
+  /// No description provided for @questionEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} · ended'**
+  String questionEnded(String title);
 
   /// No description provided for @questionExpired.
   ///

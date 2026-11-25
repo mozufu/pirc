@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pirc_app/src/connection/storage.dart';
 import 'package:pirc_app/src/format.dart';
 import 'package:pirc_app/src/work/questions.dart';
 
@@ -14,11 +15,16 @@ Map<String, Object?> _question(
   String kind, {
   Map<String, Object?> request = const {},
   int? expiresAt,
+  String status = 'pending',
+  String? answeredBy,
+  int? resolvedAt,
 }) => {
   'id': id,
   'kind': kind,
   'runnerEpoch': 1,
-  'status': 'pending',
+  'status': status,
+  'answeredBy': ?answeredBy,
+  'resolvedAt': ?resolvedAt,
   'expiresAt': expiresAt ?? _in(const Duration(minutes: 14)),
   'request': {'title': 'Q $id', 'message': 'Why $id', ...request},
 };
@@ -28,6 +34,7 @@ Future<FixtureSession> _open(
   List<Map<String, Object?>> questions, {
   Map<String, Object?>? lease,
   Map<String, Object?>? agent,
+  List<Map<String, Object?>>? clients,
 }) async {
   final session = FixtureSession('joined-mid-stream.json')
     ..lease = lease
@@ -35,6 +42,9 @@ Future<FixtureSession> _open(
   if (agent != null) session.snapshot['agent'] = agent;
   final gateway = session.install();
   session.gateway = gateway;
+  if (clients != null) {
+    gateway.json['GET /api/clients'] = (_) => {'clients': clients};
+  }
   gateway.routes.add((request) {
     if (request.path.contains('/interactions/') &&
         request.path.endsWith('/answer')) {
@@ -46,6 +56,12 @@ Future<FixtureSession> _open(
     tester,
     gateway: gateway,
     location: '/work?open=s2',
+    saved: Saved(
+      prefs: {
+        PrefKeys.gatewayUrl: 'https://gateway.test/',
+        PrefKeys.clientId: 'me',
+      },
+    ),
     overrides: [clockProvider.overrideWithValue(() => _now)],
   );
   return session;
@@ -77,9 +93,9 @@ void main() {
     await tester.pumpAndSettle();
     final body = _answer(s, 'q1');
     expect(body['answer'], {'value': 'Only the 3 failures'});
-    expect(body['clientId'], isNotEmpty);
-    expect(body['generation'], 1);
-    // Answered: one summary line until the snapshot drops it.
+    expect(body['clientId'], 'me');
+    expect(body.containsKey('generation'), isFalse);
+    // Answered: one summary line until the snapshot reports its end.
     expect(find.text('Q q1 · Only the 3 failures'), findsOneWidget);
   });
 
@@ -155,28 +171,27 @@ void main() {
     expect(find.text('No'), findsNothing);
   });
 
-  appTest('control on another device disables Send and offers Take control', (
-    tester,
-  ) async {
+  appTest('any device may answer without holding control', (tester) async {
     final s = await _open(
       tester,
       [_question('q7', 'confirm')],
       lease: {'clientId': 'other-phone', 'generation': 4},
     );
+    expect(find.text('Take control'), findsNothing);
     final yes = tester.widget<FilledButton>(
       find.widgetWithText(FilledButton, 'Yes'),
     );
-    expect(yes.onPressed, isNull);
-    final card = find.byType(QuestionCard);
-    await tester.tap(
-      find.descendant(of: card, matching: find.text('Take control')),
-    );
+    expect(yes.onPressed, isNotNull);
+    await tester.tap(find.text('Yes'));
     await tester.pumpAndSettle();
-    expect(s.lease!['clientId'], isNot('other-phone'));
-    final enabled = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Yes'),
+    final body = _answer(s, 'q7');
+    expect(body['clientId'], 'me');
+    expect(body['answer'], {'confirmed': true});
+    expect(body.containsKey('generation'), isFalse);
+    expect(
+      s.gateway!.sent('POST', '/api/sessions/s2/control/acquire'),
+      isEmpty,
     );
-    expect(enabled.onPressed, isNotNull);
   });
 
   appTest('an answer refused by a lost pairing is not shown as answered', (
@@ -190,10 +205,133 @@ void main() {
     expect(find.textContaining('Q q9 · '), findsNothing);
   });
 
-  appTest('two devices: an answer from the other one shows as handled '
-      'elsewhere', (tester) async {
-    final s = await _open(tester, [_question('q8', 'confirm')]);
-    // The other device answers: the snapshot no longer lists it.
+  appTest('a second answer is refused and shows how the question ended', (
+    tester,
+  ) async {
+    final s = await _open(
+      tester,
+      [_question('q8', 'confirm')],
+      clients: [
+        {
+          'clientId': 'other-phone',
+          'name': 'Pixel 9',
+          'kind': 'device',
+          'lastSeenAt': 1,
+        },
+      ],
+    );
+    s.snapshot['interactions'] = [
+      _question(
+        'q8',
+        'confirm',
+        status: 'answered',
+        answeredBy: 'other-phone',
+        resolvedAt: _in(const Duration(minutes: 2)),
+      ),
+    ];
+    s.gateway!.json['POST /api/sessions/s2/interactions/q8/answer'] = (_) =>
+        apiError(409, 'stale_interaction', 'Interaction was already answered');
+    await tester.tap(find.text('Yes'));
+    await tester.pumpAndSettle();
+    expect(find.byType(QuestionCard), findsNothing);
+    expect(find.text('Answered on Pixel 9 · 11:02'), findsOneWidget);
+    expect(find.textContaining('already answered'), findsNothing);
+  });
+
+  appTest('an interaction_answered event carries the end state', (
+    tester,
+  ) async {
+    final s = await _open(
+      tester,
+      [_question('qe', 'confirm')],
+      clients: [
+        {
+          'clientId': 'other-phone',
+          'name': 'Pixel 9',
+          'kind': 'device',
+          'lastSeenAt': 1,
+        },
+      ],
+    );
+    s.gateway!.socket('/api/events')!.push({
+      'sessionId': 's2',
+      'epoch': 1,
+      'sequence': 5,
+      'type': 'interaction_answered',
+      'timestamp': 1,
+      'data': {
+        'interactionId': 'qe',
+        'interactionEpoch': 1,
+        'status': 'answered',
+        'answeredBy': 'other-phone',
+        'resolvedAt': _in(const Duration(minutes: 2)),
+      },
+    });
+    await tester.pumpAndSettle();
+    expect(find.byType(QuestionCard), findsNothing);
+    expect(find.text('Answered on Pixel 9 · 11:02'), findsOneWidget);
+  });
+
+  appTest('every end state comes from the backend', (tester) async {
+    await _open(
+      tester,
+      [
+        _question(
+          'qa',
+          'confirm',
+          status: 'answered',
+          answeredBy: 'other-phone',
+          resolvedAt: _in(const Duration(minutes: 2)),
+        ),
+        _question(
+          'qm',
+          'confirm',
+          status: 'answered',
+          answeredBy: 'me',
+          resolvedAt: _in(const Duration(minutes: 1)),
+        ),
+        _question(
+          'qc',
+          'confirm',
+          status: 'cancelled',
+          resolvedAt: _in(Duration.zero),
+        ),
+        _question(
+          'qe',
+          'confirm',
+          status: 'expired',
+          resolvedAt: _in(Duration.zero),
+        ),
+        _question(
+          'qs',
+          'confirm',
+          status: 'stale',
+          resolvedAt: _in(Duration.zero),
+        ),
+      ],
+      clients: [
+        {
+          'clientId': 'other-phone',
+          'name': 'Pixel 9',
+          'kind': 'device',
+          'lastSeenAt': 1,
+        },
+      ],
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Answered on Pixel 9 · 11:02'), findsOneWidget);
+    expect(find.text('Q qm · Answered'), findsOneWidget);
+    expect(find.text('Withdrawn'), findsOneWidget);
+    expect(find.text('Expired'), findsOneWidget);
+    expect(find.text('Ended when the session restarted'), findsOneWidget);
+  });
+
+  appTest('a disappearance without a status is only a neutral fallback', (
+    tester,
+  ) async {
+    final s = await _open(tester, [
+      _question('qn', 'confirm')..remove('status'),
+    ]);
     s.snapshot['interactions'] = <Object?>[];
     s.gateway!.socket('/api/events')!.push({
       'sessionId': 's2',
@@ -201,11 +339,11 @@ void main() {
       'sequence': 5,
       'type': 'interaction_answered',
       'timestamp': 1,
-      'data': {'interactionId': 'q8'},
+      'data': {'interactionId': 'qn'},
     });
     await tester.pumpAndSettle();
     expect(find.byType(QuestionCard), findsNothing);
-    expect(find.text('Q q8 · handled on another device'), findsOneWidget);
+    expect(find.text('Q qn · ended'), findsOneWidget);
   });
 
   appTest('the approval mode control sends set_approval_mode; full access '

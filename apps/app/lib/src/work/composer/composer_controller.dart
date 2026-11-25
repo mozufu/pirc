@@ -81,6 +81,9 @@ class ComposerController extends Notifier<ComposerState> {
   final String sessionId;
   CommandSender? _sender;
 
+  /// A send is taking control or asking first; it has not started uploading.
+  bool _preparing = false;
+
   String get _draftKey => '${PrefKeys.draftPrefix}$sessionId';
 
   @override
@@ -116,16 +119,25 @@ class ComposerController extends Notifier<ComposerState> {
   );
 
   /// Sends the draft: a `prompt` when idle, `steer` or `follow_up` while a
-  /// run is active.
-  Future<void> send({required bool runActive}) async {
+  /// run is active. Sending takes control; [confirmTakeover] asks first when
+  /// another client acted in this session within the last 30 seconds.
+  Future<void> send({
+    required bool runActive,
+    Future<bool> Function(String name)? confirmTakeover,
+  }) async {
     final text = state.draft.trim();
     if ((text.isEmpty && state.attachments.isEmpty) ||
         state.sending ||
+        _preparing ||
         state.uncertain != null) {
       return;
     }
-    state = state.copyWith(sending: true, clearError: true);
+    _preparing = true;
+    state = state.copyWith(clearError: true);
     try {
+      final lease = await _session.leaseForSend(confirm: confirmTakeover);
+      if (lease == null) return;
+      state = state.copyWith(sending: true);
       final uploads = <String>[];
       final api = ref.read(apiProvider);
       try {
@@ -152,7 +164,7 @@ class ComposerController extends Notifier<ComposerState> {
           : state.when == SendWhen.steer
           ? CommandPayload.steer(text, uploadIds: ids)
           : CommandPayload.followUp(text, uploadIds: ids);
-      final outcome = await _send(payload);
+      final outcome = await _send(payload, lease: lease);
       switch (outcome) {
         case CommandAccepted() || CommandDuplicate():
           setDraft('');
@@ -167,7 +179,8 @@ class ComposerController extends Notifier<ComposerState> {
           break;
       }
     } finally {
-      state = state.copyWith(sending: false);
+      _preparing = false;
+      if (state.sending) state = state.copyWith(sending: false);
     }
   }
 
@@ -225,17 +238,25 @@ class ComposerController extends Notifier<ComposerState> {
 
   static const _rejected = 'rejected';
 
-  /// Sends [payload] under the held lease; handles the typed refusals.
-  Future<CommandOutcome?> _send(CommandPayload payload) async {
+  /// Sends [payload] under [lease]; a plain Stop needs no lease and goes
+  /// with this device's client ID alone.
+  Future<CommandOutcome?> _send(
+    CommandPayload payload, {
+    ControlLease? lease,
+  }) async {
     final sender = _sender;
     final view = ref.read(sessionControllerProvider(sessionId));
-    final lease = _session.heldLease;
-    if (sender == null || lease == null || view.state == null) return null;
+    final control = lease ?? _session.heldLease;
+    final stop = payload.type == 'stop';
+    if (sender == null || (!stop && control == null) || view.state == null) {
+      return null;
+    }
     try {
       final outcome = await sender.send(
         sessionId: sessionId,
         payload: payload,
-        lease: lease,
+        lease: control,
+        clientId: ref.read(clientIdProvider),
         binding: view.state!.session.binding,
       );
       if (outcome is CommandRejected) {

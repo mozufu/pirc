@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:pirc_app/src/connection/storage.dart';
+import 'package:pirc_app/src/format.dart';
 import 'package:pirc_app/src/work/composer/attachments.dart';
 import 'package:pirc_client/pirc_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,8 +31,15 @@ const _models = [
 
 /// joined-mid-stream with a binding, a model and (optionally) a running run
 /// with a queue; commands are accepted unless [commandReply] says otherwise.
+final _now = DateTime(2026, 11, 25, 11);
+int _at(Duration offset) => _now.add(offset).millisecondsSinceEpoch;
+
 class _Composer {
-  _Composer({bool running = false, List<String> queue = const []}) {
+  _Composer({
+    bool running = false,
+    List<String> queue = const [],
+    Map<String, Object?>? lease,
+  }) {
     final snapshot = session.snapshot;
     (snapshot['session']! as Map)['binding'] = _binding;
     snapshot['agent'] = {
@@ -40,6 +48,7 @@ class _Composer {
     };
     if (running) snapshot['run'] = {'id': 'r1', 'status': 'running'};
     snapshot['queue'] = {'steering': queue, 'followUp': <String>[]};
+    session.lease = lease;
     gateway = session.install();
     gateway.json['GET /api/models'] = (_) => {'models': _models};
     gateway.json['POST /api/sessions/s2/commands'] = (request) =>
@@ -70,13 +79,16 @@ Future<_Composer> _open(
   WidgetTester tester, {
   bool running = false,
   List<String> queue = const [],
+  Map<String, Object?>? lease,
+  List overrides = const [],
 }) async {
-  final composer = _Composer(running: running, queue: queue);
+  final composer = _Composer(running: running, queue: queue, lease: lease);
   await pumpApp(
     tester,
     gateway: composer.gateway,
     width: 1300,
     location: '/work?open=s2',
+    overrides: overrides,
   );
   return composer;
 }
@@ -128,6 +140,114 @@ void main() {
       );
       final stop = c.gateway.sent('POST', '/api/sessions/s2/commands').last;
       expect((stop.json! as Map).containsKey('expectedBinding'), isFalse);
+    });
+
+    appTest('Stop works without control and sends only the client ID', (
+      tester,
+    ) async {
+      final c = await _open(
+        tester,
+        running: true,
+        lease: {'clientId': 'other-phone', 'generation': 4},
+      );
+      final stop = tester.widget<TextButton>(
+        find.ancestor(
+          of: find.text('Stop this work'),
+          matching: find.byType(TextButton),
+        ),
+      );
+      expect(stop.onPressed, isNotNull);
+      await tester.tap(find.text('Stop this work'));
+      await tester.pumpAndSettle();
+      final prefs = await SharedPreferences.getInstance();
+      expect(c.lastBody['clientId'], prefs.getString(PrefKeys.clientId));
+      expect(c.lastBody.containsKey('generation'), isFalse);
+      expect(
+        c.gateway.sent('POST', '/api/sessions/s2/control/acquire'),
+        isEmpty,
+      );
+    });
+
+    appTest('sending takes control silently from an idle holder', (
+      tester,
+    ) async {
+      final c = await _open(
+        tester,
+        lease: {
+          'clientId': 'other-phone',
+          'generation': 4,
+          'holder': {
+            'name': 'Pixel 9',
+            'kind': 'device',
+            'lastActionAt': _at(const Duration(minutes: -2)),
+          },
+        },
+        overrides: [clockProvider.overrideWithValue(() => _now)],
+      );
+      await _type(tester, 'Hello there');
+      final reads = c.gateway.sent('GET', '/api/sessions/s2/control').length;
+      await _send(tester);
+      expect(
+        c.gateway.sent('GET', '/api/sessions/s2/control'),
+        hasLength(reads + 1),
+      );
+      final acquire =
+          c.gateway
+                  .sent('POST', '/api/sessions/s2/control/acquire')
+                  .single
+                  .json!
+              as Map;
+      expect(acquire['force'], isTrue);
+      expect(c.lastBody['clientId'], c.session.lease!['clientId']);
+      expect(c.lastBody['generation'], c.session.lease!['generation']);
+      expect(c.payloads.single['type'], 'prompt');
+      expect(
+        find.text('Pixel 9 was just working here. Send anyway?'),
+        findsNothing,
+      );
+    });
+
+    appTest('a recently active holder asks once; Cancel and Send', (
+      tester,
+    ) async {
+      final c = await _open(
+        tester,
+        lease: {
+          'clientId': 'other-phone',
+          'generation': 4,
+          'holder': {
+            'name': 'Pixel 9',
+            'kind': 'device',
+            'lastActionAt': _at(const Duration(seconds: -10)),
+          },
+        },
+        overrides: [clockProvider.overrideWithValue(() => _now)],
+      );
+      await _type(tester, 'Hello there');
+      await tester.tap(find.byTooltip('Send'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Pixel 9 was just working here. Send anyway?'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(c.gateway.sent('POST', '/api/sessions/s2/commands'), isEmpty);
+      expect(_fieldText(tester), 'Hello there');
+
+      await tester.tap(find.byTooltip('Send'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('send-anyway')));
+      await tester.pumpAndSettle();
+      final acquire =
+          c.gateway
+                  .sent('POST', '/api/sessions/s2/control/acquire')
+                  .single
+                  .json!
+              as Map;
+      expect(acquire['force'], isTrue);
+      expect(c.lastBody['clientId'], c.session.lease!['clientId']);
+      expect(c.payloads.single['type'], 'prompt');
     });
 
     appTest('stop returns the cleared queue text to the draft', (tester) async {

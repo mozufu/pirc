@@ -342,6 +342,19 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String continuedOn(String name) {
+    return '已改由 $name 繼續';
+  }
+
+  @override
+  String takeoverConfirm(String name) {
+    return '$name 剛剛在這裡工作。仍要送出嗎？';
+  }
+
+  @override
+  String get anotherDevice => '另一台裝置';
+
+  @override
   String get takeControl => '取得控制權';
 
   @override
@@ -462,6 +475,30 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String handledElsewhere(String title) {
     return '$title · 已在另一台裝置處理';
+  }
+
+  @override
+  String answeredOn(String name, String time) {
+    return '由 $name 於 $time 回答';
+  }
+
+  @override
+  String answeredOnName(String name) {
+    return '由 $name 回答';
+  }
+
+  @override
+  String get questionAnswered => '已回答';
+
+  @override
+  String get questionWithdrawn => '已撤回';
+
+  @override
+  String get questionStale => '工作階段重新啟動時結束';
+
+  @override
+  String questionEnded(String title) {
+    return '$title · 已結束';
   }
 
   @override

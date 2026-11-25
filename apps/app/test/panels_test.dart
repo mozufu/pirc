@@ -322,6 +322,7 @@ void main() {
         find.byKey(const Key('browser-control')),
       );
       expect(take.onPressed, isNull);
+      expect(find.text('Take control'), findsOneWidget);
     });
   });
 

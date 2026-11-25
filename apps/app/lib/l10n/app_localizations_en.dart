@@ -362,6 +362,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String continuedOn(String name) {
+    return 'Continued on $name';
+  }
+
+  @override
+  String takeoverConfirm(String name) {
+    return '$name was just working here. Send anyway?';
+  }
+
+  @override
+  String get anotherDevice => 'Another device';
+
+  @override
   String get takeControl => 'Take control';
 
   @override
@@ -491,6 +504,30 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String handledElsewhere(String title) {
     return '$title · handled on another device';
+  }
+
+  @override
+  String answeredOn(String name, String time) {
+    return 'Answered on $name · $time';
+  }
+
+  @override
+  String answeredOnName(String name) {
+    return 'Answered on $name';
+  }
+
+  @override
+  String get questionAnswered => 'Answered';
+
+  @override
+  String get questionWithdrawn => 'Withdrawn';
+
+  @override
+  String get questionStale => 'Ended when the session restarted';
+
+  @override
+  String questionEnded(String title) {
+    return '$title · ended';
   }
 
   @override

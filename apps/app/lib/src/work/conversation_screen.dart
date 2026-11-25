@@ -112,6 +112,7 @@ class ConversationScreen extends ConsumerWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (view.continuedOn case final name?) _ContinuedNotice(name: name),
           ?banner,
           if (view.partialOutputLost)
             Padding(
@@ -123,11 +124,8 @@ class ConversationScreen extends ConsumerWidget {
               ),
             ),
           Expanded(child: body),
-          if (state != null && !view.deleted) ...[
-            if (view.control == ControlState.other)
-              ControlBar(sessionId: sessionId),
+          if (state != null && !view.deleted)
             ?parts.bottom?.call(context, view),
-          ],
         ],
       ),
     );
@@ -183,54 +181,38 @@ class _Title extends ConsumerWidget {
   }
 }
 
-/// Another client controls the session: the composer is read-only and
-/// "Take control" acquires the lease with `force`.
-class ControlBar extends ConsumerWidget {
-  const ControlBar({super.key, required this.sessionId});
-  final String sessionId;
+/// Another client took control: a quiet notice, not a read-only state. The
+/// composer stays usable and its next send takes control back.
+class _ContinuedNotice extends StatelessWidget {
+  const _ContinuedNotice({required this.name});
+  final String name;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final colors = PircColorTokens.of(context);
-    final holder = ref
-        .watch(sessionControllerProvider(sessionId))
-        .lease
-        ?.holder
-        ?.name;
     return Material(
       color: colors['surface.subtle'],
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: PircSpacing.gutterPhone,
-            vertical: PircSpacing.stackSm,
-          ),
-          child: Row(
-            children: [
-              Icon(
-                LucideIcons.monitorSmartphone,
-                size: PircSize.iconRow,
-                color: colors['text.secondary'],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: PircSpacing.gutterPhone,
+          vertical: PircSpacing.stackSm,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              LucideIcons.monitorSmartphone,
+              size: PircSize.iconRow,
+              color: colors['text.secondary'],
+            ),
+            const SizedBox(width: PircSpacing.stackSm),
+            Expanded(
+              child: Text(
+                l10n.continuedOn(name),
+                style: Theme.of(context).textTheme.bodySmall,
               ),
-              const SizedBox(width: PircSpacing.stackSm),
-              Expanded(
-                child: Text(
-                  holder == null || holder.isEmpty
-                      ? l10n.controlledElsewhere
-                      : l10n.controlledByName(holder),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-              TextButton(
-                onPressed: () => ref
-                    .read(sessionControllerProvider(sessionId).notifier)
-                    .takeControl(force: true),
-                child: Text(l10n.takeControl),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
