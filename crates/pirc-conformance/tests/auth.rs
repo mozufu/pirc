@@ -26,9 +26,18 @@ async fn probe(api: &Api, t: &mut Transcript, case: &str, headers: &[(&str, Stri
     let get = api.send("GET", "/api/workspaces", headers, None).await;
     t.response(&format!("{case}: GET"), "GET /api/workspaces", &get);
     let post = api
-        .send("POST", "/api/sessions", headers, Some(json!({})))
+        .send(
+            "POST",
+            "/api/conversation-submissions/prepare",
+            headers,
+            Some(json!({})),
+        )
         .await;
-    t.response(&format!("{case}: POST"), "POST /api/sessions", &post);
+    t.response(
+        &format!("{case}: POST"),
+        "POST /api/conversation-submissions/prepare",
+        &post,
+    );
 }
 
 async fn record_socket(t: &mut Transcript, step: &str, connection: Connection) {
@@ -41,7 +50,7 @@ async fn record_socket(t: &mut Transcript, step: &str, connection: Connection) {
     }
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn browser_request_matrix() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -150,7 +159,7 @@ async fn untrusted_peer() {
     insta::assert_json_snapshot!("untrusted_peer", t.into_value());
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn proxy_secret() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

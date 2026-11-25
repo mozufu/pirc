@@ -15,7 +15,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use pirc_conformance::{
-    Api, Cluster, GatewayOptions, NODE_ID, NODE_TOKEN, Response, Transcript, WebSocket,
+    Api, Cluster, FirstSend, GatewayOptions, NODE_ID, NODE_TOKEN, Response, Transcript, WebSocket,
     assert_node_frame, browser_headers,
 };
 use regex::Regex;
@@ -176,6 +176,8 @@ struct NodeState {
     /// `agent_response` frames by request id.
     answers: HashMap<String, Value>,
     sessions: usize,
+    /// The first-send creation identity of `sessions`.
+    creation: String,
     /// A session's name and the run delivered into it.
     names: HashMap<String, String>,
     runs: HashMap<String, String>,
@@ -198,6 +200,41 @@ fn reply(request: &Value, state: &mut NodeState) -> Value {
         .map(|rest| rest.split('/').next().unwrap_or_default().to_owned())
         .unwrap_or_default();
     match method {
+        "GET" if url == "/api/session-creations/capabilities" => ok(json!({
+            "version": 1, "canAllocate": true, "canTransferAttachments": true,
+            "attachmentMimeInQuery": true, "canAdmitFirstMessage": true,
+            "canReadFirstMessageReceipt": true, "canCancelCreation": true,
+            "canStopBeforeAllocation": true, "maxUploadBytes": 1_048_576,
+            "maxAttachments": 16 })),
+        "POST" if url == "/api/session-creations" => {
+            state.sessions += 1;
+            state.creation = request["payload"]["operationId"]
+                .as_str()
+                .unwrap_or_default()
+                .into();
+            json!({ "status": 200, "body": { "creation": {
+                "operationId": state.creation.clone(), "workspaceId": request["payload"]["workspaceId"],
+                "sessionId": format!("remote-{}", state.sessions), "state": "ready" } } })
+        }
+        "POST" if url.ends_with("/commands") => {
+            let stop = request["payload"]["payload"]["type"] == "stop";
+            let admission = json!({ "operationId": state.creation.clone(),
+                "sessionId": format!("remote-{}", state.sessions), "state": "stopped",
+                "command": null, "inputHash": null, "stopRequested": true,
+                "stopConfirmed": true });
+            ok(json!({ "command": { "id": request["payload"]["commandId"],
+                    "sessionId": format!("remote-{}", state.sessions),
+                    "status": "accepted" },
+                "initialAdmission": if stop { admission } else { Value::Null } }))
+        }
+        "GET" if url.contains("/admission") => ok(json!({ "admission": {
+            "operationId": state.creation.clone(), "sessionId": format!("remote-{}", state.sessions),
+            "state": "stopped", "command": null, "inputHash": null,
+            "stopRequested": true, "stopConfirmed": true } })),
+        "POST" if url == "/api/session-creations/internal" => {
+            state.sessions += 1;
+            json!({ "status": 201, "body": { "session": { "id": format!("remote-{}", state.sessions) } } })
+        }
         "POST" if url == "/api/sessions" => {
             state.sessions += 1;
             json!({ "status": 201, "body": { "session": { "id": format!("remote-{}", state.sessions) } } })
@@ -485,7 +522,7 @@ impl Scenario {
     }
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn schedules() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -509,15 +546,11 @@ async fn schedules() {
     let node = FakeNode::connect(&api, state.clone()).await;
 
     // A session to watch the hints on (remote-1); its agent proposes later.
-    let created = s
-        .call(
-            "a session for the hints",
-            "POST",
-            "/api/sessions",
-            Some(json!({ "workspaceId": "test:ws" })),
-        )
-        .await;
-    let chat = created.body["session"]["id"].as_str().unwrap().to_owned();
+    let chat = FirstSend::browser(&api)
+        .workspace("test:ws")
+        .start_idle()
+        .await
+        .id;
     s.forget_relayed();
     let hints = format!("/api/events?sessionId={chat}&schedules=1");
     let mut socket = api.connect(&hints, &browser_headers()).await.open();

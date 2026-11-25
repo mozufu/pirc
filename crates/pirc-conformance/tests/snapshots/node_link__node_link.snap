@@ -13,14 +13,14 @@ expression: t.into_value()
   {
     "observed": {
       "closed": 4426,
-      "reason": "node protocol 9 != daemon 15"
+      "reason": "node protocol 9 != daemon 17"
     },
     "step": "older protocol"
   },
   {
     "observed": {
       "closed": 4426,
-      "reason": "node protocol 1 != daemon 15"
+      "reason": "node protocol 1 != daemon 17"
     },
     "step": "no protocol"
   },
@@ -92,7 +92,6 @@ expression: t.into_value()
               "available": true,
               "displayName": "Fake workspace",
               "id": "ws",
-              "kind": "directory",
               "mode": "directory"
             }
           ]
@@ -130,64 +129,11 @@ expression: t.into_value()
   {
     "observed": {
       "data": {
-        "method": "POST",
-        "payload": {
-          "workspaceId": "ws"
-        },
-        "url": "/api/sessions",
-        "user": "test@example.com"
-      },
-      "requestId": "<uuid:1>",
-      "type": "request"
-    },
-    "step": "relayed request"
-  },
-  {
-    "body": {
-      "session": {
-        "binding": {
-          "execution": {
-            "generation": 1,
-            "modeId": "directory",
-            "nodeId": "test",
-            "workspaceId": "test:ws"
-          },
-          "membership": {
-            "legacyWorkspaceId": "test:ws",
-            "revision": 1
-          },
-          "version": 1
-        },
-        "createdAt": "<epoch-ms>",
-        "id": "session_<uuid:2>",
-        "name": "New session",
-        "nameSource": "auto",
-        "nodeId": "test",
-        "pinnedAt": null,
-        "runStatus": null,
-        "runnerEpoch": 0,
-        "runnerState": "stopped",
-        "settledAt": null,
-        "unread": false,
-        "updatedAt": "<epoch-ms>",
-        "workspaceId": "test:ws"
-      }
-    },
-    "headers": {
-      "content-type": "application/json"
-    },
-    "request": "POST /api/sessions",
-    "status": 201,
-    "step": "create a session on the node"
-  },
-  {
-    "observed": {
-      "data": {
         "type": "agent_start"
       },
       "epoch": 0,
       "sequence": 1,
-      "sessionId": "session_<uuid:2>",
+      "sessionId": "session_<uuid:1>",
       "timestamp": "<epoch-ms>",
       "type": "pi_event"
     },

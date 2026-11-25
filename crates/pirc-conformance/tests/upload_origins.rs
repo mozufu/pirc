@@ -1,20 +1,22 @@
 //! Real Gateway/Node metadata is identical for Web and paired-device HTTP.
 //! This is saved content provenance, not proof of filesystem mount revocation.
-use pirc_conformance::{Api, CHATS_WORKSPACE_ID, Cluster, GatewayOptions, HOST, browser_headers};
+use pirc_conformance::{
+    Api, CHATS_WORKSPACE_ID, Cluster, FirstSend, GatewayOptions, HOST, browser_headers,
+};
 use serde_json::json;
+
+static NEXT_OPERATION: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(1);
+
 async fn create(api: &Api) -> String {
-    let r = api
-        .send(
-            "POST",
-            "/api/sessions",
-            &browser_headers(),
-            Some(json!({"workspaceId":CHATS_WORKSPACE_ID})),
-        )
-        .await;
-    assert_eq!(r.status, 201, "{}", r.body);
-    r.body["session"]["id"].as_str().unwrap().into()
+    let operation = NEXT_OPERATION.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    FirstSend::browser(api)
+        .workspace(CHATS_WORKSPACE_ID)
+        .operation(format!("first-{operation}"))
+        .start_idle()
+        .await
+        .id
 }
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn saved_upload_origin_is_shared_across_devices_and_survives_restart() {
     let Some(mut cluster) = Cluster::start_with(GatewayOptions {

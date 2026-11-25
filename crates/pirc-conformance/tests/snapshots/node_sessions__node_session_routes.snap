@@ -5,41 +5,42 @@ expression: t.into_value()
 [
   {
     "body": {
-      "session": {
-        "binding": {
-          "execution": {
-            "generation": 1,
-            "modeId": "directory",
-            "nodeId": "test",
-            "workspaceId": "test:test"
-          },
-          "membership": {
-            "legacyWorkspaceId": "test:test",
-            "revision": 1
-          },
-          "version": 1
+      "preparation": {
+        "accepted": true,
+        "acceptedAt": "<epoch-ms>",
+        "attachmentsExpiredAt": null,
+        "attachmentsExpiresAt": null,
+        "cleanupPending": false,
+        "messageAdmission": {
+          "attemptNumber": 0,
+          "commandId": null,
+          "outcome": "not_admitted",
+          "retryEligible": false,
+          "retryId": null,
+          "stopConfirmed": true,
+          "stopRequested": true
         },
-        "createdAt": "<epoch-ms>",
-        "id": "session_<uuid:1>",
-        "name": "New session",
-        "nameSource": "auto",
-        "nodeId": "test",
-        "pinnedAt": null,
-        "runStatus": null,
-        "runnerEpoch": 0,
-        "runnerState": "stopped",
-        "settledAt": null,
-        "unread": false,
-        "updatedAt": "<epoch-ms>",
+        "nodeMapped": true,
+        "operationId": "first-send",
+        "sessionId": "session_<uuid:1>",
+        "stagedAttachmentIds": [],
+        "state": "stopped",
+        "submission": {
+          "attachments": [],
+          "message": "Conformance first message.",
+          "model": null,
+          "thinking": null,
+          "workspaceId": "test:test"
+        },
         "workspaceId": "test:test"
       }
     },
     "headers": {
       "content-type": "application/json"
     },
-    "request": "POST /api/sessions",
-    "status": 201,
-    "step": "create session"
+    "request": "POST /api/conversation-submissions/:id/dispatch",
+    "status": 200,
+    "step": "first send"
   },
   {
     "body": {
@@ -767,16 +768,16 @@ expression: t.into_value()
   {
     "body": {
       "error": {
-        "code": "forbidden",
-        "message": "User is not allowed on this node"
+        "code": "node_submission_unavailable",
+        "message": "Node could not complete the first-message preparation; reconcile the same submission"
       }
     },
     "headers": {
       "content-type": "application/json"
     },
-    "request": "POST /api/sessions",
+    "request": "POST /api/conversation-submissions/stranger-first/accept",
     "status": 403,
-    "step": "a user the gateway allows but the node does not creates a session"
+    "step": "a user the gateway allows but the node does not is refused by first-send"
   },
   {
     "body": {

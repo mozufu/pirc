@@ -22,7 +22,8 @@ use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use axum::routing::post;
 use pirc_conformance::{
-    Api, Cluster, GatewayOptions, Response as ApiResponse, WORKSPACE_ID, WebSocket, browser_headers,
+    Api, Cluster, FirstSend, GatewayOptions, Response as ApiResponse, Started, WORKSPACE_ID,
+    WebSocket, browser_headers,
 };
 use serde_json::{Value, json};
 use tokio::net::TcpListener;
@@ -301,30 +302,44 @@ pub struct Session {
     pub base: String,
     pub client: String,
     pub generation: Value,
+    binding: Value,
     commands: usize,
 }
 
 impl Session {
-    /// Create a session (no control taken yet).
-    pub async fn create(api: &Api) -> (Self, ApiResponse) {
-        let created = api
-            .send(
-                "POST",
-                "/api/sessions",
-                &browser_headers(),
-                Some(json!({ "workspaceId": WORKSPACE_ID })),
-            )
-            .await;
-        let id = created.body["session"]["id"].as_str().unwrap().to_owned();
-        let session = Self {
+    fn from_started(api: &Api, started: Started) -> Self {
+        Self {
             api: api.clone(),
-            base: format!("/api/sessions/{id}"),
-            id,
-            client: "browser".to_owned(),
-            generation: Value::Null,
+            base: started.base,
+            id: started.id,
+            client: started.client_id,
+            generation: started.generation,
+            binding: Value::Null,
             commands: 0,
-        };
-        (session, created)
+        }
+    }
+
+    /// Create an idle session through first-send (the first message is
+    /// fenced, so no run starts). Control is already held by `client`.
+    pub async fn create(api: &Api) -> (Self, ApiResponse) {
+        let started = FirstSend::browser(api)
+            .workspace(WORKSPACE_ID)
+            .start_idle()
+            .await;
+        let response = started.response.clone();
+        (Self::from_started(api, started), response)
+    }
+
+    /// Create a session through first-send with `message` as its first
+    /// message, wait for the reply, and hold control.
+    pub async fn start(api: &Api, message: &str) -> (Self, ApiResponse) {
+        let started = FirstSend::browser(api)
+            .workspace(WORKSPACE_ID)
+            .message(message)
+            .start()
+            .await;
+        let response = started.response.clone();
+        (Self::from_started(api, started), response)
     }
 
     /// An existing session, e.g. one the backend created (no control taken yet).
@@ -335,6 +350,7 @@ impl Session {
             id: id.to_owned(),
             client: "browser".to_owned(),
             generation: Value::Null,
+            binding: Value::Null,
             commands: 0,
         }
     }
@@ -392,12 +408,20 @@ impl Session {
     }
 
     pub async fn command_with(&self, id: &str, payload: Value) -> ApiResponse {
-        self.post(
-            "/commands",
-            json!({ "commandId": id, "clientId": self.client.clone(),
-                "generation": self.generation.clone(), "payload": payload }),
-        )
-        .await
+        let stop = matches!(payload["type"].as_str(), Some("stop" | "stop_transition"));
+        let binding = if stop {
+            Value::Null
+        } else {
+            let environment = self.get("/environment").await;
+            assert_eq!(environment.status, 200, "{}", environment.body);
+            environment.body["binding"].clone()
+        };
+        let mut body = json!({ "commandId": id, "clientId": self.client.clone(),
+            "generation": self.generation.clone(), "payload": payload });
+        if !stop {
+            body["expectedBinding"] = binding;
+        }
+        self.post("/commands", body).await
     }
 
     /// A live `/api/events` socket from the session's current watermark.

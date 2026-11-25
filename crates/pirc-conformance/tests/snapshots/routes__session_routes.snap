@@ -221,57 +221,6 @@ expression: t.into_value()
         },
         "createdAt": "<epoch-ms>",
         "id": "session_<uuid:1>",
-        "name": "New session",
-        "nameSource": "auto",
-        "nodeId": "test",
-        "pinnedAt": null,
-        "runStatus": null,
-        "runnerEpoch": 0,
-        "runnerState": "stopped",
-        "settledAt": null,
-        "unread": false,
-        "updatedAt": "<epoch-ms>",
-        "workspaceId": "test:ws"
-      }
-    },
-    "headers": {
-      "content-type": "application/json"
-    },
-    "request": "POST /api/sessions",
-    "status": 201,
-    "step": "create a session"
-  },
-  {
-    "observed": [
-      {
-        "method": "POST",
-        "payload": {
-          "workspaceId": "ws"
-        },
-        "url": "/api/sessions",
-        "user": "test@example.com"
-      }
-    ],
-    "step": "create a session: relayed"
-  },
-  {
-    "body": {
-      "session": {
-        "binding": {
-          "execution": {
-            "generation": 1,
-            "modeId": "directory",
-            "nodeId": "test",
-            "workspaceId": "test:ws"
-          },
-          "membership": {
-            "legacyWorkspaceId": "test:ws",
-            "revision": 1
-          },
-          "version": 1
-        },
-        "createdAt": "<epoch-ms>",
-        "id": "session_<uuid:1>",
         "name": "Mine",
         "nameSource": "user",
         "nodeId": "test",
@@ -556,9 +505,27 @@ expression: t.into_value()
   {
     "observed": [
       {
+        "method": "GET",
+        "url": "/api/command-environments/capabilities",
+        "user": "test@example.com"
+      },
+      {
         "method": "POST",
         "payload": {
           "clientId": "browser",
+          "commandEnvironment": {
+            "execution": {
+              "generation": 1,
+              "modeId": "directory",
+              "nodeId": "test",
+              "workspaceId": "test:ws"
+            },
+            "membership": {
+              "legacyWorkspaceId": "test:ws",
+              "revision": 1
+            },
+            "version": 1
+          },
           "commandId": "c1",
           "generation": 2,
           "payload": {
@@ -628,9 +595,27 @@ expression: t.into_value()
   {
     "observed": [
       {
+        "method": "GET",
+        "url": "/api/command-environments/capabilities",
+        "user": "test@example.com"
+      },
+      {
         "method": "POST",
         "payload": {
           "clientId": "browser",
+          "commandEnvironment": {
+            "execution": {
+              "generation": 1,
+              "modeId": "directory",
+              "nodeId": "test",
+              "workspaceId": "test:ws"
+            },
+            "membership": {
+              "legacyWorkspaceId": "test:ws",
+              "revision": 1
+            },
+            "version": 1
+          },
           "commandId": "c2",
           "generation": 2,
           "payload": {
@@ -668,9 +653,27 @@ expression: t.into_value()
   {
     "observed": [
       {
+        "method": "GET",
+        "url": "/api/command-environments/capabilities",
+        "user": "test@example.com"
+      },
+      {
         "method": "POST",
         "payload": {
           "clientId": "browser",
+          "commandEnvironment": {
+            "execution": {
+              "generation": 1,
+              "modeId": "directory",
+              "nodeId": "test",
+              "workspaceId": "test:ws"
+            },
+            "membership": {
+              "legacyWorkspaceId": "test:ws",
+              "revision": 1
+            },
+            "version": 1
+          },
           "commandId": "c3",
           "generation": 2,
           "payload": {
@@ -1037,7 +1040,6 @@ expression: t.into_value()
               "available": true,
               "displayName": "Fake workspace",
               "id": "ws",
-              "kind": "directory",
               "mode": "directory"
             },
             {

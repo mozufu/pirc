@@ -3,7 +3,8 @@
 //! broker and event relay meet the agent.
 
 use pirc_conformance::{
-    Cluster, GatewayOptions, Normalizer, Reply, Transcript, WORKSPACE_ID, browser_headers,
+    Cluster, FirstSend, GatewayOptions, Normalizer, Reply, Transcript, WORKSPACE_ID,
+    browser_headers,
 };
 use serde_json::{Value, json};
 
@@ -11,7 +12,7 @@ fn settled(frame: &Value) -> bool {
     frame["type"] == "pi_event" && frame["data"]["type"] == "agent_settled"
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn agent_under_node() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -25,16 +26,12 @@ async fn agent_under_node() {
     let api = cluster.api();
     let headers = browser_headers();
     let mut t = Transcript::new(cluster.volatile());
-    let created = api
-        .send(
-            "POST",
-            "/api/sessions",
-            &headers,
-            Some(json!({ "workspaceId": WORKSPACE_ID })),
-        )
+    let started = FirstSend::new(&api, &headers)
+        .workspace(WORKSPACE_ID)
+        .start_idle()
         .await;
-    let id = created.body["session"]["id"].as_str().unwrap().to_owned();
-    let session = format!("/api/sessions/{id}");
+    let id = started.id;
+    let session = started.base;
     let acquired = api
         .send(
             "POST",
@@ -76,6 +73,9 @@ async fn agent_under_node() {
         },
         Reply::Text("All done.".to_owned()),
     ]);
+    let environment = api
+        .send("GET", &format!("{session}/environment"), &headers, None)
+        .await;
     let sent = api
         .send(
             "POST",
@@ -83,6 +83,7 @@ async fn agent_under_node() {
             &headers,
             Some(
                 json!({ "commandId": "c1", "clientId": "browser", "generation": generation,
+                "expectedBinding": environment.body["binding"],
                 "payload": { "type": "prompt", "message": "Write, read and edit" } }),
             ),
         )

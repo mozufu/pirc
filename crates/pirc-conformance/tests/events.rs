@@ -4,8 +4,8 @@
 //! the node so every frame is under its control.
 
 use pirc_conformance::{
-    Cluster, GatewayOptions, NODE_ID, NODE_TOKEN, Transcript, WebSocket, assert_node_frame,
-    browser_headers,
+    Cluster, FirstSend, GatewayOptions, NODE_ID, NODE_TOKEN, Transcript, WebSocket,
+    assert_node_frame, browser_headers,
 };
 use serde_json::{Value, json};
 
@@ -66,7 +66,7 @@ async fn exchange(
     )
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn event_stream() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -82,33 +82,13 @@ async fn event_stream() {
     let mut t = Transcript::new(cluster.volatile());
     let mut node = register(&cluster).await;
 
-    let create = {
-        let api = api.clone();
-        let browser = browser.clone();
-        tokio::spawn(async move {
-            api.send(
-                "POST",
-                "/api/sessions",
-                &browser,
-                Some(json!({ "workspaceId": "test:ws" })),
-            )
-            .await
-        })
-    };
-    let request = node.next_json().await.expect("relayed request");
-    send(
-        &mut node,
-        json!({
-            "type": "response",
-            "requestId": request["requestId"],
-            "data": { "status": 201, "body": { "session": { "id": "remote-1" } } },
-        }),
-    )
-    .await;
-    let session = create.await.unwrap().body["session"]["id"]
-        .as_str()
-        .unwrap()
-        .to_owned();
+    let (started, ()) = tokio::join!(
+        FirstSend::new(&api, &browser)
+            .workspace("test:ws")
+            .start_idle(),
+        pirc_conformance::serve_first_send_idle(&mut node, "remote-1"),
+    );
+    let session = started.id;
 
     let hints =
         format!("/api/events?sessionId={session}&directory=1&sessions=1&memory=1&schedules=1");

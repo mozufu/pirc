@@ -7,7 +7,8 @@
 //! in `session_agent_events`, the parity target of the agent port.
 
 use pirc_conformance::{
-    Cluster, GatewayOptions, Normalizer, Reply, Transcript, WORKSPACE_ID, browser_headers,
+    Cluster, FirstSend, GatewayOptions, Normalizer, Reply, Transcript, WORKSPACE_ID,
+    browser_headers,
 };
 use std::collections::BTreeSet;
 
@@ -21,7 +22,7 @@ fn cursor(watermark: &Value) -> String {
     format!("{}:{}", watermark["epoch"], watermark["sequence"])
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn session_lifecycle() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -39,17 +40,17 @@ async fn session_lifecycle() {
     let workspaces = api.send("GET", "/api/workspaces", &headers, None).await;
     t.response("list workspaces", "GET /api/workspaces", &workspaces);
 
-    let created = api
-        .send(
-            "POST",
-            "/api/sessions",
-            &headers,
-            Some(json!({ "workspaceId": WORKSPACE_ID })),
-        )
+    let started = FirstSend::new(&api, &headers)
+        .workspace(WORKSPACE_ID)
+        .start_idle()
         .await;
-    t.response("create session", "POST /api/sessions", &created);
-    let id = created.body["session"]["id"].as_str().unwrap().to_owned();
-    let session = format!("/api/sessions/{id}");
+    t.response(
+        "first send",
+        "POST /api/conversation-submissions/:id/dispatch",
+        &started.response,
+    );
+    let id = started.id;
+    let session = started.base;
 
     let listed = api.send("GET", "/api/sessions", &headers, None).await;
     t.response("list sessions", "GET /api/sessions", &listed);
@@ -77,10 +78,14 @@ async fn session_lifecycle() {
     cluster
         .llm
         .push([Reply::Text("Hello from the fake model.".to_owned())]);
+    let environment = api
+        .send("GET", &format!("{session}/environment"), &headers, None)
+        .await;
     let command = json!({
         "commandId": "command-1",
         "clientId": "browser",
         "generation": generation,
+        "expectedBinding": environment.body["binding"],
         "payload": { "type": "prompt", "message": "Say hello" },
     });
     let path = format!("{session}/commands");

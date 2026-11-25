@@ -15,6 +15,7 @@ mod cluster;
 mod fake_gateway;
 mod fake_llm;
 mod fake_push;
+mod first_send;
 mod normalize;
 
 pub use agent::{
@@ -29,6 +30,7 @@ pub use cluster::{
 pub use fake_gateway::{FakeGateway, NodeLink, assert_gateway_frame, assert_node_frame};
 pub use fake_llm::{FakeLlm, ModelsReply, Reply};
 pub use fake_push::{FakePush, PushSubscription};
+pub use first_send::{FirstSend, Started, serve_first_send_idle};
 pub use normalize::{Normalizer, Transcript, mask_background_log_dir};
 
 /// Headers a trusted proxy adds to an authenticated browser request.

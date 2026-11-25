@@ -15,7 +15,7 @@ expression: t.into_value()
       "modes": [
         "directory"
       ],
-      "protocol": 15,
+      "protocol": 17,
       "role": "node",
       "type": "register",
       "workspaces": [

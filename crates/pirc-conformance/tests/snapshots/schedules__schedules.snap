@@ -5,44 +5,6 @@ expression: s.t.into_value()
 [
   {
     "body": {
-      "session": {
-        "binding": {
-          "execution": {
-            "generation": 1,
-            "modeId": "directory",
-            "nodeId": "test",
-            "workspaceId": "test:ws"
-          },
-          "membership": {
-            "legacyWorkspaceId": "test:ws",
-            "revision": 1
-          },
-          "version": 1
-        },
-        "createdAt": "<epoch-ms>",
-        "id": "session_<uuid:1>",
-        "name": "New session",
-        "nameSource": "auto",
-        "nodeId": "test",
-        "pinnedAt": null,
-        "runStatus": null,
-        "runnerEpoch": 0,
-        "runnerState": "stopped",
-        "settledAt": null,
-        "unread": false,
-        "updatedAt": "<epoch-ms>",
-        "workspaceId": "test:ws"
-      }
-    },
-    "headers": {
-      "content-type": "application/json"
-    },
-    "request": "POST /api/sessions",
-    "status": 201,
-    "step": "a session for the hints"
-  },
-  {
-    "body": {
       "schedules": [],
       "timezone": "UTC"
     },
@@ -1000,7 +962,7 @@ expression: s.t.into_value()
         "payload": {
           "workspaceId": "ws"
         },
-        "url": "/api/sessions",
+        "url": "/api/session-creations/internal",
         "user": "test@example.com"
       },
       {

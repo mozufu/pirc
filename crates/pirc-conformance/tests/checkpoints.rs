@@ -8,7 +8,7 @@ use std::process::Command;
 use std::time::{Duration, Instant};
 
 use pirc_conformance::{
-    Api, Cluster, GatewayOptions, HOST, Reply, Response, USER, WORKSPACE_ID, WebSocket,
+    Api, Cluster, FirstSend, GatewayOptions, HOST, Reply, Response, USER, WORKSPACE_ID, WebSocket,
     browser_headers,
 };
 use serde_json::{Value, json};
@@ -65,20 +65,16 @@ fn ok(response: Response, expected: u16) -> Value {
     assert_eq!(response.status, expected, "{}", response.body);
     response.body
 }
+static NEXT_OPERATION: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(1);
+
 async fn create(api: &Api, headers: &Headers, workspace: &str) -> String {
-    ok(
-        api.send(
-            "POST",
-            "/api/sessions",
-            headers,
-            Some(json!({"workspaceId":workspace})),
-        )
-        .await,
-        201,
-    )["session"]["id"]
-        .as_str()
-        .unwrap()
-        .into()
+    let operation = NEXT_OPERATION.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    FirstSend::new(api, headers)
+        .workspace(workspace)
+        .operation(format!("first-{operation}"))
+        .start_idle()
+        .await
+        .id
 }
 async fn control(api: &Api, headers: &Headers, id: &str, client: &str) -> Value {
     ok(
@@ -123,12 +119,21 @@ async fn prompt(
     generation: &Value,
     command: &str,
 ) -> Response {
+    let environment = api
+        .send(
+            "GET",
+            &format!("/api/sessions/{id}/environment"),
+            headers,
+            None,
+        )
+        .await;
     api.send(
         "POST",
         &format!("/api/sessions/{id}/commands"),
         headers,
         Some(
             json!({"commandId":command,"clientId":client,"generation":generation,
+            "expectedBinding":environment.body["binding"],
             "payload":{"type":"prompt","message":command}}),
         ),
     )
@@ -250,7 +255,7 @@ fn tree(root: &Path) -> BTreeMap<PathBuf, Vec<u8>> {
     out
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn native_recovery_preserves_dirty_git_and_continues_once_across_devices_and_restarts() {
     let _fixture = NATIVE_FIXTURE.lock().await;
@@ -581,7 +586,7 @@ async fn native_recovery_preserves_dirty_git_and_continues_once_across_devices_a
     assert_eq!(tree(&source), expected_source);
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn stale_previews_and_conflicts_require_fresh_review_and_preserve_later_writes() {
     let _fixture = NATIVE_FIXTURE.lock().await;
@@ -708,7 +713,7 @@ async fn stale_previews_and_conflicts_require_fresh_review_and_preserve_later_wr
     );
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn killed_node_marks_unfinished_capture_incomplete_instead_of_inventing_a_postimage() {
     let _fixture = NATIVE_FIXTURE.lock().await;

@@ -9,7 +9,7 @@ use serde_json::json;
 /// `PIRC_UPLOAD_MAX_BYTES`, the gateway's body limit, in this scenario.
 const BODY_LIMIT: usize = 4096;
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn http_edges() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -111,8 +111,14 @@ async fn http_edges() {
         let browser = browser.clone();
         let body = body.to_vec();
         async move {
-            api.send_bytes("POST", "/api/sessions", &browser, content_type, body)
-                .await
+            api.send_bytes(
+                "POST",
+                "/api/conversation-submissions/prepare",
+                &browser,
+                content_type,
+                body,
+            )
+            .await
         }
     };
     let cases: [(&str, Option<&'static str>, Vec<u8>); 9] = [
@@ -154,7 +160,11 @@ async fn http_edges() {
     ];
     for (step, content_type, body) in cases {
         let response = post(content_type, &body).await;
-        t.response(step, "POST /api/sessions", &response);
+        t.response(
+            step,
+            "POST /api/conversation-submissions/prepare",
+            &response,
+        );
     }
 
     insta::assert_json_snapshot!("http_edges", t.into_value());

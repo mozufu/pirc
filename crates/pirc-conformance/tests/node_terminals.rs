@@ -32,6 +32,12 @@ fn terminal_env() -> GatewayOptions {
     }
 }
 
+/// An isolated work terminal request with its durable identity.
+fn work_terminal(s: &Session, request: &str) -> Value {
+    json!({ "clientId": s.client, "generation": s.generation,
+        "executionPath": "isolated_work", "requestId": request })
+}
+
 /// Terminal ids (8 hex characters) become `<terminal-N>` in transcripts.
 #[derive(Default)]
 struct Ids(Vec<(String, String)>);
@@ -167,7 +173,7 @@ async fn stream(
     .await
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[ignore = "pirc 2: compatibility host terminals were removed; the main terminal transcript needs explicit isolated or reviewed host requests"]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_terminals() {
     let Some(cluster) = Cluster::start_with(terminal_env()).await else {
@@ -215,7 +221,7 @@ async fn node_terminals() {
         &refused,
     );
     s.acquire().await;
-    let mut body = lease(&s);
+    let mut body = work_terminal(&s, "terminal-1");
     body["cols"] = json!(100);
     body["rows"] = json!(30);
     let opened = s.post("/terminals", body).await;
@@ -225,7 +231,7 @@ async fn node_terminals() {
         "POST /api/sessions/:id/terminals",
         &ids.response(&opened),
     );
-    let mut body = lease(&s);
+    let mut body = work_terminal(&s, "terminal-2");
     body["cols"] = json!(5);
     body["rows"] = json!(1000);
     let clamped = s.post("/terminals", body).await;
@@ -235,7 +241,7 @@ async fn node_terminals() {
         "POST /api/sessions/:id/terminals",
         &ids.response(&clamped),
     );
-    let mut body = lease(&s);
+    let mut body = work_terminal(&s, "terminal-invalid");
     body["cols"] = json!("wide");
     let invalid = s.post("/terminals", body).await;
     t.response(
@@ -419,8 +425,12 @@ async fn node_terminals() {
 
     // At most 4 live terminals per session; opening one drops exited ones.
     let mut opened = vec![second.clone()];
-    for step in ["open a third", "open a fourth", "open a fifth (4 live)"] {
-        let created = s.post("/terminals", lease(&s)).await;
+    for (step, request) in [
+        ("open a third", "terminal-3"),
+        ("open a fourth", "terminal-4"),
+        ("open a fifth (4 live)", "terminal-5"),
+    ] {
+        let created = s.post("/terminals", work_terminal(&s, request)).await;
         opened.push(ids.learn(&created));
         t.response(
             step,
@@ -428,7 +438,7 @@ async fn node_terminals() {
             &ids.response(&created),
         );
     }
-    let refused = s.post("/terminals", lease(&s)).await;
+    let refused = s.post("/terminals", work_terminal(&s, "terminal-6")).await;
     t.response(
         "a fifth live terminal",
         "POST /api/sessions/:id/terminals",
@@ -484,7 +494,9 @@ async fn node_terminals() {
     );
     let created = tokio::time::timeout(std::time::Duration::from_secs(10), async {
         loop {
-            let created = s.post("/terminals", lease(&s)).await;
+            let created = s
+                .post("/terminals", work_terminal(&s, "terminal-after-close"))
+                .await;
             if created.status != 409 {
                 break created;
             }
@@ -548,7 +560,7 @@ async fn node_terminals() {
     insta::assert_json_snapshot!("node_terminals", t.into_value());
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_terminals_disabled() {
     let mut options = terminal_env();
@@ -598,7 +610,7 @@ async fn node_terminals_disabled() {
     insta::assert_json_snapshot!("node_terminals_disabled", t.into_value());
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn isolated_terminal_never_falls_back_to_host_on_an_unsupported_backend() {
     let Some(cluster) = Cluster::start_with(terminal_env()).await else {
@@ -632,7 +644,7 @@ async fn isolated_terminal_never_falls_back_to_host_on_an_unsupported_backend() 
 
 /// Human review/confirmation uses the ordinary authenticated Gateway relay. This
 /// case is a real host shell in an owned fixture, not native sandbox acceptance.
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_host_terminal_review() {
     let Some(cluster) = Cluster::start_with(terminal_env()).await else {
@@ -712,7 +724,7 @@ async fn node_host_terminal_review() {
     assert_eq!(closed_retry.body["hostManagement"]["state"], "unconfirmed");
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn isolated_terminal_requests_report_no_start_without_host_fallback() {
     let Some(cluster) = Cluster::start_with(terminal_env()).await else {
@@ -755,7 +767,7 @@ async fn isolated_terminal_requests_report_no_start_without_host_fallback() {
     );
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn terminal_requests_are_discoverable_through_the_gateway_without_control() {
     let Some(cluster) = Cluster::start_with(terminal_env()).await else {
@@ -809,7 +821,7 @@ async fn terminal_requests_are_discoverable_through_the_gateway_without_control(
     assert_eq!(closed.status, 204, "{closed:?}");
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn terminal_request_errors_and_acknowledgement_are_specific_through_the_gateway() {
     let Some(cluster) = Cluster::start_with(terminal_env()).await else {
@@ -843,7 +855,7 @@ async fn terminal_request_errors_and_acknowledgement_are_specific_through_the_ga
     );
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn old_clients_without_an_execution_path_are_asked_to_update_by_default() {
     let mut options = terminal_env();
@@ -857,7 +869,7 @@ async fn old_clients_without_an_execution_path_are_asked_to_update_by_default() 
     s.acquire().await;
     let lease = json!({"clientId":s.client,"generation":s.generation});
     let refused = s.post("/terminals", lease.clone()).await;
-    assert_eq!(refused.status, 426, "{refused:?}");
+    assert_eq!(refused.status, 400, "{refused:?}");
     assert_eq!(
         refused.body["error"]["code"],
         "terminal_execution_path_required"

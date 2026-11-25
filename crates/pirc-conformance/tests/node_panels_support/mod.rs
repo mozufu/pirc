@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use pirc_conformance::{
-    Api, Cluster, Response, Transcript, WORKSPACE_ID, WebSocket, browser_headers,
+    Api, Cluster, FirstSend, Response, Transcript, WORKSPACE_ID, WebSocket, browser_headers,
 };
 use serde_json::{Value, json};
 
@@ -45,22 +45,21 @@ impl Panel {
             .collect();
         literals.extend(encoded);
         let mut t = Transcript::new(literals);
-        let created = api
-            .send(
-                "POST",
-                "/api/sessions",
-                &headers,
-                Some(json!({ "workspaceId": WORKSPACE_ID })),
-            )
+        let started = FirstSend::new(&api, &headers)
+            .workspace(WORKSPACE_ID)
+            .start_idle()
             .await;
-        t.response("create a session", "POST /api/sessions", &created);
-        let id = created.body["session"]["id"].as_str().unwrap().to_owned();
+        t.response(
+            "first send",
+            "POST /api/conversation-submissions/:id/dispatch",
+            &started.response,
+        );
         Self {
             api,
             headers,
             t,
-            session: format!("/api/sessions/{id}"),
-            id,
+            session: started.base,
+            id: started.id,
             workspace: cluster.dir.path().canonicalize().unwrap().join("workspace"),
             generation: None,
             masks: Vec::new(),
@@ -220,6 +219,16 @@ impl Panel {
     pub async fn command(&mut self, step: &str, command_id: &str, payload: Value) -> Response {
         let mut command = self.lease();
         command["commandId"] = json!(command_id);
+        let binding = self
+            .api
+            .send(
+                "GET",
+                &format!("{}/environment", self.session),
+                &self.headers,
+                None,
+            )
+            .await;
+        command["expectedBinding"] = binding.body["binding"].clone();
         command["payload"] = payload;
         self.call(step, "POST", "/commands", Some(command)).await
     }

@@ -11,7 +11,7 @@
 use std::time::{Duration, Instant};
 
 use pirc_conformance::{
-    Cluster, ModelsReply, Reply, Response, Transcript, WORKSPACE_ID, browser_headers,
+    Cluster, FirstSend, ModelsReply, Reply, Response, Transcript, WORKSPACE_ID, browser_headers,
 };
 use regex::Regex;
 use serde_json::{Value, json};
@@ -45,7 +45,7 @@ fn settled(frame: &Value) -> bool {
     frame["type"] == "pi_event" && frame["data"]["type"] == "agent_settled"
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn backends() {
     let Some(cluster) = Cluster::start().await else {
@@ -690,17 +690,12 @@ async fn backends() {
         "/api/providers/default-model",
         Some(json!({ "provider": "ui", "id": "ui-model", "thinking": "high" }))
     );
-    let created = api
-        .send(
-            "POST",
-            "/api/sessions",
-            &headers,
-            Some(json!({ "workspaceId": WORKSPACE_ID })),
-        )
+    let started = FirstSend::new(&api, &headers)
+        .workspace(WORKSPACE_ID)
+        .start_idle()
         .await;
-    assert_eq!(created.status, 201, "{}", created.body);
-    let id = created.body["session"]["id"].as_str().unwrap().to_owned();
-    let session = format!("/api/sessions/{id}");
+    let id = started.id;
+    let session = started.base;
     let acquired = api
         .send(
             "POST",
@@ -727,6 +722,9 @@ async fn backends() {
         .llm
         .push([Reply::Text("Hello through the UI backend.".to_owned())]);
     let before = cluster.llm.requests().len();
+    let environment = api
+        .send("GET", &format!("{session}/environment"), &headers, None)
+        .await;
     let path = format!("{session}/commands");
     let sent = api
         .send(
@@ -735,6 +733,7 @@ async fn backends() {
             &headers,
             Some(json!({
                 "commandId": "command-1", "clientId": "browser", "generation": generation,
+                "expectedBinding": environment.body["binding"],
                 "payload": { "type": "prompt", "message": "Say hello" },
             })),
         )

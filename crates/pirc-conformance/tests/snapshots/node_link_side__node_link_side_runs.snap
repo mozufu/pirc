@@ -8,6 +8,7 @@ expression: t.into_value()
       "keys": [
         "request",
         "requestId",
+        "session",
         "type"
       ],
       "requestId": "<uuid:1>"

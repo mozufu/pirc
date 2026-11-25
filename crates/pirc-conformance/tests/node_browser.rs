@@ -46,7 +46,7 @@ async fn finish(b: &mut Browsing, start: &Value, session: &str) {
         .await;
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_browser_fetch() {
     let Some((mut b, session, _, first)) = begin(&[]).await else {
@@ -111,7 +111,7 @@ await call('browser_navigate', {{ url: 'http://exa mple.com/' }});"#,
     insta::assert_json_snapshot!("node_browser_fetch", b.t.into_value());
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_browser_pages() {
     let Some((mut b, session, _, first)) = begin(&[]).await else {
@@ -205,7 +205,7 @@ await call('browser_snapshot', {{}});"#,
     insta::assert_json_snapshot!("node_browser_pages", b.t.into_value());
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_browser_tabs() {
     let Some((mut b, session, _, first)) = begin(&[]).await else {
@@ -294,7 +294,7 @@ fn lease(generation: &Value, message: Value) -> Value {
     message
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_browser_viewer() {
     let Some(mut b) = start(false, &[]).await else {
@@ -608,7 +608,7 @@ fn positive(value: &Value, keys: &[&str]) -> Value {
     }
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_browser_record() {
     if ffmpeg().is_none() {
@@ -753,7 +753,7 @@ await call('browser_record', {{ action: 'pause' }});"#,
     insta::assert_json_snapshot!("node_browser_record", b.t.into_value());
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_browser_close() {
     let Some(mut b) = start(true, &[]).await else {
@@ -796,7 +796,7 @@ async fn node_browser_close() {
 
 /// A real Node, Chromium and ffmpeg: resource retirement is independent of
 /// the actor that opened the tab, and does not close a workspace peer's tab.
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_browser_fence_retires_recording_without_closing_a_workspace_peer() {
     if ffmpeg().is_none() {

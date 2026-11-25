@@ -331,7 +331,6 @@ expression: t.into_value()
         "available": true,
         "displayName": "Test",
         "id": "test",
-        "kind": "directory",
         "mode": "directory",
         "roles": [
           {
@@ -347,7 +346,6 @@ expression: t.into_value()
         "displayName": "Project",
         "hostId": "test",
         "id": "<workspace:1>",
-        "kind": "directory",
         "mode": "directory",
         "roles": [
           {
@@ -363,7 +361,6 @@ expression: t.into_value()
         "displayName": "Plain",
         "hostId": "test",
         "id": "<workspace:2>",
-        "kind": "directory",
         "mode": "directory",
         "roles": [
           {
@@ -379,7 +376,6 @@ expression: t.into_value()
         "displayName": "Roled",
         "hostId": "test",
         "id": "<workspace:3>",
-        "kind": "directory",
         "mode": "directory",
         "roles": [
           {

@@ -45,7 +45,7 @@ fn model_of(start: &Value) -> Value {
 /// A 1×1 PNG.
 const PNG: &str = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_link_side_link() {
     let server = FakeGateway::bind().await;
@@ -180,23 +180,23 @@ async fn node_link_side_link() {
         ),
         (
             "a JSON body that does not parse",
-            json!({ "method": "POST", "url": "/api/sessions", "user": USER,
+            json!({ "method": "POST", "url": "/api/session-creations", "user": USER,
                 "bodyBase64": "eyJ3b3Jrc3BhY2VJZCI6", "contentType": "application/json" }),
         ),
         (
             "an empty JSON body",
-            json!({ "method": "POST", "url": "/api/sessions", "user": USER,
+            json!({ "method": "POST", "url": "/api/session-creations", "user": USER,
                 "bodyBase64": "", "contentType": "application/json" }),
         ),
         (
             "a JSON body as bodyBase64",
-            json!({ "method": "POST", "url": "/api/sessions", "user": USER,
+            json!({ "method": "POST", "url": "/api/session-creations", "user": USER,
                 "bodyBase64": "eyJ3b3Jrc3BhY2VJZCI6ICJub3BlIn0=",
                 "contentType": "application/json" }),
         ),
         (
             "no payload where a body is required",
-            json!({ "method": "POST", "url": "/api/sessions", "user": USER }),
+            json!({ "method": "POST", "url": "/api/session-creations", "user": USER }),
         ),
         (
             "an unknown session",
@@ -389,7 +389,7 @@ fn recap_request(start: &Value) -> Value {
         "toolChoice": request["toolChoice"] })
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_link_side_runs() {
     let server = FakeGateway::bind().await;
@@ -951,7 +951,7 @@ async fn control_lines(node: &LoneNode, count: usize) -> Vec<Value> {
     }
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_link_side_sandbox() {
     let server = FakeGateway::bind().await;
@@ -1236,7 +1236,7 @@ async fn node_link_side_reports_refused_credentials() {
 
 /// Real Node + Agent/PTC + relayed human confirmation, with a fake gateway/model.
 /// The approved shell writes only this fixture; duplicate devices cannot replay it.
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test]
 async fn node_link_side_host_management() {
     let server = FakeGateway::bind().await;

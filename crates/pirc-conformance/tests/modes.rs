@@ -1,12 +1,12 @@
 //! A custom mode through a real gateway, node and agent. Assertion-based so
 //! this security scenario does not depend on platform-specific snapshots.
 
-use pirc_conformance::{Cluster, GatewayOptions, Reply, browser_headers};
+use pirc_conformance::{Cluster, FirstSend, GatewayOptions, Reply, browser_headers};
 use pirc_protocol::mode::{AssistantAccess, ModeId, PromptSection, ScheduleScope, default_chat};
 use serde_json::{Value, json};
 use std::time::Duration;
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn custom_mode_catalog_prompt_capabilities_and_removal() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -66,17 +66,12 @@ async fn custom_mode_catalog_prompt_capabilities_and_removal() {
     assert_eq!(workspace.body["workspace"]["kind"], "chat");
     assert_eq!(workspace.body["workspace"]["mode"], "research");
     let workspace_id = workspace.body["workspace"]["id"].as_str().unwrap();
-    let created = api
-        .send(
-            "POST",
-            "/api/sessions",
-            &headers,
-            Some(json!({"workspaceId":workspace_id})),
-        )
+    let started = FirstSend::new(&api, &headers)
+        .workspace(workspace_id)
+        .start_idle()
         .await;
-    assert_eq!(created.status, 201, "{}", created.body);
-    let id = created.body["session"]["id"].as_str().unwrap();
-    let base = format!("/api/sessions/{id}");
+    let id = &started.id;
+    let base = started.base;
     let acquired = api
         .send(
             "POST",
@@ -87,6 +82,11 @@ async fn custom_mode_catalog_prompt_capabilities_and_removal() {
         .await;
     assert_eq!(acquired.status, 200, "{}", acquired.body);
     let generation = acquired.body["lease"]["generation"].clone();
+    let binding = api
+        .send("GET", &format!("{base}/environment"), &headers, None)
+        .await
+        .body["binding"]
+        .clone();
     let mut live = api
         .connect(&format!("/api/events?sessionId={id}"), &headers)
         .await
@@ -94,7 +94,8 @@ async fn custom_mode_catalog_prompt_capabilities_and_removal() {
     cluster.llm.push([Reply::Text("Mode verified.".into())]);
     let command = |command_id: &str| {
         json!({"commandId":command_id,"clientId":"modes-test",
-        "generation":generation,"payload":{"type":"prompt","message":"Check the custom mode"}})
+        "generation":generation,"expectedBinding":binding.clone(),
+        "payload":{"type":"prompt","message":"Check the custom mode"}})
     };
     let sent = api
         .send(
@@ -191,10 +192,16 @@ async fn custom_mode_catalog_prompt_capabilities_and_removal() {
     let denied = api
         .send(
             "POST",
-            "/api/sessions",
+            "/api/conversation-submissions/prepare",
             &headers,
-            Some(json!({"workspaceId":workspace_id})),
+            Some(json!({"operationId": "removed-mode", "submission": {
+                "workspaceId": workspace_id, "message": "Hello" }})),
         )
         .await;
-    assert_eq!(denied.status, 409, "{}", denied.body);
+    assert!(
+        matches!(denied.status, 404 | 409),
+        "{} {}",
+        denied.status,
+        denied.body
+    );
 }

@@ -1,9 +1,11 @@
 //! Admission binds browser/device intent to the configured environment. This
 //! does not prove active sandbox revocation after a command has been admitted.
-use pirc_conformance::{CHATS_WORKSPACE_ID, Cluster, GatewayOptions, HOST, browser_headers};
+use pirc_conformance::{
+    CHATS_WORKSPACE_ID, Cluster, FirstSend, GatewayOptions, HOST, browser_headers,
+};
 use serde_json::json;
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn browser_and_paired_device_keep_intent_across_policy_changes() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -17,18 +19,16 @@ async fn browser_and_paired_device_keep_intent_across_policy_changes() {
     };
     let api = cluster.api();
     let web = browser_headers();
-    let created = api
-        .send(
-            "POST",
-            "/api/sessions",
-            &web,
-            Some(json!({"workspaceId":CHATS_WORKSPACE_ID})),
-        )
+    let started = FirstSend::new(&api, &web)
+        .workspace(CHATS_WORKSPACE_ID)
+        .start_idle()
         .await;
-    assert_eq!(created.status, 201, "{}", created.body);
-    let id = created.body["session"]["id"].as_str().unwrap();
-    let base = format!("/api/sessions/{id}");
-    let binding = created.body["session"]["binding"].clone();
+    let base = started.base;
+    let environment = api
+        .send("GET", &format!("{base}/environment"), &web, None)
+        .await;
+    assert_eq!(environment.status, 200, "{}", environment.body);
+    let binding = environment.body["binding"].clone();
     assert_eq!(binding["execution"]["generation"], 1);
     let lease = api
         .send(
@@ -179,7 +179,7 @@ async fn browser_and_paired_device_keep_intent_across_policy_changes() {
 #[path = "conversation_environment_support/gate.rs"]
 mod gate;
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn policy_change_after_gateway_admission_prevents_node_dispatch_and_survives_restart() {
     let Some(mut cluster) = Cluster::start_with(GatewayOptions {
@@ -203,17 +203,15 @@ async fn policy_change_after_gateway_admission_prevents_node_dispatch_and_surviv
         .await;
     let api = cluster.api();
     let headers = browser_headers();
-    let created = api
-        .send(
-            "POST",
-            "/api/sessions",
-            &headers,
-            Some(json!({"workspaceId":CHATS_WORKSPACE_ID})),
-        )
+    let started = FirstSend::new(&api, &headers)
+        .workspace(CHATS_WORKSPACE_ID)
+        .start_idle()
         .await;
-    assert_eq!(created.status, 201, "{}", created.body);
-    let id = created.body["session"]["id"].as_str().unwrap();
-    let base = format!("/api/sessions/{id}");
+    let base = started.base;
+    let environment = api
+        .send("GET", &format!("{base}/environment"), &headers, None)
+        .await;
+    let binding = environment.body["binding"].clone();
     let acquired = api
         .send(
             "POST",
@@ -222,7 +220,7 @@ async fn policy_change_after_gateway_admission_prevents_node_dispatch_and_surviv
             Some(json!({"clientId":"web"})),
         )
         .await;
-    let request = json!({"commandId":"held-old-environment","clientId":"web","generation":acquired.body["lease"]["generation"],"expectedBinding":created.body["session"]["binding"],"payload":{"type":"prompt","message":"must never reach the model"}});
+    let request = json!({"commandId":"held-old-environment","clientId":"web","generation":acquired.body["lease"]["generation"],"expectedBinding":binding,"payload":{"type":"prompt","message":"must never reach the model"}});
     let path = format!("{base}/commands");
     let send = api.send("POST", &path, &headers, Some(request.clone()));
     tokio::pin!(send);

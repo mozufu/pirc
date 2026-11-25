@@ -123,7 +123,7 @@ fn agent_pid(root: &Path) -> Option<i32> {
     None
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_routes() {
     // The gateway lets a second user in; the node does not know them.
@@ -139,7 +139,11 @@ async fn node_session_routes() {
     let headers = browser_headers();
     let mut t = Transcript::new(cluster.volatile());
     let (mut session, created) = Session::create(&api).await;
-    t.response("create session", "POST /api/sessions", &created);
+    t.response(
+        "first send",
+        "POST /api/conversation-submissions/:id/dispatch",
+        &created,
+    );
     let base = session.base.clone();
 
     // Renaming (the gateway relays only `name`; pin and settle are its own).
@@ -390,17 +394,28 @@ async fn node_session_routes() {
             (*name, value)
         })
         .collect();
+    let prepared = api
+        .send(
+            "POST",
+            "/api/conversation-submissions/prepare",
+            &stranger,
+            Some(json!({ "operationId": "stranger-first", "submission": {
+                "workspaceId": WORKSPACE_ID, "message": "Hello" } })),
+        )
+        .await;
+    assert_eq!(prepared.status, 200, "{}", prepared.body);
     let refused = api
         .send(
             "POST",
-            "/api/sessions",
+            "/api/conversation-submissions/stranger-first/accept",
             &stranger,
-            Some(json!({ "workspaceId": WORKSPACE_ID })),
+            None,
         )
         .await;
+    assert_eq!(refused.status, 403, "{}", refused.body);
     t.response(
-        "a user the gateway allows but the node does not creates a session",
-        "POST /api/sessions",
+        "a user the gateway allows but the node does not is refused by first-send",
+        "POST /api/conversation-submissions/stranger-first/accept",
         &refused,
     );
     let foreign = api
@@ -414,7 +429,7 @@ async fn node_session_routes() {
     insta::assert_json_snapshot!("node_session_routes", t.into_value());
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_commands() {
     let llm = HeldLlm::start().await;
@@ -803,7 +818,7 @@ fn outcomes(frames: &[Value]) -> Value {
     )
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_failures() {
     let llm = HeldLlm::start().await;
@@ -859,7 +874,7 @@ async fn node_session_failures() {
     insta::assert_json_snapshot!("node_session_failures", t.into_value());
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_interactions() {
     let llm = HeldLlm::start().await;
@@ -1084,7 +1099,7 @@ async fn node_session_interactions() {
     insta::assert_json_snapshot!("node_session_interactions", t.into_value());
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_interaction_answer_race_across_devices() {
     let llm = HeldLlm::start().await;

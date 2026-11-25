@@ -16,12 +16,12 @@ export type Tally = { passed: number; failed: number; ignored: number; suites: n
 
 /**
  * Fewer passes than this means the suite did not run. Lower it only when tests are
- * removed on purpose. pirc 2 set aside about 90 tests that create sessions through
- * the removed `POST /api/sessions` (each is a declared `#[ignore]`), leaving about
- * 190 passes; raise this back above 250 when they are rewritten on first-send
- * (plans/roadmap.md M2.9).
+ * removed on purpose. The first-send rewrite (plans/roadmap.md M4.11) restored the
+ * suite above 250 passes; the remaining declared ignores are the assistant chat
+ * mode, the live Web/native-client acceptance runs and terminal scenarios that need
+ * an isolated-terminal backend.
  */
-export const MIN_PASSED = 185;
+export const MIN_PASSED = 260;
 
 /** The sum of every `test result:` line of a `cargo test` output. */
 export function tally(output: string): Tally {

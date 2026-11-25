@@ -51,6 +51,14 @@ pub fn registered(models: Value, mirrors: Value) -> Value {
     json!({ "type": "registered", "nodeId": NODE_ID, "models": models, "mirrors": mirrors })
 }
 
+/// The environment a fake Gateway admits this fixture's commands in.
+pub fn binding() -> Value {
+    json!({ "version": 1,
+        "membership": { "revision": 1, "legacyWorkspaceId": "test" },
+        "execution": { "generation": 1, "workspaceId": "test",
+            "nodeId": NODE_ID, "modeId": "directory" } })
+}
+
 /// `agent_settled` of `session`.
 pub fn settled_in(session: &str) -> impl Fn(&Value) -> bool + '_ {
     move |frame: &Value| {
@@ -104,13 +112,14 @@ impl Gateway {
         json!({ "request": data, "response": without_details(&response["data"]) })
     }
 
-    /// Create a session in workspace `test`, take control and return
+    /// Create a session in workspace `test` through the Node's internal entry
+    /// (the test plays the Gateway), take control and return
     /// `(session id, lease generation)`.
     pub async fn session(&mut self) -> (String, Value) {
         let created = self
             .ask(
                 "POST",
-                "/api/sessions",
+                "/api/session-creations/internal",
                 Some(json!({ "workspaceId": "test" })),
             )
             .await;
@@ -139,11 +148,16 @@ impl Gateway {
         command_id: &str,
         payload: Value,
     ) -> Value {
+        let stop = matches!(payload["type"].as_str(), Some("stop" | "stop_transition"));
+        let mut body = json!({ "commandId": command_id, "clientId": "browser",
+            "generation": generation, "payload": payload });
+        if !stop {
+            body["commandEnvironment"] = binding();
+        }
         self.ask(
             "POST",
             &format!("/api/sessions/{session}/commands"),
-            Some(json!({ "commandId": command_id, "clientId": "browser",
-                "generation": generation, "payload": payload })),
+            Some(body),
         )
         .await
     }
@@ -173,8 +187,12 @@ impl Gateway {
             loop {
                 let frame = if let Some(i) = self.link.skipped.iter().position(|f| {
                     f["type"] == "agent_request"
-                        && ["workspace.mirrorState", "history.authority"]
-                            .contains(&f["op"].as_str().unwrap_or(""))
+                        && [
+                            "workspace.mirrorState",
+                            "history.authority",
+                            "command.authority",
+                        ]
+                        .contains(&f["op"].as_str().unwrap_or(""))
                 }) {
                     self.link.skipped.remove(i)
                 } else {
@@ -185,6 +203,17 @@ impl Gateway {
                         .contains(&frame["op"].as_str().unwrap_or(""))
                 {
                     self.link.send(&json!({"type":"agent_response","requestId":frame["requestId"],"status":200,"body":{"result":{"owner":USER,"version":2,"watermark":0,"digest":null,"legacyProjection":""}}})).await;
+                    continue;
+                }
+                if frame["type"] == "agent_request" && frame["op"] == "command.authority" {
+                    let args = &frame["args"];
+                    self.link
+                        .send(
+                            &json!({"type":"agent_response","requestId":frame["requestId"],
+                        "status":200,"body":{"result":{"commandId":args["commandId"],
+                            "binding":args["binding"]}}}),
+                        )
+                        .await;
                     continue;
                 }
                 if wanted(&frame) {

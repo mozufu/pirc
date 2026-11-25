@@ -2,10 +2,10 @@
 //! and revocation closing the device's open sockets
 //! (`apps/gateway/src/daemon/devices.ts`).
 
-use pirc_conformance::{Cluster, HOST, Transcript, WORKSPACE_ID, browser_headers};
+use pirc_conformance::{Cluster, FirstSend, HOST, Transcript, WORKSPACE_ID, browser_headers};
 use serde_json::json;
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn device_token_lifecycle() {
     let Some(cluster) = Cluster::start().await else {
@@ -15,15 +15,11 @@ async fn device_token_lifecycle() {
     let browser = browser_headers();
     let mut t = Transcript::new(cluster.volatile());
 
-    let created = api
-        .send(
-            "POST",
-            "/api/sessions",
-            &browser,
-            Some(json!({ "workspaceId": WORKSPACE_ID })),
-        )
-        .await;
-    let session = created.body["session"]["id"].as_str().unwrap().to_owned();
+    let session = FirstSend::new(&api, &browser)
+        .workspace(WORKSPACE_ID)
+        .start_idle()
+        .await
+        .id;
 
     let paired = api
         .send(

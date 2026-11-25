@@ -14,7 +14,34 @@ async fn register(gateway: &FakeGateway) -> pirc_conformance::NodeLink {
 fn req(method: &str, path: &str, payload: Value) -> Value {
     json!({"method":method,"url":path,"user":USER,"payload":payload})
 }
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+
+/// A reviewed host terminal (isolated terminals need a containment backend).
+async fn host_terminal(
+    link: &mut pirc_conformance::NodeLink,
+    base: &str,
+    generation: &Value,
+    request: &str,
+) -> Value {
+    let mut body = json!({"clientId":"phone","generation":generation,
+        "executionPath":"host_management","requestId":request,"action":"review"});
+    let reviewed = link
+        .request(
+            &format!("{request}-review"),
+            req("POST", &format!("{base}/terminals"), body.clone()),
+        )
+        .await;
+    assert_eq!(reviewed["data"]["status"], 200, "{reviewed}");
+    body["action"] = json!("confirm");
+    body["confirmed"] = json!(true);
+    body["reviewId"] = reviewed["data"]["body"]["hostManagement"]["id"].clone();
+    body["reviewHash"] = reviewed["data"]["body"]["hostManagement"]["reviewHash"].clone();
+    link.request(
+        &format!("{request}-open"),
+        req("POST", &format!("{base}/terminals"), body),
+    )
+    .await
+}
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() {
     let gateway = FakeGateway::bind().await;
@@ -53,7 +80,11 @@ async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() 
     let create = link
         .request(
             "session",
-            req("POST", "/api/sessions", json!({"workspaceId":"chats"})),
+            req(
+                "POST",
+                "/api/session-creations/internal",
+                json!({"workspaceId":"chats"}),
+            ),
         )
         .await;
     assert_eq!(create["data"]["status"], 201, "{create}");
@@ -231,7 +262,7 @@ async fn persisted_fence_survives_reboot_without_rebinding_or_erasing_context() 
     );
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[ignore = "pirc 2: transition drain of a terminal needs an isolated-terminal backend; this fixture provides host terminals only"]
 #[tokio::test(flavor = "multi_thread")]
 async fn terminal_stream_reports_the_fence_while_a_peer_remains_interactive() {
     let gateway = FakeGateway::bind().await;
@@ -256,7 +287,11 @@ async fn terminal_stream_reports_the_fence_while_a_peer_remains_interactive() {
         let created = link
             .request(
                 &format!("create-{stream}"),
-                req("POST", "/api/sessions", json!({"workspaceId":"chats"})),
+                req(
+                    "POST",
+                    "/api/session-creations/internal",
+                    json!({"workspaceId":"chats"}),
+                ),
             )
             .await;
         assert_eq!(created["data"]["status"], 201, "{created}");
@@ -278,18 +313,13 @@ async fn terminal_stream_reports_the_fence_while_a_peer_remains_interactive() {
             .await;
         assert_eq!(acquired["data"]["status"], 200, "{acquired}");
         let generation = acquired["data"]["body"]["lease"]["generation"].clone();
-        let terminal = link
-            .request(
-                &format!("terminal-{stream}"),
-                req(
-                    "POST",
-                    &format!("{base}/terminals"),
-                    json!({"clientId":"phone","generation":generation}),
-                ),
-            )
-            .await;
+        let terminal =
+            host_terminal(&mut link, &base, &generation, &format!("terminal-{stream}")).await;
         assert_eq!(terminal["data"]["status"], 201, "{terminal}");
-        let terminal = terminal["data"]["body"]["terminal"]["id"].as_str().unwrap();
+        let terminal = terminal["data"]["body"]["terminal"]["id"]
+            .as_str()
+            .or_else(|| terminal["data"]["body"]["workRequest"]["terminalId"].as_str())
+            .unwrap_or_else(|| panic!("no terminal id: {terminal}"));
         link.send(&json!({"type":"terminal_open","streamId":stream,"sessionId":session,"terminalId":terminal,"user":USER})).await;
         link.recv_where(|f| {
             f["type"] == "terminal_frame"
@@ -370,7 +400,7 @@ async fn terminal_stream_reports_the_fence_while_a_peer_remains_interactive() {
     assert_eq!(peer_removed["data"]["status"], 204, "{peer_removed}");
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[ignore = "pirc 2: transition drain of a terminal needs an isolated-terminal backend; this fixture provides host terminals only"]
 #[tokio::test(flavor = "multi_thread")]
 async fn terminal_observation_survives_restart_and_an_unknown_shell_blocks_deletion() {
     for settle_before_crash in [true, false] {
@@ -383,7 +413,6 @@ async fn terminal_observation_survives_restart_and_an_unknown_shell_blocks_delet
                 env: vec![
                     ("PIRC_BROWSER", "false".into()),
                     ("PIRC_TERMINAL_SHELL", "/bin/sh".into()),
-                    ("PIRC_LEGACY_HOST_TERMINALS", "1".into()),
                 ],
                 second_workspace: false,
             },
@@ -394,7 +423,11 @@ async fn terminal_observation_survives_restart_and_an_unknown_shell_blocks_delet
         let created = link
             .request(
                 "create",
-                req("POST", "/api/sessions", json!({"workspaceId":"chats"})),
+                req(
+                    "POST",
+                    "/api/session-creations/internal",
+                    json!({"workspaceId":"chats"}),
+                ),
             )
             .await;
         assert_eq!(created["data"]["status"], 201, "{created}");
@@ -413,15 +446,18 @@ async fn terminal_observation_survives_restart_and_an_unknown_shell_blocks_delet
             .await;
         let generation = acquired["data"]["body"]["lease"]["generation"].clone();
         assert!(generation.is_number(), "{acquired}");
-        let lease = json!({"clientId":"phone","generation":generation});
-        let terminal = link
-            .request(
-                "terminal",
-                req("POST", &format!("{base}/terminals"), lease.clone()),
-            )
-            .await;
+        let terminal = host_terminal(
+            &mut link,
+            &base,
+            &generation,
+            &format!("terminal-fenced-{settle_before_crash}"),
+        )
+        .await;
         assert_eq!(terminal["data"]["status"], 201, "{terminal}");
-        let terminal = terminal["data"]["body"]["terminal"]["id"].as_str().unwrap();
+        let terminal = terminal["data"]["body"]["terminal"]["id"]
+            .as_str()
+            .or_else(|| terminal["data"]["body"]["workRequest"]["terminalId"].as_str())
+            .unwrap_or_else(|| panic!("no terminal id: {terminal}"));
         if settle_before_crash {
             let closed = link
                 .request(
@@ -429,7 +465,7 @@ async fn terminal_observation_survives_restart_and_an_unknown_shell_blocks_delet
                     req(
                         "POST",
                         &format!("{base}/terminals/{terminal}/close"),
-                        lease.clone(),
+                        json!({"clientId":"phone","generation":generation}),
                     ),
                 )
                 .await;
@@ -509,7 +545,7 @@ async fn terminal_observation_survives_restart_and_an_unknown_shell_blocks_delet
 
 /// Real Node and Git processes with the conformance sandbox stand-in. This
 /// proves request retirement/output gating, not native OS descendant revocation.
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn in_flight_git_panel_stops_on_fence_and_peer_file_reads_survive() {
     use std::{fs, process::Command, time::Duration};
@@ -564,7 +600,11 @@ async fn in_flight_git_panel_stops_on_fence_and_peer_file_reads_survive() {
         let created = link
             .request(
                 &format!("panel-create-{name}"),
-                req("POST", "/api/sessions", json!({"workspaceId":"test"})),
+                req(
+                    "POST",
+                    "/api/session-creations/internal",
+                    json!({"workspaceId":"test"}),
+                ),
             )
             .await;
         assert_eq!(created["data"]["status"], 201, "{created}");

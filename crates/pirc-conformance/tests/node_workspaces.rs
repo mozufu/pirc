@@ -16,8 +16,8 @@ use std::fs;
 
 use node_chat_support::{Ids, canonical_json};
 use pirc_conformance::{
-    Api, Cluster, FakeGateway, GatewayOptions, LoneNode, NODE_ID, Reply, Transcript, USER,
-    WORKSPACE_ID, browser_headers,
+    Api, Cluster, FakeGateway, FirstSend, GatewayOptions, LoneNode, NODE_ID, Reply, Transcript,
+    USER, WORKSPACE_ID, browser_headers,
 };
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -85,22 +85,21 @@ fn settled(frame: &Value) -> bool {
     frame["type"] == "pi_event" && frame["data"]["type"] == "agent_settled"
 }
 
-/// Create a session in `workspace`, prompt it once and return the agent's
-/// notifications from the snapshot after the run.
+static NEXT_OPERATION: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(1);
+
+/// Create a session in `workspace` through first-send, prompt it once and
+/// return the agent's notifications from the snapshot after the run.
 async fn run_once(cluster: &Cluster, workspace: &str, message: &str) -> (String, Value) {
     let api = cluster.api();
     let headers = browser_headers();
-    let created = api
-        .send(
-            "POST",
-            "/api/sessions",
-            &headers,
-            Some(json!({ "workspaceId": workspace })),
-        )
+    let operation = NEXT_OPERATION.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let started = FirstSend::new(&api, &headers)
+        .workspace(workspace)
+        .operation(format!("first-{operation}"))
+        .start_idle()
         .await;
-    assert_eq!(created.status, 201, "{}", created.body);
-    let id = created.body["session"]["id"].as_str().unwrap().to_owned();
-    let session = format!("/api/sessions/{id}");
+    let id = started.id;
+    let session = started.base;
     let acquired = api
         .send(
             "POST",
@@ -125,6 +124,9 @@ async fn run_once(cluster: &Cluster, workspace: &str, message: &str) -> (String,
         .await
         .open();
     cluster.llm.push([Reply::Text("Done.".to_owned())]);
+    let environment = api
+        .send("GET", &format!("{session}/environment"), &headers, None)
+        .await;
     let sent = api
         .send(
             "POST",
@@ -132,6 +134,7 @@ async fn run_once(cluster: &Cluster, workspace: &str, message: &str) -> (String,
             &headers,
             Some(
                 json!({ "commandId": format!("command-{message}"), "clientId": "browser", "generation": generation,
+                "expectedBinding": environment.body["binding"],
                 "payload": { "type": "prompt", "message": message } }),
             ),
         )
@@ -152,7 +155,7 @@ async fn run_once(cluster: &Cluster, workspace: &str, message: &str) -> (String,
     (id, json!(notifications))
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_workspaces() {
     // The node's state inside its HOME (relative to the node's working
@@ -279,7 +282,7 @@ async fn node_workspaces() {
         "a chat project on a coding node: 403",
         "POST",
         "/api/workspaces",
-        Some(json!({ "nodeId": NODE_ID, "kind": "chat", "displayName": "Trip" })),
+        Some(json!({ "nodeId": NODE_ID, "mode": "chat", "displayName": "Trip" })),
     )
     .await;
     r.send(
@@ -455,7 +458,7 @@ async fn node_workspaces() {
 
 /// Removal fences only gateway access; re-adding the canonical directory
 /// must recover the node's original workspace and saved conversation.
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn removed_directory_readd_restores_real_node_history() {
     let Some(mut cluster) = Cluster::start().await else {
@@ -549,9 +552,12 @@ async fn removed_directory_readd_restores_real_node_history() {
         let denied = api
             .send(
                 "POST",
-                "/api/sessions",
+                "/api/conversation-submissions/prepare",
                 &headers,
-                Some(json!({ "workspaceId": id })),
+                Some(
+                    json!({ "operationId": format!("removed-{restarted}"), "submission": {
+                    "workspaceId": id, "message": "Hello" } }),
+                ),
             )
             .await;
         assert_eq!(denied.status, 404, "{}", denied.body);
@@ -661,7 +667,7 @@ impl OnNode<'_> {
 }
 
 /// The node's own answers, with the test as the gateway.
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_workspaces_on_node() {
     let gateway = FakeGateway::bind().await;
@@ -711,7 +717,7 @@ async fn node_workspaces_on_node() {
         "a workspace with its own role",
         "POST",
         "/api/workspaces",
-        Some(json!({ "kind": "directory", "path": "~/roled", "displayName": "Roled" })),
+        Some(json!({ "path": "~/roled", "displayName": "Roled" })),
     )
     .await;
     n.request(
@@ -725,7 +731,7 @@ async fn node_workspaces_on_node() {
         "a chat project on a coding node: 403",
         "POST",
         "/api/workspaces",
-        Some(json!({ "kind": "chat", "displayName": "Trip" })),
+        Some(json!({ "mode": "chat", "displayName": "Trip" })),
     )
     .await;
     n.request_as(
@@ -812,7 +818,7 @@ async fn node_workspaces_on_node() {
         .request(
             "a session in the configured workspace",
             "POST",
-            "/api/sessions",
+            "/api/session-creations/internal",
             Some(json!({ "workspaceId": "test" })),
         )
         .await;

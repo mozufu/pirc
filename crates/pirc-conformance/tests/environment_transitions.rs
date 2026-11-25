@@ -1,8 +1,17 @@
 //! Real Gateway persistence/Node capability evidence for review-only transitions.
-use pirc_conformance::{Cluster, WORKSPACE_ID, browser_headers};
+use pirc_conformance::{Cluster, FirstSend, WORKSPACE_ID, browser_headers};
 use serde_json::json;
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+static NEXT_OPERATION: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(1);
+
+fn operation() -> String {
+    format!(
+        "first-{}",
+        NEXT_OPERATION.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+    )
+}
+
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn preview_survives_gateway_restart_and_node_offline_without_changing_binding() {
     let Some(mut cluster) = Cluster::start().await else {
@@ -10,17 +19,12 @@ async fn preview_survives_gateway_restart_and_node_offline_without_changing_bind
     };
     let headers = browser_headers();
     let api = cluster.api();
-    let created = api
-        .send(
-            "POST",
-            "/api/sessions",
-            &headers,
-            Some(json!({"workspaceId":WORKSPACE_ID})),
-        )
+    let started = FirstSend::new(&api, &headers)
+        .workspace(WORKSPACE_ID)
+        .operation(operation())
+        .start_idle()
         .await;
-    assert_eq!(created.status, 201, "{}", created.body);
-    let id = created.body["session"]["id"].as_str().unwrap();
-    let base = format!("/api/sessions/{id}");
+    let base = started.base;
     let before = api
         .send("GET", &format!("{base}/environment"), &headers, None)
         .await;
@@ -180,7 +184,8 @@ async fn preview_survives_gateway_restart_and_node_offline_without_changing_bind
 
 mod switching {
     use pirc_conformance::{
-        Api, Cluster, GatewayOptions, Reply, TARGET_WORKSPACE_ID, WORKSPACE_ID, browser_headers,
+        Api, Cluster, FirstSend, GatewayOptions, Reply, TARGET_WORKSPACE_ID, WORKSPACE_ID,
+        browser_headers,
     };
     use serde_json::{Value, json};
 
@@ -200,27 +205,24 @@ mod switching {
         assert_eq!(response.status, 200, "{path}: {}", response.body);
         response.body
     }
-    /// A conversation on `test:test` with current control.
+    /// An idle conversation on `test:test` with current control: created
+    /// through first-send, with its first message fenced by a Stop.
     async fn conversation(api: &Api, headers: &Headers) -> (String, Value) {
-        let created = ok(
-            api,
-            headers,
-            "POST",
-            "/api/sessions",
-            json!({"workspaceId":WORKSPACE_ID}),
-        )
-        .await;
-        let id = created["session"]["id"].as_str().unwrap().to_owned();
+        let started = FirstSend::new(api, headers)
+            .workspace(WORKSPACE_ID)
+            .operation(super::operation())
+            .start_idle()
+            .await;
         let generation = ok(
             api,
             headers,
             "POST",
-            &format!("/api/sessions/{id}/control/acquire"),
+            &format!("/api/sessions/{}/control/acquire", started.id),
             json!({"clientId":"web","force":true}),
         )
         .await["lease"]["generation"]
             .clone();
-        (id, generation)
+        (started.id, generation)
     }
     async fn settle_prompt(
         api: &Api,
@@ -283,7 +285,7 @@ mod switching {
         .await
     }
 
-    #[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn an_enabled_switch_installs_after_confirmed_or_acknowledged_revocation() {
         let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -351,6 +353,9 @@ mod switching {
                 .any(|item| item["kind"] == "platform_containment")
         );
         assert!(!waiting.to_string().contains("/private"));
+        let binding =
+            get(&api, &headers, &format!("/api/sessions/{busy}/environment")).await["binding"]
+                .clone();
         let blocked = api
             .send(
                 "POST",
@@ -358,6 +363,7 @@ mod switching {
                 &headers,
                 Some(
                     json!({"commandId":"during","clientId":"web","generation":generation,
+                    "expectedBinding":binding,
                     "payload":{"type":"prompt","message":"during"}}),
                 ),
             )
@@ -434,7 +440,7 @@ mod switching {
             .clone()
     }
 
-    #[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn a_gateway_crash_after_confirmation_is_finished_by_the_recovery_sweep() {
         let Some(mut cluster) = Cluster::start_with(switching()).await else {
@@ -461,7 +467,7 @@ mod switching {
         let _ = generation;
     }
 
-    #[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn an_offline_node_keeps_the_switch_pending_and_a_restarted_node_finishes_it() {
         let Some(mut cluster) = Cluster::start_with(switching()).await else {
@@ -518,7 +524,7 @@ mod switching {
         );
     }
 
-    #[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn concurrent_steps_install_once_and_a_takeover_moves_control() {
         let Some(cluster) = Cluster::start_with(switching()).await else {
@@ -567,7 +573,7 @@ mod switching {
         assert_eq!(continued["transition"]["state"], "installed", "{continued}");
     }
 
-    #[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn cancel_after_the_drain_keeps_the_original_workspace_and_reopens_work() {
         let Some(cluster) = Cluster::start_with(switching()).await else {
@@ -636,7 +642,7 @@ mod switching {
 
     /// O1: confirm, then every client goes away and control expires. The
     /// backend finishes exactly one binding update with operation authority.
-    #[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn o1_a_confirmed_switch_finishes_after_control_expires_and_clients_close() {
         let Some(mut cluster) = Cluster::start_with(with_authority("60", "1500")).await else {
@@ -668,7 +674,7 @@ mod switching {
 
     /// O2 and O6: the Node is away past the lease and the authority deadline.
     /// Nothing installs; the current controller must reauthorize to continue.
-    #[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn o2_o6_expired_authority_needs_reauthorization_before_installing() {
         let Some(mut cluster) = Cluster::start_with(with_authority("3", "1500")).await else {
@@ -715,7 +721,7 @@ mod switching {
 
     /// X2: advance and cancel race on two requests; exactly one result commits
     /// and the binding matches it.
-    #[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn x2_racing_install_and_cancel_commit_exactly_one_result() {
         let Some(cluster) = Cluster::start_with(switching()).await else {
@@ -752,7 +758,7 @@ mod switching {
 
     /// X5: the binding commits, then the first runtime launch fails because the
     /// target vanished. Readiness reports it; the binding is not reverted.
-    #[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn x5_a_failed_first_launch_keeps_the_committed_binding() {
         let Some(cluster) = Cluster::start_with(switching()).await else {
@@ -801,7 +807,7 @@ mod switching {
     /// C6a-2 (C1 O5, C3 X3): a grant revoked while a confirmed switch waits makes
     /// the reviewed plan stale. No step installs it, cancelling returns to the
     /// source without the grant, and widening waits for the transition.
-    #[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+    #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
     #[tokio::test(flavor = "multi_thread")]
     async fn o5_x3_a_grant_revoked_between_phases_is_never_installed_or_restored() {
         let mut options = switching();

@@ -51,7 +51,33 @@ async fn approved(gw: &mut Gateway, session: &str, generation: &Value, key: &str
     .expect("approved host command should start");
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+/// Open a reviewed host terminal (this fixture has no isolated-terminal backend).
+async fn host_terminal(gw: &mut Gateway, session: &str, generation: &Value, request: &str) {
+    let mut body = json!({"clientId":"browser","generation":generation,
+        "executionPath":"host_management","requestId":request,"action":"review"});
+    let reviewed = gw
+        .ask(
+            "POST",
+            &format!("/api/sessions/{session}/terminals"),
+            Some(body.clone()),
+        )
+        .await;
+    assert_eq!(reviewed["data"]["status"], 200, "{reviewed}");
+    body["action"] = json!("confirm");
+    body["confirmed"] = json!(true);
+    body["reviewId"] = reviewed["data"]["body"]["hostManagement"]["id"].clone();
+    body["reviewHash"] = reviewed["data"]["body"]["hostManagement"]["reviewHash"].clone();
+    let opened = gw
+        .ask(
+            "POST",
+            &format!("/api/sessions/{session}/terminals"),
+            Some(body),
+        )
+        .await;
+    assert_eq!(opened["data"]["status"], 201, "{opened}");
+}
+
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn approved_host_commands_settle_before_stop_and_transition_acknowledgement() {
     let server = FakeGateway::bind().await;
@@ -178,7 +204,7 @@ async fn approved_host_commands_settle_before_stop_and_transition_acknowledgemen
     assert_eq!(std::fs::read_to_string(second).unwrap(), second_pid);
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[ignore = "pirc 2: transition drain of a terminal needs an isolated-terminal backend; this fixture provides host terminals only"]
 #[tokio::test(flavor = "multi_thread")]
 async fn crash_lost_host_observation_does_not_skip_terminal_shutdown_on_drain() {
     let server = FakeGateway::bind().await;
@@ -228,14 +254,7 @@ async fn crash_lost_host_observation_does_not_skip_terminal_shutdown_on_drain() 
     let control = acquired["data"]["body"]["lease"]["generation"].clone();
     let (peer, peer_control) = gw.session().await;
     for (session, generation) in [(&source, &control), (&peer, &peer_control)] {
-        let created = gw
-            .ask(
-                "POST",
-                &format!("/api/sessions/{session}/terminals"),
-                Some(json!({"clientId":"browser","generation":generation})),
-            )
-            .await;
-        assert_eq!(created["data"]["status"], 201, "{created}");
+        host_terminal(&mut gw, session, generation, &format!("terminal-{session}")).await;
     }
     let before = gw.ask("GET", &format!("{base}/snapshot"), None).await;
     let accepted = gw.ask("POST", &format!("{base}/execution-fences"), Some(json!({

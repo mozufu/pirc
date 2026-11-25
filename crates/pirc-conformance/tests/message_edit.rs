@@ -25,7 +25,7 @@ fn history(snapshot: &Value) -> Vec<String> {
         .collect()
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn edited_messages_preserve_switchable_history_and_model_context() {
     let llm = HeldLlm::start().await;
@@ -34,15 +34,10 @@ async fn edited_messages_preserve_switchable_history_and_model_context() {
     let Some(cluster) = held_cluster(&llm, models.path(), GatewayOptions::default()).await else {
         return;
     };
-    let (mut session, _) = Session::create(&cluster.api()).await;
+    // The first message is the question being edited; it is sent through
+    // first-send, the only creation path.
+    let (mut session, _) = Session::start(&cluster.api(), "original question").await;
     session.acquire().await;
-    let response = session
-        .command(json!({"type":"prompt", "message":"original question"}))
-        .await;
-    assert_eq!(
-        response.body["command"]["status"], "accepted",
-        "{response:?}"
-    );
     let original = session
         .snapshot_until("original reply", |snapshot| {
             history(snapshot).contains(&"original answer".to_owned())

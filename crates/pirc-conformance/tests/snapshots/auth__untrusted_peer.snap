@@ -27,7 +27,7 @@ expression: t.into_value()
     "headers": {
       "content-type": "application/json"
     },
-    "request": "POST /api/sessions",
+    "request": "POST /api/conversation-submissions/prepare",
     "status": 401,
     "step": "proxy headers from an untrusted peer: POST"
   }

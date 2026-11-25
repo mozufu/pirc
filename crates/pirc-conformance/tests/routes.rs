@@ -6,8 +6,8 @@
 use std::sync::{Arc, Mutex};
 
 use pirc_conformance::{
-    Api, Cluster, GatewayOptions, NODE_ID, NODE_TOKEN, Transcript, WebSocket, assert_node_frame,
-    browser_headers,
+    Api, Cluster, FirstSend, GatewayOptions, NODE_ID, NODE_TOKEN, Transcript, WebSocket,
+    assert_node_frame, browser_headers,
 };
 use serde_json::{Value, json};
 
@@ -18,6 +18,15 @@ fn node_headers() -> Vec<(&'static str, String)> {
     ]
 }
 
+/// The Node-side identity of the test's first-send creation.
+static CREATION: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
+
+fn stopped_admission() -> Value {
+    json!({ "operationId": CREATION.lock().unwrap().clone(), "sessionId": "remote-1",
+        "state": "stopped", "command": null, "inputHash": null,
+        "stopRequested": true, "stopConfirmed": true })
+}
+
 /// The node's answer to a relayed request.
 fn answer(request: &Value) -> Value {
     let method = request["method"].as_str().unwrap_or_default();
@@ -26,6 +35,26 @@ fn answer(request: &Value) -> Value {
     match (method, url) {
         ("POST", "/api/workspaces") => json!({ "status": 201, "body": { "workspace": {
             "id": "added", "displayName": request["payload"]["displayName"], "mode": "directory", "kind": "directory" } } }),
+        ("GET", "/api/command-environments/capabilities") => ok(json!({
+            "version": 1, "rechecksCommandEnvironment": true })),
+        ("GET", "/api/session-creations/capabilities") => ok(json!({
+            "version": 1, "canAllocate": true, "canTransferAttachments": true,
+            "attachmentMimeInQuery": true, "canAdmitFirstMessage": true,
+            "canReadFirstMessageReceipt": true, "canCancelCreation": true,
+            "canStopBeforeAllocation": true, "maxUploadBytes": 1_048_576,
+            "maxAttachments": 16 })),
+        ("POST", "/api/session-creations") => {
+            let operation = request["payload"]["operationId"]
+                .as_str()
+                .unwrap_or_default();
+            *CREATION.lock().unwrap() = operation.to_owned();
+            ok(json!({ "creation": { "operationId": operation,
+                "workspaceId": request["payload"]["workspaceId"], "sessionId": "remote-1",
+                "state": "ready" } }))
+        }
+        ("GET", url) if url.contains("/admission") => {
+            ok(json!({ "admission": stopped_admission() }))
+        }
         ("POST", "/api/sessions") => {
             json!({ "status": 201, "body": { "session": { "id": "remote-1" } } })
         }
@@ -50,6 +79,9 @@ fn answer(request: &Value) -> Value {
                     "code": "conflict", "message": "Rejected by the node" } } }),
                 Some("rejected_with_command") => json!({ "status": 409, "body": { "command": {
                     "status": "rejected", "error": "Busy" } } }),
+                Some("stop") => json!({ "status": 202, "body": {
+                    "command": { "status": "accepted", "result": { "ok": true } },
+                    "initialAdmission": stopped_admission() } }),
                 _ => json!({ "status": 202, "body": { "command": {
                     "status": "accepted", "result": { "ok": true } } } }),
             }
@@ -95,7 +127,7 @@ async fn serve_node(api: &Api) -> (Arc<Mutex<Vec<Value>>>, tokio::task::JoinHand
     (seen, task)
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn session_routes() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -182,14 +214,17 @@ async fn session_routes() {
         Some(json!({ "trusted": true, "hash": "a".repeat(64) }))
     );
 
-    let created = call!(
-        "create a session",
-        "POST",
-        "/api/sessions",
-        Some(json!({ "workspaceId": "test:ws" }))
-    );
-    let session_id = created.body["session"]["id"].as_str().unwrap().to_owned();
+    let started = FirstSend::new(&api, &browser)
+        .workspace("test:ws")
+        .start_idle()
+        .await;
+    let session_id = started.id;
+    relayed.lock().unwrap().clear();
     let path = format!("/api/sessions/{session_id}");
+    let environment = api
+        .send("GET", &format!("{path}/environment"), &browser, None)
+        .await;
+    let binding = environment.body["binding"].clone();
 
     call!(
         "rename, pin and settle",
@@ -207,7 +242,8 @@ async fn session_routes() {
     call!("snapshot", "GET", format!("{path}/snapshot"), None);
     call!("no lease yet", "GET", format!("{path}/control"), None);
     let command = json!({ "commandId": "c1", "clientId": "browser", "generation": 1,
-        "payload": { "type": "prompt", "message": "hi" }, "extra": true });
+        "expectedBinding": binding.clone(), "payload": { "type": "prompt", "message": "hi" },
+        "extra": true });
     call!(
         "a command without the lease",
         "POST",
@@ -234,7 +270,8 @@ async fn session_routes() {
         Some(json!({ "clientId": "browser", "generation": 1 }))
     );
     let command = json!({ "commandId": "c1", "clientId": "browser", "generation": 2,
-        "payload": { "type": "prompt", "message": "hi" }, "extra": true });
+        "expectedBinding": binding.clone(), "payload": { "type": "prompt", "message": "hi" },
+        "extra": true });
     call!(
         "a command",
         "POST",
@@ -262,7 +299,7 @@ async fn session_routes() {
         format!("{path}/commands"),
         Some(
             json!({ "commandId": "c2", "clientId": "browser", "generation": 2,
-            "payload": { "type": "reject" } })
+            "expectedBinding": binding.clone(), "payload": { "type": "reject" } })
         )
     );
     call!(
@@ -271,6 +308,7 @@ async fn session_routes() {
         format!("{path}/commands"),
         Some(
             json!({ "commandId": "c3", "clientId": "browser", "generation": 2,
+            "expectedBinding": binding.clone(),
             "payload": { "type": "rejected_with_command" } })
         )
     );

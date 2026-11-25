@@ -205,29 +205,29 @@ expression: t.into_value()
   {
     "body": {
       "error": {
-        "code": "not_found",
-        "message": "Workspace not found"
+        "code": "invalid_input",
+        "message": "Invalid request"
       }
     },
     "headers": {
       "content-type": "application/json"
     },
-    "request": "POST /api/sessions",
-    "status": 404,
+    "request": "POST /api/conversation-submissions/prepare",
+    "status": 400,
     "step": "valid JSON, unknown workspace"
   },
   {
     "body": {
       "error": {
-        "code": "not_found",
-        "message": "Workspace not found"
+        "code": "invalid_input",
+        "message": "Invalid request"
       }
     },
     "headers": {
       "content-type": "application/json"
     },
-    "request": "POST /api/sessions",
-    "status": 404,
+    "request": "POST /api/conversation-submissions/prepare",
+    "status": 400,
     "step": "JSON with a charset"
   },
   {
@@ -240,7 +240,7 @@ expression: t.into_value()
     "headers": {
       "content-type": "application/json"
     },
-    "request": "POST /api/sessions",
+    "request": "POST /api/conversation-submissions/prepare",
     "status": 500,
     "step": "invalid JSON"
   },
@@ -254,7 +254,7 @@ expression: t.into_value()
     "headers": {
       "content-type": "application/json"
     },
-    "request": "POST /api/sessions",
+    "request": "POST /api/conversation-submissions/prepare",
     "status": 500,
     "step": "empty JSON body"
   },
@@ -268,7 +268,7 @@ expression: t.into_value()
     "headers": {
       "content-type": "application/json"
     },
-    "request": "POST /api/sessions",
+    "request": "POST /api/conversation-submissions/prepare",
     "status": 400,
     "step": "JSON array"
   },
@@ -282,7 +282,7 @@ expression: t.into_value()
     "headers": {
       "content-type": "application/json"
     },
-    "request": "POST /api/sessions",
+    "request": "POST /api/conversation-submissions/prepare",
     "status": 400,
     "step": "JSON as text/plain"
   },
@@ -296,7 +296,7 @@ expression: t.into_value()
     "headers": {
       "content-type": "application/json"
     },
-    "request": "POST /api/sessions",
+    "request": "POST /api/conversation-submissions/prepare",
     "status": 400,
     "step": "JSON without a content type"
   },
@@ -310,7 +310,7 @@ expression: t.into_value()
     "headers": {
       "content-type": "application/json"
     },
-    "request": "POST /api/sessions",
+    "request": "POST /api/conversation-submissions/prepare",
     "status": 413,
     "step": "JSON over the body limit"
   },
@@ -324,7 +324,7 @@ expression: t.into_value()
     "headers": {
       "content-type": "application/json"
     },
-    "request": "POST /api/sessions",
+    "request": "POST /api/conversation-submissions/prepare",
     "status": 413,
     "step": "bytes over the body limit"
   }

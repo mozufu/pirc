@@ -3,8 +3,8 @@
 //! and publishing a node event (`apps/gateway/src/daemon/nodes.ts`).
 
 use pirc_conformance::{
-    Cluster, GatewayOptions, NODE_ID, NODE_TOKEN, Transcript, WebSocket, assert_gateway_frame,
-    assert_node_frame, browser_headers,
+    Cluster, FirstSend, GatewayOptions, NODE_ID, NODE_TOKEN, Transcript, WebSocket,
+    assert_gateway_frame, assert_node_frame, browser_headers,
 };
 use serde_json::{Value, json};
 
@@ -38,7 +38,7 @@ fn register(protocol: Value) -> Value {
     })
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_link() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -142,36 +142,13 @@ async fn node_link() {
     t.response("list workspaces", "GET /api/workspaces", &workspaces);
 
     // A browser request the gateway relays to the node, answered by the test.
-    let browser_api = api.clone();
-    let browser_for_task = browser.clone();
-    let create = tokio::spawn(async move {
-        browser_api
-            .send(
-                "POST",
-                "/api/sessions",
-                &browser_for_task,
-                Some(json!({ "workspaceId": "test:ws" })),
-            )
-            .await
-    });
-    let request = receive(&mut node, "relayed request").await;
-    t.note("relayed request", request.clone());
-    send(
-        &mut node,
-        &json!({
-        "type": "response",
-        "requestId": request["requestId"],
-        "data": { "status": 201, "body": { "session": { "id": "remote-1" } } },
-        }),
-    )
-    .await;
-    let created = create.await.unwrap();
-    t.response(
-        "create a session on the node",
-        "POST /api/sessions",
-        &created,
+    let (started, ()) = tokio::join!(
+        FirstSend::new(&api, &browser)
+            .workspace("test:ws")
+            .start_idle(),
+        pirc_conformance::serve_first_send_idle(&mut node, "remote-1"),
     );
-    let session = created.body["session"]["id"].as_str().unwrap().to_owned();
+    let session = started.id;
 
     let mut events = api
         .connect(&format!("/api/events?sessionId={session}"), &browser)

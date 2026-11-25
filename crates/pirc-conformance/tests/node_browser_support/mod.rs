@@ -295,7 +295,7 @@ impl Browsing {
             .gw
             .ask(
                 "POST",
-                "/api/sessions",
+                "/api/session-creations/internal",
                 Some(json!({ "workspaceId": workspace })),
             )
             .await;

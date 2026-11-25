@@ -49,7 +49,7 @@ async fn control(link: &mut pirc_conformance::NodeLink, session: &str, id: &str)
     lease["data"]["body"]["lease"]["generation"].clone()
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn a_voided_operation_is_refused_when_the_delayed_create_arrives_even_after_crashes() {
     let gateway = FakeGateway::bind().await;
@@ -73,10 +73,16 @@ async fn a_voided_operation_is_refused_when_the_delayed_create_arrives_even_afte
         .await;
     assert_eq!(capabilities["data"]["body"]["transitionVoidVersion"], 1);
     assert_eq!(capabilities["data"]["body"]["transitionReleaseVersion"], 1);
+    // The test plays the Gateway, so it creates the session through the
+    // Node's internal entry for Gateway-owned conversations.
     let created = link
         .request(
             "session",
-            req("POST", "/api/sessions", json!({"workspaceId":"chats"})),
+            req(
+                "POST",
+                "/api/session-creations/internal",
+                json!({"workspaceId":"chats"}),
+            ),
         )
         .await;
     assert_eq!(created["data"]["status"], 201, "{created}");

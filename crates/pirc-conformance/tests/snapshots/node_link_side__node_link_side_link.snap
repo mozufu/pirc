@@ -301,7 +301,7 @@ expression: t.into_value()
             "bodyBase64": "eyJ3b3Jrc3BhY2VJZCI6",
             "contentType": "application/json",
             "method": "POST",
-            "url": "/api/sessions",
+            "url": "/api/session-creations",
             "user": "test@example.com"
           },
           "response": {
@@ -322,7 +322,7 @@ expression: t.into_value()
             "bodyBase64": "",
             "contentType": "application/json",
             "method": "POST",
-            "url": "/api/sessions",
+            "url": "/api/session-creations",
             "user": "test@example.com"
           },
           "response": {
@@ -343,17 +343,17 @@ expression: t.into_value()
             "bodyBase64": "eyJ3b3Jrc3BhY2VJZCI6ICJub3BlIn0=",
             "contentType": "application/json",
             "method": "POST",
-            "url": "/api/sessions",
+            "url": "/api/session-creations",
             "user": "test@example.com"
           },
           "response": {
             "body": {
               "error": {
-                "code": "not_found",
-                "message": "Workspace not found"
+                "code": "invalid_input",
+                "message": "Invalid request"
               }
             },
-            "status": 404
+            "status": 400
           }
         }
       },
@@ -362,7 +362,7 @@ expression: t.into_value()
         "exchange": {
           "request": {
             "method": "POST",
-            "url": "/api/sessions",
+            "url": "/api/session-creations",
             "user": "test@example.com"
           },
           "response": {

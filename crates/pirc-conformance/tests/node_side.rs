@@ -27,6 +27,71 @@ fn settled(frame: &Value) -> bool {
         && frame["event"]["data"]["type"] == "agent_settled"
 }
 
+/// Answer one agent request as the Gateway would.
+async fn answer(link: &mut pirc_conformance::NodeLink, frame: &Value) {
+    let args = &frame["args"];
+    let result = match frame["op"].as_str() {
+        Some("command.authority") => {
+            json!({ "commandId": args["commandId"], "binding": args["binding"] })
+        }
+        _ => json!({ "owner": USER, "version": 2, "watermark": 0,
+            "digest": null, "legacyProjection": "" }),
+    };
+    link.send(
+        &json!({ "type": "agent_response", "requestId": frame["requestId"],
+            "status": 200, "body": { "result": result } }),
+    )
+    .await;
+}
+
+/// The next frame satisfying `wanted`, answering the agent's own Gateway reads,
+/// including requests the command receipt already passed over.
+async fn recv_answering(
+    link: &mut pirc_conformance::NodeLink,
+    wanted: impl Fn(&Value) -> bool,
+) -> Value {
+    loop {
+        if let Some(index) = link.skipped.iter().position(&wanted) {
+            return link.skipped.remove(index);
+        }
+        if let Some(index) = link
+            .skipped
+            .iter()
+            .position(|frame| frame["type"] == "agent_request")
+        {
+            let frame = link.skipped.remove(index);
+            answer(link, &frame).await;
+            continue;
+        }
+        let frame = link.recv().await;
+        if frame["type"] == "agent_request" {
+            answer(link, &frame).await;
+            continue;
+        }
+        if wanted(&frame) {
+            return frame;
+        }
+        link.skipped.push(frame);
+    }
+}
+
+/// Send a request, answering the agent's Gateway reads until its response.
+async fn request_answering(link: &mut pirc_conformance::NodeLink, id: &str, data: Value) -> Value {
+    link.send(&json!({ "type": "request", "requestId": id, "data": data }))
+        .await;
+    loop {
+        let frame = link.recv().await;
+        if frame["type"] == "agent_request" {
+            answer(link, &frame).await;
+            continue;
+        }
+        if frame["type"] == "response" && frame["requestId"] == id {
+            return frame;
+        }
+        link.skipped.push(frame);
+    }
+}
+
 /// The secret-free catalog the gateway projects for nodes.
 fn models() -> Value {
     json!({
@@ -42,7 +107,7 @@ fn models() -> Value {
     })
 }
 
-#[ignore = "pirc 2: needs a session created through first-send instead of the removed POST /api/sessions; rewritten after M4 (plans/roadmap.md M2.9)"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_side_link() {
     let gateway = FakeGateway::bind().await;
@@ -71,7 +136,7 @@ async fn node_side_link() {
     let created = link
         .request(
             "request-1",
-            json!({ "method": "POST", "url": "/api/sessions", "user": USER,
+            json!({ "method": "POST", "url": "/api/session-creations/internal", "user": USER,
                 "payload": { "workspaceId": "test" } }),
         )
         .await;
@@ -91,21 +156,23 @@ async fn node_side_link() {
     t.note("acquire control", acquired.clone());
     let generation = acquired["data"]["body"]["lease"]["generation"].clone();
 
-    let prompted = link
-        .request(
-            "request-3",
-            json!({ "method": "POST", "url": format!("/api/sessions/{session}/commands"),
-                "user": USER, "payload": { "commandId": "command-1", "clientId": "browser",
-                    "generation": generation,
-                    "payload": { "type": "prompt", "message": "Say hello" } } }),
-        )
-        .await;
+    let binding = json!({ "version": 1,
+        "membership": { "revision": 1, "legacyWorkspaceId": "test" },
+        "execution": { "generation": 1, "workspaceId": "test",
+            "nodeId": NODE_ID, "modeId": "directory" } });
+    let prompted = request_answering(
+        &mut link,
+        "request-3",
+        json!({ "method": "POST", "url": format!("/api/sessions/{session}/commands"),
+            "user": USER, "payload": { "commandId": "command-1", "clientId": "browser",
+                "generation": generation, "commandEnvironment": binding,
+                "payload": { "type": "prompt", "message": "Say hello" } } }),
+    )
+    .await;
     t.note("prompt", prompted);
 
     // The agent's model request, which the gateway runs for it.
-    let start = link
-        .recv_where(|frame| frame["type"] == "model_start")
-        .await;
+    let start = recv_answering(&mut link, |frame| frame["type"] == "model_start").await;
     let request = &start["request"];
     let tools: Vec<&Value> = request["tools"]
         .as_array()
@@ -156,7 +223,7 @@ async fn node_side_link() {
     .await;
 
     link.skipped.clear();
-    link.recv_where(settled).await;
+    recv_answering(&mut link, settled).await;
     let events: Vec<Value> = link
         .skipped
         .iter()
