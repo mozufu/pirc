@@ -545,4 +545,78 @@ mod control_tests {
         .await;
         assert!(control["lease"]["holder"]["lastActionAt"].as_i64().unwrap() > now_ms() - 5_000);
     }
+
+    #[tokio::test]
+    async fn taking_control_tells_every_device_who_holds_it() {
+        let (app, _dir) = app_with_models(json!({}));
+        let session = {
+            let conn = app.db.lock();
+            conn.sync_remote_workspaces(
+                "node",
+                &[(
+                    "repo".into(),
+                    "Repo".into(),
+                    pirc_protocol::ModeId::new("directory").unwrap(),
+                )],
+            )
+            .unwrap();
+            conn.create_session("node:repo", "node://node/r1", "node", "r1", "alice")
+                .unwrap()
+                .id
+        };
+        let node = crate::nodes::ConnectedNode {
+            id: "node".into(),
+            role: pirc_protocol::NodeRole::Node,
+            modes: vec![pirc_protocol::ModeId::new("directory").unwrap()],
+            workspaces: vec![pirc_protocol::RegisteredWorkspace {
+                checkpoint_private: false,
+                id: "repo".into(),
+                display_name: "Repo".into(),
+                mode: pirc_protocol::ModeId::new("directory").unwrap(),
+                roles: None,
+                repo: None,
+            }],
+            connected_at: now_ms(),
+            last_seen_at: now_ms(),
+            added: Default::default(),
+        };
+        app.nodes.set_test_node(node, |request| {
+            let body = match request.url.as_str() {
+                url if url.ends_with("/control/acquire") => json!({ "lease": {
+                        "clientId": request.payload.as_ref().unwrap()["clientId"],
+                        "generation": 1, "expiresAt": now_ms() + 60_000 } }),
+                _ => json!({}),
+            };
+            Ok(pirc_protocol::NodeHttpResponse {
+                status: 200,
+                body: Some(body),
+            })
+        });
+        let seen = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let sink = seen.clone();
+        let _listening = app.events.subscribe_all(std::sync::Arc::new(move |event| {
+            if event.kind == "control_changed" {
+                sink.lock().unwrap().push(event.data.clone().unwrap());
+            }
+        }));
+        let (status, acquired) = call(
+            &app,
+            "POST",
+            &format!("/api/sessions/{session}/control/acquire"),
+            Some("alice"),
+            None,
+            Some(json!({ "clientId": "web-1", "clientName": "Office iMac" })),
+        )
+        .await;
+        assert_eq!(status, 200, "{acquired}");
+        assert_eq!(
+            acquired["lease"].get("clientName"),
+            None,
+            "the name stays in the Gateway"
+        );
+        let events = seen.lock().unwrap().clone();
+        assert_eq!(events.len(), 1);
+        assert_eq!(events[0]["clientId"], "web-1");
+        assert_eq!(events[0]["holder"]["name"], "Office iMac");
+    }
 }

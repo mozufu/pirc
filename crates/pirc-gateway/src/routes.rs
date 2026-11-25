@@ -1315,6 +1315,16 @@ pub async fn acquire(
             lease.client_name.as_deref(),
             &headers,
         )?;
+        let held = json!({ "clientId": lease.client_id });
+        let holder = crate::clients::holder(&conn, &identity.user, &claimed.session.id, &held)?;
+        drop(conn);
+        // Every device of the session learns at once who controls it now.
+        app.events.publish(
+            &claimed.session.id,
+            claimed.session.runner_epoch,
+            "control_changed",
+            json!({ "clientId": lease.client_id, "holder": holder }),
+        );
     }
     Ok(ok(remote))
 }
@@ -1384,6 +1394,12 @@ pub async fn release(
     )
     .await?;
     app.db.lock().clear_remote_lease(&claimed.session.id)?;
+    app.events.publish(
+        &claimed.session.id,
+        claimed.session.runner_epoch,
+        "control_changed",
+        json!({ "clientId": null, "holder": null }),
+    );
     Ok(no_content())
 }
 
