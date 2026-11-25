@@ -3,6 +3,9 @@
 # reported as skipped, never as passed. Safety regressions are never tagged.
 #   flutter test                          default suite
 #   flutter test --run-skipped -t fonts   the tests that need host fonts (macOS)
+#   flutter test --run-skipped -t golden  golden images (macOS; a 0.5 % pixel
+#                                         difference passes, see
+#                                         test/flutter_test_config.dart)
 #   flutter test --run-skipped            everything
 tags:
   tier3:
@@ -13,3 +16,5 @@ tags:
     skip: 'Needs host fonts (macOS); run with --run-skipped -t fonts.'
   device:
     skip: 'Needs a device; run with --run-skipped -t device.'
+  golden:
+    skip: 'Golden images; run on macOS with --run-skipped -t golden.'
