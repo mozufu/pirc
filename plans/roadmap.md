@@ -849,10 +849,22 @@ every new string in `app_en.arb` and `app_zh.arb` in the same commit, client tes
 `FakeTransport`, app tests on `test/support/harness.dart`. Step 0 is backend work
 done before step 3 starts; steps 1–2 run first, then 3–13 in any order, then 14.
 
+**Fidelity.** The phone layout (below 600 wide) must look exactly like the design:
+the same sizes, spacing, type, colours, radii and icons as the E prototype and its
+CSS (`pirc-c.css` → `pirc-d.css` → `pirc-e.css`) and `docs/design/tokens.json`. Each
+phone screen is accepted by putting its golden image next to its screenshot in
+`docs/design/screenshots/E-*` (light and dark); every visible difference is listed in
+the step's commit and fixed, or the design is shown to be wrong and the owner is
+asked. Tablet and desktop follow the layout rules of E spec § 9 with the same
+components.
+
 **Settled for M7 (no open choices).**
 
-- **Avatars** are the five colours only (`avatarColor` 1–5). Image upload is not
-  built; the "upload" tile of E7 and E31 is not shown.
+- **Avatars**: a pot, a group and the user each have a colour (`avatarColor` 1–5)
+  and may have an uploaded picture (`avatarImage`), kept by the Gateway so every
+  device shows it. The app crops the picked image to a square and scales it to
+  512 × 512 (PNG or WebP) before uploading; the colour stays as the fallback while
+  the picture loads or when it is removed.
 - **Personality templates** (E7) fill the personality field with this text; the user
   can edit it. Rigorous: "Precise and careful. Checks facts before answering, says
   when unsure, and prefers correctness over speed." Concise: "Brief and direct.
@@ -861,12 +873,21 @@ done before step 3 starts; steps 1–2 run first, then 3–13 in any order, then
   the next step." Custom: an empty field. zh-TW: 嚴謹「精確細心，回答前先查證，不確定時直說，寧可正確也不求快。」、簡潔「簡短直接，用最少的字回答，不寒暄。」、友善「溫暖、鼓勵人，用平常的話說明，確認你對下一步沒有疑問。」
 - **Speech preview** (E7) shows one fixed sample line per template (en/zh in the ARB
   files); no model is called.
-- **Thinking levels** in the UI map to the backend values: Low `low`, Medium
-  `medium`, High `high`, Highest `xhigh`. "Adjust by itself" is `thinkingAuto`.
+- **Thinking levels** follow the selected model: the picker lists only the levels
+  `GET /api/models` gives for that model (`thinkingLevels`), labelled Minimal 最低
+  (`minimal`), Low 低 (`low`), Medium 中 (`medium`), High 高 (`high`), Extra high
+  超高 (`xhigh`), Max 最高 (`max`); a model without thinking shows the row disabled.
+  When the model changes and its list lacks the chosen level, the nearest lower
+  level is chosen. "Adjust by itself" is `thinkingAuto`.
 - **Budgets** (E9): money per month in US dollars (sent as micro-dollars) and tokens
-  per day. A new pot starts with US$20 per month and 500,000 tokens per day; both
-  fields are required and 0 means the pot may not spend (the help text says so).
-  Owner-wide caps in Settings → pots: 0 means no owner-wide cap.
+  per day. A new pot starts with US$20 per month and 2,000,000 tokens per day. Either
+  limit can be switched off, not both: the step shows two switches and the last one
+  on cannot be turned off. Subscription usage counts in money only when "show
+  API-equivalent price" is on (P20), so the token limit is the one that always
+  applies; the help text says so. When either limit is used up, the user gets a
+  notification and the pot's direct thread a notice; at 80 % of either, the pot is
+  told at the start of its next run (no extra wake). Owner-wide caps in Settings →
+  pots: 0 means no owner-wide cap.
 - **Defaults of a new pot**: reach "only answer"; observe nothing; DM send and
   receive "all"; no work locations; 2 concurrent works; autonomy review every 2 days
   (the toggle in step ③ can turn it off); main model = the Gateway's default model
@@ -908,7 +929,21 @@ done before step 3 starts; steps 1–2 run first, then 3–13 in any order, then
    - Pots: `GET /api/pots` and `GET /api/pots/{id}` gain `status`
      (`working`, `idle`, `unavailable`), `needsYou` and `budgetLeft`
      (`moneyMicros`, `tokens` left in the current windows).
-   - Models: `GET /api/models` gains `defaultModel` (`provider`, `id`, `thinking`).
+   - Models: `GET /api/models` gains `defaultModel` (`provider`, `id`, `thinking`)
+     and, per model, `thinkingLevels` (the levels it accepts, from `minimal`,
+     `low`, `medium`, `high`, `xhigh`, `max`; empty without thinking). `max` becomes
+     a level of its own wherever a thinking level is accepted (pots, schedules,
+     sessions), sent to providers that have it.
+   - Pictures: `POST /api/images` (PNG, JPEG or WebP, at most 1 MiB) returns an
+     `imageId`; `GET /api/images/{id}` serves it to its owner with long caching.
+     Pots (`profile.avatarImage`), groups (`avatarImage`) and the user
+     (`avatarImage` in `/api/me`) refer to one; replacing or removing it deletes the
+     old picture.
+   - Budgets: a pot's money and token limits may each be `null` (off), never both;
+     new pots default to US$20 a month and 2,000,000 tokens a day. At 80 % of either
+     limit, `pot.context` adds a budget notice to the pot's next run; when either is
+     used up, the user gets a push and the pot's direct thread a system notice, once
+     per window.
    - The user: `GET|PATCH /api/me` (`displayName`, `avatarColor`); pots call the
      user by `displayName` (`pot.context`).
    - Groups: `PATCH /api/threads/{id}` (`name`, `avatarColor`, `hostPotId`,
@@ -956,16 +991,15 @@ done before step 3 starts; steps 1–2 run first, then 3–13 in any order, then
    Done when: tests for ordering, both badges, the status dots, the empty state and
    each hint; goldens at the four widths, light and dark.
 4. **New pot (E7–E10).** Four steps with Back / Next; the last says "Create".
-   ① avatar colour, name (1–40), personality with the templates. ② intro (≤ 200),
+   ① avatar colour or picture (pick, crop, upload), name (1–40), personality with the templates. ② intro (≤ 200),
    work description (≤ 8000), responsibilities (add, edit, reorder, remove; title
    ≤ 200, optional detail). ③ reach (only answer / observe and suggest / start
    work); observe scopes, one switch each (calendar, schedules, and pickers for
    workspaces, projects and sessions from `GET /api/workspaces` and
    `GET /api/sessions`); DM send and receive, each all / selected / off, with a pot
    picker for selected; when reach is "start work": work locations (workspace and
-   read/write), max concurrent works (0–16), budgets; autonomy review interval
-   (off, 1 day, 2 days, 1 week). ④ main model and fallbacks from `GET /api/models`,
-   thinking, "adjust by itself", and when reach is "start work" the work models,
+   read/write), max concurrent works (0–16), budgets (two limits with their switches, per the settled rule); autonomy review interval
+   (off, 1 day, 2 days, 1 week). ④ main model and fallbacks from `GET /api/models`, thinking (the model's levels), "adjust by itself", and when reach is "start work" the work models,
    each direct or ask; otherwise the explanation text instead. "Create" posts the
    whole input once and opens the new pot's conversation. A backend 400 shows its
    message on the step it concerns; nothing is lost on Back.
@@ -1017,7 +1051,7 @@ done before step 3 starts; steps 1–2 run first, then 3–13 in any order, then
    and the app returns to the Chat tab.
    Done when: tests for each fit, a pot's proposal, rule-1 refusal text, the preview,
    archive and delete; goldens.
-9. **Groups (E32–E35).** New group: name, colour, host, members (2–16 pots). The
+9. **Groups (E32–E35).** New group: name, colour or picture, host, members (2–16 pots). The
    group conversation: bubbles with each pot's avatar and name; the composer's @
    opens `MentionPopover` (members with their reach and `budgetLeft`) and "@all" with
    the warning that every member will be woken; the request sends `mentions` (pot
@@ -1042,17 +1076,15 @@ done before step 3 starts; steps 1–2 run first, then 3–13 in any order, then
     shown range: the six numbers, the heatmap (18 / 26–30 / 40 weeks by width), 12
     weekly bars, the cumulative area, this month by pot and by model as bar lists.
     Subscription money shows only when "show API-equivalent" is on (P20), marked as
-    an estimate. Edit profile sheet: display name and colour (`PATCH /api/me`). The
+    an estimate. Edit profile sheet: display name, colour and picture (`PATCH /api/me`, `POST /api/images`). The
     drawer's user row shows the display name and opens this page.
-    Done when: tests for the numbers, the ranges by width, the estimate marking and
-    the profile edit; goldens.
+    Done when: tests for the numbers, the ranges by width, the estimate marking and the profile edit (name, colour, picture upload and removal); goldens.
 13. **Work tab additions (E2–E4, E36).** "Opened by pots" rows open the work with the
     pot bar of M6; a pending model approval row opens the sheet of step 6; the
     conversation of a pot-opened work shows its `WorkCard` header link back to the
     pot.
     Done when: tests for both entry points.
-14. **Close the milestone.** Goldens of every E screen at the four widths, light and
-    dark, checked against `docs/design/screenshots/E-*`; the ARB key test passes;
+14. **Close the milestone.** Goldens of every E screen at the four widths, light and dark; the phone ones compared with `docs/design/screenshots/E-*` per the fidelity rule, with no difference left unexplained; the ARB key test passes;
     the placeholder for the Chat and Activity tabs is deleted; the status table is
     updated.
 
