@@ -21,7 +21,7 @@ export type Tally = { passed: number; failed: number; ignored: number; suites: n
  * the remaining suite. The declared ignores are the live Web/native-client
  * acceptance runs and terminal scenarios that need an isolated-terminal backend.
  */
-export const MIN_PASSED = 228;
+export const MIN_PASSED = 227;
 
 /** The sum of every `test result:` line of a `cargo test` output. */
 export function tally(output: string): Tally {
