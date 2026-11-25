@@ -326,6 +326,16 @@ the backend milestones. Flutter comes from the Nix shell (`nix develop`, Flutter
      Done when: `flutter pub get` at the root resolves; `flutter analyze` passes for
      `apps/android` and `apps/app`; `flutter build apk --debug --flavor standard
 --dart-define=PIRC_TAILSCALE=false` and `flutter build web` succeed for `apps/app`.
+   - Added later in M5 (owner decision, so M6 screens can be built and tested
+     natively): the macOS scaffold, `flutter create --platforms macos`. Bundle ID
+     `dev.pirc.mobile`, product name `pirc`, deployment target 12.0 (the lowest Xcode
+     27 accepts); App Sandbox on, `network.client` in both entitlement files, no
+     `network.server` in Release, no Keychain groups. macOS has only the standard
+     build: with no flavor, `PIRC_TAILSCALE=true` is refused, as on Web. It uses the
+     `dart:io` transport adapter. The Nix Flutter needs `macos` in the flake, and
+     `flutter build macos` there needs a writable copy of the engine artifacts
+     (`lipo` rewrites the framework, store files are read-only) and the shell's
+     `DEVELOPER_DIR`/`SDKROOT` unset. CI does not build macOS.
 2. **Rendering package** (inventory and order in
    [client.md](client.md#rendering)). Every sub-step keeps `apps/android` analyzing:
    1. _Break the cycle inside `apps/android`._ `rendering/` imports six `live/` files
@@ -475,8 +485,9 @@ Outline: Flutter Web build (self-hosted CanvasKit and fonts, CSP with
 `'wasm-unsafe-eval'`, no inline scripts, hand-written service worker with build ID,
 Web Push, cache headers); agent HTML in a sandboxed opaque-origin iframe (Q3);
 web-only screens (management approval, pairing QR); Nix packaging and nginx headers;
-delete `apps/web`. macOS desktop target: Keychain credentials, pairing, isolated
-web view for script-bearing documents (Q8), notifications while running.
+delete `apps/web`. macOS desktop target, building on the scaffold from M5: Keychain
+credentials, pairing, isolated web view for script-bearing documents (Q8),
+notifications while running.
 
 ## M10 Embedded Tailscale
 
