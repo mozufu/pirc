@@ -1,9 +1,8 @@
-/// Design tokens, theme, shared components and the adaptive scaffold.
+/// Design tokens, theme, shared components and the adaptive scaffold
+/// (design direction E; tokens from `docs/design/tokens.json`).
 library;
 
-/// Window-width breakpoints of the four layouts (plans/client.md).
-abstract final class PircBreakpoints {
-  static const double wide = 1200;
-  static const double medium = 900;
-  static const double compact = 600;
-}
+export 'src/adaptive_scaffold.dart';
+export 'src/theme.dart';
+export 'src/token_types.dart';
+export 'src/tokens.g.dart';
