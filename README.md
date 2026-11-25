@@ -1,11 +1,11 @@
 # pirc
 
-A private, self-hosted workspace for persistent coding-agent sessions and assistant chats, with a forward-authenticated web UI and a native Android client. It ships as two native Rust executables: `pirc-gateway` and `pirc-node` (including the `chat` role).
+A private, self-hosted workspace for persistent coding-agent sessions and named pot agents, with a forward-authenticated web UI and a native Android client. It ships as two native Rust executables: `pirc-gateway` and `pirc-node` (including the `chat` role).
 
 It consists of:
 
 - a **gateway** that browsers talk to: authentication, the session index, and routing;
-- a **chat node** (`pirc-node chat`) for assistant chats and projects;
+- a **chat node** (`pirc-node chat`) for pots;
 - one or more **coding nodes** (`pirc-node`), one per machine with workspaces, which connect out to the gateway and run one built-in agent subprocess per session (over a JSONL RPC on stdin/stdout), plus side-panel shells;
 - a responsive Svelte PWA;
 - a native Flutter Android client ([`apps/android`](apps/android/README.md)), which pairs through device tokens; browser compatibility and some mobile workflows remain in progress.
@@ -14,10 +14,10 @@ The gateway never runs agents or tools; it only runs model requests on their beh
 
 ## Features
 
-- **Persistent sessions across machines:** reconnect from the web or Android, follow streaming runs, respond to approvals, and switch between assistant chats and coding workspaces.
+- **Persistent sessions across machines:** reconnect from the web or Android, follow streaming runs, respond to approvals, and switch between pot threads and coding workspaces.
 - **Coding tools and collaboration:** file and shell tools, programmatic tool calling (PTC), background tasks, subagents and agent teams, with workspace write leases and per-session approval modes (`read-only`, `auto`, `full-access`).
-- **Chat projects:** project instructions, shared read-only project files, linked coding workspaces, task delegation (approved per task, or per project setting) with its approvals relayed to the chat, and project deletion with a preview and memory review.
-- **Memory and context:** observational memory for long sessions, shared USER/MEMORY notes for chats, approved USER preferences in coding sessions, and workspace-memory search across repository clones.
+- **Pots:** named persistent agents replace the assistant chat. The chat node hosts their sessions; user memory and shared repository memory remain.
+- **Memory and context:** observational memory for long sessions, shared USER/MEMORY notes for full-assistant modes, approved USER preferences in coding sessions, and workspace-memory search across repository clones.
 - **Workspace panels:** files, Git changes and history, interactive terminals, and browser viewing and takeover. Scheduled runs and push notifications help follow work away from the session.
 - **Gateway-managed models:** subscription logins, API keys and custom endpoints, without configuring provider credentials on every node.
 
@@ -78,7 +78,7 @@ The node's first workspace can point to this repository. See the [gateway and no
 ```sh
 bun run build                  # web bundle plus two native release executables
 ./target/release/pirc-gateway   # browser API and routing
-./target/release/pirc-node chat # assistant chats and projects
+./target/release/pirc-node chat # pots
 ./target/release/pirc-node      # coding agents and shells for this machine
 ```
 
@@ -90,7 +90,7 @@ The Nix gateway includes the static Web UI; the node includes native sandbox/bro
 
 ### Upgrading
 
-Upgrade the gateway and every chat/coding node together. The current tree uses node protocol **15**; older-protocol nodes cannot connect. The unreleased first-send checkpoints migrate databases to gateway **1034** and node **2040** (the `SCHEMA_VERSION` constants in `crates/pirc-gateway/src/db.rs` and `crates/pirc-node/src/store/mod.rs` are the source of truth). Web/native Android recovery and explicit retries are integrated, but the new flow remains gated by `canSubmit: false` pending full client/device and rollout acceptance. Web IndexedDB and Android private draft envelopes are **3**, preserving drafts while refusing older writers. Back up state and configuration first; older executables refuse the newer schemas. See [Upgrades](docs/deploy/upgrades.md) for capability requirements, migration notes and rollback limitations.
+Upgrade the gateway and every chat/coding node together. The current tree uses node protocol **15**; older-protocol nodes cannot connect. The `SCHEMA_VERSION` constants in `crates/pirc-gateway/src/db.rs` and `crates/pirc-node/src/store/mod.rs` are the source of truth for database compatibility. Web/native Android recovery and explicit retries are integrated, but the new flow remains gated by `canSubmit: false` pending full client/device and rollout acceptance. Web IndexedDB and Android private draft envelopes are **3**, preserving drafts while refusing older writers. Back up state and configuration first; older executables refuse the newer schemas. See [Upgrades](docs/deploy/upgrades.md) for capability requirements, migration notes and rollback limitations.
 
 Upgrading from the pre-Rust **0.3.x** releases still requires fresh state: re-pair devices, re-login providers and start new sessions rather than reusing the old databases. See [migration and rollback guidance](docs/deploy/upgrades.md).
 
@@ -102,7 +102,7 @@ Start with the [documentation index](docs/README.md). Current usage guides and a
 
 - [Agent configuration and sandbox](docs/guides/agent.md), [tools and workflows](docs/guides/tools.md)
 - [Model backends and subscription logins](docs/guides/model-backends.md)
-- [Session UI](docs/guides/session-ui.md), [browser](docs/guides/browser.md), [schedules and notifications](docs/guides/schedules.md), [chat projects](docs/guides/chat-projects.md)
+- [Session UI](docs/guides/session-ui.md), [browser](docs/guides/browser.md), [schedules and notifications](docs/guides/schedules.md), [pots](docs/guides/pots.md)
 - [Architecture references](docs/architecture/README.md), [deployment guides](docs/deploy/README.md)
 
 ## Validation

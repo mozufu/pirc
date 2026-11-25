@@ -142,9 +142,9 @@ Workspaces are an execution allowlist: sessions only ever run in a listed direct
 
 ## The chat node
 
-Run `pirc-node chat` for assistant chats/projects, or `pirc-node` for coding workspaces. Both use the same executable; the explicit `chat` subcommand selects the role, not an environment switch. `pirc-node chat` requires an empty `PIRC_WORKSPACES`. By default it accepts only the `chat` mode; coding nodes accept only `directory`. Set comma-separated `PIRC_MODES` to accept additional gateway-defined ids, for example `directory,review` or `chat,research`. Workspace creation follows the mode's workdir capability, not the node role. An explicitly empty list accepts no modes; a fresh chat node then does not seed top-level Chats. Run at most one chat node, on an always-on host. On NixOS, `services.pirc.chat = true` selects `pirc-node chat` for the local runner.
+Run `pirc-node chat` to host pots, or `pirc-node` for coding workspaces. Both use the same executable; the explicit `chat` subcommand selects the role, not an environment switch. `pirc-node chat` requires an empty `PIRC_WORKSPACES`. By default it accepts only the `pot` mode; coding nodes accept only `directory`. Set comma-separated `PIRC_MODES` to accept additional gateway-defined ids, for example `directory,review` or `pot,research`. Workspace creation follows the mode's workdir capability, not the node role. An explicitly empty list accepts no modes. Run at most one chat node, on an always-on host. On NixOS, `services.pirc.chat = true` selects `pirc-node chat` for the local runner.
 
-The chat node keeps every chat workspace under `$STATE/chat/<workspaceId>/` (the top-level `chats`, and each project), including each project's `instructions.md`. See [`docs/guides/chat-projects.md`](../guides/chat-projects.md).
+The chat node keeps the `pots` workspace under `$STATE/chat/pots/`, with each pot session in its own private directory. See [Pots](../guides/pots.md).
 
 ## Agent process
 
@@ -179,14 +179,12 @@ receive validated `PIRC_MODE` JSON; `PIRC_WORKSPACE_KIND` is retired. See
 ```
 ~/.config/.pirc/
 ├── config.json     limits, features, hooks, env, allowedPaths, sandbox
-├── AGENTS.md       global coding rules (optional; not read by chats)
-├── SOUL.md         global chat persona (optional; never read by coding sessions)
-├── CHAT.md         global chat rules (optional; replaces AGENTS.md for chats)
+├── AGENTS.md       global rules (optional; read when a mode selects agents:global)
 ├── roles/          roles: <name>.md, front matter + instructions (optional)
 └── skills/         Agent Skills: <name>/SKILL.md (optional)
 ```
 
-A role (`roles/<name>.md`) is what subagents, teammates and delegations start in; agents pick a role, never a model. Built-in `general` is followed by node-wide `$PIRC_CONFIG_DIR/roles/`, then workspace `.pirc/roles/`; a later file replaces the entire earlier role with the same filename. Every front matter key is optional:
+A role (`roles/<name>.md`) is what subagents, teammates and pot work sessions start in; agents pick a role, never a model. Built-in `general` is followed by node-wide `$PIRC_CONFIG_DIR/roles/`, then workspace `.pirc/roles/`; a later file replaces the entire earlier role with the same filename. Every front matter key is optional:
 
 ```markdown
 ---
@@ -268,6 +266,6 @@ PIRC_WORKSPACES=[]
 
 Keep the file readable by the node account only (`0600`), and list its directory in `sandbox.filesystem.denyRead` when it sits outside `PIRC_STATE_DIR` ([Sandbox and browser](sandbox-and-browser.md)).
 
-Chat nodes read global `SOUL.md` (persona) then the fixed environment description and `CHAT.md` (rules), never `AGENTS.md`. Coding nodes never read SOUL/CHAT. Each chat file is capped at 8000 characters. Settings → Assistant edits these same node-local files when writable; symlinks and Nix store files are read-only. Empty Soul falls back to the built-in identity. Changes apply at the next agent start. The gateway persistently binds one chat node ID; stop the old node and release its binding in Settings → Assistant before replacing it.
+A mode selects its prompt sections; unselected files are not read. Changes to AGENTS.md, roles or mode files apply at the next agent start. The gateway persistently binds one chat node ID to host pots; stop the old node and release its binding in Settings → Assistant before replacing it.
 
 Multiple nodes may share one OS account with distinct IDs and stores. Their private paths are registered automatically; see [same-account isolation](sandbox-and-browser.md#same-account-nodes-and-gateway), including upgrade/restart requirements and the limits for already-running sandboxes.

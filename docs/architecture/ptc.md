@@ -37,7 +37,7 @@ The shared numeric limits are in `crates/pirc-ptc/src/contracts.rs`; attachment 
 
 These are separate budgets: the interpreter heap is not total process RSS, and operation results are not the outer model-output budget. Calls waiting for a slot count toward progress and quotas. Repeated attempts past quotas are bounded by an additional host-side attempt limit.
 
-Active time pauses for human waits only while the guest is idle, not while it continues computing. Existing approval/question expiry still applies. Cancellation and timeouts stop the guest; pending operations receive cancellation and a five-second settling grace. An operation that ignores abort may outlive that grace, so stopping a script is not proof that all external effects stopped. Late callbacks do not resume the terminated script. Durable jobs and delegated agents have their own lifecycles.
+Active time pauses for human waits only while the guest is idle, not while it continues computing. Existing approval/question expiry still applies. Cancellation and timeouts stop the guest; pending operations receive cancellation and a five-second settling grace. An operation that ignores abort may outlive that grace, so stopping a script is not proof that all external effects stopped. Late callbacks do not resume the terminated script. Durable jobs and background agents have their own lifecycles.
 
 ## Discovery
 

@@ -83,6 +83,4 @@ Open **Settings → Model backends** and choose **Log in**. The gateway runs the
 - Tokens are refreshed on the gateway shortly before they expire, once for concurrent requests. **Log out** deletes the gateway's saved credentials and blocks new requests; it does not revoke the account upstream or recall content already sent.
 - pi-ai's model catalog is not proof that your plan includes a model, and a built-in login is not a statement about each service's terms for third-party clients: check them yourself. Real logins and paid calls are not part of the automated tests.
 
-Chat projects (the assistant's chats on the chat node) can turn off delegation, memory search, remote recall, schedules and web search per project, and can carry instructions for every new chat. See [Chat projects](chat-projects.md).
-
 Implementation references: [observational memory](../architecture/observational-memory.md) and [model backends and authentication](../architecture/backend-auth.md).

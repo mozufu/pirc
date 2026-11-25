@@ -4,7 +4,7 @@
 
 The built-in agent (`crates/pirc-agent/`) is configured in three layers. **Models (gateway)** and credentials are documented in [Model backends](./model-backends.md); node and project settings follow:
 
-- **Node**: `~/.config/.pirc/config.json` on each node (override the directory with `PIRC_CONFIG_DIR`) holds limits, features, hooks, `env`, `allowedPaths` and `sandbox`. Coding rules go in `AGENTS.md` in the same directory. Chats instead use global `SOUL.md` (persona) and `CHAT.md` (general rules), editable in Settings → Assistant when the files are writable. Changes apply at the next agent start; move chat-relevant rules out of `AGENTS.md` when upgrading. Coding sessions also start with your approved USER entries (Settings → Memory), the same on every node: move personal preferences (language, answer style, commit conventions you always want) from each node's `AGENTS.md` into USER by telling a chat, and keep repository and machine rules in `AGENTS.md`. Where they disagree the session is told that repository instructions decide how to work in the repository.
+- **Node**: `~/.config/.pirc/config.json` on each node (override the directory with `PIRC_CONFIG_DIR`) holds limits, features, hooks, `env`, `allowedPaths` and `sandbox`. Coding rules go in `AGENTS.md` in the same directory. A mode selects whether that global file is part of its prompt; changes apply at the next agent start. Full-assistant modes also start with your approved USER entries (Settings → Memory), the same on every node. Keep repository and machine rules in `AGENTS.md`; where they disagree the session is told that repository instructions decide how to work in the repository.
 - **Project**: `<workspace>/.pirc/config.json` can only add `allowedPaths`, `env`, `hooks`, and a `defaultModel` (which must name one of the gateway's models). Its `allowedPaths`, `env`, `hooks` and `defaultModel` are ignored until you trust them in the workspace's Settings (trust is tied to their content, so a later change needs trusting again), and its `allowedPaths` never widen the sandbox. `<workspace>/.pirc/AGENTS.md` is appended to the system prompt, and `<workspace>/.pirc/roles/<name>.md` adds or replaces roles. The agent cannot write to any `.pirc/` directory.
 
 ## Agent sandbox
@@ -60,4 +60,4 @@ Hooks (`sessionStart`, `beforePrompt`, `beforeTool`, `afterTool`, `agentSettled`
 
 ## Tools and workflows
 
-See [Tools and workflows](./tools.md), [Browser](./browser.md), [Schedules and notifications](./schedules.md), and [Chat projects](./chat-projects.md).
+See [Tools and workflows](./tools.md), [Browser](./browser.md), and [Schedules and notifications](./schedules.md).

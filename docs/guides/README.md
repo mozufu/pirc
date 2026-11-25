@@ -7,8 +7,7 @@
 | [Agent configuration](agent.md)                | Node/project configuration, sandbox boundaries, skills, recap and hooks                                                                   |
 | [Tools and workflows](tools.md)                | Direct tools and PTC, goals, background jobs, teams, roles and auto mode                                                                  |
 | [Model backends and logins](model-backends.md) | Gateway backend sources, precedence, reloads, subscription logins and credentials                                                         |
-| [Chat projects](chat-projects.md)              | Capability controls, project instructions, project files, linked workspaces, assistant prompts, Context inspector and deletion boundaries |
-| [Session UI](session-ui.md)                    | Chat/Work navigation, Needs you, run cards, write leases and client differences                                                           |
+| [Session UI](session-ui.md)                    | Pots/Work navigation, Needs you, run cards, write leases and client differences                                                           |
 | [Browser](browser.md)                          | Fetching, interaction, takeover, recording and browser settings                                                                           |
 | [Schedules and notifications](schedules.md)    | Scheduled runs, approvals, missed runs, time zones and push notifications                                                                 |
 | [Calendar](calendar.md)                        | Month/week/day views, personal events, recurrence, reminders and agent confirmation grants                                                |

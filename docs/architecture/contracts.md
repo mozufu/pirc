@@ -629,7 +629,6 @@ service/API sketch, § Memory integration acceptance.
 | Unarchive                       | Same IDs return                                                                 | No replay, restart or re-creation                                                                   |
 | Leave or move project           | Dialogue kept; grant transition of section 9                                    | Files and history kept; project rules, notes and board access removed; independent grants disclosed |
 | Delete conversation             | New work fenced; work scoped to it stopped and reconciled                       | Owned content removed; user folders and independently owned records kept                            |
-| Delete project                  | Membership, dispatch and member conversations fenced; affected hosts reconciled | The confirmed member set and project-owned state deleted; external resources kept                   |
 
 - "Owned" needs recorded provenance, never a matching path, file name, repository key,
   author label or current membership. A mounted folder is never project-owned data. A
@@ -639,17 +638,12 @@ service/API sketch, § Memory integration acceptance.
   and in scope. Uploads lose their owned associations; bytes are collected only when
   no surviving owner needs them. External schedules survive; a schedule whose target
   was removed is blocked and shown for repair, never retargeted. Independently owned
-  delegated work and user-taken-over work stay. Checkpoint evidence and opened
+  pot work and user-taken-over work stay. Checkpoint evidence and opened
   recovery workspaces stay. Other conversations, exports, logs, backups and provider
   copies are outside automatic deletion and are disclosed.
 - Memory: deleting a conversation deletes memory entries originally created there,
   their versions and proposals; entries created elsewhere stay even if it edited them.
-  Deleting a project classifies entries by write-time version origin: all versions
-  from the project → forget; a project-authored suffix → roll back to the last outside
-  version; mixed histories → the user's Forget/Keep/Edit choice at a current
-  revision. Project deletion runs this plan once; cleaning its member conversations
-  never runs a second standalone purge that would undo those choices. A moved
-  conversation keeps its old versions' original scope. A model-supplied project label
+  A moved conversation keeps its old versions' original scope. A model-supplied label
   is not provenance.
 - Flow: current preview (what stops, is deleted and remains) → confirm that exact
   scope (changes invalidate it; cancel mutates nothing) → record intent and fence new

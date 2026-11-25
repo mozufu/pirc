@@ -1,129 +1,162 @@
-# Assistant memory, repositories and delegation
+# Assistant memory and repositories
 
-This reference describes the current Rust contracts. For session compaction and local repository handoffs, see [observational memory](observational-memory.md); for prompt composition, see [prompt context](prompt-context.md). Configuration and user workflows are in [Gateway and node](../development/gateway-and-node.md) and [Chat projects](../guides/chat-projects.md).
-
-## Local project-origin cleanup (schema 1024)
-
-Project deletion now consumes immutable write-time origins, independently of the
-conversation's present workspace. Known all-project histories are forgotten;
-project-only suffixes roll back; mixed or unknown histories require explicit
-Keep/Edit/Forget. Edit retains known outside history and removes project/unknown
-versions after recording the user's replacement, even when its text is unchanged.
-Unknown proposal origins require separate Keep/Forget; keeping is not approval.
-
-A durable receipt commits with the deletion fence and memory effects. Retries,
-restart and overlapping member-chat deletion cannot change that cleanup scope or
-purge later edits. No final automatic memory sweep follows Node cleanup. Legacy
-partial deletions without receipts need a fresh review. Only present member chats
-are removed; origin records outlive moved/deleted authors. This does not yet enable
-a workspace move or acknowledge installed sandbox policy.
+This reference describes the Rust memory contracts. For session compaction and
+local repository handoffs, see [observational memory](observational-memory.md);
+for prompt composition, see [prompt context](prompt-context.md). Configuration
+and user workflows are in [Gateway and node](../development/gateway-and-node.md).
 
 ## Memory scopes and authority
 
 | Layer                            | Storage                      | Readers and writers                                                       |
 | -------------------------------- | ---------------------------- | ------------------------------------------------------------------------- |
 | Session observations/reflections | Node session ledger          | The session's memory workers; recall reads retained branch sources        |
-| Workspace handoff notes          | Node workspace-memory ledger | Main coding sessions in that repository; not teammates/subagents or chats |
-| USER                             | Gateway SQLite, per user     | Chats propose changes; the user approves. Main coding sessions read only  |
-| MEMORY                           | Gateway SQLite, per user     | Chats write notes directly; the user can review, restore and forget       |
-| Mirrored records/delegations     | Gateway SQLite               | Chats search the user's records; hits retain their workspace scope        |
+| Workspace handoff notes          | Node workspace-memory ledger | Main coding sessions in that repository; not teammates/subagents           |
+| USER                             | Gateway SQLite, per user     | Full-assistant modes propose changes; the user approves. Coding sessions read only |
+| MEMORY                           | Gateway SQLite, per user     | Full-assistant modes write notes directly; the user can review, restore and forget |
+| Mirrored workspace notes         | Gateway SQLite               | Searches the user's repository notes; hits retain their workspace scope    |
 
-`pirc-node chat` hosts the top-level `chats` workspace and chat projects, not directory workspaces. Each chat has its own node-managed working directory under `<stateDir>/chat/<workspaceId>/sessions/<sessionId>/`; file tools and bash remain available. Session OM remains enabled independently of global memory. Repository work belongs on coding nodes.
+`pirc-node chat` hosts the `pots` workspace and each pot's own session, not
+directory workspaces. A pot session has its own node-managed working directory
+under `<stateDir>/chat/pots/sessions/<sessionId>/`; file tools and bash remain
+available. Session OM remains enabled independently of global memory.
+Repository work belongs on coding nodes.
 
-The gateway derives the session owner and enforces the workspace mode and capabilities on agent operations. Directory sessions may request USER context, but cannot use assistant note/proposal/search/delegation operations. Teammates and subagents have no gateway channel. Node credentials never authorize a USER proposal or delegation approval: those decisions use user-authenticated gateway routes.
+The gateway derives the session owner and enforces the workspace mode and
+capabilities on agent operations. Directory sessions may request USER context,
+but cannot use assistant note/proposal/search operations. Teammates and
+subagents have no gateway channel.
 
-Origin is computed by code, not supplied by a model's account of where a fact came from. The assistant feature finds a proposed USER quote in actual `user` messages (with normalized matching), not tool results, custom messages or delegated tasks. Notes carry origins and source entry IDs; a human origin requires a matching quote. Recall results are omitted from observer evidence rather than learned again. Gateway deliveries, delegation results and team events remain data, not user instructions.
+Origin is computed by code, not supplied by a model's account of where a fact
+came from. The assistant feature finds a proposed USER quote in actual `user`
+messages (with normalized matching), not tool results or custom messages. Notes
+carry origins and source entry IDs; a human origin requires a matching quote.
+Recall results are omitted from observer evidence rather than learned again.
+Gateway deliveries and team events remain data, not user instructions.
 
-Memory text is redacted before storage, on both the node and gateway. Redaction is best effort, not a guarantee that arbitrary secrets are detected.
+Memory text is redacted before storage, on both the node and gateway. Redaction
+is best effort, not a guarantee that arbitrary secrets are detected.
 
 ## Agent gateway channel
 
-Agent requests travel as JSONL `gateway_request`/`gateway_response` through the runner, then `agent_request`/`agent_response` over the authenticated node link. The node applies a 30-second timeout; arguments are capped at 64 KiB, with at most 8 requests per session, 64 pending on a node's forwarding channel and 32 per node at the gateway. Invalid input is a request error, not a fatal agent/link error. `assistant.context`, `memory.note`, `memory.proposeUser`, `memory.search`, `delegation.create`, `delegation.status` and `recall.remote` are explicit operations, not arbitrary gateway HTTP access. Protocol mismatches close the node link with 4426; deploy compatible gateway/node builds together.
+Agent requests travel as JSONL `gateway_request`/`gateway_response` through the
+runner, then `agent_request`/`agent_response` over the authenticated node link.
+The node applies a 30-second timeout; arguments are capped at 64 KiB, with at
+most 8 requests per session, 64 pending on a node's forwarding channel and 32
+per node at the gateway. Invalid input is a request error, not a fatal
+agent/link error. `assistant.context`, `memory.note`, `memory.proposeUser`,
+`memory.search`, `recall.remote` and the pots operations are explicit
+operations, not arbitrary gateway HTTP access. Protocol mismatches close the
+node link with 4426; deploy compatible gateway/node builds together.
 
 ## Frozen context and writes
 
-Before its first successful context load, a chat waits up to 10 seconds for `assistant.context`. USER, MEMORY, workspace/role listings and their revisions are saved in `assistant.snapshot` for prompt-cache stability. Changes reach new snapshots, not a running chat's frozen copy; capability restrictions are applied when presenting it. A failed load gives a notice, not an assertion that no memory exists, and a later run retries.
+Before its first successful context load, a full-assistant mode waits up to 10
+seconds for `assistant.context`. USER, MEMORY, the repository list and their
+revisions are saved in `assistant.snapshot` for prompt-cache stability. Changes
+reach new snapshots, not a running session's frozen copy; capability
+restrictions are applied when presenting it. A failed load gives a notice, not
+an assertion that no memory exists, and a later run retries.
 
-Main coding sessions, delegated ones included, wait at most 3 seconds and freeze only a `## User` section. They get no MEMORY or workspace list and no assistant-memory tools. Repository instructions still determine how to work in the repository. A failed load omits USER for that run and warns once per agent process.
+Coding sessions wait at most 3 seconds and freeze only a `## User` section. They
+get no MEMORY or repository list and no assistant-memory tools. Repository
+instructions still determine how to work in the repository. A failed load omits
+USER for that run and warns once per agent process.
 
-- `memory_note` adds, replaces or removes notes immediately. Replace/remove use the revision the chat last saw; stale writes fail with a conflict instead of overwriting unseen edits.
-- `memory_propose_user` queues a change with the user's quote. Approval checks the shown revision. Duplicate pending proposals are reused; rejected proposals cannot simply be resubmitted unchanged. At most 20 proposals may wait.
-- Budgets are characters: `PIRC_MEMORY_USER_CHARS` defaults to 2,000 and `PIRC_MEMORY_NOTE_CHARS` to 8,000; one entry holds at most 1,000. Over-budget writes fail with `memory_full`.
-- Remove is reversible. Explicit **Forget** erases entry text, logged versions and proposals carrying them, retaining normalized hashes of all versions to refuse the same text. It does not erase node transcripts, workspace memory or already-frozen snapshots, and cannot recognize paraphrases. Project deletion has different, project-scoped cleanup/tombstones; see [deleting a project](../guides/chat-projects.md#deleting-a-project).
+- `memory_note` adds, replaces or removes notes immediately. Replace/remove use
+  the revision the session last saw; stale writes fail with a conflict instead
+  of overwriting unseen edits.
+- `memory_propose_user` queues a change with the user's quote. Approval checks
+  the shown revision. Duplicate pending proposals are reused; rejected
+  proposals cannot simply be resubmitted unchanged. At most 20 proposals may
+  wait.
+- Budgets are characters: `PIRC_MEMORY_USER_CHARS` defaults to 2,000 and
+  `PIRC_MEMORY_NOTE_CHARS` to 8,000; one entry holds at most 1,000. Over-budget
+  writes fail with `memory_full`.
+- Remove is reversible. Explicit **Forget** erases entry text, logged versions
+  and proposals carrying them, retaining normalized hashes of all versions to
+  refuse the same text. It does not erase node transcripts, workspace memory or
+  already-frozen snapshots, and cannot recognize paraphrases.
 
-### Frozen project/environment origins (unreleased local schema 1023)
-
-New global-memory text versions and USER proposals have private server-authored
-origin snapshots, separate from caller-visible `sources`. They record the verified
-conversation, project-membership revision/resolution and configured execution/policy
-versions at write time. The original entry creator still governs single-conversation
-deletion. Approval copies the proposal's original snapshot; restore/rollback copies
-the restored version's snapshot. Direct user edits do not inherit a current project.
-Legacy records without a snapshot remain unknown, with no inferred backfill.
-
-Origin snapshots are written atomically with their version/proposal. Forget and
-redaction scrub them; deleting a version or proposal cascades them. A retained
-version from an editor whose conversation was deleted keeps its historical source,
-without keeping the deleted conversation alive. Memory operations also recheck the
-Gateway's captured binding in the write transaction; a changed environment returns
-`stale_environment` rather than relabelling a delayed write.
-
-Schema 1024 integrates these snapshots into the project-deletion planner above.
-The full Node effect fence is still pending. Neither mechanism exposes project
-moves or proves Node-installed sandbox policy.
+Memory writes and approvals also store a server-authored origin snapshot with
+the conversation, membership and policy revisions at write time. These are
+internal provenance, not caller-controlled labels.
 
 ### Fetched-content provenance
 
-A bash command naming a network fetcher or a URL is tagged `tool:bash:network`; PTC bash operations propagate that capability/taint. A MEMORY note with a network origin and no human origin is shown as “from fetched content,” with guidance to verify it as a claim, not follow it as an instruction. Mixed local/network sources are labelled too. This is a coarse heuristic: scripts or build commands may fetch without naming a fetcher, and names may appear without a fetch. It is not complete data-flow tracking.
+A bash command naming a network fetcher or a URL is tagged `tool:bash:network`;
+PTC bash operations propagate that capability/taint. A MEMORY note with a
+network origin and no human origin is shown as “from fetched content,” with
+guidance to verify it as a claim, not follow it as an instruction. Mixed
+local/network sources are labelled too. This is a coarse heuristic: scripts or
+build commands may fetch without naming a fetcher, and names may appear without
+a fetch. It is not complete data-flow tracking.
 
 ## Repository identity, mirroring and search
 
 Two identities serve different purposes:
 
-- The node's **workspace-memory ledger key** identifies a local repository root, shared by its worktrees. The node discovers it from repository files without running host git, validates worktree back-references, rejects unsafe file links and opens only the session's own ledger in its sandbox. See [workspace memory](observational-memory.md#workspace-memory).
-- The gateway's **repository key** groups clones for search: the `origin` remote normalized to `host/path` by `pirc_protocol::normalize_origin`. Credentials, scheme, port, query and trailing `.git` are removed; local paths, file URLs, local-machine remotes and invalid keys yield no identity. It is metadata, not authorization.
+- The node's **workspace-memory ledger key** identifies a local repository root,
+  shared by its worktrees. The node discovers it from repository files without
+  running host git, validates worktree back-references, rejects unsafe file
+  links and opens only the session's own ledger in its sandbox. See
+  [workspace memory](observational-memory.md#workspace-memory).
+- The gateway's **repository key** groups clones for search: the `origin` remote
+  normalized to `host/path` by `pirc_protocol::normalize_origin`. Credentials,
+  scheme, port, query and trailing `.git` are removed; local paths, file URLs,
+  local-machine remotes and invalid keys yield no identity. It is metadata, not
+  authorization.
 
-For the latter, `pirc-node/src/repo.rs` reads only the workspace's own `.git` and its `gitdir:`/`commondir` config, never a parent repository, and never executes git on the host. Includes and `insteadOf` rewrites are ignored. Files must be regular, size-bounded and opened without taking a controlling terminal. A remote change is published on re-registration. Accepted limit: symlinked `.git` or absolute git-directory references may identify another readable repository; only the normalized key leaves the node, and it joins only the same user's records.
+For the latter, `pirc-node/src/repo.rs` reads only the workspace's own `.git` and
+its `gitdir:`/`commondir` config, never a parent repository, and never executes
+git on the host. Includes and `insteadOf` rewrites are ignored. Files must be
+regular, size-bounded and opened without taking a controlling terminal. A remote
+change is published on re-registration. Accepted limit: symlinked `.git` or
+absolute git-directory references may identify another readable repository; only
+the normalized key leaves the node, and it joins only the same user's records.
 
-Nodes mirror ledger chunks with byte offsets and acknowledgements; reconnect resumes from the gateway watermark, shrunk ledgers reset, and malformed lines are skipped. Paths/worktrees are not included in mirrored git metadata. Ownership comes from the writing session known to the gateway; unknown-owner records are not searchable. Forget/clear records remove searchable content. Per-node storage is capped at 200,000 rows and 64 MiB of text.
+Nodes mirror ledger chunks with byte offsets and acknowledgements; reconnect
+resumes from the gateway watermark, shrunk ledgers reset, and malformed lines
+are skipped. Paths/worktrees are not included in mirrored git metadata.
+Ownership comes from the writing session known to the gateway; unknown-owner
+records are not searchable. Forget/clear records remove searchable content.
+Per-node storage is capped at 200,000 rows and 64 MiB of text.
 
-`memory_search` matches up to eight query words with escaped SQL `LIKE`, ranked by matches, active before superseded, then recency. It searches workspace notes and delegations, preserving “applies to workspace” labels rather than promoting hits to global rules. A workspace filter also includes clones with the same repository key. `recall` on a remote workspace note asks its holding node for sources after an ownership check; when that node is offline, it returns the gateway copy explicitly labelled as such.
-
-## Project links
-
-Only the user edits links through authenticated `GET`/`PUT /api/workspaces/:id/links`; there is no agent operation. A chat project (not top-level `chats`) may link at most 20 directory workspaces. Links preserve their repository identity, cover other clones and may outlive a removed workspace.
-
-Links are defaults and ordering, **not permissions**:
-
-- Frozen context lists linked workspaces, other clones, then the rest; removed targets stay visible as removed.
-- Delegation without a target uses the sole link; multiple links require an explicit choice.
-- Search without a workspace tries the live linked workspaces/repositories first, then everything if empty. `everywhere: true` skips that preference; results say which scope was searched.
-- Unlinked workspaces remain reachable, and every delegation still requires confirmation.
+`memory_search` matches up to eight query words with escaped SQL `LIKE`, ranked
+by matches, active before superseded, then recency. It searches workspace notes,
+preserving “applies to workspace” labels rather than promoting hits to global
+rules. A workspace filter also includes clones with the same repository key.
+`recall` on a remote workspace note asks its holding node for sources after an
+ownership check; when that node is offline, it returns the gateway copy
+explicitly labelled as such.
 
 ## Node-local skills
 
-Skills are configuration, not memory. `SKILL.md` directories load from `~/.agents/skills/`, then `$PIRC_CONFIG_DIR/skills/`, then `<workspace>/.pirc/skills/`, with later sources taking precedence. Node-level skills reach chats too; repository skills belong to that workspace and are labelled untrusted repository content. Only their names, descriptions and paths are listed initially; the model reads a skill on demand or the user loads `/skill:<name>`. Loaded skill text is not new observer evidence. Skill directories are protected from agent writes and are not synced from the gateway; install a chat's skills and required programs on its chat node.
+Skills are configuration, not memory. `SKILL.md` directories load from
+`~/.agents/skills/`, then `$PIRC_CONFIG_DIR/skills/`, then
+`<workspace>/.pirc/skills/`, with later sources taking precedence. Node-level
+skills reach chat sessions too; repository skills belong to that workspace and
+are labelled untrusted repository content. Only their names, descriptions and
+paths are listed initially; the model reads a skill on demand or the user loads
+`/skill:<name>`. Loaded skill text is not new observer evidence. Skill
+directories are protected from agent writes and are not synced from the
+gateway; install skills and required programs on the node that runs them.
 
-## Roles and delegation
+## Roles
 
-The agent selects a named role, not a model or thinking level. Role files come from built-in `general`, node configuration, then workspace configuration; later files replace earlier roles wholesale, with source/override information exposed to the user. Invalid roles or model patterns with no catalog match fail rather than silently widening access. Model-pattern fallback is restricted to the expanded candidates and does not guarantee provider credentials or entitlement. See the [configuration reference](../development/gateway-and-node.md) and `crates/pirc-agent/src/roles.rs`.
+The agent selects a named role, not a model or thinking level. Role files come
+from built-in `general`, node configuration, then workspace configuration; later
+files replace earlier roles wholesale, with source/override information exposed
+to the user. Invalid roles or model patterns with no catalog match fail rather
+than silently widening access. Model-pattern fallback is restricted to the
+expanded candidates and does not guarantee provider credentials or entitlement.
+See the [configuration reference](../development/gateway-and-node.md) and
+`crates/pirc-agent/src/roles.rs`.
 
-`delegate({workspace, task, title?, role?, quote?})` or `delegate({follows, task, quote?})` creates a gateway-owned pending approval, or, when the chat workspace's `delegation_approval` allows it, a task that starts at once ([chat projects guide](../guides/chat-projects.md#delegation)). The target must be a directory workspace on an online node. At most 10 delegations wait per user; `PIRC_DELEGATION_TTL_MS` defaults to one hour. Roles come from the node's registration catalog, refreshed on reconnect. A follow-up keeps its session's role and cannot select another.
+## Implementation
 
-The confirmation presents the target and full task. Only the user chooses model/thinking overrides; agent schemas reject those fields. After approval, the gateway creates or reuses the target session, applies the role and approved settings, then delivers a custom `assistant-delegation` message. Delivery does not take the user's control lease. Every follow-up follows the same policy, so under `always` it needs a fresh approval. Without the card the role's model or the workspace default runs it.
-
-By default a dangerous command waits for the user in the delegated session. The approval checkbox “treat this task as my request for auto mode” authorizes the classifier to consider that task as a user request **only for the run it starts**, not future runs. It is not full access; delegated sessions use the node's default approval mode, not the chat's mode. Under every policy, a `quote` the chat's agent found verbatim in the user's last three messages reaches the delegated run as `details.userRequests`, and its classifier reads those words (never the task) as user requests for that run only. The delegated session's confirmations are relayed to the chat and answered there without a lease ([security decisions](security-decisions.md#delegation-approval)).
-
-The gateway tracks running, waiting-input, completed and failed states. Results are redacted; update messages carry up to 4,000 characters, while `delegation_status` reads the stored result in 12,000-character chunks (stored results are capped). Results are gateway data, never new user instructions. Updates that cannot reach the chat node are retried on reconnect. The user may take control of the coding session; completed sessions are left in place. Delegated main sessions may produce workspace memory, but never global assistant memory.
-
-Finished delegation records older than 90 days are pruned hourly unless a later delegation follows them. This does not imply deletion of their node sessions, mirrored workspace records or forgotten-memory tombstones.
-
-## Implementation and provenance
-
-Primary contracts live in `crates/pirc-agent/src/features/assistant/`, `features/memory/serialize.rs`, `crates/pirc-gateway/src/memory/`, `memory_records.rs`, `delegations.rs`, `project_links.rs`, `crates/pirc-node/src/{repo,memory_mirror}.rs` and `crates/pirc-protocol/src/repo.rs`. Protocol versions and limits are defined in current Rust code; the old assistant plan's startup flags and protocol numbers are not current contracts.
-
-The original design/decision record is retrievable without a working-tree archive:
-
-```sh
-git show af7074fc51742e79c8f0c76a9aaf64f80b414f7e:docs/history/assistant.md
-```
+Memory operations and schemas live in `crates/pirc-gateway/src/memory.rs` and its
+submodules; agent-side memory is in
+`crates/pirc-agent/src/features/assistant/` and
+`crates/pirc-agent/src/features/memory/`. Workspace-memory ledgers and
+mirroring are in `crates/pirc-node/src/workspace_memory/` and
+`crates/pirc-gateway/src/memory_records.rs`.
