@@ -4,7 +4,9 @@
 #   flutter test                          default suite
 #   flutter test --run-skipped -t fonts   the tests that need host fonts (macOS)
 #   flutter test --run-skipped -t golden  golden images (macOS; compare with
-#                                         docs/design/screenshots by eye)
+#                                         docs/design/screenshots by eye; a
+#                                         0.5 % pixel difference passes, see
+#                                         test/flutter_test_config.dart)
 #   flutter test --run-skipped            everything
 tags:
   tier3:
