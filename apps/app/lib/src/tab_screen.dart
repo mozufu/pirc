@@ -1,21 +1,23 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide DrawerButton;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
 import '../l10n/app_localizations.dart';
 import 'router.dart';
+import 'shell/app_drawer.dart';
 
 /// One tab in the adaptive frame. Lists and items are placeholders until
 /// M6/M7 fill them; the frame, routing and layouts are final.
-class TabScreen extends StatelessWidget {
+class TabScreen extends ConsumerWidget {
   const TabScreen({super.key, required this.tab, this.openItem});
 
   final AppTab tab;
   final String? openItem;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final shell = StatefulNavigationShell.maybeOf(context);
     final open = openItem;
@@ -25,32 +27,42 @@ class TabScreen extends StatelessWidget {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop && open != null) context.go(tab.path);
       },
-      child: AdaptiveScaffold(
-        destinations: [
-          PircDestination(icon: LucideIcons.messageCircle, label: l10n.tabChat),
-          PircDestination(icon: LucideIcons.briefcase, label: l10n.tabWork),
-          PircDestination(icon: LucideIcons.activity, label: l10n.tabActivity),
-          PircDestination(icon: LucideIcons.calendar, label: l10n.tabCalendar),
-        ],
-        selectedIndex: tab.index,
-        onDestinationSelected: (index) => shell?.goBranch(
-          index,
-          initialLocation: index == shell.currentIndex,
+      child: PushDrawer(
+        open: ref.watch(drawerOpenProvider),
+        onClose: ref.read(drawerOpenProvider.notifier).close,
+        closeLabel: l10n.closeDrawer,
+        drawer: const AppDrawer(),
+        child: AdaptiveScaffold(
+          destinations: [
+            PircDestination(
+              icon: LucideIcons.messageCircle,
+              label: l10n.tabChat,
+            ),
+            PircDestination(icon: LucideIcons.briefcase, label: l10n.tabWork),
+            PircDestination(
+              icon: LucideIcons.activity,
+              label: l10n.tabActivity,
+            ),
+            PircDestination(
+              icon: LucideIcons.calendar,
+              label: l10n.tabCalendar,
+            ),
+          ],
+          selectedIndex: tab.index,
+          onDestinationSelected: (index) => shell?.goBranch(
+            index,
+            initialLocation: index == shell.currentIndex,
+          ),
+          list: _TabList(tab: tab),
+          content: open == null
+              ? null
+              : _ItemPlaceholder(
+                  key: ValueKey(open),
+                  title: l10n.openItem(open),
+                  onBack: () => context.go(tab.path),
+                ),
+          placeholder: _Empty(text: l10n.nothingOpen),
         ),
-        trailing: IconButton(
-          tooltip: l10n.settings,
-          icon: const Icon(LucideIcons.settings),
-          onPressed: () => context.push('/settings'),
-        ),
-        list: _TabList(tab: tab),
-        content: open == null
-            ? null
-            : _ItemPlaceholder(
-                key: ValueKey(open),
-                title: l10n.openItem(open),
-                onBack: () => context.go(tab.path),
-              ),
-        placeholder: _Empty(text: l10n.nothingOpen),
       ),
     );
   }
@@ -71,18 +83,7 @@ class _TabList extends StatelessWidget {
       AppTab.calendar => (l10n.tabCalendar, l10n.emptyCalendar),
     };
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        actions: [
-          if (PircLayout.forWidth(MediaQuery.sizeOf(context).width) ==
-              PircLayout.compact)
-            IconButton(
-              tooltip: l10n.settings,
-              icon: const Icon(LucideIcons.settings),
-              onPressed: () => context.push('/settings'),
-            ),
-        ],
-      ),
+      appBar: AppBar(leading: const DrawerButton(), title: Text(title)),
       body: _Empty(text: empty),
     );
   }

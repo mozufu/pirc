@@ -17,7 +17,7 @@ acceptance, activation.
 | [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
 | [M4 Pots backend](#m4-pots-backend)                           | complete | in progress |            | steps 0–10b done; 10c next, 11 in progress on a branch      |
 | [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`               |
-| [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | in progress |            | steps 1–2 done; step 12 waits on M4 10b                     |
+| [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | in progress |            | steps 1–3 done; step 12 waits on M4 10b                     |
 | [M7 Pots screens](#m7-pots-screens)                           | outline  |             |            |                                                             |
 | [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                             |
 | [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                          |

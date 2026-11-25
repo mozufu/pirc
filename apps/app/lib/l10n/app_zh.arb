@@ -39,5 +39,16 @@
   "upgradeTitle": "請更新 App",
   "upgradeBody": "這個版本的 App 對你的 Gateway 來說太舊了，更新後才能繼續。",
   "signedOutTitle": "請重新登入",
-  "signedOutBody": "登入已經結束，重新載入頁面再登入一次。"
+  "signedOutBody": "登入已經結束，重新載入頁面再登入一次。",
+  "openDrawer": "開啟選單",
+  "closeDrawer": "關閉選單",
+  "gatewayConnected": "Gateway 已連線",
+  "gatewayOffline": "Gateway 離線",
+  "hosts": "主機",
+  "hostsFailed": "無法載入主機。",
+  "noHosts": "沒有連線中的主機。",
+  "hostIdle": "沒有執行中的工作",
+  "hostRunning": "{count} 個工作執行中",
+  "switchToLight": "切換成淺色",
+  "switchToDark": "切換成深色"
 }

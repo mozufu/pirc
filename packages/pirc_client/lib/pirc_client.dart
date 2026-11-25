@@ -4,6 +4,8 @@
 /// the `dart:io` one by conditional import.
 library;
 
+export 'src/api/directory_api.dart';
+export 'src/api/sessions_api.dart';
 export 'src/api_client.dart';
 export 'src/commands/command_sender.dart';
 export 'src/commands/control.dart';

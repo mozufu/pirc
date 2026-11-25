@@ -134,4 +134,45 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get signedOutBody =>
       'Your sign-in has ended. Reload the page to sign in again.';
+
+  @override
+  String get openDrawer => 'Open the menu';
+
+  @override
+  String get closeDrawer => 'Close the menu';
+
+  @override
+  String get gatewayConnected => 'Gateway connected';
+
+  @override
+  String get gatewayOffline => 'Gateway offline';
+
+  @override
+  String get hosts => 'Hosts';
+
+  @override
+  String get hostsFailed => 'The hosts could not be loaded.';
+
+  @override
+  String get noHosts => 'No host is connected.';
+
+  @override
+  String get hostIdle => 'No work running';
+
+  @override
+  String hostRunning(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sessions running',
+      one: '1 session running',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get switchToLight => 'Switch to light';
+
+  @override
+  String get switchToDark => 'Switch to dark';
 }

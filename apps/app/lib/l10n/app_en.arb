@@ -46,5 +46,23 @@
   "upgradeTitle": "Update the app",
   "upgradeBody": "This version of the app is too old for your Gateway. Update it to continue.",
   "signedOutTitle": "Sign in again",
-  "signedOutBody": "Your sign-in has ended. Reload the page to sign in again."
+  "signedOutBody": "Your sign-in has ended. Reload the page to sign in again.",
+  "openDrawer": "Open the menu",
+  "closeDrawer": "Close the menu",
+  "gatewayConnected": "Gateway connected",
+  "gatewayOffline": "Gateway offline",
+  "hosts": "Hosts",
+  "hostsFailed": "The hosts could not be loaded.",
+  "noHosts": "No host is connected.",
+  "hostIdle": "No work running",
+  "hostRunning": "{count, plural, =1{1 session running} other{{count} sessions running}}",
+  "@hostRunning": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "switchToLight": "Switch to light",
+  "switchToDark": "Switch to dark"
 }

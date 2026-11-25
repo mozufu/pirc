@@ -129,6 +129,41 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get signedOutBody => '登入已經結束，重新載入頁面再登入一次。';
+
+  @override
+  String get openDrawer => '開啟選單';
+
+  @override
+  String get closeDrawer => '關閉選單';
+
+  @override
+  String get gatewayConnected => 'Gateway 已連線';
+
+  @override
+  String get gatewayOffline => 'Gateway 離線';
+
+  @override
+  String get hosts => '主機';
+
+  @override
+  String get hostsFailed => '無法載入主機。';
+
+  @override
+  String get noHosts => '沒有連線中的主機。';
+
+  @override
+  String get hostIdle => '沒有執行中的工作';
+
+  @override
+  String hostRunning(int count) {
+    return '$count 個工作執行中';
+  }
+
+  @override
+  String get switchToLight => '切換成淺色';
+
+  @override
+  String get switchToDark => '切換成深色';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

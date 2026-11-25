@@ -190,4 +190,71 @@ void main() {
       expect(headers.containsKey(managementHeader), isFalse);
     });
   });
+
+  group('directory and sessions', () {
+    test('nodes and workspaces are read', () async {
+      final transport = FakeTransport(
+        onSend: (request) async => switch (request.path) {
+          '/api/nodes' => reply(200, {
+            'nodes': [
+              {
+                'id': 'laptop',
+                'role': 'worker',
+                'modes': ['default'],
+                'workspaces': [
+                  {'id': 'pirc', 'displayName': 'pirc', 'available': false},
+                ],
+                'connectedAt': 1,
+                'lastSeenAt': 2,
+              },
+            ],
+          }),
+          _ => reply(200, {
+            'workspaces': [
+              {
+                'id': 'laptop:pirc',
+                'hostId': 'h1',
+                'displayName': 'pirc',
+                'mode': 'default',
+                'kind': 'directory',
+                'deleting': true,
+              },
+            ],
+          }),
+        },
+      );
+      final directory = DirectoryApi(ApiClient(transport));
+      final node = (await directory.nodes()).single;
+      expect(node.id, 'laptop');
+      expect(node.workspaces.single.available, isFalse);
+      final workspace = (await directory.workspaces()).single;
+      expect(workspace.nodeId, 'laptop');
+      expect(workspace.kind, 'directory');
+      expect(workspace.deleting, isTrue);
+    });
+
+    test('row actions send what the Gateway reads', () async {
+      final transport = FakeTransport(
+        onSend: (request) async => reply(200, {
+          'session': {'id': 's/1', 'workspaceId': 'w', 'name': 'n'},
+        }),
+      );
+      final sessions = SessionsApi(ApiClient(transport));
+      await sessions.update('s/1', pinned: true);
+      await sessions.update('s/1', name: 'New', settled: false);
+      await sessions.delete('s/1');
+      await sessions.markRead('s/1');
+      expect(
+        [for (final r in transport.requests) '${r.method} ${r.path}'],
+        [
+          'PATCH /api/sessions/s%2F1',
+          'PATCH /api/sessions/s%2F1',
+          'DELETE /api/sessions/s%2F1',
+          'POST /api/sessions/s%2F1/read',
+        ],
+      );
+      expect(transport.requests[0].json, {'pinned': true});
+      expect(transport.requests[1].json, {'name': 'New', 'settled': false});
+    });
+  });
 }

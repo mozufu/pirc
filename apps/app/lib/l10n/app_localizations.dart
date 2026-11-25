@@ -338,6 +338,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your sign-in has ended. Reload the page to sign in again.'**
   String get signedOutBody;
+
+  /// No description provided for @openDrawer.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the menu'**
+  String get openDrawer;
+
+  /// No description provided for @closeDrawer.
+  ///
+  /// In en, this message translates to:
+  /// **'Close the menu'**
+  String get closeDrawer;
+
+  /// No description provided for @gatewayConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Gateway connected'**
+  String get gatewayConnected;
+
+  /// No description provided for @gatewayOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Gateway offline'**
+  String get gatewayOffline;
+
+  /// No description provided for @hosts.
+  ///
+  /// In en, this message translates to:
+  /// **'Hosts'**
+  String get hosts;
+
+  /// No description provided for @hostsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The hosts could not be loaded.'**
+  String get hostsFailed;
+
+  /// No description provided for @noHosts.
+  ///
+  /// In en, this message translates to:
+  /// **'No host is connected.'**
+  String get noHosts;
+
+  /// No description provided for @hostIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'No work running'**
+  String get hostIdle;
+
+  /// No description provided for @hostRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 session running} other{{count} sessions running}}'**
+  String hostRunning(int count);
+
+  /// No description provided for @switchToLight.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to light'**
+  String get switchToLight;
+
+  /// No description provided for @switchToDark.
+  ///
+  /// In en, this message translates to:
+  /// **'Switch to dark'**
+  String get switchToDark;
 }
 
 class _AppLocalizationsDelegate
