@@ -11,6 +11,7 @@ export 'src/commands/first_send.dart';
 export 'src/commands/ids.dart';
 export 'src/errors.dart';
 export 'src/events/event_stream.dart';
+export 'src/events/hint_stream.dart';
 export 'src/models/api_error.dart';
 export 'src/models/binding.dart';
 export 'src/models/capabilities.dart';

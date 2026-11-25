@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pirc_render/pirc_render.dart';
 
 import '../l10n/app_localizations.dart';
+import 'connection/connection_screens.dart';
+import 'connection/hints.dart';
 import 'preferences.dart';
 import 'render_bridge.dart';
 import 'router.dart';
@@ -13,6 +15,9 @@ class PircApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Keeps the hint socket open while the app runs.
+    ref.watch(hintsProvider);
+    final textScale = ref.watch(textScaleProvider);
     return MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       routerConfig: ref.watch(routerProvider),
@@ -30,7 +35,15 @@ class PircApp extends ConsumerWidget {
       builder: (context, child) {
         // The renderer's own strings follow the resolved locale.
         RenderL10n.language = languageOf(Localizations.localeOf(context));
-        return child!;
+        final media = MediaQuery.of(context);
+        return MediaQuery(
+          data: media.copyWith(
+            textScaler: textScale == 1.0
+                ? media.textScaler
+                : TextScaler.linear(media.textScaler.scale(1) * textScale),
+          ),
+          child: ConnectionFrame(child: child!),
+        );
       },
     );
   }

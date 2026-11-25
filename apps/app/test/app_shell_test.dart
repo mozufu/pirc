@@ -4,31 +4,19 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pirc_app/src/app.dart';
 import 'package:pirc_app/src/preferences.dart';
 import 'package:pirc_app/src/render_bridge.dart';
 import 'package:pirc_app/src/router.dart';
 import 'package:pirc_render/pirc_render.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
+import 'support/harness.dart';
+
 Future<ProviderContainer> _pump(
   WidgetTester tester, {
   required double width,
   String location = '/chat',
-}) async {
-  tester.view.devicePixelRatio = 1;
-  tester.view.physicalSize = Size(width, 900);
-  addTearDown(tester.view.reset);
-  final container = ProviderContainer(
-    overrides: [initialLocationProvider.overrideWithValue(location)],
-  );
-  addTearDown(container.dispose);
-  await tester.pumpWidget(
-    UncontrolledProviderScope(container: container, child: const PircApp()),
-  );
-  await tester.pumpAndSettle();
-  return container;
-}
+}) => pumpApp(tester, gateway: FakeGateway(), width: width, location: location);
 
 Future<void> _resize(WidgetTester tester, double width) async {
   tester.view.physicalSize = Size(width, 900);

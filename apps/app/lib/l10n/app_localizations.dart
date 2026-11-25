@@ -224,6 +224,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dark'**
   String get appearanceDark;
+
+  /// No description provided for @pairTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair this device'**
+  String get pairTitle;
+
+  /// No description provided for @pairBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the pairing link that the Gateway\'s web page shows.'**
+  String get pairBody;
+
+  /// No description provided for @pairLinkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing link'**
+  String get pairLinkLabel;
+
+  /// No description provided for @pairAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair'**
+  String get pairAction;
+
+  /// No description provided for @pairChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get pairChecking;
+
+  /// No description provided for @pairPaired.
+  ///
+  /// In en, this message translates to:
+  /// **'Paired'**
+  String get pairPaired;
+
+  /// No description provided for @pairNotALink.
+  ///
+  /// In en, this message translates to:
+  /// **'This is not a pairing link.'**
+  String get pairNotALink;
+
+  /// No description provided for @pairTokenRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'The Gateway did not accept this link. Create a new one.'**
+  String get pairTokenRefused;
+
+  /// No description provided for @pairAppTooOld.
+  ///
+  /// In en, this message translates to:
+  /// **'This app is too old for the Gateway. Update the app.'**
+  String get pairAppTooOld;
+
+  /// No description provided for @pairUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'The Gateway could not be reached.'**
+  String get pairUnreachable;
+
+  /// No description provided for @pairFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing failed.'**
+  String get pairFailed;
+
+  /// No description provided for @offlineBanner.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline. What you see may be out of date.'**
+  String get offlineBanner;
+
+  /// No description provided for @reconnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting…'**
+  String get reconnecting;
+
+  /// No description provided for @loadingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting and fetching the latest state…'**
+  String get loadingTitle;
+
+  /// No description provided for @loadingNote.
+  ///
+  /// In en, this message translates to:
+  /// **'No buttons are shown until the state is known.'**
+  String get loadingNote;
+
+  /// No description provided for @upgradeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Update the app'**
+  String get upgradeTitle;
+
+  /// No description provided for @upgradeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This version of the app is too old for your Gateway. Update it to continue.'**
+  String get upgradeBody;
+
+  /// No description provided for @signedOutTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in again'**
+  String get signedOutTitle;
+
+  /// No description provided for @signedOutBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your sign-in has ended. Reload the page to sign in again.'**
+  String get signedOutBody;
 }
 
 class _AppLocalizationsDelegate

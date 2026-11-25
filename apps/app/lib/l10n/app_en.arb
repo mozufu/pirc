@@ -14,7 +14,11 @@
   "nothingOpen": "Select an item to open it",
   "openItem": "Item {id}",
   "@openItem": {
-    "placeholders": { "id": { "type": "String" } }
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
   },
   "language": "Language",
   "languageSystem": "Follow the system",
@@ -23,5 +27,24 @@
   "appearance": "Appearance",
   "appearanceSystem": "Follow the system",
   "appearanceLight": "Light",
-  "appearanceDark": "Dark"
+  "appearanceDark": "Dark",
+  "pairTitle": "Pair this device",
+  "pairBody": "Paste the pairing link that the Gateway's web page shows.",
+  "pairLinkLabel": "Pairing link",
+  "pairAction": "Pair",
+  "pairChecking": "Checking…",
+  "pairPaired": "Paired",
+  "pairNotALink": "This is not a pairing link.",
+  "pairTokenRefused": "The Gateway did not accept this link. Create a new one.",
+  "pairAppTooOld": "This app is too old for the Gateway. Update the app.",
+  "pairUnreachable": "The Gateway could not be reached.",
+  "pairFailed": "Pairing failed.",
+  "offlineBanner": "Offline. What you see may be out of date.",
+  "reconnecting": "Reconnecting…",
+  "loadingTitle": "Reconnecting and fetching the latest state…",
+  "loadingNote": "No buttons are shown until the state is known.",
+  "upgradeTitle": "Update the app",
+  "upgradeBody": "This version of the app is too old for your Gateway. Update it to continue.",
+  "signedOutTitle": "Sign in again",
+  "signedOutBody": "Your sign-in has ended. Reload the page to sign in again."
 }
