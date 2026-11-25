@@ -275,9 +275,25 @@ that a session can only act as itself.
      Done when: the acceptance cases of usage.md (concurrent requests near a cap,
      subscriptions without API-equivalent accounting, price change) pass as
      Gateway tests.
-   - 8b. _Causal roots and the loop guard_ (after 6b and 8a): `causal_roots` with
-     depth/fan-out and root budgets carried by every wake, DM and work start; the
-     loop guard of [pots.md](pots.md#loop-guard) with its four tests.
+   - 8b. _Causal roots and the loop guard_ (after 6b and 8a; code in
+     `pots/roots.rs` and `pots/guard.rs`). `causal_roots` (origin, depth and fan-out
+     limits from `pot_settings`, money and token budget, spent and reserved, state
+     `active`/`suspended`/`stopped`, last progress). A root starts at a user message,
+     an observed event, a review or a reminder; every wake, pot message and work
+     start it causes carries it with its depth (`pot_wakes` gains `depth`;
+     `pot_works` gains `causal_root`). A wake past the depth limit, or past the
+     fan-out of the wake that caused it, is not queued and the sender is told.
+     Admission also reserves against the root's budget, so parallel children cannot
+     overspend it. Loop guard rules 2–5 of [pots.md](pots.md#loop-guard) (rule 1,
+     handovers, comes with 10a): progress is recorded by the backend (a work run
+     finishes, a pot's message lands in a direct or group thread, a decision is
+     answered, an observation is noted); repeats of the same structured purpose and
+     no-progress streaks per root and per pot pair suspend the root; rate ceilings
+     delay delivery first. A suspended root delivers nothing, posts one
+     `loop_guard` card (`GET /api/causal-roots/{id}`, `POST …/{id}/resume`,
+     `…/stop`), and is logged `loop_guard`; a pot cannot lift it.
+     Done when: the four loop-guard tests of pots.md and the depth/fan-out cases
+     pass.
 9. **Observation and de-duplication** (L0–L3 of [pots.md](pots.md#observation-and-de-duplication);
    code in `pots/observe.rs`, tools in `features/pot/observe.rs`).
    - 9a. _Events and observations._ `obs_events` (L0: owner, source kind and ref,
@@ -306,14 +322,26 @@ evidence?)` (L1 `obs_observations`, one per pot and event, only for events that
      Done when: the pots.md acceptance case (two pots observing one event: two L1
      rows, one L2 notification, one L3 dispatch) passes, plus scope, exclusion and
      lead tests.
-10. **Handover, archive and delete**, then **remove the old assistant**: chat mode,
-    `assistant_node` claim semantics (the chat node stays as the pot host),
-    `SOUL.md`/`CHAT.md` routes, assistant-only chat projects, the assistant tools that
-    pot tools replace, and the legacy session observational memory in
-    `crates/pirc-agent/src/features/memory/` (moved here from M2.6; keep what
-    workspace memory and pot memory use; delete
-    `docs/architecture/legacy-observational-memory.md`).
-    Deletes: an estimated 10–15k lines including tests.
+10. **Handover, delete and the old assistant.**
+    - 10a. _Handover, archive and delete_ (pots.md, Handover…): `pot_handovers` and
+      items with fit, `handover_propose`, confirm, the retire preview, and delete
+      (handover, then revocation, then the session, then removal); loop-guard rule 1.
+    - 10b. _Remove the assistant chat mode and delegations_ (parallel to 8b and 9;
+      no `crates/pirc-conformance` edits): the `chat` mode (`chat.md`,
+      `default_chat`, the `chats` workspace and top-level chats), `SOUL.md`/`CHAT.md`
+      and `/api/assistant/prompts` (Gateway and Node, `assistant_prompts.rs`),
+      assistant-only chat projects and project links, delegations (`delegations.rs`,
+      the `delegate`/`delegation_status` tools, the `assistant-delegation*` delivery
+      types, the mode's `delegate`/`delegate_target`), and the clients' routes for
+      them. The chat node stays as the pot host: the `assistant_node` claim remains
+      (renamed later if useful). User memory and the legacy session memory stay for
+      10c. Conformance tests of removed features are deleted after the rewrite
+      (step 11) lands.
+    - 10c. _Pot memory and the legacy memory_: pots get their own memory store keyed
+      by pot (P8; recall never crosses pots), replacing the user-memory tools in the
+      pot mode; then the legacy session observational memory in
+      `crates/pirc-agent/src/features/memory/` is removed (keep what workspace
+      memory uses; delete `docs/architecture/legacy-observational-memory.md`).
 11. **Conformance rewrite** (parallel to every other step; touches only
     `crates/pirc-conformance` and `scripts/conformance-accounting.ts`). A harness
     helper starts a conversation through first-send (prepare, accept, materialize,
