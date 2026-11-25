@@ -46,6 +46,12 @@ abstract final class Samples {
               size: AvatarSize.md,
               status: AvatarStatus.working,
             ),
+            avatar(
+              'Tester',
+              2,
+              size: AvatarSize.sm,
+              status: AvatarStatus.working,
+            ),
             avatar('Travel', 4, status: AvatarStatus.unavailable),
             avatar('Butler', 1),
           ],
@@ -93,6 +99,7 @@ abstract final class Samples {
               time: '10:34',
               preview: 'Tester: OK, I opened a work session.',
               badge: const ChatBadge.unread('3'),
+              selected: true,
               onTap: () {},
             ),
             ChatRow(
@@ -101,6 +108,7 @@ abstract final class Samples {
               role: 'Testing',
               time: '10:42',
               preview: 'I passed the nightly problem to you',
+              previousSelected: true,
               onTap: () {},
             ),
             ChatRow(

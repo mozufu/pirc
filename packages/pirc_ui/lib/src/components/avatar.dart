@@ -13,8 +13,9 @@ enum AvatarSize {
   final double diameter;
   final double fontSize;
 
-  /// The two small sizes use the smaller "working" pill.
-  bool get small => this == sm || this == md;
+  /// Only `.e-av.md` uses the smaller "working" pill; `sm` keeps the
+  /// 16 px one.
+  bool get small => this == md;
 }
 
 /// What the dot on an avatar says (E spec § 3). Available shows nothing.

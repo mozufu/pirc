@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
-import '../tokens.g.dart';
 import 'bubble.dart';
 
 /// One member in a [MentionPopover].
@@ -48,7 +47,6 @@ class MentionPopover<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = PircColorTokens.of(context);
-    final dark = Theme.of(context).brightness == Brightness.dark;
     return Semantics(
       container: true,
       label: semanticLabel,
@@ -57,7 +55,7 @@ class MentionPopover<T> extends StatelessWidget {
         decoration: BoxDecoration(
           color: colors['surface.layer'],
           borderRadius: BorderRadius.circular(18),
-          boxShadow: dark ? PircElevation.floatDark : PircElevation.floatLight,
+          boxShadow: Theme.of(context).extension<PircElevationTokens>()!.pop,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,

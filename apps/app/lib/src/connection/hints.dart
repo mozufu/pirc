@@ -12,7 +12,12 @@ const appHintKinds = {
   'schedules',
   'sessions',
   'pots',
+  'threads',
   'approvals',
+  'activity',
+  'budgetRequests',
+  'notifications',
+  'causalRoots',
 };
 
 /// A counter per hint type (`sessions_changed`, …). A list provider watches

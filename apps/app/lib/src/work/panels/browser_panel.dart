@@ -76,6 +76,9 @@ class _BrowserPanelState extends ConsumerState<BrowserPanel> {
         },
       );
     } on PircException catch (error) {
+      if (mounted && ref.read(connectionProvider.notifier).report(error)) {
+        return;
+      }
       if (mounted) setState(() => _error = error.message);
     } finally {
       if (mounted) setState(() => _connecting = false);

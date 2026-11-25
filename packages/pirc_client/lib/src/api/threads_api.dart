@@ -21,8 +21,8 @@ class ThreadLastMessage {
     authorId: text(field(json, 'authorId')),
     authorName: str(field(json, 'authorName')),
     firstLine:
-        str(field(json, 'firstLine')) ??
         str(field(json, 'body'))?.split('\n').first ??
+        str(field(json, 'firstLine')) ??
         '',
     createdAt: number(field(json, 'createdAt')) ?? 0,
   );

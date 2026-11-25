@@ -90,6 +90,12 @@ void main() {
               status: AvatarStatus.working,
             ),
             Avatar(
+              key: Key('w-sm'),
+              name: 'T',
+              size: AvatarSize.sm,
+              status: AvatarStatus.working,
+            ),
+            Avatar(
               key: Key('off'),
               name: 'T',
               status: AvatarStatus.unavailable,
@@ -106,6 +112,20 @@ void main() {
       );
       expect(pill(const Key('w')).height, 16);
       expect(pill(const Key('w-md')).height, 14);
+      expect(pill(const Key('w-sm')).height, 16);
+      expect(
+        tester
+            .getRect(
+              find
+                  .descendant(
+                    of: find.byKey(const Key('w-sm')),
+                    matching: find.byType(Container),
+                  )
+                  .at(1),
+            )
+            .right,
+        tester.getRect(find.byKey(const Key('w-sm'))).right + 8,
+      );
       expect(pill(const Key('off')), const Size(12, 12));
       expect(
         find.descendant(
@@ -229,6 +249,26 @@ void main() {
         light['text.warning'],
       );
     });
+
+    testWidgets('a selected row hides its own and the next hairline', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const Column(
+          children: [
+            ChatRow(key: Key('a'), title: 'A', selected: true),
+            ChatRow(key: Key('b'), title: 'B', previousSelected: true),
+            ChatRow(key: Key('c'), title: 'C'),
+          ],
+        ),
+      );
+      int lines() => tester
+          .widgetList<CustomPaint>(find.byType(CustomPaint))
+          .where((paint) => '${paint.painter?.runtimeType}' == '_TopLine')
+          .length;
+      expect(lines(), 1);
+    });
   });
 
   group('Bubble', () {
@@ -307,6 +347,18 @@ void main() {
     );
     await tester.tap(find.text('Researcher'));
     expect(picked, 'r');
+    final box = tester.widget<Container>(
+      find
+          .descendant(
+            of: find.byType(MentionPopover<String>),
+            matching: find.byType(Container),
+          )
+          .first,
+    );
+    expect(
+      (box.decoration! as BoxDecoration).boxShadow,
+      PircElevation.popLight,
+    );
   });
 
   testWidgets('ProfileHeader shows the actions; a disabled one does nothing', (
@@ -381,6 +433,9 @@ void main() {
           reason: text,
         );
       }
+      for (final glyph in ['✓', '!', '■', '·']) {
+        expect(find.text(glyph), findsOneWidget, reason: glyph);
+      }
     });
 
     testWidgets('the check toggles and the chevron opens the details', (
@@ -437,6 +492,14 @@ void main() {
       expect(find.byType(Avatar), findsNothing);
       await tester.tap(find.text('No one'));
       expect(taps, 1);
+    });
+
+    testWidgets('the meta row keeps its top padding inside 36', (tester) async {
+      await _pump(
+        tester,
+        const HandoverItem(kind: 'Duty', title: 'Watch', subtitle: 'Daily'),
+      );
+      expect(tester.getSize(find.byKey(const Key('handover-to'))).height, 36);
     });
   });
 

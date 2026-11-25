@@ -205,12 +205,25 @@ void main() {
     final container = await pumpApp(tester, gateway: gateway);
     final hints = gateway.socket('/api/hints')!;
     expect(hints.target.queryParameters.keys.toSet(), appHintKinds);
+    expect(
+      appHintKinds,
+      containsAll([
+        'threads',
+        'activity',
+        'budgetRequests',
+        'notifications',
+        'causalRoots',
+      ]),
+    );
     final before = container.read(hintRevisionsProvider);
     expect(before['sessions_changed'], 1, reason: 'the open reads everything');
     hints.push({'type': 'sessions_changed'});
     await tester.pump();
     expect(container.read(hintRevisionsProvider)['sessions_changed'], 2);
     expect(container.read(hintRevisionsProvider)['pots_changed'], 1);
+    hints.push({'type': 'threads_changed'});
+    await tester.pump();
+    expect(container.read(hintRevisionsProvider)['threads_changed'], 2);
     hints.serverClose(1006);
     await tester.pump();
     expect(find.text('Reconnecting…'), findsOneWidget);

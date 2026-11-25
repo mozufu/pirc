@@ -35,6 +35,7 @@ class ChatRow extends StatelessWidget {
     this.badge,
     this.divider = true,
     this.selected = false,
+    this.previousSelected = false,
     this.onTap,
     this.onLongPress,
     this.minHeight,
@@ -52,6 +53,10 @@ class ChatRow extends StatelessWidget {
   final ChatBadge? badge;
   final bool divider;
   final bool selected;
+
+  /// The row above is selected, whose fill also hides this row's hairline
+  /// (`.e-row.sel + .e-row::before`).
+  final bool previousSelected;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
@@ -152,7 +157,7 @@ class ChatRow extends StatelessWidget {
         onSecondaryTap: onLongPress,
         hoverColor: colors['fill.hover'],
         child: CustomPaint(
-          painter: divider && !selected
+          painter: divider && !selected && !previousSelected
               ? _TopLine(colors['line.hairline'], hasAvatar ? 76 : 16)
               : null,
           child: ConstrainedBox(

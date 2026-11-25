@@ -12,10 +12,10 @@ enum HandoverFit {
   /// It can, with less (`text.warning`, !).
   narrowed,
 
-  /// It cannot; the item stops (`status.danger`, ✕).
+  /// It cannot; the item stops (`status.danger`, ■).
   stop,
 
-  /// Nothing to check yet, or not handed over (`text.muted`, –).
+  /// Nothing to check yet, or not handed over (`text.muted`, ·).
   muted,
 }
 
@@ -234,10 +234,11 @@ class HandoverItem extends StatelessWidget {
               ),
             ),
             if (subtitle != null || target != null || checked != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: 36),
+              ConstrainedBox(
+                key: const Key('handover-to'),
+                constraints: const BoxConstraints(minHeight: 36),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8),
                   child: Row(
                     spacing: 8,
                     children: [
@@ -321,27 +322,19 @@ class _FitLine extends StatelessWidget {
       HandoverFit.muted => colors['text.muted'],
     };
     final style = TextStyle(fontSize: 13, height: 19 / 13, color: color);
+    final glyph = switch (fit) {
+      HandoverFit.ok => '✓',
+      HandoverFit.narrowed => '!',
+      HandoverFit.stop => '■',
+      HandoverFit.muted => '·',
+    };
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: 6,
         children: [
-          SizedBox(
-            width: 14,
-            child: switch (fit) {
-              HandoverFit.ok => Padding(
-                padding: const EdgeInsets.only(top: 3),
-                child: Icon(LucideIcons.check, size: 14, color: color),
-              ),
-              HandoverFit.narrowed => Text('!', style: style),
-              HandoverFit.stop => Padding(
-                padding: const EdgeInsets.only(top: 3),
-                child: Icon(LucideIcons.x, size: 14, color: color),
-              ),
-              HandoverFit.muted => Text('–', style: style),
-            },
-          ),
+          SizedBox(width: 14, child: Text(glyph, style: style)),
           Expanded(child: Text(text, style: style)),
         ],
       ),

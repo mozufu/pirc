@@ -190,6 +190,9 @@ class _TerminalPageState extends ConsumerState<TerminalPage> {
       _socket = socket;
       _frames = socket.messages.listen(_onFrame);
     } on PircException catch (error) {
+      if (mounted && ref.read(connectionProvider.notifier).report(error)) {
+        return;
+      }
       if (mounted) setState(() => _error = error.message);
     }
   }

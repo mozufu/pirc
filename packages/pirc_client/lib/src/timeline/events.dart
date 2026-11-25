@@ -73,7 +73,7 @@ class SessionDeleted extends TimelineEvent {
   const SessionDeleted();
 }
 
-/// Side-panel data changed (memory, background, team, git); refetch lazily.
+/// Side-panel data changed (context, background, team); refetch lazily.
 class PanelChanged extends TimelineEvent {
   const PanelChanged(this.sections);
   final List<String> sections;

@@ -105,6 +105,7 @@ Message _assistantMessage(Map<String, Object?> raw, String id, Now now) {
     role: 'assistant',
     content: contentText(raw['content']),
     createdAt: at(raw['timestamp'], now),
+    images: _images(raw['content']),
     completedAt: number(raw['completedAt']),
     thinking: _nonEmpty(reasoning),
     thinkingRedacted: redacted,

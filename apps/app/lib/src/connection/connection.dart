@@ -208,7 +208,21 @@ class ConnectionController extends Notifier<ConnectionStatus> {
 
   /// A screen hit [error]; fatal ones change the phase. Returns whether the
   /// error was handled here.
-  bool report(Object error) => error is PircException && _handleFatal(error);
+  bool report(Object error) {
+    // A panel's socket upgrade is refused with the HTTP status, unlike the
+    // session and hint streams, which map it themselves.
+    final fatal = switch (error) {
+      EventSocketRefused(status: 401) => const PairingRequired(
+        'Event socket refused (401)',
+      ),
+      EventSocketRefused(status: 426) => const ClientUpgradeRequired(
+        'Event socket refused (426)',
+      ),
+      PircException exception => exception,
+      _ => null,
+    };
+    return fatal != null && _handleFatal(fatal);
+  }
 
   bool _handleFatal(PircException error) {
     switch (error) {

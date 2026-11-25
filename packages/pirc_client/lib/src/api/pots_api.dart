@@ -279,15 +279,26 @@ class PotPermissions {
   /// Tokens per day; null turns the limit off (step 0).
   final int? budgetTokensDay;
 
-  Map<String, Object?> toJson() => {
-    'reach': reach,
-    'observe': [for (final scope in observe) scope.toJson()],
-    'dm': dm.toJson(),
-    'workLocations': [for (final location in workLocations) location.toJson()],
-    'maxConcurrentWorks': maxConcurrentWorks,
-    'budgetMoneyMonthMicros': budgetMoneyMonthMicros,
-    'budgetTokensDay': budgetTokensDay,
-  };
+  /// Throws [ArgumentError] when both limits are off: the Gateway refuses
+  /// that.
+  Map<String, Object?> toJson() {
+    if (budgetMoneyMonthMicros == null && budgetTokensDay == null) {
+      throw ArgumentError(
+        'Turn off at most one limit: tokens or money must apply',
+      );
+    }
+    return {
+      'reach': reach,
+      'observe': [for (final scope in observe) scope.toJson()],
+      'dm': dm.toJson(),
+      'workLocations': [
+        for (final location in workLocations) location.toJson(),
+      ],
+      'maxConcurrentWorks': maxConcurrentWorks,
+      'budgetMoneyMonthMicros': budgetMoneyMonthMicros,
+      'budgetTokensDay': budgetTokensDay,
+    };
+  }
 }
 
 /// A model by provider and model ID.

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/connection/connection.dart';
+import 'package:pirc_app/src/connection/connection_screens.dart';
 import 'package:pirc_app/src/connection/hints.dart';
 import 'package:pirc_app/src/work/panels/panel_container.dart';
 import 'package:pirc_app/src/work/panels/terminal_panel.dart';
@@ -390,6 +391,42 @@ void main() {
         },
       );
       expect(find.text('Host is offline'), findsOneWidget);
+    });
+
+    appTest('browser: a 401 on the stream opens pairing', (tester) async {
+      await _open(
+        tester,
+        PanelSection.browser,
+        socketErrors: {
+          '$_base/browser/stream': const EventSocketRefused(
+            401,
+            'Event socket refused (401)',
+          ),
+        },
+      );
+      expect(find.byType(PairingScreen), findsOneWidget);
+    });
+
+    appTest('terminal: a 426 on the stream opens the update screen', (
+      tester,
+    ) async {
+      final terminal = (_full['terminals']! as Map)['terminals'][0];
+      await _open(
+        tester,
+        PanelSection.terminal,
+        route: (r) => r.method == 'POST' && r.path == '$_base/terminals'
+            ? reply(200, {'terminal': terminal})
+            : null,
+        socketErrors: {
+          '$_base/terminals/ab12cd34/stream': const EventSocketRefused(
+            426,
+            'Event socket refused (426)',
+          ),
+        },
+      );
+      await tester.tap(find.text('New terminal'));
+      await tester.pumpAndSettle();
+      expect(find.byType(UpgradeScreen), findsOneWidget);
     });
 
     appTest('browser: open, waiting for the first frame', (tester) async {

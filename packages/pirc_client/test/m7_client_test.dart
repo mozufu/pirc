@@ -140,6 +140,24 @@ void main() {
       expect(pot.needsYou, 0);
     });
 
+    test('a pot input needs at least one budget limit', () {
+      const input = PotInput(
+        profile: PotProfile(name: 'Ada'),
+        work: PotWorkSection(),
+        permissions: PotPermissions(
+          budgetMoneyMonthMicros: null,
+          budgetTokensDay: null,
+        ),
+        models: PotModels(
+          main: PotModelChoice(provider: 'p', model: 'm'),
+        ),
+      );
+      expect(input.toJson, throwsArgumentError);
+      // One limit off is fine.
+      const oneOff = PotPermissions(budgetMoneyMonthMicros: null);
+      expect(oneOff.toJson()['budgetTokensDay'], 2000000);
+    });
+
     test('list reads every pot in full', () async {
       final (api, _) = _answering({
         'pots': [_potJson()],
@@ -409,6 +427,30 @@ void main() {
       expect(transport.requests.last.query, {'potId': 'pot1'});
       expect(works.single.causalRoot, 'root1');
     });
+
+    test('one work is read by ID', () async {
+      final (api, transport) = _answering({
+        'work': {
+          'id': 'w1',
+          'potId': 'pot1',
+          'sessionId': 's1',
+          'workspaceId': 'n:w',
+          'title': 'Fix',
+          'provider': 'anthropic',
+          'model': 'opus',
+          'thinking': 'high',
+          'state': 'taken_over',
+          'createdAt': 9,
+        },
+      });
+      final work = await PotsApi(api).work('w1');
+      expect(transport.requests.single.method, 'GET');
+      expect(transport.requests.single.path, '/api/pot-works/w1');
+      expect(work.id, 'w1');
+      expect(work.title, 'Fix');
+      expect(work.model, 'opus');
+      expect(work.open, isFalse);
+    });
   });
 
   group('threads', () {
@@ -430,7 +472,7 @@ void main() {
             'lastMessage': {
               'authorKind': 'pot',
               'authorId': 'pot2',
-              'firstLine': 'Done',
+              'body': 'Done\nSecond line',
               'createdAt': 899,
             },
           },
@@ -493,6 +535,30 @@ void main() {
         'hostPotId': 'pot1',
         'memberPotIds': ['pot1', 'pot2'],
         'avatarColor': 2,
+      });
+    });
+
+    test('a group is created with a picture', () async {
+      final (api, transport) = _answering({
+        'thread': {
+          'id': 't4',
+          'kind': 'group',
+          'name': 'Design',
+          'avatarImage': 'img7',
+        },
+      }, status: 201);
+      final thread = await ThreadsApi(api).createGroup(
+        name: 'Design',
+        hostPotId: 'pot1',
+        memberPotIds: ['pot1', 'pot2'],
+        avatarImage: 'img7',
+      );
+      expect(thread.avatarImage, 'img7');
+      expect(transport.requests.single.json, {
+        'name': 'Design',
+        'hostPotId': 'pot1',
+        'memberPotIds': ['pot1', 'pot2'],
+        'avatarImage': 'img7',
       });
     });
 
@@ -924,6 +990,7 @@ void main() {
             'title': 'Fix CI',
             'sessionId': 's1',
             'body': 'Run the tests',
+            'delivery': 'delivered',
             'createdAt': 7,
           },
         ],
@@ -937,6 +1004,7 @@ void main() {
       expect(view.instructions.single.workTitle, 'Fix CI');
       expect(view.instructions.single.sessionId, 's1');
       expect(view.instructions.single.body, 'Run the tests');
+      expect(view.instructions.single.delivery, 'delivered');
       expect(view.nextBefore, 'm3');
 
       final (api2, _) = _answering({'potId': 'pot1'});
@@ -990,27 +1058,43 @@ void main() {
   group('me, images and usage', () {
     test('me is read and patched', () async {
       final (api, transport) = _answering({
-        'me': {'displayName': 'Kim', 'avatarColor': 5, 'avatarImage': 'img1'},
+        'profile': {
+          'displayName': 'Kim',
+          'avatarColor': 5,
+          'avatarImage': 'img1',
+          'revision': 7,
+        },
       });
       final me = MeApi(api);
       final profile = await me.read();
-      await me.update(displayName: 'Kim L', removeAvatarImage: true);
-      await me.update(avatarColor: 2, avatarImage: 'img2');
+      await me.update(
+        revision: 7,
+        displayName: 'Kim L',
+        removeAvatarImage: true,
+      );
+      await me.update(revision: 8, avatarColor: 2, avatarImage: 'img2');
       expect(transport.requests.first.path, '/api/me');
       expect(profile.displayName, 'Kim');
       expect(profile.avatarImage, 'img1');
+      expect(profile.revision, 7);
       expect(transport.requests[1].method, 'PATCH');
       expect(transport.requests[1].json, {
+        'revision': 7,
         'displayName': 'Kim L',
         'avatarImage': null,
       });
       expect(transport.requests[2].json, {
+        'revision': 8,
         'avatarColor': 2,
         'avatarImage': 'img2',
       });
 
-      final (api2, _) = _answering({'displayName': 'Flat', 'avatarColor': 3});
-      expect((await MeApi(api2).read()).displayName, 'Flat');
+      final (api2, _) = _answering({
+        'profile': {'displayName': 'Flat', 'avatarColor': 3, 'revision': 2},
+      });
+      final flat = await MeApi(api2).read();
+      expect(flat.displayName, 'Flat');
+      expect(flat.revision, 2);
     });
 
     test('an image is uploaded as raw bytes and read back', () async {

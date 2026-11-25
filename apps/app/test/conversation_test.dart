@@ -156,6 +156,32 @@ void main() {
     expect(find.byType(InteractiveViewer), findsOneWidget);
   });
 
+  appTest('an image in an assistant message is shown', (tester) async {
+    const png =
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    final session = FixtureSession('joined-mid-stream.json');
+    (session.snapshot['history']! as List).add({
+      'role': 'assistant',
+      'content': [
+        {'type': 'text', 'text': 'Here is the screenshot.'},
+        {'type': 'image', 'mimeType': 'image/png', 'data': png},
+      ],
+      'timestamp': 1500,
+    });
+    await _open(tester, session, height: 3000);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Here is the screenshot.'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(InlineImages),
+        matching: find.byWidgetPredicate(
+          (w) => w is Image && w.image is MemoryImage,
+        ),
+      ),
+      findsOneWidget,
+    );
+  });
+
   appTest('a reset loads a new snapshot and resumes from its watermark', (
     tester,
   ) async {

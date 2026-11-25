@@ -138,7 +138,7 @@ class SentInstruction {
     this.workTitle = '',
     this.sessionId = '',
     this.body = '',
-    this.state,
+    this.delivery,
     this.createdAt = 0,
   });
 
@@ -148,7 +148,7 @@ class SentInstruction {
     workTitle: str(field(json, 'workTitle')) ?? str(field(json, 'title')) ?? '',
     sessionId: text(field(json, 'sessionId')) ?? '',
     body: str(field(json, 'body')) ?? str(field(json, 'text')) ?? '',
-    state: str(field(json, 'state')),
+    delivery: str(field(json, 'delivery')),
     createdAt: number(field(json, 'createdAt')) ?? 0,
   );
 
@@ -159,7 +159,10 @@ class SentInstruction {
   /// The work session, to open its conversation.
   final String sessionId;
   final String body;
-  final String? state;
+
+  /// `delivered`, `refused` or `uncertain` (the work's at-most-once
+  /// delivery).
+  final String? delivery;
   final int createdAt;
 }
 
