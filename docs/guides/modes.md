@@ -138,20 +138,20 @@ models) belong in a directory listed in the node's sandbox `allowedPaths`.
 
 ### Fields
 
-| Field                                   | Meaning / validation                                                                                                                                   |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `label`                                 | Required nonblank display name, at most 100 characters.                                                                                                |
-| `description`                           | Optional description, at most 500 characters.                                                                                                          |
-| `ui`                                    | Required presentation hints: nonblank `noun`, optional nonblank `icon`; each at most 100 characters. `group` was removed: the tab follows `assistant`. |
-| `workdir`                               | Required `per-session` or `workspace`.                                                                                                                 |
-| `prompt`                                | Required ordered list of 1–8 unique named sections, listed below. A nonempty Markdown body requires `body` in this list.                               |
-| `features_off`, `features_on`           | Optional lists of known feature configuration keys. A key cannot appear twice or in both lists.                                                        |
-| `tools`                                 | Optional operation allowlist, at most 64 known unique names. Absent or `null` means unrestricted; `[]` means no operations.                            |
-| `assistant`                             | Required `user` (approved USER entries) or `full` (full assistant memory state).                                                                       |
-| `schedule_scope`                        | Required `own` or `any`.                                                                                                                               |
-| `project_config`, `workspace_memory`    | Repository configuration / workspace-memory ledger. Default false.                                                                                     |
-| `repository`                            | Repository identity. Default false.                                                                                                                    |
-| `recap`, `delete_sessions`              | Session recap / individual session deletion. Default false.                                                                                            |
+| Field                                | Meaning / validation                                                                                                                                   |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `label`                              | Required nonblank display name, at most 100 characters.                                                                                                |
+| `description`                        | Optional description, at most 500 characters.                                                                                                          |
+| `ui`                                 | Required presentation hints: nonblank `noun`, optional nonblank `icon`; each at most 100 characters. `group` was removed: the tab follows `assistant`. |
+| `workdir`                            | Required `per-session` or `workspace`.                                                                                                                 |
+| `prompt`                             | Required ordered list of 1–8 unique named sections, listed below. A nonempty Markdown body requires `body` in this list.                               |
+| `features_off`, `features_on`        | Optional lists of known feature configuration keys. A key cannot appear twice or in both lists.                                                        |
+| `tools`                              | Optional operation allowlist, at most 64 known unique names. Absent or `null` means unrestricted; `[]` means no operations.                            |
+| `assistant`                          | Required `user` (approved USER entries) or `full` (full assistant memory state).                                                                       |
+| `schedule_scope`                     | Required `own` or `any`.                                                                                                                               |
+| `project_config`, `workspace_memory` | Repository configuration / workspace-memory ledger. Default false.                                                                                     |
+| `repository`                         | Repository identity. Default false.                                                                                                                    |
+| `recap`, `delete_sessions`           | Session recap / individual session deletion. Default false.                                                                                            |
 
 String bounds count UTF-16 code units, matching role instruction limits. The
 Markdown body is limited to 8,000 units. Unknown schema fields, unknown enum

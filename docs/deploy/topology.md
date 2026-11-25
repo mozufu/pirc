@@ -7,7 +7,7 @@ Two native executables implement three roles; chat uses an explicit subcommand:
 | Executable       | Runs on                              | Listens on                                                  | Does                                                                                                                                |
 | ---------------- | ------------------------------------ | ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | `pirc-gateway`   | one always-on host                   | `PIRC_HOST:PIRC_PORT` (default `127.0.0.1:8787`), HTTP + WS | Authenticates browsers and phones, indexes sessions, routes requests, runs **all model requests**, keeps memory, schedules and push |
-| `pirc-node chat` | at most one always-on host           | nothing (connects out over one WebSocket)                   | Hosts pots, runs agents and their tools; owns pot transcripts                                                                          |
+| `pirc-node chat` | at most one always-on host           | nothing (connects out over one WebSocket)                   | Hosts pots, runs agents and their tools; owns pot transcripts                                                                       |
 | `pirc-node`      | every machine with coding workspaces | nothing (connects out over one WebSocket)                   | Runs coding agents, side-panel shells, file/Git inspection, uploads and the agents' browser; owns session transcripts               |
 
 Chat and coding roles share the node executable and agent implementation. Their internal worker commands are not independently deployed services:
@@ -65,7 +65,7 @@ Run at most one `pirc-node chat` process (NixOS: `services.pirc.chat = true` sel
 | Data                                                                       | Process   | Location                                                                    |
 | -------------------------------------------------------------------------- | --------- | --------------------------------------------------------------------------- |
 | Session index, control leases, command outcomes, device tokens             | gateway   | `$PIRC_STATE_DIR/gateway.sqlite`                                            |
-| Assistant memory, schedules, push subscriptions, workspace caps | gateway   | same database                                                               |
+| Assistant memory, schedules, push subscriptions, workspace caps            | gateway   | same database                                                               |
 | Web-managed model backends and subscription logins                         | gateway   | `$PIRC_STATE_DIR/backends/settings.json` (0600)                             |
 | VAPID key pair for push (unless given by environment)                      | gateway   | `$PIRC_STATE_DIR/vapid.json`                                                |
 | Session transcripts (the conversation source of truth), runs, interactions | node      | `$PIRC_STATE_DIR/sessions/<id>/`, `gateway.sqlite`                          |

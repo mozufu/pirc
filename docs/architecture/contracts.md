@@ -623,12 +623,12 @@ service/API sketch, § Memory integration acceptance.
 
 ## 13. Archive, leave and delete
 
-| Action                          | Execution                                                                       | Data                                                                                                |
-| ------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Archive conversation or project | Organization only; no stop, no membership change                                | Tasks and schedules continue within grants; needs-you indicators stay visible outside the archive   |
-| Unarchive                       | Same IDs return                                                                 | No replay, restart or re-creation                                                                   |
-| Leave or move project           | Dialogue kept; grant transition of section 9                                    | Files and history kept; project rules, notes and board access removed; independent grants disclosed |
-| Delete conversation             | New work fenced; work scoped to it stopped and reconciled                       | Owned content removed; user folders and independently owned records kept                            |
+| Action                          | Execution                                                 | Data                                                                                                |
+| ------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Archive conversation or project | Organization only; no stop, no membership change          | Tasks and schedules continue within grants; needs-you indicators stay visible outside the archive   |
+| Unarchive                       | Same IDs return                                           | No replay, restart or re-creation                                                                   |
+| Leave or move project           | Dialogue kept; grant transition of section 9              | Files and history kept; project rules, notes and board access removed; independent grants disclosed |
+| Delete conversation             | New work fenced; work scoped to it stopped and reconciled | Owned content removed; user folders and independently owned records kept                            |
 
 - "Owned" needs recorded provenance, never a matching path, file name, repository key,
   author label or current membership. A mounted folder is never project-owned data. A

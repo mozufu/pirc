@@ -7,13 +7,13 @@ and user workflows are in [Gateway and node](../development/gateway-and-node.md)
 
 ## Memory scopes and authority
 
-| Layer                            | Storage                      | Readers and writers                                                       |
-| -------------------------------- | ---------------------------- | ------------------------------------------------------------------------- |
-| Session observations/reflections | Node session ledger          | The session's memory workers; recall reads retained branch sources        |
-| Workspace handoff notes          | Node workspace-memory ledger | Main coding sessions in that repository; not teammates/subagents           |
+| Layer                            | Storage                      | Readers and writers                                                                |
+| -------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------- |
+| Session observations/reflections | Node session ledger          | The session's memory workers; recall reads retained branch sources                 |
+| Workspace handoff notes          | Node workspace-memory ledger | Main coding sessions in that repository; not teammates/subagents                   |
 | USER                             | Gateway SQLite, per user     | Full-assistant modes propose changes; the user approves. Coding sessions read only |
 | MEMORY                           | Gateway SQLite, per user     | Full-assistant modes write notes directly; the user can review, restore and forget |
-| Mirrored workspace notes         | Gateway SQLite               | Searches the user's repository notes; hits retain their workspace scope    |
+| Mirrored workspace notes         | Gateway SQLite               | Searches the user's repository notes; hits retain their workspace scope            |
 
 `pirc-node chat` hosts the `pots` workspace and each pot's own session, not
 directory workspaces. A pot session has its own node-managed working directory
