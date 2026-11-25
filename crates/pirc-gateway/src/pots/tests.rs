@@ -997,7 +997,7 @@ mod runtime {
                 rusqlite::params![pot, now_ms() - 1],
             )
             .unwrap();
-        // A review is due as well, but a paused pot gets neither yet.
+        // A review is due as well: both wait as wakes while the pot is paused.
         app.db
             .lock()
             .execute(
@@ -1006,10 +1006,12 @@ mod runtime {
                 rusqlite::params![pot, now_ms() - 3_600_000, now_ms() - 1],
             )
             .unwrap();
-        assert_eq!(
-            super::super::autonomy::sweep(&app.db.lock()).unwrap(),
-            vec![("alice".to_owned(), pot.clone())],
-            "the reminder waits as a wake; the review waits for the resume"
+        let woken = super::super::autonomy::sweep(&app.db.lock()).unwrap();
+        assert_eq!(woken.len(), 2);
+        assert!(
+            woken
+                .iter()
+                .all(|(owner, id)| owner == "alice" && *id == pot)
         );
         let reviews: i64 = app
             .db
@@ -1020,7 +1022,7 @@ mod runtime {
                 |r| r.get(0),
             )
             .unwrap();
-        assert_eq!(reviews, 0);
+        assert_eq!(reviews, 1);
         runtime::check(&app, "alice", &pot).await.unwrap();
         assert!(fake.requests.lock().unwrap().is_empty());
 
@@ -1034,28 +1036,13 @@ mod runtime {
         .unwrap();
         runtime::check(&app, "alice", &pot).await.unwrap();
         let delivered = fake.delivered.lock().unwrap().clone().unwrap();
-        assert_eq!(delivered["details"]["source"], "reminder");
-        assert_eq!(delivered["content"], note);
+        assert_eq!(delivered["details"]["source"], "review");
 
-        // The reminder engagement moved the review timer; make a review due
-        // again and it arrives after the reminder settled.
         *fake.stage.lock().unwrap() = Stage::Answered;
         runtime::check(&app, "alice", &pot).await.unwrap();
-        app.db
-            .lock()
-            .execute(
-                "UPDATE pot_runtime SET last_engaged_at=?2,next_review_at=?3 WHERE pot_id=?1",
-                rusqlite::params![pot, now_ms() - 7_200_000, now_ms() - 3_600_000],
-            )
-            .unwrap();
-        assert!(
-            !super::super::autonomy::sweep(&app.db.lock())
-                .unwrap()
-                .is_empty()
-        );
-        runtime::check(&app, "alice", &pot).await.unwrap();
-        let review = fake.delivered.lock().unwrap().clone().unwrap();
-        assert_eq!(review["details"]["source"], "review");
+        let delivered = fake.delivered.lock().unwrap().clone().unwrap();
+        assert_eq!(delivered["details"]["source"], "reminder");
+        assert_eq!(delivered["content"], note);
     }
 }
 

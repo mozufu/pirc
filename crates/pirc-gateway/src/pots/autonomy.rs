@@ -377,12 +377,11 @@ pub fn record_fallback(
 }
 
 /// The due reviews and reminders of the sweep: create their wakes and return
-/// the pots that now have one. A reminder is created even while its pot is
-/// paused, so it waits like any other wake; reviews wait for the resume too.
+/// the pots that now have one. Both are created while their pot is paused, so
+/// they wait like any other wake and are delivered after the resume.
 pub fn sweep(conn: &Connection) -> ApiResult<Vec<(String, String)>> {
-    let mut woken = Vec::new();
+    let mut woken = due_reviews(conn)?;
     woken.extend(due_reminders(conn)?);
-    woken.extend(due_reviews(conn)?);
     Ok(woken)
 }
 
@@ -439,7 +438,7 @@ fn due_reviews(conn: &Connection) -> ApiResult<Vec<(String, String)>> {
             "SELECT p.owner_user,p.id,p.created_at,r.autonomy_interval_s,r.next_review_at,
               r.last_engaged_at
              FROM pot_runtime r JOIN pots p ON p.id=r.pot_id
-             WHERE p.state='active' AND r.autonomy_interval_s IS NOT NULL
+             WHERE p.state IN ('active','paused') AND r.autonomy_interval_s IS NOT NULL
              ORDER BY p.id",
         )?
         .query_map([], |r| {
