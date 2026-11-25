@@ -322,40 +322,47 @@ evidence?)` (L1 `obs_observations`, one per pot and event, only for events that
      Done when: the pots.md acceptance case (two pots observing one event: two L1
      rows, one L2 notification, one L3 dispatch) passes, plus scope, exclusion and
      lead tests.
-10. **Handover, delete and the old assistant.** - 10a. _Handover, archive and delete_ (pots.md, Handover…; code in
-    `pots/handover.rs` and `pots/retire.rs`). - Items of a pot: responsibilities, pending reminders, open works it
-    coordinates, groups it hosts. Fit against the receiver at proposal and again
-    at apply: to a pot, a work is `ok` only with a `write` location for it and
-    the `work` reach, a host role only for a member, a responsibility is
-    `narrowed` when the receiver's reach is lower; to the user, works are taken
-    over and the rest `stop`s. Nothing grants permissions. - `pot_handovers` (from, to pot or user, proposed by user or pot, reason,
-    state `proposed`/`applied`/`rejected`, revision) and `pot_handover_items`
-    (kind, ref, label, fit, reason). `POST /api/handovers` (the user),
-    `handover_propose` (`pot.handover.propose`, a `handover` card), `GET
-/api/handovers`, `POST …/{id}/confirm` with the revision, `…/reject`.
-    Applying moves what fits, wakes the receiver (`handover`), logs `assign`.
-    Loop-guard rule 1: a pot may not hand an item to a pot that held it within
-    `handback_cooldown_s`; the user may. - Retire: `POST /api/pots/{id}/retire/preview` and `…/retire` with the mode
-    (`archive` or `delete`), the revision and a target per item (pot, user or
-    none), applied in order: hand over, drop what has no target, fail queued
-    wakes, then archive, or delete the pot's session and the pot. Rows that
-    outlive a deleted pot keep its name: activity (already), its messages
-    (`author_name`), its direct and DM threads (named, with the pot reference
-    cleared); they expire with the owner's activity retention. - 10b. _Remove the assistant chat mode and delegations_ (parallel to 8b and 9;
-    no `crates/pirc-conformance` edits): the `chat` mode (`chat.md`,
-    `default_chat`, the `chats` workspace and top-level chats), `SOUL.md`/`CHAT.md`
-    and `/api/assistant/prompts` (Gateway and Node, `assistant_prompts.rs`),
-    assistant-only chat projects and project links, delegations (`delegations.rs`,
-    the `delegate`/`delegation_status` tools, the `assistant-delegation*` delivery
-    types, the mode's `delegate`/`delegate_target`), and the clients' routes for
-    them. The chat node stays as the pot host: the `assistant_node` claim remains
-    (renamed later if useful). User memory and the legacy session memory stay for
-    10c. Conformance tests of removed features are deleted after the rewrite
-    (step 11) lands. - 10c. _Pot memory and the legacy memory_: pots get their own memory store keyed
-    by pot (P8; recall never crosses pots), replacing the user-memory tools in the
-    pot mode; then the legacy session observational memory in
-    `crates/pirc-agent/src/features/memory/` is removed (keep what workspace
-    memory uses; delete `docs/architecture/legacy-observational-memory.md`).
+10. **Handover, delete and the old assistant.**
+    - 10a. _Handover, archive and delete_ (pots.md, Handover…; code in
+      `pots/handover.rs` and `pots/retire.rs`).
+      - Items of a pot: responsibilities, pending reminders, open works it
+        coordinates, groups it hosts. Fit against the receiver at proposal and again
+        at apply: to a pot, a work is `ok` only with a `write` location for it and
+        the `work` reach, a host role only for a member, a responsibility is
+        `narrowed` when the receiver's reach is lower; to the user, works are taken
+        over and the rest `stop`s. Nothing grants permissions.
+      - `pot_handovers` and `pot_handover_items`; `POST /api/handovers` (the user),
+        `handover_propose` (`pot.handover.propose`, a `handover` card),
+        `GET /api/handovers`, `POST …/{id}/confirm` with the revision, `…/reject`.
+        Applying moves what fits, wakes the receiver (`handover`), logs `assign`.
+        Loop-guard rule 1: a pot may not hand an item to a pot that held it within
+        `handback_cooldown_s`; the user may.
+      - Retire: `POST /api/pots/{id}/retire/preview` and `…/retire` with the mode
+        (`archive` or `delete`), the revision and a target per item (pot, user or
+        none), applied in order: hand over, drop what has no target, fail queued
+        wakes, then archive, or delete the pot's session and the pot. A deleted
+        pot's activity, messages (`author_name`) and direct or DM threads keep its
+        name until the owner's activity retention.
+    - 10b. _Remove the assistant chat mode and delegations_: the `chat` mode and
+      the `chats` workspace, `SOUL.md`/`CHAT.md` and `/api/assistant/prompts`,
+      chat projects and project links, delegations and the mode's
+      `delegate`/`delegate_target`. The chat node stays as the pot host (the
+      `assistant_node` claim remains). Conformance tests of removed features go
+      with step 11.
+    - 10c. _Pot memory and the legacy memory_ (two parallel parts).
+      - 10c-1. _Pot memory_ (`pots/memory.rs`, `features/pot/memory.rs`):
+        `pot_memory` notes keyed by pot (deleted with it; P8, recall never crosses
+        pots), with revisions and a per-pot size budget. In the pot mode,
+        `memory_note` (`pot.memory.note`: add, update, remove with the base
+        revision) and `memory_search` (`pot.memory.search`, the pot's own notes);
+        `pot.context` adds the notes, frozen per run. `GET /api/pots/{id}/memory`
+        and `DELETE /api/pots/{id}/memory/{entryId}` let the user read and forget
+        them. Pots still read the user-approved USER entries; they never write the
+        user's memory.
+      - 10c-2. _Legacy session memory_: remove the legacy session observational
+        memory in `crates/pirc-agent/src/features/memory/` (keep what workspace
+        memory uses) and delete `docs/architecture/legacy-observational-memory.md`.
+
 11. **Conformance rewrite** (parallel to every other step; touches only
     `crates/pirc-conformance` and `scripts/conformance-accounting.ts`). A harness
     helper starts a conversation through first-send (prepare, accept, materialize,
