@@ -1,6 +1,7 @@
 name: Sandbox debug
 on:
-  workflow_dispatch:
+  push:
+    branches: [ci-sandbox-fix]
 jobs:
   sandbox-agent:
     name: Native sandbox agent debug
