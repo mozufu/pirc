@@ -355,7 +355,59 @@ pub fn note_exhausted(
             ..Refs::default()
         }),
     )?;
+    // A notice in the pot's own thread, so the user sees it where the pot is.
+    let what = match exhaustion.unit {
+        Unit::Money => "This month's spending limit",
+        Unit::Tokens => "Today's token limit",
+    };
+    super::threads::post_system(
+        conn,
+        owner,
+        pot_id,
+        &format!(
+            "{what} is used up. The pot tells you when it asks for more; until then it takes no new model work for {window}."
+        ),
+    )?;
     Ok(true)
+}
+
+/// How full a pot's limits are, for its next run's prompt: the units at or
+/// past 80 % of their cap.
+pub fn nearly_exhausted(
+    conn: &Connection,
+    owner: &str,
+    pot_id: &str,
+    windows: &Windows,
+) -> ApiResult<Vec<Value>> {
+    let caps = caps(conn, owner, pot_id)?;
+    let (money_used, tokens_used) = used(conn, owner, Some(pot_id), windows)?;
+    let money_reserved = money_reserved(conn, owner, Some(pot_id), windows.month_start)?;
+    let tokens_reserved = tokens_reserved(conn, owner, Some(pot_id), windows.day_start)?;
+    let mut out = Vec::new();
+    let percent = |used: i64, reserved: i64, cap: i64| -> i64 {
+        if cap <= 0 {
+            0
+        } else {
+            (used.saturating_add(reserved)).saturating_mul(100) / cap
+        }
+    };
+    if let Some(cap) = caps.pot_money {
+        let pct = percent(money_used, money_reserved, cap);
+        if pct >= 80 {
+            out.push(
+                serde_json::json!({ "unit": "money", "percent": pct.min(100), "window": "month" }),
+            );
+        }
+    }
+    if let Some(cap) = caps.pot_tokens {
+        let pct = percent(tokens_used, tokens_reserved, cap);
+        if pct >= 80 {
+            out.push(
+                serde_json::json!({ "unit": "tokens", "percent": pct.min(100), "window": "day" }),
+            );
+        }
+    }
+    Ok(out)
 }
 
 /// Whether a wake must wait for budget. Called from `runtime::claim`, so the

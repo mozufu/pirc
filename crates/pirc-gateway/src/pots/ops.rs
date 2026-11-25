@@ -304,6 +304,13 @@ pub fn context(conn: &Connection, owner: &str, session_id: &str) -> ApiResult<Va
             "thinkingAuto": pot.input.models.thinking_auto,
         },
         "user": { "name": crate::me::display_name(conn, owner)? },
+        // Limits already 80 % used, so the pot can economise or ask in time.
+        "budget": super::budget::nearly_exhausted(
+            conn,
+            owner,
+            &pot.id,
+            &super::budget::windows("UTC", crate::util::now_ms()),
+        )?,
         // Where the pot reaches the user when a wake has no reply thread
         // (reviews, reminders, observations).
         "directThreadId": super::threads::direct(conn, owner, &pot.id)?.id,

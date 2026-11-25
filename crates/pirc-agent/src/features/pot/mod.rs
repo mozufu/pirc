@@ -107,6 +107,27 @@ pub fn identity_section(context: &Value) -> Result<PromptSection, String> {
             notes.join("\n")
         ));
     }
+    let budget: Vec<String> = context["budget"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|unit| {
+            let percent = unit["percent"].as_i64()?;
+            let what = match unit["unit"].as_str()? {
+                "money" => "this month's money limit",
+                "tokens" => "today's token limit",
+                _ => return None,
+            };
+            Some(format!("- {percent}% of {what} is used up."))
+        })
+        .collect();
+    if !budget.is_empty() {
+        out.push_str(&format!(
+            "\n\n## Budget\n\n{} Economise where you can, and ask for more with budget_request if \
+             the work needs it. When a limit is used up you take no new model work.",
+            budget.join("\n")
+        ));
+    }
     let thread = text(context, "directThreadId");
     if !thread.is_empty() {
         out.push_str(&format!(
@@ -250,6 +271,13 @@ mod tests {
                 .contains("## What you may do\n\nYou may only answer when addressed.")
         );
         assert!(section.text.ends_with("The user is alice."));
+        // Limits at 80 % are named for the pot to act on.
+        let tight = identity_section(&json!({
+            "pot": { "name": "Tester" },
+            "budget": [{ "unit": "tokens", "percent": 82, "window": "day" }],
+        }))
+        .unwrap();
+        assert!(tight.text.contains("## Budget\n\n- 82% of today's token limit is used up."), "{}", tight.text);
         // A minimal pot has only its name.
         let bare = identity_section(&json!({ "pot": { "name": "Bare" } })).unwrap();
         assert_eq!(bare.text, "You are Bare, one of the user's pots.");
