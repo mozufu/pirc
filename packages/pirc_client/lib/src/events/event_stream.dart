@@ -64,6 +64,7 @@ class SessionEventStream {
     required this.sessionId,
     Cursor? cursor,
     this.hints = const {},
+    this.connectTimeout = const Duration(seconds: 15),
     Random? random,
   }) : _random = random ?? Random() {
     _cursor = cursor;
@@ -74,6 +75,10 @@ class SessionEventStream {
 
   /// Hint subscriptions: any of `directory`, `memory`, `schedules`, `sessions`.
   final Set<String> hints;
+
+  /// A connect that takes longer is abandoned and retried: one started while
+  /// offline could otherwise wait until the operating system gives up.
+  final Duration connectTimeout;
   final Random _random;
 
   final _signals = StreamController<EventStreamSignal>.broadcast();
@@ -100,9 +105,13 @@ class SessionEventStream {
   }
 
   /// Connectivity regained or page visible: reconnect now instead of waiting
-  /// out the backoff. Does nothing while connected or connecting.
+  /// out the backoff. A connect still in flight (perhaps started while
+  /// offline) is abandoned for a new one. Does nothing while connected.
   void retryNow() {
-    if (_state != EventConnectionState.waiting) return;
+    if (_state != EventConnectionState.waiting &&
+        _state != EventConnectionState.connecting) {
+      return;
+    }
     _timer?.cancel();
     _attempts = 0;
     unawaited(_open());
@@ -153,7 +162,20 @@ class SessionEventStream {
     _setState(EventConnectionState.connecting);
     final EventSocket socket;
     try {
-      socket = await transport.connectEvents(_target);
+      final pending = transport.connectEvents(_target);
+      socket = await pending.timeout(
+        connectTimeout,
+        onTimeout: () {
+          // Close the socket if the abandoned connect still succeeds.
+          unawaited(
+            pending.then(
+              (abandoned) => abandoned.close(1000, 'Timed out'),
+              onError: (Object _) {},
+            ),
+          );
+          throw const TransportException('Event socket connect timed out');
+        },
+      );
     } on EventSocketRefused catch (error) {
       if (generation != _generation) return;
       final fatal = _refusal(error.status);

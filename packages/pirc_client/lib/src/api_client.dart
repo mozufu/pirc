@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../pirc_client.dart' show apiVersion;
 import 'errors.dart';
 import 'models/capabilities.dart';
 import 'models/snapshot.dart';
@@ -38,9 +39,23 @@ class ApiClient {
   Future<Object?> post(String path, [Object? body]) =>
       json(ApiRequest.post(path, json: body ?? const <String, Object?>{}));
 
-  /// `GET /api/capabilities`, read on connect.
+  /// `GET /api/capabilities`.
   Future<Capabilities> capabilities() async =>
       Capabilities.fromJson(await get('/api/capabilities'));
+
+  /// The first call after connecting: reads the capability document and
+  /// refuses a Gateway that speaks another API version. The Gateway answers
+  /// an old client with 426 itself; this catches a client newer than it.
+  Future<Capabilities> connect() async {
+    final capabilities = await this.capabilities();
+    if (capabilities.apiVersion != apiVersion) {
+      throw ClientUpgradeRequired(
+        'The Gateway speaks API version ${capabilities.apiVersion}; '
+        'this app needs version $apiVersion.',
+      );
+    }
+    return capabilities;
+  }
 
   /// `GET /api/sessions/{id}/snapshot`.
   Future<SessionSnapshot> snapshot(String sessionId) async =>

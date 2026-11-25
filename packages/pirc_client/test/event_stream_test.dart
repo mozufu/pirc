@@ -325,4 +325,72 @@ void main() {
       expect(h.transport.connects, hasLength(1));
     });
   });
+
+  group('offline connects', () {
+    test('a hanging connect times out and is retried', () {
+      fakeAsync((async) {
+        final pending = <Completer<EventSocket>>[];
+        final transport = FakeTransport(
+          onConnect: (_) {
+            final completer = Completer<EventSocket>();
+            pending.add(completer);
+            return completer.future;
+          },
+        );
+        final stream = SessionEventStream(
+          transport: transport,
+          sessionId: 's1',
+          connectTimeout: const Duration(seconds: 15),
+          random: FixedRandom(0),
+        )..start();
+        async.elapse(const Duration(seconds: 14));
+        expect(pending, hasLength(1));
+        expect(stream.state, EventConnectionState.connecting);
+        async.elapse(const Duration(seconds: 1));
+        expect(stream.state, EventConnectionState.waiting);
+        // The abandoned connect succeeding late is closed, not adopted.
+        final abandoned = FakeEventSocket();
+        pending.first.complete(abandoned);
+        async.flushMicrotasks();
+        expect(abandoned.closedByClient, isTrue);
+        async.elapse(const Duration(milliseconds: 750));
+        expect(pending, hasLength(2));
+        unawaited(stream.close());
+        async.flushMicrotasks();
+      });
+    });
+
+    test('retryNow replaces a connect that is still in flight', () {
+      fakeAsync((async) {
+        final pending = <Completer<EventSocket>>[];
+        final transport = FakeTransport(
+          onConnect: (_) {
+            final completer = Completer<EventSocket>();
+            pending.add(completer);
+            return completer.future;
+          },
+        );
+        final stream = SessionEventStream(
+          transport: transport,
+          sessionId: 's1',
+          random: FixedRandom(0),
+        )..start();
+        async.elapse(const Duration(seconds: 3));
+        stream.retryNow();
+        async.flushMicrotasks();
+        expect(pending, hasLength(2));
+        final fresh = FakeEventSocket();
+        pending[1].complete(fresh);
+        async.flushMicrotasks();
+        expect(stream.state, EventConnectionState.connected);
+        final stale = FakeEventSocket();
+        pending[0].complete(stale);
+        async.flushMicrotasks();
+        expect(stale.closedByClient, isTrue);
+        expect(stream.state, EventConnectionState.connected);
+        unawaited(stream.close());
+        async.flushMicrotasks();
+      });
+    });
+  });
 }
