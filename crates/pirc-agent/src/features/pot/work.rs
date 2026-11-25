@@ -101,6 +101,7 @@ impl WorkTool {
                         "approvalId": string("The user's allow-once approval for this start"),
                         "reason": string("Why this model, shown when it needs approval"),
                         "estimateMicros": { "type": "integer", "minimum": 0, "description": "Your cost estimate in micro-USD" },
+                        "eventId": string("The observed event this work answers, so only one pot acts on it"),
                     },
                     "required": ["workspaceId", "title", "instruction"],
                     "additionalProperties": false,

@@ -88,6 +88,8 @@ pub struct Hints {
     pub activity: Arc<Listeners<String>>,
     /// The owner's pot budget requests changed (`budgetRequests=1`).
     pub budget_requests: Arc<Listeners<String>>,
+    /// The owner's observation notifications changed (`notifications=1`).
+    pub notifications: Arc<Listeners<String>>,
 }
 
 impl Hints {
@@ -102,6 +104,7 @@ impl Hints {
             approvals: Listeners::new(),
             activity: Listeners::new(),
             budget_requests: Listeners::new(),
+            notifications: Listeners::new(),
         }
     }
 }

@@ -376,6 +376,9 @@ pub struct Note {
     pub note: String,
     #[serde(default)]
     pub evidence: Vec<String>,
+    /// Ask to tell the user (L2): the lead pot does, or everyone's notes merge.
+    #[serde(default)]
+    pub notify: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize)]
@@ -389,8 +392,98 @@ pub struct Observation {
     pub created_at: i64,
 }
 
-/// The pot's L1 note on an event that reached it; one per pot and event.
-pub fn note(conn: &Connection, owner: &str, pot_id: &str, input: Note) -> ApiResult<Observation> {
+/// What a note did beyond being kept.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Noted {
+    pub observation: Observation,
+    /// The event's notification, if there is one; the note is attached to it.
+    pub notification_id: Option<String>,
+    /// This note created the notification: the user is told now.
+    pub notified: bool,
+    /// A lead pot tells the user about this event, not this pot.
+    pub lead_pot: Option<String>,
+}
+
+/// Attach an observation to the event's notification, if there is one.
+fn attach(
+    conn: &Connection,
+    owner: &str,
+    event_id: &str,
+    observation_id: &str,
+) -> ApiResult<Option<String>> {
+    let id: Option<String> = conn
+        .query_row(
+            "SELECT id FROM obs_notifications WHERE owner_user=?1 AND event_id=?2",
+            params![owner, event_id],
+            |r| r.get(0),
+        )
+        .optional()?;
+    if let Some(id) = &id {
+        conn.execute(
+            "UPDATE obs_notifications SET observation_ids_json=json_insert(observation_ids_json,'$[#]',?2),
+              updated_at=?3, state='open' WHERE id=?1
+              AND NOT EXISTS(SELECT 1 FROM json_each(observation_ids_json) WHERE value=?2)",
+            params![id, observation_id, now_ms()],
+        )?;
+    }
+    Ok(id)
+}
+
+/// The pot's L1 note on an event that reached it (one per pot and event),
+/// attached to the event's notification; with `notify`, the notification is
+/// created by the lead pot, or merged when the event reached no lead.
+pub fn note(conn: &Connection, owner: &str, pot_id: &str, input: Note) -> ApiResult<Noted> {
+    let notify = input.notify;
+    let event_id = input.event_id.clone();
+    let observation = keep_note(conn, owner, pot_id, input)?;
+    let leads: Vec<String> = conn
+        .prepare("SELECT pot_id FROM obs_targets WHERE event_id=?1 AND lead=1 ORDER BY pot_id")?
+        .query_map([&event_id], |r| r.get(0))?
+        .collect::<Result<_, _>>()?;
+    let mut lead_pot = None;
+    let mut notified = false;
+    if notify {
+        if !leads.is_empty() && !leads.iter().any(|lead| lead == pot_id) {
+            lead_pot = Some(
+                conn.query_row("SELECT name FROM pots WHERE id=?1", [&leads[0]], |r| {
+                    r.get(0)
+                })
+                .unwrap_or_else(|_| leads[0].clone()),
+            );
+        } else {
+            let issuer = (!leads.is_empty()).then_some(pot_id);
+            let stamp = now_ms();
+            notified = conn.execute(
+                "INSERT OR IGNORE INTO obs_notifications(id,owner_user,event_id,issuer_pot_id,created_at,updated_at)
+                 VALUES(?1,?2,?3,?4,?5,?5)",
+                params![new_id("notif"), owner, event_id, issuer, stamp],
+            )? == 1;
+        }
+    }
+    let notification_id = attach(conn, owner, &event_id, &observation.id)?;
+    if notified {
+        let preview: String = observation.note.chars().take(160).collect();
+        super::activity::log(
+            conn,
+            owner,
+            pot_id,
+            super::activity::Entry::new(
+                super::activity::Kind::ForwardedToUser,
+                format!("Told the user: {preview}"),
+            )
+            .toward(super::activity::Counterpart::User),
+        )?;
+    }
+    Ok(Noted {
+        observation,
+        notification_id,
+        notified,
+        lead_pot,
+    })
+}
+
+fn keep_note(conn: &Connection, owner: &str, pot_id: &str, input: Note) -> ApiResult<Observation> {
     reached(conn, owner, pot_id, &input.event_id)?;
     let note = input.note.trim();
     if note.is_empty() || note.chars().count() > MAX_NOTE {
@@ -515,4 +608,263 @@ pub async fn read(app: &App, owner: &str, pot_id: &str, event_id: &str) -> ApiRe
         .map(|m| text_of(m).chars().take(MAX_ANSWER).collect::<String>());
     out["lastAnswer"] = json!(answer);
     Ok(out)
+}
+
+/// One notification as the user sees it: the event and every attached note.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Notification {
+    pub id: String,
+    pub event_id: String,
+    pub source_kind: String,
+    pub source_ref: String,
+    pub condition: String,
+    /// The lead pot that told the user; absent when merged.
+    pub issuer_pot_id: Option<String>,
+    pub observations: Vec<NotedBy>,
+    pub state: String,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NotedBy {
+    pub pot_id: String,
+    pub pot_name: String,
+    pub note: String,
+    pub evidence: Vec<String>,
+    pub created_at: i64,
+}
+
+fn notification(conn: &Connection, row: NotificationRow) -> ApiResult<Notification> {
+    let (
+        id,
+        event_id,
+        source_kind,
+        source_ref,
+        condition,
+        issuer,
+        ids,
+        state,
+        created_at,
+        updated_at,
+    ) = row;
+    let ids: Vec<String> = serde_json::from_str(&ids).unwrap_or_default();
+    let mut observations = Vec::new();
+    for observation in ids {
+        let found = conn
+            .query_row(
+                "SELECT o.pot_id, p.name, o.note, o.evidence_json, o.created_at FROM obs_observations o
+                 JOIN pots p ON p.id=o.pot_id WHERE o.id=?1",
+                [&observation],
+                |r| {
+                    let evidence: String = r.get(3)?;
+                    Ok(NotedBy {
+                        pot_id: r.get(0)?,
+                        pot_name: r.get(1)?,
+                        note: r.get(2)?,
+                        evidence: serde_json::from_str(&evidence).unwrap_or_default(),
+                        created_at: r.get(4)?,
+                    })
+                },
+            )
+            .optional()?;
+        observations.extend(found);
+    }
+    Ok(Notification {
+        id,
+        event_id,
+        source_kind,
+        source_ref,
+        condition,
+        issuer_pot_id: issuer,
+        observations,
+        state,
+        created_at,
+        updated_at,
+    })
+}
+
+const NOTIFICATION: &str =
+    "SELECT n.id, n.event_id, e.source_kind, e.source_ref, e.condition_key, n.issuer_pot_id,
+  n.observation_ids_json, n.state, n.created_at, n.updated_at
+  FROM obs_notifications n JOIN obs_events e ON e.id=n.event_id";
+
+type NotificationRow = (
+    String,
+    String,
+    String,
+    String,
+    String,
+    Option<String>,
+    String,
+    String,
+    i64,
+    i64,
+);
+
+fn notification_row(r: &rusqlite::Row) -> rusqlite::Result<NotificationRow> {
+    Ok((
+        r.get(0)?,
+        r.get(1)?,
+        r.get(2)?,
+        r.get(3)?,
+        r.get(4)?,
+        r.get(5)?,
+        r.get(6)?,
+        r.get(7)?,
+        r.get(8)?,
+        r.get(9)?,
+    ))
+}
+
+/// The owner's notifications, newest first; `state` is `open` or `read`.
+pub fn notifications(
+    conn: &Connection,
+    owner: &str,
+    state: Option<&str>,
+) -> ApiResult<Vec<Notification>> {
+    if state.is_some_and(|s| s != "open" && s != "read") {
+        return Err(ApiError::new(400, "invalid_input", "state is open or read"));
+    }
+    let rows: Vec<NotificationRow> = conn
+        .prepare(&format!(
+            "{NOTIFICATION} WHERE n.owner_user=?1 AND (?2 IS NULL OR n.state=?2) ORDER BY n.updated_at DESC, n.rowid DESC LIMIT 200"
+        ))?
+        .query_map(params![owner, state], notification_row)?
+        .collect::<Result<_, _>>()?;
+    rows.into_iter()
+        .map(|row| notification(conn, row))
+        .collect()
+}
+
+pub fn mark_read(conn: &Connection, owner: &str, id: &str) -> ApiResult<Notification> {
+    if conn.execute(
+        "UPDATE obs_notifications SET state='read' WHERE id=?1 AND owner_user=?2",
+        params![id, owner],
+    )? == 0
+    {
+        return Err(ApiError::not_found("Notification not found"));
+    }
+    let row = conn.query_row(
+        &format!("{NOTIFICATION} WHERE n.id=?1"),
+        [id],
+        notification_row,
+    )?;
+    notification(conn, row)
+}
+
+/// What a notification shows as a push.
+pub fn push_message(
+    conn: &Connection,
+    notification_id: &str,
+) -> ApiResult<crate::push::PushMessage> {
+    let row = conn.query_row(
+        &format!("{NOTIFICATION} WHERE n.id=?1"),
+        [notification_id],
+        notification_row,
+    )?;
+    let shown = notification(conn, row)?;
+    let first = shown.observations.first();
+    Ok(crate::push::PushMessage {
+        title: first.map_or_else(
+            || "A pot noticed something".to_owned(),
+            |o| format!("{} noticed something", o.pot_name),
+        ),
+        body: first
+            .map(|o| o.note.chars().take(200).collect())
+            .unwrap_or_default(),
+        tag: format!("pot-notification:{}", shown.id),
+        target: json!({ "potNotification": shown.id }),
+        interaction: None,
+    })
+}
+
+/// The purpose a work start serves for an event (L3): target, action, event.
+fn purpose(workspace_id: &str, event_id: &str) -> String {
+    format!("{workspace_id}|work_open|{event_id}")
+}
+
+fn handled_by(conn: &Connection, owner: &str, key: &str) -> ApiResult<Option<String>> {
+    Ok(conn
+        .query_row(
+            "SELECT p.name FROM obs_dispatches d JOIN pots p ON p.id=d.pot_id
+             WHERE d.owner_user=?1 AND d.purpose_key=?2 AND d.state='active'",
+            params![owner, key],
+            |r| r.get(0),
+        )
+        .optional()?)
+}
+
+fn already_handled(name: &str) -> ApiError {
+    ApiError::new(
+        409,
+        "already_handled",
+        format!("{name} is already handling this; add what you know with observe_note"),
+    )
+}
+
+/// Before asking for an approval: is this purpose already someone's?
+pub fn check_dispatch(
+    conn: &Connection,
+    owner: &str,
+    pot_id: &str,
+    event_id: &str,
+    workspace_id: &str,
+) -> ApiResult<()> {
+    reached(conn, owner, pot_id, event_id)?;
+    match handled_by(conn, owner, &purpose(workspace_id, event_id))? {
+        Some(name) => Err(already_handled(&name)),
+        None => Ok(()),
+    }
+}
+
+/// Claim the purpose for this pot's work start; a second pot is refused with
+/// who handles it.
+pub fn claim_dispatch(
+    conn: &Connection,
+    owner: &str,
+    pot_id: &str,
+    event_id: &str,
+    workspace_id: &str,
+) -> ApiResult<String> {
+    reached(conn, owner, pot_id, event_id)?;
+    let key = purpose(workspace_id, event_id);
+    let id = new_id("disp");
+    let inserted = conn.execute(
+        "INSERT OR IGNORE INTO obs_dispatches(id,owner_user,event_id,purpose_key,pot_id,created_at)
+         VALUES(?1,?2,?3,?4,?5,?6)",
+        params![id, owner, event_id, key, pot_id, now_ms()],
+    )?;
+    if inserted == 0 {
+        let name = handled_by(conn, owner, &key)?.unwrap_or_else(|| "another pot".to_owned());
+        return Err(already_handled(&name));
+    }
+    Ok(id)
+}
+
+pub fn dispatch_started(conn: &Connection, dispatch_id: &str, work_id: &str) -> ApiResult<()> {
+    conn.execute(
+        "UPDATE obs_dispatches SET work_id=?2 WHERE id=?1",
+        params![dispatch_id, work_id],
+    )?;
+    Ok(())
+}
+
+/// The start failed, or the user took the work over: the purpose is free.
+pub fn release_dispatch(conn: &Connection, dispatch_id: &str) -> ApiResult<()> {
+    conn.execute(
+        "UPDATE obs_dispatches SET state='released' WHERE id=?1",
+        [dispatch_id],
+    )?;
+    Ok(())
+}
+
+pub fn release_work(conn: &Connection, work_id: &str) -> ApiResult<()> {
+    conn.execute(
+        "UPDATE obs_dispatches SET state='released' WHERE work_id=?1",
+        [work_id],
+    )?;
+    Ok(())
 }

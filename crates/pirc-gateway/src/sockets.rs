@@ -232,9 +232,9 @@ fn track_device(app: &AppState, identity: &Identity, outbox: &Arc<Outbox>) -> Op
 }
 
 /// The change hints a socket asked for (`directory=1`, `pots=1`, …).
-type HintFlags = [bool; 9];
+type HintFlags = [bool; 10];
 
-const HINT_NAMES: [&str; 9] = [
+const HINT_NAMES: [&str; 10] = [
     "directory",
     "memory",
     "schedules",
@@ -244,10 +244,11 @@ const HINT_NAMES: [&str; 9] = [
     "approvals",
     "activity",
     "budgetRequests",
+    "notifications",
 ];
 
 fn hint_flags(query: &std::collections::HashMap<String, Vec<String>>) -> ApiResult<HintFlags> {
-    let mut flags = [false; 9];
+    let mut flags = [false; 10];
     for (index, name) in HINT_NAMES.iter().enumerate() {
         match single(query, name)? {
             None => {}
@@ -305,6 +306,13 @@ fn subscribe_hints(
             app.hints
                 .budget_requests
                 .add(user.clone(), make("budget_requests_changed")),
+        );
+    }
+    if flags[9] {
+        hints.push(
+            app.hints
+                .notifications
+                .add(user.clone(), make("notifications_changed")),
         );
     }
     if flags[7] {

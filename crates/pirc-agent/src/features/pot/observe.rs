@@ -27,7 +27,18 @@ fn event_id() -> Value {
     json!({ "type": "string", "description": "The eventId from the event you were woken for" })
 }
 
-fn describe_note(_: &Value) -> String {
+fn describe_note(result: &Value) -> String {
+    if result["notified"] == true {
+        return "Noted, and the user was told.".to_owned();
+    }
+    if let Some(lead) = result["leadPot"].as_str() {
+        return format!(
+            "Noted. {lead} leads this source and tells the user; your note is attached."
+        );
+    }
+    if result["notificationId"].is_string() {
+        return "Noted, and attached to what the user was already told.".to_owned();
+    }
     "Noted.".to_owned()
 }
 
@@ -82,6 +93,8 @@ impl ObserveTool {
                         "note": { "type": "string", "description": "What you notice, in your own words" },
                         "evidence": { "type": "array", "items": { "type": "string" },
                                       "description": "References that support it (session ids, file paths)" },
+                        "notify": { "type": "boolean",
+                                    "description": "Tell the user about this event (once per event; a lead pot speaks for the others)" },
                     },
                     "required": ["eventId", "note"],
                     "additionalProperties": false,

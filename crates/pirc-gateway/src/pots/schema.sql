@@ -322,3 +322,31 @@ CREATE TABLE obs_observations (
  created_at INTEGER NOT NULL,
  UNIQUE(pot_id, event_id)
 );
+-- L2: at most one notification to the user per observed event, from the lead
+-- pot or merged from every observer who asked to notify.
+CREATE TABLE obs_notifications (
+ id TEXT PRIMARY KEY,
+ owner_user TEXT NOT NULL,
+ event_id TEXT NOT NULL REFERENCES obs_events(id) ON DELETE CASCADE,
+ -- The lead pot that notified; NULL for a merged notification.
+ issuer_pot_id TEXT REFERENCES pots(id) ON DELETE SET NULL,
+ observation_ids_json TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(observation_ids_json)),
+ state TEXT NOT NULL DEFAULT 'open' CHECK(state IN ('open','read')),
+ created_at INTEGER NOT NULL,
+ updated_at INTEGER NOT NULL,
+ UNIQUE(owner_user, event_id)
+);
+CREATE INDEX obs_notifications_owner ON obs_notifications(owner_user, state, updated_at DESC);
+-- L3: one active dispatch per purpose (target, action, event); a second pot
+-- is told who handles it.
+CREATE TABLE obs_dispatches (
+ id TEXT PRIMARY KEY,
+ owner_user TEXT NOT NULL,
+ event_id TEXT NOT NULL REFERENCES obs_events(id) ON DELETE CASCADE,
+ purpose_key TEXT NOT NULL,
+ pot_id TEXT NOT NULL REFERENCES pots(id) ON DELETE CASCADE,
+ work_id TEXT,
+ state TEXT NOT NULL DEFAULT 'active' CHECK(state IN ('active','released')),
+ created_at INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX obs_dispatches_active ON obs_dispatches(owner_user, purpose_key) WHERE state='active';

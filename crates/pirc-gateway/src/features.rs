@@ -40,7 +40,13 @@ fn no_store_route(method: &Method, path: &str) -> bool {
             _,
             [
                 "api",
-                "calendar" | "pots" | "threads" | "model-approvals" | "activity" | "pot-works",
+                "calendar"
+                | "pots"
+                | "threads"
+                | "model-approvals"
+                | "activity"
+                | "pot-works"
+                | "observation-notifications",
                 ..,
             ],
         ) => true,

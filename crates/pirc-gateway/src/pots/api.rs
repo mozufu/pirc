@@ -35,6 +35,11 @@ pub fn routes() -> Router<AppState> {
             get(list_messages).post(post_message),
         )
         .route("/api/activity", get(list_activity))
+        .route("/api/observation-notifications", get(list_notifications))
+        .route(
+            "/api/observation-notifications/{id}/read",
+            post(read_notification),
+        )
         .route("/api/pot-works", get(list_works))
         .route("/api/pot-works/{id}", get(read_work))
         .route("/api/pot-works/{id}/take-over", post(take_over_work))
@@ -494,4 +499,30 @@ async fn read_budget_request(
 ) -> ApiResult<axum::Json<Value>> {
     let request = budget::read(&app.db.lock(), &identity.user, &id)?;
     Ok(axum::Json(json!({ "budgetRequest": request })))
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NotificationFilter {
+    state: Option<String>,
+}
+
+async fn list_notifications(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    axum::extract::Query(filter): axum::extract::Query<NotificationFilter>,
+) -> ApiResult<axum::Json<Value>> {
+    let notifications =
+        super::observe::notifications(&app.db.lock(), &identity.user, filter.state.as_deref())?;
+    Ok(axum::Json(json!({ "notifications": notifications })))
+}
+
+async fn read_notification(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path(id): Path<String>,
+) -> ApiResult<axum::Json<Value>> {
+    let notification = super::observe::mark_read(&app.db.lock(), &identity.user, &id)?;
+    app.notifications_changed(&identity.user);
+    Ok(axum::Json(json!({ "notification": notification })))
 }

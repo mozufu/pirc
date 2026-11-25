@@ -605,6 +605,47 @@ mod http {
     }
 
     #[tokio::test]
+    async fn observation_notifications_are_listed_and_read_over_http() {
+        let (app, _dir) = app();
+        let (status, listed) = call(
+            &app,
+            "GET",
+            "/api/observation-notifications?state=open",
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        assert_eq!((status, listed["notifications"].clone()), (200, json!([])));
+        assert_eq!(
+            call(
+                &app,
+                "GET",
+                "/api/observation-notifications?state=all",
+                Some("alice"),
+                None,
+                None
+            )
+            .await
+            .0,
+            400
+        );
+        assert_eq!(
+            call(
+                &app,
+                "POST",
+                "/api/observation-notifications/notif_x/read",
+                Some("alice"),
+                None,
+                None
+            )
+            .await
+            .0,
+            404
+        );
+    }
+
+    #[tokio::test]
     async fn observe_scopes_must_be_the_owners_own() {
         let (app, _dir) = app();
         let mut pot = body();
@@ -3201,7 +3242,7 @@ mod work {
     use std::sync::{Arc, Mutex};
 
     #[derive(Default)]
-    struct Fake {
+    pub(super) struct Fake {
         delivered: Mutex<Vec<Value>>,
         sessions: Mutex<u32>,
         /// How the next deliveries end: "ok", "refuse" or "lose".
@@ -3306,6 +3347,22 @@ mod work {
         super::create(&mut app.db.lock(), "alice", input)
             .unwrap()
             .id
+    }
+
+    pub(super) fn setup_for_dispatch() -> (crate::app::AppState, tempfile::TempDir, Arc<Fake>) {
+        setup()
+    }
+
+    pub(super) fn pot_for_dispatch(app: &crate::app::AppState, name: &str) -> String {
+        super::create(&mut app.db.lock(), "alice", super::input(name))
+            .unwrap()
+            .id
+    }
+
+    impl Fake {
+        pub(super) fn sessions_started(&self) -> std::sync::MutexGuard<'_, u32> {
+            self.sessions.lock().unwrap()
+        }
     }
 
     fn open(model: Option<&str>, approval: Option<&str>) -> work::Open {
@@ -3690,6 +3747,7 @@ mod observe {
                     event_id: event.clone(),
                     note: text.into(),
                     evidence: vec![],
+                    notify: false,
                 },
             )
         };
@@ -3711,7 +3769,8 @@ mod observe {
                 Note {
                     event_id: event.clone(),
                     note: "x".into(),
-                    evidence: vec![]
+                    evidence: vec![],
+                    notify: false,
                 }
             )
             .unwrap_err()
@@ -3726,7 +3785,8 @@ mod observe {
                 Note {
                     event_id: event,
                     note: "x".into(),
-                    evidence: vec![]
+                    evidence: vec![],
+                    notify: false,
                 }
             )
             .unwrap_err()
@@ -3863,6 +3923,105 @@ mod observe {
         assert!(lead, "the calendar scope is led");
     }
 
+    fn noted(
+        conn: &rusqlite::Connection,
+        pot: &str,
+        event: &str,
+        text: &str,
+        notify: bool,
+    ) -> observe::Noted {
+        observe::note(
+            conn,
+            "alice",
+            pot,
+            Note {
+                event_id: event.into(),
+                note: text.into(),
+                evidence: vec![],
+                notify,
+            },
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn a_lead_tells_the_user_once_and_other_notes_are_attached() {
+        let (db, lead, other, session) = setup();
+        let conn = db.lock();
+        observe::emit_session(&conn, &session, SessionCondition::RunFinished, "1").unwrap();
+        let event = event_of(&conn, &lead);
+        // The non-lead asks to notify: refused in favour of the lead.
+        let first = noted(&conn, &other, &event, "Flaky test again", true);
+        assert_eq!(
+            (first.notified, first.lead_pot.as_deref()),
+            (false, Some("Tester"))
+        );
+        assert!(first.notification_id.is_none());
+        let told = noted(&conn, &lead, &event, "Build broke on main", true);
+        assert!(told.notified);
+        let shown = observe::notifications(&conn, "alice", Some("open")).unwrap();
+        assert_eq!(shown.len(), 1);
+        assert_eq!(shown[0].issuer_pot_id.as_deref(), Some(lead.as_str()));
+        assert_eq!(shown[0].observations.len(), 1);
+        drop(conn);
+        // A later note from a third observer is attached to the same notification.
+        let mut conn = db.lock();
+        let mut third = input("Third");
+        third.permissions.observe[0].lead = false;
+        let third = create(&mut conn, "alice", third).unwrap().id;
+        conn.execute(
+            "INSERT INTO obs_targets(event_id,pot_id,lead) VALUES(?1,?2,0)",
+            params![event, third],
+        )
+        .unwrap();
+        let attached = noted(&conn, &third, &event, "Saw it too", false);
+        assert_eq!(attached.notification_id, told.notification_id);
+        let shown = observe::notifications(&conn, "alice", None).unwrap();
+        assert_eq!(shown.len(), 1, "one notification per event");
+        assert_eq!(
+            shown[0]
+                .observations
+                .iter()
+                .map(|o| o.pot_name.as_str())
+                .collect::<Vec<_>>(),
+            ["Tester", "Third"]
+        );
+        // Read, and gone from the open list; another owner sees nothing.
+        observe::mark_read(&conn, "alice", &shown[0].id).unwrap();
+        assert!(
+            observe::notifications(&conn, "alice", Some("open"))
+                .unwrap()
+                .is_empty()
+        );
+        assert_eq!(
+            observe::mark_read(&conn, "bob", &shown[0].id)
+                .unwrap_err()
+                .status,
+            404
+        );
+        assert!(
+            observe::notifications(&conn, "bob", None)
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn without_a_lead_the_notes_merge_into_one_notification() {
+        let (db, lead, other, session) = setup();
+        let conn = db.lock();
+        conn.execute("UPDATE pot_observe_scopes SET lead=0", [])
+            .unwrap();
+        observe::emit_session(&conn, &session, SessionCondition::WaitingInput, "1").unwrap();
+        let event = event_of(&conn, &lead);
+        assert!(noted(&conn, &other, &event, "Needs an answer", true).notified);
+        let second = noted(&conn, &lead, &event, "Agreed", true);
+        assert!(!second.notified, "the notification exists already");
+        let shown = observe::notifications(&conn, "alice", None).unwrap();
+        assert_eq!((shown.len(), shown[0].issuer_pot_id.clone()), (1, None));
+        assert_eq!(shown[0].observations.len(), 2);
+    }
+
     #[test]
     fn a_project_scope_reaches_its_members_sessions() {
         let (db, lead, _other, _session) = setup();
@@ -3967,5 +4126,66 @@ mod hints {
                 other => panic!("{query}: expected a close, got {other:?}"),
             }
         }
+    }
+}
+
+mod dispatch {
+    use super::super::{observe, work};
+    use crate::db::Store;
+
+    #[tokio::test]
+    async fn one_pot_handles_an_events_purpose_and_a_take_over_frees_it() {
+        let (app, _dir, fake) = super::work::setup_for_dispatch();
+        let first = super::work::pot_for_dispatch(&app, "Tester");
+        let second = super::work::pot_for_dispatch(&app, "Helper");
+        let event = {
+            let conn = app.db.lock();
+            let observed = conn
+                .create_session("node:repo", "node://node/o1", "node", "o1", "alice")
+                .unwrap()
+                .id;
+            observe::emit_session(
+                &conn,
+                &observed,
+                observe::SessionCondition::RunFinished,
+                "1",
+            )
+            .unwrap();
+            conn.query_row("SELECT id FROM obs_events", [], |r| r.get::<_, String>(0))
+                .unwrap()
+        };
+        let open = |event: &str| -> work::Open {
+            serde_json::from_value(serde_json::json!({
+                "workspaceId": "node:repo", "title": "Fix it", "instruction": "Fix the failure.", "eventId": event,
+            }))
+            .unwrap()
+        };
+        let started = work::open(&app, "alice", &first, open(&event))
+            .await
+            .unwrap();
+        assert_eq!(started["state"], "started");
+        let refused = work::open(&app, "alice", &second, open(&event))
+            .await
+            .unwrap_err();
+        assert_eq!(refused.code, "already_handled");
+        assert!(refused.message.contains("Tester"), "{}", refused.message);
+        // An event that did not reach the pot cannot be claimed.
+        assert_eq!(
+            work::open(&app, "alice", &second, open("obs_unknown"))
+                .await
+                .unwrap_err()
+                .status,
+            404
+        );
+        // The user takes the first work over: the purpose is free again.
+        let work_id = started["work"]["id"].as_str().unwrap().to_owned();
+        work::take_over(&app.db.lock(), "alice", &work_id).unwrap();
+        assert_eq!(
+            work::open(&app, "alice", &second, open(&event))
+                .await
+                .unwrap()["state"],
+            "started"
+        );
+        assert_eq!(*fake.sessions_started(), 2);
     }
 }

@@ -390,8 +390,20 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
         Op::ObserveNote(note) => {
             let conn = app.db.lock();
             let pot = pot_of_session(&conn, &context.user, &context.session.id)?;
-            let observation = super::observe::note(&conn, &context.user, &pot.id, note)?;
-            Ok(json!({ "observation": observation }))
+            let noted = super::observe::note(&conn, &context.user, &pot.id, note)?;
+            let push = match (&noted.notification_id, noted.notified) {
+                (Some(id), true) => Some(super::observe::push_message(&conn, id)?),
+                _ => None,
+            };
+            drop(conn);
+            if noted.notification_id.is_some() {
+                app.notifications_changed(&context.user);
+            }
+            if let Some(message) = push {
+                app.activity_changed(&context.user);
+                crate::push::notify(app, &context.user, message);
+            }
+            Ok(serde_json::to_value(noted).expect("notes serialize"))
         }
         Op::ObserveRead(read) => {
             let pot = pot_of_session(&app.db.lock(), &context.user, &context.session.id)?;

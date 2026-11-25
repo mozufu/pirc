@@ -121,6 +121,9 @@ pub struct Open {
     pub reason: Option<String>,
     #[serde(default)]
     pub estimate_micros: Option<u64>,
+    /// The observed event this work answers: one pot per purpose (L3).
+    #[serde(default)]
+    pub event_id: Option<String>,
 }
 
 fn check_instruction(text: &str) -> ApiResult<&str> {
@@ -333,6 +336,15 @@ pub async fn open(app: &App, owner: &str, pot_id: &str, input: Open) -> ApiResul
                 consumed = Some(id.clone());
             }
             None => {
+                if let Some(event) = &input.event_id {
+                    super::observe::check_dispatch(
+                        &app.db.lock(),
+                        owner,
+                        pot_id,
+                        event,
+                        &plan.workspace.id,
+                    )?;
+                }
                 let approval = app.request_approval(
                     owner,
                     pot_id,
@@ -351,12 +363,36 @@ pub async fn open(app: &App, owner: &str, pot_id: &str, input: Open) -> ApiResul
             }
         }
     }
+    let dispatch = match &input.event_id {
+        Some(event) => {
+            let claimed = super::observe::claim_dispatch(
+                &app.db.lock(),
+                owner,
+                pot_id,
+                event,
+                &plan.workspace.id,
+            );
+            match claimed {
+                Ok(id) => Some(id),
+                Err(error) => {
+                    if let Some(id) = &consumed {
+                        approvals::release(&app.db.lock(), owner, id)?;
+                    }
+                    return Err(error);
+                }
+            }
+        }
+        None => None,
+    };
     let title = input.title.trim();
     let session = match start_session(app, &plan.workspace, owner, title).await {
         Ok(session) => session,
         Err(failure) => {
             if let Some(id) = consumed {
                 approvals::release(&app.db.lock(), owner, &id)?;
+            }
+            if let Some(id) = &dispatch {
+                super::observe::release_dispatch(&app.db.lock(), id)?;
             }
             return Err(ApiError::new(
                 503,
@@ -400,6 +436,9 @@ pub async fn open(app: &App, owner: &str, pot_id: &str, input: Open) -> ApiResul
                 ..Refs::default()
             }),
         )?;
+        if let Some(dispatch) = &dispatch {
+            super::observe::dispatch_started(&conn, dispatch, &id)?;
+        }
         super::threads::post_card(
             &conn,
             owner,
@@ -522,6 +561,7 @@ pub fn take_over(conn: &Connection, owner: &str, work_id: &str) -> ApiResult<Wor
         "UPDATE pot_works SET state='taken_over',updated_at=?2 WHERE id=?1",
         params![work.id, now_ms()],
     )?;
+    super::observe::release_work(conn, &work.id)?;
     let thread = super::threads::direct(conn, owner, &work.pot_id)?;
     runtime::enqueue(
         conn,
