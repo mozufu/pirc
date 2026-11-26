@@ -408,7 +408,6 @@ impl Session {
     }
 
     pub async fn command_with(&self, id: &str, payload: Value) -> ApiResponse {
-        let plain_stop = payload["type"] == json!("stop");
         let stop = matches!(payload["type"].as_str(), Some("stop" | "stop_transition"));
         let binding = if stop {
             Value::Null
@@ -418,10 +417,7 @@ impl Session {
             environment.body["binding"].clone()
         };
         let mut body = json!({ "commandId": id, "clientId": self.client.clone(),
-            "payload": payload });
-        if !plain_stop {
-            body["generation"] = self.generation.clone();
-        }
+            "generation": self.generation.clone(), "payload": payload });
         if !stop {
             body["expectedBinding"] = binding;
         }

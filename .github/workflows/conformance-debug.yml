@@ -49,7 +49,7 @@ jobs:
         env:
           PIRC_BROWSER_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}
           PIRC_BROWSER_REQUIRED: '1'
-          RECORD: 'false'
+          RECORD: 'true'
           SCOPE: all
         run: |
           set -o pipefail

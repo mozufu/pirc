@@ -101,7 +101,6 @@ async fn browser_and_paired_device_keep_intent_across_policy_changes() {
     assert_eq!(legacy.body["error"]["code"], "environment_required");
     request["commandId"] = json!("stop");
     request["payload"] = json!({"type":"stop"});
-    request.as_object_mut().unwrap().remove("generation");
     let stopped = api
         .send(
             "POST",

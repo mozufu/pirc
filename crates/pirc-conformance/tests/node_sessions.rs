@@ -588,11 +588,8 @@ async fn node_session_commands() {
     s.snapshot_until("f3 queued", |b| b["queue"]["followUp"] == json!(["f3"]))
         .await;
     let stopped = s.command(json!({ "type": "stop" })).await;
-    eprintln!("DEBUG commands stop: {:?}", stopped.body);
     t.response("stop", "POST /api/sessions/:id/commands", &stopped);
-    eprintln!("DEBUG commands waiting for settle");
     let settled = read_until(&mut events, |f| agent_event(f, "agent_settled")).await;
-    eprintln!("DEBUG commands settled");
     t.note("events until the stopped run settles", briefs(&settled));
     second.release();
     let snapshot = s
@@ -820,6 +817,50 @@ fn outcomes(frames: &[Value]) -> Value {
     )
 }
 
+#[ignore = "pirc 2: the gateway still validates the lease for a plain Stop before relaying it"]
+#[tokio::test(flavor = "multi_thread")]
+async fn node_session_stop_without_control() {
+    let llm = HeldLlm::start().await;
+    let models = tempfile::tempdir().unwrap();
+    let Some(cluster) = held_cluster(&llm, models.path(), GatewayOptions::default()).await else {
+        return;
+    };
+    let api = cluster.api();
+    let (mut s, _) = Session::create(&api).await;
+    s.acquire().await;
+    let mut events = s.events().await;
+
+    let held = Hold::new();
+    llm.push([Step::held(&held, Step::text("Held reply."))]);
+    assert_eq!(
+        s.command(json!({ "type": "prompt", "message": "hold" }))
+            .await
+            .status,
+        202
+    );
+    s.snapshot_until("the reply streams", streaming).await;
+
+    // Another device takes control; the browser is no longer the holder.
+    let phone = s
+        .post(
+            "/control/acquire",
+            json!({ "clientId": "phone", "force": true }),
+        )
+        .await;
+    assert_eq!(phone.status, 200, "{}", phone.body);
+    let stopped = s
+        .post(
+            "/commands",
+            json!({ "commandId": "stop-without-control", "clientId": s.client.clone(),
+                "payload": { "type": "stop" } }),
+        )
+        .await;
+    assert_eq!(stopped.status, 202, "{}", stopped.body);
+    assert_eq!(stopped.body["command"]["status"], "accepted");
+    read_until(&mut events, |frame| agent_event(frame, "agent_settled")).await;
+    events.close().await;
+}
+
 #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_failures() {
@@ -1028,15 +1069,12 @@ async fn node_session_interactions() {
         .unwrap_or_default()
         .to_owned();
     let stopped = s.command(json!({ "type": "stop" })).await;
-    eprintln!("DEBUG interactions stop: {:?}", stopped.body);
     t.response(
         "stop with the dialog open",
         "POST /api/sessions/:id/commands",
         &stopped,
     );
-    eprintln!("DEBUG interactions waiting for settle");
     let settled = read_until(&mut events, |f| agent_event(f, "agent_settled")).await;
-    eprintln!("DEBUG interactions settled");
     t.note("events after stop", briefs(&settled));
     t.note(
         "interaction_answered on stop",

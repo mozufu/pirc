@@ -19,7 +19,8 @@ export type Tally = { passed: number; failed: number; ignored: number; suites: n
  * removed on purpose. M4.10 removed the assistant chat mode, chat projects,
  * delegations and assistant-memory tests, so the first-send rewrite (M4.11) runs
  * the remaining suite. The declared ignores are the live Web/native-client
- * acceptance runs and terminal scenarios that need an isolated-terminal backend.
+ * acceptance runs and terminal scenarios that need an isolated-terminal backend,
+ * plus the gateway's plain Stop without a lease check (pirc 2).
  */
 export const MIN_PASSED = 231;
 
