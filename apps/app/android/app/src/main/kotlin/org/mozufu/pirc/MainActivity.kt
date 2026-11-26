@@ -9,9 +9,19 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         channels?.detach()
-        channels = PlatformChannels(PlatformChannels.features(this)).also {
+        channels = PlatformChannels(PlatformChannels.features(this, flutterEngine.renderer)).also {
             it.attach(flutterEngine.dartExecutor.binaryMessenger)
         }
+    }
+
+    override fun onPause() {
+        channels?.background()
+        super.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        channels?.foreground()
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {

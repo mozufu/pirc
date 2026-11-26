@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import 'native_raster_images.dart';
 import 'render_l10n.dart';
 import 'render_theme.dart';
 
@@ -242,8 +243,9 @@ Widget nativeHeldMarkdownImage(Uri uri, String? title, String? alt) {
   if (!nativeRemoteContentSource(uri)) {
     final data = uri.scheme == 'data' ? uri.data : null;
     if (data != null && data.mimeType.startsWith('image/')) {
-      return Image.memory(
+      return NativeMemoryImage(
         data.contentAsBytes(),
+        data.mimeType,
         semanticLabel: alt,
         errorBuilder: (_, _, _) => Text(alt ?? ''),
       );

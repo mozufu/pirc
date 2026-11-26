@@ -3195,6 +3195,66 @@ abstract class AppLocalizations {
   /// **'{megabytes} MB'**
   String browserRecordingSize(String megabytes);
 
+  /// No description provided for @browserRecordingPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Play in the app'**
+  String get browserRecordingPlay;
+
+  /// No description provided for @recordingPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get recordingPlay;
+
+  /// No description provided for @recordingPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get recordingPause;
+
+  /// No description provided for @recordingPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'{position} of {duration}'**
+  String recordingPosition(String position, String duration);
+
+  /// No description provided for @recordingSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Playback speed'**
+  String get recordingSpeed;
+
+  /// No description provided for @recordingSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to Downloads'**
+  String get recordingSave;
+
+  /// No description provided for @recordingClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close the player'**
+  String get recordingClose;
+
+  /// No description provided for @recordingSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to Downloads as {name}.'**
+  String recordingSaved(String name);
+
+  /// No description provided for @recordingSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The recording could not be saved.'**
+  String get recordingSaveFailed;
+
+  /// No description provided for @recordingPlaybackFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The recording could not be played.'**
+  String get recordingPlaybackFailed;
+
   /// No description provided for @imageLabel.
   ///
   /// In en, this message translates to:

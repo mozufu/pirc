@@ -18,6 +18,7 @@ import 'src/document_canvas.dart';
 import 'src/document_canvas_pointer.dart';
 import 'src/html_script_submission.dart' as script;
 
+export 'src/canvas_text_fonts.dart';
 export 'src/document_canvas.dart';
 export 'src/document_canvas_pointer.dart';
 export 'src/document_computed_styles.dart';

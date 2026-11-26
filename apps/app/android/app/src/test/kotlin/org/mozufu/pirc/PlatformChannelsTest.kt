@@ -11,11 +11,20 @@ import org.junit.Test
 class PlatformChannelsTest {
     private class Feature(override val name: String) : PlatformFeature {
         var detached = false
+        var inFront = true
 
         override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) = result.success(null)
 
         override fun detach() {
             detached = true
+        }
+
+        override fun background() {
+            inFront = false
+        }
+
+        override fun foreground() {
+            inFront = true
         }
     }
 
@@ -43,6 +52,15 @@ class PlatformChannelsTest {
         channels.detach()
         assertTrue(messenger.handlers.values.all { it == null })
         assertTrue(features.all { it.detached })
+    }
+
+    @Test fun theActivityStateReachesEveryFeature() {
+        val features = listOf(Feature("media"), Feature("images"))
+        val channels = PlatformChannels(features)
+        channels.background()
+        assertTrue(features.none { it.inFront })
+        channels.foreground()
+        assertTrue(features.all { it.inFront })
     }
 
     @Test(expected = IllegalArgumentException::class)

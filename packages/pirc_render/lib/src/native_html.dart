@@ -5446,14 +5446,24 @@ class _NativeHtmlFactory extends WidgetFactory {
       );
     }
     if (tree.element.localName == 'img') {
-      final choice = selectNativeResponsiveImage(
-        tree.element,
-        viewportWidth: imageViewport().width,
-        viewportHeight: imageViewport().height,
-        devicePixelRatio: imageDpr(),
-        avifSupported: NativeRasterImages.avifSupported,
-        dark: imageDark(),
-      );
+      NativeResponsiveImageSelection select(bool avif) =>
+          selectNativeResponsiveImage(
+            tree.element,
+            viewportWidth: imageViewport().width,
+            viewportHeight: imageViewport().height,
+            devicePixelRatio: imageDpr(),
+            avifSupported: avif,
+            dark: imageDark(),
+          );
+      var choice = select(NativeRasterImages.avifSupported);
+      // Only in-memory (`data:`) AVIF passes through `normalizeAvif`; a
+      // remote one would reach the platform decoder, which gets alpha
+      // wrong. Take the source chosen without AVIF instead, as before.
+      if (NativeRasterImages.avifSupported &&
+          !choice.url.trimLeft().toLowerCase().startsWith('data:')) {
+        final plain = select(false);
+        if (plain.url.isNotEmpty && plain.url != choice.url) choice = plain;
+      }
       if (choice.url.isNotEmpty) {
         tree.element.attributes['src'] = choice.url;
         _imageDensities[tree.element] = choice.density;
@@ -6223,8 +6233,9 @@ class _NativeHtmlFactory extends WidgetFactory {
         uri.data?.mimeType.startsWith('image/') == true) {
       final bytes = uri.data!.contentAsBytes();
       if (bytes.length <= 32 * 1024 * 1024) {
-        return Image.memory(
+        return NativeMemoryImage(
           bytes,
+          uri.data!.mimeType,
           scale: density,
           semanticLabel: src.image?.alt,
           errorBuilder: (_, _, _) => Text(src.image?.alt ?? ''),

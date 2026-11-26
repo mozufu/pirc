@@ -1753,6 +1753,40 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get browserRecordingPlay => 'Play in the app';
+
+  @override
+  String get recordingPlay => 'Play';
+
+  @override
+  String get recordingPause => 'Pause';
+
+  @override
+  String recordingPosition(String position, String duration) {
+    return '$position of $duration';
+  }
+
+  @override
+  String get recordingSpeed => 'Playback speed';
+
+  @override
+  String get recordingSave => 'Save to Downloads';
+
+  @override
+  String get recordingClose => 'Close the player';
+
+  @override
+  String recordingSaved(String name) {
+    return 'Saved to Downloads as $name.';
+  }
+
+  @override
+  String get recordingSaveFailed => 'The recording could not be saved.';
+
+  @override
+  String get recordingPlaybackFailed => 'The recording could not be played.';
+
+  @override
   String get imageLabel => 'Image';
 
   @override

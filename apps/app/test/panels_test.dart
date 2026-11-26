@@ -1,10 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/connection/connection.dart';
 import 'package:pirc_app/src/connection/connection_screens.dart';
 import 'package:pirc_app/src/connection/hints.dart';
+import 'package:pirc_app/src/platform/media.dart';
+import 'package:pirc_app/src/work/panels/browser_panel.dart';
 import 'package:pirc_app/src/work/panels/panel_container.dart';
 import 'package:pirc_app/src/work/panels/terminal_panel.dart';
 import 'package:pirc_client/pirc_client.dart';
@@ -138,6 +142,8 @@ Future<FixtureSession> _open(
   FutureOr<ApiResponse?> Function(ApiRequest request)? route,
   bool settle = true,
   Map<String, Object> socketErrors = const {},
+  MediaPlayers? media,
+  double height = 900,
 }) async {
   final s = FixtureSession('joined-mid-stream.json')..lease = lease;
   final gateway = s.install();
@@ -159,13 +165,14 @@ Future<FixtureSession> _open(
     tester,
     gateway: gateway,
     width: width,
-    height: 900,
+    height: height,
     location: '/work?open=s2&side=panel:${section.name}',
     overrides: [
       terminalPollProvider.overrideWithValue(const Duration(milliseconds: 10)),
       ...overrides,
     ],
     settle: settle,
+    media: media,
   );
   if (!settle) {
     for (var i = 0; i < 10; i++) {
@@ -710,6 +717,189 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('The recording could not be loaded.'), findsOneWidget);
+  });
+
+  group('browser: recordings play in the app on Android', () {
+    final recording = List.filled(3 * 1024 * 1024, 7);
+
+    /// Taps [finder] after scrolling it into the recordings area.
+    Future<void> tap(WidgetTester tester, Finder finder) async {
+      await tester.ensureVisible(finder);
+      await tester.pump();
+      await tester.tap(finder);
+    }
+
+    /// Opens the browser panel with one loaded recording, `a.webm`.
+    Future<void> load(
+      WidgetTester tester,
+      FakeMediaPlayers media, {
+      double height = 900,
+    }) async {
+      final s = await _open(
+        tester,
+        PanelSection.browser,
+        media: media,
+        height: height,
+        route: (r) => r.path == '$_base/browser/recording'
+            ? ApiResponse(200, recording)
+            : null,
+      );
+      s.gateway!.socket('$_base/browser/stream')!
+        ..push({
+          'type': 'state',
+          'state': {'active': true, 'url': 'https://example.test/'},
+        })
+        ..push({
+          'type': 'log',
+          'entries': [
+            {'action': 'Saved recording .pirc/recordings/a.webm'},
+          ],
+        });
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Load'));
+      await tester.pumpAndSettle();
+      // Android keeps the share sheet next to the in-app player.
+      expect(find.byTooltip('Open in another app'), findsOneWidget);
+      await tester.tap(find.byTooltip('Play in the app'));
+      await tester.pumpAndSettle();
+    }
+
+    appTest('play, seek, speed and save', (tester) async {
+      final media = FakeMediaPlayers();
+      await load(tester, media);
+
+      final id = media.players.keys.single;
+      expect(media.opened[id], recording);
+      expect(tester.widget<Texture>(find.byType(Texture)).textureId, id);
+      expect(find.text('0:00 / 0:10'), findsOneWidget);
+
+      await tap(tester, find.byTooltip('Play'));
+      await tester.pump();
+      expect(find.byTooltip('Pause'), findsOneWidget);
+
+      await tester.ensureVisible(find.byKey(const Key('recording-seek')));
+      await tester.pump();
+      await tester.drag(
+        find.byKey(const Key('recording-seek')),
+        const Offset(400, 0),
+      );
+      await tester.pump();
+      expect(media.actions.last, startsWith('seek '));
+      expect(media.players[id]!.position, greaterThan(Duration.zero));
+
+      await tap(tester, find.byKey(const Key('recording-speed')));
+      await tester.pumpAndSettle();
+      expect(find.text('0.25×'), findsOneWidget);
+      await tester.tap(find.text('1.5×').last);
+      await tester.pumpAndSettle();
+      expect(media.actions.last, 'rate 1.5');
+      expect(find.text('1.5×'), findsOneWidget);
+
+      await tap(tester, find.byTooltip('Save to Downloads'));
+      await tester.pump();
+      expect(find.text('Saved to Downloads as a.webm.'), findsOneWidget);
+      expect(media.saved['a.webm'], recording);
+
+      await tap(tester, find.byTooltip('Close the player'));
+      await tester.pump();
+      expect(find.byType(Texture), findsNothing);
+      expect(media.players, isEmpty);
+    });
+
+    appTest('the seek bar reads out the position', (tester) async {
+      final media = FakeMediaPlayers();
+      await load(tester, media);
+      final semantics = tester.ensureSemantics();
+      await tester.ensureVisible(find.byKey(const Key('recording-seek')));
+      await tester.pump();
+      final values = <String>[];
+      void walk(SemanticsNode node) {
+        values.add(node.value);
+        node.visitChildren((child) {
+          walk(child);
+          return true;
+        });
+      }
+
+      walk(tester.getSemantics(find.byKey(const Key('recording-seek'))));
+      expect(values, contains('0:00 of 0:10'));
+      semantics.dispose();
+    });
+
+    appTest('a player that goes away stops being read', (tester) async {
+      final media = FakeMediaPlayers();
+      await load(tester, media);
+      await tap(tester, find.byTooltip('Play'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(media.statusReads, greaterThan(0));
+      // A decoder error, a seek timeout or unpairing closed it on Android.
+      await media.closeAll();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      expect(find.text('The recording could not be played.'), findsOneWidget);
+      final reads = media.statusReads;
+      await tester.pump(const Duration(seconds: 2));
+      expect(media.statusReads, reads);
+    });
+
+    appTest('a short screen scrolls the recordings', (tester) async {
+      final media = FakeMediaPlayers();
+      await load(tester, media, height: 480);
+      expect(tester.takeException(), isNull);
+      expect(find.byType(Texture), findsOneWidget);
+      final area = find.ancestor(
+        of: find.byType(Texture),
+        matching: find.byType(SingleChildScrollView),
+      );
+      final panel = find.ancestor(
+        of: area.first,
+        matching: find.byType(BrowserPanel),
+      );
+      expect(
+        tester.getSize(area.first).height,
+        lessThanOrEqualTo(tester.getSize(panel).height / 3 + 0.5),
+      );
+    });
+
+    appTest('a WebM file without a length has no seek bar', (tester) async {
+      final media = FakeMediaPlayers(duration: Duration.zero);
+      await load(tester, media);
+      expect(find.byType(Texture), findsOneWidget);
+      expect(find.byKey(const Key('recording-seek')), findsNothing);
+      expect(find.text('0:00'), findsOneWidget);
+      await tap(tester, find.byTooltip('Play'));
+      await tester.pump();
+      expect(find.byTooltip('Pause'), findsOneWidget);
+    });
+
+    appTest('a file Android cannot play says so', (tester) async {
+      final media = FakeMediaPlayers()..failNextOpen = true;
+      await load(tester, media);
+      expect(find.byType(Texture), findsNothing);
+      expect(find.text('The recording could not be played.'), findsOneWidget);
+    });
+
+    appTest('play in the background is refused quietly', (tester) async {
+      final media = FakeMediaPlayers()..background = true;
+      await load(tester, media);
+      await tap(tester, find.byTooltip('Play'));
+      await tester.pump();
+      expect(find.byTooltip('Play'), findsOneWidget);
+      expect(find.text('The recording could not be played.'), findsNothing);
+    });
+
+    appTest('unpairing closes the players', (tester) async {
+      final media = FakeMediaPlayers();
+      await load(tester, media);
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(BrowserPanel)),
+      );
+      await container.read(connectionProvider.notifier).unpair();
+      await tester.pumpAndSettle();
+      expect(media.closedAll, 1);
+      expect(media.players, isEmpty);
+    });
   });
 
   appTest('tasks: statuses are words, not codes', (tester) async {

@@ -3,8 +3,12 @@ package org.mozufu.pirc
 import android.app.Activity
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
+import io.flutter.view.TextureRegistry
 import org.mozufu.pirc.credentials.CredentialsChannel
 import org.mozufu.pirc.credentials.KeystoreCredentialStore
+import org.mozufu.pirc.fonts.FontsChannel
+import org.mozufu.pirc.images.ImagesChannel
+import org.mozufu.pirc.media.MediaChannel
 
 /**
  * One feature's method channel, named `org.mozufu.pirc/<name>`. Each feature
@@ -16,6 +20,12 @@ interface PlatformFeature : MethodChannel.MethodCallHandler {
 
     /** The engine is going away: stop work and drop references to it. */
     fun detach() {}
+
+    /** The activity is paused (another app or the lock screen is in front). */
+    fun background() {}
+
+    /** The activity is in front again. */
+    fun foreground() {}
 }
 
 /** Registers every feature's channel on the engine and removes them again. */
@@ -41,6 +51,10 @@ class PlatformChannels(private val features: List<PlatformFeature>) {
         features.forEach { it.detach() }
     }
 
+    fun background() = features.forEach { it.background() }
+
+    fun foreground() = features.forEach { it.foreground() }
+
     private fun detachChannels() {
         channels.forEach { it.setMethodCallHandler(null) }
         channels.clear()
@@ -52,8 +66,11 @@ class PlatformChannels(private val features: List<PlatformFeature>) {
         fun channelName(feature: String) = PREFIX + feature
 
         /** The features of the app. Later M8 steps add theirs here. */
-        fun features(activity: Activity): List<PlatformFeature> = listOf(
+        fun features(activity: Activity, textures: TextureRegistry): List<PlatformFeature> = listOf(
             CredentialsChannel(KeystoreCredentialStore.create(activity.applicationContext)),
+            MediaChannel.create(activity, textures),
+            ImagesChannel(),
+            FontsChannel(),
         )
     }
 }

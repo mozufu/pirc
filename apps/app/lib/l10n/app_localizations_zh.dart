@@ -1683,6 +1683,40 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get browserRecordingPlay => '在 App 內播放';
+
+  @override
+  String get recordingPlay => '播放';
+
+  @override
+  String get recordingPause => '暫停';
+
+  @override
+  String recordingPosition(String position, String duration) {
+    return '$position／$duration';
+  }
+
+  @override
+  String get recordingSpeed => '播放速度';
+
+  @override
+  String get recordingSave => '儲存到「下載」';
+
+  @override
+  String get recordingClose => '關閉播放器';
+
+  @override
+  String recordingSaved(String name) {
+    return '已儲存到「下載」：$name。';
+  }
+
+  @override
+  String get recordingSaveFailed => '無法儲存錄影。';
+
+  @override
+  String get recordingPlaybackFailed => '無法播放錄影。';
+
+  @override
   String get imageLabel => '圖片';
 
   @override

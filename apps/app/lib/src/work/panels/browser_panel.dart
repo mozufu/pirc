@@ -11,7 +11,9 @@ import 'package:share_plus/share_plus.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../connection/connection.dart';
 import '../../connection/data.dart';
+import '../../platform/media.dart';
 import 'panel_common.dart';
+import 'recording_player.dart';
 
 /// `Saved recording <path>` browser log entries name a recording file.
 final _recordingLog = RegExp(
@@ -144,129 +146,145 @@ class _BrowserPanelState extends ConsumerState<BrowserPanel> {
         icon: LucideIcons.globe,
       );
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (!control) ReadOnlyNote(sessionId: widget.sessionId),
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  key: const Key('browser-url'),
-                  controller: _url,
-                  enabled: control && mine,
-                  decoration: const InputDecoration(isDense: true),
-                  onSubmitted: (url) => _send({'type': 'navigate', 'url': url}),
-                ),
-              ),
-              const SizedBox(width: 8),
-              FilledButton.tonal(
-                key: const Key('browser-control'),
-                onPressed: control
-                    ? () => _send({'type': mine ? 'release' : 'takeover'})
-                    : null,
-                child: Text(mine ? l10n.browserReturn : l10n.browserTake),
-              ),
-              IconButton(
-                tooltip: recording
-                    ? l10n.browserStopRecording
-                    : l10n.browserRecord,
-                onPressed: control
-                    ? () => _send({
-                        'type': 'record',
-                        'action': recording ? 'stop' : 'start',
-                      })
-                    : null,
-                icon: Icon(
-                  recording ? LucideIcons.squareStop : LucideIcons.circleDot,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (state['agentWaiting'] == true || state['action'] != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Text(
-              '${state['action'] ?? l10n.browserAgentWaiting}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ),
-        if (_error != null)
+    return LayoutBuilder(
+      builder: (context, box) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (!control) ReadOnlyNote(sessionId: widget.sessionId),
           Padding(
             padding: const EdgeInsets.all(8),
-            child: Text(_error!, style: Theme.of(context).textTheme.bodySmall),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    key: const Key('browser-url'),
+                    controller: _url,
+                    enabled: control && mine,
+                    decoration: const InputDecoration(isDense: true),
+                    onSubmitted: (url) =>
+                        _send({'type': 'navigate', 'url': url}),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilledButton.tonal(
+                  key: const Key('browser-control'),
+                  onPressed: control
+                      ? () => _send({'type': mine ? 'release' : 'takeover'})
+                      : null,
+                  child: Text(mine ? l10n.browserReturn : l10n.browserTake),
+                ),
+                IconButton(
+                  tooltip: recording
+                      ? l10n.browserStopRecording
+                      : l10n.browserRecord,
+                  onPressed: control
+                      ? () => _send({
+                          'type': 'record',
+                          'action': recording ? 'stop' : 'start',
+                        })
+                      : null,
+                  icon: Icon(
+                    recording ? LucideIcons.squareStop : LucideIcons.circleDot,
+                  ),
+                ),
+              ],
+            ),
           ),
-        if (_recordings.isNotEmpty)
-          _Recordings(sessionId: widget.sessionId, paths: _recordings),
-        Expanded(
-          child: _frame == null
-              ? PanelNote(text: l10n.browserNoFrame, icon: LucideIcons.globe)
-              : LayoutBuilder(
-                  builder: (context, box) {
-                    // Map a tap on the scaled frame to page coordinates.
-                    final scale = (box.maxWidth / _frameSize.width).clamp(
-                      0.0,
-                      box.maxHeight / _frameSize.height,
-                    );
-                    return GestureDetector(
-                      onTapUp: control && mine
-                          ? (details) {
-                              final x = details.localPosition.dx / scale;
-                              final y = details.localPosition.dy / scale;
-                              for (final action in ['down', 'up']) {
-                                _send({
-                                  'type': 'mouse',
-                                  'action': action,
-                                  'x': x,
-                                  'y': y,
-                                  'button': 'left',
-                                  'clickCount': 1,
-                                });
+          if (state['agentWaiting'] == true || state['action'] != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                '${state['action'] ?? l10n.browserAgentWaiting}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          if (_error != null)
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Text(
+                _error!,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          if (_recordings.isNotEmpty)
+            // At most a third of the panel, scrolling, so an open player
+            // never pushes the page off a short (landscape) screen.
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: box.maxHeight / 3),
+              child: SingleChildScrollView(
+                child: _Recordings(
+                  sessionId: widget.sessionId,
+                  paths: _recordings,
+                ),
+              ),
+            ),
+          Expanded(
+            child: _frame == null
+                ? PanelNote(text: l10n.browserNoFrame, icon: LucideIcons.globe)
+                : LayoutBuilder(
+                    builder: (context, box) {
+                      // Map a tap on the scaled frame to page coordinates.
+                      final scale = (box.maxWidth / _frameSize.width).clamp(
+                        0.0,
+                        box.maxHeight / _frameSize.height,
+                      );
+                      return GestureDetector(
+                        onTapUp: control && mine
+                            ? (details) {
+                                final x = details.localPosition.dx / scale;
+                                final y = details.localPosition.dy / scale;
+                                for (final action in ['down', 'up']) {
+                                  _send({
+                                    'type': 'mouse',
+                                    'action': action,
+                                    'x': x,
+                                    'y': y,
+                                    'button': 'left',
+                                    'clickCount': 1,
+                                  });
+                                }
                               }
-                            }
-                          : null,
-                      child: Align(
-                        alignment: Alignment.topLeft,
-                        child: Image.memory(
-                          _frame!,
-                          width: _frameSize.width * scale,
-                          height: _frameSize.height * scale,
-                          gaplessPlayback: true,
+                            : null,
+                        child: Align(
+                          alignment: Alignment.topLeft,
+                          child: Image.memory(
+                            _frame!,
+                            width: _frameSize.width * scale,
+                            height: _frameSize.height * scale,
+                            gaplessPlayback: true,
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-        ),
-        if (control && mine)
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: TextField(
-              key: const Key('browser-text'),
-              controller: _text,
-              decoration: InputDecoration(
-                isDense: true,
-                hintText: l10n.browserType,
-              ),
-              onSubmitted: (text) {
-                _send({'type': 'text', 'text': text});
-                _send({'type': 'key', 'key': 'Enter'});
-                _text.clear();
-              },
-            ),
+                      );
+                    },
+                  ),
           ),
-      ],
+          if (control && mine)
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: TextField(
+                key: const Key('browser-text'),
+                controller: _text,
+                decoration: InputDecoration(
+                  isDense: true,
+                  hintText: l10n.browserType,
+                ),
+                onSubmitted: (text) {
+                  _send({'type': 'text', 'text': text});
+                  _send({'type': 'key', 'key': 'Enter'});
+                  _text.clear();
+                },
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
 
 /// The saved recordings (`GET …/browser/recording?path=`). A recording is
-/// WebM, which not every platform can play in the app, so a loaded one is
-/// handed to another app (or saved) through the share sheet. Reading needs
-/// no control lease.
+/// WebM: on Android a loaded one plays in the app ([RecordingPlayer]);
+/// elsewhere it is handed to another app (or saved) through the share
+/// sheet. Reading needs no control lease.
 class _Recordings extends ConsumerStatefulWidget {
   const _Recordings({required this.sessionId, required this.paths});
 
@@ -281,6 +299,9 @@ class _RecordingsState extends ConsumerState<_Recordings> {
   final _loaded = <String, Uint8List>{};
   final _loading = <String>{};
   final _failed = <String>{};
+
+  /// The recording open in the in-app player (Android).
+  String? _playing;
 
   Future<void> _load(String path) async {
     final api = ref.read(apiProvider);
@@ -325,6 +346,7 @@ class _RecordingsState extends ConsumerState<_Recordings> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final text = Theme.of(context).textTheme;
+    final media = ref.watch(mediaPlayersProvider);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -332,7 +354,7 @@ class _RecordingsState extends ConsumerState<_Recordings> {
           padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
           child: Text(l10n.browserRecordings, style: text.labelMedium),
         ),
-        for (final path in widget.paths.reversed)
+        for (final path in widget.paths.reversed) ...[
           ListTile(
             key: ValueKey('recording:$path'),
             dense: true,
@@ -359,12 +381,32 @@ class _RecordingsState extends ConsumerState<_Recordings> {
                     onPressed: () => _load(path),
                     child: Text(l10n.browserRecordingLoad),
                   )
-                : IconButton(
-                    tooltip: l10n.browserRecordingOpen,
-                    icon: const Icon(LucideIcons.share2, size: 18),
-                    onPressed: () => _open(path, _loaded[path]!),
+                : Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (media != null)
+                        IconButton(
+                          tooltip: l10n.browserRecordingPlay,
+                          icon: const Icon(LucideIcons.circlePlay, size: 18),
+                          onPressed: () => setState(() => _playing = path),
+                        ),
+                      IconButton(
+                        tooltip: l10n.browserRecordingOpen,
+                        icon: const Icon(LucideIcons.share2, size: 18),
+                        onPressed: () => _open(path, _loaded[path]!),
+                      ),
+                    ],
                   ),
           ),
+          if (media != null && _playing == path && _loaded[path] != null)
+            RecordingPlayer(
+              key: ValueKey('player:$path'),
+              media: media,
+              path: path,
+              bytes: _loaded[path]!,
+              onClose: () => setState(() => _playing = null),
+            ),
+        ],
       ],
     );
   }

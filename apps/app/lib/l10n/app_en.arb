@@ -992,6 +992,33 @@
       }
     }
   },
+  "browserRecordingPlay": "Play in the app",
+  "recordingPlay": "Play",
+  "recordingPause": "Pause",
+  "recordingPosition": "{position} of {duration}",
+  "@recordingPosition": {
+    "placeholders": {
+      "position": {
+        "type": "String"
+      },
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingSpeed": "Playback speed",
+  "recordingSave": "Save to Downloads",
+  "recordingClose": "Close the player",
+  "recordingSaved": "Saved to Downloads as {name}.",
+  "@recordingSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "recordingSaveFailed": "The recording could not be saved.",
+  "recordingPlaybackFailed": "The recording could not be played.",
   "imageLabel": "Image",
   "imageUnreadable": "This image cannot be shown.",
   "statusCompleted": "Completed",

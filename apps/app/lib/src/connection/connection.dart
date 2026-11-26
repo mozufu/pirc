@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pirc_client/pirc_client.dart';
 
+import '../platform/media.dart';
 import 'storage.dart';
 
 /// Builds the transport; tests replace it with a fake.
@@ -231,6 +232,7 @@ class ConnectionController extends Notifier<ConnectionStatus> {
           _set(ConnectionPhase.signedOut, error);
         } else {
           unawaited(_forgetToken());
+          unawaited(_closeMedia());
           _set(ConnectionPhase.unpaired, error);
         }
         return true;
@@ -255,8 +257,19 @@ class ConnectionController extends Notifier<ConnectionStatus> {
   Future<void> _forgetToken() =>
       ref.read(secretStoreProvider).delete(deviceTokenKey);
 
+  /// Stops the recordings of the pairing that ends and drops their cached
+  /// copies.
+  Future<void> _closeMedia() async {
+    try {
+      await ref.read(mediaPlayersProvider)?.closeAll();
+    } on Exception {
+      // The players are already gone with the engine.
+    }
+  }
+
   /// Saves a checked pairing and connects with it.
   Future<void> savePairing(Uri gateway, String token) async {
+    await _closeMedia();
     await ref.read(secretStoreProvider).write(deviceTokenKey, token);
     await ref
         .read(sharedPreferencesProvider)
@@ -267,6 +280,7 @@ class ConnectionController extends Notifier<ConnectionStatus> {
   /// "Unpair this device…": removes the token and the local data.
   Future<void> unpair() async {
     await _forgetToken();
+    await _closeMedia();
     final prefs = ref.read(sharedPreferencesProvider);
     for (final key in prefs.getKeys().toList()) {
       if (key == PrefKeys.gatewayUrl ||
