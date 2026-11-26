@@ -245,7 +245,7 @@ expression: t.into_value()
           "type": "queue_update"
         },
         "epoch": 0,
-        "sequence": 17,
+        "sequence": 20,
         "sessionId": "session_<uuid:2>",
         "timestamp": "<epoch-ms>",
         "type": "pi_event"
@@ -261,7 +261,7 @@ expression: t.into_value()
           "type": "queue_update"
         },
         "epoch": 0,
-        "sequence": 18,
+        "sequence": 21,
         "sessionId": "session_<uuid:2>",
         "timestamp": "<epoch-ms>",
         "type": "pi_event"
@@ -1324,7 +1324,7 @@ expression: t.into_value()
           "source": "user"
         },
         "epoch": 0,
-        "sequence": 90,
+        "sequence": 93,
         "sessionId": "session_<uuid:2>",
         "timestamp": "<epoch-ms>",
         "type": "session_renamed"

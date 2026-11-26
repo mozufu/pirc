@@ -248,34 +248,6 @@ expression: t.into_value()
   {
     "body": {
       "error": {
-        "code": "lost_control",
-        "message": "Control lease is missing, expired, or superseded"
-      }
-    },
-    "headers": {
-      "content-type": "application/json"
-    },
-    "request": "POST /api/sessions/:id/interactions/:interactionId/answer",
-    "status": 409,
-    "step": "answer with a stale generation"
-  },
-  {
-    "body": {
-      "error": {
-        "code": "invalid_input",
-        "message": "Invalid request"
-      }
-    },
-    "headers": {
-      "content-type": "application/json"
-    },
-    "request": "POST /api/sessions/:id/interactions/:interactionId/answer",
-    "status": 400,
-    "step": "answer without a generation"
-  },
-  {
-    "body": {
-      "error": {
         "code": "invalid_input",
         "message": "Invalid request"
       }
@@ -311,7 +283,21 @@ expression: t.into_value()
     },
     "request": "POST /api/sessions/:id/interactions/:interactionId/answer",
     "status": 200,
-    "step": "answer"
+    "step": "answer without a generation"
+  },
+  {
+    "body": {
+      "error": {
+        "code": "stale_interaction",
+        "message": "Interaction is no longer answerable"
+      }
+    },
+    "headers": {
+      "content-type": "application/json"
+    },
+    "request": "POST /api/sessions/:id/interactions/:interactionId/answer",
+    "status": 409,
+    "step": "answer again with a stale generation"
   },
   {
     "body": {
@@ -354,8 +340,11 @@ expression: t.into_value()
   {
     "observed": [
       {
+        "answeredBy": "browser",
         "interactionEpoch": 1,
-        "interactionId": "interaction_<uuid:3>"
+        "interactionId": "interaction_<uuid:3>",
+        "resolvedAt": "<epoch-ms>",
+        "status": "answered"
       }
     ],
     "step": "interaction_answered"
@@ -461,13 +450,63 @@ expression: t.into_value()
       {
         "cancelled": true,
         "interactionEpoch": 1,
-        "interactionId": "interaction_<uuid:9>"
+        "interactionId": "interaction_<uuid:9>",
+        "resolvedAt": "<epoch-ms>",
+        "status": "cancelled"
       }
     ],
     "step": "interaction_answered on stop"
   },
   {
-    "observed": [],
+    "observed": [
+      {
+        "answeredBy": "browser",
+        "expiresAt": "<epoch-ms>",
+        "id": "interaction_<uuid:3>",
+        "kind": "select",
+        "request": {
+          "id": "<uuid:4>",
+          "method": "select",
+          "multiple": true,
+          "optionDescriptions": [
+            "",
+            "",
+            ""
+          ],
+          "options": [
+            "red",
+            "blue",
+            "Other (type your own answer)"
+          ],
+          "title": "Color?",
+          "toolCallId": "<uuid:5>:op1",
+          "type": "extension_ui_request"
+        },
+        "resolvedAt": "<epoch-ms>",
+        "rpcId": "<uuid:4>",
+        "runnerEpoch": 1,
+        "sessionId": "session_<uuid:6>",
+        "status": "answered"
+      },
+      {
+        "expiresAt": "<epoch-ms>",
+        "id": "interaction_<uuid:9>",
+        "kind": "input",
+        "request": {
+          "id": "<uuid:10>",
+          "method": "input",
+          "placeholder": "Enter your answer",
+          "title": "Name?",
+          "toolCallId": "<uuid:11>:op1",
+          "type": "extension_ui_request"
+        },
+        "resolvedAt": "<epoch-ms>",
+        "rpcId": "<uuid:10>",
+        "runnerEpoch": 1,
+        "sessionId": "session_<uuid:6>",
+        "status": "cancelled"
+      }
+    ],
     "step": "interactions after stop"
   },
   {
@@ -486,7 +525,7 @@ expression: t.into_value()
   },
   {
     "body": {
-      "interactionId": "interaction_<uuid:10>",
+      "interactionId": "interaction_<uuid:12>",
       "status": "answered"
     },
     "headers": {
