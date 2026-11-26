@@ -98,7 +98,7 @@ abstract final class PircTheme {
     TextStyle text(PircTypeSpec spec) => spec.style(
       color: spec.color == null ? colors['text.primary'] : colors[spec.color!],
     );
-    return ThemeData(
+    final theme = ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: scheme,
@@ -129,17 +129,6 @@ abstract final class PircTheme {
       ),
       materialTapTargetSize: MaterialTapTargetSize.padded,
       visualDensity: VisualDensity.standard,
-      badgeTheme: BadgeThemeData(
-        // Tab badges are yellow with white 10/700 text, 16 high (E).
-        backgroundColor: colors['status.warning'],
-        textColor: Colors.white,
-        textStyle: const TextStyle(
-          fontSize: 10,
-          height: 1,
-          fontWeight: FontWeight.w700,
-        ),
-        largeSize: 16,
-      ),
       navigationBarTheme: NavigationBarThemeData(
         height: PircSize.tabBarHeight,
         backgroundColor: colors['surface.page'],
@@ -159,6 +148,22 @@ abstract final class PircTheme {
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: colors['surface.sidebar'],
         indicatorColor: colors['accent.soft'],
+      ),
+    );
+    return theme.copyWith(
+      badgeTheme: BadgeThemeData(
+        // Tab badges are yellow with white 10/700 text, 16 high (E). The
+        // style starts from the text theme so it keeps the app's font
+        // family (a bare TextStyle falls back to the engine default).
+        backgroundColor: colors['status.warning'],
+        textColor: Colors.white,
+        textStyle: theme.textTheme.labelSmall!.copyWith(
+          fontSize: 10,
+          height: 1,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0,
+        ),
+        largeSize: 16,
       ),
     );
   }

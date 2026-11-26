@@ -301,7 +301,7 @@ class ChatEntryRow extends ConsumerWidget {
       time: listTime(context, entry.time, now: now),
       preview: preview ?? l10n.chatNoMessages,
       previewWarning: attention,
-      previewLeading: attention ? const _Diamond() : null,
+      previewLeading: attention ? const WaitingDiamond() : null,
       badge: attention
           ? ChatBadge.attention('${entry.needsYou}')
           : entry.unread > 0
@@ -432,21 +432,6 @@ class GroupThreadAvatar extends ConsumerWidget {
     }
     return Avatar(name: name, color: color ?? 1, image: picture, size: size);
   }
-}
-
-/// The ◆ before a preview that waits on the user, in `text.warning`.
-class _Diamond extends StatelessWidget {
-  const _Diamond();
-
-  @override
-  Widget build(BuildContext context) => Transform.rotate(
-    angle: 0.785398,
-    child: Container(
-      width: 9,
-      height: 9,
-      color: PircColorTokens.of(context)['text.warning'],
-    ),
-  );
 }
 
 /// `e-addrow`: "New pot" or "Create group" at the end of a filtered list.

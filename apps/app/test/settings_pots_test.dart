@@ -554,22 +554,29 @@ void main() {
   });
 
   group('golden images', () {
-    for (final mode in [ThemeMode.light, ThemeMode.dark]) {
-      testWidgets('settings_pots 375 ${mode.name}', (tester) async {
-        await tester.runAsync(loadGoldenFonts);
-        final (_, container) = await _pump(
+    for (final width in goldenWidths) {
+      for (final mode in [ThemeMode.light, ThemeMode.dark]) {
+        testWidgets('settings_pots ${width.toInt()} ${mode.name}', (
           tester,
-          PotsSettingsFixture(),
-          height: 812,
-        );
-        container.read(themeModeProvider.notifier).select(mode);
-        await tester.pumpAndSettle();
-        await expectLater(
-          find.byType(MaterialApp),
-          matchesGoldenFile('goldens/settings_pots_375_${mode.name}.png'),
-        );
-        await disposeApp(tester);
-      }, tags: ['golden']);
+        ) async {
+          await tester.runAsync(loadGoldenFonts);
+          final (_, container) = await _pump(
+            tester,
+            PotsSettingsFixture(),
+            width: width,
+            height: goldenHeight(width),
+          );
+          container.read(themeModeProvider.notifier).select(mode);
+          await tester.pumpAndSettle();
+          await expectLater(
+            find.byType(MaterialApp),
+            matchesGoldenFile(
+              'goldens/settings_pots_${width.toInt()}_${mode.name}.png',
+            ),
+          );
+          await disposeApp(tester);
+        }, tags: ['golden']);
+      }
     }
   });
 }

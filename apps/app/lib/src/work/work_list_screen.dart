@@ -300,7 +300,7 @@ class WorkRow extends ConsumerWidget {
         [
           WidgetSpan(
             alignment: PlaceholderAlignment.middle,
-            child: Icon(LucideIcons.diamond, size: 12, color: warning),
+            child: const WaitingDiamond(),
           ),
           TextSpan(
             text: ' ${l10n.approvalWaiting(approval.model)}',
@@ -429,11 +429,7 @@ class WorkRow extends ConsumerWidget {
       String label,
       Color? color,
     ) = switch (session.runStatus) {
-      'waiting_input' => (
-        Icon(LucideIcons.diamond, size: 12, color: warning),
-        l10n.stateWaiting,
-        warning,
-      ),
+      'waiting_input' => (const WaitingDiamond(), l10n.stateWaiting, warning),
       'running' => (const StateDot(DotState.running), l10n.stateRunning, null),
       'queued' => (
         Icon(LucideIcons.clock, size: 12, color: colors['text.secondary']),

@@ -576,6 +576,33 @@ void main() {
     });
   });
 
+  testWidgets('WaitingDiamond takes the width of its turned square', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [WaitingDiamond(), Text('Waiting')],
+      ),
+    );
+    final size = tester.getSize(find.byType(WaitingDiamond));
+    expect(size.width, closeTo(9 * 1.41421356, 0.001));
+    expect(size.height, size.width);
+    // The text starts where the diamond's corner ends.
+    expect(
+      tester.getTopLeft(find.text('Waiting')).dx,
+      closeTo(tester.getTopRight(find.byType(WaitingDiamond)).dx, 0.001),
+    );
+    final square = tester.widget<Container>(
+      find.descendant(
+        of: find.byType(WaitingDiamond),
+        matching: find.byType(Container),
+      ),
+    );
+    expect(square.color, light['text.warning']);
+  });
+
   testWidgets('ModelAccess is a button with its label', (tester) async {
     var taps = 0;
     await _pump(tester, ModelAccess(label: 'Ask you', onTap: () => taps++));

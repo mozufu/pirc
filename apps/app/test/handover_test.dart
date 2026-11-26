@@ -772,73 +772,85 @@ void main() {
       return container;
     }
 
-    for (final mode in [ThemeMode.light, ThemeMode.dark]) {
-      testWidgets('handover 375 ${mode.name}', (tester) async {
-        await golden(tester, _proposal, mode);
-        await expectLater(
-          find.byType(MaterialApp),
-          matchesGoldenFile('goldens/handover_375_${mode.name}.png'),
-        );
-        await disposeApp(tester);
-      }, tags: ['golden']);
+    for (final width in goldenWidths) {
+      final w = width.toInt();
+      for (final mode in [ThemeMode.light, ThemeMode.dark]) {
+        testWidgets('handover $w ${mode.name}', (tester) async {
+          await golden(
+            tester,
+            _proposal,
+            mode,
+            width: width,
+            height: goldenHeight(width),
+          );
+          await expectLater(
+            find.byType(MaterialApp),
+            matchesGoldenFile('goldens/handover_${w}_${mode.name}.png'),
+          );
+          await disposeApp(tester);
+        }, tags: ['golden']);
 
-      testWidgets('retire 375 ${mode.name}', (tester) async {
-        await golden(tester, _retire, mode);
-        await _e15Targets(tester);
-        await expectLater(
-          find.byType(MaterialApp),
-          matchesGoldenFile('goldens/retire_375_${mode.name}.png'),
-        );
-        await disposeApp(tester);
-      }, tags: ['golden']);
+        testWidgets('retire $w ${mode.name}', (tester) async {
+          await golden(
+            tester,
+            _retire,
+            mode,
+            width: width,
+            height: goldenHeight(width),
+          );
+          await _e15Targets(tester);
+          await expectLater(
+            find.byType(MaterialApp),
+            matchesGoldenFile('goldens/retire_${w}_${mode.name}.png'),
+          );
+          await disposeApp(tester);
+        }, tags: ['golden']);
 
-      testWidgets('retire detail 375 ${mode.name}', (tester) async {
-        await golden(tester, _retire, mode);
-        await _e15Targets(tester, reminder: true);
-        for (final (key, title) in [
-          ('responsibility:r1', 'Sort your decisions every morning'),
-          ('reminder:rem1', 'Start “Tidy the API docs” after task A'),
-        ]) {
-          await _tap(tester, _in('held-$key', find.text(title)));
-        }
-        await tester.drag(
-          find.byKey(const ValueKey('retire-scroll')),
-          const Offset(0, 3000),
-        );
-        await tester.pumpAndSettle();
-        await expectLater(
-          find.byType(MaterialApp),
-          matchesGoldenFile('goldens/retire_detail_375_${mode.name}.png'),
-        );
-        await disposeApp(tester);
-      }, tags: ['golden']);
+        testWidgets('retire detail $w ${mode.name}', (tester) async {
+          await golden(
+            tester,
+            _retire,
+            mode,
+            width: width,
+            height: goldenHeight(width),
+          );
+          await _e15Targets(tester, reminder: true);
+          for (final (key, title) in [
+            ('responsibility:r1', 'Sort your decisions every morning'),
+            ('reminder:rem1', 'Start “Tidy the API docs” after task A'),
+          ]) {
+            await _tap(tester, _in('held-$key', find.text(title)));
+          }
+          await tester.drag(
+            find.byKey(const ValueKey('retire-scroll')),
+            const Offset(0, 3000),
+          );
+          await tester.pumpAndSettle();
+          await expectLater(
+            find.byType(MaterialApp),
+            matchesGoldenFile('goldens/retire_detail_${w}_${mode.name}.png'),
+          );
+          await disposeApp(tester);
+        }, tags: ['golden']);
 
-      testWidgets('retire pick 375 ${mode.name}', (tester) async {
-        await golden(tester, _retire, mode);
-        await _e15Targets(tester);
-        await tester.tap(find.byKey(const ValueKey('target-reminder:rem1')));
-        await tester.pumpAndSettle();
-        await expectLater(
-          find.byType(MaterialApp),
-          matchesGoldenFile('goldens/retire_pick_375_${mode.name}.png'),
-        );
-        await disposeApp(tester);
-      }, tags: ['golden']);
+        testWidgets('retire pick $w ${mode.name}', (tester) async {
+          await golden(
+            tester,
+            _retire,
+            mode,
+            width: width,
+            height: goldenHeight(width),
+          );
+          await _e15Targets(tester);
+          await tester.tap(find.byKey(const ValueKey('target-reminder:rem1')));
+          await tester.pumpAndSettle();
+          await expectLater(
+            find.byType(MaterialApp),
+            matchesGoldenFile('goldens/retire_pick_${w}_${mode.name}.png'),
+          );
+          await disposeApp(tester);
+        }, tags: ['golden']);
+      }
     }
-
-    testWidgets('handover 1300 light', (tester) async {
-      await golden(
-        tester,
-        _proposal,
-        ThemeMode.light,
-        width: 1300,
-        height: 900,
-      );
-      await expectLater(
-        find.byType(MaterialApp),
-        matchesGoldenFile('goldens/handover_1300_light.png'),
-      );
-      await disposeApp(tester);
-    }, tags: ['golden']);
   });
 }

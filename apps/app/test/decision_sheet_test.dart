@@ -324,33 +324,37 @@ void main() {
 
   group('golden images', () {
     for (final reason in [false, true]) {
-      for (final mode in [ThemeMode.light, ThemeMode.dark]) {
-        final name = reason ? 'approval_reason' : 'approval';
-        testWidgets('$name 375 ${mode.name}', (tester) async {
-          await tester.runAsync(loadGoldenFonts);
-          final d = _Decisions();
-          final container = await pumpApp(
-            tester,
-            gateway: d.install(),
-            width: 375,
-            height: 812,
-            location: '/work',
-            reduceMotion: true,
-            overrides: [clockProvider.overrideWithValue(() => fixedNow)],
-          );
-          container.read(themeModeProvider.notifier).select(mode);
-          await tester.pumpAndSettle();
-          await _openFromWork(tester);
-          if (reason) {
-            await tester.tap(find.text('Deny with a reason'));
+      for (final width in goldenWidths) {
+        for (final mode in [ThemeMode.light, ThemeMode.dark]) {
+          final name = reason ? 'approval_reason' : 'approval';
+          testWidgets('$name ${width.toInt()} ${mode.name}', (tester) async {
+            await tester.runAsync(loadGoldenFonts);
+            final d = _Decisions();
+            final container = await pumpApp(
+              tester,
+              gateway: d.install(),
+              width: width,
+              height: goldenHeight(width),
+              location: '/work',
+              reduceMotion: true,
+              overrides: [clockProvider.overrideWithValue(() => fixedNow)],
+            );
+            container.read(themeModeProvider.notifier).select(mode);
             await tester.pumpAndSettle();
-          }
-          await expectLater(
-            find.byType(MaterialApp),
-            matchesGoldenFile('goldens/${name}_375_${mode.name}.png'),
-          );
-          await disposeApp(tester);
-        }, tags: ['golden']);
+            await _openFromWork(tester);
+            if (reason) {
+              await tester.tap(find.text('Deny with a reason'));
+              await tester.pumpAndSettle();
+            }
+            await expectLater(
+              find.byType(MaterialApp),
+              matchesGoldenFile(
+                'goldens/${name}_${width.toInt()}_${mode.name}.png',
+              ),
+            );
+            await disposeApp(tester);
+          }, tags: ['golden']);
+        }
       }
     }
   });

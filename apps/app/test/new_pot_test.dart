@@ -96,6 +96,7 @@ Future<(FakeGateway, _NewPot, ProviderContainer)> _pump(
   WidgetTester tester, {
   _NewPot? newPot,
   double width = 375,
+  double height = 812,
 }) async {
   final n = newPot ?? _NewPot();
   final gateway = n.install();
@@ -103,7 +104,7 @@ Future<(FakeGateway, _NewPot, ProviderContainer)> _pump(
     tester,
     gateway: gateway,
     width: width,
-    height: 812,
+    height: height,
     location: '/chat?open=new-pot',
     reduceMotion: true,
     overrides: [
@@ -808,21 +809,31 @@ void main() {
 
   group('golden images', () {
     for (final step in [1, 2, 3, 4]) {
-      for (final mode in [ThemeMode.light, ThemeMode.dark]) {
-        testWidgets('new pot $step 375 ${mode.name}', (tester) async {
-          await tester.runAsync(loadGoldenFonts);
-          final (_, _, container) = await _pump(tester);
-          container.read(themeModeProvider.notifier).select(mode);
-          await tester.pumpAndSettle();
-          await _goldenState(tester, step);
-          await _unfocus(tester);
-          await tester.pumpAndSettle();
-          await expectLater(
-            find.byType(MaterialApp),
-            matchesGoldenFile('goldens/new_pot_${step}_375_${mode.name}.png'),
-          );
-          await disposeApp(tester);
-        }, tags: ['golden']);
+      for (final width in goldenWidths) {
+        for (final mode in [ThemeMode.light, ThemeMode.dark]) {
+          testWidgets('new pot $step ${width.toInt()} ${mode.name}', (
+            tester,
+          ) async {
+            await tester.runAsync(loadGoldenFonts);
+            final (_, _, container) = await _pump(
+              tester,
+              width: width,
+              height: goldenHeight(width),
+            );
+            container.read(themeModeProvider.notifier).select(mode);
+            await tester.pumpAndSettle();
+            await _goldenState(tester, step);
+            await _unfocus(tester);
+            await tester.pumpAndSettle();
+            await expectLater(
+              find.byType(MaterialApp),
+              matchesGoldenFile(
+                'goldens/new_pot_${step}_${width.toInt()}_${mode.name}.png',
+              ),
+            );
+            await disposeApp(tester);
+          }, tags: ['golden']);
+        }
       }
     }
   });

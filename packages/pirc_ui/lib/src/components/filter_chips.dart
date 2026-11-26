@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../theme.dart';
@@ -130,6 +132,32 @@ class StateDot extends StatelessWidget {
       ),
     );
   }
+}
+
+/// ◆: the filled diamond before a line that waits on the user (E spec § 3),
+/// in `text.warning` unless [color] is given. [size] is the side of the
+/// square before it is turned; the widget takes the turned square's full
+/// width, like a glyph, so it never overlaps the text next to it.
+class WaitingDiamond extends StatelessWidget {
+  const WaitingDiamond({super.key, this.color, this.size = 9});
+
+  final Color? color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => SizedBox.square(
+    dimension: size * math.sqrt2,
+    child: Center(
+      child: Transform.rotate(
+        angle: math.pi / 4,
+        child: Container(
+          width: size,
+          height: size,
+          color: color ?? PircColorTokens.of(context)['text.warning'],
+        ),
+      ),
+    ),
+  );
 }
 
 /// The small "Needs you" pill at the end of a row (`status.warningSoft`).

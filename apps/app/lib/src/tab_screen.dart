@@ -109,12 +109,12 @@ class TabScreen extends ConsumerWidget {
         child: AdaptiveScaffold(
           destinations: [
             PircDestination(
-              icon: LucideIcons.messageCircle,
+              icon: LucideIcons.messageSquare,
               label: l10n.tabChat,
               badge: ref.watch(chatBadgeProvider),
             ),
             PircDestination(
-              icon: LucideIcons.briefcase,
+              icon: LucideIcons.folder,
               label: l10n.tabWork,
               badge: ref.watch(workBadgeProvider),
             ),

@@ -630,58 +630,63 @@ void main() {
       WidgetTester tester,
       String location,
       ThemeMode mode,
+      double width,
     ) async {
       await tester.runAsync(loadGoldenFonts);
       final (_, container) = await _pump(
         tester,
         GroupFixture(),
         location: location,
-        height: 812,
+        width: width,
+        height: goldenHeight(width),
       );
       container.read(themeModeProvider.notifier).select(mode);
       await tester.pumpAndSettle();
     }
 
-    for (final mode in [ThemeMode.light, ThemeMode.dark]) {
-      testWidgets('new group 375 ${mode.name}', (tester) async {
-        await golden(tester, _newGroup, mode);
-        await _type(tester, 'group-name', 'Mobile team');
-        for (final id in ['p-butler', 'p-research', 'p-tester']) {
-          await _key(tester, 'member-$id');
-        }
-        await _key(tester, 'host-p-butler');
-        await tester.drag(
-          find.byKey(const ValueKey('group-scroll')),
-          const Offset(0, 3000),
-        );
-        await tester.pumpAndSettle();
-        FocusManager.instance.primaryFocus?.unfocus();
-        await tester.pumpAndSettle();
-        await expectLater(
-          find.byType(MaterialApp),
-          matchesGoldenFile('goldens/new_group_375_${mode.name}.png'),
-        );
-        await disposeApp(tester);
-      }, tags: ['golden']);
+    for (final width in goldenWidths) {
+      final w = width.toInt();
+      for (final mode in [ThemeMode.light, ThemeMode.dark]) {
+        testWidgets('new group $w ${mode.name}', (tester) async {
+          await golden(tester, _newGroup, mode, width);
+          await _type(tester, 'group-name', 'Mobile team');
+          for (final id in ['p-butler', 'p-research', 'p-tester']) {
+            await _key(tester, 'member-$id');
+          }
+          await _key(tester, 'host-p-butler');
+          await tester.drag(
+            find.byKey(const ValueKey('group-scroll')),
+            const Offset(0, 3000),
+          );
+          await tester.pumpAndSettle();
+          FocusManager.instance.primaryFocus?.unfocus();
+          await tester.pumpAndSettle();
+          await expectLater(
+            find.byType(MaterialApp),
+            matchesGoldenFile('goldens/new_group_${w}_${mode.name}.png'),
+          );
+          await disposeApp(tester);
+        }, tags: ['golden']);
 
-      testWidgets('group mention 375 ${mode.name}', (tester) async {
-        await golden(tester, _group, mode);
-        await _key(tester, 'group-mention');
-        await expectLater(
-          find.byType(MaterialApp),
-          matchesGoldenFile('goldens/group_mention_375_${mode.name}.png'),
-        );
-        await disposeApp(tester);
-      }, tags: ['golden']);
+        testWidgets('group mention $w ${mode.name}', (tester) async {
+          await golden(tester, _group, mode, width);
+          await _key(tester, 'group-mention');
+          await expectLater(
+            find.byType(MaterialApp),
+            matchesGoldenFile('goldens/group_mention_${w}_${mode.name}.png'),
+          );
+          await disposeApp(tester);
+        }, tags: ['golden']);
 
-      testWidgets('group info 375 ${mode.name}', (tester) async {
-        await golden(tester, _info, mode);
-        await expectLater(
-          find.byType(MaterialApp),
-          matchesGoldenFile('goldens/group_info_375_${mode.name}.png'),
-        );
-        await disposeApp(tester);
-      }, tags: ['golden']);
+        testWidgets('group info $w ${mode.name}', (tester) async {
+          await golden(tester, _info, mode, width);
+          await expectLater(
+            find.byType(MaterialApp),
+            matchesGoldenFile('goldens/group_info_${w}_${mode.name}.png'),
+          );
+          await disposeApp(tester);
+        }, tags: ['golden']);
+      }
     }
   });
 }

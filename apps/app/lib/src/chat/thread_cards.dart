@@ -554,7 +554,10 @@ class WorkCardView extends ConsumerWidget {
     final muted = PircColorTokens.of(context)['text.muted'];
     // E spec § 3: ◐ running, ◆ waiting for you, ◷ queued.
     final (Widget? symbol, String? state) = switch (session?.runStatus) {
-      'waiting_input' => (_Diamond(color: muted), l10n.stateWaiting),
+      'waiting_input' => (
+        WaitingDiamond(color: muted, size: 7.5),
+        l10n.stateWaiting,
+      ),
       'running' => (const StateDot(DotState.running), l10n.stateRunning),
       'queued' => (
         Icon(LucideIcons.clock, size: 12, color: muted),
@@ -586,18 +589,6 @@ class WorkCardView extends ConsumerWidget {
       onTap: open,
     );
   }
-}
-
-/// ◆: a filled diamond the size of the text.
-class _Diamond extends StatelessWidget {
-  const _Diamond({required this.color});
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Transform.rotate(
-    angle: 0.785398,
-    child: Container(width: 7.5, height: 7.5, color: color),
-  );
 }
 
 /// `handover`: a pot's proposal; opens the handover (E14, step 8).

@@ -3,6 +3,13 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
+/// The four widths of every screen's golden images: phone, tablet
+/// portrait, tablet landscape and desktop (E spec § 9).
+const goldenWidths = [375.0, 700.0, 1000.0, 1300.0];
+
+/// The window height of a golden image: 812 on a phone, else 900.
+double goldenHeight(double width) => width < 600 ? 812 : 900;
+
 bool _loaded = false;
 
 /// Loads real fonts for golden images (macOS only, tag `golden`): every

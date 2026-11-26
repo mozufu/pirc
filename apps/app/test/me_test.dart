@@ -357,27 +357,32 @@ void main() {
       ('me_total', '/me?chart=total'),
       ('me_edit', '/me'),
     ]) {
-      for (final mode in [ThemeMode.light, ThemeMode.dark]) {
-        testWidgets('$name 375 ${mode.name}', (tester) async {
-          await tester.runAsync(loadGoldenFonts);
-          final (_, container) = await _pump(
-            tester,
-            MeFixture.e28(),
-            location: location,
-            height: 812,
-          );
-          container.read(themeModeProvider.notifier).select(mode);
-          await tester.pumpAndSettle();
-          if (name == 'me_edit') {
-            await tester.tap(find.byKey(const ValueKey('me-edit')));
+      for (final width in goldenWidths) {
+        for (final mode in [ThemeMode.light, ThemeMode.dark]) {
+          testWidgets('$name ${width.toInt()} ${mode.name}', (tester) async {
+            await tester.runAsync(loadGoldenFonts);
+            final (_, container) = await _pump(
+              tester,
+              MeFixture.e28(),
+              location: location,
+              width: width,
+              height: goldenHeight(width),
+            );
+            container.read(themeModeProvider.notifier).select(mode);
             await tester.pumpAndSettle();
-          }
-          await expectLater(
-            find.byType(MaterialApp),
-            matchesGoldenFile('goldens/${name}_375_${mode.name}.png'),
-          );
-          await disposeApp(tester);
-        }, tags: ['golden']);
+            if (name == 'me_edit') {
+              await tester.tap(find.byKey(const ValueKey('me-edit')));
+              await tester.pumpAndSettle();
+            }
+            await expectLater(
+              find.byType(MaterialApp),
+              matchesGoldenFile(
+                'goldens/${name}_${width.toInt()}_${mode.name}.png',
+              ),
+            );
+            await disposeApp(tester);
+          }, tags: ['golden']);
+        }
       }
     }
   });

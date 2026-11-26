@@ -4,9 +4,11 @@ library;
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/format.dart';
 import 'package:pirc_app/src/preferences.dart';
+import 'package:pirc_app/src/work/work_data.dart';
 
 import 'support/activity_fixtures.dart';
 import 'support/chat_fixtures.dart';
@@ -124,6 +126,10 @@ FakeGateway _calendar() {
   return g;
 }
 
+/// The drawer over Chat (E21): hosts with running work and the user row.
+FakeGateway _drawer() =>
+    ChatFixture().install(WorkFixture().install(MeFixture.e28().install()));
+
 final _screens = <String, (String, FakeGateway Function(), Saved Function())>{
   'conversation': ('/work?open=s2', _conversation, Saved.new),
   'new_conversation': (
@@ -155,25 +161,45 @@ final _screens = <String, (String, FakeGateway Function(), Saved Function())>{
   ),
   'me': ('/me', () => MeFixture.e28().install(), Saved.new),
   'activity': ('/activity', () => ActivityFixture().install(), Saved.new),
+  'work_needs_you': ('/work', () => WorkFixture().install(), Saved.new),
+  'work_pots': ('/work', () => WorkFixture().install(), Saved.new),
+  'drawer': ('/chat', _drawer, Saved.new),
 };
+
+/// What to do on a screen of [_screens] before its image is taken. The
+/// filters are set directly, so the chip row stays at its start as in E3
+/// and E4.
+final _actions =
+    <String, Future<void> Function(WidgetTester, ProviderContainer)>{
+      'work_needs_you': (tester, container) async => container
+          .read(workFilterProvider.notifier)
+          .select(WorkFilter.needsYou),
+      'work_pots': (tester, container) async =>
+          container.read(workFilterProvider.notifier).select(WorkFilter.pots),
+      'drawer': (tester, container) async =>
+          tester.tap(find.byTooltip('Open the menu')),
+    };
 
 void main() {
   for (final MapEntry(key: name, value: (location, gateway, saved))
       in _screens.entries) {
-    for (final width in [375.0, 700.0, 1000.0, 1300.0]) {
+    for (final width in goldenWidths) {
       for (final mode in [ThemeMode.light, ThemeMode.dark]) {
-        appTest('$name $width ${mode.name}', (tester) async {
+        appTest('$name ${width.toInt()} ${mode.name}', (tester) async {
           await tester.runAsync(loadGoldenFonts);
           final container = await pumpApp(
             tester,
             gateway: gateway(),
             saved: saved(),
             width: width,
+            height: goldenHeight(width),
             location: location,
             overrides: [clockProvider.overrideWithValue(() => fixedNow)],
             reduceMotion: true,
           );
           container.read(themeModeProvider.notifier).select(mode);
+          await tester.pumpAndSettle();
+          await _actions[name]?.call(tester, container);
           await tester.pumpAndSettle();
           await expectLater(
             find.byType(MaterialApp),

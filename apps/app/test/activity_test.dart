@@ -592,25 +592,31 @@ void main() {
       ('pov_work', _pov, 'pov-work-w-nightly'),
       ('pov_dm', _pov, 'pov-thread-t-dm'),
     ]) {
-      for (final mode in [ThemeMode.light, ThemeMode.dark]) {
-        testWidgets('$name 375 ${mode.name}', (tester) async {
-          await tester.runAsync(loadGoldenFonts);
-          final (_, container) = await _pump(
-            tester,
-            ActivityFixture(),
-            location: location,
-          );
-          container.read(themeModeProvider.notifier).select(mode);
-          await tester.pumpAndSettle();
-          if (tap != null) {
-            await _tap(tester, find.byKey(ValueKey(tap)));
-          }
-          await expectLater(
-            find.byType(MaterialApp),
-            matchesGoldenFile('goldens/${name}_375_${mode.name}.png'),
-          );
-          await disposeApp(tester);
-        }, tags: ['golden']);
+      for (final width in goldenWidths) {
+        for (final mode in [ThemeMode.light, ThemeMode.dark]) {
+          testWidgets('$name ${width.toInt()} ${mode.name}', (tester) async {
+            await tester.runAsync(loadGoldenFonts);
+            final (_, container) = await _pump(
+              tester,
+              ActivityFixture(),
+              location: location,
+              width: width,
+              height: goldenHeight(width),
+            );
+            container.read(themeModeProvider.notifier).select(mode);
+            await tester.pumpAndSettle();
+            if (tap != null) {
+              await _tap(tester, find.byKey(ValueKey(tap)));
+            }
+            await expectLater(
+              find.byType(MaterialApp),
+              matchesGoldenFile(
+                'goldens/${name}_${width.toInt()}_${mode.name}.png',
+              ),
+            );
+            await disposeApp(tester);
+          }, tags: ['golden']);
+        }
       }
     }
   });
