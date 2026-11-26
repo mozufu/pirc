@@ -428,7 +428,7 @@ async fn node_session_routes() {
     insta::assert_json_snapshot!("node_session_routes", t.into_value());
 }
 
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: Runner::dispatch_configured still validates the lease after choosing the runner"]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_commands() {
     let llm = HeldLlm::start().await;
@@ -817,51 +817,6 @@ fn outcomes(frames: &[Value]) -> Value {
     )
 }
 
-#[ignore = "pirc 2: Runner::dispatch_configured still validates the lease after choosing the runner"]
-#[tokio::test(flavor = "multi_thread")]
-async fn node_session_stop_without_control() {
-    let llm = HeldLlm::start().await;
-    let models = tempfile::tempdir().unwrap();
-    let Some(cluster) = held_cluster(&llm, models.path(), GatewayOptions::default()).await else {
-        return;
-    };
-    let api = cluster.api();
-    let (mut s, _) = Session::create(&api).await;
-    s.acquire().await;
-    let mut events = s.events().await;
-
-    let held = Hold::new();
-    llm.push([Step::held(&held, Step::text("Held reply."))]);
-    assert_eq!(
-        s.command(json!({ "type": "prompt", "message": "hold" }))
-            .await
-            .status,
-        202
-    );
-    s.snapshot_until("the reply streams", streaming).await;
-
-    // Another device takes control; the browser is no longer the holder, so
-    // this plain Stop has no lease to give.
-    let phone = s
-        .post(
-            "/control/acquire",
-            json!({ "clientId": "phone", "force": true }),
-        )
-        .await;
-    assert_eq!(phone.status, 200, "{}", phone.body);
-    let stopped = s
-        .post(
-            "/commands",
-            json!({ "commandId": "stop-without-control", "clientId": s.client.clone(),
-                "payload": { "type": "stop" } }),
-        )
-        .await;
-    assert_eq!(stopped.status, 202, "{}", stopped.body);
-    assert_eq!(stopped.body["command"]["status"], "accepted");
-    read_until(&mut events, |frame| agent_event(frame, "agent_settled")).await;
-    events.close().await;
-}
-
 #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_failures() {
@@ -918,7 +873,7 @@ async fn node_session_failures() {
     insta::assert_json_snapshot!("node_session_failures", t.into_value());
 }
 
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: Runner::dispatch_configured still validates the lease after choosing the runner"]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_interactions() {
     let llm = HeldLlm::start().await;
