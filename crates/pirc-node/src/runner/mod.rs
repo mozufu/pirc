@@ -531,9 +531,13 @@ impl RunnerManager {
                 })?,
             _ => runner,
         };
-        node.db
-            .lock()
-            .validate_lease(session_id, lease.0, lease.1)?;
+        // The second check, after the runner exists: a plain Stop is exempt for
+        // the same reason as the first one above.
+        if !matches!(payload, CommandPayload::Stop) {
+            node.db
+                .lock()
+                .validate_lease(session_id, lease.0, lease.1)?;
+        }
         if let Some(settings) = initial {
             crate::session_creation::admission::require_sendable(
                 &node.db.lock(),
