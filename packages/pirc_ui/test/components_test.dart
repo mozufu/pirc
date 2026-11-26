@@ -187,6 +187,26 @@ void main() {
     expect(find.bySemanticsLabel('Butler, Researcher'), findsOneWidget);
   });
 
+  testWidgets('GroupAvatar takes other sizes (the 88 profile)', (tester) async {
+    await _pump(
+      tester,
+      const GroupAvatar(
+        first: AvatarFace('Butler', color: 1),
+        second: AvatarFace('Researcher', color: 3),
+        dimension: 88,
+        faceDiameter: 58,
+        fontSize: 22,
+      ),
+    );
+    expect(tester.getSize(find.byType(GroupAvatar)), const Size(88, 88));
+    final faces = find.descendant(
+      of: find.byType(GroupAvatar),
+      matching: find.byType(Avatar),
+    );
+    expect(tester.getSize(faces.first), const Size(58, 58));
+    expect(tester.widget<Text>(find.text('B')).style?.fontSize, 22);
+  });
+
   group('ChatRow', () {
     testWidgets('72 with an avatar, 64 without; badges and taps', (
       tester,

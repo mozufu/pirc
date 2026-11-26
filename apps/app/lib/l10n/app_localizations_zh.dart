@@ -2758,6 +2758,137 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get retireDeleteField => 'pots 名稱';
+
+  @override
+  String groupNewCount(int count) {
+    return '已選 $count 位 pots';
+  }
+
+  @override
+  String get groupAvatarFaces => '用成員頭像';
+
+  @override
+  String get groupAvatarNote => '預設用成員頭像；也可以選顏色或上傳圖片';
+
+  @override
+  String get groupName => '名稱';
+
+  @override
+  String get groupNameHint => '群組名稱';
+
+  @override
+  String get groupMembers => '成員';
+
+  @override
+  String get groupHost => '主持';
+
+  @override
+  String get groupHostNote => '沒有 @ 任何人時由主持回覆，並決定交給誰。主持不會因此拿到其他成員的權限。';
+
+  @override
+  String get groupHostPickFirst => '先勾選成員，再選主持。';
+
+  @override
+  String get groupCreate => '建立';
+
+  @override
+  String get groupNameMissing => '替群組取個名字';
+
+  @override
+  String get groupMemberRule => '群組要有 2 到 16 位 pots';
+
+  @override
+  String get groupHostMissing => '從成員中選一位主持';
+
+  @override
+  String get groupHostTag => '主持';
+
+  @override
+  String groupMemberHost(String name) {
+    return '$name（主持）';
+  }
+
+  @override
+  String groupComposerHint(String host) {
+    return '沒有 @ 時由$host回覆…';
+  }
+
+  @override
+  String get groupComposerHintNoHost => '傳訊息到群組…';
+
+  @override
+  String groupComposerTo(String names) {
+    return '傳給$names…';
+  }
+
+  @override
+  String get groupTargetTo => '傳給';
+
+  @override
+  String groupTargetRemove(String name) {
+    return '不傳給$name';
+  }
+
+  @override
+  String get groupMention => '@ 成員';
+
+  @override
+  String get groupMentionLabel => '選擇要 @ 的成員';
+
+  @override
+  String get groupMentionHeader => '要找誰？各自只用自己的權限與額度';
+
+  @override
+  String get groupMentionAll => '所有人';
+
+  @override
+  String get groupMentionAllWarning => '每位都會回覆，各自花自己的額度';
+
+  @override
+  String get groupInfo => '群組資訊';
+
+  @override
+  String get groupEditLook => '更改名稱與頭像';
+
+  @override
+  String groupMembersCount(int count) {
+    return '成員 · $count';
+  }
+
+  @override
+  String get groupYouDetail => '建立者 · 可以更改成員和主持';
+
+  @override
+  String get groupEditMembers => '新增或移除成員';
+
+  @override
+  String get groupPermissionsNote => '權限不會因為在同一個群組而合併。主持把事情交給別人時，對方只用自己的權限。';
+
+  @override
+  String get groupNoHost => '沒有主持';
+
+  @override
+  String get groupHostStays => '主持一定是成員；要移除請先換主持';
+
+  @override
+  String get groupDelete => '刪除群組…';
+
+  @override
+  String get groupDeleteNote => '刪除群組不會刪除成員或它們開的工作。';
+
+  @override
+  String groupDeleteTitle(String name) {
+    return '刪除$name？';
+  }
+
+  @override
+  String get groupDeleteBody => '它的訊息會永久刪除；成員 pots 和它們的工作都會留著。';
+
+  @override
+  String get groupConflict => '群組在別的裝置上改過了。你的修改還在，確認後再儲存一次。';
+
+  @override
+  String get groupGone => '這個群組已刪除。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pirc_app/src/chat/group_conversation_screen.dart';
 import 'package:pirc_app/src/chat/handover_screen.dart';
 import 'package:pirc_app/src/chat/pot_conversation_screen.dart';
 import 'package:pirc_app/src/chat/pot_profile_screen.dart';
@@ -483,7 +484,7 @@ void main() {
       expect(find.byKey(const ValueKey('thread-composer-field')), findsNothing);
     });
 
-    appTest('a group\'s thread ID stays on the placeholder', (tester) async {
+    appTest('a group\'s thread ID opens the group', (tester) async {
       final fixture = ConversationFixture();
       final gateway = fixture.install();
       gateway.json['GET /api/threads/t-mobile'] = (_) => {
@@ -501,8 +502,9 @@ void main() {
         overrides: [clockProvider.overrideWithValue(() => fixedNow)],
         reduceMotion: true,
       );
-      expect(find.text('Item t-mobile'), findsOneWidget);
-      expect(find.byKey(const ValueKey('thread-composer-field')), findsNothing);
+      expect(find.text('Item t-mobile'), findsNothing);
+      expect(find.byType(PotConversationScreen), findsOneWidget);
+      expect(find.byType(GroupConversationScreen), findsOneWidget);
     });
   });
 

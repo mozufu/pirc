@@ -146,6 +146,11 @@ final _screens = <String, (String, FakeGateway Function(), Saved Function())>{
     () => PotProfileFixture().install(),
     Saved.new,
   ),
+  'group_conversation': (
+    '/chat?open=t-mobile',
+    () => GroupFixture().install(),
+    Saved.new,
+  ),
 };
 
 void main() {

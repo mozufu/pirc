@@ -2878,4 +2878,152 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get retireDeleteField => 'Pot name';
+
+  @override
+  String groupNewCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pots selected',
+      one: '1 pot selected',
+      zero: 'No pots selected',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get groupAvatarFaces => 'Members\' faces';
+
+  @override
+  String get groupAvatarNote =>
+      'Members\' faces by default; you can also pick a colour or upload a picture';
+
+  @override
+  String get groupName => 'Name';
+
+  @override
+  String get groupNameHint => 'Group name';
+
+  @override
+  String get groupMembers => 'Members';
+
+  @override
+  String get groupHost => 'Host';
+
+  @override
+  String get groupHostNote =>
+      'Without an @, the host answers and decides who to hand things to. The host gets no other member\'s permissions.';
+
+  @override
+  String get groupHostPickFirst =>
+      'Tick the members first, then choose the host.';
+
+  @override
+  String get groupCreate => 'Create';
+
+  @override
+  String get groupNameMissing => 'Give the group a name';
+
+  @override
+  String get groupMemberRule => 'A group has 2 to 16 pots';
+
+  @override
+  String get groupHostMissing => 'Choose a host among the members';
+
+  @override
+  String get groupHostTag => 'Host';
+
+  @override
+  String groupMemberHost(String name) {
+    return '$name (host)';
+  }
+
+  @override
+  String groupComposerHint(String host) {
+    return 'Without @, $host answers…';
+  }
+
+  @override
+  String get groupComposerHintNoHost => 'Message the group…';
+
+  @override
+  String groupComposerTo(String names) {
+    return 'To $names…';
+  }
+
+  @override
+  String get groupTargetTo => 'To';
+
+  @override
+  String groupTargetRemove(String name) {
+    return 'Don\'t send to $name';
+  }
+
+  @override
+  String get groupMention => '@ a member';
+
+  @override
+  String get groupMentionLabel => 'Choose who to @';
+
+  @override
+  String get groupMentionHeader =>
+      'Who is it for? Each uses only its own permissions and budget';
+
+  @override
+  String get groupMentionAll => 'Everyone';
+
+  @override
+  String get groupMentionAllWarning =>
+      'Every member will be woken and reply, each on its own budget';
+
+  @override
+  String get groupInfo => 'Group info';
+
+  @override
+  String get groupEditLook => 'Change name and avatar';
+
+  @override
+  String groupMembersCount(int count) {
+    return 'Members · $count';
+  }
+
+  @override
+  String get groupYouDetail => 'Creator · can change the members and the host';
+
+  @override
+  String get groupEditMembers => 'Add or remove members';
+
+  @override
+  String get groupPermissionsNote =>
+      'Permissions don\'t merge in a group. When the host hands something to another member, that member uses only its own permissions.';
+
+  @override
+  String get groupNoHost => 'No host';
+
+  @override
+  String get groupHostStays =>
+      'The host stays a member; choose another host first';
+
+  @override
+  String get groupDelete => 'Delete group…';
+
+  @override
+  String get groupDeleteNote =>
+      'Deleting the group deletes neither its members nor the works they opened.';
+
+  @override
+  String groupDeleteTitle(String name) {
+    return 'Delete $name?';
+  }
+
+  @override
+  String get groupDeleteBody =>
+      'Its messages are deleted for good. The member pots and their works stay.';
+
+  @override
+  String get groupConflict =>
+      'The group changed on another device. Your edit is kept; check it and save again.';
+
+  @override
+  String get groupGone => 'This group was deleted.';
 }

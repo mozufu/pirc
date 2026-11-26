@@ -19,14 +19,14 @@ import 'thread_view.dart';
 /// A pot's conversation (E11): its direct thread with the header (avatar,
 /// name, status; it opens the profile), the messages and cards, and the
 /// composer. Opened by `pot:<id>`, or by a direct thread's ID (a deleted
-/// pot's old thread, read-only). A group's thread shows [groupFallback]
-/// until step 9 builds group conversations.
+/// pot's old thread, read-only). Any other thread (a group, a pot DM)
+/// shows what [otherThread] builds for it once the thread is read.
 class PotConversationScreen extends ConsumerStatefulWidget {
   const PotConversationScreen({
     super.key,
     required this.chatKey,
     this.showBack = true,
-    this.groupFallback,
+    this.otherThread,
   });
 
   /// `pot:<id>` or a thread ID.
@@ -34,7 +34,7 @@ class PotConversationScreen extends ConsumerStatefulWidget {
 
   /// False at 1200 and wider, where the list stays beside it.
   final bool showBack;
-  final WidgetBuilder? groupFallback;
+  final Widget Function(BuildContext context, PotThread thread)? otherThread;
 
   @override
   ConsumerState<PotConversationScreen> createState() =>
@@ -71,8 +71,8 @@ class _PotConversationScreenState extends ConsumerState<PotConversationScreen> {
     final colors = PircColorTokens.of(context);
     final view = ref.watch(threadControllerProvider(widget.chatKey));
     final thread = view.thread;
-    if (thread != null && !thread.isDirect && widget.groupFallback != null) {
-      return widget.groupFallback!(context);
+    if (thread != null && !thread.isDirect && widget.otherThread != null) {
+      return widget.otherThread!(context, thread);
     }
     final key = widget.chatKey;
     final potId = key.startsWith('pot:')
@@ -94,7 +94,7 @@ class _PotConversationScreenState extends ConsumerState<PotConversationScreen> {
     } else {
       body = ThreadMessageList(
         view: view,
-        avatarOf: (message) => _MessageAvatar(
+        avatarOf: (message) => MessageAvatar(
           message: message,
           deletedName: name,
           deletedColor: thread?.avatarColor,
@@ -191,8 +191,9 @@ class _PotConversationScreenState extends ConsumerState<PotConversationScreen> {
 }
 
 /// The avatar of a pot's bubble: the pot's, or a deleted pot's letter.
-class _MessageAvatar extends ConsumerWidget {
-  const _MessageAvatar({
+class MessageAvatar extends ConsumerWidget {
+  const MessageAvatar({
+    super.key,
     required this.message,
     required this.deletedName,
     this.deletedColor,
@@ -234,17 +235,54 @@ class _Header extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final colors = PircColorTokens.of(context);
     final summary = pot;
     final full = summary == null
         ? null
         : ref.watch(potProvider(summary.id)).value;
-    final status = summary == null ? null : _status(l10n, summary, full);
+    final status = summary == null ? null : potStateLine(l10n, summary, full);
     final line = [
       if (summary != null && summary.intro.isNotEmpty) summary.intro,
       ?status,
-      if (full != null) ?_budget(l10n, full),
+      if (full != null) ?potBudgetLine(l10n, full),
     ].join(' · ');
+    return ThreadHeader(
+      avatar: summary != null
+          ? PotAvatar(pot: summary, size: AvatarSize.md)
+          : Avatar(name: name, color: deletedColor ?? 1, size: AvatarSize.md),
+      name: name,
+      line: line,
+      showBack: showBack,
+      onOpen: onOpen,
+      openTooltip: l10n.potProfileOf(name),
+    );
+  }
+}
+
+/// `c-top` with `e-head`: Back, the [avatar] (36), the [name] (16/600)
+/// over a [line] (12 muted), and the info button; the header and the
+/// button call [onOpen] (a pot's profile, a group's info).
+class ThreadHeader extends StatelessWidget {
+  const ThreadHeader({
+    super.key,
+    required this.avatar,
+    required this.name,
+    required this.line,
+    required this.showBack,
+    required this.onOpen,
+    required this.openTooltip,
+  });
+
+  final Widget avatar;
+  final String name;
+  final String line;
+  final bool showBack;
+  final VoidCallback? onOpen;
+  final String openTooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final colors = PircColorTokens.of(context);
     return SizedBox(
       height: PircSize.topBar,
       child: Padding(
@@ -269,14 +307,7 @@ class _Header extends ConsumerWidget {
                 child: Row(
                   spacing: 8,
                   children: [
-                    if (summary != null)
-                      PotAvatar(pot: summary, size: AvatarSize.md)
-                    else
-                      Avatar(
-                        name: name,
-                        color: deletedColor ?? 1,
-                        size: AvatarSize.md,
-                      ),
+                    avatar,
                     Expanded(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -314,7 +345,7 @@ class _Header extends ConsumerWidget {
             ),
             if (onOpen != null)
               IconButton(
-                tooltip: l10n.potProfileOf(name),
+                tooltip: openTooltip,
                 color: colors['text.secondary'],
                 onPressed: onOpen,
                 icon: const Icon(LucideIcons.info, size: 21),
@@ -324,39 +355,43 @@ class _Header extends ConsumerWidget {
       ),
     );
   }
+}
 
-  /// Paused, working or unavailable; else what it may do.
-  static String? _status(AppLocalizations l10n, PotSummary pot, Pot? full) {
-    if (pot.state == 'paused') return l10n.potPaused;
-    if (pot.status == 'working') return l10n.potWorking;
-    if (pot.status == 'unavailable') return l10n.potUnavailable;
-    return switch (full?.permissions.reach) {
+/// Paused, working or unavailable; else what it may do ([full]'s reach).
+String? potStateLine(AppLocalizations l10n, PotSummary pot, Pot? full) {
+  if (pot.state == 'paused') return l10n.potPaused;
+  if (pot.status == 'working') return l10n.potWorking;
+  if (pot.status == 'unavailable') return l10n.potUnavailable;
+  return potReachLine(l10n, full);
+}
+
+/// What [pot] may do, in the conversation header's words.
+String? potReachLine(AppLocalizations l10n, Pot? pot) =>
+    switch (pot?.permissions.reach) {
       'answer' => l10n.potHeaderAnswer,
       'observe' => l10n.potHeaderObserve,
       'work' => l10n.potHeaderWork,
       _ => null,
     };
-  }
 
-  /// "This month $4.20 / $20", or today's tokens when money has no limit.
-  static String? _budget(AppLocalizations l10n, Pot pot) {
-    final left = pot.budgetLeft;
-    final money = pot.permissions.budgetMoneyMonthMicros;
-    if (money != null && left?.moneyMicros != null) {
-      return l10n.potBudgetMonthUsed(
-        dollars(money - left!.moneyMicros!),
-        dollars(money),
-      );
-    }
-    final tokens = pot.permissions.budgetTokensDay;
-    if (tokens != null && left?.tokens != null) {
-      return l10n.potBudgetDayUsed(
-        compactTokens(tokens - left!.tokens!),
-        compactTokens(tokens),
-      );
-    }
-    return null;
+/// "This month $4.20 / $20", or today's tokens when money has no limit.
+String? potBudgetLine(AppLocalizations l10n, Pot pot) {
+  final left = pot.budgetLeft;
+  final money = pot.permissions.budgetMoneyMonthMicros;
+  if (money != null && left?.moneyMicros != null) {
+    return l10n.potBudgetMonthUsed(
+      dollars(money - left!.moneyMicros!),
+      dollars(money),
+    );
   }
+  final tokens = pot.permissions.budgetTokensDay;
+  if (tokens != null && left?.tokens != null) {
+    return l10n.potBudgetDayUsed(
+      compactTokens(tokens - left!.tokens!),
+      compactTokens(tokens),
+    );
+  }
+  return null;
 }
 
 /// Dollars without cents when they are whole: `$20`, `$4.20`.

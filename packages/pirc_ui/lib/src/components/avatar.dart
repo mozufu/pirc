@@ -278,7 +278,9 @@ class AvatarFace {
 
 /// `e-avg`: two member avatars stacked in a 48 square (32 each, the first
 /// top left, the second bottom right on top), each ringed in the page
-/// colour. [small] is the 32 square with 22 avatars.
+/// colour. [small] is the 32 square with 22 avatars; [dimension],
+/// [faceDiameter] and [fontSize] give other sizes (a 36 header with 24
+/// faces, an 88 profile with 58).
 class GroupAvatar extends StatelessWidget {
   const GroupAvatar({
     super.key,
@@ -287,6 +289,9 @@ class GroupAvatar extends StatelessWidget {
     this.small = false,
     this.ring,
     this.semanticLabel,
+    this.dimension,
+    this.faceDiameter,
+    this.fontSize,
   });
 
   final AvatarFace first;
@@ -294,12 +299,15 @@ class GroupAvatar extends StatelessWidget {
   final bool small;
   final Color? ring;
   final String? semanticLabel;
+  final double? dimension;
+  final double? faceDiameter;
+  final double? fontSize;
 
   @override
   Widget build(BuildContext context) {
     final ringColor = ring ?? PircColorTokens.of(context)['surface.page'];
-    final box = small ? 32.0 : 48.0;
-    final face = small ? 22.0 : 32.0;
+    final box = dimension ?? (small ? 32.0 : 48.0);
+    final face = faceDiameter ?? (small ? 22.0 : 32.0);
     Widget member(AvatarFace f) => DecoratedBox(
       decoration: BoxDecoration(
         shape: BoxShape.circle,
@@ -311,7 +319,7 @@ class GroupAvatar extends StatelessWidget {
         image: f.image,
         me: f.me,
         diameter: face,
-        fontSize: small ? 10 : 13,
+        fontSize: fontSize ?? (small ? 10 : 13),
       ),
     );
     return Semantics(

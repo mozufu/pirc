@@ -33,6 +33,15 @@ String chatLocation(String open, {String? side}) => Uri(
 String potProfileLocation(String potId) =>
     chatLocation(potChatKey(potId), side: profileSide);
 
+/// The Chat tab's `side` value of a group's info (E35), with the group's
+/// thread ID as the open item: the right column at 1200 and wider, a page
+/// on phones (E spec § 9).
+const groupInfoSide = 'group-info';
+
+/// A group's info beside (or over) its conversation.
+String groupInfoLocation(String threadId) =>
+    chatLocation(threadId, side: groupInfoSide);
+
 /// A pot's settings (E24) in the Chat tab's content pane.
 String potSettingsKey(String potId) => 'settings:$potId';
 

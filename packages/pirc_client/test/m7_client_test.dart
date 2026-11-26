@@ -577,6 +577,8 @@ void main() {
       await threads.update('t3', revision: 4, avatarImage: 'img2');
       await threads.delete('t3');
       await threads.markRead('t3', 41);
+      await threads.update('t3', revision: 5, removeAvatarColor: true);
+      await threads.update('t3', revision: 6, avatarColor: 2);
       final requests = transport.requests;
       expect(requests[0].method, 'PATCH');
       expect(requests[0].path, '/api/threads/t3');
@@ -594,6 +596,8 @@ void main() {
       expect(requests[3].method, 'POST');
       expect(requests[3].path, '/api/threads/t3/read');
       expect(requests[3].json, {'seq': 41});
+      expect(requests[4].json, {'revision': 5, 'avatarColor': null});
+      expect(requests[5].json, {'revision': 6, 'avatarColor': 2});
     });
 
     test('messages page back and read every card kind', () async {

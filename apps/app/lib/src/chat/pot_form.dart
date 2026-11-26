@@ -78,10 +78,10 @@ String modelLabel(List<ModelInfo> models, String provider, String model) {
   return '${providerLabel(provider)} · ${info?.name ?? model}';
 }
 
-TextStyle? _fieldStyle(BuildContext context, {double size = 15}) =>
+TextStyle? formFieldStyle(BuildContext context, {double size = 15}) =>
     Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: size);
 
-InputDecoration _plain(BuildContext context, String hint) {
+InputDecoration plainField(BuildContext context, String hint) {
   final colors = PircColorTokens.of(context);
   return InputDecoration.collapsed(
     hintText: hint,
@@ -90,8 +90,8 @@ InputDecoration _plain(BuildContext context, String hint) {
 }
 
 /// `e-in`: a one-line field row (52 high) with an optional 72 label.
-class _InputRow extends StatelessWidget {
-  const _InputRow({this.label, required this.field, this.suffix});
+class FormInputRow extends StatelessWidget {
+  const FormInputRow({super.key, this.label, required this.field, this.suffix});
 
   final String? label;
   final Widget field;
@@ -145,8 +145,8 @@ class _TextArea extends StatelessWidget {
         minLines: 2,
         maxLines: null,
         keyboardType: TextInputType.multiline,
-        style: _fieldStyle(context)?.copyWith(height: 23 / 15),
-        decoration: _plain(context, hint),
+        style: formFieldStyle(context)?.copyWith(height: 23 / 15),
+        decoration: plainField(context, hint),
       ),
     ),
   );
@@ -268,9 +268,6 @@ class _PotLookFormState extends ConsumerState<PotLookForm> {
   late final _personality = TextEditingController(
     text: widget.draft.personality,
   );
-  bool _uploading = false;
-  String? _uploadError;
-
   PotDraft get _draft => widget.draft;
 
   @override
@@ -287,82 +284,16 @@ class _PotLookFormState extends ConsumerState<PotLookForm> {
     super.dispose();
   }
 
-  Future<void> _pickPicture() async {
-    final l10n = AppLocalizations.of(context);
-    if (_draft.avatarImage != null) {
-      final remove = await _sheet<bool>(
-        context,
-        (context) => ListView(
-          shrinkWrap: true,
-          children: [
-            ListTile(
-              leading: const Icon(LucideIcons.image),
-              title: Text(l10n.potAvatarChoose),
-              onTap: () => Navigator.pop(context, false),
-            ),
-            ListTile(
-              leading: const Icon(LucideIcons.trash2),
-              title: Text(l10n.potAvatarRemove),
-              onTap: () => Navigator.pop(context, true),
-            ),
-          ],
-        ),
-      );
-      if (remove == null || !mounted) return;
-      if (remove) {
-        widget.onChanged(
-          widget.draft.copyWith(avatarImage: null, avatarBytes: null),
-        );
-        return;
-      }
-    }
-    final Uint8List? bytes;
-    try {
-      bytes = await ref.read(avatarPicturePickerProvider)();
-    } on Object catch (error) {
-      if (mounted) setState(() => _uploadError = '$error');
-      return;
-    }
-    final api = ref.read(apiProvider);
-    if (bytes == null || api == null || !mounted) return;
-    setState(() {
-      _uploading = true;
-      _uploadError = null;
-    });
-    try {
-      final id = await ImagesApi(api).upload(bytes, contentType: 'image/png');
-      if (!mounted) return;
-      widget.onChanged(
-        widget.draft.copyWith(avatarImage: id, avatarBytes: bytes),
-      );
-      setState(() => _uploading = false);
-    } on PircException catch (error) {
-      if (mounted) {
-        setState(() {
-          _uploading = false;
-          _uploadError = error.message;
-        });
-      }
-    }
-  }
-
   void _template(PersonalityTemplate template) {
     final text = templateText(AppLocalizations.of(context), template);
     _personality.text = text;
     widget.onChanged(_draft.copyWith(template: template, personality: text));
   }
 
-  ImageProvider? _picture() {
-    final bytes = _draft.avatarBytes;
-    if (bytes != null) return MemoryImage(bytes);
-    return watchAvatarImage(ref, _draft.avatarImage);
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final colors = PircColorTokens.of(context);
-    final picture = _picture();
+    final picture = avatarPicture(ref, _draft.avatarImage, _draft.avatarBytes);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -377,54 +308,29 @@ class _PotLookFormState extends ConsumerState<PotLookForm> {
             ),
           ),
         ),
-        Semantics(
-          label: l10n.potAvatarColors,
-          container: true,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 4),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              spacing: 10,
-              children: [
-                for (var color = 1; color <= 5; color++)
-                  _Swatch(
-                    key: ValueKey('swatch-$color'),
-                    color: colors[avatarColorToken(color)],
-                    selected: _draft.avatarColor == color,
-                    label: l10n.potAvatarColor(color),
-                    onTap: () =>
-                        widget.onChanged(_draft.copyWith(avatarColor: color)),
-                  ),
-                _UploadSwatch(
-                  picture: picture,
-                  uploading: _uploading,
-                  label: l10n.potAvatarUpload,
-                  onTap: _uploading ? null : _pickPicture,
-                ),
-              ],
-            ),
+        AvatarPicker(
+          color: _draft.avatarColor,
+          image: _draft.avatarImage,
+          bytes: _draft.avatarBytes,
+          note: l10n.potAvatarNote,
+          onColor: (color) =>
+              widget.onChanged(_draft.copyWith(avatarColor: color)),
+          onPicture: (id, bytes) => widget.onChanged(
+            _draft.copyWith(avatarImage: id, avatarBytes: bytes),
           ),
-        ),
-        GroupNote(
-          _uploading
-              ? l10n.potAvatarUploading
-              : _uploadError ?? l10n.potAvatarNote,
-          error: _uploadError != null && !_uploading,
-          textAlign: TextAlign.center,
-          padding: const EdgeInsets.fromLTRB(32, 4, 32, 0),
         ),
         GroupLabel(l10n.potGroupBasic),
         GroupedList(
           children: [
-            _InputRow(
+            FormInputRow(
               label: l10n.potName,
               field: TextField(
                 key: const ValueKey('pot-name'),
                 controller: _name,
                 onChanged: (value) =>
                     widget.onChanged(_draft.copyWith(name: value)),
-                style: _fieldStyle(context, size: 15.5),
-                decoration: _plain(context, l10n.potNameHint),
+                style: formFieldStyle(context, size: 15.5),
+                decoration: plainField(context, l10n.potNameHint),
                 textInputAction: TextInputAction.next,
               ),
             ),
@@ -480,10 +386,158 @@ class _PotLookFormState extends ConsumerState<PotLookForm> {
   }
 }
 
+/// The picture to show for an avatar being edited: the picked [bytes]
+/// (not shown by the Gateway yet), else the uploaded [image].
+ImageProvider? avatarPicture(WidgetRef ref, String? image, Uint8List? bytes) =>
+    bytes != null ? MemoryImage(bytes) : watchAvatarImage(ref, image);
+
+/// `e-swatches` and its note: [leading] swatches (a group's "members'
+/// faces"), the five colours and the upload swatch, which picks a
+/// picture, crops it to 512 × 512 and uploads it (`POST /api/images`), or
+/// offers to remove the one there is. The note line shows [note], the
+/// upload's progress or its error. New pot, a pot's settings, New group
+/// and a group's info use it.
+class AvatarPicker extends ConsumerStatefulWidget {
+  const AvatarPicker({
+    super.key,
+    required this.color,
+    required this.image,
+    required this.bytes,
+    required this.note,
+    required this.onColor,
+    required this.onPicture,
+    this.leading = const [],
+  });
+
+  /// The chosen colour, or null for none.
+  final int? color;
+
+  /// The uploaded picture's ID.
+  final String? image;
+
+  /// The picked picture's bytes (shown at once).
+  final Uint8List? bytes;
+  final String note;
+  final ValueChanged<int> onColor;
+
+  /// The uploaded picture's ID and bytes, or nulls when it is removed.
+  final void Function(String? id, Uint8List? bytes) onPicture;
+  final List<Widget> leading;
+
+  @override
+  ConsumerState<AvatarPicker> createState() => _AvatarPickerState();
+}
+
+class _AvatarPickerState extends ConsumerState<AvatarPicker> {
+  bool _uploading = false;
+  String? _uploadError;
+
+  Future<void> _pickPicture() async {
+    final l10n = AppLocalizations.of(context);
+    if (widget.image != null) {
+      final remove = await _sheet<bool>(
+        context,
+        (context) => ListView(
+          shrinkWrap: true,
+          children: [
+            ListTile(
+              leading: const Icon(LucideIcons.image),
+              title: Text(l10n.potAvatarChoose),
+              onTap: () => Navigator.pop(context, false),
+            ),
+            ListTile(
+              leading: const Icon(LucideIcons.trash2),
+              title: Text(l10n.potAvatarRemove),
+              onTap: () => Navigator.pop(context, true),
+            ),
+          ],
+        ),
+      );
+      if (remove == null || !mounted) return;
+      if (remove) {
+        widget.onPicture(null, null);
+        return;
+      }
+    }
+    final Uint8List? bytes;
+    try {
+      bytes = await ref.read(avatarPicturePickerProvider)();
+    } on Object catch (error) {
+      if (mounted) setState(() => _uploadError = '$error');
+      return;
+    }
+    final api = ref.read(apiProvider);
+    if (bytes == null || api == null || !mounted) return;
+    setState(() {
+      _uploading = true;
+      _uploadError = null;
+    });
+    try {
+      final id = await ImagesApi(api).upload(bytes, contentType: 'image/png');
+      if (!mounted) return;
+      widget.onPicture(id, bytes);
+      setState(() => _uploading = false);
+    } on PircException catch (error) {
+      if (mounted) {
+        setState(() {
+          _uploading = false;
+          _uploadError = error.message;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final colors = PircColorTokens.of(context);
+    final picture = avatarPicture(ref, widget.image, widget.bytes);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Semantics(
+          label: l10n.potAvatarColors,
+          container: true,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 12, bottom: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              spacing: 10,
+              children: [
+                ...widget.leading,
+                for (var color = 1; color <= 5; color++)
+                  AvatarSwatch(
+                    key: ValueKey('swatch-$color'),
+                    color: colors[avatarColorToken(color)],
+                    selected: widget.color == color,
+                    label: l10n.potAvatarColor(color),
+                    onTap: () => widget.onColor(color),
+                  ),
+                _UploadSwatch(
+                  picture: picture,
+                  uploading: _uploading,
+                  label: l10n.potAvatarUpload,
+                  onTap: _uploading ? null : _pickPicture,
+                ),
+              ],
+            ),
+          ),
+        ),
+        GroupNote(
+          _uploading ? l10n.potAvatarUploading : _uploadError ?? widget.note,
+          error: _uploadError != null && !_uploading,
+          textAlign: TextAlign.center,
+          padding: const EdgeInsets.fromLTRB(32, 4, 32, 0),
+        ),
+      ],
+    );
+  }
+}
+
 /// `e-sw`: a 32 colour circle; the chosen one has a 2 gap and a 2 ink
 /// ring.
-class _Swatch extends StatelessWidget {
-  const _Swatch({
+class AvatarSwatch extends StatelessWidget {
+  const AvatarSwatch({
     super.key,
     required this.color,
     required this.selected,
@@ -554,7 +608,7 @@ class _UploadSwatch extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = PircColorTokens.of(context);
-    return _Swatch(
+    return AvatarSwatch(
       key: const ValueKey('swatch-upload'),
       color: colors['surface.layer'],
       selected: picture != null,
@@ -713,7 +767,7 @@ class _PotWorkFormState extends State<PotWorkForm> {
         GroupLabel(l10n.potGroupIntro),
         GroupedList(
           children: [
-            _InputRow(
+            FormInputRow(
               field: TextField(
                 key: const ValueKey('pot-intro'),
                 controller: _intro,
@@ -721,8 +775,8 @@ class _PotWorkFormState extends State<PotWorkForm> {
                     widget.onChanged(widget.draft.copyWith(intro: value)),
                 minLines: 1,
                 maxLines: 3,
-                style: _fieldStyle(context, size: 15.5),
-                decoration: _plain(context, l10n.potIntroHint),
+                style: formFieldStyle(context, size: 15.5),
+                decoration: plainField(context, l10n.potIntroHint),
               ),
             ),
           ],
@@ -1469,7 +1523,7 @@ class _PotReachFormState extends ConsumerState<PotReachForm> {
             ),
           ),
           if (_draft.moneyOn)
-            _InputRow(
+            FormInputRow(
               label: l10n.potBudgetDollars,
               field: TextField(
                 key: const ValueKey('budget-money'),
@@ -1482,8 +1536,8 @@ class _PotReachFormState extends ConsumerState<PotReachForm> {
                 ],
                 onChanged: (text) =>
                     _set(_draft.copyWith(moneyMicros: _micros(text))),
-                style: _fieldStyle(context, size: 15.5),
-                decoration: _plain(context, '20'),
+                style: formFieldStyle(context, size: 15.5),
+                decoration: plainField(context, '20'),
               ),
             ),
           GroupedRow(
@@ -1498,7 +1552,7 @@ class _PotReachFormState extends ConsumerState<PotReachForm> {
             ),
           ),
           if (_draft.tokensOn)
-            _InputRow(
+            FormInputRow(
               field: TextField(
                 key: const ValueKey('budget-tokens'),
                 controller: _tokenField,
@@ -1506,8 +1560,8 @@ class _PotReachFormState extends ConsumerState<PotReachForm> {
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 onChanged: (text) =>
                     _set(_draft.copyWith(tokens: _tokens(text))),
-                style: _fieldStyle(context, size: 15.5),
-                decoration: _plain(context, '2000000'),
+                style: formFieldStyle(context, size: 15.5),
+                decoration: plainField(context, '2000000'),
               ),
               suffix: l10n.potBudgetTokenUnit,
             ),

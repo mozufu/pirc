@@ -23,6 +23,8 @@ class ThreadMessageList extends ConsumerStatefulWidget {
     required this.onLoadOlder,
     required this.onNewestShown,
     this.nameOf,
+    this.hostLabelOf,
+    this.mineTextOf,
   });
 
   final ThreadView view;
@@ -32,6 +34,13 @@ class ThreadMessageList extends ConsumerStatefulWidget {
 
   /// The name above a pot's bubble (groups); null shows none.
   final String? Function(ThreadMessage message)? nameOf;
+
+  /// The host's tag beside its name (groups); null shows none.
+  final String? Function(ThreadMessage message)? hostLabelOf;
+
+  /// The text of the user's bubble (a [String] or an [InlineSpan], the
+  /// group's mentions in front); by default the message's body.
+  final Object Function(ThreadMessage message)? mineTextOf;
   final VoidCallback onLoadOlder;
   final VoidCallback onNewestShown;
 
@@ -134,12 +143,17 @@ class _ThreadMessageListState extends ConsumerState<ThreadMessageList> {
   }
 
   Widget _message(ThreadMessage message) {
-    if (message.fromUser) return Bubble.mine(text: message.body);
+    if (message.fromUser) {
+      return Bubble.mine(
+        text: widget.mineTextOf?.call(message) ?? message.body,
+      );
+    }
     if (message.fromPot) {
       return Bubble(
         text: message.body,
         avatar: widget.avatarOf(message),
         name: widget.nameOf?.call(message),
+        hostLabel: widget.hostLabelOf?.call(message),
       );
     }
     final card = message.card;
@@ -227,10 +241,19 @@ class ThreadComposer extends StatefulWidget {
     required this.onSend,
     this.enabled = true,
     this.above,
+    this.tools = const [],
+    this.controller,
   });
 
   final String hint;
   final Future<bool> Function(String body) onSend;
+
+  /// Buttons at the left of the tools row (a group's @).
+  final List<Widget> tools;
+
+  /// The field's text, when the caller needs it; else the composer keeps
+  /// its own.
+  final TextEditingController? controller;
 
   /// False while offline: the field and the button are disabled and the
   /// draft is kept.
@@ -244,12 +267,14 @@ class ThreadComposer extends StatefulWidget {
 }
 
 class _ThreadComposerState extends State<ThreadComposer> {
-  final _text = TextEditingController();
+  TextEditingController? _own;
+  TextEditingController get _text =>
+      widget.controller ?? (_own ??= TextEditingController());
   bool _sending = false;
 
   @override
   void dispose() {
-    _text.dispose();
+    _own?.dispose();
     super.dispose();
   }
 
@@ -320,6 +345,7 @@ class _ThreadComposerState extends State<ThreadComposer> {
               padding: const EdgeInsets.fromLTRB(10, 6, 8, 8),
               child: Row(
                 children: [
+                  ...widget.tools,
                   const Spacer(),
                   SizedBox.square(
                     dimension: PircSize.composerButton,

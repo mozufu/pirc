@@ -10,7 +10,10 @@ import 'calendar/calendar_screen.dart';
 import 'chat/chat_data.dart';
 import 'chat/chat_list_screen.dart';
 import 'chat/decision_sheet.dart';
+import 'chat/group_conversation_screen.dart';
+import 'chat/group_info_screen.dart';
 import 'chat/handover_screen.dart';
+import 'chat/new_group_screen.dart';
 import 'chat/new_pot_screen.dart';
 import 'chat/pot_conversation_screen.dart';
 import 'chat/pot_profile_screen.dart';
@@ -44,7 +47,7 @@ class TabScreen extends ConsumerWidget {
   final Uri? location;
 
   /// What the side pane shows (`result:<id>`, `panel:<section>`, a pot's
-  /// `profile`).
+  /// `profile`, a group's `group-info`).
   final String? side;
 
   @override
@@ -161,20 +164,28 @@ class TabScreen extends ConsumerWidget {
                     key: const ValueKey(newPotKey),
                     showBack: !desktop,
                   ),
-                  // A pot's conversation, or a direct thread by its ID (a
-                  // deleted pot's, read-only). Groups (step 9) and
-                  // `new-group` keep the placeholder.
+                  AppTab.chat when open == newGroupKey => NewGroupScreen(
+                    key: const ValueKey(newGroupKey),
+                    showBack: !desktop,
+                  ),
+                  // A pot's conversation, a direct thread by its ID (a
+                  // deleted pot's, read-only) or a group by its ID. A pot
+                  // DM (step 10) keeps the placeholder.
                   AppTab.chat
-                      when open.startsWith('pot:') ||
-                          (open != newGroupKey && !open.contains(':')) =>
+                      when open.startsWith('pot:') || !open.contains(':') =>
                     PotConversationScreen(
                       key: ValueKey(open),
                       chatKey: open,
                       showBack: !desktop,
-                      groupFallback: (context) => _ItemPlaceholder(
-                        title: l10n.openItem(open),
-                        onBack: () => context.go(tab.path),
-                      ),
+                      otherThread: (context, thread) => thread.isGroup
+                          ? GroupConversationScreen(
+                              threadId: open,
+                              showBack: !desktop,
+                            )
+                          : _ItemPlaceholder(
+                              title: l10n.openItem(open),
+                              onBack: () => context.go(tab.path),
+                            ),
                     ),
                   AppTab.calendar => CalendarDetail(
                     key: ValueKey(open),
@@ -197,6 +208,15 @@ class TabScreen extends ConsumerWidget {
               ? PotProfileScreen(
                   key: ValueKey('profile:$open'),
                   potId: open.substring('pot:'.length),
+                  closeIcon: desktop,
+                  onClose: () => context.go(chatLocation(open)),
+                )
+              : tab == AppTab.chat &&
+                    side == groupInfoSide &&
+                    !open.contains(':')
+              ? GroupInfoScreen(
+                  key: ValueKey('group-info:$open'),
+                  threadId: open,
                   closeIcon: desktop,
                   onClose: () => context.go(chatLocation(open)),
                 )

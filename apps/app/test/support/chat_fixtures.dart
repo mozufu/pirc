@@ -864,3 +864,221 @@ class HandoverFixture extends PotProfileFixture {
     return g;
   }
 }
+
+/// E32–E35: "Mobile team" (`t-mobile`) with Butler hosting Researcher and
+/// Tester; the E33 messages (a question, Butler's answer, the handoff
+/// line, Researcher's answer, the user's message to Tester, Tester's
+/// reply with its work card). Each member reads in full (its reach and
+/// budget). Posting, the read position, creating, editing (the PATCH
+/// moves the revision on; [conflictOnce] answers the next one 409 after
+/// another device's change) and deleting change the fixture as the
+/// Gateway does.
+class GroupFixture extends ChatFixture {
+  GroupFixture() {
+    pots[0]['budgetLeft'] = {'moneyMicros': 15800000, 'tokens': 1200000};
+    pots[1]['status'] = 'idle';
+    pots[1]['budgetLeft'] = {'tokens': 1200000};
+    pots[2]['budgetLeft'] = {'moneyMicros': 4000000, 'tokens': 1500000};
+    group = threads[1];
+  }
+
+  late Map<String, Object?> group;
+
+  late List<Map<String, Object?>> messages = [
+    messageJson(
+      1,
+      'Before the login page is fixed, will iPad split view have the '
+      'same problem?',
+      authorKind: 'user',
+      createdAt: at(10, 20),
+      threadId: 't-mobile',
+    ),
+    messageJson(
+      2,
+      "This needs a look at how Flutter behaves; I'll ask Researcher.",
+      authorId: 'p-butler',
+      createdAt: at(10, 21),
+      threadId: 't-mobile',
+    ),
+    messageJson(
+      3,
+      'Butler handed it to Researcher · it uses its own permissions',
+      authorKind: 'system',
+      createdAt: at(10, 21),
+      threadId: 't-mobile',
+    ),
+    messageJson(
+      4,
+      'Will update: viewInsets changes in split view. But the iPad '
+      'floating keyboard reports 0, which needs its own handling.',
+      authorId: 'p-research',
+      createdAt: at(10, 30),
+      threadId: 't-mobile',
+    ),
+    {
+      ...messageJson(
+        5,
+        'add a test for the iPad floating keyboard',
+        authorKind: 'user',
+        createdAt: at(10, 32),
+        threadId: 't-mobile',
+      ),
+      'mentions': ['p-tester'],
+    },
+    messageJson(
+      6,
+      'OK, I opened a work.',
+      authorId: 'p-tester',
+      createdAt: at(10, 34),
+      threadId: 't-mobile',
+    ),
+    messageJson(
+      7,
+      '',
+      authorKind: 'system',
+      createdAt: at(10, 34),
+      threadId: 't-mobile',
+      card: {'kind': 'work', 'workId': 'w2', 'sessionId': 's-ipad'},
+    ),
+  ];
+
+  /// What each member may do (`GET /api/pots/{id}`).
+  Map<String, Map<String, Object?>> get full => {
+    'p-butler': fullPotJson(pots[0], reach: 'work'),
+    'p-tester': fullPotJson(pots[1], reach: 'work', moneyMicros: null),
+    'p-research': fullPotJson(pots[2], reach: 'observe', moneyMicros: 5000000),
+    'p-travel': fullPotJson(pots[3], reach: 'answer'),
+  };
+
+  /// Bodies of the requests, by kind.
+  final posts = <Map<String, Object?>>[];
+  final creates = <Map<String, Object?>>[];
+  final patches = <Map<String, Object?>>[];
+  int deletes = 0;
+
+  /// The posted message's refused wakes.
+  List<Map<String, Object?>> refused = [];
+
+  /// The next create, post or patch answers this instead.
+  ApiResponse? createRefusal;
+  ApiResponse? postRefusal;
+  ApiResponse? patchRefusal;
+
+  /// The next PATCH finds the group changed by another device: the name
+  /// changes and the revision moves on, then it answers 409.
+  bool conflictOnce = false;
+
+  Map<String, Object?> get thread => {
+    ...group,
+    'lastSeq': messages.isEmpty ? 0 : messages.last['seq'],
+  };
+
+  @override
+  FakeGateway install([FakeGateway? gateway]) {
+    final g = super.install(gateway);
+    for (final MapEntry(key: id, value: pot) in full.entries) {
+      g.json['GET /api/pots/$id'] = (_) => {'pot': pot};
+    }
+    g.json['GET /api/threads/t-mobile'] = (_) => threads.contains(group)
+        ? {'thread': thread}
+        : apiError(404, 'not_found', 'No such thread');
+    g.json['GET /api/threads/t-mobile/messages'] = (request) => {
+      'messages': request.query['before'] == null ? messages : const [],
+    };
+    g.json['POST /api/threads/t-mobile/read'] = (_) => <String, Object?>{};
+    g.json['GET /api/pot-works/w2'] = (_) => {
+      'work': {
+        'id': 'w2',
+        'potId': 'p-tester',
+        'sessionId': 's-ipad',
+        'workspaceId': 'ci:pirc',
+        'title': 'Add the iPad floating keyboard test',
+        'state': 'open',
+      },
+    };
+    g.json['POST /api/threads/t-mobile/messages'] = (request) {
+      final body = (request.json! as Map).cast<String, Object?>();
+      posts.add(body);
+      final refusal = postRefusal;
+      if (refusal != null) {
+        postRefusal = null;
+        return refusal;
+      }
+      final message = {
+        ...messageJson(
+          (messages.last['seq']! as int) + 1,
+          body['body']! as String,
+          authorKind: 'user',
+          createdAt: at(10, 59),
+          threadId: 't-mobile',
+        ),
+        'mentions': body['mentions'] ?? const <String>[],
+        'all': body['all'] ?? false,
+      };
+      messages.add(message);
+      return {
+        'message': message,
+        'woken': ['p-butler'],
+        'refused': refused,
+      };
+    };
+    g.json['PATCH /api/threads/t-mobile'] = (request) {
+      final body = (request.json! as Map).cast<String, Object?>();
+      patches.add(body);
+      if (conflictOnce) {
+        conflictOnce = false;
+        group['name'] = 'Mobile crew';
+        group['revision'] = (group['revision']! as int) + 1;
+        return apiError(409, 'revision_conflict', 'The group changed');
+      }
+      final refusal = patchRefusal;
+      if (refusal != null) {
+        patchRefusal = null;
+        return refusal;
+      }
+      if (body['revision'] != group['revision']) {
+        return apiError(409, 'revision_conflict', 'The group changed');
+      }
+      for (final key in ['name', 'avatarColor', 'avatarImage', 'hostPotId']) {
+        if (body.containsKey(key)) group[key] = body[key];
+      }
+      if (body['memberPotIds'] case final List<Object?> ids) {
+        group['pots'] = [...ids];
+      }
+      group['revision'] = (group['revision']! as int) + 1;
+      return {'thread': thread};
+    };
+    g.json['DELETE /api/threads/t-mobile'] = (_) {
+      deletes++;
+      threads.remove(group);
+      return <String, Object?>{};
+    };
+    g.json['POST /api/threads'] = (request) {
+      final body = (request.json! as Map).cast<String, Object?>();
+      creates.add(body);
+      final refusal = createRefusal;
+      if (refusal != null) {
+        createRefusal = null;
+        return refusal;
+      }
+      final made = threadJson(
+        't-new',
+        kind: 'group',
+        name: body['name']! as String,
+        pots: [...(body['memberPotIds']! as List).cast<String>()],
+        hostPotId: body['hostPotId'] as String?,
+        avatarColor: body['avatarColor'] as int?,
+        updatedAt: at(10, 59),
+      );
+      threads.add(made);
+      return {'thread': made};
+    };
+    g.json['GET /api/threads/t-new'] = (_) => {
+      'thread': threads.firstWhere((t) => t['id'] == 't-new'),
+    };
+    g.json['GET /api/threads/t-new/messages'] = (_) => {
+      'messages': <Object?>[],
+    };
+    return g;
+  }
+}

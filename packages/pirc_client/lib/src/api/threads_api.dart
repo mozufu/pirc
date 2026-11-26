@@ -331,25 +331,29 @@ class ThreadsApi {
     }),
   );
 
-  /// Edits a group. [removeAvatarImage] sends `avatarImage: null`.
-  ///
-  /// Provisional: the route comes with M7 step 0.
+  /// Edits a group. [removeAvatarImage] sends `avatarImage: null`;
+  /// [removeAvatarColor] sends `avatarColor: null` (the members' faces).
   Future<PotThread> update(
     String id, {
     required int revision,
     String? name,
     int? avatarColor,
+    bool removeAvatarColor = false,
     String? avatarImage,
     bool removeAvatarImage = false,
     String? hostPotId,
     List<String>? memberPotIds,
   }) async {
     assert(avatarImage == null || !removeAvatarImage);
+    assert(avatarColor == null || !removeAvatarColor);
     return _thread(
       await api.patch(path(id), {
         'revision': revision,
         'name': ?name,
-        'avatarColor': ?avatarColor,
+        if (removeAvatarColor)
+          'avatarColor': null
+        else
+          'avatarColor': ?avatarColor,
         if (removeAvatarImage)
           'avatarImage': null
         else

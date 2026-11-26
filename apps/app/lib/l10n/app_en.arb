@@ -1813,5 +1813,93 @@
       }
     }
   },
-  "retireDeleteField": "Pot name"
+  "retireDeleteField": "Pot name",
+  "groupNewCount": "{count, plural, =0{No pots selected} =1{1 pot selected} other{{count} pots selected}}",
+  "@groupNewCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupAvatarFaces": "Members' faces",
+  "groupAvatarNote": "Members' faces by default; you can also pick a colour or upload a picture",
+  "groupName": "Name",
+  "groupNameHint": "Group name",
+  "groupMembers": "Members",
+  "groupHost": "Host",
+  "groupHostNote": "Without an @, the host answers and decides who to hand things to. The host gets no other member's permissions.",
+  "groupHostPickFirst": "Tick the members first, then choose the host.",
+  "groupCreate": "Create",
+  "groupNameMissing": "Give the group a name",
+  "groupMemberRule": "A group has 2 to 16 pots",
+  "groupHostMissing": "Choose a host among the members",
+  "groupHostTag": "Host",
+  "groupMemberHost": "{name} (host)",
+  "@groupMemberHost": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "groupComposerHint": "Without @, {host} answers…",
+  "@groupComposerHint": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "groupComposerHintNoHost": "Message the group…",
+  "groupComposerTo": "To {names}…",
+  "@groupComposerTo": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "groupTargetTo": "To",
+  "groupTargetRemove": "Don't send to {name}",
+  "@groupTargetRemove": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "groupMention": "@ a member",
+  "groupMentionLabel": "Choose who to @",
+  "groupMentionHeader": "Who is it for? Each uses only its own permissions and budget",
+  "groupMentionAll": "Everyone",
+  "groupMentionAllWarning": "Every member will be woken and reply, each on its own budget",
+  "groupInfo": "Group info",
+  "groupEditLook": "Change name and avatar",
+  "groupMembersCount": "Members · {count}",
+  "@groupMembersCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "groupYouDetail": "Creator · can change the members and the host",
+  "groupEditMembers": "Add or remove members",
+  "groupPermissionsNote": "Permissions don't merge in a group. When the host hands something to another member, that member uses only its own permissions.",
+  "groupNoHost": "No host",
+  "groupHostStays": "The host stays a member; choose another host first",
+  "groupDelete": "Delete group…",
+  "groupDeleteNote": "Deleting the group deletes neither its members nor the works they opened.",
+  "groupDeleteTitle": "Delete {name}?",
+  "@groupDeleteTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "groupDeleteBody": "Its messages are deleted for good. The member pots and their works stay.",
+  "groupConflict": "The group changed on another device. Your edit is kept; check it and save again.",
+  "groupGone": "This group was deleted."
 }

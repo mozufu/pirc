@@ -81,7 +81,8 @@ class HandoverTarget extends StatelessWidget {
   }
 }
 
-/// `e-check`: a round tick (26 here): ink when on, a ring when off.
+/// `e-check`: a round tick (26 here): ink when on, a ring when off, in a
+/// [hitSize] square (44; a row that is tapped as a whole may pass [size]).
 class RoundCheck extends StatelessWidget {
   const RoundCheck({
     super.key,
@@ -89,12 +90,14 @@ class RoundCheck extends StatelessWidget {
     required this.onChanged,
     this.semanticLabel,
     this.size = 26,
+    this.hitSize = 44,
   });
 
   final bool value;
   final ValueChanged<bool>? onChanged;
   final String? semanticLabel;
   final double size;
+  final double hitSize;
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +110,7 @@ class RoundCheck extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onChanged == null ? null : () => onChanged!(!value),
         child: SizedBox.square(
-          dimension: 44,
+          dimension: hitSize,
           child: Center(
             child: Container(
               width: size,

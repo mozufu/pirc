@@ -5060,6 +5060,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pot name'**
   String get retireDeleteField;
+
+  /// No description provided for @groupNewCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No pots selected} =1{1 pot selected} other{{count} pots selected}}'**
+  String groupNewCount(int count);
+
+  /// No description provided for @groupAvatarFaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Members\' faces'**
+  String get groupAvatarFaces;
+
+  /// No description provided for @groupAvatarNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Members\' faces by default; you can also pick a colour or upload a picture'**
+  String get groupAvatarNote;
+
+  /// No description provided for @groupName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get groupName;
+
+  /// No description provided for @groupNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Group name'**
+  String get groupNameHint;
+
+  /// No description provided for @groupMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Members'**
+  String get groupMembers;
+
+  /// No description provided for @groupHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Host'**
+  String get groupHost;
+
+  /// No description provided for @groupHostNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Without an @, the host answers and decides who to hand things to. The host gets no other member\'s permissions.'**
+  String get groupHostNote;
+
+  /// No description provided for @groupHostPickFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Tick the members first, then choose the host.'**
+  String get groupHostPickFirst;
+
+  /// No description provided for @groupCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get groupCreate;
+
+  /// No description provided for @groupNameMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Give the group a name'**
+  String get groupNameMissing;
+
+  /// No description provided for @groupMemberRule.
+  ///
+  /// In en, this message translates to:
+  /// **'A group has 2 to 16 pots'**
+  String get groupMemberRule;
+
+  /// No description provided for @groupHostMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a host among the members'**
+  String get groupHostMissing;
+
+  /// No description provided for @groupHostTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Host'**
+  String get groupHostTag;
+
+  /// No description provided for @groupMemberHost.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (host)'**
+  String groupMemberHost(String name);
+
+  /// No description provided for @groupComposerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Without @, {host} answers…'**
+  String groupComposerHint(String host);
+
+  /// No description provided for @groupComposerHintNoHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Message the group…'**
+  String get groupComposerHintNoHost;
+
+  /// No description provided for @groupComposerTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To {names}…'**
+  String groupComposerTo(String names);
+
+  /// No description provided for @groupTargetTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get groupTargetTo;
+
+  /// No description provided for @groupTargetRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t send to {name}'**
+  String groupTargetRemove(String name);
+
+  /// No description provided for @groupMention.
+  ///
+  /// In en, this message translates to:
+  /// **'@ a member'**
+  String get groupMention;
+
+  /// No description provided for @groupMentionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose who to @'**
+  String get groupMentionLabel;
+
+  /// No description provided for @groupMentionHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Who is it for? Each uses only its own permissions and budget'**
+  String get groupMentionHeader;
+
+  /// No description provided for @groupMentionAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone'**
+  String get groupMentionAll;
+
+  /// No description provided for @groupMentionAllWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Every member will be woken and reply, each on its own budget'**
+  String get groupMentionAllWarning;
+
+  /// No description provided for @groupInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Group info'**
+  String get groupInfo;
+
+  /// No description provided for @groupEditLook.
+  ///
+  /// In en, this message translates to:
+  /// **'Change name and avatar'**
+  String get groupEditLook;
+
+  /// No description provided for @groupMembersCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Members · {count}'**
+  String groupMembersCount(int count);
+
+  /// No description provided for @groupYouDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Creator · can change the members and the host'**
+  String get groupYouDetail;
+
+  /// No description provided for @groupEditMembers.
+  ///
+  /// In en, this message translates to:
+  /// **'Add or remove members'**
+  String get groupEditMembers;
+
+  /// No description provided for @groupPermissionsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions don\'t merge in a group. When the host hands something to another member, that member uses only its own permissions.'**
+  String get groupPermissionsNote;
+
+  /// No description provided for @groupNoHost.
+  ///
+  /// In en, this message translates to:
+  /// **'No host'**
+  String get groupNoHost;
+
+  /// No description provided for @groupHostStays.
+  ///
+  /// In en, this message translates to:
+  /// **'The host stays a member; choose another host first'**
+  String get groupHostStays;
+
+  /// No description provided for @groupDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete group…'**
+  String get groupDelete;
+
+  /// No description provided for @groupDeleteNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleting the group deletes neither its members nor the works they opened.'**
+  String get groupDeleteNote;
+
+  /// No description provided for @groupDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String groupDeleteTitle(String name);
+
+  /// No description provided for @groupDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Its messages are deleted for good. The member pots and their works stay.'**
+  String get groupDeleteBody;
+
+  /// No description provided for @groupConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'The group changed on another device. Your edit is kept; check it and save again.'**
+  String get groupConflict;
+
+  /// No description provided for @groupGone.
+  ///
+  /// In en, this message translates to:
+  /// **'This group was deleted.'**
+  String get groupGone;
 }
 
 class _AppLocalizationsDelegate

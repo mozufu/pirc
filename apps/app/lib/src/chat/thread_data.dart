@@ -208,12 +208,20 @@ class ThreadController extends Notifier<ThreadView> {
   }
 
   /// Posts [body] as the user and adds the message at once (the pot's
-  /// reply arrives with `threads_changed`). Throws when it fails.
-  Future<PostedMessage> post(String body) async {
+  /// reply arrives with `threads_changed`). In a group, [mentions] (pot
+  /// IDs) wake only those members and [all] every member; without either
+  /// the host wakes. Throws when it fails.
+  Future<PostedMessage> post(
+    String body, {
+    List<String> mentions = const [],
+    bool all = false,
+  }) async {
     final thread = state.thread;
     final api = ref.read(apiProvider);
     if (thread == null || api == null) throw const NotConnected();
-    final posted = await ThreadsApi(api).post(thread.id, body);
+    final posted = await ThreadsApi(
+      api,
+    ).post(thread.id, body, mentions: mentions, all: all);
     if (ref.mounted && posted.message.seq > 0) {
       state = state.copyWith(
         messages: _merge(state.messages, [posted.message]),

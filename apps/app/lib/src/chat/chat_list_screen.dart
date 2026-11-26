@@ -281,7 +281,7 @@ class ChatEntryRow extends ConsumerWidget {
         ].join(' · '),
       ),
       GroupChat(:final thread, :final members) => (
-        GroupThreadAvatar(thread: thread, members: members),
+        GroupThreadAvatar.of(thread, members: members),
         l10n.groupMemberCount(members.length),
       ),
     };
@@ -344,38 +344,78 @@ class PotAvatar extends ConsumerWidget {
   }
 }
 
-/// A group's avatar: its picture, else two members stacked, else its
-/// colour.
+/// A group's avatar: its picture, else its colour when it has one, else
+/// two members stacked (a group without a colour uses its members'
+/// faces, E32), else colour 1. [size] is 48 (rows), 36 (the conversation
+/// header) or 88 (New group and the group's info).
 class GroupThreadAvatar extends ConsumerWidget {
   const GroupThreadAvatar({
     super.key,
-    required this.thread,
+    required this.name,
     required this.members,
+    this.color,
+    this.image,
+    this.picture,
+    this.size = AvatarSize.standard,
+    this.ring,
   });
 
-  final PotThread thread;
+  /// The avatar of [thread].
+  GroupThreadAvatar.of(
+    PotThread thread, {
+    Key? key,
+    required List<PotSummary> members,
+    AvatarSize size = AvatarSize.standard,
+    Color? ring,
+  }) : this(
+         key: key,
+         name: thread.name,
+         members: members,
+         color: thread.avatarColor,
+         image: thread.avatarImage,
+         size: size,
+         ring: ring,
+       );
+
+  final String name;
   final List<PotSummary> members;
+  final int? color;
+
+  /// The uploaded picture's ID.
+  final String? image;
+
+  /// A picture not uploaded yet (New group), shown before [image].
+  final ImageProvider? picture;
+  final AvatarSize size;
+
+  /// The faces' ring: the page colour by default.
+  final Color? ring;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final picture = watchAvatarImage(ref, thread.avatarImage);
-    if (picture == null && members.length >= 2) {
+    final picture = this.picture ?? watchAvatarImage(ref, image);
+    if (picture == null && color == null && members.length >= 2) {
       AvatarFace face(PotSummary pot) => AvatarFace(
         pot.name,
         color: pot.avatarColor,
         image: watchAvatarImage(ref, pot.avatarImage),
       );
+      final (face2, font) = switch (size) {
+        AvatarSize.md => (24.0, 10.0),
+        AvatarSize.lg => (58.0, 22.0),
+        _ => (32.0, 13.0),
+      };
       return GroupAvatar(
         first: face(members[0]),
         second: face(members[1]),
-        semanticLabel: thread.name,
+        semanticLabel: name,
+        dimension: size.diameter,
+        faceDiameter: face2,
+        fontSize: font,
+        ring: ring,
       );
     }
-    return Avatar(
-      name: thread.name,
-      color: thread.avatarColor ?? 1,
-      image: picture,
-    );
+    return Avatar(name: name, color: color ?? 1, image: picture, size: size);
   }
 }
 

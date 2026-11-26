@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/chat/chat_data.dart';
 import 'package:pirc_app/src/chat/chat_list_screen.dart';
+import 'package:pirc_app/src/chat/new_group_screen.dart';
 import 'package:pirc_app/src/chat/pot_conversation_screen.dart';
 import 'package:pirc_app/src/format.dart';
 import 'package:pirc_app/src/preferences.dart';
@@ -360,7 +361,7 @@ void main() {
       );
       await tester.tap(find.text('Create group'));
       await tester.pumpAndSettle();
-      expect(find.text('Item new-group'), findsOneWidget);
+      expect(find.byType(NewGroupScreen), findsOneWidget);
     });
 
     appTest('"Create group" waits for two pots', (tester) async {
