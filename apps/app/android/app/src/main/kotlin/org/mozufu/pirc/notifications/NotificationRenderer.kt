@@ -114,7 +114,13 @@ class NotificationRenderer(
         NotificationChannels.ensure(context, manager)
         for (step in steps) {
             when (step) {
-                is ReceiptStep.Show -> manager.notify(step.spec.tag, ID, build(step.spec))
+                is ReceiptStep.Show -> {
+                    // "Answered on …" only updates a notification still on screen: one the
+                    // quick-reply overlay removed after its own send (while this push was
+                    // being read) is not posted again.
+                    if (step.spec.answeredOn != null && step.spec.tag !in shownTags()) continue
+                    manager.notify(step.spec.tag, ID, build(step.spec))
+                }
                 is ReceiptStep.Remove -> manager.cancel(step.tag, ID)
                 ReceiptStep.PairingEnded -> pairingEnded(pairingStamp)
             }
@@ -219,14 +225,9 @@ class NotificationRenderer(
 
     /** An explicit, immutable intent straight to [MainActivity] (no service in between). */
     private fun open(tag: String, role: String, target: OpenTarget): PendingIntent {
-        val json = target.json()
-        val intent = Intent(context, MainActivity::class.java)
-            .setAction(ACTION_OPEN)
+        val intent = openIntent(context, signer, target)
             // Makes each tag, button and choice its own PendingIntent.
             .setIdentifier("$tag|$role|${target.key}")
-            .putExtra(EXTRA_TARGET, json)
-            .putExtra(EXTRA_SIGNATURE, signer.sign(json))
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         return PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
 
@@ -239,6 +240,19 @@ class NotificationRenderer(
         const val ACTION_OPEN = "org.mozufu.pirc.OPEN_NOTIFICATION"
         const val EXTRA_TARGET = "org.mozufu.pirc.notificationTarget"
         const val EXTRA_SIGNATURE = "org.mozufu.pirc.notificationSignature"
+
+        /**
+         * The signed intent that opens [target] in [MainActivity], as a notification tap
+         * does; the quick-reply overlay starts it directly.
+         */
+        fun openIntent(context: Context, signer: TapSigner, target: OpenTarget): Intent {
+            val json = target.json()
+            return Intent(context, MainActivity::class.java)
+                .setAction(ACTION_OPEN)
+                .putExtra(EXTRA_TARGET, json)
+                .putExtra(EXTRA_SIGNATURE, signer.sign(json))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
 
         fun labelOf(label: ActionLabel) = when (label) {
             ActionLabel.ANSWER -> R.string.notification_answer

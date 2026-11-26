@@ -53,6 +53,9 @@
                 <action android:name="org.unifiedpush.android.connector.PUSH_EVENT" />
             </intent-filter>
         </service>
+        <!-- The quick-reply overlay's anchor (M8 step 4): OverlayHost starts it once its
+             window is on screen and stops it when the window closes. Not exported. -->
+        <service android:name=".overlay.OverlayService" android:exported="false" />
         <!-- The QR scanner module of Google Play services (scanner channel). -->
         <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode_ui" />
         <!-- Don't delete the meta-data below.

@@ -681,6 +681,8 @@ impl Ctx<'_> {
         if run.schedule_id != schedule_id {
             return Err(ApiError::not_found(format!("No run {run_id}")));
         }
+        // The schedule's title, so the quick-reply overlay can name the run.
+        let title = self.get(user, schedule_id)?.spec.title;
         let reason = match run.status {
             RunStatus::Missed | RunStatus::Failed | RunStatus::Skipped => run
                 .result
@@ -691,6 +693,7 @@ impl Ctx<'_> {
         Ok(json!({
             "id": run.id,
             "scheduleId": run.schedule_id,
+            "title": title,
             "state": run.status,
             "dueAt": run.due_at,
             "startedAt": run.started_at,

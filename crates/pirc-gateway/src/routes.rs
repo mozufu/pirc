@@ -1519,8 +1519,17 @@ pub async fn interaction_state(
     let request = &row["request"];
     let conn = app.db.lock();
     let lease = conn.get_lease(&claimed.session.id)?;
+    // The holder as `GET …/control` names it, plus the lease's `clientId`, so a
+    // background client can tell "this device" from another one. A live lease
+    // whose client has no record still names its `clientId`.
     let control_holder = if lease.is_object() && lease["expired"] != true {
-        crate::clients::holder(&conn, &identity.user, &claimed.session.id, &lease)?
+        let mut holder =
+            crate::clients::holder(&conn, &identity.user, &claimed.session.id, &lease)?;
+        if !holder.is_object() {
+            holder = json!({});
+        }
+        holder["clientId"] = lease["clientId"].clone();
+        holder
     } else {
         Value::Null
     };
@@ -1536,6 +1545,8 @@ pub async fn interaction_state(
         .flatten();
     Ok(ok(json!({
         "id": row["id"],
+        // The overlay's header names the session.
+        "sessionName": claimed.session.name,
         "state": state,
         "epoch": epoch,
         "question": {
@@ -1999,6 +2010,7 @@ mod tests {
         let (status, ask) = read("ask", "alice").await;
         assert_eq!(status, 200, "{ask}");
         assert_eq!(ask["state"], "pending");
+        assert_eq!(ask["sessionName"], "New session");
         assert_eq!(ask["epoch"], "3");
         assert_eq!(ask["question"]["title"], "Which?");
         assert_eq!(
@@ -2007,6 +2019,7 @@ mod tests {
         );
         assert_eq!(ask["expiresAt"], soon);
         assert_eq!(ask["controlHolder"]["name"], "Office iMac");
+        assert_eq!(ask["controlHolder"]["clientId"], "web-1");
         assert_eq!(ask["answeredBy"], Value::Null);
         assert_eq!(ask.get("history"), None, "no snapshot");
 
@@ -2020,6 +2033,28 @@ mod tests {
         assert_eq!(read("gone", "alice").await.1["state"], "expired");
         assert_eq!(read("nothing", "alice").await.0, 404);
         assert_eq!(read("ask", "bob").await.0, 403, "another user's session");
+
+        // A live lease of a client the Gateway has no record of still names
+        // its clientId, so the phone does not read it as free.
+        app.db
+            .lock()
+            .execute(
+                "UPDATE leases SET client_id='phone-2' WHERE session_id=?1",
+                [&session],
+            )
+            .unwrap();
+        let (_, unknown) = read("ask", "alice").await;
+        assert_eq!(unknown["controlHolder"], json!({ "clientId": "phone-2" }));
+
+        // An expired lease has no holder.
+        app.db
+            .lock()
+            .execute(
+                "UPDATE leases SET expires_at=1 WHERE session_id=?1",
+                [&session],
+            )
+            .unwrap();
+        assert_eq!(read("ask", "alice").await.1["controlHolder"], Value::Null);
     }
 
     fn payload(value: Value) -> Result<Value, ApiError> {

@@ -45,8 +45,9 @@ sealed interface BackgroundResult {
 
 /**
  * The slim client that push receipt and the quick-reply overlay use without the Flutter
- * engine (plans/client.md, Background client). It reads only the compact routes and
- * sends answers and schedule decisions; nothing else.
+ * engine (plans/client.md, Background client). It reads only the compact routes, sends
+ * answers and schedule decisions, and takes the control lease for the overlay's send
+ * ([takeControl]); nothing else.
  *
  * Calls block: run them off the main thread. [tokens] reads the device token from the
  * Keystore for each request. [clientId] is the app's client ID, which answers name.
@@ -95,6 +96,29 @@ class BackgroundClient(
         url("api", "sessions", sessionId, "interactions", interactionId, "answer"),
         JSONObject().put("clientId", clientId).put("answer", answer).toString().toRequestBody(JSON),
     )
+
+    /**
+     * `POST /api/sessions/{id}/control/acquire` with `{clientId, force: true}`: takes the
+     * control lease from another device before the overlay sends an answer, as the
+     * composer's send does (M4 step 13). It is not a command: it has no command ID and
+     * never marks one as uncertain, and taking a lease twice is harmless, so a failure
+     * before an answer came is [BackgroundResult.Unreachable] and any 5xx is
+     * [BackgroundResult.Refused]. Nothing keeps the lease alive afterwards; it ends by
+     * itself (30 s) unless the app takes it over.
+     */
+    fun takeControl(sessionId: String): BackgroundResult {
+        val token = try {
+            tokens()
+        } catch (error: Exception) {
+            return BackgroundResult.Unreachable(error)
+        } ?: return BackgroundResult.Unpaired
+        val body = JSONObject().put("clientId", clientId).put("force", true).toString().toRequestBody(JSON)
+        return try {
+            withToken(token, Request.Builder().url(url("api", "sessions", sessionId, "control", "acquire")).post(body), ::classify)
+        } catch (error: IOException) {
+            BackgroundResult.Unreachable(error)
+        }
+    }
 
     /** Allows a missed run: `POST /api/schedules/{id}/run` with `{runId}`. */
     fun allowRun(scheduleId: String, runId: String, commandId: String = newCommandId()): BackgroundResult =

@@ -10,6 +10,7 @@ import org.mozufu.pirc.notifications.CompactReads
 import org.mozufu.pirc.notifications.NotificationRenderer
 import org.mozufu.pirc.notifications.PushNote
 import org.mozufu.pirc.notifications.PushReceipt
+import org.mozufu.pirc.overlay.OverlayLauncher
 import org.unifiedpush.android.connector.FailedReason
 import org.unifiedpush.android.connector.PushService
 import org.unifiedpush.android.connector.data.PushEndpoint
@@ -66,7 +67,16 @@ object PushDelivery {
                 val client = BackgroundClient.create(app, target.gateway, target.clientId)
                 val renderer = NotificationRenderer(app)
                 val receipt = PushReceipt(reads(client), renderer::shownTags, shownTitle = renderer::shownTitle)
-                renderer.apply(receipt.plan(note), target.pairingStamp)
+                val steps = receipt.plan(note)
+                renderer.apply(steps, target.pairingStamp)
+                // Then, beside the notification, the quick-reply overlay when the read showed
+                // a question with choices or a missed run. A failure here never touches the
+                // notification, which is already posted.
+                try {
+                    OverlayLauncher.of(app).onReceipt(note, steps)
+                } catch (error: RuntimeException) {
+                    Log.w("PircPush", "Overlay not opened: ${error.javaClass.simpleName}")
+                }
             } catch (error: Exception) {
                 // A push is best effort; it must not stop the service.
                 Log.w("PircPush", "Could not show a push: ${error.javaClass.simpleName}")

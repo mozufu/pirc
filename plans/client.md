@@ -80,7 +80,9 @@ scanner, file/save pickers, share, clipboard images, drag-and-drop, the
 engine. They keep a slim Kotlin client (OkHttp from one factory, the same proxy as
 Dart). To avoid keeping a second reducer, the Gateway gains compact endpoints for
 them (M8): the current state of one interaction (question, choices, epoch, expiry,
-control holder) and of one scheduled run.
+control holder) and of one scheduled run. Besides answers and schedule decisions, the
+client sends one more request: the overlay's send takes the control lease
+(`…/control/acquire` with `force`) when another device holds it.
 
 **Management grants** move into Dart memory with the token. The earlier rule of keeping
 them only in Kotlin added no real boundary inside one process.

@@ -258,4 +258,44 @@ class BackgroundClientTest {
         assertTrue(client.interaction("s1", "i1") is BackgroundResult.Done)
         assertEquals("gateway.invalid", server.takeRequest().headers["Host"])
     }
+
+    @Test fun takeControlForcesTheLeaseForThisClientWithoutACommandId() {
+        enqueue(200, """{"lease":{"clientId":"client-1","generation":4}}""")
+        val client = client()
+
+        val result = client.takeControl("s/1") as BackgroundResult.Done
+        assertEquals(4, result.body!!.getJSONObject("lease").getInt("generation"))
+        val acquire = server.takeRequest()
+        assertEquals("POST", acquire.method)
+        assertEquals("/api/sessions/s%2F1/control/acquire", acquire.url.encodedPath)
+        assertEquals("1", acquire.headers["X-Pirc-Request"])
+        assertEquals("Bearer pirc_dev_old", acquire.headers["Authorization"])
+        val body = JSONObject(acquire.body!!.utf8())
+        assertEquals("client-1", body.getString("clientId"))
+        assertTrue(body.getBoolean("force"))
+        assertEquals(setOf("clientId", "force"), body.keys().asSequence().toSet())
+        assertEquals(emptySet<String>(), client.notSure)
+    }
+
+    @Test fun aFailedTakeoverIsARefusalOrUnreachableAndMarksNoCommand() {
+        enqueue(409, """{"error":{"code":"lease_owned","message":"Another user"}}""")
+        enqueue(502, """{"error":{"code":"node_offline","message":"Offline"}}""")
+        val client = client()
+
+        val refused = client.takeControl("s1") as BackgroundResult.Refused
+        assertEquals("lease_owned", refused.code)
+        assertEquals(502, (client.takeControl("s1") as BackgroundResult.Refused).status)
+        val failing = GatewayHttp.client().newBuilder().addInterceptor { throw IOException("offline") }.build()
+        assertTrue(client(failing).takeControl("s1") is BackgroundResult.Unreachable)
+        assertEquals(emptySet<String>(), client.notSure)
+        // The answer after it still goes out with its own command ID.
+        enqueue(200, "{}")
+        assertTrue(client.answer("s1", "i1", JSONObject().put("value", "A")) is BackgroundResult.Done)
+    }
+
+    @Test fun takeControlWithoutATokenSendsNothing() {
+        token = null
+        assertEquals(BackgroundResult.Unpaired, client().takeControl("s1"))
+        assertEquals(0, server.requestCount)
+    }
 }

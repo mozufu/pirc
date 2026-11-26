@@ -4,4 +4,18 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <application>
+        <!-- Debug builds only: drives the quick-reply overlay into one state with fake
+             data, for screenshots (DebugOverlayReceiver). Only the shell may send to it
+             (it holds DUMP). The scene is a string extra; see the receiver for the
+             command line and the scenes. -->
+        <receiver
+            android:name=".overlay.DebugOverlayReceiver"
+            android:exported="true"
+            android:permission="android.permission.DUMP">
+            <intent-filter>
+                <action android:name="org.mozufu.pirc.debug.OVERLAY" />
+            </intent-filter>
+        </receiver>
+    </application>
 </manifest>

@@ -1019,6 +1019,7 @@ async fn a_missed_run_reads_compactly_and_its_push_names_the_run() {
     assert_eq!(status, 200, "{body}");
     let run = &body["run"];
     assert_eq!(run["state"], "missed");
+    assert_eq!(run["title"], schedule.spec.title);
     assert_eq!(run["dueAt"], missed.due_at);
     assert!(run["reason"].as_str().unwrap().contains("not running"));
     assert_eq!(run.get("result"), None);

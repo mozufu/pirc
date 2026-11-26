@@ -184,6 +184,12 @@ class NotificationRendererTest {
         assertFalse(renderer.shownTags().contains("interaction:7331:3:7131"))
     }
 
+    @Test fun aLateAnsweredUpdateDoesNotRepostARemovedNotification() {
+        // The overlay's own send removed it while the "answered" push was being read.
+        renderer.apply(listOf(ReceiptStep.Show(spec().copy(answeredOn = "Pixel", actions = emptyList(), choices = emptyList()))))
+        assertTrue(shadowOf(manager).allNotifications.isEmpty())
+    }
+
     @Test @Config(qualifiers = "zh-rTW")
     fun stringsFollowTheSystemLanguage() {
         val note = renderer.build(spec(lockScreen = "title"))
