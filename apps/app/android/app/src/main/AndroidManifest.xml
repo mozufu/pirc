@@ -1,5 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Notifications (M8 step 3); asked for only from Settings → Notifications. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Push receipt reads the state before it shows a notification (PushDelivery). -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- The quick-reply overlay (step 4); its switch is in Settings → Notifications. -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <application
         android:allowBackup="false"
         android:fullBackupContent="false"
@@ -40,6 +46,13 @@
                 <data android:scheme="pirc" android:host="pair" />
             </intent-filter>
         </activity>
+        <!-- UnifiedPush callbacks. Not exported: the connector's receiver takes the
+             distributor's broadcasts and binds this service inside the app. -->
+        <service android:name=".push.PircPushService" android:exported="false">
+            <intent-filter>
+                <action android:name="org.unifiedpush.android.connector.PUSH_EVENT" />
+            </intent-filter>
+        </service>
         <!-- The QR scanner module of Google Play services (scanner channel). -->
         <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode_ui" />
         <!-- Don't delete the meta-data below.

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Strings Kotlin shows without the Flutter engine (notifications). Every key is also in
+     values-zh-rTW/strings.xml; StringsTest checks that. -->
+<resources>
+    <string name="notification_app_name">pirc</string>
+    <string name="channel_needs_you">Needs you</string>
+    <string name="channel_needs_you_description">Questions, missed runs, model approvals, budget requests and handovers</string>
+    <string name="channel_done">Done</string>
+    <string name="channel_done_description">Finished schedules, pot replies and things pots noticed</string>
+    <string name="channel_progress">Progress</string>
+    <string name="channel_progress_description">A pot opening work, and work progress</string>
+    <string name="channel_calendar">Calendar reminders</string>
+    <string name="channel_calendar_description">Reminders of your calendar events</string>
+    <string name="channel_summary">Summaries</string>
+    <string name="channel_summary_description">The daily summary, the summary after quiet hours and test notifications</string>
+    <string name="notification_answer">Answer…</string>
+    <string name="notification_open_conversation">Open conversation</string>
+    <string name="notification_view_and_run">View and run</string>
+    <string name="notification_skip">Skip…</string>
+    <string name="notification_answered_on">Answered on %1$s</string>
+    <string name="notification_another_device">another device</string>
+    <string name="notification_unlock_to_view">Unlock to view</string>
+    <string name="notification_pairing_ended">Pairing ended</string>
+    <string name="notification_pairing_ended_body">Open pirc to pair again.</string>
+</resources>

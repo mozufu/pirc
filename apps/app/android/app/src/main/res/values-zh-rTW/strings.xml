@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notification_app_name">pirc</string>
+    <string name="channel_needs_you">需要你回應</string>
+    <string name="channel_needs_you_description">問題、錯過的排程、模型核准、預算申請與交接</string>
+    <string name="channel_done">完成</string>
+    <string name="channel_done_description">完成的排程、pot 的回覆與 pot 注意到的事</string>
+    <string name="channel_progress">進度</string>
+    <string name="channel_progress_description">pot 開啟工作與工作進度</string>
+    <string name="channel_calendar">行事曆提醒</string>
+    <string name="channel_calendar_description">行事曆事件的提醒</string>
+    <string name="channel_summary">摘要</string>
+    <string name="channel_summary_description">每日摘要、勿擾時段結束後的摘要與測試通知</string>
+    <string name="notification_answer">回答…</string>
+    <string name="notification_open_conversation">開啟對話</string>
+    <string name="notification_view_and_run">查看並執行</string>
+    <string name="notification_skip">略過…</string>
+    <string name="notification_answered_on">已由 %1$s 回答</string>
+    <string name="notification_another_device">另一台裝置</string>
+    <string name="notification_unlock_to_view">解鎖後查看內容</string>
+    <string name="notification_pairing_ended">配對已結束</string>
+    <string name="notification_pairing_ended_body">開啟 pirc 重新配對。</string>
+</resources>

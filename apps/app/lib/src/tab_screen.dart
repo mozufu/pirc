@@ -255,6 +255,8 @@ class TabScreen extends ConsumerWidget {
         key: ValueKey(open),
         itemId: open,
         showBack: !desktop,
+        // "Skip…" on a missed-run notification: ask to skip it.
+        askSkip: params['action'] == 'skip',
       ),
       AppTab.activity when povPotOf(open) != null => switch ((
         params['thread'],

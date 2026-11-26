@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The expanded question (C § 6.3): the question and at most 3 choices. A choice only
+     opens the app with it preselected; the app checks the state before anything is sent. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/notification_question"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="3"
+        android:ellipsize="end"
+        android:textAppearance="@android:style/TextAppearance.Material.Notification" />
+
+    <TextView
+        android:id="@+id/notification_choice_1"
+        style="@style/NotificationChoice" />
+
+    <TextView
+        android:id="@+id/notification_choice_2"
+        style="@style/NotificationChoice" />
+
+    <TextView
+        android:id="@+id/notification_choice_3"
+        style="@style/NotificationChoice" />
+</LinearLayout>

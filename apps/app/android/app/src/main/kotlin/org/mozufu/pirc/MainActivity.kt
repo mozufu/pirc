@@ -30,6 +30,11 @@ class MainActivity : FlutterActivity() {
         channels?.newIntent(intent)
     }
 
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        channels?.permissionResult(requestCode)
+    }
+
     override fun onPause() {
         channels?.background()
         super.onPause()

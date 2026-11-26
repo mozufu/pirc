@@ -40,6 +40,13 @@ android {
         }
     }
 
+    // Robolectric tests read the app's strings and layouts (notifications, M8 step 3).
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
+
     buildTypes {
         release {
             // Release signing is added with the release pipeline (M11).
@@ -82,4 +89,12 @@ configurations.matching { it.name.endsWith("UnitTestCompileClasspath") || it.nam
     resolutionStrategy.dependencySubstitution {
         substitute(module("com.squareup.okhttp3:okhttp")).using(module("com.squareup.okhttp3:okhttp-jvm:5.1.0"))
     }
+}
+
+// With Android resources in unit tests, packaging them reads the merged assets that the
+// Flutter plugin's copyFlutterAssets* tasks also write. Order the two without making the
+// Kotlin tests build the Dart side.
+tasks.configureEach {
+    val variant = Regex("package(\\w+)UnitTestForUnitTest").matchEntire(name)?.groupValues?.get(1) ?: return@configureEach
+    mustRunAfter("copyFlutterAssets$variant")
 }

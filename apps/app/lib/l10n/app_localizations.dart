@@ -2493,6 +2493,366 @@ abstract class AppLocalizations {
   /// **'Sent to {count} targets.'**
   String pushSent(int count);
 
+  /// No description provided for @notificationChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnecting and checking the latest state'**
+  String get notificationChecking;
+
+  /// No description provided for @notificationHandled.
+  ///
+  /// In en, this message translates to:
+  /// **'This was already handled'**
+  String get notificationHandled;
+
+  /// No description provided for @notificationExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This question expired'**
+  String get notificationExpired;
+
+  /// No description provided for @notificationExpiredDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'It can no longer be answered.'**
+  String get notificationExpiredDetail;
+
+  /// No description provided for @notificationOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not check the latest state'**
+  String get notificationOffline;
+
+  /// No description provided for @notificationChoiceKept.
+  ///
+  /// In en, this message translates to:
+  /// **'Your choice is kept: {choice}'**
+  String notificationChoiceKept(String choice);
+
+  /// No description provided for @notificationOpenConversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Open conversation'**
+  String get notificationOpenConversation;
+
+  /// No description provided for @answerSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm your answer'**
+  String get answerSheetTitle;
+
+  /// No description provided for @answerSheetCheckedHere.
+  ///
+  /// In en, this message translates to:
+  /// **'From the notification · checked at {time}: the question is still open, control on this device'**
+  String answerSheetCheckedHere(String time);
+
+  /// No description provided for @answerSheetChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'From the notification · checked at {time}: the question is still open'**
+  String answerSheetChecked(String time);
+
+  /// No description provided for @answerSheetControlledBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Controlled by {name}. Take control to send.'**
+  String answerSheetControlledBy(String name);
+
+  /// No description provided for @answerSheetTakeControl.
+  ///
+  /// In en, this message translates to:
+  /// **'Take control'**
+  String get answerSheetTakeControl;
+
+  /// No description provided for @answerSheetSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Send answer'**
+  String get answerSheetSend;
+
+  /// No description provided for @pushThisPhoneOn.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone gets notifications'**
+  String get pushThisPhoneOn;
+
+  /// No description provided for @pushThisPhoneOff.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone gets no notifications'**
+  String get pushThisPhoneOff;
+
+  /// No description provided for @pushConnecting.
+  ///
+  /// In en, this message translates to:
+  /// **'Connecting to the distributor…'**
+  String get pushConnecting;
+
+  /// No description provided for @pushSetupFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Push could not be set up'**
+  String get pushSetupFailed;
+
+  /// No description provided for @pushLastDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'last delivered {time}'**
+  String pushLastDelivered(String time);
+
+  /// No description provided for @pushThisDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'This phone'**
+  String get pushThisDevice;
+
+  /// No description provided for @pushOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Push notifications'**
+  String get pushOn;
+
+  /// No description provided for @pushDistributor.
+  ///
+  /// In en, this message translates to:
+  /// **'Distributor'**
+  String get pushDistributor;
+
+  /// No description provided for @pushChooseDistributor.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose'**
+  String get pushChooseDistributor;
+
+  /// No description provided for @pushNoDistributor.
+  ///
+  /// In en, this message translates to:
+  /// **'No UnifiedPush distributor is installed. Install one, such as ntfy, then come back to turn push on.'**
+  String get pushNoDistributor;
+
+  /// No description provided for @pushConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'These settings were changed elsewhere. The current values are shown; make your change again.'**
+  String get pushConflict;
+
+  /// No description provided for @pushTargetGone.
+  ///
+  /// In en, this message translates to:
+  /// **'The Gateway no longer has this phone. Turn push off and on again.'**
+  String get pushTargetGone;
+
+  /// No description provided for @pushCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get pushCategories;
+
+  /// No description provided for @pushCategoryNeedsYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs you'**
+  String get pushCategoryNeedsYou;
+
+  /// No description provided for @pushCategoryNeedsYouNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Questions, missed runs, model approvals, budget requests, handovers'**
+  String get pushCategoryNeedsYouNote;
+
+  /// No description provided for @pushCategoryDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get pushCategoryDone;
+
+  /// No description provided for @pushCategoryDoneNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished schedules, pot replies, what pots noticed'**
+  String get pushCategoryDoneNote;
+
+  /// No description provided for @pushCategoryProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get pushCategoryProgress;
+
+  /// No description provided for @pushCategoryProgressNote.
+  ///
+  /// In en, this message translates to:
+  /// **'A pot opening work'**
+  String get pushCategoryProgressNote;
+
+  /// No description provided for @pushCategoryCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar reminders'**
+  String get pushCategoryCalendar;
+
+  /// No description provided for @pushCategoryCalendarNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders of your events'**
+  String get pushCategoryCalendarNote;
+
+  /// No description provided for @pushLevelImmediate.
+  ///
+  /// In en, this message translates to:
+  /// **'At once'**
+  String get pushLevelImmediate;
+
+  /// No description provided for @pushLevelDigest.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get pushLevelDigest;
+
+  /// No description provided for @pushLevelOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get pushLevelOff;
+
+  /// No description provided for @pushDigestAt.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary time'**
+  String get pushDigestAt;
+
+  /// No description provided for @pushDigestAtNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Items set to Summary arrive together once a day.'**
+  String get pushDigestAtNote;
+
+  /// No description provided for @pushQuietHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Quiet hours'**
+  String get pushQuietHours;
+
+  /// No description provided for @pushQuietHoursNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs-you items arrive silently; done and progress wait for the summary when quiet hours end.'**
+  String get pushQuietHoursNote;
+
+  /// No description provided for @pushQuietStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts'**
+  String get pushQuietStart;
+
+  /// No description provided for @pushQuietEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends'**
+  String get pushQuietEnd;
+
+  /// No description provided for @pushLockScreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock screen'**
+  String get pushLockScreen;
+
+  /// No description provided for @pushLockScreenShows.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get pushLockScreenShows;
+
+  /// No description provided for @pushLockHidden.
+  ///
+  /// In en, this message translates to:
+  /// **'No content'**
+  String get pushLockHidden;
+
+  /// No description provided for @pushLockTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title only'**
+  String get pushLockTitle;
+
+  /// No description provided for @pushLockFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything'**
+  String get pushLockFull;
+
+  /// No description provided for @pushLockScreenNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Android shows only the title when its lock screen setting hides sensitive notification content (Settings → Notifications → Notifications on lock screen). With that setting off, Android shows the whole notification; \"No content\" always hides it.'**
+  String get pushLockScreenNote;
+
+  /// No description provided for @pushTimeZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Times are in {zone}.'**
+  String pushTimeZone(String zone);
+
+  /// No description provided for @pushPermissionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permission'**
+  String get pushPermissionTitle;
+
+  /// No description provided for @pushPermissionGranted.
+  ///
+  /// In en, this message translates to:
+  /// **'pirc may show notifications'**
+  String get pushPermissionGranted;
+
+  /// No description provided for @pushPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Android does not let pirc show notifications'**
+  String get pushPermissionDenied;
+
+  /// No description provided for @pushPermissionAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get pushPermissionAsk;
+
+  /// No description provided for @pushChannelsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound, vibration and pop-ups are set per category in Android\'s notification settings.'**
+  String get pushChannelsNote;
+
+  /// No description provided for @pushOpenSystemSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open system notification settings'**
+  String get pushOpenSystemSettings;
+
+  /// No description provided for @pushStyle.
+  ///
+  /// In en, this message translates to:
+  /// **'Style'**
+  String get pushStyle;
+
+  /// No description provided for @quickReplyOverlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick reply over other apps'**
+  String get quickReplyOverlay;
+
+  /// No description provided for @quickReplyOverlayNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Shows the question and its choices over other apps, and checks the latest state before you can send. Needs \"Display over other apps\"; without it a normal notification is shown.'**
+  String get quickReplyOverlayNote;
+
+  /// No description provided for @quickReplyOverlayWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Off until \"Display over other apps\" is allowed.'**
+  String get quickReplyOverlayWaiting;
+
   /// No description provided for @calendarAllowRead.
   ///
   /// In en, this message translates to:
@@ -2972,6 +3332,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dismiss'**
   String get taskDismiss;
+
+  /// No description provided for @taskSkipAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip this missed run?'**
+  String get taskSkipAsk;
+
+  /// No description provided for @taskSkipAskNote.
+  ///
+  /// In en, this message translates to:
+  /// **'It will not run. The task runs again at its next time.'**
+  String get taskSkipAskNote;
 
   /// No description provided for @taskTargetGone.
   ///

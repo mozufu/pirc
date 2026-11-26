@@ -16,10 +16,6 @@ final _memoryProvider = FutureProvider.autoDispose<Map<String, Object?>>((ref) {
   return MemoryApi(requireApi(ref)).view();
 });
 
-final _pushProvider = FutureProvider.autoDispose<Map<String, Object?>>(
-  (ref) => PushApi(requireApi(ref)).status(),
-);
-
 final _modesProvider = FutureProvider.autoDispose<List<Map<String, Object?>>>(
   (ref) => ModesApi(requireApi(ref)).list(),
 );
@@ -156,85 +152,6 @@ class MemoryPage extends ConsumerWidget {
             SettingsGroup(
               title: l10n.memoryRemoved,
               children: [for (final e in removed) entry(e, removed: true)],
-            ),
-        ];
-      }),
-    );
-  }
-}
-
-/// Notifications: the push targets the Gateway knows, with Remove, and
-/// "Send test". Levels and quiet hours come with push in M8.
-class NotificationsPage extends ConsumerWidget {
-  const NotificationsPage({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    final value = ref.watch(_pushProvider);
-    return SettingsPage(
-      title: l10n.settingsNotifications,
-      children: _states(context, value, () => ref.invalidate(_pushProvider), (
-        data,
-      ) {
-        final targets = (data['subscriptions'] as List? ?? const [])
-            .cast<Map>();
-        final push = PushApi(ref.read(apiProvider)!);
-        return [
-          SettingsGroup(
-            title: l10n.pushTargets,
-            children: [
-              if (targets.isEmpty) ListTile(title: Text(l10n.pushNone)),
-              for (final t in targets)
-                ListTile(
-                  leading: Icon(
-                    t['failing'] == true
-                        ? LucideIcons.bellOff
-                        : LucideIcons.bell,
-                    size: 20,
-                  ),
-                  title: Text('${t['name']}'),
-                  subtitle: Text(
-                    t['failing'] == true ? l10n.pushFailing : '${t['kind']}',
-                  ),
-                  trailing: TextButton(
-                    onPressed: () => _run(
-                      context,
-                      ref,
-                      () => push.remove('${t['id']}'),
-                      () => ref.invalidate(_pushProvider),
-                    ),
-                    child: Text(l10n.deviceRevoke),
-                  ),
-                ),
-            ],
-          ),
-          if (targets.isNotEmpty)
-            SettingsGroup(
-              children: [
-                ListTile(
-                  leading: const Icon(LucideIcons.send, size: 20),
-                  title: Text(l10n.pushSendTest),
-                  onTap: () async {
-                    try {
-                      final count = await push.sendTest();
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(l10n.pushSent(count))),
-                        );
-                      }
-                    } on PircException catch (error) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(l10n.actionFailed(error.message)),
-                          ),
-                        );
-                      }
-                    }
-                  },
-                ),
-              ],
             ),
         ];
       }),

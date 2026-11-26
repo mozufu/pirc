@@ -9,6 +9,8 @@ import 'package:pirc_app/src/connection/connection.dart';
 import 'package:pirc_app/src/connection/storage.dart';
 import 'package:pirc_app/src/platform/links.dart';
 import 'package:pirc_app/src/platform/media.dart';
+import 'package:pirc_app/src/platform/notifications.dart';
+import 'package:pirc_app/src/platform/push.dart';
 import 'package:pirc_app/src/platform/scanner.dart';
 import 'package:pirc_app/src/router.dart';
 import 'package:pirc_client/pirc_client.dart';
@@ -222,7 +224,8 @@ void appTest(
 /// the Android media channel ([FakeMediaPlayers]); without it the app has no
 /// in-app player, as on Web and macOS. [scanner] and [links] stand in for
 /// the scanner and links channels; without them the app has neither, as on
-/// Web and macOS.
+/// Web and macOS. [push] and [notifications] stand in for the push and
+/// notifications channels (Android), likewise.
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   required FakeGateway gateway,
@@ -238,6 +241,8 @@ Future<ProviderContainer> pumpApp(
   MediaPlayers? media,
   Scanner? scanner,
   AppLinks? links,
+  PushPlatform? push,
+  NotificationsPlatform? notifications,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = Size(width, height);
@@ -263,6 +268,8 @@ Future<ProviderContainer> pumpApp(
       mediaPlayersProvider.overrideWithValue(media),
       scannerProvider.overrideWithValue(scanner),
       appLinksProvider.overrideWithValue(links),
+      pushPlatformProvider.overrideWithValue(push),
+      notificationsPlatformProvider.overrideWithValue(notifications),
       webOriginProvider.overrideWithValue(Uri.parse('https://gateway.test/')),
       if (location != null) initialLocationProvider.overrideWithValue(location),
       ...overrides.cast(),

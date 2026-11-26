@@ -7,6 +7,7 @@ import '../../l10n/app_localizations.dart';
 import 'composer/composer.dart';
 import 'composer/composer_controller.dart';
 import '../connection/connection.dart';
+import '../notifications/notification_check.dart';
 import 'conversation_screen.dart';
 import 'environment/environment_controller.dart';
 import 'environment/environment_ui.dart';
@@ -48,52 +49,56 @@ class WorkConversation extends ConsumerWidget {
         ref.watch(
           environmentProvider(sessionId).select((e) => e.transitioning),
         );
-    return ConversationScreen(
+    // A question checked from a notification opens its answer sheet here.
+    return NotificationAnswerOpener(
       sessionId: sessionId,
-      showBack: showBack,
-      parts: ConversationParts(
-        banner: (context, view) => Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            PotBar(sessionId: sessionId),
-            if (switching) EnvironmentBanner(sessionId: sessionId),
-          ],
-        ),
-        onTitleTap: switching
-            ? () => showWorkspaceSheet(context, ref, sessionId)
-            : null,
-        messageBuilder: (context, message) =>
-            potInstructionEntry(context, message) ??
-            artifactEntry(sessionId)(context, message),
-        footer: (context, view) => questionCards(sessionId),
-        actions: (context, view) => [
-          IconButton(
-            tooltip: l10n.panelsOpen,
-            icon: const Icon(LucideIcons.panelRight),
-            onPressed: () => context.go(
-              workLocation(
-                sessionId,
-                side: panelSide(PanelSection.files),
-                context: context,
+      child: ConversationScreen(
+        sessionId: sessionId,
+        showBack: showBack,
+        parts: ConversationParts(
+          banner: (context, view) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              PotBar(sessionId: sessionId),
+              if (switching) EnvironmentBanner(sessionId: sessionId),
+            ],
+          ),
+          onTitleTap: switching
+              ? () => showWorkspaceSheet(context, ref, sessionId)
+              : null,
+          messageBuilder: (context, message) =>
+              potInstructionEntry(context, message) ??
+              artifactEntry(sessionId)(context, message),
+          footer: (context, view) => questionCards(sessionId),
+          actions: (context, view) => [
+            IconButton(
+              tooltip: l10n.panelsOpen,
+              icon: const Icon(LucideIcons.panelRight),
+              onPressed: () => context.go(
+                workLocation(
+                  sessionId,
+                  side: panelSide(PanelSection.files),
+                  context: context,
+                ),
               ),
             ),
+            ApprovalModeButton(
+              mode: view.state?.approvalMode,
+              enabled: view.control == ControlState.mine && !coordinated,
+              onSelected: (mode) => ref
+                  .read(composerProvider(sessionId).notifier)
+                  .setApprovalMode(mode),
+            ),
+          ],
+          bottom: (context, view) => SessionComposer(
+            sessionId: sessionId,
+            view: view,
+            messagesAllowed: !coordinated && !transitioning,
+            lockedHint: transitioning
+                ? l10n.composerTransitioning
+                : l10n.composerLocked,
           ),
-          ApprovalModeButton(
-            mode: view.state?.approvalMode,
-            enabled: view.control == ControlState.mine && !coordinated,
-            onSelected: (mode) => ref
-                .read(composerProvider(sessionId).notifier)
-                .setApprovalMode(mode),
-          ),
-        ],
-        bottom: (context, view) => SessionComposer(
-          sessionId: sessionId,
-          view: view,
-          messagesAllowed: !coordinated && !transitioning,
-          lockedHint: transitioning
-              ? l10n.composerTransitioning
-              : l10n.composerLocked,
         ),
       ),
     );

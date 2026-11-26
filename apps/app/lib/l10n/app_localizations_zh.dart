@@ -1321,6 +1321,201 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get notificationChecking => '正在重新連線並取得最新狀態';
+
+  @override
+  String get notificationHandled => '這項已經處理過了';
+
+  @override
+  String get notificationExpired => '問題已過期';
+
+  @override
+  String get notificationExpiredDetail => '已無法再回答。';
+
+  @override
+  String get notificationOffline => '無法確認最新狀態';
+
+  @override
+  String notificationChoiceKept(String choice) {
+    return '已保留你的選擇：$choice';
+  }
+
+  @override
+  String get notificationOpenConversation => '開啟對話';
+
+  @override
+  String get answerSheetTitle => '確認你的回答';
+
+  @override
+  String answerSheetCheckedHere(String time) {
+    return '來自通知 · $time 已重新確認：問題仍有效，控制權在此裝置';
+  }
+
+  @override
+  String answerSheetChecked(String time) {
+    return '來自通知 · $time 已重新確認：問題仍有效';
+  }
+
+  @override
+  String answerSheetControlledBy(String name) {
+    return '由 $name 控制中。取得控制權後才能送出。';
+  }
+
+  @override
+  String get answerSheetTakeControl => '取得控制權';
+
+  @override
+  String get answerSheetSend => '送出答案';
+
+  @override
+  String get pushThisPhoneOn => '此手機會收到通知';
+
+  @override
+  String get pushThisPhoneOff => '此手機不會收到通知';
+
+  @override
+  String get pushConnecting => '正在連線推播服務…';
+
+  @override
+  String get pushSetupFailed => '無法設定推播';
+
+  @override
+  String pushLastDelivered(String time) {
+    return '最後成功 $time';
+  }
+
+  @override
+  String get pushThisDevice => '這支手機';
+
+  @override
+  String get pushOn => '推播通知';
+
+  @override
+  String get pushDistributor => '推播服務';
+
+  @override
+  String get pushChooseDistributor => '選擇';
+
+  @override
+  String get pushNoDistributor =>
+      '沒有安裝 UnifiedPush 推播服務。請先安裝一個（例如 ntfy），再回來開啟推播。';
+
+  @override
+  String get pushConflict => '這些設定已在別處變更。目前的值已顯示；請再變更一次。';
+
+  @override
+  String get pushTargetGone => 'Gateway 已沒有這支手機。請關閉推播再開啟。';
+
+  @override
+  String get pushCategories => '通知類別';
+
+  @override
+  String get pushCategoryNeedsYou => '需要你回應';
+
+  @override
+  String get pushCategoryNeedsYouNote => '問題、錯過的排程、模型核准、預算申請、交接';
+
+  @override
+  String get pushCategoryDone => '完成';
+
+  @override
+  String get pushCategoryDoneNote => '完成的排程、pot 的回覆、pot 注意到的事';
+
+  @override
+  String get pushCategoryProgress => '進度';
+
+  @override
+  String get pushCategoryProgressNote => 'pot 開啟工作';
+
+  @override
+  String get pushCategoryCalendar => '行事曆提醒';
+
+  @override
+  String get pushCategoryCalendarNote => '你的事件提醒';
+
+  @override
+  String get pushLevelImmediate => '立即';
+
+  @override
+  String get pushLevelDigest => '摘要';
+
+  @override
+  String get pushLevelOff => '不通知';
+
+  @override
+  String get pushDigestAt => '摘要時間';
+
+  @override
+  String get pushDigestAtNote => '設為摘要的項目每天一起送達一次。';
+
+  @override
+  String get pushQuietHours => '勿擾時段';
+
+  @override
+  String get pushQuietHoursNote => '需要你回應的項目靜音送達；完成與進度等勿擾結束時的摘要。';
+
+  @override
+  String get pushQuietStart => '開始';
+
+  @override
+  String get pushQuietEnd => '結束';
+
+  @override
+  String get pushLockScreen => '鎖定畫面';
+
+  @override
+  String get pushLockScreenShows => '顯示';
+
+  @override
+  String get pushLockHidden => '隱藏內容';
+
+  @override
+  String get pushLockTitle => '只顯示標題';
+
+  @override
+  String get pushLockFull => '全部';
+
+  @override
+  String get pushLockScreenNote =>
+      'Android 的鎖定畫面設定隱藏敏感通知內容時，才只會顯示標題（設定 → 通知 → 鎖定畫面上的通知）。未開啟該設定時 Android 會顯示整則通知；「隱藏內容」則一律不顯示。';
+
+  @override
+  String pushTimeZone(String zone) {
+    return '時間以 $zone 計算。';
+  }
+
+  @override
+  String get pushPermissionTitle => '權限';
+
+  @override
+  String get pushPermissionGranted => 'pirc 可以顯示通知';
+
+  @override
+  String get pushPermissionDenied => 'Android 不允許 pirc 顯示通知';
+
+  @override
+  String get pushPermissionAsk => '允許';
+
+  @override
+  String get pushChannelsNote => '聲音、震動與彈出方式由 Android 通知類別管理。';
+
+  @override
+  String get pushOpenSystemSettings => '開啟系統通知設定';
+
+  @override
+  String get pushStyle => '樣式';
+
+  @override
+  String get quickReplyOverlay => '下方快速回應視窗';
+
+  @override
+  String get quickReplyOverlayNote =>
+      '在其他 App 上層顯示問題與選項，先確認最新狀態才可送出。需要「顯示在其他應用程式上層」權限；未授權時改用一般通知。';
+
+  @override
+  String get quickReplyOverlayWaiting => '在允許「顯示在其他應用程式上層」之前保持關閉。';
+
+  @override
   String get calendarAllowRead => 'agent 可以讀取行事曆';
 
   @override
@@ -1561,6 +1756,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get taskDismiss => '略過';
+
+  @override
+  String get taskSkipAsk => '略過這次錯過的執行？';
+
+  @override
+  String get taskSkipAskNote => '這次不會執行。工作會在下次排定的時間再執行。';
 
   @override
   String get taskTargetGone => '已暫停：它的專案已不存在。請編輯並選擇新的專案。';

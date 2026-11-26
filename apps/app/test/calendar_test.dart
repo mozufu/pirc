@@ -383,6 +383,35 @@ void main() {
     expect(g.sent('POST', '/api/schedules/s1/runs/r1/dismiss'), hasLength(1));
   });
 
+  appTest('"Skip…" on a notification asks before it skips the missed run', (
+    tester,
+  ) async {
+    final g = await _calendar(
+      tester,
+      items: [_task(missed: true)],
+      location: '/calendar?open=run:r1&action=skip',
+    );
+    expect(find.text('Skip this missed run?'), findsOneWidget);
+    expect(g.sent('POST', '/api/schedules/s1/runs/r1/dismiss'), isEmpty);
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(g.sent('POST', '/api/schedules/s1/runs/r1/dismiss'), isEmpty);
+    // Asked once: the location no longer says skip.
+    expect(find.text('Skip this missed run?'), findsNothing);
+    expect(find.text('Run it now'), findsOneWidget);
+  });
+
+  appTest('"Skip…" skips the missed run only once confirmed', (tester) async {
+    final g = await _calendar(
+      tester,
+      items: [_task(missed: true)],
+      location: '/calendar?open=run:r1&action=skip',
+    );
+    await tester.tap(find.byKey(const Key('confirm-skip')));
+    await tester.pumpAndSettle();
+    expect(g.sent('POST', '/api/schedules/s1/runs/r1/dismiss'), hasLength(1));
+  });
+
   appTest('a task whose target is gone shows paused; Save waits for a new '
       'target', (tester) async {
     final g = await _calendar(

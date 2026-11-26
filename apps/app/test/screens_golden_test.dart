@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/format.dart';
+import 'package:pirc_app/src/platform/notifications.dart';
+import 'package:pirc_app/src/platform/push.dart';
 import 'package:pirc_app/src/preferences.dart';
 import 'package:pirc_app/src/work/work_data.dart';
 
@@ -126,6 +128,35 @@ FakeGateway _calendar() {
   return g;
 }
 
+/// Settings → Notifications (C screenshots 11 and 30): this phone gets
+/// notifications through ntfy, with the D20 levels.
+FakeGateway _notifications() => FakeGateway()
+  ..json['GET /api/push'] = (_) => {
+    'publicKey': 'KEY',
+    'subscriptions': [
+      {
+        'id': 'push-phone',
+        'kind': 'unifiedpush',
+        'name': 'Pixel 9',
+        'host': 'ntfy.sh',
+        'createdAt': 1,
+        'lastSuccessAt': DateTime(2026, 11, 25, 8, 53).millisecondsSinceEpoch,
+        'failing': false,
+        'levels': {
+          'needs_you': 'immediate',
+          'done': 'digest',
+          'progress': 'off',
+          'calendar': 'immediate',
+        },
+        'quietHours': {'start': '23:00', 'end': '07:30'},
+        'timeZone': 'Asia/Taipei',
+        'lockScreen': 'title',
+        'digestAt': '18:00',
+        'revision': 4,
+      },
+    ],
+  };
+
 /// The drawer over Chat (E21): hosts with running work and the user row.
 FakeGateway _drawer() =>
     ChatFixture().install(WorkFixture().install(MeFixture.e28().install()));
@@ -164,6 +195,24 @@ final _screens = <String, (String, FakeGateway Function(), Saved Function())>{
   'work_needs_you': ('/work', () => WorkFixture().install(), Saved.new),
   'work_pots': ('/work', () => WorkFixture().install(), Saved.new),
   'drawer': ('/chat', _drawer, Saved.new),
+  'notifications': ('/settings/notifications', _notifications, Saved.new),
+};
+
+/// The Android push and notifications channels of a screen of [_screens];
+/// the others have neither.
+final _platforms = <String, (PushPlatform, NotificationsPlatform) Function()>{
+  'notifications': () => (
+    FakePush(
+      current: const PushStatus(
+        PushState.on,
+        distributor: 'io.heckel.ntfy',
+        subscriptionId: 'push-phone',
+        timeZone: 'Asia/Taipei',
+      ),
+    ),
+    FakeNotifications(granted: true, overlayAllowed: true)
+      ..overlayWanted = true,
+  ),
 };
 
 /// What to do on a screen of [_screens] before its image is taken. The
@@ -187,6 +236,7 @@ void main() {
       for (final mode in [ThemeMode.light, ThemeMode.dark]) {
         appTest('$name ${width.toInt()} ${mode.name}', (tester) async {
           await tester.runAsync(loadGoldenFonts);
+          final platforms = _platforms[name]?.call();
           final container = await pumpApp(
             tester,
             gateway: gateway(),
@@ -196,6 +246,8 @@ void main() {
             location: location,
             overrides: [clockProvider.overrideWithValue(() => fixedNow)],
             reduceMotion: true,
+            push: platforms?.$1,
+            notifications: platforms?.$2,
           );
           container.read(themeModeProvider.notifier).select(mode);
           await tester.pumpAndSettle();

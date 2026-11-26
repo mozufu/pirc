@@ -837,6 +837,108 @@
       }
     }
   },
+  "notificationChecking": "Reconnecting and checking the latest state",
+  "notificationHandled": "This was already handled",
+  "notificationExpired": "This question expired",
+  "notificationExpiredDetail": "It can no longer be answered.",
+  "notificationOffline": "Could not check the latest state",
+  "notificationChoiceKept": "Your choice is kept: {choice}",
+  "@notificationChoiceKept": {
+    "placeholders": {
+      "choice": {
+        "type": "String"
+      }
+    }
+  },
+  "notificationOpenConversation": "Open conversation",
+  "answerSheetTitle": "Confirm your answer",
+  "answerSheetCheckedHere": "From the notification · checked at {time}: the question is still open, control on this device",
+  "@answerSheetCheckedHere": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "answerSheetChecked": "From the notification · checked at {time}: the question is still open",
+  "@answerSheetChecked": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "answerSheetControlledBy": "Controlled by {name}. Take control to send.",
+  "@answerSheetControlledBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "answerSheetTakeControl": "Take control",
+  "answerSheetSend": "Send answer",
+  "pushThisPhoneOn": "This phone gets notifications",
+  "pushThisPhoneOff": "This phone gets no notifications",
+  "pushConnecting": "Connecting to the distributor…",
+  "pushSetupFailed": "Push could not be set up",
+  "pushLastDelivered": "last delivered {time}",
+  "@pushLastDelivered": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "pushThisDevice": "This phone",
+  "pushOn": "Push notifications",
+  "pushDistributor": "Distributor",
+  "pushChooseDistributor": "Choose",
+  "pushNoDistributor": "No UnifiedPush distributor is installed. Install one, such as ntfy, then come back to turn push on.",
+  "pushConflict": "These settings were changed elsewhere. The current values are shown; make your change again.",
+  "pushTargetGone": "The Gateway no longer has this phone. Turn push off and on again.",
+  "pushCategories": "Categories",
+  "pushCategoryNeedsYou": "Needs you",
+  "pushCategoryNeedsYouNote": "Questions, missed runs, model approvals, budget requests, handovers",
+  "pushCategoryDone": "Done",
+  "pushCategoryDoneNote": "Finished schedules, pot replies, what pots noticed",
+  "pushCategoryProgress": "Progress",
+  "pushCategoryProgressNote": "A pot opening work",
+  "pushCategoryCalendar": "Calendar reminders",
+  "pushCategoryCalendarNote": "Reminders of your events",
+  "pushLevelImmediate": "At once",
+  "pushLevelDigest": "Summary",
+  "pushLevelOff": "Off",
+  "pushDigestAt": "Summary time",
+  "pushDigestAtNote": "Items set to Summary arrive together once a day.",
+  "pushQuietHours": "Quiet hours",
+  "pushQuietHoursNote": "Needs-you items arrive silently; done and progress wait for the summary when quiet hours end.",
+  "pushQuietStart": "Starts",
+  "pushQuietEnd": "Ends",
+  "pushLockScreen": "Lock screen",
+  "pushLockScreenShows": "Show",
+  "pushLockHidden": "No content",
+  "pushLockTitle": "Title only",
+  "pushLockFull": "Everything",
+  "pushLockScreenNote": "Android shows only the title when its lock screen setting hides sensitive notification content (Settings → Notifications → Notifications on lock screen). With that setting off, Android shows the whole notification; \"No content\" always hides it.",
+  "pushTimeZone": "Times are in {zone}.",
+  "@pushTimeZone": {
+    "placeholders": {
+      "zone": {
+        "type": "String"
+      }
+    }
+  },
+  "pushPermissionTitle": "Permission",
+  "pushPermissionGranted": "pirc may show notifications",
+  "pushPermissionDenied": "Android does not let pirc show notifications",
+  "pushPermissionAsk": "Allow",
+  "pushChannelsNote": "Sound, vibration and pop-ups are set per category in Android's notification settings.",
+  "pushOpenSystemSettings": "Open system notification settings",
+  "pushStyle": "Style",
+  "quickReplyOverlay": "Quick reply over other apps",
+  "quickReplyOverlayNote": "Shows the question and its choices over other apps, and checks the latest state before you can send. Needs \"Display over other apps\"; without it a normal notification is shown.",
+  "quickReplyOverlayWaiting": "Off until \"Display over other apps\" is allowed.",
   "calendarAllowRead": "Agents may read the calendar",
   "calendarAllowPropose": "Agents may propose changes",
   "calendarAllowProposeNote": "Each change waits for your answer in the conversation.",
@@ -924,6 +1026,8 @@
   "eventRepeats": "Repeats",
   "taskAllowRun": "Run it now",
   "taskDismiss": "Dismiss",
+  "taskSkipAsk": "Skip this missed run?",
+  "taskSkipAskNote": "It will not run. The task runs again at its next time.",
   "taskTargetGone": "Paused: its project is gone. Edit it and pick a new one.",
   "taskPaused": "Paused",
   "taskRunNow": "Run now",

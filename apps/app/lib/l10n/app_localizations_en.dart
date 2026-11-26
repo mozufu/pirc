@@ -1368,6 +1368,211 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get notificationChecking =>
+      'Reconnecting and checking the latest state';
+
+  @override
+  String get notificationHandled => 'This was already handled';
+
+  @override
+  String get notificationExpired => 'This question expired';
+
+  @override
+  String get notificationExpiredDetail => 'It can no longer be answered.';
+
+  @override
+  String get notificationOffline => 'Could not check the latest state';
+
+  @override
+  String notificationChoiceKept(String choice) {
+    return 'Your choice is kept: $choice';
+  }
+
+  @override
+  String get notificationOpenConversation => 'Open conversation';
+
+  @override
+  String get answerSheetTitle => 'Confirm your answer';
+
+  @override
+  String answerSheetCheckedHere(String time) {
+    return 'From the notification · checked at $time: the question is still open, control on this device';
+  }
+
+  @override
+  String answerSheetChecked(String time) {
+    return 'From the notification · checked at $time: the question is still open';
+  }
+
+  @override
+  String answerSheetControlledBy(String name) {
+    return 'Controlled by $name. Take control to send.';
+  }
+
+  @override
+  String get answerSheetTakeControl => 'Take control';
+
+  @override
+  String get answerSheetSend => 'Send answer';
+
+  @override
+  String get pushThisPhoneOn => 'This phone gets notifications';
+
+  @override
+  String get pushThisPhoneOff => 'This phone gets no notifications';
+
+  @override
+  String get pushConnecting => 'Connecting to the distributor…';
+
+  @override
+  String get pushSetupFailed => 'Push could not be set up';
+
+  @override
+  String pushLastDelivered(String time) {
+    return 'last delivered $time';
+  }
+
+  @override
+  String get pushThisDevice => 'This phone';
+
+  @override
+  String get pushOn => 'Push notifications';
+
+  @override
+  String get pushDistributor => 'Distributor';
+
+  @override
+  String get pushChooseDistributor => 'Choose';
+
+  @override
+  String get pushNoDistributor =>
+      'No UnifiedPush distributor is installed. Install one, such as ntfy, then come back to turn push on.';
+
+  @override
+  String get pushConflict =>
+      'These settings were changed elsewhere. The current values are shown; make your change again.';
+
+  @override
+  String get pushTargetGone =>
+      'The Gateway no longer has this phone. Turn push off and on again.';
+
+  @override
+  String get pushCategories => 'Categories';
+
+  @override
+  String get pushCategoryNeedsYou => 'Needs you';
+
+  @override
+  String get pushCategoryNeedsYouNote =>
+      'Questions, missed runs, model approvals, budget requests, handovers';
+
+  @override
+  String get pushCategoryDone => 'Done';
+
+  @override
+  String get pushCategoryDoneNote =>
+      'Finished schedules, pot replies, what pots noticed';
+
+  @override
+  String get pushCategoryProgress => 'Progress';
+
+  @override
+  String get pushCategoryProgressNote => 'A pot opening work';
+
+  @override
+  String get pushCategoryCalendar => 'Calendar reminders';
+
+  @override
+  String get pushCategoryCalendarNote => 'Reminders of your events';
+
+  @override
+  String get pushLevelImmediate => 'At once';
+
+  @override
+  String get pushLevelDigest => 'Summary';
+
+  @override
+  String get pushLevelOff => 'Off';
+
+  @override
+  String get pushDigestAt => 'Summary time';
+
+  @override
+  String get pushDigestAtNote =>
+      'Items set to Summary arrive together once a day.';
+
+  @override
+  String get pushQuietHours => 'Quiet hours';
+
+  @override
+  String get pushQuietHoursNote =>
+      'Needs-you items arrive silently; done and progress wait for the summary when quiet hours end.';
+
+  @override
+  String get pushQuietStart => 'Starts';
+
+  @override
+  String get pushQuietEnd => 'Ends';
+
+  @override
+  String get pushLockScreen => 'Lock screen';
+
+  @override
+  String get pushLockScreenShows => 'Show';
+
+  @override
+  String get pushLockHidden => 'No content';
+
+  @override
+  String get pushLockTitle => 'Title only';
+
+  @override
+  String get pushLockFull => 'Everything';
+
+  @override
+  String get pushLockScreenNote =>
+      'Android shows only the title when its lock screen setting hides sensitive notification content (Settings → Notifications → Notifications on lock screen). With that setting off, Android shows the whole notification; \"No content\" always hides it.';
+
+  @override
+  String pushTimeZone(String zone) {
+    return 'Times are in $zone.';
+  }
+
+  @override
+  String get pushPermissionTitle => 'Permission';
+
+  @override
+  String get pushPermissionGranted => 'pirc may show notifications';
+
+  @override
+  String get pushPermissionDenied =>
+      'Android does not let pirc show notifications';
+
+  @override
+  String get pushPermissionAsk => 'Allow';
+
+  @override
+  String get pushChannelsNote =>
+      'Sound, vibration and pop-ups are set per category in Android\'s notification settings.';
+
+  @override
+  String get pushOpenSystemSettings => 'Open system notification settings';
+
+  @override
+  String get pushStyle => 'Style';
+
+  @override
+  String get quickReplyOverlay => 'Quick reply over other apps';
+
+  @override
+  String get quickReplyOverlayNote =>
+      'Shows the question and its choices over other apps, and checks the latest state before you can send. Needs \"Display over other apps\"; without it a normal notification is shown.';
+
+  @override
+  String get quickReplyOverlayWaiting =>
+      'Off until \"Display over other apps\" is allowed.';
+
+  @override
   String get calendarAllowRead => 'Agents may read the calendar';
 
   @override
@@ -1621,6 +1826,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get taskDismiss => 'Dismiss';
+
+  @override
+  String get taskSkipAsk => 'Skip this missed run?';
+
+  @override
+  String get taskSkipAskNote =>
+      'It will not run. The task runs again at its next time.';
 
   @override
   String get taskTargetGone =>

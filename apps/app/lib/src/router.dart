@@ -5,12 +5,15 @@ import 'package:go_router/go_router.dart';
 import 'connection/connection.dart';
 import 'connection/connection_screens.dart';
 import 'me/me_screen.dart';
+import 'notifications/notification_check.dart';
+import 'notifications/notification_open.dart';
 import 'preferences.dart';
 import 'settings/basic_pages.dart';
 import 'settings/device_page.dart';
 import 'settings/devices_page.dart';
 import 'settings/pairing_approval.dart';
 import 'settings/more_pages.dart';
+import 'settings/notifications_page.dart';
 import 'settings/pots_page.dart';
 import 'settings/providers_page.dart';
 import 'settings/settings_screen.dart';
@@ -107,6 +110,32 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/pair',
         builder: (context, state) => const PairingScreen(),
+      ),
+      // A tapped question notification (C § 6.2): checked before anything
+      // can be sent.
+      GoRoute(
+        path: notificationCheckPath,
+        redirect: (context, state) {
+          final q = state.uri.queryParameters;
+          return q['session'] == null ||
+                  q['interaction'] == null ||
+                  q['epoch'] == null
+              ? ref.read(startTabProvider)
+              : null;
+        },
+        builder: (context, state) {
+          final q = state.uri.queryParameters;
+          return NotificationCheckScreen(
+            key: ValueKey(state.uri.toString()),
+            question: QuestionOpen(
+              sessionId: q['session']!,
+              interactionId: q['interaction']!,
+              epoch: q['epoch']!,
+              choice: q['choice'],
+              label: q['label'],
+            ),
+          );
+        },
       ),
       GoRoute(
         path: '/',

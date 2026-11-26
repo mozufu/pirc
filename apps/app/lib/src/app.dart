@@ -8,6 +8,7 @@ import 'connection/connection_screens.dart';
 import 'connection/hints.dart';
 import 'connection/pairing.dart';
 import 'connection/rotation.dart';
+import 'notifications/notification_open.dart';
 import 'preferences.dart';
 import 'render_bridge.dart';
 import 'router.dart';
@@ -23,6 +24,10 @@ class PircApp extends ConsumerWidget {
     // app comes to the foreground.
     ref.listen(pairLinkInboxProvider, (_, _) {});
     ref.listen(deviceLifetimeProvider, (_, _) {});
+    // Follows notification taps, and tells the Kotlin background client
+    // where the Gateway is (Android).
+    ref.listen(notificationTapsProvider, (_, _) {});
+    ref.listen(backgroundTargetProvider, (_, _) {});
     final textScale = ref.watch(textScaleProvider);
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,

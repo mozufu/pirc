@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pirc_client/pirc_client.dart';
 
 import '../platform/media.dart';
+import '../platform/push.dart';
 import 'storage.dart';
 
 /// Builds the transport; tests replace it with a fake.
@@ -278,6 +279,9 @@ class ConnectionController extends Notifier<ConnectionStatus> {
       return;
     }
     unawaited(_forgetToken());
+    // The Gateway refused the token, so it is not asked to forget the
+    // endpoint (the subscription goes with the token there).
+    unawaited(_forgetPush(atGateway: false));
     unawaited(_closeMedia());
     _set(ConnectionPhase.unpaired, error, pairingExpired: true);
   }
@@ -330,6 +334,21 @@ class ConnectionController extends Notifier<ConnectionStatus> {
   Future<void> _forgetToken() =>
       ref.read(secretStoreProvider).delete(deviceTokenKey);
 
+  /// Stops push and clears the background client's target (Android). With
+  /// [atGateway] it runs while the token is still stored, so the Gateway
+  /// forgets the endpoint too. Unpairing waits a few seconds at most: Kotlin
+  /// has read the token by then and finishes on its own.
+  Future<void> _forgetPush({bool atGateway = true}) async {
+    try {
+      await ref
+          .read(pushPlatformProvider)
+          ?.forget(atGateway: atGateway)
+          .timeout(const Duration(seconds: 5));
+    } on Exception {
+      // Push is best effort; unpairing goes on.
+    }
+  }
+
   /// Stops the recordings of the pairing that ends and drops their cached
   /// copies.
   Future<void> _closeMedia() async {
@@ -352,6 +371,7 @@ class ConnectionController extends Notifier<ConnectionStatus> {
 
   /// "Unpair this device…": removes the token and the local data.
   Future<void> unpair() async {
+    await _forgetPush();
     await _forgetToken();
     await _closeMedia();
     final prefs = ref.read(sharedPreferencesProvider);

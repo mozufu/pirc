@@ -19,9 +19,18 @@ final _scheduleProvider = FutureProvider.autoDispose
 
 /// The open calendar item: an event occurrence or an agent task run.
 class CalendarDetail extends ConsumerWidget {
-  const CalendarDetail({super.key, required this.itemId, this.showBack = true});
+  const CalendarDetail({
+    super.key,
+    required this.itemId,
+    this.showBack = true,
+    this.askSkip = false,
+  });
   final String itemId;
   final bool showBack;
+
+  /// Opened from "Skip…" on a missed-run notification (`action=skip`): asks
+  /// once whether to skip the run. Nothing is skipped without that answer.
+  final bool askSkip;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -45,7 +54,11 @@ class CalendarDetail extends ConsumerWidget {
           ? Center(child: Text(l10n.calendarItemGone))
           : item.isEvent
           ? _EventDetail(item: item, onGone: close)
-          : _TaskDetail(item: item, onGone: close),
+          : _SkipAsker(
+              item: item,
+              ask: askSkip && item.missed,
+              child: _TaskDetail(item: item, onGone: close),
+            ),
     );
   }
 }
@@ -174,6 +187,75 @@ class _EventDetail extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// With [ask], asks once whether to skip [item], a missed run, and takes
+/// `action=skip` out of the location so Back or a rebuild does not ask again.
+/// It stays in the tree either way, so the answer still applies after the
+/// location changed.
+class _SkipAsker extends ConsumerStatefulWidget {
+  const _SkipAsker({
+    required this.item,
+    required this.ask,
+    required this.child,
+  });
+  final CalendarItem item;
+  final bool ask;
+  final Widget child;
+
+  @override
+  ConsumerState<_SkipAsker> createState() => _SkipAskerState();
+}
+
+class _SkipAskerState extends ConsumerState<_SkipAsker> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.ask) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _ask());
+    }
+  }
+
+  Future<void> _ask() async {
+    if (!mounted) return;
+    final here = GoRouterState.of(context).uri;
+    context.go(
+      here
+          .replace(queryParameters: {...here.queryParameters}..remove('action'))
+          .toString(),
+    );
+    final l10n = AppLocalizations.of(context);
+    final skip = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(l10n.taskSkipAsk),
+        content: Text(l10n.taskSkipAskNote),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            key: const Key('confirm-skip'),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(l10n.taskDismiss),
+          ),
+        ],
+      ),
+    );
+    if (skip != true || !mounted) return;
+    final run = widget.item.run;
+    await calendarAction(
+      context,
+      (api) => api.dismiss(widget.item.sourceId, '${run?['id']}'),
+      ref,
+    );
+    ref.invalidate(calendarItemsProvider);
+    ref.invalidate(schedulesProvider);
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _TaskDetail extends ConsumerWidget {

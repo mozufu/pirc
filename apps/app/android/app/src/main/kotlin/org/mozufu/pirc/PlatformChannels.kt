@@ -11,6 +11,8 @@ import org.mozufu.pirc.fonts.FontsChannel
 import org.mozufu.pirc.images.ImagesChannel
 import org.mozufu.pirc.links.LinksChannel
 import org.mozufu.pirc.media.MediaChannel
+import org.mozufu.pirc.notifications.NotificationsChannel
+import org.mozufu.pirc.push.PushChannel
 import org.mozufu.pirc.scanner.ScannerChannel
 
 /**
@@ -35,6 +37,9 @@ interface PlatformFeature : MethodChannel.MethodCallHandler {
 
     /** The running activity received [intent] (a link opened it again). */
     fun newIntent(intent: Intent) {}
+
+    /** A permission request of [requestCode] was answered; true when this feature asked. */
+    fun permissionResult(requestCode: Int): Boolean = false
 }
 
 /** Registers every feature's channel on the engine and removes them again. */
@@ -67,6 +72,8 @@ class PlatformChannels(private val features: List<PlatformFeature>) {
 
     fun newIntent(intent: Intent) = features.forEach { it.newIntent(intent) }
 
+    fun permissionResult(requestCode: Int): Boolean = features.any { it.permissionResult(requestCode) }
+
     private fun detachChannels() {
         channels.forEach { it.setMethodCallHandler(null) }
         channels.clear()
@@ -90,6 +97,8 @@ class PlatformChannels(private val features: List<PlatformFeature>) {
             FontsChannel(),
             ScannerChannel.create(activity),
             LinksChannel.create(activity, restored),
+            PushChannel.create(activity),
+            NotificationsChannel.create(activity, restored),
         )
     }
 }
