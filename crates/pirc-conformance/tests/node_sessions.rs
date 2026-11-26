@@ -588,8 +588,11 @@ async fn node_session_commands() {
     s.snapshot_until("f3 queued", |b| b["queue"]["followUp"] == json!(["f3"]))
         .await;
     let stopped = s.command(json!({ "type": "stop" })).await;
+    eprintln!("DEBUG commands stop: {:?}", stopped.body);
     t.response("stop", "POST /api/sessions/:id/commands", &stopped);
+    eprintln!("DEBUG commands waiting for settle");
     let settled = read_until(&mut events, |f| agent_event(f, "agent_settled")).await;
+    eprintln!("DEBUG commands settled");
     t.note("events until the stopped run settles", briefs(&settled));
     second.release();
     let snapshot = s
@@ -1025,12 +1028,15 @@ async fn node_session_interactions() {
         .unwrap_or_default()
         .to_owned();
     let stopped = s.command(json!({ "type": "stop" })).await;
+    eprintln!("DEBUG interactions stop: {:?}", stopped.body);
     t.response(
         "stop with the dialog open",
         "POST /api/sessions/:id/commands",
         &stopped,
     );
+    eprintln!("DEBUG interactions waiting for settle");
     let settled = read_until(&mut events, |f| agent_event(f, "agent_settled")).await;
+    eprintln!("DEBUG interactions settled");
     t.note("events after stop", briefs(&settled));
     t.note(
         "interaction_answered on stop",

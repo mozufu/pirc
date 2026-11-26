@@ -102,17 +102,15 @@ async fn browser_and_paired_device_keep_intent_across_policy_changes() {
     request["commandId"] = json!("stop");
     request["payload"] = json!({"type":"stop"});
     request.as_object_mut().unwrap().remove("generation");
-    assert_eq!(
-        api.send(
+    let stopped = api
+        .send(
             "POST",
             &format!("{base}/commands"),
             &web,
-            Some(request.clone())
+            Some(request.clone()),
         )
-        .await
-        .status,
-        202
-    );
+        .await;
+    assert_eq!(stopped.status, 202, "{}", stopped.body);
 
     let pair = api
         .send(
