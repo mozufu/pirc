@@ -397,27 +397,11 @@ bool _equalJson(Object? a, Object? b) {
 /// [current] fitted to [levels]: kept when the model accepts it, else the
 /// nearest lower level it accepts, else its lowest level. Off (or a model
 /// without thinking, which gets `off`) starts again from Medium.
-String fitThinking(String current, List<String> levels) {
-  final known = [
-    for (final level in thinkingOrder)
-      if (level != 'off' && levels.contains(level)) level,
-  ];
-  if (known.isEmpty) return 'off';
-  if (known.contains(current)) return current;
-  final rank = thinkingOrder.indexOf(current == 'off' ? 'medium' : current);
-  String? best;
-  for (final level in known) {
-    if (thinkingOrder.indexOf(level) <= rank) best = level;
-  }
-  return best ?? known.first;
-}
+String fitThinking(String current, List<String> levels) =>
+    fitThinkingToLevels(current, levels);
 
 /// The thinking levels [model] accepts, lowest first.
-List<String> thinkingLevelsOf(ModelInfo? model) => [
-  for (final level in thinkingOrder)
-    if (level != 'off' && (model?.thinkingLevels.contains(level) ?? false))
-      level,
-];
+List<String> thinkingLevelsOf(ModelInfo? model) => thinkingLevelsFor(model);
 
 /// The step a refused create or save concerns. The Gateway's 400s carry
 /// only a code and a message, so this reads them; null when it cannot

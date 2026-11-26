@@ -261,6 +261,34 @@ void main() {
       expect(_location(container).toString(), '/chat?open=pot%3Ap-butler');
     });
 
+    appTest("a deleted pot's direct thread opens by its thread ID", (
+      tester,
+    ) async {
+      final fixture = ActivityFixture();
+      fixture.activity.first['refs'] = {'thread': 't-butler'};
+      fixture.activity.first['kind'] = 'review';
+      fixture.pots.removeWhere((pot) => pot['id'] == 'p-butler');
+      fixture.messages[1]['authorName'] = 'Butler';
+      final (gateway, container) = await _pump(tester, fixture);
+      await _tap(tester, _row('e1'));
+      expect(_location(container).toString(), '/chat?open=t-butler');
+      expect(
+        gateway.sent('GET', '/api/pots/p-butler/thread'),
+        isEmpty,
+        reason: 'no direct-thread route for a deleted pot',
+      );
+      expect(find.text('Butler'), findsWidgets);
+      expect(find.byKey(const ValueKey('thread-read-only')), findsOneWidget);
+    });
+
+    appTest("a deleted pot's pot DM opens by its thread ID", (tester) async {
+      final fixture = ActivityFixture();
+      fixture.pots.removeWhere((pot) => pot['id'] == 'p-tester');
+      final (_, container) = await _pump(tester, fixture);
+      await _tap(tester, _row('e3'));
+      expect(_location(container).toString(), '/chat?open=t-dm');
+    });
+
     appTest('an approval opens its sheet', (tester) async {
       final (gateway, _) = await _pump(tester, ActivityFixture());
       await _tap(tester, _row('e1'));

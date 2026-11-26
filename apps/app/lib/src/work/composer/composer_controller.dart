@@ -9,6 +9,7 @@ import '../../connection/data.dart';
 import '../../connection/storage.dart';
 import '../session_controller.dart';
 import 'attachments.dart';
+import 'model_sheet.dart';
 
 /// Where a message goes while a run is active: `steer` (into the current
 /// turn) or `follow_up` (after it).
@@ -201,6 +202,20 @@ class ComposerController extends Notifier<ComposerState> {
 
   Future<CommandOutcome?> setModel(ModelInfo model) =>
       _send(CommandPayload.setModel(model.provider, model.id));
+
+  /// Sets [model] and, when its levels no longer accept the chosen thinking
+  /// level, the nearest lower one the model accepts (the pot forms' rule).
+  Future<void> changeModel(ModelInfo model) async {
+    final before = ref
+        .read(sessionControllerProvider(sessionId))
+        .state
+        ?.thinkingLevel;
+    final next = before == null
+        ? null
+        : fitThinkingToLevels(before, model.thinkingLevels);
+    await setModel(model);
+    if (next != null && next != before) await setThinking(next);
+  }
 
   Future<CommandOutcome?> setThinking(String level) =>
       _send(CommandPayload.setThinking(level));

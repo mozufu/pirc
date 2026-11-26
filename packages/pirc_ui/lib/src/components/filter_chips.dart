@@ -13,8 +13,9 @@ class FilterChipItem<T> {
   final int? count;
 }
 
-/// Full-round filter chips (`c-filter`): 32 high, `fill.hover`, the selected
-/// one `action.primary`; they scroll sideways.
+/// Full-round filter chips (`e-f`): 34 high, `fill.hover`, the selected one
+/// `action.primary`; label 14, count 12/600 in `text.warning`; they scroll
+/// sideways.
 class FilterChips<T> extends StatelessWidget {
   const FilterChips({
     super.key,
@@ -34,14 +35,13 @@ class FilterChips<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = PircColorTokens.of(context);
-    final text = Theme.of(context).textTheme.labelLarge;
     return SizedBox(
-      height: 44,
+      height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: padding,
+        padding: padding.copyWith(bottom: 6),
         itemCount: items.length,
-        separatorBuilder: (_, _) => const SizedBox(width: PircSpacing.stackSm),
+        separatorBuilder: (_, _) => const SizedBox(width: 6),
         itemBuilder: (context, index) {
           final item = items[index];
           final on = item.value == selected;
@@ -57,32 +57,36 @@ class FilterChips<T> extends StatelessWidget {
                   customBorder: const StadiumBorder(),
                   onTap: () => onSelected(item.value),
                   child: Container(
-                    height: 32,
+                    height: 34,
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     alignment: Alignment.center,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
+                      spacing: 6,
                       children: [
                         Text(
                           item.label,
-                          style: text?.copyWith(
+                          style: TextStyle(
+                            fontSize: 14,
+                            height: 20 / 14,
+                            fontWeight: on ? FontWeight.w500 : FontWeight.w400,
                             color: on
                                 ? colors['action.onPrimary']
-                                : colors['text.primary'],
+                                : colors['text.secondary'],
                           ),
                         ),
-                        if (count > 0) ...[
-                          const SizedBox(width: 6),
+                        if (count > 0)
                           Text(
                             '$count',
-                            style: text?.copyWith(
-                              fontSize: 13,
+                            style: TextStyle(
+                              fontSize: 12,
+                              height: 20 / 12,
+                              fontWeight: FontWeight.w600,
                               color: on
                                   ? colors['action.onPrimary']
                                   : colors['text.warning'],
                             ),
                           ),
-                        ],
                       ],
                     ),
                   ),

@@ -240,6 +240,24 @@ void main() {
       });
     });
 
+    appTest('at tablet width tapping outside the 440 pane closes it', (
+      tester,
+    ) async {
+      final (_, container) = await _pump(
+        tester,
+        PotProfileFixture(),
+        width: 700,
+        height: 812,
+      );
+      expect(find.byType(PotProfileScreen), findsOneWidget);
+      // The pane is 440 wide at the right; this point is outside it.
+      await tester.tapAt(const Offset(100, 300));
+      await tester.pumpAndSettle();
+      expect(_location(container).toString(), '/chat?open=pot%3Ap-butler');
+      expect(find.byType(PotProfileScreen), findsNothing);
+      expect(find.byType(PotConversationScreen), findsOneWidget);
+    });
+
     appTest('Back on a phone returns to the conversation', (tester) async {
       final (_, container) = await _pump(tester, PotProfileFixture());
       await _tap(tester, find.byTooltip('Back').last);
@@ -395,6 +413,13 @@ void main() {
       fixture.pots[0]['state'] = 'paused';
       final (gateway, _) = await _pump(tester, fixture);
       expect(find.byKey(const ValueKey('profile-paused')), findsOneWidget);
+      expect(
+        find.textContaining(
+          'It does not observe, suggest or start new work; its '
+          'responsibilities and follow-ups stay.',
+        ),
+        findsOneWidget,
+      );
       await _tap(tester, _action('Resume'));
       expect(
         [

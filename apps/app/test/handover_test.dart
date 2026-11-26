@@ -158,7 +158,7 @@ void main() {
         _in('held-responsibility:r1', find.text('09:00 · summary')),
         findsOne,
       );
-      expect(_in('held-group_host:t-mobile', find.text('3 pots')), findsOne);
+      expect(_in('held-group_host:t-mobile', find.text('4 people')), findsOne);
       expect(_enabled(tester, 'handover-next'), isFalse);
 
       await _tapKey(tester, 'receiver-p-research');
@@ -424,6 +424,22 @@ void main() {
         findsOne,
       );
       expect(find.byKey(const ValueKey('handover-confirm')), findsNothing);
+    });
+
+    appTest('System Back goes to the pot\'s profile', (tester) async {
+      final (_, container) = await _pump(
+        tester,
+        HandoverFixture(),
+        location: _proposal,
+      );
+      expect(find.byType(HandoverScreen), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(_location(container).queryParameters, {
+        'open': 'pot:p-butler',
+        'side': 'profile',
+      });
+      expect(find.byType(HandoverScreen), findsNothing);
     });
   });
 

@@ -568,7 +568,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get thinkingOff => '關閉';
 
   @override
-  String get thinkingMinimal => '最少';
+  String get thinkingMinimal => '最低';
 
   @override
   String get thinkingLow => '低';
@@ -2323,7 +2323,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get potPausedBannerTitle => '已暫停。';
 
   @override
-  String get potPausedBannerText => '新的訊息與事件會等到恢復後再送達，也不開新工作。';
+  String get potPausedBannerText => '不會觀察、建議或開新工作；負責的事與追蹤都保留。';
 
   @override
   String get potProfileNoResponsibilities => '還沒有負責的事。';
@@ -2592,7 +2592,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String handoverGroupPots(int count) {
-    return '$count 位 pots';
+    return '$count 人';
   }
 
   @override

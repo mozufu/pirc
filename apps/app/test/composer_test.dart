@@ -25,8 +25,27 @@ const _binding = {
 };
 
 const _models = [
-  {'provider': 'anthropic', 'id': 'opus', 'name': 'Opus', 'reasoning': true},
-  {'provider': 'local', 'id': 'small', 'name': 'Small', 'reasoning': false},
+  {
+    'provider': 'anthropic',
+    'id': 'opus',
+    'name': 'Opus',
+    'reasoning': true,
+    'thinkingLevels': ['low', 'medium', 'high', 'max'],
+  },
+  {
+    'provider': 'local',
+    'id': 'small',
+    'name': 'Small',
+    'reasoning': true,
+    'thinkingLevels': ['low', 'high'],
+  },
+  {
+    'provider': 'local',
+    'id': 'tiny',
+    'name': 'Tiny',
+    'reasoning': false,
+    'thinkingLevels': <String>[],
+  },
 ];
 
 /// joined-mid-stream with a binding, a model and (optionally) a running run
@@ -258,7 +277,31 @@ void main() {
       expect(_fieldText(tester), 'draft\n\nfirst\n\nsecond');
     });
 
-    appTest('the model sheet sends set_model and set_thinking', (tester) async {
+    appTest('the thinking picker lists only the model\'s levels', (
+      tester,
+    ) async {
+      final c = await _open(tester);
+      await tester.tap(find.byKey(const Key('model-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Thinking'));
+      await tester.pumpAndSettle();
+      expect(find.text('Low'), findsOneWidget);
+      // The row's subtitle names the current level, then the option.
+      expect(find.text('Medium'), findsNWidgets(2));
+      expect(find.text('High'), findsOneWidget);
+      expect(find.text('Max'), findsOneWidget);
+      expect(find.text('Minimal'), findsNothing);
+      expect(find.text('Extra high'), findsNothing);
+      await tester.tap(find.text('High'));
+      await tester.pumpAndSettle();
+      expect(c.payloads, [
+        {'type': 'set_thinking', 'level': 'high'},
+      ]);
+    });
+
+    appTest('a model change clamps thinking to the nearest lower level', (
+      tester,
+    ) async {
       final c = await _open(tester);
       await tester.tap(find.byKey(const Key('model-button')));
       await tester.pumpAndSettle();
@@ -266,15 +309,9 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.text('Small'));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const Key('model-button')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Thinking'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('High'));
-      await tester.pumpAndSettle();
       expect(c.payloads, [
         {'type': 'set_model', 'provider': 'local', 'modelId': 'small'},
-        {'type': 'set_thinking', 'level': 'high'},
+        {'type': 'set_thinking', 'level': 'low'},
       ]);
     });
 
@@ -283,7 +320,7 @@ void main() {
     ) async {
       final c = _Composer();
       c.session.snapshot['agent'] = {
-        'model': {'provider': 'local', 'id': 'small'},
+        'model': {'provider': 'local', 'id': 'tiny'},
       };
       await pumpApp(tester, gateway: c.gateway, location: '/work?open=s2');
       await tester.tap(find.byKey(const Key('model-button')));

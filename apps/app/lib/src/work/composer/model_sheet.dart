@@ -28,6 +28,31 @@ const thinkingOrder = [
   'max',
 ];
 
+/// The thinking levels [model] accepts, lowest first (the settled M7 rule).
+List<String> thinkingLevelsFor(ModelInfo? model) => [
+  for (final level in thinkingOrder)
+    if (level != 'off' && (model?.thinkingLevels.contains(level) ?? false))
+      level,
+];
+
+/// [current] fitted to [levels]: the level itself when it is accepted, else
+/// the nearest lower one, else the lowest. `off` means no thinking, so it
+/// takes the first accepted level (as the pot forms do).
+String fitThinkingToLevels(String current, List<String> levels) {
+  final known = [
+    for (final level in thinkingOrder)
+      if (level != 'off' && levels.contains(level)) level,
+  ];
+  if (known.isEmpty) return 'off';
+  if (known.contains(current)) return current;
+  final rank = thinkingOrder.indexOf(current == 'off' ? 'medium' : current);
+  String? best;
+  for (final level in known) {
+    if (thinkingOrder.indexOf(level) <= rank) best = level;
+  }
+  return best ?? known.first;
+}
+
 String thinkingLabel(AppLocalizations l10n, String? level) => switch (level) {
   'off' => l10n.thinkingOff,
   'minimal' => l10n.thinkingMinimal,
@@ -100,7 +125,8 @@ class _ModelSheetState extends ConsumerState<_ModelSheet> {
     final models = ref.watch(modelsProvider);
     final list = models.value ?? const <ModelInfo>[];
     final current = currentModel(list, widget.provider, widget.modelId);
-    final thinkingEnabled = current?.reasoning ?? false;
+    final levels = thinkingLevelsFor(current);
+    final thinkingEnabled = levels.isNotEmpty;
     Widget check(bool on) => on
         ? Icon(LucideIcons.check, color: colors['accent.default'])
         : const SizedBox(width: 24);
@@ -158,7 +184,7 @@ class _ModelSheetState extends ConsumerState<_ModelSheet> {
               ),
             ),
             if (_open == 'thinking' && thinkingEnabled)
-              for (final level in thinkingOrder)
+              for (final level in levels)
                 ListTile(
                   contentPadding: const EdgeInsets.only(left: 32, right: 16),
                   title: Text(thinkingLabel(l10n, level)),

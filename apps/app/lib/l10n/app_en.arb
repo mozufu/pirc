@@ -29,7 +29,7 @@
       }
     }
   },
-  "groupMemberCount": "{count} pots",
+  "groupMemberCount": "{count} people",
   "@groupMemberCount": {
     "placeholders": {
       "count": {
@@ -1453,7 +1453,7 @@
     }
   },
   "potPausedBannerTitle": "Paused.",
-  "potPausedBannerText": "New messages and events wait until you resume it, and it starts no work.",
+  "potPausedBannerText": "It does not observe, suggest or start new work; its responsibilities and follow-ups stay.",
   "potProfileNoResponsibilities": "No responsibilities yet.",
   "potProfileMayDo": "What it may do",
   "potProfileObserveNothing": "Nothing yet",
@@ -1622,7 +1622,7 @@
   },
   "handoverNeedsMember": "Needs: to be in the group",
   "handoverHostDoes": "Will do: answer messages without an @ and decide who takes them",
-  "handoverGroupPots": "{count, plural, =1{1 pot} other{{count} pots}}",
+  "handoverGroupPots": "{count, plural, =1{1 person} other{{count} people}}",
   "@handoverGroupPots": {
     "placeholders": {
       "count": {

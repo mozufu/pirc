@@ -542,6 +542,23 @@ void main() {
       );
     });
 
+    appTest('step ④ with an empty model catalog refuses to create', (
+      tester,
+    ) async {
+      final n = _NewPot()..models = {'models': <Object?>[]};
+      final (gateway, _, _) = await _pump(tester, newPot: n);
+      await _type(tester, 'pot-name', 'Researcher');
+      for (var i = 0; i < 3; i++) {
+        await _next(tester);
+      }
+      expect(_step(4), findsOneWidget);
+      expect(find.text('The Gateway serves no models yet.'), findsOneWidget);
+      await _tap(tester, find.byKey(const ValueKey('pot-next')));
+      expect(_step(4), findsOneWidget, reason: 'no model, no Create');
+      expect(find.text('The Gateway serves no models yet.'), findsOneWidget);
+      expect(gateway.sent('POST', '/api/pots'), isEmpty);
+    });
+
     appTest('a full create sends every step once', (tester) async {
       final (gateway, n, container) = await _pump(tester);
       // ①

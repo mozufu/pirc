@@ -125,6 +125,10 @@ sealed class ChatEntry {
   /// When the newest message arrived (or the thread changed).
   int get time => thread?.lastMessage?.createdAt ?? thread?.updatedAt ?? 0;
 
+  /// The thread's last change (a message, a rename, a new avatar): the list
+  /// is ordered by this, so a renamed group moves to the top.
+  int get updatedAt => thread?.updatedAt ?? 0;
+
   int get unread => thread?.unread ?? 0;
 
   /// Items that wait on the user (pots only).
@@ -235,7 +239,7 @@ class ChatList {
     // Stable, so pots without a thread keep the Gateway's order at the end.
     final order = {for (final (i, e) in entries.indexed) e: i};
     entries.sort((a, b) {
-      final byTime = b.time.compareTo(a.time);
+      final byTime = b.updatedAt.compareTo(a.updatedAt);
       return byTime != 0 ? byTime : order[a]!.compareTo(order[b]!);
     });
     return ChatList(all: entries, pots: pots);

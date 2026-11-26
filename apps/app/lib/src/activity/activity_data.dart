@@ -319,7 +319,16 @@ class OpenBudgetRequest extends ActivityOpen {
 /// sheet, a budget request's sheet, a handover, a work session, then a
 /// thread (a pot's conversation, a group, or a pot DM in the pot's point of
 /// view). `budget` on `budget_exhausted` is a window, not a request.
-ActivityOpen? activityOpenOf(ActivityEntry entry, List<PotThread> threads) {
+///
+/// A direct thread whose pot was deleted opens by its thread ID: the
+/// Gateway's direct-thread route needs the pot, but a thread ID still reads
+/// the stored conversation (read only). A pot DM whose pot was deleted is
+/// opened the same way instead of as a point of view.
+ActivityOpen? activityOpenOf(
+  ActivityEntry entry,
+  List<PotThread> threads, {
+  List<PotSummary> pots = const [],
+}) {
   final refs = entry.refs;
   final kind = entry.kind;
   if ((kind == 'awaiting_approval' || kind == 'approval_answered') &&
@@ -339,11 +348,17 @@ ActivityOpen? activityOpenOf(ActivityEntry entry, List<PotThread> threads) {
   if (threadId != null) {
     final thread = threads.where((t) => t.id == threadId).firstOrNull;
     final potId = entry.potId;
-    if (thread != null && thread.kind == 'pot_dm' && potId != null) {
-      return OpenLocation(povThreadLocation(potId, threadId));
+    final pot = potId == null
+        ? null
+        : pots.where((p) => p.id == potId).firstOrNull;
+    if (thread != null && thread.kind == 'pot_dm' && pot != null) {
+      return OpenLocation(povThreadLocation(pot.id, threadId));
     }
     if (thread != null && thread.isDirect && thread.pots.isNotEmpty) {
-      return OpenLocation(chatLocation(potChatKey(thread.pots.first)));
+      final owner = pots.where((p) => p.id == thread.pots.first).firstOrNull;
+      if (owner != null) {
+        return OpenLocation(chatLocation(potChatKey(owner.id)));
+      }
     }
     return OpenLocation(chatLocation(threadId));
   }

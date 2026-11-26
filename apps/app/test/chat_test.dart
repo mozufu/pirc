@@ -98,6 +98,17 @@ void main() {
       expect(list.all[1].key, 't-mobile');
     });
 
+    test('updatedAt orders the list, so a renamed group moves to the top', () {
+      final fixture = ChatFixture();
+      // The group's last message is older; its rename is newer than every
+      // other thread.
+      fixture.threads[1]['updatedAt'] = at(10, 59);
+      final list = ChatList.build(fixture.parsedThreads, fixture.parsedPots);
+      expect(list.all.first.name, 'Mobile team');
+      expect(list.all.first.time, at(10, 34), reason: 'shows the message time');
+      expect(list.all.first.updatedAt, at(10, 59));
+    });
+
     test('filters and search', () {
       final fixture = ChatFixture();
       final list = ChatList.build(fixture.parsedThreads, fixture.parsedPots);
@@ -137,7 +148,7 @@ void main() {
       expect(travel.time, 'Yesterday');
       expect(_row(tester, 'Trip plan').time, 'Sat');
       final group = _row(tester, 'Mobile team');
-      expect(group.role, '3 pots');
+      expect(group.role, '4 people');
       expect(group.preview, 'Tester: OK, I opened a work.');
       expect(
         _row(tester, 'Tester').preview,
@@ -301,6 +312,7 @@ void main() {
             at(10, 59),
             authorId: 'p-research',
           );
+          fixture.threads[3]['updatedAt'] = at(10, 59);
         }
         gateway.socket('/api/hints')!.push({'type': hint});
         await tester.pumpAndSettle();
@@ -383,28 +395,32 @@ void main() {
   });
 
   group('golden images', () {
-    for (final mode in [ThemeMode.light, ThemeMode.dark]) {
-      testWidgets('New sheet 375 ${mode.name}', (tester) async {
-        await tester.runAsync(loadGoldenFonts);
-        final container = await pumpApp(
-          tester,
-          gateway: ChatFixture().install(),
-          width: 375,
-          height: 812,
-          location: '/chat',
-          overrides: [clockProvider.overrideWithValue(() => fixedNow)],
-          reduceMotion: true,
-        );
-        container.read(themeModeProvider.notifier).select(mode);
-        await tester.pumpAndSettle();
-        await tester.tap(find.byTooltip('New pot or group'));
-        await tester.pumpAndSettle();
-        await expectLater(
-          find.byType(MaterialApp),
-          matchesGoldenFile('goldens/chat_new_375_${mode.name}.png'),
-        );
-        await disposeApp(tester);
-      }, tags: ['golden']);
+    for (final width in [375.0, 700.0, 1000.0, 1300.0]) {
+      for (final mode in [ThemeMode.light, ThemeMode.dark]) {
+        testWidgets('New sheet $width ${mode.name}', (tester) async {
+          await tester.runAsync(loadGoldenFonts);
+          final container = await pumpApp(
+            tester,
+            gateway: ChatFixture().install(),
+            width: width,
+            height: 812,
+            location: '/chat',
+            overrides: [clockProvider.overrideWithValue(() => fixedNow)],
+            reduceMotion: true,
+          );
+          container.read(themeModeProvider.notifier).select(mode);
+          await tester.pumpAndSettle();
+          await tester.tap(find.byTooltip('New pot or group'));
+          await tester.pumpAndSettle();
+          await expectLater(
+            find.byType(MaterialApp),
+            matchesGoldenFile(
+              'goldens/chat_new_${width.toInt()}_${mode.name}.png',
+            ),
+          );
+          await disposeApp(tester);
+        }, tags: ['golden']);
+      }
     }
   });
 }

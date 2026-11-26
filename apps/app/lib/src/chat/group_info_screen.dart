@@ -156,6 +156,7 @@ class _InfoBody extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
           child: Column(
+            spacing: 4,
             children: [
               GroupThreadAvatar.of(
                 thread,
@@ -163,37 +164,41 @@ class _InfoBody extends ConsumerWidget {
                 size: AvatarSize.lg,
                 ring: colors['surface.grouped'],
               ),
-              const SizedBox(height: 14),
-              Text(
-                thread.name,
-                key: const ValueKey('group-info-name'),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 22,
-                  height: 30 / 22,
-                  fontWeight: FontWeight.w600,
-                  color: colors['text.primary'],
-                ),
-              ),
-              const SizedBox(height: 12),
-              FilledButton(
-                key: const ValueKey('group-edit-look'),
-                onPressed: () => _showSheet(
-                  context,
-                  (_) => _LookSheet(thread: thread, members: members),
-                ),
-                style: FilledButton.styleFrom(
-                  backgroundColor: colors['surface.layer'],
-                  foregroundColor: colors['text.primary'],
-                  minimumSize: const Size(0, 36),
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  shape: const StadiumBorder(),
-                  textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: Text(
+                  thread.name,
+                  key: const ValueKey('group-info-name'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 22,
+                    height: 30 / 22,
+                    fontWeight: FontWeight.w600,
+                    color: colors['text.primary'],
                   ),
                 ),
-                child: Text(l10n.groupEditLook),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: FilledButton(
+                  key: const ValueKey('group-edit-look'),
+                  onPressed: () => _showSheet(
+                    context,
+                    (_) => _LookSheet(thread: thread, members: members),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: colors['surface.layer'],
+                    foregroundColor: colors['text.primary'],
+                    minimumSize: const Size(0, 36),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    shape: const StadiumBorder(),
+                    textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  child: Text(l10n.groupEditLook),
+                ),
               ),
             ],
           ),

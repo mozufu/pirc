@@ -9,7 +9,11 @@ const _destinations = [
   PircDestination(icon: Icons.calendar_today_outlined, label: 'Calendar'),
 ];
 
-Widget _frame({bool open = false, bool side = false}) => MaterialApp(
+Widget _frame({
+  bool open = false,
+  bool side = false,
+  VoidCallback? onSideDismiss,
+}) => MaterialApp(
   theme: PircTheme.of(Brightness.light),
   home: AdaptiveScaffold(
     destinations: _destinations,
@@ -27,6 +31,7 @@ Widget _frame({bool open = false, bool side = false}) => MaterialApp(
           )
         : null,
     side: side ? const Text('side', key: Key('side')) : null,
+    onSideDismiss: onSideDismiss,
     placeholder: const Center(child: Text('Nothing open')),
   ),
 );
@@ -83,6 +88,16 @@ void main() {
     expect(_visible(tester, const Key('content')), isTrue);
     expect(tester.getTopRight(find.byKey(const Key('side'))).dx, 700);
     expect(tester.getTopLeft(find.byKey(const Key('side'))).dx, 700 - 440);
+  });
+
+  testWidgets('700: tapping outside the 440 pane dismisses it', (tester) async {
+    await _size(tester, 700);
+    var dismissed = false;
+    await tester.pumpWidget(
+      _frame(open: true, side: true, onSideDismiss: () => dismissed = true),
+    );
+    await tester.tapAt(const Offset(100, 200));
+    expect(dismissed, isTrue);
   });
 
   testWidgets('1000: list 320 and content; side replaces content', (

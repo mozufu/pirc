@@ -55,7 +55,14 @@ class ChatListScreen extends ConsumerWidget {
                   height: PircSize.stateDot,
                   decoration: BoxDecoration(color: dot, shape: BoxShape.circle),
                 ),
-                Text(status, style: text.labelSmall),
+                Text(
+                  status,
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 16 / 12,
+                    color: colors['text.muted'],
+                  ),
+                ),
               ],
             ),
           ],
@@ -140,14 +147,16 @@ class _SearchState extends ConsumerState<_Search> {
       controller: _controller,
       onChanged: ref.read(chatQueryProvider.notifier).set,
       textInputAction: TextInputAction.search,
+      style: const TextStyle(fontSize: 15),
       decoration: InputDecoration(
         isDense: true,
         hintText: widget.hint,
+        hintStyle: const TextStyle(fontSize: 15),
         prefixIcon: const Icon(LucideIcons.search, size: PircSize.iconRow),
         filled: true,
         fillColor: colors['fill.hover'],
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(PircRadius.lg),
+          borderRadius: BorderRadius.circular(PircRadius.md),
           borderSide: BorderSide.none,
         ),
       ),
@@ -282,7 +291,7 @@ class ChatEntryRow extends ConsumerWidget {
       ),
       GroupChat(:final thread, :final members) => (
         GroupThreadAvatar.of(thread, members: members),
-        l10n.groupMemberCount(members.length),
+        l10n.groupMemberCount(members.length + 1),
       ),
     };
     return ChatRow(
@@ -313,11 +322,16 @@ class PotAvatar extends ConsumerWidget {
     required this.pot,
     this.size = AvatarSize.standard,
     this.withStatus = false,
+    this.ring,
   });
 
   final PotSummary pot;
   final AvatarSize size;
   final bool withStatus;
+
+  /// The status dot's ring: the page colour by default, `surface.grouped`
+  /// on grouped pages.
+  final Color? ring;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -335,6 +349,7 @@ class PotAvatar extends ConsumerWidget {
       size: size,
       image: watchAvatarImage(ref, pot.avatarImage),
       status: status,
+      ring: ring,
       statusLabel: switch (status) {
         AvatarStatus.working => l10n.potWorking,
         AvatarStatus.unavailable => l10n.potUnavailable,
@@ -448,7 +463,7 @@ class _AddRow extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           spacing: 12,
           children: [
@@ -468,8 +483,8 @@ class _AddRow extends StatelessWidget {
             Text(
               title,
               style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
+                fontSize: 15,
+                height: 22 / 15,
                 color: colors[enabled ? 'text.primary' : 'text.faint'],
               ),
             ),

@@ -216,7 +216,7 @@ abstract class AppLocalizations {
   /// No description provided for @groupMemberCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} pots'**
+  /// **'{count} people'**
   String groupMemberCount(int count);
 
   /// No description provided for @potPaused.
@@ -4326,7 +4326,7 @@ abstract class AppLocalizations {
   /// No description provided for @potPausedBannerText.
   ///
   /// In en, this message translates to:
-  /// **'New messages and events wait until you resume it, and it starts no work.'**
+  /// **'It does not observe, suggest or start new work; its responsibilities and follow-ups stay.'**
   String get potPausedBannerText;
 
   /// No description provided for @potProfileNoResponsibilities.
@@ -4806,7 +4806,7 @@ abstract class AppLocalizations {
   /// No description provided for @handoverGroupPots.
   ///
   /// In en, this message translates to:
-  /// **'{count, plural, =1{1 pot} other{{count} pots}}'**
+  /// **'{count, plural, =1{1 person} other{{count} people}}'**
   String handoverGroupPots(int count);
 
   /// No description provided for @handoverAdjust.

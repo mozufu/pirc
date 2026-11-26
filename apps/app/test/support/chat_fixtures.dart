@@ -51,9 +51,11 @@ Map<String, Object?> lastJson(
   int createdAt, {
   String authorKind = 'pot',
   String? authorId,
+  String? authorName,
 }) => {
   'authorKind': authorKind,
   'authorId': ?authorId,
+  'authorName': ?authorName,
   'body': body,
   'createdAt': createdAt,
 };

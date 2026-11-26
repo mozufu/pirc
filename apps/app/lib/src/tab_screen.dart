@@ -15,6 +15,7 @@ import 'chat/chat_list_screen.dart';
 import 'chat/decision_sheet.dart';
 import 'chat/group_conversation_screen.dart';
 import 'chat/group_info_screen.dart';
+import 'chat/handover_data.dart';
 import 'chat/handover_screen.dart';
 import 'chat/new_group_screen.dart';
 import 'chat/new_pot_screen.dart';
@@ -22,6 +23,7 @@ import 'chat/pot_conversation_screen.dart';
 import 'chat/pot_profile_screen.dart';
 import 'chat/pot_settings_screen.dart';
 import 'chat/retire_screen.dart';
+import 'chat/thread_data.dart';
 import 'router.dart';
 import 'shell/app_drawer.dart';
 import 'work/new_conversation/new_conversation_screen.dart';
@@ -80,6 +82,15 @@ class TabScreen extends ConsumerWidget {
             // or delete to its settings.
             AppTab.chat when open.startsWith('handover-new:') =>
               potProfileLocation(open.substring('handover-new:'.length)),
+            // A handover shown from its card goes back to the pot's profile,
+            // like one started there.
+            AppTab.chat when open.startsWith('handover:') =>
+              handoverBackLocation(
+                ref
+                    .read(handoverProvider(open.substring('handover:'.length)))
+                    .value
+                    ?.fromPotId,
+              ),
             AppTab.chat when open.startsWith('retire:') => potSettingsLocation(
               open.substring('retire:'.length),
             ),
@@ -156,8 +167,21 @@ class TabScreen extends ConsumerWidget {
                 )
               : null,
           // Rule C makes work panels a page below 900; information about a
-          // chat item slides in from the right at 600–899 (E spec § 9).
+          // chat item slides in from the right at 600–899 (E spec § 9) and
+          // closes when the user taps outside it.
           sideFullPage: tab == AppTab.work,
+          onSideDismiss:
+              tab == AppTab.chat &&
+                  open != null &&
+                  side == profileSide &&
+                  open.startsWith('pot:')
+              ? () => context.go(chatLocation(open))
+              : tab == AppTab.chat &&
+                    open != null &&
+                    side == groupInfoSide &&
+                    !open.contains(':')
+              ? () => context.go(chatLocation(open))
+              : null,
           placeholder: _Empty(text: l10n.nothingOpen),
         ),
       ),

@@ -465,12 +465,7 @@ class _SheetBody extends StatelessWidget {
             spacing: 10,
             children: [
               if (pot != null) PotAvatar(pot: pot!, size: AvatarSize.sm),
-              Expanded(
-                child: Text(
-                  title,
-                  style: text.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-                ),
-              ),
+              Expanded(child: Text(title, style: text.titleLarge)),
             ],
           ),
           const SizedBox(height: 8),
@@ -488,39 +483,44 @@ class _SheetBody extends StatelessWidget {
                       indent: 16,
                       color: colors['line.hairline'],
                     ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SizedBox(
-                          width: 68,
-                          child: Text(
-                            row.label,
-                            style: text.bodyMedium?.copyWith(
-                              color: colors['text.muted'],
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 56),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: 56,
+                            child: Text(
+                              row.label,
+                              style: TextStyle(
+                                fontSize: 14,
+                                height: 20 / 14,
+                                color: colors['text.muted'],
+                              ),
                             ),
                           ),
-                        ),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(row.value, style: text.bodyLarge),
-                              if (row.sub != null && row.sub!.isNotEmpty)
-                                Text(
-                                  row.sub!,
-                                  style: text.bodySmall?.copyWith(
-                                    color: colors['text.muted'],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(row.value, style: text.bodyMedium),
+                                if (row.sub != null && row.sub!.isNotEmpty)
+                                  Text(
+                                    row.sub!,
+                                    style: text.bodySmall?.copyWith(
+                                      color: colors['text.muted'],
+                                    ),
                                   ),
-                                ),
-                            ],
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],

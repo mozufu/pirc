@@ -274,7 +274,7 @@ class _MeScreenState extends ConsumerState<MeScreen> {
                   minimumSize: const Size(0, 36),
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontSize: 15,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

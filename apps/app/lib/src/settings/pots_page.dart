@@ -283,6 +283,7 @@ class _PotsSettingsPageState extends ConsumerState<PotsSettingsPage> {
                       pot: _summary(pot),
                       size: AvatarSize.md,
                       withStatus: true,
+                      ring: colors['surface.grouped'],
                     ),
                     titleWidget: _NameLine(
                       name: pot.name,
@@ -446,8 +447,8 @@ class _Totals extends ConsumerWidget {
     final colors = PircColorTokens.of(context);
     final totals = ref.watch(potTotalsProvider).value;
     final meta = TextStyle(
-      fontSize: 12.5,
-      height: 18 / 12.5,
+      fontSize: 13.5,
+      height: 18 / 13.5,
       color: colors['text.muted'],
       fontFeatures: const [FontFeature.tabularFigures()],
     );
@@ -509,7 +510,14 @@ class _Totals extends ConsumerWidget {
               ),
             ),
           ),
-          Text(value, style: meta),
+          Flexible(
+            child: Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: meta,
+            ),
+          ),
         ],
       );
     }

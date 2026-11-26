@@ -83,6 +83,7 @@ class AdaptiveScaffold extends StatefulWidget {
     this.contentMaxWidth = 760,
     this.trailing,
     this.sideFullPage = false,
+    this.onSideDismiss,
   });
 
   final List<PircDestination> destinations;
@@ -110,6 +111,10 @@ class AdaptiveScaffold extends StatefulWidget {
   /// Rule C (panels, results, the task sheet): below 900 the side pane is a
   /// full page instead of a 440-wide panel.
   final bool sideFullPage;
+
+  /// Closes the 440-wide information pane of the portrait layout when the
+  /// user taps outside it (E spec § 9).
+  final VoidCallback? onSideDismiss;
 
   @override
   State<AdaptiveScaffold> createState() => _AdaptiveScaffoldState();
@@ -174,7 +179,15 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                 _pane(_contentKey, content, visible: hasContent),
                 if (layout == PircLayout.compact || widget.sideFullPage)
                   _pane(_sideKey, side, visible: hasSide)
-                else
+                else ...[
+                  if (hasSide && widget.onSideDismiss != null)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        key: const ValueKey('side-barrier'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: widget.onSideDismiss,
+                      ),
+                    ),
                   Positioned(
                     top: 0,
                     right: 0,
@@ -196,6 +209,7 @@ class _AdaptiveScaffoldState extends State<AdaptiveScaffold> {
                       visible: hasSide,
                     ),
                   ),
+                ],
               ],
             );
           case PircLayout.landscape:

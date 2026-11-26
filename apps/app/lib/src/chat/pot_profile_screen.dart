@@ -476,7 +476,7 @@ class _ActivitySection extends ConsumerWidget {
                     tone: activityKindTone(entry.kind),
                   ),
                   quote: entry.summary.isEmpty ? null : entry.summary,
-                  onTap: switch (activityOpenOf(entry, threads)) {
+                  onTap: switch (activityOpenOf(entry, threads, pots: pots)) {
                     final open? => () => openActivity(context, open),
                     null => null,
                   },

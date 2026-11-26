@@ -228,7 +228,7 @@ class _ActivityListState extends ConsumerState<ActivityListScreen> {
         );
       }
       final summary = potById(ref, entry.potId);
-      final open = activityOpenOf(entry, threads);
+      final open = activityOpenOf(entry, threads, pots: pots);
       children.add(
         LogRow(
           key: ValueKey('activity-${entry.id}'),
@@ -329,7 +329,14 @@ class _ActivityListState extends ConsumerState<ActivityListScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(l10n.tabActivity, style: text.titleSmall),
-            Text(l10n.activitySubtitle, style: text.labelSmall),
+            Text(
+              l10n.activitySubtitle,
+              style: TextStyle(
+                fontSize: 12,
+                height: 16 / 12,
+                color: colors['text.muted'],
+              ),
+            ),
           ],
         ),
         actions: [

@@ -69,7 +69,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String groupMemberCount(int count) {
-    return '$count pots';
+    return '$count people';
   }
 
   @override
@@ -2415,7 +2415,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get potPausedBannerText =>
-      'New messages and events wait until you resume it, and it starts no work.';
+      'It does not observe, suggest or start new work; its responsibilities and follow-ups stay.';
 
   @override
   String get potProfileNoResponsibilities => 'No responsibilities yet.';
@@ -2692,8 +2692,8 @@ class AppLocalizationsEn extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count pots',
-      one: '1 pot',
+      other: '$count people',
+      one: '1 person',
     );
     return '$_temp0';
   }

@@ -472,6 +472,7 @@ void main() {
             'lastMessage': {
               'authorKind': 'pot',
               'authorId': 'pot2',
+              'authorName': 'Tester',
               'body': 'Done\nSecond line',
               'createdAt': 899,
             },
@@ -494,6 +495,7 @@ void main() {
       expect(threads.first.unread, 2);
       expect(threads.first.lastMessage?.firstLine, 'Done');
       expect(threads.first.lastMessage?.authorId, 'pot2');
+      expect(threads.first.lastMessage?.authorName, 'Tester');
       expect(threads.last.isDirect, isTrue);
       expect(threads.last.unread, 0);
       expect(threads.last.lastMessage, isNull);

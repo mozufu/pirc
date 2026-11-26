@@ -114,7 +114,8 @@ String? heldSubtitle(
     case 'group_host':
       for (final thread in threads) {
         if (thread.id == item.ref) {
-          return l10n.handoverGroupPots(thread.pots.length);
+          // The user is a member too, as in the group info header.
+          return l10n.handoverGroupPots(thread.pots.length + 1);
         }
       }
       return null;

@@ -130,14 +130,31 @@ abstract final class PircTheme {
       materialTapTargetSize: MaterialTapTargetSize.padded,
       visualDensity: VisualDensity.standard,
       badgeTheme: BadgeThemeData(
-        // Tab badges are yellow (design decision).
+        // Tab badges are yellow with white 10/700 text, 16 high (E).
         backgroundColor: colors['status.warning'],
-        textColor: colors['text.primary'],
+        textColor: Colors.white,
+        textStyle: const TextStyle(
+          fontSize: 10,
+          height: 1,
+          fontWeight: FontWeight.w700,
+        ),
+        largeSize: 16,
       ),
       navigationBarTheme: NavigationBarThemeData(
         height: PircSize.tabBarHeight,
         backgroundColor: colors['surface.page'],
         indicatorColor: colors['accent.soft'],
+        // `e-tab`: 11.5/14, 500; muted until chosen, then accent.
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            fontSize: 11.5,
+            height: 14 / 11.5,
+            fontWeight: FontWeight.w500,
+            color: states.contains(WidgetState.selected)
+                ? colors['accent.pressed']
+                : colors['text.muted'],
+          ),
+        ),
       ),
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: colors['surface.sidebar'],

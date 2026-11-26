@@ -204,7 +204,7 @@ class _SessionComposerState extends ConsumerState<SessionComposer> {
                                   provider: state.selectedModelProvider,
                                   modelId: state.selectedModelId,
                                   thinking: state.thinkingLevel,
-                                  onModel: actions.setModel,
+                                  onModel: actions.changeModel,
                                   onThinking: actions.setThinking,
                                 )
                               : null,

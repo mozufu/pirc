@@ -248,7 +248,7 @@ class _PovScreenState extends ConsumerState<PovScreen> {
           ],
         ),
         thread.name,
-        l10n.groupMemberCount(thread.pots.length),
+        l10n.groupMemberCount(thread.pots.length + 1),
       ),
     };
     return ChatRow(
@@ -282,29 +282,29 @@ class _Head extends StatelessWidget {
     return Semantics(
       header: true,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(
-          PircSpacing.gutterPhone,
-          PircSpacing.stackXl,
-          PircSpacing.gutterPhone,
-          PircSpacing.stackSm,
-        ),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
         child: Row(
-          spacing: PircSpacing.stackSm,
+          spacing: 8,
           children: [
             if (folder)
-              Icon(
-                LucideIcons.folder,
-                size: PircSize.iconRow,
-                color: colors['text.secondary'],
-              ),
+              Icon(LucideIcons.folder, size: 14, color: colors['text.muted']),
             Expanded(
               child: Text(
                 title,
-                style: text.titleMedium?.copyWith(fontWeight: FontWeight.w500),
+                style: text.labelMedium,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (count != null) Text(count!, style: text.bodyMedium),
+            if (count != null)
+              Text(
+                count!,
+                style: TextStyle(
+                  fontSize: 12.5,
+                  height: 18 / 12.5,
+                  letterSpacing: 0,
+                  color: colors['text.muted'],
+                ),
+              ),
           ],
         ),
       ),
@@ -361,7 +361,7 @@ class PovThreadScreen extends ConsumerWidget {
           ],
         ),
         thread.name,
-        l10n.groupMemberCount(thread.pots.length),
+        l10n.groupMemberCount(thread.pots.length + 1),
       ),
       'pot_dm' => () {
         final otherId = thread!.pots.where((p) => p != potId).firstOrNull;

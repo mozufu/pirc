@@ -199,6 +199,7 @@ class ActivityFixture extends ConversationFixture {
       "OK, I'll put it in today's summary reminder.",
       at(10, 43),
       authorId: 'p-butler',
+      authorName: 'Butler',
     ),
   )..['lastSeq'] = 5;
 
@@ -276,6 +277,7 @@ class ActivityFixture extends ConversationFixture {
           'nightly has a question for you',
           at(10, 42),
           authorId: 'p-tester',
+          authorName: 'Tester',
         ),
       ),
     ],
