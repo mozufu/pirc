@@ -21,8 +21,10 @@ apps/android/                old app; keeps building until M8 deletes it
 apps/web/                    old web app; keeps building until M9 deletes it
 ```
 
-The Android application ID stays `dev.pirc.mobile` so the new app replaces the old
-one in place.
+The new app's Android application ID and macOS bundle ID are `org.mozufu.pirc`
+(owner decision, 2026-11-26; M5 built it as `dev.pirc.mobile`). The old app is
+`dev.pirc.mobile.preview`, so the two install side by side: a user of the old app
+pairs the new one again and then uninstalls the old one by hand (P5, M8).
 
 ## Transport
 
@@ -150,7 +152,7 @@ nginx and Authelia), on the official Tailscale service.
   They are Gradle product flavors (`flutter build apk --flavor standard|tailscale`)
   with the Dart side selected by `--dart-define=PIRC_TAILSCALE=true|false`; the
   `standard` flavor must not link the native library. They share the application ID
-  base but install side by side (`dev.pirc.mobile` and `dev.pirc.mobile.tailscale`),
+  base but install side by side (`org.mozufu.pirc` and `org.mozufu.pirc.tailscale`),
   so both can be tested on one device; pairing and data are per install. Release
   artifacts are named `pirc-<version>-standard.apk` and `pirc-<version>-tailscale.apk`.
   CI builds both variants. Desktop and Web have only the standard build for now.

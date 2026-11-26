@@ -19,7 +19,7 @@ acceptance, activation.
 | [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`               |
 | [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | finished after review; 12 rewritten; Memory panel removed   |
 | [M7 Pots screens](#m7-pots-screens)                           | complete | complete    |            | steps 0–14 done; goldens of every E screen at four widths   |
-| [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                             |
+| [M8 Android cutover](#m8-android-cutover)                     | complete |             |            | defaults A–F accepted 2026-11-26; ID `org.mozufu.pirc`      |
 | [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                          |
 | [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                                                             |
 | [M11 Release](#m11-release)                                   | outline  |             |            |                                                             |
@@ -412,8 +412,8 @@ the backend milestones. Flutter comes from the Nix shell (`nix develop`, Flutter
      `apps/android/pubspec.lock`, so all members share the old app's pinned versions
      (`csslib`, `flutter_math_fork`, `flutter_svg`, …).
    - `apps/app`: `flutter create --platforms android,web`, package `pirc_app`.
-     Gradle product flavors `standard` (`dev.pirc.mobile`) and `tailscale`
-     (`dev.pirc.mobile.tailscale`, through `applicationIdSuffix`), dimension
+     Gradle product flavors `standard` (`org.mozufu.pirc`) and `tailscale`
+     (`org.mozufu.pirc.tailscale`, through `applicationIdSuffix`), dimension
      `network`. Dart reads `bool.fromEnvironment('PIRC_TAILSCALE')`; a startup check
      refuses a build whose define does not match the flavor (the flavor is passed to
      Dart through `appFlavor`). The old app stays `dev.pirc.mobile.preview`, so both
@@ -424,7 +424,7 @@ the backend milestones. Flutter comes from the Nix shell (`nix develop`, Flutter
 --dart-define=PIRC_TAILSCALE=false` and `flutter build web` succeed for `apps/app`.
    - Added later in M5 (owner decision, so M6 screens can be built and tested
      natively): the macOS scaffold, `flutter create --platforms macos`. Bundle ID
-     `dev.pirc.mobile`, product name `pirc`, deployment target 12.0 (the lowest Xcode
+     `org.mozufu.pirc`, product name `pirc`, deployment target 12.0 (the lowest Xcode
      27 accepts); App Sandbox on, `network.client` in both entitlement files, no
      `network.server` in Release, no Keychain groups. macOS has only the standard
      build: with no flavor, `PIRC_TAILSCALE=true` is refused, as on Web. It uses the
@@ -1109,19 +1109,305 @@ components.
 
 ## M8 Android cutover
 
-Outline: slim native layer (push, notifications, quick-reply overlay, Keystore,
-pickers, scanner, JS sandbox, media); notification actions re-fetch state before
-showing a preselected answer; pairing v2 (app-initiated, challenge bound, confirmation
-code shown on approval, credential rotation that extends idle life but not grants);
-message content gets an opaque origin in the native engine; delete the old
-`apps/android` UI and the bridge methods it alone used; application ID kept.
+Goal: the new app (`apps/app`, application ID `org.mozufu.pirc`) does everything the
+old app (`apps/android`, `dev.pirc.mobile.preview`) does on Android, and the old app
+is deleted. The two IDs differ (M5 step 1), so the new app installs beside the old one
+and cannot read its token: a user pairs again and then uninstalls "pirc preview" (P5).
+
+Specification: [client.md](client.md#transport) for what stays in Kotlin and the
+background client; design C § 6 (`docs/design/design-spec-C.md`, screenshots
+`docs/design/screenshots/C-手機/8, 9, 11, 13–15, 28, 30` and `C-通知/`) for
+notifications and the quick-reply overlay; design D § 11 (D20) for notification
+levels; [device tokens](../docs/development/gateway-and-node.md#device-tokens) for
+the current pairing. The old app is the reference for behavior, not for code: read
+`apps/android/android/app/src/main/kotlin/dev/pirc/{android,pirc_mobile}/` and
+`apps/android/lib/live/`, and port a file only when it already has no old Gateway
+client in it (for example the ML Kit scanner flow or the canvas font loader).
+
+Conventions. Kotlin lives in `apps/app/android/app/src/main/kotlin/org/mozufu/pirc/`,
+one package per feature. Each feature has its own method channel named
+`org.mozufu.pirc/<feature>` (`credentials`, `push`, `notifications`, `overlay`, `scanner`,
+`files`, `media`, `images`, `fonts`, `scripts`), with a Dart wrapper in
+`apps/app/lib/src/platform/` (or in `pirc_render_document` for the document channels)
+and a fake for tests. Kotlin unit tests run with `./gradlew testStandardDebugUnitTest`
+in `apps/app/android`; `client.yml` adds that command in step 1. New strings go into
+both ARB files; strings that Kotlin shows without the Flutter engine (notifications,
+overlay) go into `values/strings.xml` and `values-zh-rTW/strings.xml`, and a test
+checks that both have the same keys. Step 0 comes first, then step 1. Steps 2, 3, 5, 6
+and 7 can then run in any order; step 4 needs step 3. Step 8 needs all of them, and
+step 9 closes the milestone.
+
+**Defaults the owner accepted on 2026-11-26.** The sources left these points open.
+The steps below use them.
+
+- **A. Pairing v2 and v1 (steps 0, 2).** The approval page of pairing v2 is a route of
+  the `apps/app` Web build, which is served only from M9; `apps/web` gets no new work
+  (P14). So M8 builds v2 completely and keeps v1 (the `pirc://pair?url=&token=` link
+  and the Devices page that shows it) working: the Android app scans and opens v1
+  links. M9 deploys the Web build, switches the app to v2 only, and deletes v1
+  (`POST /api/devices` returning a token, the link, and the Devices page "Pair a new
+  device").
+- **B. Token rotation (A7, steps 0, 2).** `POST /api/device/rotate` gives a new token
+  for the same device record and starts new idle and maximum windows (7 and 30 days),
+  so a phone that is used at least once a week never pairs again. Rotation never adds
+  or extends a management grant or a capability.
+- **C. Who applies notification preferences (steps 0, 3).** The Gateway applies them
+  per push target before it sends anything, so a muted category is never sent and Web
+  Push (M9) uses the same settings.
+- **D. Digest (steps 0, 3).** Items at level "digest" are not pushed one by one. The
+  Gateway sends one summary push per target at the digest time (default 18:00 in the
+  target's time zone) and one at the end of quiet hours, each only when there are new
+  items. Quiet hours default to off.
+- **E. What a notification can answer (steps 3, 4).** Only agent questions
+  (`interaction_created`) and missed schedule runs get option buttons and the
+  overlay, as in the old app. Pot model approvals (E25), budget requests, handovers
+  and observation notifications open the app on their sheet or the Activity tab, with
+  no preselected answer.
+- **F. Release signing (step 8).** The cutover moves the signing of the old app
+  (environment variables `PIRC_ANDROID_KEYSTORE`, `PIRC_ANDROID_STORE_PASSWORD`,
+  `PIRC_ANDROID_KEY_ALIAS`, `PIRC_ANDROID_KEY_PASSWORD`, `PIRC_ANDROID_REQUIRE_SIGNING`)
+  into `apps/app/android/app/build.gradle.kts`, so `release.yml` keeps making a signed
+  APK. Distribution and the production key are still M11.
+
+**Not in M8:** the live progress notification (C § 6.3 "即時進度"), iOS, and Gateway
+push relays. Real remote push delivery (UnifiedPush through a public distributor, Web
+Push) is tested only by the owner: the owner declined third-party relay testing, so
+an agent never runs it.
+
+0. **Backend additions** (Gateway; done before steps 2–4 need them).
+   1. _Pairing v2._ App-initiated and bound to a challenge, built on the request
+      store of `management.rs` (`/api/native-management/requests`), not as a second
+      copy of it.
+      - `POST /api/pairing/requests` with `{ deviceName, platform, challenge }`
+        (`challenge` is the hex SHA-256 of a verifier that only the app holds) needs
+        no identity. It returns `{ id, expiresAt, approvePath }`. A request lives 10
+        minutes; at most 20 are open at one time, and more are refused with 429.
+        Known limit: anyone who can reach these routes can keep 20 requests open and
+        so delay pairing; the owner then waits up to 10 minutes or pairs with v1.
+      - `GET /api/pairing/approvals/{id}` and `POST …/{id}/approve|deny` accept only
+        a browser identity, as the management approval does. The approval binds the
+        request to that user and returns a 6-digit confirmation code, shown only in
+        the browser.
+      - `POST /api/pairing/requests/{id}/claim` with `{ verifier, code }` needs no
+        identity. It returns `202` while the request waits, `{ device, token }` once
+        approved and the code matches, and `410` when denied or expired. Five wrong
+        codes end the request. The token is the same `pirc_dev_` token as v1, with
+        the same limits (10 phones, `Cache-Control: no-store`).
+      - The two routes without identity still need a trusted proxy peer and an
+        allowed `Host`. `docs/deploy/` and the Traefik example in
+        `gateway-and-node.md` gain the router that sends exactly these two paths to
+        the Gateway without forward auth.
+   2. _Rotation_ (default B): `POST /api/device/rotate` (device token only) returns a
+      new token for the same device ID, name and push targets, and sets the new
+      deadlines. The old token works until the new one is first used or 5 minutes
+      pass, so a lost response does not leave the phone without a token.
+      `GET /api/device` already returns `expiresAt`; it gains `idleExpiresAt`.
+   3. _Notification preferences_ (defaults C and D). Each push target gains
+      `{ levels, quietHours, timeZone, lockScreen }`. `levels` maps the D20
+      categories `needs_you`, `done`, `progress` and `calendar` to `immediate`,
+      `digest` or `off` (defaults: immediate, digest, off, immediate). `quietHours`
+      is `{ start, end }` or null; during quiet hours only `needs_you` is sent, as a
+      silent notification. `lockScreen` is `hidden`, `title` or `full` (default
+      `title`). `PATCH /api/push/subscriptions/{id}` changes them with a revision.
+      Every sender (interactions, schedules, calendar, pots) names its category; the
+      digest sender is new.
+   4. _Push payload._ Question pushes add `expiresAt`, `category` and at most 3
+      choices (`{ id, label }`) when the question is a single choice with 3 or fewer
+      options; other questions send no choices. Pot pushes name their target
+      (`{ potId, threadId }`, `{ activityNotificationId }`, `{ approvalId }`,
+      `{ budgetRequestId }`). A missed-run push adds `runId` to its schedule target,
+      so the background client can read the run. The push still holds no secret, and the app still
+      fetches state before it shows any answer (C § 6.2).
+   5. _Compact state for the background client._ `GET /api/sessions/{id}/interactions/{iid}`
+      returns `state` (`pending`, `answered` or `expired`), `epoch`, `question`,
+      `choices`, `expiresAt`, `controlHolder` and `answeredBy`
+      (`{ deviceName, at }` or null). `GET /api/schedules/{id}/runs/{runId}` returns the run's state, time and
+      reason. Both are small and need no session snapshot. `answeredBy` is also added
+      to the `interaction_answered` push so other devices can say who answered.
+      Done when: Gateway tests for each route and each refusal (no identity on an
+      approval, a wrong code, a sixth code, an expired request, the 21st request, a
+      rotated old token after first use of the new one, a category set to off, quiet
+      hours, the digest), and every route is in `gateway-and-node.md`.
+1. **Kotlin base, credentials and background client.**
+   - Add the Kotlin dependencies once: OkHttp, UnifiedPush connector, ML Kit code
+     scanner, `androidx.javascriptengine`, and JUnit with Robolectric for tests (the
+     versions in the old app's `build.gradle.kts`).
+   - `credentials` channel: the Keystore store of the old `CredentialStore.kt`
+     (AES-GCM, alias `pirc-device-token`). On Android it replaces
+     `flutter_secure_storage` (M6 default A); macOS keeps the Keychain through
+     `flutter_secure_storage`. On first start after the update the app moves an
+     existing token from the old store into the Keystore and deletes the old entry.
+   - Background client: one OkHttp factory (redirects off, `Authorization: Bearer`,
+     `X-Pirc-Client: pirc-app/<apiVersion>`, `X-Pirc-Request: 1` on every non-GET, a
+     proxy hook for M10). It reads only the compact routes of step 0.5 and sends
+     answers and schedule decisions with a client-generated command ID. It never
+     re-sends a request whose outcome is unknown (N8); it reports "Not sure it
+     arrived" instead.
+   - `pirc_render` calls `dev.pirc.mobile/gateway` for `imageCapabilities` and
+     `normalizeAvif`; this step renames that call to `org.mozufu.pirc/images`. Step 7
+     adds the Kotlin side.
+     Done when: Kotlin tests for the store (save, read, delete, move from the old
+     store), for the request headers and for redirects being refused; a Dart test
+     that the app reads its token through the channel; `client.yml` runs the Kotlin
+     tests.
+2. **Pairing on Android.**
+   - QR scanner (`scanner` channel, ML Kit code scanner as in `BarcodeScanFlow.kt`)
+     and the `pirc://pair` intent filter. Both feed the pairing page of M6 step 2. A
+     v1 link pairs as today (default A).
+   - Pairing v2 in the app: the user gives the Gateway address (typed, or a QR code
+     that holds only the address). The app creates a request, shows the device name
+     and "Open in a browser to approve", opens `approvePath` in the browser, and asks
+     for the 6-digit code shown there. It claims with the verifier and the code. The
+     states are waiting, approved, wrong code, denied and expired, each with its own
+     text and a way to start again.
+   - The approval route `/?pair=<id>` of the Web build (as `/?nativeManagement=<id>`
+     in M6 step 15): device name, platform, the device lifetime and Approve and
+     Deny; after Approve it shows the code in large digits. It is tested here and
+     served from M9.
+   - Rotation (default B): when the app comes to the foreground and less than 23 days
+     of the maximum window remain, it rotates once and saves the new token before it
+     uses it. The idle window needs no check, because every use resets it. If rotation
+     fails and less than 3 days of the maximum window remain, Settings → this device and
+     the drawer user row show "Pairing ends on <date>. Open pirc on this phone before
+     then, or pair again."
+     Done when: tests for the scanner result, the deep link, each v2 state, a wrong
+     code, the approval page (approve, deny, expired), rotation (saved before use,
+     a lost response) and the warning.
+3. **Push and notifications.**
+   - `push` channel: UnifiedPush registration as in `PushRegistration.kt`
+     (distributor choice, enable, disable, a retired instance). The app sends the
+     endpoint to `POST /api/push/subscriptions` with `kind: unifiedpush`.
+   - Push receipt runs in Kotlin without the Flutter engine. The service reads the
+     compact state (step 0.5) and then shows, updates or removes the notification.
+     It never shows choices for state it could not read.
+   - Notifications follow C § 6.3: collapsed (title and question, "Answer…" and "Open
+     conversation"); expanded with at most 3 choices; a missed run with "View and
+     run" and "Skip…"; "answered on <device>" with removal after 5 seconds; the lock
+     screen version from `lockScreen`. Android notification channels follow the
+     four D20 categories. Calendar reminders are pushes from the Gateway, as now.
+   - A tap opens the app directly (no service in between). The app shows "Reconnecting
+     and checking the latest state" with no buttons, then one of the five results of
+     C § 6.2: still open (conversation and answer sheet with the tapped answer
+     preselected; only "Send answer" sends), already answered (by whom and when),
+     expired, controlled on another device (with "Take control"), offline (the
+     preselection is kept, only "Retry"). Pot pushes open their target (default E).
+   - Settings → Notifications (C screenshots 11 and 30): push on or off, the
+     distributor, the four levels, quiet hours, the lock screen choice, "Send test",
+     and the notification permission (Android 13+), which is asked only from this
+     page or the first question.
+     Deletes: the M8 placeholder text in `more_pages.dart`.
+     Done when: Kotlin tests for each push kind (shown, updated, removed, state not
+     readable), the lock screen versions and the channel of each category; Dart tests
+     for the five results, each pot target and the settings page (save, conflict);
+     goldens of the settings page.
+4. **Quick-reply overlay.** An overlay service drawn by Kotlin above other apps (C
+   § 6.4, screenshots 13–15 and 28), shown for a question push when the user has
+   granted "Display over other apps"; without the permission, the normal
+   notification is shown.
+   - It opens with "Checking the latest state…" and all buttons disabled. After the
+     compact read it shows the choices, a send button and the control source
+     ("Control: this device" or the device that holds it). Sending gets a control
+     lease and sends the answer through the background client, as the old
+     `GatewayOverlayService.kt` does.
+   - States: checking, ready, sent (closes by itself), answered elsewhere (result and
+     "OK"), expired, offline, no control, and "Not sure it arrived". Close does not
+     answer; the item stays in "Needs you". The top right opens the full
+     conversation.
+   - The overlay uses the token colours and type of `tokens.json`, in light and dark.
+     Done when: Kotlin tests for each state and for the lease and command ID of a
+     send; screenshots of each state next to C 13–15 and 28 in the commit, with each
+     difference listed.
+5. **Files, sharing and input.** `files` channel: the system picker for attachments
+   and project files (replaces `file_selector`), the save picker for downloads and
+   documents, share (replaces `share_plus` on Android), images from the clipboard,
+   and images dropped onto the composer. The `FileProvider` authority is
+   `${applicationId}.files`.
+   Deletes: the M8 note in `attachments.dart`; `file_selector` and `share_plus` on
+   Android, if no other platform uses them.
+   Done when: Dart tests with the fake channel for each entry point and for a refused
+   or cancelled pick; Kotlin tests for the save picker and the clipboard read.
+6. **Documents and the script runtime (tier 3).** Rebuild the old `live/document_*`
+   files on `pirc_client` inside `pirc_render_document`, and install
+   `RenderHost.documentRuntime` in `apps/app` on Android only (Web and macOS keep
+   null until M9).
+   - Kotlin `scripts` channel: the `JavaScriptSandbox` host, script resources,
+     document cookies and document storage, as in `NativeDocumentScripts.kt` and the
+     files next to it.
+   - **Opaque origin for message content.** A document or script that comes from a
+     message or a tool result runs with an opaque origin. It never receives the
+     device token or the Gateway's cookies. Its cookies and storage are kept per
+     document and never shared with the Gateway origin or with another message.
+     Remote images and media load only after the user taps them. The old
+     `PairedOriginPolicy.kt` is not ported.
+   - Split the dialog top-layer layout and the script callbacks out of
+     `native_html.dart` into `pirc_render_document` (left for M8 by M5 step 2.4), so
+     that the import-graph test still finds no tier-3 file in the chat surface.
+   - Move `apps/android/tool/parity/fixtures/` to `packages/pirc_render/test/fixtures/parity/`
+     and change the four tests that read it. The `apps/web/tool/parity/*.mjs`
+     scripts, which write to `apps/android/build/parity`, are left broken until M9
+     deletes `apps/web` (P13, P14).
+     Done when: the moved tier-3 tests pass with `-t tier3`; new default-suite safety
+     tests show that a message document gets no token, no Gateway cookie and no
+     storage of another message; the import-graph test passes.
+7. **Media, AVIF and canvas fonts.** `media` channel: recording playback and HTML
+   media (play, pause, seek, save), as in `RecordingPlayer.kt` and
+   `HtmlMediaPlayer.kt`, including WebM. `images` channel: `imageCapabilities` and
+   `normalizeAvif` (`NativeRasterImages.kt`). `fonts` channel: the canvas text fonts
+   (`NativeCanvasTextFonts.kt` and the two font files next to it).
+   Done when: Kotlin tests for each channel; a Dart test that an AVIF image is shown
+   when the channel reports support and falls back when it does not.
+8. **Cutover: delete the old app.**
+   - Delete `apps/android` and `.github/workflows/android.yml`. Remove `apps/android`
+     from the root `pubspec.yaml` workspace and regenerate `pubspec.lock`.
+   - Signing (default F): port the old signing block into
+     `apps/app/android/app/build.gradle.kts`. `release.yml` builds the `standard`
+     flavor of `apps/app` (and the `tailscale` flavor, still the same app until
+     M10) and keeps its checks; `release-setup.yml` and `scripts/release-ci.ts`
+     check `client.yml` instead of `android.yml` and name `org.mozufu.pirc`.
+   - `scripts/version.ts` and `scripts/test/version.test.ts` read
+     `apps/app/pubspec.yaml`. Delete `scripts/e2e/jvm.mjs` and
+     `scripts/prepare-native-first-send.py` (they compile the old Kotlin core); the
+     e2e scripts that use `apps/android/tool/parity/test_browser.mjs` move that file
+     to `scripts/e2e/` or drop the check.
+   - Docs: `README.md`, `docs/README.md`, `docs/development/{localization,first-send-acceptance,releasing}.md`,
+     `docs/guides/session-ui.md`, `fixtures/timeline/README.md`,
+     `scripts/e2e/README.md`, `fixtures/mobile-parity/.gitignore` and
+     `.prettierignore` no longer name `apps/android`. In `client.md`, the layout
+     table drops `apps/android`.
+     Deletes: `apps/android` (about 17,000 lines of Kotlin and the old Flutter UI),
+     `android.yml`, the two old e2e scripts.
+   - Record the last commit that contains `apps/android` in
+     `docs/development/historical-records.md` with `git show` examples, as M1 step 3
+     did for the old plans.
+     Done when: `rg -n 'apps/android' --glob '!plans/**'` finds only history
+     (`CHANGELOG.md`, `docs/development/historical-records.md`); `flutter analyze` and the default
+     suites pass for the workspace; both debug APKs and a signed release APK build
+     in CI.
+9. **Close the milestone.**
+   - Goldens of every screen that M8 added or changed (pairing v2, the approval page,
+     Settings → Notifications, the reconnect page and the five results) at the four
+     widths, light and dark; the ARB key test and the `strings.xml` key test pass.
+   - Device acceptance, run by the owner on a physical phone with a real account
+     (from [Carried-over items](#carried-over-items)): pairing (v1 link and QR,
+     rotation), streaming, cancel and reconnect, panels, management consent,
+     answering the same question on Web and on the phone at the same time; keyboard
+     and CJK IME, safe areas, rotation, background, low memory; notifications on the
+     phone's own Android version (permission, lock screen, quiet hours, the overlay);
+     calendar reminders; full multi-line approval bodies and labels, browser
+     takeover, WebM playback; the release build. Remote push delivery is part of this
+     list only if the owner chooses to run it. Each result is recorded in the status
+     table's Notes; a skipped check is not a pass (N8).
+   - Update the status table.
 
 ## M9 Web and macOS cutover
 
 Outline: Flutter Web build (self-hosted CanvasKit and fonts, CSP with
 `'wasm-unsafe-eval'`, no inline scripts, hand-written service worker with build ID,
 Web Push, cache headers); agent HTML in a sandboxed opaque-origin iframe (Q3);
-web-only screens (management approval, pairing QR); Nix packaging and nginx headers;
+web-only screens (management approval, pairing QR, the pairing v2 approval route
+built in M8); if M8 default A stands, the app switches to pairing v2 only and v1 is
+deleted (`POST /api/devices` returning a token, the `pirc://pair` token link, the
+Devices page "Pair a new device"); Nix packaging and nginx headers;
 delete `apps/web`. macOS desktop target, building on the scaffold from M5: Keychain
 credentials, pairing, isolated web view for script-bearing documents (Q8),
 notifications while running.
