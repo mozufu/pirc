@@ -59,6 +59,9 @@ pub struct Thread {
 pub struct LastMessage {
     /// `user`, `pot` or `system`.
     pub author_kind: String,
+    /// The pot that wrote it, when one did.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub author_id: Option<String>,
     pub author_name: String,
     pub body: String,
     pub created_at: i64,
@@ -137,7 +140,7 @@ fn summary(conn: &Connection, thread: &mut Thread) -> rusqlite::Result<()> {
     )?;
     thread.last_message = conn
         .query_row(
-            "SELECT m.author_kind, COALESCE(m.author_name,
+            "SELECT m.author_kind, m.author_id, COALESCE(m.author_name,
                (SELECT p.name FROM pots p WHERE p.id=m.author_id), ''),
                m.body, m.created_at
              FROM messages m WHERE m.thread_id=?1 ORDER BY m.seq DESC LIMIT 1",
@@ -145,9 +148,10 @@ fn summary(conn: &Connection, thread: &mut Thread) -> rusqlite::Result<()> {
             |r| {
                 Ok(LastMessage {
                     author_kind: r.get(0)?,
-                    author_name: r.get(1)?,
-                    body: r.get(2)?,
-                    created_at: r.get(3)?,
+                    author_id: r.get(1)?,
+                    author_name: r.get(2)?,
+                    body: r.get(3)?,
+                    created_at: r.get(4)?,
                 })
             },
         )

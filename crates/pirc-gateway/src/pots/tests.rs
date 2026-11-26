@@ -2630,11 +2630,12 @@ mod threads {
         let shown = threads::get(&conn, "alice", &thread.id).unwrap();
         assert_eq!(shown.unread, 1);
         assert_eq!(
-            shown
-                .last_message
-                .as_ref()
-                .map(|m| (m.author_name.as_str(), m.body.as_str())),
-            Some(("Tester", "Done"))
+            shown.last_message.as_ref().map(|m| (
+                m.author_id.as_deref(),
+                m.author_name.as_str(),
+                m.body.as_str()
+            )),
+            Some((Some(tester.as_str()), "Tester", "Done"))
         );
         let listed = threads::list(&conn, "alice").unwrap();
         assert_eq!(listed[0].unread, 1);
