@@ -2484,5 +2484,33 @@
         "type": "String"
       }
     }
-  }
+  },
+  "filePickerFailed": "The file picker could not open.",
+  "filesTooLarge": "Not added, too large: {names}.",
+  "@filesTooLarge": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "filesUnreadable": "Not added, could not be read: {names}.",
+  "@filesUnreadable": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "filesTooMany": "Not added, more than 16 files or 64 MiB at once: {names}.",
+  "@filesTooMany": {
+    "placeholders": {
+      "names": {
+        "type": "String"
+      }
+    }
+  },
+  "pictureNotRead": "This picture could not be read.",
+  "pictureTooLarge": "This picture is too large.",
+  "shareFailed": "This could not be shared."
 }

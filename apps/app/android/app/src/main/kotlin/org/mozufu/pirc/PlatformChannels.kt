@@ -7,6 +7,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.view.TextureRegistry
 import org.mozufu.pirc.credentials.CredentialsChannel
 import org.mozufu.pirc.credentials.KeystoreCredentialStore
+import org.mozufu.pirc.files.FilesChannel
 import org.mozufu.pirc.fonts.FontsChannel
 import org.mozufu.pirc.images.ImagesChannel
 import org.mozufu.pirc.links.LinksChannel
@@ -40,6 +41,9 @@ interface PlatformFeature : MethodChannel.MethodCallHandler {
 
     /** A permission request of [requestCode] was answered; true when this feature asked. */
     fun permissionResult(requestCode: Int): Boolean = false
+
+    /** An activity started for a result of [requestCode] answered; true when this feature started it. */
+    fun activityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean = false
 }
 
 /** Registers every feature's channel on the engine and removes them again. */
@@ -74,6 +78,9 @@ class PlatformChannels(private val features: List<PlatformFeature>) {
 
     fun permissionResult(requestCode: Int): Boolean = features.any { it.permissionResult(requestCode) }
 
+    fun activityResult(requestCode: Int, resultCode: Int, data: Intent?): Boolean =
+        features.any { it.activityResult(requestCode, resultCode, data) }
+
     private fun detachChannels() {
         channels.forEach { it.setMethodCallHandler(null) }
         channels.clear()
@@ -99,6 +106,7 @@ class PlatformChannels(private val features: List<PlatformFeature>) {
             LinksChannel.create(activity, restored),
             PushChannel.create(activity),
             NotificationsChannel.create(activity, restored),
+            FilesChannel.create(activity),
         )
     }
 }

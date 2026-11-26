@@ -7,6 +7,7 @@ import 'package:pirc_ui/pirc_ui.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../connection/data.dart';
+import '../platform/files.dart';
 import '../work/composer/model_sheet.dart';
 import '../work/work_data.dart';
 import 'chat_data.dart';
@@ -462,6 +463,18 @@ class _AvatarPickerState extends ConsumerState<AvatarPicker> {
     final Uint8List? bytes;
     try {
       bytes = await ref.read(avatarPicturePickerProvider)();
+    } on FilesFailure catch (error) {
+      // A picker that is already open answers this tap: nothing to say.
+      if (!mounted || error.code == FilesError.busy) return;
+      final l10n = AppLocalizations.of(context);
+      setState(
+        () => _uploadError = switch (error.code) {
+          FilesError.unavailable => l10n.filePickerFailed,
+          RefusedFile.tooLarge => l10n.pictureTooLarge,
+          _ => l10n.pictureNotRead,
+        },
+      );
+      return;
     } on Object catch (error) {
       if (mounted) setState(() => _uploadError = '$error');
       return;

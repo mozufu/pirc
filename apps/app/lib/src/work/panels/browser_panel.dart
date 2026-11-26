@@ -11,6 +11,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../connection/connection.dart';
 import '../../connection/data.dart';
+import '../../platform/files.dart';
 import '../../platform/media.dart';
 import 'panel_common.dart';
 import 'recording_player.dart';
@@ -330,17 +331,30 @@ class _RecordingsState extends ConsumerState<_Recordings> {
     }
   }
 
-  void _open(String path, Uint8List bytes) => SharePlus.instance.share(
-    ShareParams(
-      files: [
-        XFile.fromData(
-          bytes,
-          mimeType: 'video/webm',
-          name: path.split('/').last,
-        ),
-      ],
-    ),
-  );
+  /// "Open in another app": the files channel's share sheet on Android,
+  /// `share_plus` elsewhere.
+  Future<void> _open(String path, Uint8List bytes) async {
+    final l10n = AppLocalizations.of(context);
+    final files = ref.read(filesPlatformProvider);
+    final name = path.split('/').last;
+    try {
+      if (files != null) {
+        await files.shareFile(bytes, name: name, mimeType: 'video/webm');
+      } else {
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [XFile.fromData(bytes, mimeType: 'video/webm', name: name)],
+          ),
+        );
+      }
+    } on Exception {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.shareFailed)));
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

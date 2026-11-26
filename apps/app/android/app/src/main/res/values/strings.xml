@@ -67,4 +67,5 @@
     <string name="overlay_run_skipped_already">This run was already skipped.</string>
     <string name="overlay_run_failed">This run has already failed. Open the schedule to read why.</string>
     <string name="overlay_run_gone">This run no longer waits for you.</string>
+    <string name="files_share_title">Share</string>
 </resources>

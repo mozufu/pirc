@@ -7,7 +7,10 @@ import 'package:pirc_ui/pirc_ui.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../connection/connection.dart';
 import '../../connection/hints.dart';
+import '../../platform/files.dart';
 import '../session_controller.dart';
+import 'attachment_input.dart';
+import 'attachments.dart';
 import 'composer_controller.dart';
 import 'dock.dart';
 import 'model_sheet.dart';
@@ -74,11 +77,45 @@ class _SessionComposerState extends ConsumerState<SessionComposer> {
     return send == true;
   }
 
+  Future<void> _attach() async {
+    final pick = await pickAttachments(context, ref);
+    if (pick == null || !mounted) return;
+    ref.read(composerProvider(widget.sessionId).notifier).addAttachments(pick);
+  }
+
+  /// Images pasted or dropped onto the composer.
+  void _take(FilePick pick) {
+    final attachments = AttachmentPick.from(pick);
+    ref
+        .read(composerProvider(widget.sessionId).notifier)
+        .addAttachments(attachments);
+    showRefusedAttachments(
+      ScaffoldMessenger.maybeOf(context),
+      AppLocalizations.of(context),
+      attachments,
+    );
+  }
+
+  /// The input takes dropped images on Android while messages are allowed.
+  Widget _dropArea(
+    FilesPlatform? files, {
+    required bool enabled,
+    required Widget child,
+  }) => files == null
+      ? child
+      : ComposerDropTarget(
+          files: files,
+          enabled: enabled,
+          onPick: _take,
+          child: child,
+        );
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final colors = PircColorTokens.of(context);
     final elevation = Theme.of(context).extension<PircElevationTokens>();
+    final files = ref.watch(filesPlatformProvider);
     final composer = ref.watch(composerProvider(widget.sessionId));
     final actions = ref.read(composerProvider(widget.sessionId).notifier);
     // A stop or a "never arrived" check may change the draft.
@@ -142,169 +179,196 @@ class _SessionComposerState extends ConsumerState<SessionComposer> {
                 ).textTheme.bodySmall?.copyWith(color: colors['status.danger']),
               ),
             ),
-          Container(
-            margin: const EdgeInsets.fromLTRB(
-              PircSpacing.composerSideInset,
-              0,
-              PircSpacing.composerSideInset,
-              PircSpacing.stackMd,
-            ),
-            decoration: BoxDecoration(
-              color: colors['surface.input'],
-              borderRadius: BorderRadius.circular(PircRadius.panel),
-              boxShadow: elevation?.float,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (composer.attachments.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    child: Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        for (final a in composer.attachments)
-                          InputChip(
-                            label: Text(a.name),
-                            onDeleted: () => actions.removeAttachment(a.id),
+          _dropArea(
+            files,
+            enabled: canWrite,
+            child: Container(
+              margin: const EdgeInsets.fromLTRB(
+                PircSpacing.composerSideInset,
+                0,
+                PircSpacing.composerSideInset,
+                PircSpacing.stackMd,
+              ),
+              decoration: BoxDecoration(
+                color: colors['surface.input'],
+                borderRadius: BorderRadius.circular(PircRadius.panel),
+                boxShadow: elevation?.float,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (composer.attachments.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          for (final a in composer.attachments)
+                            InputChip(
+                              label: Text(a.name),
+                              onDeleted: () => actions.removeAttachment(a.id),
+                            ),
+                        ],
+                      ),
+                    ),
+                  Actions(
+                    actions: pasteActions(
+                      files: canWrite ? files : null,
+                      onPick: _take,
+                    ),
+                    child: TextField(
+                      key: const Key('composer-field'),
+                      controller: _text,
+                      enabled: canWrite,
+                      minLines: 1,
+                      maxLines: 8,
+                      onChanged: actions.setDraft,
+                      contentInsertionConfiguration: keyboardImages(
+                        files: canWrite ? files : null,
+                        onPick: _take,
+                      ),
+                      contextMenuBuilder: (context, editable) =>
+                          composerContextMenu(
+                            context,
+                            editable,
+                            files: canWrite ? files : null,
+                            onPick: _take,
                           ),
+                      decoration: InputDecoration(
+                        hintText: hint,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.fromLTRB(
+                          20,
+                          16,
+                          20,
+                          8,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 52,
+                    child: Row(
+                      children: [
+                        const SizedBox(width: 6),
+                        // The left group takes the room the buttons leave. The
+                        // steer/queue toggle keeps its size beside + when it
+                        // fits and scales down when it does not; the model
+                        // button gets what is left.
+                        Expanded(
+                          child: LayoutBuilder(
+                            builder: (context, box) => Row(
+                              children: [
+                                IconButton(
+                                  tooltip: l10n.attach,
+                                  icon: const Icon(LucideIcons.plus),
+                                  onPressed: canWrite ? _attach : null,
+                                ),
+                                Flexible(
+                                  child: TextButton(
+                                    key: const Key('model-button'),
+                                    onPressed: canCommand
+                                        ? () => showModelSheet(
+                                            context,
+                                            provider:
+                                                state.selectedModelProvider,
+                                            modelId: state.selectedModelId,
+                                            thinking: state.thinkingLevel,
+                                            onModel: actions.changeModel,
+                                            onThinking: actions.setThinking,
+                                          )
+                                        : null,
+                                    style: TextButton.styleFrom(
+                                      backgroundColor: colors['fill.hover'],
+                                      shape: const StadiumBorder(),
+                                    ),
+                                    child: Text(
+                                      [
+                                        model?.name ??
+                                            state.selectedModelId ??
+                                            l10n.modelDefault,
+                                        if (state.thinkingLevel != null)
+                                          thinkingLabel(
+                                            l10n,
+                                            state.thinkingLevel,
+                                          ),
+                                      ].join(' · '),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ),
+                                if (active && canWrite) ...[
+                                  const SizedBox(width: 4),
+                                  ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: (box.maxWidth - 52).clamp(
+                                        0.0,
+                                        double.infinity,
+                                      ),
+                                    ),
+                                    child: FittedBox(
+                                      fit: BoxFit.scaleDown,
+                                      child: _WhenToggle(
+                                        when: composer.when,
+                                        onChanged: actions.setWhen,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                        // `c-stop2`: a round secondary button (default D, E36).
+                        if (active) ...[
+                          IconButton(
+                            key: const Key('stop-button'),
+                            tooltip: l10n.stopWork,
+                            style: IconButton.styleFrom(
+                              fixedSize: const Size.square(40),
+                              minimumSize: const Size.square(40),
+                              backgroundColor: colors['fill.hover'],
+                              foregroundColor: colors['text.primary'],
+                              disabledBackgroundColor: colors['fill.hover'],
+                              disabledForegroundColor: colors['text.faint'],
+                            ),
+                            onPressed: online ? actions.stop : null,
+                            icon: const _StopGlyph(),
+                          ),
+                          const SizedBox(width: 4),
+                        ],
+                        IconButton.filled(
+                          tooltip: l10n.send,
+                          style: IconButton.styleFrom(
+                            backgroundColor: colors['action.primary'],
+                            foregroundColor: colors['action.onPrimary'],
+                            disabledBackgroundColor: colors['surface.subtle'],
+                            disabledForegroundColor: colors['text.faint'],
+                          ),
+                          onPressed: canSend
+                              ? () => actions.send(
+                                  runActive: active,
+                                  confirmTakeover: (name) =>
+                                      _confirmTakeover(context, name),
+                                )
+                              : null,
+                          icon: composer.sending
+                              ? const SizedBox.square(
+                                  dimension: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(LucideIcons.arrowUp),
+                        ),
+                        const SizedBox(width: 6),
                       ],
                     ),
                   ),
-                TextField(
-                  key: const Key('composer-field'),
-                  controller: _text,
-                  enabled: canWrite,
-                  minLines: 1,
-                  maxLines: 8,
-                  onChanged: actions.setDraft,
-                  decoration: InputDecoration(
-                    hintText: hint,
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                  ),
-                ),
-                SizedBox(
-                  height: 52,
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 6),
-                      // The left group takes the room the buttons leave. The
-                      // steer/queue toggle keeps its size beside + when it
-                      // fits and scales down when it does not; the model
-                      // button gets what is left.
-                      Expanded(
-                        child: LayoutBuilder(
-                          builder: (context, box) => Row(
-                            children: [
-                              IconButton(
-                                tooltip: l10n.attach,
-                                icon: const Icon(LucideIcons.plus),
-                                onPressed: canWrite ? actions.attach : null,
-                              ),
-                              Flexible(
-                                child: TextButton(
-                                  key: const Key('model-button'),
-                                  onPressed: canCommand
-                                      ? () => showModelSheet(
-                                          context,
-                                          provider: state.selectedModelProvider,
-                                          modelId: state.selectedModelId,
-                                          thinking: state.thinkingLevel,
-                                          onModel: actions.changeModel,
-                                          onThinking: actions.setThinking,
-                                        )
-                                      : null,
-                                  style: TextButton.styleFrom(
-                                    backgroundColor: colors['fill.hover'],
-                                    shape: const StadiumBorder(),
-                                  ),
-                                  child: Text(
-                                    [
-                                      model?.name ??
-                                          state.selectedModelId ??
-                                          l10n.modelDefault,
-                                      if (state.thinkingLevel != null)
-                                        thinkingLabel(
-                                          l10n,
-                                          state.thinkingLevel,
-                                        ),
-                                    ].join(' · '),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
-                              if (active && canWrite) ...[
-                                const SizedBox(width: 4),
-                                ConstrainedBox(
-                                  constraints: BoxConstraints(
-                                    maxWidth: (box.maxWidth - 52).clamp(
-                                      0.0,
-                                      double.infinity,
-                                    ),
-                                  ),
-                                  child: FittedBox(
-                                    fit: BoxFit.scaleDown,
-                                    child: _WhenToggle(
-                                      when: composer.when,
-                                      onChanged: actions.setWhen,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                      // `c-stop2`: a round secondary button (default D, E36).
-                      if (active) ...[
-                        IconButton(
-                          key: const Key('stop-button'),
-                          tooltip: l10n.stopWork,
-                          style: IconButton.styleFrom(
-                            fixedSize: const Size.square(40),
-                            minimumSize: const Size.square(40),
-                            backgroundColor: colors['fill.hover'],
-                            foregroundColor: colors['text.primary'],
-                            disabledBackgroundColor: colors['fill.hover'],
-                            disabledForegroundColor: colors['text.faint'],
-                          ),
-                          onPressed: online ? actions.stop : null,
-                          icon: const _StopGlyph(),
-                        ),
-                        const SizedBox(width: 4),
-                      ],
-                      IconButton.filled(
-                        tooltip: l10n.send,
-                        style: IconButton.styleFrom(
-                          backgroundColor: colors['action.primary'],
-                          foregroundColor: colors['action.onPrimary'],
-                          disabledBackgroundColor: colors['surface.subtle'],
-                          disabledForegroundColor: colors['text.faint'],
-                        ),
-                        onPressed: canSend
-                            ? () => actions.send(
-                                runActive: active,
-                                confirmTakeover: (name) =>
-                                    _confirmTakeover(context, name),
-                              )
-                            : null,
-                        icon: composer.sending
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(LucideIcons.arrowUp),
-                      ),
-                      const SizedBox(width: 6),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],

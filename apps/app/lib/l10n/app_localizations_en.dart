@@ -3921,4 +3921,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String pairLinkScanned(String gateway) {
     return 'A pairing link for $gateway was scanned. Tap Pair to use it.';
   }
+
+  @override
+  String get filePickerFailed => 'The file picker could not open.';
+
+  @override
+  String filesTooLarge(String names) {
+    return 'Not added, too large: $names.';
+  }
+
+  @override
+  String filesUnreadable(String names) {
+    return 'Not added, could not be read: $names.';
+  }
+
+  @override
+  String filesTooMany(String names) {
+    return 'Not added, more than 16 files or 64 MiB at once: $names.';
+  }
+
+  @override
+  String get pictureNotRead => 'This picture could not be read.';
+
+  @override
+  String get pictureTooLarge => 'This picture is too large.';
+
+  @override
+  String get shareFailed => 'This could not be shared.';
 }

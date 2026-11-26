@@ -1107,5 +1107,12 @@
   "pairApprovalDecided": "這個請求已經處理過了。",
   "pairApprovalExpired": "這個請求已過期，請在 App 重新開始。",
   "pairingEndsWarning": "配對將於 {date} 結束。請在那之前在這支手機開啟 pirc，或重新配對。",
-  "pairLinkScanned": "已掃描 {gateway} 的配對連結。點「配對」即可使用。"
+  "pairLinkScanned": "已掃描 {gateway} 的配對連結。點「配對」即可使用。",
+  "filePickerFailed": "無法開啟檔案選擇器。",
+  "filesTooLarge": "檔案太大，未加入：{names}。",
+  "filesUnreadable": "無法讀取，未加入：{names}。",
+  "filesTooMany": "一次超過 16 個檔案或 64 MiB，未加入：{names}。",
+  "pictureNotRead": "無法讀取這張圖片。",
+  "pictureTooLarge": "這張圖片太大。",
+  "shareFailed": "無法分享。"
 }

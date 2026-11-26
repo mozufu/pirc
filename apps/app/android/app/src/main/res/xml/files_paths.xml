@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The files channel's FileProvider serves only the share cache (cacheDir/share/,
+     ShareCache.DIR): never the token, preferences or any other app file. -->
+<paths>
+    <cache-path name="share" path="share/" />
+</paths>

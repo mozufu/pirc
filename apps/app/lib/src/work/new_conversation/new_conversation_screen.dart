@@ -10,6 +10,8 @@ import '../../connection/connection.dart';
 import '../../connection/data.dart';
 import '../../connection/hints.dart';
 import '../../connection/storage.dart';
+import '../../platform/files.dart';
+import '../composer/attachment_input.dart';
 import '../composer/attachments.dart';
 import '../composer/model_sheet.dart';
 import 'first_send_controller.dart';
@@ -111,6 +113,33 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         );
   }
 
+  /// Images pasted or dropped onto the composer.
+  void _take(FilePick pick) {
+    final attachments = AttachmentPick.from(pick);
+    if (attachments.files.isNotEmpty) {
+      setState(() => _attachments.addAll(attachments.files));
+    }
+    showRefusedAttachments(
+      ScaffoldMessenger.maybeOf(context),
+      AppLocalizations.of(context),
+      attachments,
+    );
+  }
+
+  /// The input takes dropped images on Android while it can be edited.
+  Widget _dropArea(
+    FilesPlatform? files, {
+    required bool enabled,
+    required Widget child,
+  }) => files == null
+      ? child
+      : ComposerDropTarget(
+          files: files,
+          enabled: enabled,
+          onPick: _take,
+          child: child,
+        );
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -128,6 +157,7 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
         );
       }
     });
+    final files = ref.watch(filesPlatformProvider);
     final online =
         ref.watch(appConnectionStateProvider) == AppConnectionState.online;
     final busy = first.phase == FirstSendPhase.sending;
@@ -182,107 +212,138 @@ class _NewConversationScreenState extends ConsumerState<NewConversationScreen> {
           ),
           SafeArea(
             top: false,
-            child: Container(
-              margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-              decoration: BoxDecoration(
-                color: colors['surface.input'],
-                borderRadius: BorderRadius.circular(PircRadius.panel),
-                boxShadow: Theme.of(
-                  context,
-                ).extension<PircElevationTokens>()?.float,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (_attachments.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: Wrap(
-                        spacing: 6,
-                        children: [
-                          for (final a in _attachments)
-                            InputChip(
-                              label: Text(a.name),
-                              onDeleted: () =>
-                                  setState(() => _attachments.remove(a)),
+            child: _dropArea(
+              files,
+              enabled: !busy && !open,
+              child: Container(
+                margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                decoration: BoxDecoration(
+                  color: colors['surface.input'],
+                  borderRadius: BorderRadius.circular(PircRadius.panel),
+                  boxShadow: Theme.of(
+                    context,
+                  ).extension<PircElevationTokens>()?.float,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (_attachments.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                        child: Wrap(
+                          spacing: 6,
+                          children: [
+                            for (final a in _attachments)
+                              InputChip(
+                                label: Text(a.name),
+                                onDeleted: () =>
+                                    setState(() => _attachments.remove(a)),
+                              ),
+                          ],
+                        ),
+                      ),
+                    Actions(
+                      actions: pasteActions(
+                        files: busy || open ? null : files,
+                        onPick: _take,
+                      ),
+                      child: TextField(
+                        key: const Key('new-conversation-field'),
+                        controller: _text,
+                        enabled: !busy && !open,
+                        minLines: 1,
+                        maxLines: 8,
+                        onChanged: _saveDraft,
+                        contentInsertionConfiguration: keyboardImages(
+                          files: busy || open ? null : files,
+                          onPick: _take,
+                        ),
+                        contextMenuBuilder: (context, editable) =>
+                            composerContextMenu(
+                              context,
+                              editable,
+                              files: busy || open ? null : files,
+                              onPick: _take,
                             ),
+                        decoration: InputDecoration(
+                          hintText: l10n.composerHint,
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.fromLTRB(
+                            20,
+                            16,
+                            20,
+                            8,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 52,
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 6),
+                          IconButton(
+                            tooltip: l10n.attach,
+                            icon: const Icon(LucideIcons.plus),
+                            onPressed: busy || open
+                                ? null
+                                : () async {
+                                    final pick = await pickAttachments(
+                                      context,
+                                      ref,
+                                    );
+                                    if (pick != null && mounted) {
+                                      setState(
+                                        () => _attachments.addAll(pick.files),
+                                      );
+                                    }
+                                  },
+                          ),
+                          Flexible(
+                            child: TextButton(
+                              onPressed: () => showModelSheet(
+                                context,
+                                provider: _model?.provider,
+                                modelId: _model?.id,
+                                thinking: _thinking,
+                                onModel: (model) =>
+                                    setState(() => _model = model),
+                                onThinking: (level) =>
+                                    setState(() => _thinking = level),
+                              ),
+                              style: TextButton.styleFrom(
+                                backgroundColor: colors['fill.hover'],
+                                shape: const StadiumBorder(),
+                              ),
+                              child: Text(
+                                [
+                                  _model?.name ?? l10n.modelDefault,
+                                  if (_thinking != null)
+                                    thinkingLabel(l10n, _thinking),
+                                ].join(' · '),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton.filled(
+                            tooltip: l10n.send,
+                            style: IconButton.styleFrom(
+                              backgroundColor: colors['action.primary'],
+                              foregroundColor: colors['action.onPrimary'],
+                              disabledBackgroundColor: colors['surface.subtle'],
+                              disabledForegroundColor: colors['text.faint'],
+                            ),
+                            onPressed: canSend ? _send : null,
+                            icon: const Icon(LucideIcons.arrowUp),
+                          ),
+                          const SizedBox(width: 6),
                         ],
                       ),
                     ),
-                  TextField(
-                    key: const Key('new-conversation-field'),
-                    controller: _text,
-                    enabled: !busy && !open,
-                    minLines: 1,
-                    maxLines: 8,
-                    onChanged: _saveDraft,
-                    decoration: InputDecoration(
-                      hintText: l10n.composerHint,
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 52,
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 6),
-                        IconButton(
-                          tooltip: l10n.attach,
-                          icon: const Icon(LucideIcons.plus),
-                          onPressed: busy || open
-                              ? null
-                              : () async {
-                                  final picked = await ref.read(
-                                    filePickerProvider,
-                                  )();
-                                  setState(() => _attachments.addAll(picked));
-                                },
-                        ),
-                        Flexible(
-                          child: TextButton(
-                            onPressed: () => showModelSheet(
-                              context,
-                              provider: _model?.provider,
-                              modelId: _model?.id,
-                              thinking: _thinking,
-                              onModel: (model) =>
-                                  setState(() => _model = model),
-                              onThinking: (level) =>
-                                  setState(() => _thinking = level),
-                            ),
-                            style: TextButton.styleFrom(
-                              backgroundColor: colors['fill.hover'],
-                              shape: const StadiumBorder(),
-                            ),
-                            child: Text(
-                              [
-                                _model?.name ?? l10n.modelDefault,
-                                if (_thinking != null)
-                                  thinkingLabel(l10n, _thinking),
-                              ].join(' · '),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton.filled(
-                          tooltip: l10n.send,
-                          style: IconButton.styleFrom(
-                            backgroundColor: colors['action.primary'],
-                            foregroundColor: colors['action.onPrimary'],
-                            disabledBackgroundColor: colors['surface.subtle'],
-                            disabledForegroundColor: colors['text.faint'],
-                          ),
-                          onPressed: canSend ? _send : null,
-                          icon: const Icon(LucideIcons.arrowUp),
-                        ),
-                        const SizedBox(width: 6),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/connection/connection.dart';
 import 'package:pirc_app/src/connection/connection_screens.dart';
 import 'package:pirc_app/src/connection/hints.dart';
+import 'package:pirc_app/src/platform/files.dart';
 import 'package:pirc_app/src/platform/media.dart';
 import 'package:pirc_app/src/work/panels/browser_panel.dart';
 import 'package:pirc_app/src/work/panels/panel_container.dart';
@@ -143,6 +144,7 @@ Future<FixtureSession> _open(
   bool settle = true,
   Map<String, Object> socketErrors = const {},
   MediaPlayers? media,
+  FilesPlatform? files,
   double height = 900,
 }) async {
   final s = FixtureSession('joined-mid-stream.json')..lease = lease;
@@ -173,6 +175,7 @@ Future<FixtureSession> _open(
     ],
     settle: settle,
     media: media,
+    files: files,
   );
   if (!settle) {
     for (var i = 0; i < 10; i++) {
@@ -717,6 +720,37 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('The recording could not be loaded.'), findsOneWidget);
+  });
+
+  appTest('browser: on Android a recording opens in another app through the '
+      'files channel', (tester) async {
+    final files = FakeFilesPlatform();
+    final s = await _open(
+      tester,
+      PanelSection.browser,
+      files: files,
+      route: (r) => r.path == '$_base/browser/recording'
+          ? ApiResponse(200, List.filled(1024, 7))
+          : null,
+    );
+    s.gateway!.socket('$_base/browser/stream')!
+      ..push({
+        'type': 'state',
+        'state': {'active': true, 'url': 'https://example.test/'},
+      })
+      ..push({
+        'type': 'log',
+        'entries': [
+          {'action': 'Saved recording .pirc/recordings/a.webm'},
+        ],
+      });
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Load'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Open in another app'));
+    await tester.pumpAndSettle();
+    final (name, mimeType, bytes) = files.sharedFiles.single;
+    expect((name, mimeType, bytes.length), ('a.webm', 'video/webm', 1024));
   });
 
   group('browser: recordings play in the app on Android', () {

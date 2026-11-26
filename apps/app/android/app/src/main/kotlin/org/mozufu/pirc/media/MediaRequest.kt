@@ -1,5 +1,7 @@
 package org.mozufu.pirc.media
 
+import org.mozufu.pirc.files.cleanFileName
+
 /**
  * The validated arguments of `open`. The channel plays bytes that Dart already holds
  * (a Gateway recording, a document's media); it never fetches a URL itself. The bytes
@@ -59,20 +61,7 @@ fun validateMediaOpenRequest(
 fun mediaEssence(mimeType: String): String = mimeType.substringBefore(';').trim().lowercase()
 
 /** A file name for Downloads: the last path part, without control characters. */
-fun mediaFileName(name: String?): String {
-    // Drops C0 and C1 controls and format characters (bidi overrides such as U+202E,
-    // zero-width characters), so a name cannot hide its real extension.
-    val last = (name ?: "").substringAfterLast('/').substringAfterLast('\\')
-    val base = buildString {
-        last.codePoints().forEach {
-            val type = Character.getType(it)
-            if (type != Character.CONTROL.toInt() && type != Character.FORMAT.toInt()) appendCodePoint(it)
-        }
-    }.trim().take(MAX_NAME_LENGTH).let { if (it.lastOrNull()?.isHighSurrogate() == true) it.dropLast(1) else it }
-    return if (base.isEmpty() || base == "." || base == "..") "media" else base
-}
-
-private const val MAX_NAME_LENGTH = 200
+fun mediaFileName(name: String?): String = cleanFileName(name, fallback = "media")
 
 private val MIME_TYPE_PATTERN = Regex(
     """^[!#$%&'*+.^_`|~0-9A-Za-z-]+/[!#$%&'*+.^_`|~0-9A-Za-z-]+(?:\s*;[^\r\n]*)?$""",

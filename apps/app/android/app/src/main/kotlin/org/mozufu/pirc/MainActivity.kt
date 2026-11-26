@@ -35,6 +35,12 @@ class MainActivity : FlutterActivity() {
         channels?.permissionResult(requestCode)
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        // The engine's plugins (file_selector, share_plus) get their results first.
+        super.onActivityResult(requestCode, resultCode, data)
+        channels?.activityResult(requestCode, resultCode, data)
+    }
+
     override fun onPause() {
         channels?.background()
         super.onPause()

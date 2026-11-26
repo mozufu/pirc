@@ -3718,6 +3718,33 @@ class AppLocalizationsZh extends AppLocalizations {
   String pairLinkScanned(String gateway) {
     return '已掃描 $gateway 的配對連結。點「配對」即可使用。';
   }
+
+  @override
+  String get filePickerFailed => '無法開啟檔案選擇器。';
+
+  @override
+  String filesTooLarge(String names) {
+    return '檔案太大，未加入：$names。';
+  }
+
+  @override
+  String filesUnreadable(String names) {
+    return '無法讀取，未加入：$names。';
+  }
+
+  @override
+  String filesTooMany(String names) {
+    return '一次超過 16 個檔案或 64 MiB，未加入：$names。';
+  }
+
+  @override
+  String get pictureNotRead => '無法讀取這張圖片。';
+
+  @override
+  String get pictureTooLarge => '這張圖片太大。';
+
+  @override
+  String get shareFailed => '無法分享。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

@@ -9,6 +9,7 @@ import 'package:pirc_ui/pirc_ui.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../platform/files.dart';
 import 'artifacts.dart';
 import 'session_controller.dart';
 import 'timeline.dart';
@@ -153,12 +154,33 @@ class ResultCard extends StatelessWidget {
   }
 }
 
-class _CopyShare extends StatelessWidget {
+class _CopyShare extends ConsumerWidget {
   const _CopyShare({required this.artifact});
   final Artifact artifact;
 
+  /// The files channel's share sheet on Android, `share_plus` elsewhere.
+  Future<void> _share(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final files = ref.read(filesPlatformProvider);
+    try {
+      if (files != null) {
+        await files.shareText(artifact.shareText, subject: artifact.title);
+      } else {
+        await SharePlus.instance.share(
+          ShareParams(text: artifact.shareText, subject: artifact.title),
+        );
+      }
+    } on Exception {
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(l10n.shareFailed)));
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -178,9 +200,7 @@ class _CopyShare extends StatelessWidget {
         IconButton(
           tooltip: l10n.share,
           icon: const Icon(LucideIcons.share2, size: 18),
-          onPressed: () => SharePlus.instance.share(
-            ShareParams(text: artifact.shareText, subject: artifact.title),
-          ),
+          onPressed: () => _share(context, ref),
         ),
       ],
     );

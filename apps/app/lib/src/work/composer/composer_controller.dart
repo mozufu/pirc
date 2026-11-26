@@ -106,10 +106,12 @@ class ComposerController extends Notifier<ComposerState> {
 
   void setWhen(SendWhen when) => state = state.copyWith(when: when);
 
-  Future<void> attach() async {
-    final picked = await ref.read(filePickerProvider)();
-    if (picked.isEmpty) return;
-    state = state.copyWith(attachments: [...state.attachments, ...picked]);
+  /// Adds picked, pasted or dropped files to the next message.
+  void addAttachments(AttachmentPick picked) {
+    if (picked.files.isEmpty) return;
+    state = state.copyWith(
+      attachments: [...state.attachments, ...picked.files],
+    );
   }
 
   void removeAttachment(String id) => state = state.copyWith(

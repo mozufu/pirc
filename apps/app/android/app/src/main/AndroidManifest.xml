@@ -56,6 +56,17 @@
         <!-- The quick-reply overlay's anchor (M8 step 4): OverlayHost starts it once its
              window is on screen and stops it when the window closes. Not exported. -->
         <service android:name=".overlay.OverlayService" android:exported="false" />
+        <!-- Files handed to other apps by the files channel (M8 step 5): only the share
+             cache, not exported, and each share grants read on its one URI. -->
+        <provider
+            android:name=".files.PircFileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/files_paths" />
+        </provider>
         <!-- The QR scanner module of Google Play services (scanner channel). -->
         <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="barcode_ui" />
         <!-- Don't delete the meta-data below.

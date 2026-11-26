@@ -7,6 +7,7 @@ import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pirc_client/pirc_client.dart';
 
+import '../platform/files.dart';
 import '../work/composer/model_sheet.dart';
 
 /// The personality templates of step ① (E7).
@@ -439,8 +440,27 @@ int? potErrorStep(ApiError error) {
 /// Picks a picture and returns it cropped to a centred square and scaled
 /// to 512 × 512 PNG, or null when the user picks nothing. Tests replace
 /// it.
-final avatarPicturePickerProvider = Provider<Future<Uint8List?> Function()>(
-  (ref) => () async {
+final avatarPicturePickerProvider = Provider<Future<Uint8List?> Function()>((
+  ref,
+) {
+  final files = ref.watch(filesPlatformProvider);
+  if (files != null) {
+    // Android: the system picker; a refused picture throws its reason. The
+    // source may be larger than an upload: it is cropped to 512 × 512.
+    return () async {
+      final pick = await files.pick(
+        multiple: false,
+        mimeTypes: const ['image/png', 'image/jpeg', 'image/webp'],
+        maxBytes: FilesPlatform.maxPickBytes,
+      );
+      if (pick.refused.isNotEmpty) {
+        throw FilesFailure(pick.refused.first.reason);
+      }
+      if (pick.files.isEmpty) return null;
+      return squareAvatarPng(pick.files.first.bytes);
+    };
+  }
+  return () async {
     final file = await openFile(
       acceptedTypeGroups: const [
         XTypeGroup(
@@ -457,8 +477,8 @@ final avatarPicturePickerProvider = Provider<Future<Uint8List?> Function()>(
     );
     if (file == null) return null;
     return squareAvatarPng(await file.readAsBytes());
-  },
-);
+  };
+});
 
 /// [bytes] (any image the engine decodes) cropped to a centred square and
 /// scaled to [size] × [size], as PNG.

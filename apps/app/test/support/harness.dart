@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/app.dart';
 import 'package:pirc_app/src/connection/connection.dart';
 import 'package:pirc_app/src/connection/storage.dart';
+import 'package:pirc_app/src/platform/files.dart';
 import 'package:pirc_app/src/platform/links.dart';
 import 'package:pirc_app/src/platform/media.dart';
 import 'package:pirc_app/src/platform/notifications.dart';
@@ -225,7 +226,8 @@ void appTest(
 /// in-app player, as on Web and macOS. [scanner] and [links] stand in for
 /// the scanner and links channels; without them the app has neither, as on
 /// Web and macOS. [push] and [notifications] stand in for the push and
-/// notifications channels (Android), likewise.
+/// notifications channels (Android), likewise, and [files] for the files
+/// channel (without it the app uses `file_selector` and `share_plus`).
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   required FakeGateway gateway,
@@ -243,6 +245,7 @@ Future<ProviderContainer> pumpApp(
   AppLinks? links,
   PushPlatform? push,
   NotificationsPlatform? notifications,
+  FilesPlatform? files,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = Size(width, height);
@@ -270,6 +273,7 @@ Future<ProviderContainer> pumpApp(
       appLinksProvider.overrideWithValue(links),
       pushPlatformProvider.overrideWithValue(push),
       notificationsPlatformProvider.overrideWithValue(notifications),
+      filesPlatformProvider.overrideWithValue(files),
       webOriginProvider.overrideWithValue(Uri.parse('https://gateway.test/')),
       if (location != null) initialLocationProvider.overrideWithValue(location),
       ...overrides.cast(),

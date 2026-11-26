@@ -359,14 +359,14 @@ void main() {
       location: '/work?open=s2',
       overrides: [
         filePickerProvider.overrideWithValue(
-          () async => [
+          () async => AttachmentPick([
             PendingAttachment(
               id: 'a1',
               name: 'big.png',
               mimeType: 'image/png',
               bytes: Uint8List(4),
             ),
-          ],
+          ]),
         ),
       ],
     );

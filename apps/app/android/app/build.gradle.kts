@@ -78,6 +78,8 @@ dependencies {
     implementation("com.google.crypto.tink:tink-android:1.23.0")
     implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
     implementation("androidx.javascriptengine:javascriptengine:1.1.1")
+    // FileProvider for the files channel's share cache (the version share_plus brings).
+    implementation("androidx.core:core:1.16.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:4.16")
     testImplementation("com.squareup.okhttp3:mockwebserver3:5.1.0")

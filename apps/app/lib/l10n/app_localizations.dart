@@ -6746,6 +6746,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'A pairing link for {gateway} was scanned. Tap Pair to use it.'**
   String pairLinkScanned(String gateway);
+
+  /// No description provided for @filePickerFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The file picker could not open.'**
+  String get filePickerFailed;
+
+  /// No description provided for @filesTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'Not added, too large: {names}.'**
+  String filesTooLarge(String names);
+
+  /// No description provided for @filesUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not added, could not be read: {names}.'**
+  String filesUnreadable(String names);
+
+  /// No description provided for @filesTooMany.
+  ///
+  /// In en, this message translates to:
+  /// **'Not added, more than 16 files or 64 MiB at once: {names}.'**
+  String filesTooMany(String names);
+
+  /// No description provided for @pictureNotRead.
+  ///
+  /// In en, this message translates to:
+  /// **'This picture could not be read.'**
+  String get pictureNotRead;
+
+  /// No description provided for @pictureTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'This picture is too large.'**
+  String get pictureTooLarge;
+
+  /// No description provided for @shareFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This could not be shared.'**
+  String get shareFailed;
 }
 
 class _AppLocalizationsDelegate
