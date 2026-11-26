@@ -3047,6 +3047,155 @@ class AppLocalizationsZh extends AppLocalizations {
   String potsRestoreConflict(String name) {
     return '$name在別處改過了，已重新讀取，請再試一次。';
   }
+
+  @override
+  String get meEdit => '編輯';
+
+  @override
+  String get meOverview => '總覽';
+
+  @override
+  String get meStatTotal => '累計 token';
+
+  @override
+  String get meStatTopDay => '單日最高 token';
+
+  @override
+  String get meStatSpent => '本月花費';
+
+  @override
+  String get meStatRequests => '本月請求數';
+
+  @override
+  String get meStatLongestStreak => '最長連續使用';
+
+  @override
+  String get meStatStreak => '目前連續使用';
+
+  @override
+  String meDays(int count) {
+    return '$count 天';
+  }
+
+  @override
+  String get meStatsNote => '包含你自己和所有 pots；費用依各供應商的計價估算。';
+
+  @override
+  String meEstimate(String amount) {
+    return '本月訂閱的用量若以 API 價格計，約 $amount。這是估計，不是實際花費。';
+  }
+
+  @override
+  String get meActivity => 'Token 活動';
+
+  @override
+  String get meDaily => '每天';
+
+  @override
+  String get meWeekly => '每週';
+
+  @override
+  String get meCumulative => '累計';
+
+  @override
+  String get meTabDay => '每日';
+
+  @override
+  String get meTabWeek => '每週';
+
+  @override
+  String get meTabTotal => '累計';
+
+  @override
+  String get meLess => '少';
+
+  @override
+  String get meMore => '多';
+
+  @override
+  String meHeatmapLabel(int weeks) {
+    return '每天的 token 用量，最近 $weeks 週';
+  }
+
+  @override
+  String get meWeeksLabel => '最近 12 週每週的 token 用量';
+
+  @override
+  String get meTotalLabel => '累計的 token 用量';
+
+  @override
+  String get meTwelveWeeksAgo => '12 週前';
+
+  @override
+  String meThisWeek(String value) {
+    return '本週 $value';
+  }
+
+  @override
+  String meNow(String value) {
+    return '現在 $value';
+  }
+
+  @override
+  String meDayTip(String date, String tokens) {
+    return '$date · $tokens tokens';
+  }
+
+  @override
+  String meDayTipNone(String date) {
+    return '$date · 沒有使用';
+  }
+
+  @override
+  String get meByWho => '本月誰用了多少';
+
+  @override
+  String get meByModel => '本月用了哪些模型';
+
+  @override
+  String meYou(String name) {
+    return '$name（你）';
+  }
+
+  @override
+  String get meDeletedPot => '已刪除的 pots';
+
+  @override
+  String get meNothingThisMonth => '本月還沒有用量。';
+
+  @override
+  String get meOnlyYou => '只有你看得到。';
+
+  @override
+  String meDrawerMonth(String amount) {
+    return '本月 $amount';
+  }
+
+  @override
+  String meDrawerStreak(int count) {
+    return '連續 $count 天';
+  }
+
+  @override
+  String get meOpen => '你與用量';
+
+  @override
+  String get meEditTitle => '編輯個人資料';
+
+  @override
+  String get meName => '名字';
+
+  @override
+  String get meNameHint => '你的名字';
+
+  @override
+  String get meNameNote => 'pots 會用這個名字稱呼你；群組和動態裡也顯示這個名字。';
+
+  @override
+  String get meNameInvalid => '名字要 1 到 60 個字。';
+
+  @override
+  String get meConflict => '你的個人資料在別的裝置上改過了，已重新讀取。你的修改還在，再儲存一次即可套用。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

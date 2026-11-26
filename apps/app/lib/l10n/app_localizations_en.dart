@@ -3205,4 +3205,168 @@ class AppLocalizationsEn extends AppLocalizations {
   String potsRestoreConflict(String name) {
     return '$name changed elsewhere and was read again. Try again.';
   }
+
+  @override
+  String get meEdit => 'Edit';
+
+  @override
+  String get meOverview => 'Overview';
+
+  @override
+  String get meStatTotal => 'Tokens in total';
+
+  @override
+  String get meStatTopDay => 'Most tokens in a day';
+
+  @override
+  String get meStatSpent => 'Spent this month';
+
+  @override
+  String get meStatRequests => 'Requests this month';
+
+  @override
+  String get meStatLongestStreak => 'Longest streak';
+
+  @override
+  String get meStatStreak => 'Current streak';
+
+  @override
+  String meDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get meStatsNote =>
+      'Includes you and all pots; costs follow each provider\'s prices.';
+
+  @override
+  String meEstimate(String amount) {
+    return 'Subscription use this month at API prices: about $amount. This is an estimate, not money spent.';
+  }
+
+  @override
+  String get meActivity => 'Token activity';
+
+  @override
+  String get meDaily => 'Each day';
+
+  @override
+  String get meWeekly => 'Each week';
+
+  @override
+  String get meCumulative => 'Running total';
+
+  @override
+  String get meTabDay => 'Day';
+
+  @override
+  String get meTabWeek => 'Week';
+
+  @override
+  String get meTabTotal => 'Total';
+
+  @override
+  String get meLess => 'Less';
+
+  @override
+  String get meMore => 'More';
+
+  @override
+  String meHeatmapLabel(int weeks) {
+    return 'Tokens per day, last $weeks weeks';
+  }
+
+  @override
+  String get meWeeksLabel => 'Tokens per week, last 12 weeks';
+
+  @override
+  String get meTotalLabel => 'Running total of tokens';
+
+  @override
+  String get meTwelveWeeksAgo => '12 weeks ago';
+
+  @override
+  String meThisWeek(String value) {
+    return 'This week $value';
+  }
+
+  @override
+  String meNow(String value) {
+    return 'Now $value';
+  }
+
+  @override
+  String meDayTip(String date, String tokens) {
+    return '$date · $tokens tokens';
+  }
+
+  @override
+  String meDayTipNone(String date) {
+    return '$date · no use';
+  }
+
+  @override
+  String get meByWho => 'Who used how much this month';
+
+  @override
+  String get meByModel => 'Models used this month';
+
+  @override
+  String meYou(String name) {
+    return '$name (you)';
+  }
+
+  @override
+  String get meDeletedPot => 'Deleted pot';
+
+  @override
+  String get meNothingThisMonth => 'Nothing used this month yet.';
+
+  @override
+  String get meOnlyYou => 'Only you can see this.';
+
+  @override
+  String meDrawerMonth(String amount) {
+    return 'This month $amount';
+  }
+
+  @override
+  String meDrawerStreak(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count-day streak',
+      one: '1-day streak',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get meOpen => 'You and usage';
+
+  @override
+  String get meEditTitle => 'Edit profile';
+
+  @override
+  String get meName => 'Name';
+
+  @override
+  String get meNameHint => 'Your name';
+
+  @override
+  String get meNameNote =>
+      'Pots call you by this name; groups and Activity show it too.';
+
+  @override
+  String get meNameInvalid => 'A name is 1 to 60 characters.';
+
+  @override
+  String get meConflict =>
+      'Your profile changed on another device and is read again. Your edit is kept; save again to use it.';
 }

@@ -736,6 +736,34 @@ void main() {
       );
       expect(fill.widthFactor, 0.5);
     });
+
+    testWidgets('each heatmap cell with a tip has a tooltip in its place', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        const Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Heatmap(
+              levels: [0, 1, 2, 3, 4, 0, 0, 1],
+              tips: ['a', 'b', 'c', 'd', 'e', 'f', 'g', ''],
+              monthLabels: ['Nov'],
+              lessLabel: 'Less',
+              moreLabel: 'More',
+              semanticLabel: 'h',
+            ),
+          ],
+        ),
+      );
+      // Seven cells in the first week, the eighth (no tip) has none.
+      expect(find.byType(Tooltip), findsNWidgets(7));
+      final first = tester.getRect(find.byTooltip('a'));
+      final second = tester.getRect(find.byTooltip('b'));
+      expect(second.top - first.top, first.height + 3);
+      expect(second.left, first.left);
+      expect(first.width, closeTo(first.height, 0.01));
+    });
   });
 
   group('GroupedList', () {

@@ -2042,5 +2042,121 @@
         "type": "String"
       }
     }
-  }
+  },
+  "meEdit": "Edit",
+  "meOverview": "Overview",
+  "meStatTotal": "Tokens in total",
+  "meStatTopDay": "Most tokens in a day",
+  "meStatSpent": "Spent this month",
+  "meStatRequests": "Requests this month",
+  "meStatLongestStreak": "Longest streak",
+  "meStatStreak": "Current streak",
+  "meDays": "{count, plural, =1{1 day} other{{count} days}}",
+  "@meDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "meStatsNote": "Includes you and all pots; costs follow each provider's prices.",
+  "meEstimate": "Subscription use this month at API prices: about {amount}. This is an estimate, not money spent.",
+  "@meEstimate": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "meActivity": "Token activity",
+  "meDaily": "Each day",
+  "meWeekly": "Each week",
+  "meCumulative": "Running total",
+  "meTabDay": "Day",
+  "meTabWeek": "Week",
+  "meTabTotal": "Total",
+  "meLess": "Less",
+  "meMore": "More",
+  "meHeatmapLabel": "Tokens per day, last {weeks} weeks",
+  "@meHeatmapLabel": {
+    "placeholders": {
+      "weeks": {
+        "type": "int"
+      }
+    }
+  },
+  "meWeeksLabel": "Tokens per week, last 12 weeks",
+  "meTotalLabel": "Running total of tokens",
+  "meTwelveWeeksAgo": "12 weeks ago",
+  "meThisWeek": "This week {value}",
+  "@meThisWeek": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "meNow": "Now {value}",
+  "@meNow": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "meDayTip": "{date} · {tokens} tokens",
+  "@meDayTip": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "meDayTipNone": "{date} · no use",
+  "@meDayTipNone": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "meByWho": "Who used how much this month",
+  "meByModel": "Models used this month",
+  "meYou": "{name} (you)",
+  "@meYou": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "meDeletedPot": "Deleted pot",
+  "meNothingThisMonth": "Nothing used this month yet.",
+  "meOnlyYou": "Only you can see this.",
+  "meDrawerMonth": "This month {amount}",
+  "@meDrawerMonth": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "meDrawerStreak": "{count, plural, =1{1-day streak} other{{count}-day streak}}",
+  "@meDrawerStreak": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "meOpen": "You and usage",
+  "meEditTitle": "Edit profile",
+  "meName": "Name",
+  "meNameHint": "Your name",
+  "meNameNote": "Pots call you by this name; groups and Activity show it too.",
+  "meNameInvalid": "A name is 1 to 60 characters.",
+  "meConflict": "Your profile changed on another device and is read again. Your edit is kept; save again to use it."
 }

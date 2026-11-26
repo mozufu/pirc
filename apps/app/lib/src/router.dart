@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import 'connection/connection.dart';
 import 'connection/connection_screens.dart';
+import 'me/me_screen.dart';
 import 'preferences.dart';
 import 'settings/basic_pages.dart';
 import 'settings/device_page.dart';
@@ -93,6 +94,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/settings',
         builder: (context, state) => const SettingsScreen(),
+      ),
+      GoRoute(
+        path: meLocation,
+        builder: (context, state) =>
+            MeScreen(chart: state.uri.queryParameters['chart']),
       ),
       GoRoute(
         path: '/pair',

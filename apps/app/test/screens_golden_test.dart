@@ -11,6 +11,7 @@ import 'package:pirc_app/src/preferences.dart';
 import 'support/chat_fixtures.dart';
 import 'support/fonts.dart';
 import 'support/harness.dart';
+import 'support/me_fixtures.dart';
 import 'support/session_fixture.dart';
 import 'support/work_fixtures.dart';
 
@@ -151,6 +152,7 @@ final _screens = <String, (String, FakeGateway Function(), Saved Function())>{
     () => GroupFixture().install(),
     Saved.new,
   ),
+  'me': ('/me', () => MeFixture.e28().install(), Saved.new),
 };
 
 void main() {

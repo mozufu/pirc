@@ -5558,6 +5558,264 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{name} changed elsewhere and was read again. Try again.'**
   String potsRestoreConflict(String name);
+
+  /// No description provided for @meEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get meEdit;
+
+  /// No description provided for @meOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get meOverview;
+
+  /// No description provided for @meStatTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens in total'**
+  String get meStatTotal;
+
+  /// No description provided for @meStatTopDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Most tokens in a day'**
+  String get meStatTopDay;
+
+  /// No description provided for @meStatSpent.
+  ///
+  /// In en, this message translates to:
+  /// **'Spent this month'**
+  String get meStatSpent;
+
+  /// No description provided for @meStatRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests this month'**
+  String get meStatRequests;
+
+  /// No description provided for @meStatLongestStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest streak'**
+  String get meStatLongestStreak;
+
+  /// No description provided for @meStatStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'Current streak'**
+  String get meStatStreak;
+
+  /// No description provided for @meDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day} other{{count} days}}'**
+  String meDays(int count);
+
+  /// No description provided for @meStatsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Includes you and all pots; costs follow each provider\'s prices.'**
+  String get meStatsNote;
+
+  /// No description provided for @meEstimate.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription use this month at API prices: about {amount}. This is an estimate, not money spent.'**
+  String meEstimate(String amount);
+
+  /// No description provided for @meActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Token activity'**
+  String get meActivity;
+
+  /// No description provided for @meDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Each day'**
+  String get meDaily;
+
+  /// No description provided for @meWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Each week'**
+  String get meWeekly;
+
+  /// No description provided for @meCumulative.
+  ///
+  /// In en, this message translates to:
+  /// **'Running total'**
+  String get meCumulative;
+
+  /// No description provided for @meTabDay.
+  ///
+  /// In en, this message translates to:
+  /// **'Day'**
+  String get meTabDay;
+
+  /// No description provided for @meTabWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get meTabWeek;
+
+  /// No description provided for @meTabTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get meTabTotal;
+
+  /// No description provided for @meLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Less'**
+  String get meLess;
+
+  /// No description provided for @meMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get meMore;
+
+  /// No description provided for @meHeatmapLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens per day, last {weeks} weeks'**
+  String meHeatmapLabel(int weeks);
+
+  /// No description provided for @meWeeksLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens per week, last 12 weeks'**
+  String get meWeeksLabel;
+
+  /// No description provided for @meTotalLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Running total of tokens'**
+  String get meTotalLabel;
+
+  /// No description provided for @meTwelveWeeksAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'12 weeks ago'**
+  String get meTwelveWeeksAgo;
+
+  /// No description provided for @meThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week {value}'**
+  String meThisWeek(String value);
+
+  /// No description provided for @meNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Now {value}'**
+  String meNow(String value);
+
+  /// No description provided for @meDayTip.
+  ///
+  /// In en, this message translates to:
+  /// **'{date} · {tokens} tokens'**
+  String meDayTip(String date, String tokens);
+
+  /// No description provided for @meDayTipNone.
+  ///
+  /// In en, this message translates to:
+  /// **'{date} · no use'**
+  String meDayTipNone(String date);
+
+  /// No description provided for @meByWho.
+  ///
+  /// In en, this message translates to:
+  /// **'Who used how much this month'**
+  String get meByWho;
+
+  /// No description provided for @meByModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Models used this month'**
+  String get meByModel;
+
+  /// No description provided for @meYou.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} (you)'**
+  String meYou(String name);
+
+  /// No description provided for @meDeletedPot.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted pot'**
+  String get meDeletedPot;
+
+  /// No description provided for @meNothingThisMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing used this month yet.'**
+  String get meNothingThisMonth;
+
+  /// No description provided for @meOnlyYou.
+  ///
+  /// In en, this message translates to:
+  /// **'Only you can see this.'**
+  String get meOnlyYou;
+
+  /// No description provided for @meDrawerMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month {amount}'**
+  String meDrawerMonth(String amount);
+
+  /// No description provided for @meDrawerStreak.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1-day streak} other{{count}-day streak}}'**
+  String meDrawerStreak(int count);
+
+  /// No description provided for @meOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'You and usage'**
+  String get meOpen;
+
+  /// No description provided for @meEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit profile'**
+  String get meEditTitle;
+
+  /// No description provided for @meName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get meName;
+
+  /// No description provided for @meNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your name'**
+  String get meNameHint;
+
+  /// No description provided for @meNameNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Pots call you by this name; groups and Activity show it too.'**
+  String get meNameNote;
+
+  /// No description provided for @meNameInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'A name is 1 to 60 characters.'**
+  String get meNameInvalid;
+
+  /// No description provided for @meConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Your profile changed on another device and is read again. Your edit is kept; save again to use it.'**
+  String get meConflict;
 }
 
 class _AppLocalizationsDelegate

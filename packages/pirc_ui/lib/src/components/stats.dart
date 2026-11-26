@@ -212,8 +212,9 @@ class ChartLabels extends StatelessWidget {
 
 /// `e-hm`: tokens per day, one column per week (Sunday on top), 3 apart,
 /// square cells with radius 3; [levels] (0–4) run down each week, oldest
-/// week first. Under it the [monthLabels] and a legend from [lessLabel] to
-/// [moreLabel].
+/// week first. Each cell may have a tooltip ([tips], in the same order; an
+/// empty one has none). Under it the [monthLabels] and a legend from
+/// [lessLabel] to [moreLabel].
 class Heatmap extends StatelessWidget {
   const Heatmap({
     super.key,
@@ -222,6 +223,7 @@ class Heatmap extends StatelessWidget {
     required this.lessLabel,
     required this.moreLabel,
     required this.semanticLabel,
+    this.tips = const [],
   });
 
   final List<int> levels;
@@ -229,6 +231,10 @@ class Heatmap extends StatelessWidget {
   final String lessLabel;
   final String moreLabel;
   final String semanticLabel;
+
+  /// What each cell holds ("Nov 24 · 1.2M tokens"), shown on hover or a
+  /// long press.
+  final List<String> tips;
 
   @override
   Widget build(BuildContext context) {
@@ -247,11 +253,32 @@ class Heatmap extends StatelessWidget {
               final cell = weeks == 0
                   ? 0.0
                   : (box.maxWidth - 3 * (weeks - 1)) / weeks;
+              final paint = CustomPaint(
+                size: Size(box.maxWidth, cell * 7 + 3 * 6),
+                painter: _HeatPainter(levels, weeks, cell, palette),
+              );
               return SizedBox(
                 height: cell * 7 + 3 * 6,
-                child: CustomPaint(
-                  painter: _HeatPainter(levels, weeks, cell, palette),
-                ),
+                child: tips.isEmpty
+                    ? paint
+                    : Stack(
+                        children: [
+                          paint,
+                          for (var i = 0; i < tips.length; i++)
+                            if (tips[i].isNotEmpty)
+                              Positioned(
+                                left: (i ~/ 7) * (cell + 3),
+                                top: (i % 7) * (cell + 3),
+                                width: cell,
+                                height: cell,
+                                child: Tooltip(
+                                  message: tips[i],
+                                  excludeFromSemantics: true,
+                                  child: const SizedBox.expand(),
+                                ),
+                              ),
+                        ],
+                      ),
               );
             },
           ),

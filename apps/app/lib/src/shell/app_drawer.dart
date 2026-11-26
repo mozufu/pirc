@@ -9,6 +9,7 @@ import '../../l10n/app_localizations.dart';
 import '../connection/connection.dart';
 import '../connection/data.dart';
 import '../connection/hints.dart';
+import '../me/me_screen.dart';
 import '../preferences.dart';
 
 /// Whether the ☰ drawer is open. Opening or closing it never changes the
@@ -36,7 +37,7 @@ class DrawerButton extends ConsumerWidget {
 }
 
 /// The drawer (E21): connection state, hosts, Settings, the light/dark
-/// switch and the user row (name only; usage is M7).
+/// switch and the user row, which opens You and usage.
 class AppDrawer extends ConsumerWidget {
   const AppDrawer({super.key});
 
@@ -122,32 +123,16 @@ class AppDrawer extends ConsumerWidget {
           if (account != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                PircSpacing.stackXl,
-                PircSpacing.stackSm,
-                PircSpacing.stackXl,
+                PircSpacing.stackMd,
+                0,
+                PircSpacing.stackMd,
                 PircSpacing.stackXl,
               ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: PircSize.avatarDefault / 2,
-                    backgroundColor: colors['avatar.4'],
-                    child: Text(
-                      account.isEmpty ? '?' : account[0].toUpperCase(),
-                      style: text.titleMedium?.copyWith(
-                        color: colors['avatar.ink'],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: PircSpacing.stackMd),
-                  Expanded(
-                    child: Text(
-                      account,
-                      style: text.titleMedium,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+              child: MeDrawerRow(
+                onOpen: () {
+                  close();
+                  context.push(meLocation);
+                },
               ),
             ),
         ],
