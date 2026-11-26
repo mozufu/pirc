@@ -665,6 +665,120 @@ void main() {
     });
   });
 
+  group('GroupedList', () {
+    testWidgets('rows are 56 high with a hairline between them', (
+      tester,
+    ) async {
+      var taps = 0;
+      await _pump(
+        tester,
+        Column(
+          children: [
+            const GroupLabel('Basic'),
+            GroupedList(
+              children: [
+                GroupedRow(
+                  key: const Key('a'),
+                  title: 'One',
+                  onTap: () => taps++,
+                ),
+                const GroupedRow(
+                  key: Key('b'),
+                  title: 'Two',
+                  subtitle: 'Off',
+                  enabled: false,
+                ),
+              ],
+            ),
+            const GroupNote('A note', error: true),
+          ],
+        ),
+      );
+      expect(tester.getSize(find.byKey(const Key('a'))).height, 56);
+      expect(tester.getTopLeft(find.byKey(const Key('a'))).dx, 16);
+      expect(find.text('Basic'), findsOneWidget);
+      await tester.tap(find.text('One'));
+      await tester.tap(find.text('Two'));
+      expect(taps, 1);
+      expect(
+        tester.widget<Text>(find.text('A note')).style?.color,
+        light['status.danger'],
+      );
+    });
+
+    testWidgets('the switch toggles; disabled, it does nothing', (
+      tester,
+    ) async {
+      final values = <bool>[];
+      await _pump(
+        tester,
+        Column(
+          children: [
+            PircSwitch(
+              key: const Key('on'),
+              value: true,
+              onChanged: values.add,
+            ),
+            const PircSwitch(key: Key('locked'), value: true, onChanged: null),
+          ],
+        ),
+      );
+      expect(tester.getSize(find.byKey(const Key('on'))), const Size(52, 32));
+      await tester.tap(find.byKey(const Key('on')));
+      await tester.tap(find.byKey(const Key('locked')));
+      expect(values, [false]);
+    });
+
+    testWidgets('Segmented, PillChip and RadioRow report their picks', (
+      tester,
+    ) async {
+      final picked = <String>[];
+      await _pump(
+        tester,
+        Column(
+          children: [
+            Segmented<String>(
+              items: const [
+                SegmentedItem('all', 'All'),
+                SegmentedItem('off', 'Off'),
+              ],
+              selected: 'all',
+              onSelected: picked.add,
+            ),
+            Row(
+              children: [
+                PillChip(
+                  key: const Key('chip'),
+                  label: 'Rigorous',
+                  selected: true,
+                  onTap: () => picked.add('chip'),
+                ),
+              ],
+            ),
+            GroupedList(
+              children: [
+                RadioRow(
+                  title: 'Only answer you',
+                  selected: false,
+                  onTap: () => picked.add('radio'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+      await tester.tap(find.text('Off'));
+      await tester.tap(find.text('Rigorous'));
+      await tester.tap(find.text('Only answer you'));
+      expect(picked, ['off', 'chip', 'radio']);
+      expect(tester.getSize(find.byKey(const Key('chip'))).height, 38);
+      expect(
+        tester.getSize(find.byKey(const Key('chip'))).width,
+        lessThan(200),
+      );
+    });
+  });
+
   testWidgets('the gallery builds in light and dark without overflow', (
     tester,
   ) async {

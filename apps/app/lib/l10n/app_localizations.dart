@@ -3314,6 +3314,780 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The calendar shows times and creates events and tasks in this time zone.'**
   String get timeZoneNote;
+
+  /// No description provided for @newPotTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New pot'**
+  String get newPotTitle;
+
+  /// No description provided for @newPotStep.
+  ///
+  /// In en, this message translates to:
+  /// **'{step} / 4 · {title}'**
+  String newPotStep(int step, String title);
+
+  /// No description provided for @newPotStepLook.
+  ///
+  /// In en, this message translates to:
+  /// **'Look and personality'**
+  String get newPotStepLook;
+
+  /// No description provided for @newPotStepWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get newPotStepWork;
+
+  /// No description provided for @newPotStepReach.
+  ///
+  /// In en, this message translates to:
+  /// **'What it can do'**
+  String get newPotStepReach;
+
+  /// No description provided for @newPotStepModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Models'**
+  String get newPotStepModels;
+
+  /// No description provided for @newPotNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get newPotNext;
+
+  /// No description provided for @newPotCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create {name}'**
+  String newPotCreate(String name);
+
+  /// No description provided for @newPotCreatePlain.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get newPotCreatePlain;
+
+  /// No description provided for @potThisPot.
+  ///
+  /// In en, this message translates to:
+  /// **'this pot'**
+  String get potThisPot;
+
+  /// No description provided for @potAvatarColors.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar colour'**
+  String get potAvatarColors;
+
+  /// No description provided for @potAvatarColor.
+  ///
+  /// In en, this message translates to:
+  /// **'Colour {n}'**
+  String potAvatarColor(int n);
+
+  /// No description provided for @potAvatarUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload a picture'**
+  String get potAvatarUpload;
+
+  /// No description provided for @potAvatarNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The avatar shows the name\'s first letter by default'**
+  String get potAvatarNote;
+
+  /// No description provided for @potAvatarChoose.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose another picture'**
+  String get potAvatarChoose;
+
+  /// No description provided for @potAvatarRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the picture'**
+  String get potAvatarRemove;
+
+  /// No description provided for @potAvatarUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading the picture…'**
+  String get potAvatarUploading;
+
+  /// No description provided for @potGroupBasic.
+  ///
+  /// In en, this message translates to:
+  /// **'Basic'**
+  String get potGroupBasic;
+
+  /// No description provided for @potName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get potName;
+
+  /// No description provided for @potNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What to call it'**
+  String get potNameHint;
+
+  /// No description provided for @potGroupPersonality.
+  ///
+  /// In en, this message translates to:
+  /// **'Personality (soul)'**
+  String get potGroupPersonality;
+
+  /// No description provided for @potTemplateRigorous.
+  ///
+  /// In en, this message translates to:
+  /// **'Rigorous'**
+  String get potTemplateRigorous;
+
+  /// No description provided for @potTemplateConcise.
+  ///
+  /// In en, this message translates to:
+  /// **'Concise'**
+  String get potTemplateConcise;
+
+  /// No description provided for @potTemplateFriendly.
+  ///
+  /// In en, this message translates to:
+  /// **'Friendly'**
+  String get potTemplateFriendly;
+
+  /// No description provided for @potTemplateCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get potTemplateCustom;
+
+  /// No description provided for @potTemplateRigorousText.
+  ///
+  /// In en, this message translates to:
+  /// **'Precise and careful. Checks facts before answering, says when unsure, and prefers correctness over speed.'**
+  String get potTemplateRigorousText;
+
+  /// No description provided for @potTemplateConciseText.
+  ///
+  /// In en, this message translates to:
+  /// **'Brief and direct. Answers in as few words as possible and skips pleasantries.'**
+  String get potTemplateConciseText;
+
+  /// No description provided for @potTemplateFriendlyText.
+  ///
+  /// In en, this message translates to:
+  /// **'Warm and encouraging. Explains things plainly and checks that the user is comfortable with the next step.'**
+  String get potTemplateFriendlyText;
+
+  /// No description provided for @potPersonalityHint.
+  ///
+  /// In en, this message translates to:
+  /// **'How it talks'**
+  String get potPersonalityHint;
+
+  /// No description provided for @potPersonalityNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Personality only changes how it talks; it gives no permissions.'**
+  String get potPersonalityNote;
+
+  /// No description provided for @potGroupPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech preview'**
+  String get potGroupPreview;
+
+  /// No description provided for @potPreviewRigorous.
+  ///
+  /// In en, this message translates to:
+  /// **'Found it: with the iPad\'s floating keyboard, viewInsets reports 0. Source: the Flutter MediaQuery docs.'**
+  String get potPreviewRigorous;
+
+  /// No description provided for @potPreviewConcise.
+  ///
+  /// In en, this message translates to:
+  /// **'Floating keyboard: viewInsets is 0.'**
+  String get potPreviewConcise;
+
+  /// No description provided for @potPreviewFriendly.
+  ///
+  /// In en, this message translates to:
+  /// **'Good news, I found it! With the floating keyboard, viewInsets is 0. Shall I show you where that is in the docs?'**
+  String get potPreviewFriendly;
+
+  /// No description provided for @potPreviewCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Here is what I found about viewInsets with the floating keyboard.'**
+  String get potPreviewCustom;
+
+  /// No description provided for @potPreviewNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview, not a real reply'**
+  String get potPreviewNote;
+
+  /// No description provided for @potGroupIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Intro'**
+  String get potGroupIntro;
+
+  /// No description provided for @potIntroHint.
+  ///
+  /// In en, this message translates to:
+  /// **'One line about what it does'**
+  String get potIntroHint;
+
+  /// No description provided for @potIntroNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown in the chat list and the @ menu, so you and other pots know whom to ask.'**
+  String get potIntroNote;
+
+  /// No description provided for @potGroupDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Work description'**
+  String get potGroupDescription;
+
+  /// No description provided for @potDescriptionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'How it should work'**
+  String get potDescriptionHint;
+
+  /// No description provided for @potDescriptionNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Tells it how to work. Like the personality, nothing here gives it permissions.'**
+  String get potDescriptionNote;
+
+  /// No description provided for @potGroupResponsibilities.
+  ///
+  /// In en, this message translates to:
+  /// **'Responsibilities'**
+  String get potGroupResponsibilities;
+
+  /// No description provided for @potAddResponsibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a responsibility'**
+  String get potAddResponsibility;
+
+  /// No description provided for @potResponsibilityNew.
+  ///
+  /// In en, this message translates to:
+  /// **'New responsibility'**
+  String get potResponsibilityNew;
+
+  /// No description provided for @potResponsibilityEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Responsibility'**
+  String get potResponsibilityEdit;
+
+  /// No description provided for @potResponsibilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get potResponsibilityTitle;
+
+  /// No description provided for @potResponsibilityDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Detail (optional)'**
+  String get potResponsibilityDetail;
+
+  /// No description provided for @potMoveUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Move up'**
+  String get potMoveUp;
+
+  /// No description provided for @potMoveDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Move down'**
+  String get potMoveDown;
+
+  /// No description provided for @potRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get potRemove;
+
+  /// No description provided for @potTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'At most {max} characters'**
+  String potTooLong(int max);
+
+  /// No description provided for @potNameMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'Give it a name'**
+  String get potNameMissing;
+
+  /// No description provided for @potGroupReach.
+  ///
+  /// In en, this message translates to:
+  /// **'How far it can go'**
+  String get potGroupReach;
+
+  /// No description provided for @potReachAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Only answer you'**
+  String get potReachAnswer;
+
+  /// No description provided for @potReachAnswerDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Doesn\'t watch anything and can\'t start work'**
+  String get potReachAnswerDetail;
+
+  /// No description provided for @potReachObserve.
+  ///
+  /// In en, this message translates to:
+  /// **'Watch and suggest'**
+  String get potReachObserve;
+
+  /// No description provided for @potReachObserveDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Watches only what you allow; you decide on its suggestions'**
+  String get potReachObserveDetail;
+
+  /// No description provided for @potReachWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Can start work'**
+  String get potReachWork;
+
+  /// No description provided for @potReachWorkDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens work where you allow; each work is marked From {name} and uses its budget'**
+  String potReachWorkDetail(String name);
+
+  /// No description provided for @potGroupObserve.
+  ///
+  /// In en, this message translates to:
+  /// **'What it can see'**
+  String get potGroupObserve;
+
+  /// No description provided for @potObserveCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get potObserveCalendar;
+
+  /// No description provided for @potObserveCalendarDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Your calendar\'s events'**
+  String get potObserveCalendarDetail;
+
+  /// No description provided for @potObserveSchedules.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedules'**
+  String get potObserveSchedules;
+
+  /// No description provided for @potObserveSchedulesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled runs and their results'**
+  String get potObserveSchedulesDetail;
+
+  /// No description provided for @potObserveWorkspace.
+  ///
+  /// In en, this message translates to:
+  /// **'Project'**
+  String get potObserveWorkspace;
+
+  /// No description provided for @potObserveProject.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat project'**
+  String get potObserveProject;
+
+  /// No description provided for @potObserveSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get potObserveSession;
+
+  /// No description provided for @potObserveWorkspaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get potObserveWorkspaces;
+
+  /// No description provided for @potObserveProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat projects'**
+  String get potObserveProjects;
+
+  /// No description provided for @potObserveSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'Works'**
+  String get potObserveSessions;
+
+  /// No description provided for @potObserveAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a project or work'**
+  String get potObserveAdd;
+
+  /// No description provided for @potObserveNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing more to add.'**
+  String get potObserveNothing;
+
+  /// No description provided for @potObserveOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Only answering, it watches nothing. Choose “Watch and suggest” to let it see more.'**
+  String get potObserveOff;
+
+  /// No description provided for @potGroupDmSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Message other pots'**
+  String get potGroupDmSend;
+
+  /// No description provided for @potGroupDmReceive.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages from other pots'**
+  String get potGroupDmReceive;
+
+  /// No description provided for @potDmAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All pots'**
+  String get potDmAll;
+
+  /// No description provided for @potDmSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
+  String get potDmSelected;
+
+  /// No description provided for @potDmOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get potDmOff;
+
+  /// No description provided for @potDmNoPots.
+  ///
+  /// In en, this message translates to:
+  /// **'There are no other pots yet.'**
+  String get potDmNoPots;
+
+  /// No description provided for @potDmNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages are kept in Activity, where you can read them all. When off, {name} and other pots talk only in groups.'**
+  String potDmNote(String name);
+
+  /// No description provided for @potDmOffNote.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} won\'t message other pots; group conversations are not affected.'**
+  String potDmOffNote(String name);
+
+  /// No description provided for @potGroupWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get potGroupWork;
+
+  /// No description provided for @potWorkLocationAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a place to open work'**
+  String get potWorkLocationAdd;
+
+  /// No description provided for @potWorkLocationsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No project to add.'**
+  String get potWorkLocationsNone;
+
+  /// No description provided for @potAccessRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read only'**
+  String get potAccessRead;
+
+  /// No description provided for @potAccessWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Read and write'**
+  String get potAccessWrite;
+
+  /// No description provided for @potAccessLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Access: {access}'**
+  String potAccessLabel(String access);
+
+  /// No description provided for @potRemoveNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}'**
+  String potRemoveNamed(String name);
+
+  /// No description provided for @potMaxWorks.
+  ///
+  /// In en, this message translates to:
+  /// **'Works at the same time'**
+  String get potMaxWorks;
+
+  /// No description provided for @potMaxWorksValue.
+  ///
+  /// In en, this message translates to:
+  /// **'At most {count}'**
+  String potMaxWorksValue(int count);
+
+  /// No description provided for @potFewer.
+  ///
+  /// In en, this message translates to:
+  /// **'Fewer'**
+  String get potFewer;
+
+  /// No description provided for @potMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get potMore;
+
+  /// No description provided for @potWorkNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Each work it opens is marked “From {name}”; you can take it over at any time.'**
+  String potWorkNote(String name);
+
+  /// No description provided for @potGroupBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget'**
+  String get potGroupBudget;
+
+  /// No description provided for @potBudgetMoney.
+  ///
+  /// In en, this message translates to:
+  /// **'Money per month'**
+  String get potBudgetMoney;
+
+  /// No description provided for @potBudgetTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens per day'**
+  String get potBudgetTokens;
+
+  /// No description provided for @potBudgetDollars.
+  ///
+  /// In en, this message translates to:
+  /// **'US\$'**
+  String get potBudgetDollars;
+
+  /// No description provided for @potBudgetTokenUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'tokens'**
+  String get potBudgetTokenUnit;
+
+  /// No description provided for @potBudgetInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number above 0'**
+  String get potBudgetInvalid;
+
+  /// No description provided for @potBudgetNote.
+  ///
+  /// In en, this message translates to:
+  /// **'It and the work it opens all count. When a limit is used up it stops opening work and tells you. The token limit always applies: subscription use counts in money only when “Show API-equivalent price” is on.'**
+  String get potBudgetNote;
+
+  /// No description provided for @potGroupReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviews its own work'**
+  String get potGroupReview;
+
+  /// No description provided for @potReviewOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get potReviewOff;
+
+  /// No description provided for @potReviewDay.
+  ///
+  /// In en, this message translates to:
+  /// **'1 day'**
+  String get potReviewDay;
+
+  /// No description provided for @potReviewTwoDays.
+  ///
+  /// In en, this message translates to:
+  /// **'2 days'**
+  String get potReviewTwoDays;
+
+  /// No description provided for @potReviewWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'1 week'**
+  String get potReviewWeek;
+
+  /// No description provided for @potReviewNote.
+  ///
+  /// In en, this message translates to:
+  /// **'How often it looks back over its responsibilities and work by itself.'**
+  String get potReviewNote;
+
+  /// No description provided for @potReachNote.
+  ///
+  /// In en, this message translates to:
+  /// **'You can change all of this later in {name}\'s settings. Smaller permissions apply at once; running work is checked again against them.'**
+  String potReachNote(String name);
+
+  /// No description provided for @potGroupOwnModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Models {name} uses'**
+  String potGroupOwnModels(String name);
+
+  /// No description provided for @potMainModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Main model'**
+  String get potMainModel;
+
+  /// No description provided for @potFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Fallback {n}'**
+  String potFallback(int n);
+
+  /// No description provided for @potAddFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a fallback'**
+  String get potAddFallback;
+
+  /// No description provided for @potRemoveFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove this fallback'**
+  String get potRemoveFallback;
+
+  /// No description provided for @potModelsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'When the main model can\'t be used (budget used up, service down, host offline), the fallbacks are used in order; each switch is logged in Activity, and it switches back when the main model returns.'**
+  String get potModelsNote;
+
+  /// No description provided for @potNoModels.
+  ///
+  /// In en, this message translates to:
+  /// **'The Gateway serves no models yet.'**
+  String get potNoModels;
+
+  /// No description provided for @potModelsLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading the models…'**
+  String get potModelsLoading;
+
+  /// No description provided for @potPickModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a model'**
+  String get potPickModel;
+
+  /// No description provided for @potGroupThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking'**
+  String get potGroupThinking;
+
+  /// No description provided for @potThinkingNone.
+  ///
+  /// In en, this message translates to:
+  /// **'This model has no thinking levels'**
+  String get potThinkingNone;
+
+  /// No description provided for @potThinkingAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust by itself'**
+  String get potThinkingAuto;
+
+  /// No description provided for @potThinkingAutoDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses the level above, raising or lowering it when needed'**
+  String get potThinkingAutoDetail;
+
+  /// No description provided for @potThinkingAutoOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Usually “{level}”. It raises or lowers it by itself when needed, without asking you; each change is logged in Activity with the reason.'**
+  String potThinkingAutoOn(String level);
+
+  /// No description provided for @potThinkingAutoOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Always “{level}”; it doesn\'t change it by itself.'**
+  String potThinkingAutoOff(String level);
+
+  /// No description provided for @potGroupWorkModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Models for work'**
+  String get potGroupWorkModels;
+
+  /// No description provided for @potModeDirect.
+  ///
+  /// In en, this message translates to:
+  /// **'Direct'**
+  String get potModeDirect;
+
+  /// No description provided for @potModeAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask you'**
+  String get potModeAsk;
+
+  /// No description provided for @potModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Use: {mode}'**
+  String potModeLabel(String mode);
+
+  /// No description provided for @potWorkModelsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'To use a stronger model, {name} opens a work, picks the model and talks to it; that work is marked From {name}. Models set to “Ask you” wait for your approval before the work opens.'**
+  String potWorkModelsNote(String name);
+
+  /// No description provided for @potWorkModelsOff.
+  ///
+  /// In en, this message translates to:
+  /// **'In the last step you chose “{reach}”, so {name} can\'t open work and can\'t use other models. To let it use a stronger model, go back and choose “Can start work”.'**
+  String potWorkModelsOff(String reach, String name);
 }
 
 class _AppLocalizationsDelegate

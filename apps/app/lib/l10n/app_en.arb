@@ -1025,5 +1025,273 @@
       }
     }
   },
-  "timeZoneNote": "The calendar shows times and creates events and tasks in this time zone."
+  "timeZoneNote": "The calendar shows times and creates events and tasks in this time zone.",
+  "newPotTitle": "New pot",
+  "newPotStep": "{step} / 4 · {title}",
+  "@newPotStep": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      },
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "newPotStepLook": "Look and personality",
+  "newPotStepWork": "Work",
+  "newPotStepReach": "What it can do",
+  "newPotStepModels": "Models",
+  "newPotNext": "Next",
+  "newPotCreate": "Create {name}",
+  "@newPotCreate": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "newPotCreatePlain": "Create",
+  "potThisPot": "this pot",
+  "potAvatarColors": "Avatar colour",
+  "potAvatarColor": "Colour {n}",
+  "@potAvatarColor": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "potAvatarUpload": "Upload a picture",
+  "potAvatarNote": "The avatar shows the name's first letter by default",
+  "potAvatarChoose": "Choose another picture",
+  "potAvatarRemove": "Remove the picture",
+  "potAvatarUploading": "Uploading the picture…",
+  "potGroupBasic": "Basic",
+  "potName": "Name",
+  "potNameHint": "What to call it",
+  "potGroupPersonality": "Personality (soul)",
+  "potTemplateRigorous": "Rigorous",
+  "potTemplateConcise": "Concise",
+  "potTemplateFriendly": "Friendly",
+  "potTemplateCustom": "Custom",
+  "potTemplateRigorousText": "Precise and careful. Checks facts before answering, says when unsure, and prefers correctness over speed.",
+  "potTemplateConciseText": "Brief and direct. Answers in as few words as possible and skips pleasantries.",
+  "potTemplateFriendlyText": "Warm and encouraging. Explains things plainly and checks that the user is comfortable with the next step.",
+  "potPersonalityHint": "How it talks",
+  "potPersonalityNote": "Personality only changes how it talks; it gives no permissions.",
+  "potGroupPreview": "Speech preview",
+  "potPreviewRigorous": "Found it: with the iPad's floating keyboard, viewInsets reports 0. Source: the Flutter MediaQuery docs.",
+  "potPreviewConcise": "Floating keyboard: viewInsets is 0.",
+  "potPreviewFriendly": "Good news, I found it! With the floating keyboard, viewInsets is 0. Shall I show you where that is in the docs?",
+  "potPreviewCustom": "Here is what I found about viewInsets with the floating keyboard.",
+  "potPreviewNote": "Preview, not a real reply",
+  "potGroupIntro": "Intro",
+  "potIntroHint": "One line about what it does",
+  "potIntroNote": "Shown in the chat list and the @ menu, so you and other pots know whom to ask.",
+  "potGroupDescription": "Work description",
+  "potDescriptionHint": "How it should work",
+  "potDescriptionNote": "Tells it how to work. Like the personality, nothing here gives it permissions.",
+  "potGroupResponsibilities": "Responsibilities",
+  "potAddResponsibility": "Add a responsibility",
+  "potResponsibilityNew": "New responsibility",
+  "potResponsibilityEdit": "Responsibility",
+  "potResponsibilityTitle": "Title",
+  "potResponsibilityDetail": "Detail (optional)",
+  "potMoveUp": "Move up",
+  "potMoveDown": "Move down",
+  "potRemove": "Remove",
+  "potTooLong": "At most {max} characters",
+  "@potTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "potNameMissing": "Give it a name",
+  "potGroupReach": "How far it can go",
+  "potReachAnswer": "Only answer you",
+  "potReachAnswerDetail": "Doesn't watch anything and can't start work",
+  "potReachObserve": "Watch and suggest",
+  "potReachObserveDetail": "Watches only what you allow; you decide on its suggestions",
+  "potReachWork": "Can start work",
+  "potReachWorkDetail": "Opens work where you allow; each work is marked From {name} and uses its budget",
+  "@potReachWorkDetail": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "potGroupObserve": "What it can see",
+  "potObserveCalendar": "Calendar",
+  "potObserveCalendarDetail": "Your calendar's events",
+  "potObserveSchedules": "Schedules",
+  "potObserveSchedulesDetail": "Scheduled runs and their results",
+  "potObserveWorkspace": "Project",
+  "potObserveProject": "Chat project",
+  "potObserveSession": "Work",
+  "potObserveWorkspaces": "Projects",
+  "potObserveProjects": "Chat projects",
+  "potObserveSessions": "Works",
+  "potObserveAdd": "Add a project or work",
+  "potObserveNothing": "Nothing more to add.",
+  "potObserveOff": "Only answering, it watches nothing. Choose “Watch and suggest” to let it see more.",
+  "potGroupDmSend": "Message other pots",
+  "potGroupDmReceive": "Messages from other pots",
+  "potDmAll": "All pots",
+  "potDmSelected": "Selected",
+  "potDmOff": "Off",
+  "potDmNoPots": "There are no other pots yet.",
+  "potDmNote": "Messages are kept in Activity, where you can read them all. When off, {name} and other pots talk only in groups.",
+  "@potDmNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "potDmOffNote": "{name} won't message other pots; group conversations are not affected.",
+  "@potDmOffNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "potGroupWork": "Work",
+  "potWorkLocationAdd": "Add a place to open work",
+  "potWorkLocationsNone": "No project to add.",
+  "potAccessRead": "Read only",
+  "potAccessWrite": "Read and write",
+  "potAccessLabel": "Access: {access}",
+  "@potAccessLabel": {
+    "placeholders": {
+      "access": {
+        "type": "String"
+      }
+    }
+  },
+  "potRemoveNamed": "Remove {name}",
+  "@potRemoveNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "potMaxWorks": "Works at the same time",
+  "potMaxWorksValue": "At most {count}",
+  "@potMaxWorksValue": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "potFewer": "Fewer",
+  "potMore": "More",
+  "potWorkNote": "Each work it opens is marked “From {name}”; you can take it over at any time.",
+  "@potWorkNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "potGroupBudget": "Budget",
+  "potBudgetMoney": "Money per month",
+  "potBudgetTokens": "Tokens per day",
+  "potBudgetDollars": "US$",
+  "potBudgetTokenUnit": "tokens",
+  "potBudgetInvalid": "Enter a number above 0",
+  "potBudgetNote": "It and the work it opens all count. When a limit is used up it stops opening work and tells you. The token limit always applies: subscription use counts in money only when “Show API-equivalent price” is on.",
+  "potGroupReview": "Reviews its own work",
+  "potReviewOff": "Off",
+  "potReviewDay": "1 day",
+  "potReviewTwoDays": "2 days",
+  "potReviewWeek": "1 week",
+  "potReviewNote": "How often it looks back over its responsibilities and work by itself.",
+  "potReachNote": "You can change all of this later in {name}'s settings. Smaller permissions apply at once; running work is checked again against them.",
+  "@potReachNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "potGroupOwnModels": "Models {name} uses",
+  "@potGroupOwnModels": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "potMainModel": "Main model",
+  "potFallback": "Fallback {n}",
+  "@potFallback": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "potAddFallback": "Add a fallback",
+  "potRemoveFallback": "Remove this fallback",
+  "potModelsNote": "When the main model can't be used (budget used up, service down, host offline), the fallbacks are used in order; each switch is logged in Activity, and it switches back when the main model returns.",
+  "potNoModels": "The Gateway serves no models yet.",
+  "potModelsLoading": "Loading the models…",
+  "potPickModel": "Choose a model",
+  "potGroupThinking": "Thinking",
+  "potThinkingNone": "This model has no thinking levels",
+  "potThinkingAuto": "Adjust by itself",
+  "potThinkingAutoDetail": "Uses the level above, raising or lowering it when needed",
+  "potThinkingAutoOn": "Usually “{level}”. It raises or lowers it by itself when needed, without asking you; each change is logged in Activity with the reason.",
+  "@potThinkingAutoOn": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "potThinkingAutoOff": "Always “{level}”; it doesn't change it by itself.",
+  "@potThinkingAutoOff": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "potGroupWorkModels": "Models for work",
+  "potModeDirect": "Direct",
+  "potModeAsk": "Ask you",
+  "potModeLabel": "Use: {mode}",
+  "@potModeLabel": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "potWorkModelsNote": "To use a stronger model, {name} opens a work, picks the model and talks to it; that work is marked From {name}. Models set to “Ask you” wait for your approval before the work opens.",
+  "@potWorkModelsNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "potWorkModelsOff": "In the last step you chose “{reach}”, so {name} can't open work and can't use other models. To let it use a stronger model, go back and choose “Can start work”.",
+  "@potWorkModelsOff": {
+    "placeholders": {
+      "reach": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

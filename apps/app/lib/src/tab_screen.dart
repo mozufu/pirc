@@ -10,6 +10,7 @@ import 'calendar/calendar_screen.dart';
 import 'chat/chat_data.dart';
 import 'chat/chat_list_screen.dart';
 import 'chat/decision_sheet.dart';
+import 'chat/new_pot_screen.dart';
 import 'router.dart';
 import 'shell/app_drawer.dart';
 import 'work/new_conversation/new_conversation_screen.dart';
@@ -112,6 +113,10 @@ class TabScreen extends ConsumerWidget {
                   AppTab.work => WorkConversation(
                     key: ValueKey(open),
                     sessionId: open,
+                    showBack: !desktop,
+                  ),
+                  AppTab.chat when open == newPotKey => NewPotScreen(
+                    key: const ValueKey(newPotKey),
                     showBack: !desktop,
                   ),
                   AppTab.calendar => CalendarDetail(

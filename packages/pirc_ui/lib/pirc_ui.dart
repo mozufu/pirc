@@ -9,6 +9,7 @@ export 'src/components/buttons.dart';
 export 'src/components/chat_row.dart';
 export 'src/components/connection_states.dart';
 export 'src/components/filter_chips.dart';
+export 'src/components/grouped_list.dart';
 export 'src/components/handover_item.dart';
 export 'src/components/log_row.dart';
 export 'src/components/mention_popover.dart';

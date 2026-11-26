@@ -7,9 +7,14 @@ import 'package:pirc_ui/pirc_ui.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../connection/data.dart';
 
+/// The models the Gateway serves with its default model.
+final modelCatalogProvider = FutureProvider<ModelCatalog>(
+  (ref) => ModelsApi(requireApi(ref)).catalog(),
+);
+
 /// The models the Gateway serves.
 final modelsProvider = FutureProvider<List<ModelInfo>>(
-  (ref) => ModelsApi(requireApi(ref)).list(),
+  (ref) async => (await ref.watch(modelCatalogProvider.future)).models,
 );
 
 /// Thinking levels in order.

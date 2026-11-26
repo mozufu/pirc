@@ -225,7 +225,7 @@ void main() {
       ]);
       await tester.tap(find.text('New pot'));
       await tester.pumpAndSettle();
-      expect(find.text('Item new-pot'), findsOneWidget);
+      expect(find.text('1 / 4 · Look and personality'), findsOneWidget);
     });
 
     appTest('search matches names, intros and last messages', (tester) async {
@@ -247,7 +247,7 @@ void main() {
       expect(find.text('No pots or groups yet'), findsOneWidget);
       await tester.tap(find.widgetWithText(FilledButton, 'New pot'));
       await tester.pumpAndSettle();
-      expect(find.text('Item new-pot'), findsOneWidget);
+      expect(find.text('1 / 4 · Look and personality'), findsOneWidget);
     });
 
     appTest('a failed read offers to try again', (tester) async {
@@ -369,7 +369,7 @@ void main() {
       expect(find.text('Create group'), findsOneWidget, reason: 'still open');
       await tester.tap(find.text('New pot').last);
       await tester.pumpAndSettle();
-      expect(find.text('Item new-pot'), findsOneWidget);
+      expect(find.text('1 / 4 · Look and personality'), findsOneWidget);
     });
   });
 

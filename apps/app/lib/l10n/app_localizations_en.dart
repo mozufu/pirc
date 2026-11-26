@@ -1816,4 +1816,446 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get timeZoneNote =>
       'The calendar shows times and creates events and tasks in this time zone.';
+
+  @override
+  String get newPotTitle => 'New pot';
+
+  @override
+  String newPotStep(int step, String title) {
+    return '$step / 4 · $title';
+  }
+
+  @override
+  String get newPotStepLook => 'Look and personality';
+
+  @override
+  String get newPotStepWork => 'Work';
+
+  @override
+  String get newPotStepReach => 'What it can do';
+
+  @override
+  String get newPotStepModels => 'Models';
+
+  @override
+  String get newPotNext => 'Next';
+
+  @override
+  String newPotCreate(String name) {
+    return 'Create $name';
+  }
+
+  @override
+  String get newPotCreatePlain => 'Create';
+
+  @override
+  String get potThisPot => 'this pot';
+
+  @override
+  String get potAvatarColors => 'Avatar colour';
+
+  @override
+  String potAvatarColor(int n) {
+    return 'Colour $n';
+  }
+
+  @override
+  String get potAvatarUpload => 'Upload a picture';
+
+  @override
+  String get potAvatarNote =>
+      'The avatar shows the name\'s first letter by default';
+
+  @override
+  String get potAvatarChoose => 'Choose another picture';
+
+  @override
+  String get potAvatarRemove => 'Remove the picture';
+
+  @override
+  String get potAvatarUploading => 'Uploading the picture…';
+
+  @override
+  String get potGroupBasic => 'Basic';
+
+  @override
+  String get potName => 'Name';
+
+  @override
+  String get potNameHint => 'What to call it';
+
+  @override
+  String get potGroupPersonality => 'Personality (soul)';
+
+  @override
+  String get potTemplateRigorous => 'Rigorous';
+
+  @override
+  String get potTemplateConcise => 'Concise';
+
+  @override
+  String get potTemplateFriendly => 'Friendly';
+
+  @override
+  String get potTemplateCustom => 'Custom';
+
+  @override
+  String get potTemplateRigorousText =>
+      'Precise and careful. Checks facts before answering, says when unsure, and prefers correctness over speed.';
+
+  @override
+  String get potTemplateConciseText =>
+      'Brief and direct. Answers in as few words as possible and skips pleasantries.';
+
+  @override
+  String get potTemplateFriendlyText =>
+      'Warm and encouraging. Explains things plainly and checks that the user is comfortable with the next step.';
+
+  @override
+  String get potPersonalityHint => 'How it talks';
+
+  @override
+  String get potPersonalityNote =>
+      'Personality only changes how it talks; it gives no permissions.';
+
+  @override
+  String get potGroupPreview => 'Speech preview';
+
+  @override
+  String get potPreviewRigorous =>
+      'Found it: with the iPad\'s floating keyboard, viewInsets reports 0. Source: the Flutter MediaQuery docs.';
+
+  @override
+  String get potPreviewConcise => 'Floating keyboard: viewInsets is 0.';
+
+  @override
+  String get potPreviewFriendly =>
+      'Good news, I found it! With the floating keyboard, viewInsets is 0. Shall I show you where that is in the docs?';
+
+  @override
+  String get potPreviewCustom =>
+      'Here is what I found about viewInsets with the floating keyboard.';
+
+  @override
+  String get potPreviewNote => 'Preview, not a real reply';
+
+  @override
+  String get potGroupIntro => 'Intro';
+
+  @override
+  String get potIntroHint => 'One line about what it does';
+
+  @override
+  String get potIntroNote =>
+      'Shown in the chat list and the @ menu, so you and other pots know whom to ask.';
+
+  @override
+  String get potGroupDescription => 'Work description';
+
+  @override
+  String get potDescriptionHint => 'How it should work';
+
+  @override
+  String get potDescriptionNote =>
+      'Tells it how to work. Like the personality, nothing here gives it permissions.';
+
+  @override
+  String get potGroupResponsibilities => 'Responsibilities';
+
+  @override
+  String get potAddResponsibility => 'Add a responsibility';
+
+  @override
+  String get potResponsibilityNew => 'New responsibility';
+
+  @override
+  String get potResponsibilityEdit => 'Responsibility';
+
+  @override
+  String get potResponsibilityTitle => 'Title';
+
+  @override
+  String get potResponsibilityDetail => 'Detail (optional)';
+
+  @override
+  String get potMoveUp => 'Move up';
+
+  @override
+  String get potMoveDown => 'Move down';
+
+  @override
+  String get potRemove => 'Remove';
+
+  @override
+  String potTooLong(int max) {
+    return 'At most $max characters';
+  }
+
+  @override
+  String get potNameMissing => 'Give it a name';
+
+  @override
+  String get potGroupReach => 'How far it can go';
+
+  @override
+  String get potReachAnswer => 'Only answer you';
+
+  @override
+  String get potReachAnswerDetail =>
+      'Doesn\'t watch anything and can\'t start work';
+
+  @override
+  String get potReachObserve => 'Watch and suggest';
+
+  @override
+  String get potReachObserveDetail =>
+      'Watches only what you allow; you decide on its suggestions';
+
+  @override
+  String get potReachWork => 'Can start work';
+
+  @override
+  String potReachWorkDetail(String name) {
+    return 'Opens work where you allow; each work is marked From $name and uses its budget';
+  }
+
+  @override
+  String get potGroupObserve => 'What it can see';
+
+  @override
+  String get potObserveCalendar => 'Calendar';
+
+  @override
+  String get potObserveCalendarDetail => 'Your calendar\'s events';
+
+  @override
+  String get potObserveSchedules => 'Schedules';
+
+  @override
+  String get potObserveSchedulesDetail => 'Scheduled runs and their results';
+
+  @override
+  String get potObserveWorkspace => 'Project';
+
+  @override
+  String get potObserveProject => 'Chat project';
+
+  @override
+  String get potObserveSession => 'Work';
+
+  @override
+  String get potObserveWorkspaces => 'Projects';
+
+  @override
+  String get potObserveProjects => 'Chat projects';
+
+  @override
+  String get potObserveSessions => 'Works';
+
+  @override
+  String get potObserveAdd => 'Add a project or work';
+
+  @override
+  String get potObserveNothing => 'Nothing more to add.';
+
+  @override
+  String get potObserveOff =>
+      'Only answering, it watches nothing. Choose “Watch and suggest” to let it see more.';
+
+  @override
+  String get potGroupDmSend => 'Message other pots';
+
+  @override
+  String get potGroupDmReceive => 'Messages from other pots';
+
+  @override
+  String get potDmAll => 'All pots';
+
+  @override
+  String get potDmSelected => 'Selected';
+
+  @override
+  String get potDmOff => 'Off';
+
+  @override
+  String get potDmNoPots => 'There are no other pots yet.';
+
+  @override
+  String potDmNote(String name) {
+    return 'Messages are kept in Activity, where you can read them all. When off, $name and other pots talk only in groups.';
+  }
+
+  @override
+  String potDmOffNote(String name) {
+    return '$name won\'t message other pots; group conversations are not affected.';
+  }
+
+  @override
+  String get potGroupWork => 'Work';
+
+  @override
+  String get potWorkLocationAdd => 'Add a place to open work';
+
+  @override
+  String get potWorkLocationsNone => 'No project to add.';
+
+  @override
+  String get potAccessRead => 'Read only';
+
+  @override
+  String get potAccessWrite => 'Read and write';
+
+  @override
+  String potAccessLabel(String access) {
+    return 'Access: $access';
+  }
+
+  @override
+  String potRemoveNamed(String name) {
+    return 'Remove $name';
+  }
+
+  @override
+  String get potMaxWorks => 'Works at the same time';
+
+  @override
+  String potMaxWorksValue(int count) {
+    return 'At most $count';
+  }
+
+  @override
+  String get potFewer => 'Fewer';
+
+  @override
+  String get potMore => 'More';
+
+  @override
+  String potWorkNote(String name) {
+    return 'Each work it opens is marked “From $name”; you can take it over at any time.';
+  }
+
+  @override
+  String get potGroupBudget => 'Budget';
+
+  @override
+  String get potBudgetMoney => 'Money per month';
+
+  @override
+  String get potBudgetTokens => 'Tokens per day';
+
+  @override
+  String get potBudgetDollars => 'US\$';
+
+  @override
+  String get potBudgetTokenUnit => 'tokens';
+
+  @override
+  String get potBudgetInvalid => 'Enter a number above 0';
+
+  @override
+  String get potBudgetNote =>
+      'It and the work it opens all count. When a limit is used up it stops opening work and tells you. The token limit always applies: subscription use counts in money only when “Show API-equivalent price” is on.';
+
+  @override
+  String get potGroupReview => 'Reviews its own work';
+
+  @override
+  String get potReviewOff => 'Off';
+
+  @override
+  String get potReviewDay => '1 day';
+
+  @override
+  String get potReviewTwoDays => '2 days';
+
+  @override
+  String get potReviewWeek => '1 week';
+
+  @override
+  String get potReviewNote =>
+      'How often it looks back over its responsibilities and work by itself.';
+
+  @override
+  String potReachNote(String name) {
+    return 'You can change all of this later in $name\'s settings. Smaller permissions apply at once; running work is checked again against them.';
+  }
+
+  @override
+  String potGroupOwnModels(String name) {
+    return 'Models $name uses';
+  }
+
+  @override
+  String get potMainModel => 'Main model';
+
+  @override
+  String potFallback(int n) {
+    return 'Fallback $n';
+  }
+
+  @override
+  String get potAddFallback => 'Add a fallback';
+
+  @override
+  String get potRemoveFallback => 'Remove this fallback';
+
+  @override
+  String get potModelsNote =>
+      'When the main model can\'t be used (budget used up, service down, host offline), the fallbacks are used in order; each switch is logged in Activity, and it switches back when the main model returns.';
+
+  @override
+  String get potNoModels => 'The Gateway serves no models yet.';
+
+  @override
+  String get potModelsLoading => 'Loading the models…';
+
+  @override
+  String get potPickModel => 'Choose a model';
+
+  @override
+  String get potGroupThinking => 'Thinking';
+
+  @override
+  String get potThinkingNone => 'This model has no thinking levels';
+
+  @override
+  String get potThinkingAuto => 'Adjust by itself';
+
+  @override
+  String get potThinkingAutoDetail =>
+      'Uses the level above, raising or lowering it when needed';
+
+  @override
+  String potThinkingAutoOn(String level) {
+    return 'Usually “$level”. It raises or lowers it by itself when needed, without asking you; each change is logged in Activity with the reason.';
+  }
+
+  @override
+  String potThinkingAutoOff(String level) {
+    return 'Always “$level”; it doesn\'t change it by itself.';
+  }
+
+  @override
+  String get potGroupWorkModels => 'Models for work';
+
+  @override
+  String get potModeDirect => 'Direct';
+
+  @override
+  String get potModeAsk => 'Ask you';
+
+  @override
+  String potModeLabel(String mode) {
+    return 'Use: $mode';
+  }
+
+  @override
+  String potWorkModelsNote(String name) {
+    return 'To use a stronger model, $name opens a work, picks the model and talks to it; that work is marked From $name. Models set to “Ask you” wait for your approval before the work opens.';
+  }
+
+  @override
+  String potWorkModelsOff(String reach, String name) {
+    return 'In the last step you chose “$reach”, so $name can\'t open work and can\'t use other models. To let it use a stronger model, go back and choose “Can start work”.';
+  }
 }

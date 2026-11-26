@@ -1745,6 +1745,435 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get timeZoneNote => '行事曆以這個時區顯示時間，並以它建立活動與工作。';
+
+  @override
+  String get newPotTitle => '新增 pots';
+
+  @override
+  String newPotStep(int step, String title) {
+    return '$step / 4 · $title';
+  }
+
+  @override
+  String get newPotStepLook => '外觀與個性';
+
+  @override
+  String get newPotStepWork => '工作內容';
+
+  @override
+  String get newPotStepReach => '能做什麼';
+
+  @override
+  String get newPotStepModels => '模型';
+
+  @override
+  String get newPotNext => '下一步';
+
+  @override
+  String newPotCreate(String name) {
+    return '建立$name';
+  }
+
+  @override
+  String get newPotCreatePlain => '建立';
+
+  @override
+  String get potThisPot => '它';
+
+  @override
+  String get potAvatarColors => '頭像顏色';
+
+  @override
+  String potAvatarColor(int n) {
+    return '顏色 $n';
+  }
+
+  @override
+  String get potAvatarUpload => '上傳圖片';
+
+  @override
+  String get potAvatarNote => '頭像預設用名字的第一個字';
+
+  @override
+  String get potAvatarChoose => '換一張圖片';
+
+  @override
+  String get potAvatarRemove => '移除圖片';
+
+  @override
+  String get potAvatarUploading => '正在上傳圖片…';
+
+  @override
+  String get potGroupBasic => '基本';
+
+  @override
+  String get potName => '名字';
+
+  @override
+  String get potNameHint => '怎麼稱呼它';
+
+  @override
+  String get potGroupPersonality => '個性（soul）';
+
+  @override
+  String get potTemplateRigorous => '嚴謹';
+
+  @override
+  String get potTemplateConcise => '簡潔';
+
+  @override
+  String get potTemplateFriendly => '友善';
+
+  @override
+  String get potTemplateCustom => '自訂';
+
+  @override
+  String get potTemplateRigorousText => '精確細心，回答前先查證，不確定時直說，寧可正確也不求快。';
+
+  @override
+  String get potTemplateConciseText => '簡短直接，用最少的字回答，不寒暄。';
+
+  @override
+  String get potTemplateFriendlyText => '溫暖、鼓勵人，用平常的話說明，確認你對下一步沒有疑問。';
+
+  @override
+  String get potPersonalityHint => '它怎麼說話';
+
+  @override
+  String get potPersonalityNote => '個性只影響說話方式，不會給它任何權限。';
+
+  @override
+  String get potGroupPreview => '說話預覽';
+
+  @override
+  String get potPreviewRigorous =>
+      '查到了：iPad 浮動鍵盤時 viewInsets 會回報 0。來源：Flutter MediaQuery 文件。';
+
+  @override
+  String get potPreviewConcise => '浮動鍵盤：viewInsets 是 0。';
+
+  @override
+  String get potPreviewFriendly =>
+      '好消息，找到了！浮動鍵盤時 viewInsets 會是 0。要我帶你看文件裡的位置嗎？';
+
+  @override
+  String get potPreviewCustom => '這是我查到的浮動鍵盤與 viewInsets 的資料。';
+
+  @override
+  String get potPreviewNote => '預覽，不是真的回覆';
+
+  @override
+  String get potGroupIntro => '簡介';
+
+  @override
+  String get potIntroHint => '一句話說明它做什麼';
+
+  @override
+  String get potIntroNote => '顯示在聊天列表和 @ 選單，讓你和其他 pots 知道該找誰。';
+
+  @override
+  String get potGroupDescription => '工作說明';
+
+  @override
+  String get potDescriptionHint => '它該怎麼做事';
+
+  @override
+  String get potDescriptionNote => '告訴它怎麼做事。和個性一樣，寫在這裡不會給它權限。';
+
+  @override
+  String get potGroupResponsibilities => '負責的事';
+
+  @override
+  String get potAddResponsibility => '新增負責的事';
+
+  @override
+  String get potResponsibilityNew => '新增負責的事';
+
+  @override
+  String get potResponsibilityEdit => '負責的事';
+
+  @override
+  String get potResponsibilityTitle => '標題';
+
+  @override
+  String get potResponsibilityDetail => '細節（可不填）';
+
+  @override
+  String get potMoveUp => '上移';
+
+  @override
+  String get potMoveDown => '下移';
+
+  @override
+  String get potRemove => '移除';
+
+  @override
+  String potTooLong(int max) {
+    return '最多 $max 個字';
+  }
+
+  @override
+  String get potNameMissing => '請輸入名字';
+
+  @override
+  String get potGroupReach => '能做到哪裡';
+
+  @override
+  String get potReachAnswer => '只回答你';
+
+  @override
+  String get potReachAnswerDetail => '不主動觀察，也不能開始工作';
+
+  @override
+  String get potReachObserve => '觀察並提出建議';
+
+  @override
+  String get potReachObserveDetail => '只看你允許的範圍；建議要你決定才會做';
+
+  @override
+  String get potReachWork => '可以開始工作';
+
+  @override
+  String potReachWorkDetail(String name) {
+    return '在預設位置開工作；每個工作標示 From $name，並花額度';
+  }
+
+  @override
+  String get potGroupObserve => '能看什麼';
+
+  @override
+  String get potObserveCalendar => '行事曆';
+
+  @override
+  String get potObserveCalendarDetail => '行事曆上的活動';
+
+  @override
+  String get potObserveSchedules => '排程';
+
+  @override
+  String get potObserveSchedulesDetail => '排程的執行與結果';
+
+  @override
+  String get potObserveWorkspace => '專案';
+
+  @override
+  String get potObserveProject => '聊天專案';
+
+  @override
+  String get potObserveSession => '工作';
+
+  @override
+  String get potObserveWorkspaces => '專案';
+
+  @override
+  String get potObserveProjects => '聊天專案';
+
+  @override
+  String get potObserveSessions => '工作';
+
+  @override
+  String get potObserveAdd => '新增專案或工作';
+
+  @override
+  String get potObserveNothing => '沒有其他可新增的項目。';
+
+  @override
+  String get potObserveOff => '只回答你時，它不觀察任何東西。選「觀察並提出建議」才能讓它看更多。';
+
+  @override
+  String get potGroupDmSend => '私訊其他 pots';
+
+  @override
+  String get potGroupDmReceive => '接收其他 pots 的私訊';
+
+  @override
+  String get potDmAll => '所有 pots';
+
+  @override
+  String get potDmSelected => '選擇的';
+
+  @override
+  String get potDmOff => '關閉';
+
+  @override
+  String get potDmNoPots => '還沒有其他 pots。';
+
+  @override
+  String potDmNote(String name) {
+    return '私訊都記在動態，你都看得到。關閉後，$name和其他 pots 只能在群組裡說話。';
+  }
+
+  @override
+  String potDmOffNote(String name) {
+    return '$name不會和其他 pots 私訊；群組裡的對話不受影響。';
+  }
+
+  @override
+  String get potGroupWork => '開工';
+
+  @override
+  String get potWorkLocationAdd => '新增開工位置';
+
+  @override
+  String get potWorkLocationsNone => '沒有可新增的專案。';
+
+  @override
+  String get potAccessRead => '唯讀';
+
+  @override
+  String get potAccessWrite => '可讀寫';
+
+  @override
+  String potAccessLabel(String access) {
+    return '權限：$access';
+  }
+
+  @override
+  String potRemoveNamed(String name) {
+    return '移除$name';
+  }
+
+  @override
+  String get potMaxWorks => '同時進行的工作';
+
+  @override
+  String potMaxWorksValue(int count) {
+    return '最多 $count 個';
+  }
+
+  @override
+  String get potFewer => '減少';
+
+  @override
+  String get potMore => '增加';
+
+  @override
+  String potWorkNote(String name) {
+    return '它開的每個工作都標示「From $name」，你隨時可以接管。';
+  }
+
+  @override
+  String get potGroupBudget => '額度';
+
+  @override
+  String get potBudgetMoney => '每月金額';
+
+  @override
+  String get potBudgetTokens => '每天 token';
+
+  @override
+  String get potBudgetDollars => 'US\$';
+
+  @override
+  String get potBudgetTokenUnit => 'tokens';
+
+  @override
+  String get potBudgetInvalid => '請輸入大於 0 的數字';
+
+  @override
+  String get potBudgetNote =>
+      '它自己和它開的工作都算在裡面；用完就停止開新工作並通知你。token 上限一定有效：訂閱的用量只有在開啟「顯示 API 等值價格」時才算進金額。';
+
+  @override
+  String get potGroupReview => '自主檢視';
+
+  @override
+  String get potReviewOff => '關閉';
+
+  @override
+  String get potReviewDay => '1 天';
+
+  @override
+  String get potReviewTwoDays => '2 天';
+
+  @override
+  String get potReviewWeek => '1 週';
+
+  @override
+  String get potReviewNote => '多久自己回顧一次負責的事和工作。';
+
+  @override
+  String potReachNote(String name) {
+    return '建立後都能在$name的設定裡改。權限改小時立即生效，進行中的工作會依新權限重新檢查。';
+  }
+
+  @override
+  String potGroupOwnModels(String name) {
+    return '$name自己用的模型';
+  }
+
+  @override
+  String get potMainModel => '主模型';
+
+  @override
+  String potFallback(int n) {
+    return '備援 $n';
+  }
+
+  @override
+  String get potAddFallback => '新增備援';
+
+  @override
+  String get potRemoveFallback => '移除這個備援';
+
+  @override
+  String get potModelsNote =>
+      '主模型不能用（額度用完、服務中斷、主機離線）時依序改用備援；切換會記在動態，主模型恢復後自動換回。';
+
+  @override
+  String get potNoModels => 'Gateway 還沒有提供模型。';
+
+  @override
+  String get potModelsLoading => '正在載入模型…';
+
+  @override
+  String get potPickModel => '選擇模型';
+
+  @override
+  String get potGroupThinking => '思考程度';
+
+  @override
+  String get potThinkingNone => '這個模型沒有思考程度';
+
+  @override
+  String get potThinkingAuto => '依情況自己調整';
+
+  @override
+  String get potThinkingAutoDetail => '平常用上面選的程度，需要時自己調高或調低';
+
+  @override
+  String potThinkingAutoOn(String level) {
+    return '平常用「$level」。它覺得需要時會自己調高或調低，不會問你；每次調整都記在動態並寫出原因。';
+  }
+
+  @override
+  String potThinkingAutoOff(String level) {
+    return '一直用「$level」，不會自己改。';
+  }
+
+  @override
+  String get potGroupWorkModels => '開工作時可以用的模型';
+
+  @override
+  String get potModeDirect => '直接用';
+
+  @override
+  String get potModeAsk => '先問你';
+
+  @override
+  String potModeLabel(String mode) {
+    return '使用方式：$mode';
+  }
+
+  @override
+  String potWorkModelsNote(String name) {
+    return '要用更強的模型時，$name會開一個工作、選好模型，再跟它對話；那個工作標示 From $name。設成「先問你」的模型，開工作前會等你核准。';
+  }
+
+  @override
+  String potWorkModelsOff(String reach, String name) {
+    return '上一步選了「$reach」，$name不能開工作，也就不能用其他模型。要讓它用更強的模型，回上一步改成「可以開始工作」。';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
