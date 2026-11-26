@@ -22,6 +22,19 @@ String listTime(BuildContext context, int millis, {DateTime? now}) {
   return DateFormat.Md(locale).format(time);
 }
 
+/// Micro-dollars as US dollars with cents: `$0.80`.
+String usd(int micros) {
+  final cents = (micros / 10000).round();
+  final sign = cents < 0 ? '-' : '';
+  final abs = cents.abs();
+  return '$sign\$${abs ~/ 100}.${(abs % 100).toString().padLeft(2, '0')}';
+}
+
+/// A whole number with the locale's grouping: `2,000,000`.
+String grouped(BuildContext context, int value) => NumberFormat.decimalPattern(
+  Localizations.localeOf(context).toLanguageTag(),
+).format(value);
+
 /// A clock time with the date when it is not today.
 String clockTime(BuildContext context, int millis, {DateTime? now}) {
   final locale = Localizations.localeOf(context).toLanguageTag();

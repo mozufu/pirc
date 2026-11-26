@@ -9,6 +9,7 @@ import 'calendar/calendar_detail.dart';
 import 'calendar/calendar_screen.dart';
 import 'chat/chat_data.dart';
 import 'chat/chat_list_screen.dart';
+import 'chat/decision_sheet.dart';
 import 'router.dart';
 import 'shell/app_drawer.dart';
 import 'work/new_conversation/new_conversation_screen.dart';
@@ -21,10 +22,20 @@ import 'work/work_list_screen.dart';
 /// One tab in the adaptive frame: the Chat, Work and Calendar lists and
 /// items; Activity and the Chat items not built yet stay placeholders.
 class TabScreen extends ConsumerWidget {
-  const TabScreen({super.key, required this.tab, this.openItem, this.side});
+  const TabScreen({
+    super.key,
+    required this.tab,
+    this.openItem,
+    this.side,
+    this.location,
+  });
 
   final AppTab tab;
   final String? openItem;
+
+  /// The whole location: `approval=<id>` or `budget=<id>` (where a push
+  /// lands) opens that decision's sheet over the tab.
+  final Uri? location;
 
   /// What the side pane shows (`result:<id>`, `panel:<section>`).
   final String? side;
@@ -37,7 +48,7 @@ class TabScreen extends ConsumerWidget {
         PircLayout.forWidth(MediaQuery.sizeOf(context).width) ==
         PircLayout.desktop;
     final open = openItem;
-    return PopScope(
+    final page = PopScope(
       // Back closes the open item first (one-pane layouts show it alone).
       canPop: open == null,
       onPopInvokedWithResult: (didPop, _) {
@@ -122,7 +133,62 @@ class TabScreen extends ConsumerWidget {
         ),
       ),
     );
+    final at = location;
+    return at == null ? page : _DecisionOpener(location: at, child: page);
   }
+}
+
+/// Opens the sheet of `approval=<id>` or `budget=<id>` once and takes the
+/// parameter out of the location, so Back and a rebuild do not open it
+/// again.
+class _DecisionOpener extends StatefulWidget {
+  const _DecisionOpener({required this.location, required this.child});
+
+  final Uri location;
+  final Widget child;
+
+  @override
+  State<_DecisionOpener> createState() => _DecisionOpenerState();
+}
+
+class _DecisionOpenerState extends State<_DecisionOpener> {
+  @override
+  void initState() {
+    super.initState();
+    _check();
+  }
+
+  @override
+  void didUpdateWidget(_DecisionOpener old) {
+    super.didUpdateWidget(old);
+    if (old.location != widget.location) _check();
+  }
+
+  void _check() {
+    final params = widget.location.queryParameters;
+    final approval = params['approval'], budget = params['budget'];
+    if (approval == null && budget == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final rest = {...params}
+        ..remove('approval')
+        ..remove('budget');
+      context.go(
+        Uri(
+          path: widget.location.path,
+          queryParameters: rest.isEmpty ? null : rest,
+        ).toString(),
+      );
+      if (approval != null) {
+        showApprovalSheet(context, approval);
+      } else {
+        showBudgetRequestSheet(context, budget!);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 /// The Activity tab until M7 step 10 builds it.

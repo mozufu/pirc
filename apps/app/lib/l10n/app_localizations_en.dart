@@ -106,6 +106,131 @@ class AppLocalizationsEn extends AppLocalizations {
   String get newGroupNeedsTwo => 'Create at least two pots first';
 
   @override
+  String approvalSheetTitle(String pot, String model) {
+    return '$pot wants to use $model';
+  }
+
+  @override
+  String get approvalRowWork => 'Work';
+
+  @override
+  String get approvalRowModel => 'Model';
+
+  @override
+  String get approvalRowWhy => 'Why';
+
+  @override
+  String get approvalRowBudget => 'Budget';
+
+  @override
+  String get approvalNotStarted => 'Not started';
+
+  @override
+  String approvalEstimate(String cost, String pot, String left) {
+    return 'Estimated $cost · $pot has $left left this month';
+  }
+
+  @override
+  String approvalEstimateNoLimit(String cost) {
+    return 'Estimated $cost · no money limit';
+  }
+
+  @override
+  String approvalNote(String model, String pot) {
+    return 'You set $model to “Ask you”. Allowing works for this time only; to stop being asked, change it to “Direct” in $pot\'s settings.';
+  }
+
+  @override
+  String get deny => 'Deny';
+
+  @override
+  String get denyWithReason => 'Deny with a reason';
+
+  @override
+  String get allowOnce => 'Allow once';
+
+  @override
+  String denyReasonHint(String pot) {
+    return 'Tell $pot why, for example “Compare once more with Sonnet and list what differs”';
+  }
+
+  @override
+  String get denyAndSend => 'Deny and send the reason';
+
+  @override
+  String get answered => 'Answered';
+
+  @override
+  String get answeredAllowedOnce => 'Allowed once';
+
+  @override
+  String get answeredUsed => 'Allowed once (used)';
+
+  @override
+  String get answeredDenied => 'Denied';
+
+  @override
+  String answeredDeniedWithReason(String reason) {
+    return 'Denied: $reason';
+  }
+
+  @override
+  String budgetSheetTitle(String pot) {
+    return '$pot asks for more budget';
+  }
+
+  @override
+  String get budgetRowAsk => 'Asks for';
+
+  @override
+  String budgetMoreMoney(String amount) {
+    return '$amount more this month';
+  }
+
+  @override
+  String budgetMoreTokens(String tokens) {
+    return '$tokens more tokens today';
+  }
+
+  @override
+  String budgetLeftMoney(String amount) {
+    return '$amount left this month';
+  }
+
+  @override
+  String budgetLeftTokens(String tokens) {
+    return '$tokens tokens left today';
+  }
+
+  @override
+  String budgetNote(String pot) {
+    return 'Approving raises $pot\'s limit for the current period only.';
+  }
+
+  @override
+  String get approve => 'Approve';
+
+  @override
+  String get approveOtherAmount => 'Approve another amount';
+
+  @override
+  String get approveThisAmount => 'Approve this amount';
+
+  @override
+  String get budgetAmountMoneyHint => 'Amount in US dollars';
+
+  @override
+  String get budgetAmountTokensHint => 'Number of tokens';
+
+  @override
+  String get answeredApproved => 'Approved';
+
+  @override
+  String answeredApprovedAmount(String amount) {
+    return 'Approved $amount';
+  }
+
+  @override
   String get emptyWork => 'No sessions yet';
 
   @override
@@ -490,6 +615,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get thinkingXhigh => 'Extra high';
+
+  @override
+  String get thinkingMax => 'Max';
 
   @override
   String get thinkingDefault => 'Default thinking';

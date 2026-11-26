@@ -5,6 +5,7 @@ library;
 export 'src/adaptive_scaffold.dart';
 export 'src/components/avatar.dart';
 export 'src/components/bubble.dart';
+export 'src/components/buttons.dart';
 export 'src/components/chat_row.dart';
 export 'src/components/connection_states.dart';
 export 'src/components/filter_chips.dart';

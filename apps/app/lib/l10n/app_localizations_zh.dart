@@ -103,6 +103,131 @@ class AppLocalizationsZh extends AppLocalizations {
   String get newGroupNeedsTwo => '先建立至少兩個 pots';
 
   @override
+  String approvalSheetTitle(String pot, String model) {
+    return '$pot想用 $model';
+  }
+
+  @override
+  String get approvalRowWork => '工作';
+
+  @override
+  String get approvalRowModel => '模型';
+
+  @override
+  String get approvalRowWhy => '為什麼';
+
+  @override
+  String get approvalRowBudget => '額度';
+
+  @override
+  String get approvalNotStarted => '還沒開始';
+
+  @override
+  String approvalEstimate(String cost, String pot, String left) {
+    return '預估 $cost · $pot本月還剩 $left';
+  }
+
+  @override
+  String approvalEstimateNoLimit(String cost) {
+    return '預估 $cost · 沒有金額上限';
+  }
+
+  @override
+  String approvalNote(String model, String pot) {
+    return '你把 $model 設成「先問你」。允許只對這一次有效；想不再被問，到$pot的設定改成「直接用」。';
+  }
+
+  @override
+  String get deny => '拒絕';
+
+  @override
+  String get denyWithReason => '拒絕並說明原因';
+
+  @override
+  String get allowOnce => '允許這一次';
+
+  @override
+  String denyReasonHint(String pot) {
+    return '告訴$pot為什麼，例如「先用 Sonnet 再比對一次，把不一致的地方列給我」';
+  }
+
+  @override
+  String get denyAndSend => '拒絕並送出原因';
+
+  @override
+  String get answered => '已回覆';
+
+  @override
+  String get answeredAllowedOnce => '已允許這一次';
+
+  @override
+  String get answeredUsed => '已允許這一次（已使用）';
+
+  @override
+  String get answeredDenied => '已拒絕';
+
+  @override
+  String answeredDeniedWithReason(String reason) {
+    return '已拒絕：$reason';
+  }
+
+  @override
+  String budgetSheetTitle(String pot) {
+    return '$pot想要更多額度';
+  }
+
+  @override
+  String get budgetRowAsk => '申請';
+
+  @override
+  String budgetMoreMoney(String amount) {
+    return '本月多 $amount';
+  }
+
+  @override
+  String budgetMoreTokens(String tokens) {
+    return '今天多 $tokens token';
+  }
+
+  @override
+  String budgetLeftMoney(String amount) {
+    return '本月還剩 $amount';
+  }
+
+  @override
+  String budgetLeftTokens(String tokens) {
+    return '今天還剩 $tokens token';
+  }
+
+  @override
+  String budgetNote(String pot) {
+    return '核准只會提高$pot這一期的上限。';
+  }
+
+  @override
+  String get approve => '核准';
+
+  @override
+  String get approveOtherAmount => '核准其他數量';
+
+  @override
+  String get approveThisAmount => '核准這個數量';
+
+  @override
+  String get budgetAmountMoneyHint => '金額（美元）';
+
+  @override
+  String get budgetAmountTokensHint => 'token 數';
+
+  @override
+  String get answeredApproved => '已核准';
+
+  @override
+  String answeredApprovedAmount(String amount) {
+    return '已核准 $amount';
+  }
+
+  @override
   String get emptyWork => '還沒有工作階段';
 
   @override
@@ -460,7 +585,10 @@ class AppLocalizationsZh extends AppLocalizations {
   String get thinkingHigh => '高';
 
   @override
-  String get thinkingXhigh => '最高';
+  String get thinkingXhigh => '超高';
+
+  @override
+  String get thinkingMax => '最高';
 
   @override
   String get thinkingDefault => '預設思考';

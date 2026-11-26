@@ -18,7 +18,7 @@ acceptance, activation.
 | [M4 Pots backend](#m4-pots-backend)                           | complete | complete    |            | steps 0–13 done; 231 conformance tests on Linux             |
 | [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`               |
 | [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | finished after review; 12 rewritten; Memory panel removed   |
-| [M7 Pots screens](#m7-pots-screens)                           | complete | in progress |            | steps 0–3 done; 4–13 in progress                            |
+| [M7 Pots screens](#m7-pots-screens)                           | complete | in progress |            | steps 0–3 and 6 done; 4, 5, 7–13 in progress                |
 | [M8 Android cutover](#m8-android-cutover)                     | outline  |             |            |                                                             |
 | [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                          |
 | [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                                                             |

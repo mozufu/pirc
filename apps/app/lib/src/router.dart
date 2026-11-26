@@ -81,6 +81,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                       tab: tab,
                       openItem: state.uri.queryParameters['open'],
                       side: state.uri.queryParameters['side'],
+                      location: state.uri,
                     ),
                   ),
                 ),

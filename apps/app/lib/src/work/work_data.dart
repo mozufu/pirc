@@ -45,8 +45,8 @@ class FromSchedule extends WorkSource {
   final String title;
 }
 
-/// One row of the Work list: a session, or a pending model approval (shown
-/// but not opened; its sheet is M7).
+/// One row of the Work list: a session, or a pending model approval (it
+/// opens the approval sheet).
 @immutable
 sealed class WorkItem {
   const WorkItem();

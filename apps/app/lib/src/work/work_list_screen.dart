@@ -9,6 +9,7 @@ import 'package:pirc_ui/pirc_ui.dart';
 import '../../l10n/app_localizations.dart';
 import '../connection/data.dart';
 import '../format.dart';
+import '../chat/decision_sheet.dart';
 import '../shell/app_drawer.dart';
 import 'project_screen.dart';
 import 'work_data.dart';
@@ -391,10 +392,15 @@ class WorkRow extends ConsumerWidget {
         ),
       ),
     );
-    if (item is! SessionItem) {
-      // A model approval is shown but does not open; its sheet is M7.
-      return MergeSemantics(child: row);
+    if (item is ApprovalItem) {
+      return MergeSemantics(
+        child: InkWell(
+          onTap: () => showApprovalSheet(context, item.approval.id),
+          child: row,
+        ),
+      );
     }
+    if (item is! SessionItem) return MergeSemantics(child: row);
     void actions() => showWorkRowActions(context, ref, item.session);
     return Semantics(
       selected: selected,

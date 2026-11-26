@@ -279,6 +279,204 @@ abstract class AppLocalizations {
   /// **'Create at least two pots first'**
   String get newGroupNeedsTwo;
 
+  /// No description provided for @approvalSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{pot} wants to use {model}'**
+  String approvalSheetTitle(String pot, String model);
+
+  /// No description provided for @approvalRowWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get approvalRowWork;
+
+  /// No description provided for @approvalRowModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get approvalRowModel;
+
+  /// No description provided for @approvalRowWhy.
+  ///
+  /// In en, this message translates to:
+  /// **'Why'**
+  String get approvalRowWhy;
+
+  /// No description provided for @approvalRowBudget.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget'**
+  String get approvalRowBudget;
+
+  /// No description provided for @approvalNotStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Not started'**
+  String get approvalNotStarted;
+
+  /// No description provided for @approvalEstimate.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated {cost} · {pot} has {left} left this month'**
+  String approvalEstimate(String cost, String pot, String left);
+
+  /// No description provided for @approvalEstimateNoLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated {cost} · no money limit'**
+  String approvalEstimateNoLimit(String cost);
+
+  /// No description provided for @approvalNote.
+  ///
+  /// In en, this message translates to:
+  /// **'You set {model} to “Ask you”. Allowing works for this time only; to stop being asked, change it to “Direct” in {pot}\'s settings.'**
+  String approvalNote(String model, String pot);
+
+  /// No description provided for @deny.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny'**
+  String get deny;
+
+  /// No description provided for @denyWithReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny with a reason'**
+  String get denyWithReason;
+
+  /// No description provided for @allowOnce.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow once'**
+  String get allowOnce;
+
+  /// No description provided for @denyReasonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tell {pot} why, for example “Compare once more with Sonnet and list what differs”'**
+  String denyReasonHint(String pot);
+
+  /// No description provided for @denyAndSend.
+  ///
+  /// In en, this message translates to:
+  /// **'Deny and send the reason'**
+  String get denyAndSend;
+
+  /// No description provided for @answered.
+  ///
+  /// In en, this message translates to:
+  /// **'Answered'**
+  String get answered;
+
+  /// No description provided for @answeredAllowedOnce.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed once'**
+  String get answeredAllowedOnce;
+
+  /// No description provided for @answeredUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed once (used)'**
+  String get answeredUsed;
+
+  /// No description provided for @answeredDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied'**
+  String get answeredDenied;
+
+  /// No description provided for @answeredDeniedWithReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied: {reason}'**
+  String answeredDeniedWithReason(String reason);
+
+  /// No description provided for @budgetSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{pot} asks for more budget'**
+  String budgetSheetTitle(String pot);
+
+  /// No description provided for @budgetRowAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Asks for'**
+  String get budgetRowAsk;
+
+  /// No description provided for @budgetMoreMoney.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} more this month'**
+  String budgetMoreMoney(String amount);
+
+  /// No description provided for @budgetMoreTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'{tokens} more tokens today'**
+  String budgetMoreTokens(String tokens);
+
+  /// No description provided for @budgetLeftMoney.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} left this month'**
+  String budgetLeftMoney(String amount);
+
+  /// No description provided for @budgetLeftTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'{tokens} tokens left today'**
+  String budgetLeftTokens(String tokens);
+
+  /// No description provided for @budgetNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Approving raises {pot}\'s limit for the current period only.'**
+  String budgetNote(String pot);
+
+  /// No description provided for @approve.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get approve;
+
+  /// No description provided for @approveOtherAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve another amount'**
+  String get approveOtherAmount;
+
+  /// No description provided for @approveThisAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve this amount'**
+  String get approveThisAmount;
+
+  /// No description provided for @budgetAmountMoneyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Amount in US dollars'**
+  String get budgetAmountMoneyHint;
+
+  /// No description provided for @budgetAmountTokensHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Number of tokens'**
+  String get budgetAmountTokensHint;
+
+  /// No description provided for @answeredApproved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved'**
+  String get answeredApproved;
+
+  /// No description provided for @answeredApprovedAmount.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved {amount}'**
+  String answeredApprovedAmount(String amount);
+
   /// No description provided for @emptyWork.
   ///
   /// In en, this message translates to:
@@ -950,6 +1148,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Extra high'**
   String get thinkingXhigh;
+
+  /// No description provided for @thinkingMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Max'**
+  String get thinkingMax;
 
   /// No description provided for @thinkingDefault.
   ///

@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/format.dart';
 import 'package:pirc_app/src/preferences.dart';
 import 'package:pirc_app/src/work/work_data.dart';
-import 'package:pirc_app/src/work/work_list_screen.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
 import 'support/fonts.dart';
@@ -375,15 +374,20 @@ void main() {
       expect(gateway.sent('POST', '/api/sessions/s-fix/read'), isEmpty);
     });
 
-    testWidgets('a model approval row does not open', (tester) async {
+    testWidgets('a model approval row opens its sheet, not a conversation', (
+      tester,
+    ) async {
       final gateway = await _pumpWork(tester);
-      final router = gateway.requests.length;
       await tester.tap(
         find.text('Compare three API specs  From Butler', findRichText: true),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(WorkListScreen), findsOneWidget);
-      expect(gateway.requests.length, router);
+      expect(gateway.sent('GET', '/api/model-approvals/a-api'), hasLength(1));
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(
+        gateway.requests.where((r) => r.path.startsWith('/api/sessions/')),
+        isEmpty,
+      );
     });
   });
 

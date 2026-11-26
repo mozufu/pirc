@@ -13,7 +13,15 @@ final modelsProvider = FutureProvider<List<ModelInfo>>(
 );
 
 /// Thinking levels in order.
-const thinkingOrder = ['off', 'minimal', 'low', 'medium', 'high', 'xhigh'];
+const thinkingOrder = [
+  'off',
+  'minimal',
+  'low',
+  'medium',
+  'high',
+  'xhigh',
+  'max',
+];
 
 String thinkingLabel(AppLocalizations l10n, String? level) => switch (level) {
   'off' => l10n.thinkingOff,
@@ -22,6 +30,7 @@ String thinkingLabel(AppLocalizations l10n, String? level) => switch (level) {
   'medium' => l10n.thinkingMedium,
   'high' => l10n.thinkingHigh,
   'xhigh' => l10n.thinkingXhigh,
+  'max' => l10n.thinkingMax,
   _ => l10n.thinkingDefault,
 };
 

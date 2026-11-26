@@ -47,6 +47,142 @@
   "newPotDetail": "Set its name, avatar, personality and what it looks after",
   "newGroupDetail": "Bring a few pots together to talk, with one as host",
   "newGroupNeedsTwo": "Create at least two pots first",
+  "approvalSheetTitle": "{pot} wants to use {model}",
+  "@approvalSheetTitle": {
+    "placeholders": {
+      "pot": {
+        "type": "String"
+      },
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalRowWork": "Work",
+  "approvalRowModel": "Model",
+  "approvalRowWhy": "Why",
+  "approvalRowBudget": "Budget",
+  "approvalNotStarted": "Not started",
+  "approvalEstimate": "Estimated {cost} · {pot} has {left} left this month",
+  "@approvalEstimate": {
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      },
+      "pot": {
+        "type": "String"
+      },
+      "left": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalEstimateNoLimit": "Estimated {cost} · no money limit",
+  "@approvalEstimateNoLimit": {
+    "placeholders": {
+      "cost": {
+        "type": "String"
+      }
+    }
+  },
+  "approvalNote": "You set {model} to “Ask you”. Allowing works for this time only; to stop being asked, change it to “Direct” in {pot}'s settings.",
+  "@approvalNote": {
+    "placeholders": {
+      "model": {
+        "type": "String"
+      },
+      "pot": {
+        "type": "String"
+      }
+    }
+  },
+  "deny": "Deny",
+  "denyWithReason": "Deny with a reason",
+  "allowOnce": "Allow once",
+  "denyReasonHint": "Tell {pot} why, for example “Compare once more with Sonnet and list what differs”",
+  "@denyReasonHint": {
+    "placeholders": {
+      "pot": {
+        "type": "String"
+      }
+    }
+  },
+  "denyAndSend": "Deny and send the reason",
+  "answered": "Answered",
+  "answeredAllowedOnce": "Allowed once",
+  "answeredUsed": "Allowed once (used)",
+  "answeredDenied": "Denied",
+  "answeredDeniedWithReason": "Denied: {reason}",
+  "@answeredDeniedWithReason": {
+    "placeholders": {
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetSheetTitle": "{pot} asks for more budget",
+  "@budgetSheetTitle": {
+    "placeholders": {
+      "pot": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetRowAsk": "Asks for",
+  "budgetMoreMoney": "{amount} more this month",
+  "@budgetMoreMoney": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetMoreTokens": "{tokens} more tokens today",
+  "@budgetMoreTokens": {
+    "placeholders": {
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetLeftMoney": "{amount} left this month",
+  "@budgetLeftMoney": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetLeftTokens": "{tokens} tokens left today",
+  "@budgetLeftTokens": {
+    "placeholders": {
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "budgetNote": "Approving raises {pot}'s limit for the current period only.",
+  "@budgetNote": {
+    "placeholders": {
+      "pot": {
+        "type": "String"
+      }
+    }
+  },
+  "approve": "Approve",
+  "approveOtherAmount": "Approve another amount",
+  "approveThisAmount": "Approve this amount",
+  "budgetAmountMoneyHint": "Amount in US dollars",
+  "budgetAmountTokensHint": "Number of tokens",
+  "answeredApproved": "Approved",
+  "answeredApprovedAmount": "Approved {amount}",
+  "@answeredApprovedAmount": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
   "emptyWork": "No sessions yet",
   "emptyActivity": "No activity yet",
   "emptyCalendar": "Nothing scheduled",
@@ -243,6 +379,7 @@
   "thinkingMedium": "Medium",
   "thinkingHigh": "High",
   "thinkingXhigh": "Extra high",
+  "thinkingMax": "Max",
   "thinkingDefault": "Default thinking",
   "modelRow": "Model",
   "thinkingRow": "Thinking",
