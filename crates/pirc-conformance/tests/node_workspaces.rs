@@ -446,7 +446,7 @@ async fn node_workspaces() {
     let (session, _) = run_once(&cluster, WORKSPACE_ID, "Hello").await;
     let path = format!("/api/sessions/{session}");
     r.send(
-        "deleting a session of a directory workspace: 400",
+        "deleting a session of a directory workspace: 204",
         "DELETE",
         &path,
         None,
@@ -824,7 +824,7 @@ async fn node_workspaces_on_node() {
         .await;
     let session = created["session"]["id"].as_str().unwrap().to_owned();
     n.request(
-        "deleting it: only chats can be deleted, 400",
+        "deleting it: a directory conversation, 204",
         "DELETE",
         &format!("/api/sessions/{session}"),
         None,

@@ -150,8 +150,9 @@ impl Gateway {
     ) -> Value {
         let stop = matches!(payload["type"].as_str(), Some("stop" | "stop_transition"));
         let mut body = json!({ "commandId": command_id, "clientId": "browser",
-            "generation": generation, "payload": payload });
+            "payload": payload });
         if !stop {
+            body["generation"] = generation.clone();
             body["commandEnvironment"] = binding();
         }
         self.ask(

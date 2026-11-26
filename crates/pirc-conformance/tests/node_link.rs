@@ -163,10 +163,12 @@ async fn node_link() {
         }),
     )
     .await;
-    t.note(
-        "a node event reaches the browser",
-        events.next_json().await.expect("event"),
-    );
+    let reached = events
+        .until(|frame| frame["type"] == "pi_event")
+        .await
+        .pop()
+        .expect("event");
+    t.note("a node event reaches the browser", reached);
     events.close().await;
 
     let mut replacement = api

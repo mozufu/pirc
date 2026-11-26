@@ -640,7 +640,7 @@ async fn backends() {
         ("an extra field", with(&default, &|b| b["extra"] = json!(1))),
         (
             "an unknown thinking level",
-            with(&default, &|b| b["thinking"] = json!("max")),
+            with(&default, &|b| b["thinking"] = json!("huge")),
         ),
         ("a string", json!("openai-preset/gpt-5-mini")),
     ] {

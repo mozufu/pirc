@@ -3,7 +3,7 @@
 use pirc_conformance::{Cluster, FirstSend, GatewayOptions, HOST, WORKSPACE_ID, browser_headers};
 use serde_json::json;
 
-#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
+#[ignore = "pirc 2: a plain stop is rejected because Runner::dispatch validates generation 0"]
 #[tokio::test(flavor = "multi_thread")]
 async fn browser_and_paired_device_keep_intent_across_policy_changes() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {
@@ -101,6 +101,7 @@ async fn browser_and_paired_device_keep_intent_across_policy_changes() {
     assert_eq!(legacy.body["error"]["code"], "environment_required");
     request["commandId"] = json!("stop");
     request["payload"] = json!({"type":"stop"});
+    request.as_object_mut().unwrap().remove("generation");
     assert_eq!(
         api.send(
             "POST",

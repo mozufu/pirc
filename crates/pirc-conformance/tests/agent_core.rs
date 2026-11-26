@@ -72,8 +72,12 @@ async fn agent_rpc_commands() {
             json!({ "type": "set_thinking_level", "level": "high" }),
         ),
         (
-            "an unknown thinking level",
+            "thinking max",
             json!({ "type": "set_thinking_level", "level": "max" }),
+        ),
+        (
+            "an unknown thinking level",
+            json!({ "type": "set_thinking_level", "level": "huge" }),
         ),
         (
             "name the session",

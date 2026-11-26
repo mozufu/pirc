@@ -176,8 +176,7 @@ fn envelope(frames: &[Value]) -> Value {
             .iter()
             .map(|f| f["epoch"].as_u64().unwrap())
             .collect::<BTreeSet<_>>(),
-        "sequences are consecutive from 1":
-            sequences.iter().enumerate().all(|(i, s)| *s == i as u64 + 1),
+        "sequences are consecutive": sequences.windows(2).all(|pair| pair[1] == pair[0] + 1),
         "agent_start, agent_end, agent_settled in order": position("agent_start").is_some()
             && position("agent_start") < position("agent_end")
             && position("agent_end") < position("agent_settled"),

@@ -417,8 +417,9 @@ impl Session {
             environment.body["binding"].clone()
         };
         let mut body = json!({ "commandId": id, "clientId": self.client.clone(),
-            "generation": self.generation.clone(), "payload": payload });
+            "payload": payload });
         if !stop {
+            body["generation"] = self.generation.clone();
             body["expectedBinding"] = binding;
         }
         self.post("/commands", body).await

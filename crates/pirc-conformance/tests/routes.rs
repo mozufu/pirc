@@ -393,7 +393,6 @@ async fn session_routes() {
         format!("{path}/control/release"),
         Some(json!({ "clientId": "browser", "generation": 2 }))
     );
-    call!("only chats can be deleted", "DELETE", path.clone(), None);
     call!("models", "GET", "/api/models", None);
     call!(
         "models of a session",
@@ -410,6 +409,12 @@ async fn session_routes() {
     call!("sessions", "GET", "/api/sessions", None);
     call!("nodes", "GET", "/api/nodes", None);
     call!("assistant node", "GET", "/api/assistant/node", None);
+    call!(
+        "delete a directory conversation",
+        "DELETE",
+        path.clone(),
+        None
+    );
 
     node.abort();
     insta::assert_json_snapshot!("session_routes", t.into_value());
