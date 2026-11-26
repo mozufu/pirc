@@ -428,7 +428,7 @@ async fn node_session_routes() {
     insta::assert_json_snapshot!("node_session_routes", t.into_value());
 }
 
-#[ignore = "pirc 2: Runner::dispatch_configured still validates the lease after choosing the runner"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_commands() {
     let llm = HeldLlm::start().await;
@@ -873,7 +873,7 @@ async fn node_session_failures() {
     insta::assert_json_snapshot!("node_session_failures", t.into_value());
 }
 
-#[ignore = "pirc 2: Runner::dispatch_configured still validates the lease after choosing the runner"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_interactions() {
     let llm = HeldLlm::start().await;

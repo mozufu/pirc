@@ -389,7 +389,7 @@ fn recap_request(start: &Value) -> Value {
         "toolChoice": request["toolChoice"] })
 }
 
-#[ignore = "pirc 2: Runner::dispatch_configured still validates the lease after choosing the runner"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_link_side_runs() {
     let server = FakeGateway::bind().await;

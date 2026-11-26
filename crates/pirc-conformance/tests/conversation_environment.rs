@@ -3,7 +3,7 @@
 use pirc_conformance::{Cluster, FirstSend, GatewayOptions, HOST, WORKSPACE_ID, browser_headers};
 use serde_json::json;
 
-#[ignore = "pirc 2: Runner::dispatch_configured still validates the lease after choosing the runner"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn browser_and_paired_device_keep_intent_across_policy_changes() {
     let Some(cluster) = Cluster::start_with(GatewayOptions {

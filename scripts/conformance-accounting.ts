@@ -19,10 +19,9 @@ export type Tally = { passed: number; failed: number; ignored: number; suites: n
  * removed on purpose. M4.10 removed the assistant chat mode, chat projects,
  * delegations and assistant-memory tests, so the first-send rewrite (M4.11) runs
  * the remaining suite. The declared ignores are the live Web/native-client
- * acceptance runs and terminal scenarios that need an isolated-terminal backend,
- * plus the plain Stop regression that remains after 04344e03 (pirc 2).
+ * acceptance runs and terminal scenarios that need an isolated-terminal backend.
  */
-export const MIN_PASSED = 226;
+export const MIN_PASSED = 231;
 
 /** The sum of every `test result:` line of a `cargo test` output. */
 export function tally(output: string): Tally {
