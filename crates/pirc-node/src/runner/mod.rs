@@ -471,9 +471,15 @@ impl RunnerManager {
             Some(lock.lock().await)
         };
         let node = self.node()?;
-        node.db
-            .lock()
-            .validate_lease(session_id, lease.0, lease.1)?;
+        // A plain Stop may come from any of the owner's clients without the
+        // control lease (plans/roadmap.md M4 step 13); the Gateway has already
+        // checked who is asking. Everything else, a stop of a transition
+        // included, needs the lease.
+        if !matches!(payload, CommandPayload::Stop) {
+            node.db
+                .lock()
+                .validate_lease(session_id, lease.0, lease.1)?;
+        }
         if initial.is_some() {
             crate::session_creation::admission::require_sendable(
                 &node.db.lock(),
