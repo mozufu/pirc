@@ -5,7 +5,7 @@ import nativeVm from 'node:vm';
 import {createDocumentScriptHostVm} from './document_script_host_test_helper.mjs';
 const vm=createDocumentScriptHostVm(nativeVm);
 const bundle=readFileSync(new URL('../../assets/document-script-runtime.js',import.meta.url),'utf8');
-const fixture=JSON.parse(readFileSync(new URL('./fixtures/document-classic-globals-chromium153.json',import.meta.url),'utf8'));
+const fixture=JSON.parse(readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-classic-globals-chromium153.json',import.meta.url),'utf8'));
 for(const item of fixture.cases) test('native Script protocol vs Chromium153: '+item.name,async()=>{
  // This focused fixture has no host-awaited realm promises, so explicit engine
  // checkpoints model the IPC timing; broader legacy fixtures use default vm.

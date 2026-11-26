@@ -65,7 +65,7 @@ try {
         }
       }
   await writeFile(
-    new URL('./fixtures/document-scroll-feedback-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-scroll-feedback-chromium153.json', import.meta.url),
     JSON.stringify({ browserVersion: browser.version(), html: scrollFeedbackHTML, cases }) + '\n',
   );
   console.log(`Captured ${cases.length} scroll feedback profiles`);

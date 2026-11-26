@@ -12,7 +12,7 @@ import {
 test('live asset reference keeps sources, profiles, pixels and module cache outcomes', () => {
   const f = JSON.parse(
     readFileSync(
-      new URL('./fixtures/document-live-assets-chromium153.json', import.meta.url),
+      new URL('../../../../packages/pirc_render/test/fixtures/parity/document-live-assets-chromium153.json', import.meta.url),
       'utf8',
     ),
   );

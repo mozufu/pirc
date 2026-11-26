@@ -6,7 +6,7 @@ import {
   scrollRetentionDriver,
 } from './document_scroll_retention_fixture.mjs';
 const fixture = JSON.parse(
-  readFileSync(new URL('./fixtures/document-scroll-retention-chromium153.json', import.meta.url)),
+  readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-scroll-retention-chromium153.json', import.meta.url)),
 );
 test('scroll retention reference uses the same authored source and sandbox driver', () => {
   assert.equal(fixture.browserVersion, '153.0.8010.12');

@@ -20,6 +20,7 @@ import 'package:pirc_render/src/document_reveal.dart';
 import 'package:pirc_render/src/document_scroll_anchor.dart';
 import 'package:pirc_render/src/document_touch_boundary.dart';
 import 'package:pirc_render_document/src/document_computed_styles.dart';
+import 'package:pirc_render_document/src/document_top_layer.dart';
 import 'package:pirc_render/src/document_offsets.dart';
 import 'package:pirc_render/src/document_margin_collapse.dart';
 import 'package:pirc_render/src/document_layout_visibility.dart';
@@ -2773,6 +2774,7 @@ class _NativeFetchedDocumentViewState extends State<NativeFetchedDocumentView> {
         document: styled,
         stylesByElement: result.stylesByElement,
         computedStyles: computedStyles,
+        topLayer: const NativeDocumentTopLayer(),
       ),
       nodes: [NativeHtmlRaw(markup)],
       authorStylesBuilder: (element) =>

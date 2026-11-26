@@ -5,7 +5,7 @@ import { initialHistoryCases, initialHistoryHTML } from './document_initial_hist
 test('initial History browser corpus covers complete environments and source-identical lifecycle phases', () => {
   const fixture = JSON.parse(
     readFileSync(
-      new URL('./fixtures/document-initial-history-chromium153.json', import.meta.url),
+      new URL('../../../../packages/pirc_render/test/fixtures/parity/document-initial-history-chromium153.json', import.meta.url),
       'utf8',
     ),
   );

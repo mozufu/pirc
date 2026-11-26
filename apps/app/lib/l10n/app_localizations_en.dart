@@ -3948,4 +3948,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get shareFailed => 'This could not be shared.';
+
+  @override
+  String get messageMediaTap => 'Tap to load the media';
+
+  @override
+  String messageMediaFrom(String host) {
+    return 'From $host';
+  }
+
+  @override
+  String get messageMediaFailed => 'The media could not be loaded.';
+
+  @override
+  String get messageMediaUnsupported => 'This media cannot be played here.';
 }

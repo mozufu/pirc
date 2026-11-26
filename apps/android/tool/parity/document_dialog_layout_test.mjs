@@ -5,7 +5,7 @@ import { dialogLayoutHTML } from './document_dialog_layout_fixture.mjs';
 test('default dialog reference is bound to its captured source and eight complete profiles', () => {
   const fixture = JSON.parse(
     readFileSync(
-      new URL('./fixtures/document-dialog-layout-chromium153.json', import.meta.url),
+      new URL('../../../../packages/pirc_render/test/fixtures/parity/document-dialog-layout-chromium153.json', import.meta.url),
       'utf8',
     ),
   );

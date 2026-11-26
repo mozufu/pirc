@@ -8,7 +8,7 @@ const bundle = readFileSync(
   'utf8',
 );
 const fixture = JSON.parse(
-  readFileSync(new URL('./fixtures/document-resize-chromium153.json', import.meta.url), 'utf8'),
+  readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-resize-chromium153.json', import.meta.url), 'utf8'),
 );
 function create(html = fixture.html) {
   const context = vm.createContext({}, { microtaskMode: 'afterEvaluate' });

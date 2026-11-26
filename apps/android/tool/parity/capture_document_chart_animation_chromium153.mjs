@@ -208,7 +208,7 @@ try {
     cases,
   };
   await writeFile(
-    new URL('./fixtures/document-chart-animation-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-chart-animation-chromium153.json', import.meta.url),
     JSON.stringify(fixture) + '\n',
   );
   console.log(

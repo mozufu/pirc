@@ -13,7 +13,7 @@ const bundle = readFileSync(bundlePath, 'utf8');
 const RUN_TIMEOUT_MS = 3000;
 const fragmentWebFixture = JSON.parse(readFileSync(
   new URL(
-    './fixtures/document-fragment-scripts-chromium153.json',
+    '../../../../packages/pirc_render/test/fixtures/parity/document-fragment-scripts-chromium153.json',
     import.meta.url,
   ),
   'utf8',
@@ -21,7 +21,7 @@ const fragmentWebFixture = JSON.parse(readFileSync(
 assert.equal(fragmentWebFixture.browserVersion, '153.0.8010.12');
 const contextualFragmentWebFixture = JSON.parse(readFileSync(
   new URL(
-    './fixtures/document-contextual-fragment-chromium153.json',
+    '../../../../packages/pirc_render/test/fixtures/parity/document-contextual-fragment-chromium153.json',
     import.meta.url,
   ),
   'utf8',

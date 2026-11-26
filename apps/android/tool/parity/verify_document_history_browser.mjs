@@ -632,7 +632,7 @@ try {
       opaqueOrigins: 'The blob: history URL case is included; sandboxed/other opaque-origin frames were not tested.',
     },
   });
-  const fixturePath = process.env.PIRC_FIXTURE_PATH ?? path.join(scriptDirectory, 'fixtures/document-history-chrome155.json');
+  const fixturePath = process.env.PIRC_FIXTURE_PATH ?? path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-history-chrome155.json');
   await writeFile(fixturePath, JSON.stringify(fixture, null, 2) + '\n');
   process.stdout.write(JSON.stringify({
     browserVersion: fixture.browserVersion,

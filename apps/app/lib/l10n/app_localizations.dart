@@ -6788,6 +6788,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This could not be shared.'**
   String get shareFailed;
+
+  /// No description provided for @messageMediaTap.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to load the media'**
+  String get messageMediaTap;
+
+  /// No description provided for @messageMediaFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From {host}'**
+  String messageMediaFrom(String host);
+
+  /// No description provided for @messageMediaFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The media could not be loaded.'**
+  String get messageMediaFailed;
+
+  /// No description provided for @messageMediaUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This media cannot be played here.'**
+  String get messageMediaUnsupported;
 }
 
 class _AppLocalizationsDelegate

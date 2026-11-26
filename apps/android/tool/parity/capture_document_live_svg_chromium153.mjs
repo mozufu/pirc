@@ -3,5 +3,5 @@ import { captureLiveAssetCases } from './capture_document_live_asset_cases.mjs';
 await captureLiveAssetCases(fixture, {
   imagePath: '/photo.svg',
   imageMime: 'image/svg+xml',
-  outputURL: new URL('./fixtures/document-live-svg-chromium153.json', import.meta.url),
+  outputURL: new URL('../../../../packages/pirc_render/test/fixtures/parity/document-live-svg-chromium153.json', import.meta.url),
 });

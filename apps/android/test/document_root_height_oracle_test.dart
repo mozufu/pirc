@@ -18,7 +18,7 @@ import 'live_test.dart' show theme;
 final _fixture =
     jsonDecode(
           File(
-            'tool/parity/fixtures/document-root-heights-chromium153.json',
+            '../../packages/pirc_render/test/fixtures/parity/document-root-heights-chromium153.json',
           ).readAsStringSync(),
         )
         as Map<String, dynamic>;

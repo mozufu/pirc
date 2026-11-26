@@ -10,8 +10,8 @@ import { createDocumentScriptHostVm } from './document_script_host_test_helper.m
 
 const vm = createDocumentScriptHostVm(nativeVm);
 const asset = name => new URL('../../assets/' + name, import.meta.url);
-const fixture = JSON.parse(readFileSync(new URL('./fixtures/document-canvas-text-chromium153.json', import.meta.url)));
-const inkFixture = JSON.parse(readFileSync(new URL('./fixtures/document-canvas-ink-chromium153.json', import.meta.url)));
+const fixture = JSON.parse(readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-canvas-text-chromium153.json', import.meta.url)));
+const inkFixture = JSON.parse(readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-canvas-ink-chromium153.json', import.meta.url)));
 const font = readFileSync(new URL('./vendor/canvas-text-fixture-font/Roboto-Regular.ttf', import.meta.url));
 const wasm = readFileSync(asset('document-canvas-text.wasm'));
 const arrayBuffer = buffer => buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { elementAnchorModes, buildElementAnchorPage } from './document_element_anchor_fixture.mjs';
 const fixture = JSON.parse(
-  readFileSync(new URL('./fixtures/document-element-anchor-chromium153.json', import.meta.url)),
+  readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-element-anchor-chromium153.json', import.meta.url)),
 );
 test('element anchoring has all 168 exact-browser profiles and 672 states', () => {
   assert.equal(fixture.browserVersion, '153.0.8010.12');

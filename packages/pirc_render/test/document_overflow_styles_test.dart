@@ -8,7 +8,7 @@ void main() {
   final fixtures =
       jsonDecode(
             File(
-              '../../apps/android/tool/parity/fixtures/document-element-scroll-chromium153.json',
+              'test/fixtures/parity/document-element-scroll-chromium153.json',
             ).readAsStringSync(),
           )
           as Map;

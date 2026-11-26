@@ -1,6 +1,6 @@
 /// Fetched documents and the script runtime side of the renderer (tier 3 in
-/// plans/client.md): Canvas drawing and pointer input, computed-style export
-/// and script form submission.
+/// plans/client.md): Canvas drawing and pointer input, computed-style export,
+/// the dialog top layer, script callbacks and script form submission.
 ///
 /// Install [NativeDocumentRuntime] as `RenderHost.documentRuntime` where
 /// fetched documents are shown. Chat content does not import this library.
@@ -16,13 +16,19 @@ import 'package:pirc_render/src/html_form_submission.dart';
 
 import 'src/document_canvas.dart';
 import 'src/document_canvas_pointer.dart';
+import 'src/document_top_layer.dart';
+import 'src/html_script_callbacks.dart';
 import 'src/html_script_submission.dart' as script;
 
 export 'src/canvas_text_fonts.dart';
 export 'src/document_canvas.dart';
 export 'src/document_canvas_pointer.dart';
 export 'src/document_computed_styles.dart';
+export 'src/document_download.dart';
+export 'src/document_top_layer.dart';
+export 'src/html_script_callbacks.dart';
 export 'src/html_script_submission.dart';
+export 'src/scripts_platform.dart';
 
 /// The native implementation of [DocumentRuntime].
 class NativeDocumentRuntime implements DocumentRuntime {
@@ -72,6 +78,13 @@ class NativeDocumentRuntime implements DocumentRuntime {
     onTouchClickQueued: onTouchClickQueued,
     child: child,
   );
+
+  @override
+  DocumentTopLayer get topLayer => const NativeDocumentTopLayer();
+
+  @override
+  DocumentScriptCallbacks get scriptCallbacks =>
+      const NativeDocumentScriptCallbacks();
 
   @override
   NativeHtmlFormSubmission decodeScriptFormSubmission(

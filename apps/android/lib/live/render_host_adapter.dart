@@ -30,14 +30,16 @@ const appRenderHost = RenderHost(
   filePickerFor: _filePicker,
 );
 
-Widget _media(
-  RenderDocumentScope scope,
+Widget? _media(
+  RenderDocumentScope? scope,
   NativeHtmlMediaSpec spec,
   Map<String, String> styles, {
   String? baseUrl,
   Object? accountIdentity,
 }) {
-  final document = scope as NativeDocumentScope;
+  // Chat content has no document scope; this app plays only document media.
+  if (scope is! NativeDocumentScope) return null;
+  final document = scope;
   return NativeHtmlMedia(
     gateway: document.windows.gateway,
     spec: spec,

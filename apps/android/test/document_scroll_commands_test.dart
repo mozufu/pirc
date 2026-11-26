@@ -11,7 +11,7 @@ import 'live_test.dart' show theme;
 final fixture =
     jsonDecode(
           File(
-            'tool/parity/fixtures/document-scroll-commands-chromium153.json',
+            '../../packages/pirc_render/test/fixtures/parity/document-scroll-commands-chromium153.json',
           ).readAsStringSync(),
         )
         as Map;

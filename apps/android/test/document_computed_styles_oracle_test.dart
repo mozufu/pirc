@@ -19,7 +19,7 @@ import 'package:pirc_render/src/native_html.dart';
 import 'live_test.dart' show theme;
 
 const _fixturePath =
-    'tool/parity/fixtures/document-computed-styles-chromium153.json';
+    '../../packages/pirc_render/test/fixtures/parity/document-computed-styles-chromium153.json';
 const _revision = 1;
 
 final Map<String, dynamic> _fixture =

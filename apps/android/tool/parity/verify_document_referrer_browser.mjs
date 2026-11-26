@@ -512,7 +512,7 @@ try {
   });
   const fixturePath = path.join(
     scriptDirectory,
-    'fixtures/document-referrer-chromium153.json',
+    '../../../../packages/pirc_render/test/fixtures/parity/document-referrer-chromium153.json',
   );
   await writeFile(fixturePath, JSON.stringify(fixture, null, 2) + '\n');
   process.stdout.write(JSON.stringify({

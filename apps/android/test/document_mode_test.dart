@@ -9,7 +9,7 @@ void main() {
   final fixture =
       jsonDecode(
             File(
-              'tool/parity/fixtures/document-scrolling-element-chromium153.json',
+              '../../packages/pirc_render/test/fixtures/parity/document-scrolling-element-chromium153.json',
             ).readAsStringSync(),
           )
           as Map;

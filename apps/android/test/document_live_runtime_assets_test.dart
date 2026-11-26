@@ -52,7 +52,7 @@ class AssetGateway extends DocumentVmGateway {
 }
 
 void main() => runLiveAssetCases(
-  'tool/parity/fixtures/document-live-assets-chromium153.json',
+  '../../packages/pirc_render/test/fixtures/parity/document-live-assets-chromium153.json',
 );
 
 void runLiveAssetCases(String fixturePath) {

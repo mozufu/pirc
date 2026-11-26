@@ -3,7 +3,7 @@ import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
 
-const fixtureBytes = readFileSync(new URL('./fixtures/document-referrer-chromium153.json', import.meta.url));
+const fixtureBytes = readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-referrer-chromium153.json', import.meta.url));
 const oracle = JSON.parse(fixtureBytes);
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 

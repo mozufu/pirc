@@ -201,7 +201,7 @@ try {
           }
         }
   await writeFile(
-    new URL('./fixtures/document-absolute-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-absolute-chromium153.json', import.meta.url),
     JSON.stringify({ browserVersion: browser.version(), cases }) + '\n',
   );
   console.log(JSON.stringify({ cases: cases.length, browserVersion: browser.version() }));

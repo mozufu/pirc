@@ -8,7 +8,7 @@ const vm=createDocumentScriptHostVm(nativeVm);
 const bundle=readFileSync(process.env.PIRC_DOCUMENT_SCRIPT_RUNTIME_BUNDLE || new URL('../../assets/document-script-runtime.js',import.meta.url),'utf8');
 const source=readFileSync(new URL('../../integration_test/document_file_picker_fixture.dart',import.meta.url),'utf8');
 const fixture=source.match(/r'''([\s\S]*?)''';/)[1];
-const oracle=JSON.parse(readFileSync(new URL('./fixtures/document-file-picker-chrome155.json',import.meta.url)));
+const oracle=JSON.parse(readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-file-picker-chrome155.json',import.meta.url)));
 function invoke(ctx,name,args={}) {return JSON.parse(vm.runInContext('__pircDocument.'+name+'('+JSON.stringify(args)+')',ctx,{timeout:3000}));}
 function read(ctx,expression) {return JSON.parse(vm.runInContext('JSON.stringify('+expression+')',ctx,{timeout:3000}));}
 function click(ctx,selector) {

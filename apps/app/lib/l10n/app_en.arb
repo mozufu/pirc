@@ -2512,5 +2512,16 @@
   },
   "pictureNotRead": "This picture could not be read.",
   "pictureTooLarge": "This picture is too large.",
-  "shareFailed": "This could not be shared."
+  "shareFailed": "This could not be shared.",
+  "messageMediaTap": "Tap to load the media",
+  "messageMediaFrom": "From {host}",
+  "@messageMediaFrom": {
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
+  "messageMediaFailed": "The media could not be loaded.",
+  "messageMediaUnsupported": "This media cannot be played here."
 }

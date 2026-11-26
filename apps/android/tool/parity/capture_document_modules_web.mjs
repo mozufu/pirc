@@ -37,6 +37,6 @@ try{
   results.push({...cases[index],url:'$ORIGIN/'+index+'/page',expected:JSON.parse(JSON.stringify(value).replaceAll(origin,'$ORIGIN'))});
  }
  const fixture={browserVersion:browser.version(),browserExecutable:requireTestBrowserExecutable(),cases:results};
- const target=new URL('./fixtures/document-modules-chromium153.json',import.meta.url);
+ const target=new URL('../../../../packages/pirc_render/test/fixtures/parity/document-modules-chromium153.json',import.meta.url);
  writeFileSync(target,JSON.stringify(fixture,null,2)+'\n');console.log('Captured '+results.length+' module cases: '+fileURLToPath(target));
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

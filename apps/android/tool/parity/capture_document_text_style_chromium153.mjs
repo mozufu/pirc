@@ -84,7 +84,7 @@ try {
           }
         }
   await writeFile(
-    new URL('./fixtures/document-text-style-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-text-style-chromium153.json', import.meta.url),
     JSON.stringify({ schemaVersion: 1, browserVersion: browser.version(), cases }) + '\n',
   );
   console.log(

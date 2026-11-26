@@ -112,6 +112,12 @@ String sanitizeNativeHtml(String source, {bool markdownPolicy = true}) {
       }
       for (final key in child.attributes.keys.toList()) {
         final name = '$key'.toLowerCase();
+        if (markdownPolicy && name == 'data-pirc-dialog-modal') {
+          // Only a document script may open a modal dialog; chat markup
+          // cannot claim the top layer.
+          child.attributes.remove(key);
+          continue;
+        }
         var value = child.attributes[key]!;
         // DOMPurify keeps value untouched and applies ECMAScript trim to
         // other attributes before validation (not Dart's broader trim set).
@@ -387,6 +393,19 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
   final Map<String, FocusNode> _scriptFocusableNodes = {};
   final Set<FocusNode> _retiredScriptFocusableNodes = {};
   RenderDocumentScope? _nativeDocumentScope;
+
+  /// Tier-3 services; null for chat content, where script callbacks and the
+  /// top layer are inert.
+  DocumentRuntime? _documentRuntime;
+
+  /// [_documentRuntime] where this HTML is a document: inside a document
+  /// scope or driven by a script. Chat HTML gets no top layer and no canvas
+  /// even if a runtime is installed above it.
+  DocumentRuntime? get _documentContextRuntime =>
+      _nativeDocumentScope != null || widget.scriptDocument != null
+      ? _documentRuntime
+      : null;
+  static const _scriptFileBytesBudget = 2 * 1024 * 1024;
   final _localScriptFileSelections = NativeHtmlScriptFileSelections();
   NativeHtmlScriptFileSelections get _scriptFileSelections =>
       widget.scriptFileSelections ?? _localScriptFileSelections;
@@ -490,7 +509,15 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _nativeDocumentScope = RenderHost.of(context).documentScope(context);
+    final host = RenderHost.of(context);
+    _nativeDocumentScope = host.documentScope(context);
+    if (!identical(_documentRuntime, host.documentRuntime)) {
+      _documentRuntime = host.documentRuntime;
+      buttons?.updateOnClick(_scriptClickHandler);
+      _bindScriptControls();
+      _scheduleScriptFilePickers();
+      _scheduleScriptFormActions();
+    }
     _scheduleScriptFocusActions();
   }
 
@@ -566,11 +593,7 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
     }
     if (old.onScriptClick != widget.onScriptClick ||
         old.onScriptEvent != widget.onScriptEvent) {
-      buttons?.updateOnClick(
-        (widget.onScriptClick == null && widget.onScriptEvent == null)
-            ? null
-            : _handleScriptClick,
-      );
+      buttons?.updateOnClick(_scriptClickHandler);
     }
     forms?.onSubmit = widget.onFormSubmit;
     final pendingHistory = _pendingScriptHistoryRestore;
@@ -819,9 +842,7 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
         buttonSource,
         onReset: resetFormControls,
         onSubmit: (element) => forms!.submitButton(element),
-        onClick: (widget.onScriptClick == null && widget.onScriptEvent == null)
-            ? null
-            : _handleScriptClick,
+        onClick: _scriptClickHandler,
         locale: WidgetsBinding.instance.platformDispatcher.locale,
         enhanceMarkdown: widget.markdownStyles,
       );
@@ -839,7 +860,7 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
         dates: dates!,
         files: files!,
         onSubmit: widget.onFormSubmit,
-        onSubmitEvent: widget.onScriptEvent == null
+        onSubmitEvent: _documentRuntime == null || widget.onScriptEvent == null
             ? null
             : _handleScriptSubmit,
       );
@@ -891,12 +912,15 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
   }
 
   void _scheduleScriptFilePickers() {
-    if (_scriptFilePickerScheduled ||
+    final runtime = _documentRuntime;
+    if (runtime == null ||
+        _scriptFilePickerScheduled ||
         _scriptFilePickerRunning ||
         widget.scriptFilePickerActions.isEmpty ||
         widget.onScriptFilePickerResult == null) {
       return;
     }
+    final callbacks = runtime.scriptCallbacks;
     _scriptFilePickerScheduled = true;
     final owner = widget.scriptDocument;
     final sourceGeneration = _scriptSourceGeneration;
@@ -925,20 +949,12 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
       try {
         for (final action in actions) {
           if (!current()) break;
-          final id = action['id'] as int;
-          final controlId = action['controlId'] as String;
-          final version = action['resetVersion'] as String;
+          final pick = callbacks.decodeFilePick(action);
+          final id = pick.id;
+          final controlId = pick.controlId;
+          final version = pick.resetVersion;
           try {
-            final picked = await _pickFiles(
-              NativeHtmlFilePickerRequest(
-                accept: (action['accept'] as String)
-                    .split(',')
-                    .map((s) => s.trim().toLowerCase())
-                    .where((s) => s.isNotEmpty)
-                    .toList(),
-                multiple: action['multiple'] as bool,
-              ),
-            );
+            final picked = await _pickFiles(pick.request);
             if (!current()) {
               // Release a retained VM lease after scope retirement without ever
               // publishing selected bytes into a different document/account.
@@ -949,7 +965,7 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
               await complete(id, cancelled: true);
               continue;
             }
-            final limited = action['multiple'] == true
+            final limited = pick.request.multiple
                 ? picked
                 : picked.take(1).toList();
             if (limited.length > 256) {
@@ -957,22 +973,10 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
             }
             final selected = selections.store(controlId, version, limited);
             if (mounted && files != null) selections.reconcile(files!);
-            var remaining = 2 * 1024 * 1024;
-            final wire = <Map<String, dynamic>>[];
-            for (final file in selected) {
-              final include = file.length <= remaining;
-              if (include) remaining -= file.length;
-              wire.add({
-                'name': file.name,
-                'type': file.mimeType,
-                'size': file.length,
-                'lastModified': file.lastModified,
-                if (include)
-                  'bytesBase64': base64Encode(file.bytes)
-                else
-                  'contentError': tr("選取檔案的腳本內容超過 2 MiB 限制。"),
-              });
-            }
+            final (wire, _) = callbacks.encodeFiles(
+              selected,
+              _scriptFileBytesBudget,
+            );
             await complete(id, files: wire);
           } catch (error) {
             if (current()) {
@@ -996,12 +1000,15 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
   }
 
   void _scheduleScriptFocusActions() {
-    if (_scriptFocusActionsScheduled ||
-        !widget.scriptFocusActions.any(
-          (action) =>
-              action['sequence'] is int &&
-              (action['sequence'] as int) > _lastConsumedScriptFocusSequence,
-        )) {
+    final callbacks = _documentRuntime?.scriptCallbacks;
+    if (callbacks == null ||
+        _scriptFocusActionsScheduled ||
+        callbacks
+            .pendingActions(
+              widget.scriptFocusActions,
+              _lastConsumedScriptFocusSequence,
+            )
+            .isEmpty) {
       return;
     }
     _scriptFocusActionsScheduled = true;
@@ -1039,13 +1046,10 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
         }
         return;
       }
-      final paintedActions = widget.scriptFocusActions
-          .where(
-            (action) =>
-                action['sequence'] is int &&
-                (action['sequence'] as int) > _lastConsumedScriptFocusSequence,
-          )
-          .toList();
+      final paintedActions = callbacks.pendingActions(
+        widget.scriptFocusActions,
+        _lastConsumedScriptFocusSequence,
+      );
       if (paintedActions.isEmpty) return;
       final actions =
           (widget.takeScriptFocusActions?.call([
@@ -1055,15 +1059,7 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
                   paintedActions)
               .toList();
       if (actions.isEmpty || !current()) return;
-      actions.sort((left, right) {
-        final sequence = (left['sequence'] as int).compareTo(
-          right['sequence'] as int,
-        );
-        if (sequence != 0) return sequence;
-        return ((left['actionOrder'] as int?) ?? 0).compareTo(
-          (right['actionOrder'] as int?) ?? 0,
-        );
-      });
+      callbacks.sortFocusActions(actions);
       for (final action in actions) {
         if (action['sequence'] is int) {
           _lastConsumedScriptFocusSequence = max(
@@ -1505,12 +1501,12 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
   }
 
   void _scheduleScriptFormActions() {
-    if (_scriptFormActionsScheduled ||
-        !widget.scriptFormActions.any(
-          (action) =>
-              action['sequence'] is int &&
-              (action['sequence'] as int) > _lastConsumedFormAction,
-        )) {
+    final callbacks = _documentRuntime?.scriptCallbacks;
+    if (callbacks == null ||
+        _scriptFormActionsScheduled ||
+        callbacks
+            .pendingActions(widget.scriptFormActions, _lastConsumedFormAction)
+            .isEmpty) {
       return;
     }
     _scriptFormActionsScheduled = true;
@@ -1523,13 +1519,10 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
         _scheduleScriptFormActions();
         return;
       }
-      final paintedActions = widget.scriptFormActions
-          .where(
-            (action) =>
-                action['sequence'] is int &&
-                (action['sequence'] as int) > _lastConsumedFormAction,
-          )
-          .toList();
+      final paintedActions = callbacks.pendingActions(
+        widget.scriptFormActions,
+        _lastConsumedFormAction,
+      );
       final actions =
           widget.takeScriptFormActions?.call([
             for (final action in paintedActions) action['sequence'] as int,
@@ -1558,7 +1551,7 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
           }
           if (action['kind'] != 'submit') continue;
           try {
-            final runtime = RenderHost.of(context).documentRuntime;
+            final runtime = _documentRuntime;
             if (runtime == null) {
               throw StateError(
                 tr("Form navigation is unavailable in this document."),
@@ -1593,44 +1586,47 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
   }
 
   void _bindScriptControls() {
-    final callback = widget.onScriptEvent == null ? null : _scriptControlEvent;
-    textFields?.onUserEvent = widget.onScriptDetailedEvent == null
-        ? callback
+    // Without a document runtime (chat content) no script callback is bound.
+    final scripted = _documentRuntime != null;
+    final onEvent = scripted ? widget.onScriptEvent : null;
+    final onDetailedEvent = scripted ? widget.onScriptDetailedEvent : null;
+    final onControlClick = scripted ? widget.onScriptControlClick : null;
+    final onFilePickerResult = scripted
+        ? widget.onScriptFilePickerResult
         : null;
-    textFields?.onDetailedUserEvent = widget.onScriptDetailedEvent == null
+    final onFormActionsConsumed = scripted
+        ? widget.onScriptFormActionsConsumed
+        : null;
+    final callback = onEvent == null ? null : _scriptControlEvent;
+    textFields?.onUserEvent = onDetailedEvent == null ? callback : null;
+    textFields?.onDetailedUserEvent = onDetailedEvent == null
         ? null
         : (key, type, data) =>
               unawaited(_scriptControlDetailedEvent(key, type, data));
-    textFields?.onUserKeyEvent = widget.onScriptDetailedEvent == null
+    textFields?.onUserKeyEvent = onDetailedEvent == null
         ? null
         : _scriptControlDetailedEvent;
     controls?.onUserEvent = callback;
-    controls?.onActivateControl = widget.onScriptControlClick == null
+    controls?.onActivateControl = onControlClick == null
         ? null
         : _scriptCheckableClick;
-    selects?.onUserEvent = widget.onScriptDetailedEvent == null
-        ? callback
-        : null;
-    selects?.onDetailedUserEvent = widget.onScriptDetailedEvent == null
+    selects?.onUserEvent = onDetailedEvent == null ? callback : null;
+    selects?.onDetailedUserEvent = onDetailedEvent == null
         ? null
         : (key, type, data) =>
               unawaited(_scriptControlDetailedEvent(key, type, data));
-    selects?.onUserKeyEvent = widget.onScriptDetailedEvent == null
+    selects?.onUserKeyEvent = onDetailedEvent == null
         ? null
         : _scriptControlDetailedEvent;
     ranges?.onUserEvent = callback;
     dates?.onUserEvent = callback;
     files?.onUserEvent = callback;
-    files?.onActivateControl =
-        widget.onScriptFilePickerResult != null && widget.onScriptEvent != null
+    files?.onActivateControl = onFilePickerResult != null && onEvent != null
         ? _scriptFileClick
         : null;
-    forms?.onSubmitEvent = widget.onScriptEvent == null
-        ? null
-        : _handleScriptSubmit;
+    forms?.onSubmitEvent = onEvent == null ? null : _handleScriptSubmit;
     forms?.onRequestSubmit =
-        widget.onScriptFormActionsConsumed != null &&
-            widget.onScriptControlClick != null
+        onFormActionsConsumed != null && onControlClick != null
         ? _requestScriptSubmit
         : null;
   }
@@ -1718,7 +1714,7 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
     final callback = widget.onScriptDetailedEvent;
     final owner = widget.scriptDocument;
     final id = element.attributes['data-pirc-script-id'];
-    final runtime = RenderHost.of(context).documentRuntime;
+    final runtime = _documentContextRuntime;
     if (callback == null || owner == null || id == null || runtime == null) {
       return child;
     }
@@ -2051,6 +2047,12 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
     if (current != null) defaultAction?.call();
   }
 
+  Future<bool> Function(dom.Element)? get _scriptClickHandler =>
+      _documentRuntime == null ||
+          (widget.onScriptClick == null && widget.onScriptEvent == null)
+      ? null
+      : _handleScriptClick;
+
   Future<bool> _handleScriptClick(dom.Element button) async {
     _flushNativeFocusBeforeScriptEvent('click');
     final callback = widget.onScriptClick;
@@ -2102,11 +2104,13 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
   }
 
   List<Map<String, dynamic>> _scriptControlValues() {
-    final fragment = html.parseFragment(content);
     final values = <Map<String, dynamic>>[];
+    final callbacks = _documentRuntime?.scriptCallbacks;
+    if (callbacks == null) return values;
+    final fragment = html.parseFragment(content);
     // Keep selected content inside the 4 MiB isolate message limit after base64.
     // Native form submissions retain their independent, larger upload limit.
-    var fileBytesRemaining = 2 * 1024 * 1024;
+    var fileBytesRemaining = _scriptFileBytesBudget;
     for (final element in fragment.querySelectorAll('[data-pirc-script-id]')) {
       if (!const {'input', 'textarea', 'select'}.contains(element.localName)) {
         continue;
@@ -2163,20 +2167,12 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
       final file = files?.resolveControl(element);
       if (file != null) {
         value['fileResetVersion'] = file.fileResetVersion;
-        value['files'] = files!.filesFor(file.key).map((file) {
-          final includeBytes = file.length <= fileBytesRemaining;
-          if (includeBytes) fileBytesRemaining -= file.length;
-          return {
-            'name': file.name,
-            'type': file.mimeType,
-            'size': file.length,
-            'lastModified': file.lastModified,
-            if (includeBytes)
-              'bytesBase64': base64Encode(file.bytes)
-            else
-              'contentError': tr("選取檔案的腳本內容超過 2 MiB 限制。"),
-          };
-        }).toList();
+        final (encoded, remaining) = callbacks.encodeFiles(
+          files!.filesFor(file.key),
+          fileBytesRemaining,
+        );
+        fileBytesRemaining = remaining;
+        value['files'] = encoded;
         values.add(value);
       }
     }
@@ -2294,7 +2290,7 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
         return widget.mediaBuilder!(spec, styles);
       }
       final media = RenderHost.of(context).mediaBuilder;
-      if (scope == null || media == null) return null;
+      if (media == null) return null;
       return media(
         scope,
         spec,
@@ -2361,7 +2357,9 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
                     >() !=
                 null,
             widget.onNavigate,
-            widget.onScriptEvent == null && widget.onScriptClick == null
+            _documentRuntime == null ||
+                    (widget.onScriptEvent == null &&
+                        widget.onScriptClick == null)
                 ? null
                 : (element, action) =>
                       unawaited(_handleElementTap(element, action)),
@@ -2391,6 +2389,7 @@ class _NativeHtmlDocumentState extends State<NativeHtmlDocument>
             () => widget.htmlImages,
             () => widget.vectorImageSources,
             () => widget.deferImageLoading,
+            () => _documentContextRuntime,
           ),
           onTapUrl: (url) {
             if (widget.viewport?.resolvingAnchorUrl(url) == true) return false;
@@ -2861,7 +2860,16 @@ class _NativeHtmlFactory extends WidgetFactory {
     this.htmlImages,
     this.vectorImageSources,
     this.deferImageLoading,
+    this.documentRuntime,
   );
+
+  /// The document runtime, only inside a fetched or script-driven document;
+  /// null for chat content, whose dialogs never leave normal flow and whose
+  /// canvases stay blank.
+  final DocumentRuntime? Function() documentRuntime;
+  DocumentTopLayer? topLayer() => documentRuntime()?.topLayer;
+  int? _topLayerOrder(dom.Element element) => topLayer()?.orderOf(element);
+  bool _inTopLayer(dom.Element element) => _topLayerOrder(element) != null;
   // HtmlWidget retains its factory when rebuild triggers change. Read the
   // current document viewport instead of capturing the first build.
   final Map<String, NativeDocumentHtmlImage> Function() htmlImages;
@@ -3883,7 +3891,7 @@ class _NativeHtmlFactory extends WidgetFactory {
       fontSize: 16,
       viewport: imageViewport(),
       allowStaticPosition: true,
-      topLayer: element.attributes.containsKey('data-pirc-dialog-modal'),
+      topLayer: _inTopLayer(element),
     );
     if (spec == null ||
         (spec.needsStaticPosition &&
@@ -4010,7 +4018,7 @@ class _NativeHtmlFactory extends WidgetFactory {
   }
 
   dom.Element? _absoluteHost(dom.Element element) {
-    if (element.attributes.containsKey('data-pirc-dialog-modal')) {
+    if (_inTopLayer(element)) {
       // A top-layer dialog's containing block is the initial containing
       // block, even when its DOM parent is positioned or transformed.
       return null;
@@ -4061,14 +4069,8 @@ class _NativeHtmlFactory extends WidgetFactory {
   ) => [
     for (final item in _absoluteChildren[host] ?? const [])
       NativeAbsoluteEntry(
-        isModal: item.tree.element.attributes.containsKey(
-          'data-pirc-dialog-modal',
-        ),
-        modalOrder:
-            int.tryParse(
-              item.tree.element.attributes['data-pirc-dialog-modal'] ?? '',
-            ) ??
-            0,
+        isModal: _inTopLayer(item.tree.element),
+        modalOrder: _topLayerOrder(item.tree.element) ?? 0,
         spec: NativeAbsolutePositionSpec.parse(
           _positionedStyles(item.tree, item.styles),
           fontSize:
@@ -4085,13 +4087,10 @@ class _NativeHtmlFactory extends WidgetFactory {
           viewport: imageViewport(),
           fixedUsesViewport: host == null,
           allowStaticPosition: item.marker != null,
-          topLayer: item.tree.element.attributes.containsKey(
-            'data-pirc-dialog-modal',
-          ),
+          topLayer: _inTopLayer(item.tree.element),
         )!,
-        child:
-            item.tree.element.attributes.containsKey('data-pirc-dialog-modal')
-            ? FocusScope(child: item.child)
+        child: _inTopLayer(item.tree.element)
+            ? topLayer()!.scope(item.child)
             : item.child,
         staticMarker: item.marker,
         overflowHitTest: nativeDocumentRestorePointerHit,
@@ -4155,7 +4154,7 @@ class _NativeHtmlFactory extends WidgetFactory {
       fontSize: 16,
       viewport: imageViewport(),
       allowStaticPosition: true,
-      topLayer: tree.element.attributes.containsKey('data-pirc-dialog-modal'),
+      topLayer: _inTopLayer(tree.element),
     )!;
     final marker = markerSpec.needsStaticPosition ? GlobalKey() : null;
     tree.register(
@@ -5406,7 +5405,7 @@ class _NativeHtmlFactory extends WidgetFactory {
               final cssHeightSpecified =
                   tree.getStyle('height') != null &&
                   tree.getStyle('height')!.term != 'auto';
-              final runtime = RenderHost.of(context).documentRuntime;
+              final runtime = documentRuntime();
               if (runtime == null) {
                 return NativeBlankCanvas(
                   width: width.toDouble(),

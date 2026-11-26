@@ -9,7 +9,7 @@ import {
 test('relative-unit reference retains source-identical stages and all environments', () => {
   const f = JSON.parse(
     readFileSync(
-      new URL('./fixtures/document-relative-units-chromium153.json', import.meta.url),
+      new URL('../../../../packages/pirc_render/test/fixtures/parity/document-relative-units-chromium153.json', import.meta.url),
       'utf8',
     ),
   );

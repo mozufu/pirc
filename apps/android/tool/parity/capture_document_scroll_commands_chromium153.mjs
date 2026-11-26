@@ -66,7 +66,7 @@ try {
         }
       }
   await writeFile(
-    new URL('./fixtures/document-scroll-commands-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-scroll-commands-chromium153.json', import.meta.url),
     JSON.stringify({ browserVersion: browser.version(), html: scrollCommandsHTML, cases }) + '\n',
   );
   console.log(`Captured ${cases.length} scroll command profiles`);

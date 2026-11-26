@@ -48,6 +48,6 @@ try {
    cases.push({viewport,dpr,theme,result,networkRequests:requests,pageErrors});
   }finally{await context.close()}
  }
- await writeFile(new URL('./fixtures/document-frame-steps-chromium153.json',import.meta.url),JSON.stringify({browserVersion,html,cases})+'\n');
+ await writeFile(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-frame-steps-chromium153.json',import.meta.url),JSON.stringify({browserVersion,html,cases})+'\n');
  console.log(JSON.stringify({browserVersion,cases:cases.length,requests:0,pageErrors:0}));
 }finally{await browser.close()}

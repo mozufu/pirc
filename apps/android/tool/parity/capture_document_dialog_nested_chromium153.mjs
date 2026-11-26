@@ -129,7 +129,7 @@ try {
     blockedFirstClick,afterTopBackdrop,
     afterFirstClick,afterBothBackdrops,
   };
-  const output=new URL('./fixtures/document-dialog-nested-chromium153.json',import.meta.url);
+  const output=new URL('../../../../packages/pirc_render/test/fixtures/parity/document-dialog-nested-chromium153.json',import.meta.url);
   writeFileSync(output,JSON.stringify(fixture,null,2)+'\n');
   console.log(output.pathname);
 } finally {

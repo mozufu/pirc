@@ -114,7 +114,7 @@ try {
     cases,
   };
   await writeFile(
-    new URL('./fixtures/document-scroll-retention-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-scroll-retention-chromium153.json', import.meta.url),
     JSON.stringify(result) + '\n',
   );
   console.log(`Captured ${cases.length} scroll history profiles`);

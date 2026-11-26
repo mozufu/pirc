@@ -11,21 +11,21 @@
   },
   "nativeMedia": {
     "helperSha256": "be174297ad431c27e9d63d046f34c005b6aec2d601676bfa3cf0d1bf55a9c248",
-    "browserOracle": "apps/android/tool/parity/fixtures/document-media-chromium153.json"
+    "browserOracle": "packages/pirc_render/test/fixtures/parity/document-media-chromium153.json"
   },
   "nativeStylesheets": {
     "helperSha256": "4287eec3248396a8e7479324a27a4a2b83c8b1323b97fc3affae5ea9cfc6ea66",
-    "browserOracle": "apps/android/tool/parity/fixtures/document-stylesheets-chromium153.json"
+    "browserOracle": "packages/pirc_render/test/fixtures/parity/document-stylesheets-chromium153.json"
   },
   "nativeStorage": {
     "helperSha256": "20abded2b40e2f0e3b8b728715a64783791d5ac77c21216a73decb3b799d4961",
     "bridgeSha256": "5a7b911dc90885dcefce86525917e4fcdfde843f2f0d4298f14fb058f1e6d3a9",
-    "browserOracle": "apps/android/tool/parity/fixtures/document-storage-chrome155.json"
+    "browserOracle": "packages/pirc_render/test/fixtures/parity/document-storage-chrome155.json"
   },
   "nativeCookies": {
     "source": "apps/android/tool/parity/document_cookies_source.js",
     "sha256": "e842c1d9edde16ef8ef10fe505cc680229aa82b04af01c127c385c92b8f887c8",
-    "browserOracle": "apps/android/tool/parity/fixtures/document-cookies-chrome155.json"
+    "browserOracle": "packages/pirc_render/test/fixtures/parity/document-cookies-chrome155.json"
   },
   "nativeMutationObserver": {
     "helperSha256": "842a9ca3e4ee720fba945c422c87cdf80ad7e255c1424af098c4e4358defa65c"

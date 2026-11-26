@@ -9,7 +9,7 @@ const vm=createDocumentScriptHostVm(nativeVm);
 const bundle=readFileSync(process.env.PIRC_DOCUMENT_SCRIPT_RUNTIME_BUNDLE || new URL('../../assets/document-script-runtime.js',import.meta.url),'utf8');
 const fixtureSource=readFileSync(new URL('../../integration_test/document_anchor_activation_fixture.dart',import.meta.url),'utf8');
 const fixture=fixtureSource.match(/r'''([\s\S]*?)''';/)[1];
-const oracle=JSON.parse(readFileSync(new URL('./fixtures/document-anchor-activation-chrome155.json',import.meta.url)));
+const oracle=JSON.parse(readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-anchor-activation-chrome155.json',import.meta.url)));
 const origin='http://127.0.0.1:43177';
 function invoke(ctx,name,args={}) {return JSON.parse(vm.runInContext('__pircDocument.'+name+'('+JSON.stringify(args)+')',ctx,{timeout:3000}));}
 function read(ctx,expression) {return JSON.parse(vm.runInContext('JSON.stringify('+expression+')',ctx,{timeout:3000}));}

@@ -129,7 +129,7 @@ try {
   }
   const fixture = { schemaVersion: 1, browserVersion: browser.version(), html, table, svg, svgNested, svgClone, svgPaint };
   await writeFile(
-    new URL('./fixtures/document-contextual-fragment-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-contextual-fragment-chromium153.json', import.meta.url),
     JSON.stringify(fixture) + '\n',
   );
   console.log(JSON.stringify(fixture));

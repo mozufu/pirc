@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';imp
 import {createDocumentScriptHostVm} from './document_script_host_test_helper.mjs';
 const vm=createDocumentScriptHostVm(nativeVm);
 const bundle=readFileSync(new URL('../../assets/document-script-runtime.js',import.meta.url),'utf8');
-const fixture=JSON.parse(readFileSync(new URL('./fixtures/document-imports-chromium153.json',import.meta.url),'utf8'));
+const fixture=JSON.parse(readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-imports-chromium153.json',import.meta.url),'utf8'));
 const origin='https://document.example';
 assert.match(fixture.browserVersion,/^153\./);
 const tick=()=>new Promise(resolve=>setImmediate(resolve));

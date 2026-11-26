@@ -9,7 +9,7 @@ void main() {
   final oracle =
       jsonDecode(
             File(
-              '../../apps/android/tool/parity/fixtures/document-media-chromium153.json',
+              'test/fixtures/parity/document-media-chromium153.json',
             ).readAsStringSync(),
           )
           as Map<String, dynamic>;

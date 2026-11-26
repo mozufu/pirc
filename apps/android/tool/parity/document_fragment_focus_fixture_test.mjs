@@ -4,7 +4,7 @@ import test from 'node:test';
 import { fragmentFocusHTML, fragmentFocusModes } from './document_fragment_focus_fixture.mjs';
 test('fragment focus oracle binds authored source, native viewport and trusted event reports', () => {
   const fixture = JSON.parse(
-    readFileSync(new URL('./fixtures/document-fragment-focus-chromium153.json', import.meta.url)),
+    readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-fragment-focus-chromium153.json', import.meta.url)),
   );
   assert.equal(fixture.browserVersion, '153.0.8010.12');
   assert.equal(fixture.cases.length, 312);

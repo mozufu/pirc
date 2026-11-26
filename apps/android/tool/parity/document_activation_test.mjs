@@ -9,7 +9,7 @@ const vm=createDocumentScriptHostVm(nativeVm);
 const bundle = readFileSync(process.env.PIRC_DOCUMENT_SCRIPT_RUNTIME_BUNDLE || new URL('../../assets/document-script-runtime.js', import.meta.url), 'utf8');
 const fixtureSource = readFileSync(new URL('../../integration_test/document_activation_fixture.dart', import.meta.url), 'utf8');
 const fixtureHtml = fixtureSource.match(/r'''([\s\S]*?)''';/)[1];
-const chrome = JSON.parse(readFileSync(new URL('./fixtures/document-activation-chrome155.json', import.meta.url)));
+const chrome = JSON.parse(readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-activation-chrome155.json', import.meta.url)));
 function page(html) {
   const context = vm.createContext({});
   vm.runInContext(bundle, context, {timeout: 3000});

@@ -84,7 +84,7 @@ try {
           }
         }
   await writeFile(
-    new URL('./fixtures/document-target-state-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-target-state-chromium153.json', import.meta.url),
     JSON.stringify({ browserVersion: browser.version(), cases }) + '\n',
   );
   console.log('Captured', cases.length, 'profiles');

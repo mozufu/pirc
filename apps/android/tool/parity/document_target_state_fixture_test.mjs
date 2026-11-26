@@ -9,7 +9,7 @@ import {
 test('target state corpus uses identical sources, full environments and actual navigation states', () => {
   const fixture = JSON.parse(
     readFileSync(
-      new URL('./fixtures/document-target-state-chromium153.json', import.meta.url),
+      new URL('../../../../packages/pirc_render/test/fixtures/parity/document-target-state-chromium153.json', import.meta.url),
       'utf8',
     ),
   );

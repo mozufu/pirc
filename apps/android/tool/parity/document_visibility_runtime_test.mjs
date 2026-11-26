@@ -101,7 +101,7 @@ test('publishing visibility neither runs timers nor advances a selected native f
 test('visibility properties and synthetic event propagation match pinned Chromium', () => {
   const fixture = JSON.parse(
     readFileSync(
-      new URL('./fixtures/document-visibility-chromium153.json', import.meta.url),
+      new URL('../../../../packages/pirc_render/test/fixtures/parity/document-visibility-chromium153.json', import.meta.url),
       'utf8',
     ),
   );

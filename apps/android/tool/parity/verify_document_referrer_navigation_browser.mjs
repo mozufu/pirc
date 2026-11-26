@@ -17,7 +17,7 @@ const {chromium} = require(require.resolve('playwright-core', {
 const browserExecutable = requireTestBrowserExecutable();
 const fixturePath = path.join(
   scriptDirectory,
-  'fixtures/document-referrer-navigation-chromium153.json',
+  '../../../../packages/pirc_render/test/fixtures/parity/document-referrer-navigation-chromium153.json',
 );
 const evidenceDirectory = path.join(
   repositoryRoot,

@@ -5,7 +5,7 @@ import { controlLifetimeHTML, editedControlValues } from './document_control_lif
 test('retained-control reference keeps source, all environments and fresh/reset boundaries', () => {
   const f = JSON.parse(
     readFileSync(
-      new URL('./fixtures/document-control-lifetime-chromium153.json', import.meta.url),
+      new URL('../../../../packages/pirc_render/test/fixtures/parity/document-control-lifetime-chromium153.json', import.meta.url),
       'utf8',
     ),
   );

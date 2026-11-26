@@ -136,7 +136,7 @@ try {
         }
       }
   await writeFile(
-    new URL('./fixtures/document-relative-units-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-relative-units-chromium153.json', import.meta.url),
     JSON.stringify({ browserVersion: browser.version(), cases }) + '\n',
   );
 } finally {

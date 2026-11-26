@@ -42,7 +42,7 @@ try {
   });
   const fixture = { schemaVersion: 1, browserVersion: browser.version(), result };
   await writeFile(
-    new URL('./fixtures/document-fragment-scripts-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-fragment-scripts-chromium153.json', import.meta.url),
     JSON.stringify(fixture) + '\n',
   );
   console.log(JSON.stringify(fixture));

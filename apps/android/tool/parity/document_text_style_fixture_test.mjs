@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 const fixture = JSON.parse(
-  readFileSync(new URL('./fixtures/document-text-style-chromium153.json', import.meta.url)),
+  readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-text-style-chromium153.json', import.meta.url)),
 );
 const modes = ['replace', 'character', 'append', 'remove', 'replace_children', 'hidden'];
 test('text mutation reference covers all frozen profiles without external requests', () => {

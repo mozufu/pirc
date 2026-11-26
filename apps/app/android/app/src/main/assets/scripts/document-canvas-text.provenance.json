@@ -1,0 +1,16 @@
+{
+  "flutterVersion": "3.44.4",
+  "flutterRevision": "ad70ec4617",
+  "engineRevision": "a10d8ac38de835021c8d2f920dbf50a920ccc030",
+  "artifact": "https://storage.googleapis.com/flutter_infra_release/flutter/a10d8ac38de835021c8d2f920dbf50a920ccc030/flutter-web-sdk.zip",
+  "purpose": "Skia paragraph shaping for synchronous native Canvas text measurement; page contents remain Flutter-rendered",
+  "canvaskitJsSha256": "7361b744487f98262f77ac507006b3eae37830430048ab7811a626b79f34a52c",
+  "wasmSha256": "6bdfaa51c76845c02ea90153d44f56f99da51de44a7ee0ea15ccaeb33ed8f476",
+  "licenseSha256": "82a5f93f918f99ff82af18c8be176c709dc812cb3f5e1e1cd93847bdeb0f9369",
+  "emscriptenLicense": {
+    "source": "https://raw.githubusercontent.com/emscripten-core/emscripten/main/LICENSE",
+    "sha256": "620a78084fc7ca97c0b5dea9abf891f3ffcadfdbf305276f099c9c4e12fc1d86"
+  },
+  "helperSha256": "59aa977e7d6a08eebdbfc9a027dc512b816d52d7ca144b4ba0be757829485533",
+  "bundleSha256": "aa58742f346ca29031305120221a1605dc35cb191741fb2fc0bb6a6440fd0aee"
+}

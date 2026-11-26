@@ -19,7 +19,7 @@ import 'native_html_document_layout_test.dart' show prepareNativeLayoutDocument;
 final fixture =
     jsonDecode(
           File(
-            'tool/parity/fixtures/document-scroll-anchor-chromium153.json',
+            '../../packages/pirc_render/test/fixtures/parity/document-scroll-anchor-chromium153.json',
           ).readAsStringSync(),
         )
         as Map;

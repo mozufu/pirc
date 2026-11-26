@@ -15,6 +15,7 @@ import org.mozufu.pirc.media.MediaChannel
 import org.mozufu.pirc.notifications.NotificationsChannel
 import org.mozufu.pirc.push.PushChannel
 import org.mozufu.pirc.scanner.ScannerChannel
+import org.mozufu.pirc.scripts.ScriptsChannel
 
 /**
  * One feature's method channel, named `org.mozufu.pirc/<name>`. Each feature
@@ -107,6 +108,7 @@ class PlatformChannels(private val features: List<PlatformFeature>) {
             PushChannel.create(activity),
             NotificationsChannel.create(activity, restored),
             FilesChannel.create(activity),
+            ScriptsChannel.create(activity),
         )
     }
 }

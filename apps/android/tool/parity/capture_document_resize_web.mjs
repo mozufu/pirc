@@ -162,7 +162,7 @@ try {
     }
   }
   await writeFile(
-    new URL('./fixtures/document-resize-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-resize-chromium153.json', import.meta.url),
     JSON.stringify({
       browser: browser.version(),
       html,

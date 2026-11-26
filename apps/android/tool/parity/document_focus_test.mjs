@@ -14,7 +14,7 @@ const fixtureSource = readFileSync(new URL('../../integration_test/document_focu
 const fixtureMatch = fixtureSource.match(/const documentFocusFixture\s*=\s*r'''([\s\S]*?)''';/);
 assert.ok(fixtureMatch, 'Could not extract documentFocusFixture.');
 const fixtureHtml = fixtureMatch[1];
-const oracle = JSON.parse(readFileSync(new URL('./fixtures/document-focus-chrome155.json', import.meta.url), 'utf8'));
+const oracle = JSON.parse(readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-focus-chrome155.json', import.meta.url), 'utf8'));
 assert.equal(
   createHash('sha256').update(fixtureSource).digest('hex'),
   oracle.fixtureSha256,

@@ -77,7 +77,7 @@ try {
         }
       }
   await writeFile(
-    new URL('./fixtures/document-control-lifetime-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-control-lifetime-chromium153.json', import.meta.url),
     JSON.stringify(
       {
         browserVersion: browser.version(),

@@ -35,7 +35,7 @@ try {
     specification: 'https://html.spec.whatwg.org/multipage/interaction.html#page-visibility',
   };
   await writeFile(
-    new URL('./fixtures/document-visibility-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-visibility-chromium153.json', import.meta.url),
     JSON.stringify(fixture, null, 2) + '\n',
   );
   console.log(

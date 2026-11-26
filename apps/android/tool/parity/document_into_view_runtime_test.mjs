@@ -11,7 +11,7 @@ import {
   buildIntoViewDriver,
 } from './document_into_view_fixture.mjs';
 const fixture = JSON.parse(
-  readFileSync(new URL('./fixtures/document-into-view-chromium153.json', import.meta.url)),
+  readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-into-view-chromium153.json', import.meta.url)),
 );
 const bundle = readFileSync(
   process.env.PIRC_DOCUMENT_SCRIPT_RUNTIME_BUNDLE ||

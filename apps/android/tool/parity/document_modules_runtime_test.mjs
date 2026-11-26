@@ -83,7 +83,7 @@ test('bad module imports dispatch error and cannot execute importer bodies',asyn
  const snapshot=env.invoke('snapshot');assert.ok(snapshot.diagnostics.some(item=>item.code==='script.module_load_error'));
 });
 
-const oracle=JSON.parse(readFileSync(new URL('./fixtures/document-modules-chromium153.json',import.meta.url),'utf8'));
+const oracle=JSON.parse(readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-modules-chromium153.json',import.meta.url),'utf8'));
 assert.match(oracle.browserVersion,/^153\./);
 for (const item of oracle.cases) {
  test('Chromium153 module parity: '+item.name,async()=>{

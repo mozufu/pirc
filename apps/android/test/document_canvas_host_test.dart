@@ -177,6 +177,8 @@ void main() {
               styles: MarkdownStyleSheet(),
               builders: const {},
               markdownStyles: false,
+              // Canvases draw only in a script-driven document.
+              scriptDocument: style,
               canvases: {
                 'c': NativeDocumentCanvasSnapshot.fromJson(snapshot(0)),
               },

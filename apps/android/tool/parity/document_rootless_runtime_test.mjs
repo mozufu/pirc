@@ -7,7 +7,7 @@ import {createDocumentScriptHostVm} from './document_script_host_test_helper.mjs
 const vm=createDocumentScriptHostVm(nativeVm);
 const bundle=readFileSync(new URL('../../assets/document-script-runtime.js',import.meta.url),'utf8');
 const fixture=JSON.parse(readFileSync(
-  new URL('./fixtures/document-rootless-chromium153.json',import.meta.url),'utf8'));
+  new URL('../../../../packages/pirc_render/test/fixtures/parity/document-rootless-chromium153.json',import.meta.url),'utf8'));
 
 test('host-layout rootless document tree and parser script location match Chromium 153',()=>{
   assert.equal(fixture.browserVersion,'153.0.8010.12');

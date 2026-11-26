@@ -15,7 +15,7 @@ void main() {
   final fixture =
       jsonDecode(
             File(
-              'tool/parity/fixtures/document-details-fragment-chromium153.json',
+              '../../packages/pirc_render/test/fixtures/parity/document-details-fragment-chromium153.json',
             ).readAsStringSync(),
           )
           as Map;

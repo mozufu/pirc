@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { scrollAnchorModes, buildScrollAnchorPage } from './document_scroll_anchor_fixture.mjs';
 const fixture = JSON.parse(
-  readFileSync(new URL('./fixtures/document-scroll-anchor-chromium153.json', import.meta.url)),
+  readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-scroll-anchor-chromium153.json', import.meta.url)),
 );
 test('root anchoring includes all frozen phone/tablet, density and theme profiles', () => {
   assert.equal(fixture.browserVersion, '153.0.8010.12');

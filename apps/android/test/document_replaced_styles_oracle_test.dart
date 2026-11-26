@@ -17,7 +17,7 @@ import '../tool/parity/capture_fonts.dart';
 import 'live_test.dart' show theme;
 
 const _fixturePath =
-    'tool/parity/fixtures/document-replaced-styles-chromium153.json';
+    '../../packages/pirc_render/test/fixtures/parity/document-replaced-styles-chromium153.json';
 const _revision = 1;
 
 final Map<String, dynamic> _fixture =

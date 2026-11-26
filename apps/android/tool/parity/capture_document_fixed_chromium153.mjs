@@ -167,7 +167,7 @@ try {
           }
         }
   await writeFile(
-    new URL('./fixtures/document-fixed-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-fixed-chromium153.json', import.meta.url),
     JSON.stringify({ schemaVersion: 1, browserVersion: browser.version(), cases }) + '\n',
   );
   console.log(JSON.stringify({ cases: cases.length, browserVersion: browser.version() }));

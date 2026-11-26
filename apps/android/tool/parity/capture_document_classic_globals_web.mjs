@@ -69,5 +69,5 @@ try{
   const expected=await page.evaluate(()=>window.result);await page.close();
   results.push({...item,expected,requests:[...requests],errors});console.log(JSON.stringify({name:item.name,expected,errors}));
  }
- writeFileSync(new URL('./fixtures/document-classic-globals-chromium153.json',import.meta.url),JSON.stringify({browserVersion:browser.version(),browserExecutable:requireTestBrowserExecutable(),cases:results},null,2)+'\n');
+ writeFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-classic-globals-chromium153.json',import.meta.url),JSON.stringify({browserVersion:browser.version(),browserExecutable:requireTestBrowserExecutable(),cases:results},null,2)+'\n');
 }finally{await browser?.close();server.closeAllConnections();await new Promise(done=>server.close(done));}

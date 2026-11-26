@@ -13,7 +13,7 @@ void main() {
   final fixture =
       jsonDecode(
             File(
-              'tool/parity/fixtures/document-script-picker-lifetime-chromium153.json',
+              '../../packages/pirc_render/test/fixtures/parity/document-script-picker-lifetime-chromium153.json',
             ).readAsStringSync(),
           )
           as Map;

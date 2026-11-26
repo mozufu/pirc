@@ -9,7 +9,7 @@ import {
   buildScrollingElementDriver,
 } from './document_scrolling_element_fixture.mjs';
 const fixture = JSON.parse(
-  readFileSync(new URL('./fixtures/document-scrolling-element-chromium153.json', import.meta.url)),
+  readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-scrolling-element-chromium153.json', import.meta.url)),
 );
 const bundle = readFileSync(
   process.env.PIRC_DOCUMENT_SCRIPT_RUNTIME_BUNDLE ||

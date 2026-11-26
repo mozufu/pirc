@@ -111,7 +111,7 @@ try {
       }
   assert.deepEqual(errors, []);
   await writeFile(
-    new URL('./fixtures/document-dialog-show-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-dialog-show-chromium153.json', import.meta.url),
     JSON.stringify(
       {
         browserVersion: browser.version(),

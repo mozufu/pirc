@@ -19,7 +19,7 @@ void main() {
   final fixture =
       jsonDecode(
             File(
-              'tool/parity/fixtures/document-dialog-form-chromium153.json',
+              '../../packages/pirc_render/test/fixtures/parity/document-dialog-form-chromium153.json',
             ).readAsStringSync(),
           )
           as Map;

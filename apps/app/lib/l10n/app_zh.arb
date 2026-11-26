@@ -1114,5 +1114,9 @@
   "filesTooMany": "一次超過 16 個檔案或 64 MiB，未加入：{names}。",
   "pictureNotRead": "無法讀取這張圖片。",
   "pictureTooLarge": "這張圖片太大。",
-  "shareFailed": "無法分享。"
+  "shareFailed": "無法分享。",
+  "messageMediaTap": "點一下以載入媒體",
+  "messageMediaFrom": "來自 {host}",
+  "messageMediaFailed": "無法載入媒體。",
+  "messageMediaUnsupported": "無法在此播放這個媒體。"
 }

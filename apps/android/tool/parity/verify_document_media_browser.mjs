@@ -21,7 +21,7 @@ const browserExecutable = requireTestBrowserExecutable();
 assert.ok(!browserExecutable.includes('/Applications/Google Chrome.app/'));
 assert.ok(browserExecutable.includes('/.pirc/test-browsers/'));
 
-const fixturePath = path.join(scriptDirectory, 'fixtures/document-media-chromium153.json');
+const fixturePath = path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-media-chromium153.json');
 const fixtureOrigin = 'http://127.0.0.1:43100';
 const viewportConfigurations = [
   {id: '390x844-light-root1', width: 390, height: 844, colorScheme: 'light', rootFontScale: 1},
@@ -640,7 +640,7 @@ try {
   const runnerBytes = await readFile(scriptPath);
   const runnerSha256 = createHash('sha256').update(runnerBytes).digest('hex');
   const rawFixture = {
-    fixture: 'apps/android/tool/parity/fixtures/document-media-chromium153.json',
+    fixture: 'packages/pirc_render/test/fixtures/parity/document-media-chromium153.json',
     capturedAtUtc: new Date().toISOString(),
     browserProduct: 'Playwright-pinned Chromium Headless Shell 153',
     browserVersion: browser.version(),

@@ -875,7 +875,7 @@ try {
   };
   const normalizedFixture = normalize(fixture, actualPort, proxyPort);
   const fixturePath = process.env.PIRC_FIXTURE_PATH ??
-    path.join(scriptDirectory, 'fixtures/document-storage-chrome155.json');
+    path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-storage-chrome155.json');
   await writeFile(fixturePath, JSON.stringify(normalizedFixture, null, 2) + '\n');
   const fixtureBytes = await readFile(fixturePath);
   process.stdout.write(JSON.stringify({

@@ -5,7 +5,7 @@ import nativeVm from 'node:vm';
 import {createDocumentScriptHostVm} from './document_script_host_test_helper.mjs';
 const vm=createDocumentScriptHostVm(nativeVm);
 const bundle=readFileSync(new URL('../../assets/document-script-runtime.js',import.meta.url),'utf8');
-const oracle=JSON.parse(readFileSync(new URL('./fixtures/document-media-chromium153.json',import.meta.url),'utf8'));
+const oracle=JSON.parse(readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-media-chromium153.json',import.meta.url),'utf8'));
 const rows=oracle.viewportMatrix.cases;
 const queries=rows[0].queryObservations;
 function runtime(html,environment) {const c=vm.createContext({});vm.runInContext(bundle,c,{timeout:5000});return {c,result:call(c,'init',{html,environment,url:'https://example.test/media'})};}

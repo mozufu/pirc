@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 const fixture = JSON.parse(
-  readFileSync(new URL('./fixtures/document-pointer-events-chromium153.json', import.meta.url)),
+  readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-pointer-events-chromium153.json', import.meta.url)),
 );
 const modes = [
   'none',

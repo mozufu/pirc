@@ -64,7 +64,7 @@ try {
           }
         }
   await writeFile(
-    new URL('./fixtures/document-layout-dependencies-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-layout-dependencies-chromium153.json', import.meta.url),
     JSON.stringify({ browserVersion, cases }) + '\n',
   );
   console.log(

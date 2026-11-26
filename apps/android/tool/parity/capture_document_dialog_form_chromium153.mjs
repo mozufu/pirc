@@ -124,7 +124,7 @@ try {
         }
       }
   await writeFile(
-    new URL('./fixtures/document-dialog-form-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-dialog-form-chromium153.json', import.meta.url),
     JSON.stringify(
       {
         browserVersion: browser.version(),

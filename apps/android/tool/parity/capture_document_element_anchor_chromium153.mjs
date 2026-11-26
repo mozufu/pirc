@@ -94,7 +94,7 @@ try {
           }
         }
   await writeFile(
-    new URL('./fixtures/document-element-anchor-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-element-anchor-chromium153.json', import.meta.url),
     JSON.stringify({ schemaVersion: 1, browserVersion: browser.version(), cases }) + '\n',
   );
   console.log(

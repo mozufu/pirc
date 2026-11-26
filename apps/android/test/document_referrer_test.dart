@@ -7,7 +7,7 @@ void main() {
   final oracle =
       jsonDecode(
             File(
-              'tool/parity/fixtures/document-referrer-chromium153.json',
+              '../../packages/pirc_render/test/fixtures/parity/document-referrer-chromium153.json',
             ).readAsStringSync(),
           )
           as Map<String, dynamic>;

@@ -9,7 +9,7 @@ import {
 test('live native resource corpus retains source, all profiles and operation sequence', () => {
   const fixture = JSON.parse(
     readFileSync(
-      new URL('./fixtures/document-live-resources-chromium153.json', import.meta.url),
+      new URL('../../../../packages/pirc_render/test/fixtures/parity/document-live-resources-chromium153.json', import.meta.url),
       'utf8',
     ),
   );

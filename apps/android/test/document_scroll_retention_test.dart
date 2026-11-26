@@ -13,7 +13,7 @@ import 'live_test.dart' show theme;
 final _fixture =
     jsonDecode(
           File(
-            'tool/parity/fixtures/document-scroll-retention-chromium153.json',
+            '../../packages/pirc_render/test/fixtures/parity/document-scroll-retention-chromium153.json',
           ).readAsStringSync(),
         )
         as Map;

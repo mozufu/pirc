@@ -12,7 +12,7 @@ const bundle = readFileSync(
 );
 const fixture = JSON.parse(
   readFileSync(
-    new URL('./fixtures/document-details-fragment-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-details-fragment-chromium153.json', import.meta.url),
     'utf8',
   ),
 );

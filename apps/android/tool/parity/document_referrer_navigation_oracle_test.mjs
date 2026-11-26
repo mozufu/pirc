@@ -3,7 +3,7 @@ import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {test} from 'node:test';
 
-const fixtureUrl = new URL('./fixtures/document-referrer-navigation-chromium153.json', import.meta.url);
+const fixtureUrl = new URL('../../../../packages/pirc_render/test/fixtures/parity/document-referrer-navigation-chromium153.json', import.meta.url);
 const runnerUrl = new URL('./verify_document_referrer_navigation_browser.mjs', import.meta.url);
 const fixtureBytes = readFileSync(fixtureUrl);
 const fixture = JSON.parse(fixtureBytes);

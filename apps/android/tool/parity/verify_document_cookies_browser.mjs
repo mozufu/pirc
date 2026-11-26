@@ -862,7 +862,7 @@ try {
   };
   const fixture = normalize(rawFixture, actualPort, subPort, proxyPort);
   const fixturePath = process.env.PIRC_FIXTURE_PATH ??
-    path.join(scriptDirectory, 'fixtures/document-cookies-chrome155.json');
+    path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-cookies-chrome155.json');
   await writeFile(fixturePath, JSON.stringify(fixture, null, 2) + '\n');
   process.stdout.write(JSON.stringify({
     browserVersion: fixture.browserVersion,

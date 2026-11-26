@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
+import 'package:html/dom.dart' as dom;
 
 import 'dart:ui' as ui;
 
@@ -29,7 +30,9 @@ class RenderHost {
   /// should depend on an inherited widget so [context] rebuilds when it changes.
   final RenderDocumentScope? Function(BuildContext context)? documentScopeOf;
 
-  /// Builds the player for an HTML `<audio>`/`<video>` element in [scope].
+  /// Builds the player for an HTML `<audio>`/`<video>` element. [scope] is
+  /// null for chat content (a message or a tool result), whose media must
+  /// load only after the user taps it. Returning null shows no player.
   final RenderMediaBuilder? mediaBuilder;
 
   /// Returns a file picker for an `<input type=file>` in [scope]. The picker
@@ -56,8 +59,8 @@ class RenderHost {
 }
 
 typedef RenderMediaBuilder =
-    Widget Function(
-      RenderDocumentScope scope,
+    Widget? Function(
+      RenderDocumentScope? scope,
       NativeHtmlMediaSpec spec,
       Map<String, String> styles, {
       String? baseUrl,
@@ -156,6 +159,13 @@ abstract interface class DocumentRuntime {
     VoidCallback? Function(Map<String, dynamic> data)? onTouchClickQueued,
   });
 
+  /// The top layer of script-driven documents (modal dialogs). Chat content
+  /// has none: a dialog there stays in normal flow.
+  DocumentTopLayer get topLayer;
+
+  /// The wire format between script callbacks and the document script.
+  DocumentScriptCallbacks get scriptCallbacks;
+
   /// Decodes a form submission requested by a document script.
   NativeHtmlFormSubmission decodeScriptFormSubmission(
     Map<String, dynamic> action, {
@@ -166,4 +176,53 @@ abstract interface class DocumentRuntime {
     )
     resolveFile,
   });
+}
+
+/// The top layer of a script-driven document: dialogs that a document script
+/// opened with `showModal()`. Only the script runtime may put an element there;
+/// markup alone never does.
+abstract interface class DocumentTopLayer {
+  /// The order of [element] in the top layer, or null when it is not in it.
+  int? orderOf(dom.Element element);
+
+  /// Wraps the content of a top-layer element, so focus stays inside it.
+  Widget scope(Widget child);
+}
+
+/// The wire format of the callbacks between a rendered document and its
+/// script: picked files, and the order in which queued script actions apply.
+abstract interface class DocumentScriptCallbacks {
+  /// The actions in [actions] whose `sequence` is newer than [lastConsumed].
+  List<Map<String, dynamic>> pendingActions(
+    List<Map<String, dynamic>> actions,
+    int lastConsumed,
+  );
+
+  /// Sorts focus actions by `sequence`, then by `actionOrder`.
+  void sortFocusActions(List<Map<String, dynamic>> actions);
+
+  /// Encodes [files] for the script. File bytes are sent while their total
+  /// fits in [budget]; returns the encoded files and the budget left.
+  (List<Map<String, dynamic>>, int) encodeFiles(
+    Iterable<NativeHtmlFile> files,
+    int budget,
+  );
+
+  /// Reads a file-picker request the script queued.
+  DocumentScriptFilePick decodeFilePick(Map<String, dynamic> action);
+}
+
+/// A file chooser a document script opened (`input.click()` or
+/// `showPicker()`).
+class DocumentScriptFilePick {
+  const DocumentScriptFilePick({
+    required this.id,
+    required this.controlId,
+    required this.resetVersion,
+    required this.request,
+  });
+  final int id;
+  final String controlId;
+  final String resetVersion;
+  final NativeHtmlFilePickerRequest request;
 }

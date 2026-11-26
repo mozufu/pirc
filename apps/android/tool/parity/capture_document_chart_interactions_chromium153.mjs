@@ -19,7 +19,7 @@ const gatewayRequire = createRequire(new URL('../../../../package.json', import.
 const { chromium } = gatewayRequire('playwright-core');
 const playwrightPackage = JSON.parse(await readFile(gatewayRequire.resolve('playwright-core/package.json'), 'utf8'));
 const browserExecutable = requireTestBrowserExecutable();
-const outputPath = path.join(scriptDirectory, 'fixtures/document-chart-interactions-chromium153.json');
+const outputPath = path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-chart-interactions-chromium153.json');
 const cases = [];
 const viewports = [
   { name: 'phone', width: 390, height: 844 },

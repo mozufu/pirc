@@ -11,7 +11,7 @@ const runtimeBundle = readFileSync(
   'utf8'
 );
 const fixtureBytes = readFileSync(
-  new URL('./fixtures/document-history-chrome155.json', import.meta.url)
+  new URL('../../../../packages/pirc_render/test/fixtures/parity/document-history-chrome155.json', import.meta.url)
 );
 const chrome = JSON.parse(fixtureBytes.toString('utf8'));
 const fixtureSha256 = 'b28ceb218bc504c21f54503963b37b2a5c18b3b5e8a467781a99e340727995da';

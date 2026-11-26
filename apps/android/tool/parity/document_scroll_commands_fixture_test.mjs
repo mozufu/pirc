@@ -8,7 +8,7 @@ import {
   buildScrollCommandDriver,
 } from './document_scroll_commands_fixture.mjs';
 const fixture = JSON.parse(
-  readFileSync(new URL('./fixtures/document-scroll-commands-chromium153.json', import.meta.url)),
+  readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-scroll-commands-chromium153.json', import.meta.url)),
 );
 test('scroll command source and all 160 browser profiles are frozen independently of Flutter', () => {
   assert.equal(fixture.browserVersion, '153.0.8010.12');

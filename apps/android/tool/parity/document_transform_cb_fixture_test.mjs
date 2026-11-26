@@ -8,7 +8,7 @@ import {
 } from './document_transform_cb_fixture.mjs';
 test('136 independent transformed containing-block profiles preserve shared sources, actual clicks and pixels', () => {
   const fixture = JSON.parse(
-    readFileSync(new URL('./fixtures/document-transform-cb-chromium153.json', import.meta.url)),
+    readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-transform-cb-chromium153.json', import.meta.url)),
   );
   assert.equal(fixture.browserVersion, '153.0.8010.12');
   assert.equal(fixture.cases.length, 136);

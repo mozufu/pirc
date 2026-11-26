@@ -16,7 +16,7 @@ const vm = createDocumentScriptHostVm(nativeVm),
   );
 const fixture = JSON.parse(
   readFileSync(
-    new URL('./fixtures/document-dialog-request-close-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-dialog-request-close-chromium153.json', import.meta.url),
     'utf8',
   ),
 );

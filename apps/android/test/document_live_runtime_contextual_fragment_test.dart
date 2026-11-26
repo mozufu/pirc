@@ -47,7 +47,7 @@ void main() {
   final svgPaintFixture =
       jsonDecode(
             File(
-              'tool/parity/fixtures/document-contextual-fragment-chromium153.json',
+              '../../packages/pirc_render/test/fixtures/parity/document-contextual-fragment-chromium153.json',
             ).readAsStringSync(),
           )
           as Map<String, dynamic>;

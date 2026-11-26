@@ -7,7 +7,7 @@ void main() {
   final fixture =
       jsonDecode(
             File(
-              '../../apps/android/tool/parity/fixtures/document-canvas-sizing-chromium153.json',
+              'test/fixtures/parity/document-canvas-sizing-chromium153.json',
             ).readAsStringSync(),
           )
           as Map;

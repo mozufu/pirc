@@ -16,7 +16,7 @@ const {chromium} = require(require.resolve('playwright-core', {
 const browserExecutable = requireTestBrowserExecutable();
 assert.ok(!browserExecutable.includes('/Applications/Google Chrome.app/'));
 assert.ok(browserExecutable.includes('/.pirc/test-browsers/'));
-const fixturePath = path.join(scriptDirectory, 'fixtures/document-stylesheets-chromium153.json');
+const fixturePath = path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-stylesheets-chromium153.json');
 let priorFixture = null;
 try {
   priorFixture = JSON.parse(await readFile(fixturePath, 'utf8'));

@@ -130,7 +130,7 @@ test('screen media types, boolean expressions, dimensions, units, and MQ4 ranges
 });
 
 test('matches every captured Chromium 153 query across viewport, scale, preference, and touch contexts', async () => {
-  const fixture = JSON.parse(await readFile(new URL('./fixtures/document-media-chromium153.json', import.meta.url), 'utf8'));
+  const fixture = JSON.parse(await readFile(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-media-chromium153.json', import.meta.url), 'utf8'));
   const contexts = [
     ...fixture.viewportMatrix.cases.map(row => ['desktop', row]),
     ...fixture.resolutionContexts.map(row => ['desktop', row]),

@@ -19,7 +19,7 @@ const gatewayRequire = createRequire(new URL('../../../../package.json', import.
 const {chromium} = gatewayRequire('playwright-core');
 const playwrightPackage = JSON.parse(await readFile(gatewayRequire.resolve('playwright-core/package.json'), 'utf8'));
 const browserExecutable = requireTestBrowserExecutable();
-const outputPath = path.join(scriptDirectory, 'fixtures/document-chart-responsive-layout-chromium153.json');
+const outputPath = path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-chart-responsive-layout-chromium153.json');
 const viewportCases = [
   {name: 'phone', width: 390, height: 844},
   {name: 'tablet', width: 768, height: 1024},
@@ -528,7 +528,7 @@ try {
   if (cases.length !== 16 || cases.some((item) => item.networkRequests !== 0)) {
     throw new Error(`Expected 16 network-isolated cases; got ${cases.length}`);
   }
-  const outputPath = path.join(scriptDirectory, 'fixtures/document-chart-responsive-layout-chromium153.json');
+  const outputPath = path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-chart-responsive-layout-chromium153.json');
   await writeFile(outputPath, `${JSON.stringify(fixture)}\n`);
   console.log(JSON.stringify({outputPath, browserVersion, playwrightVersion: playwrightPackage.version, chartSha256, cases: cases.length}));
 } finally {

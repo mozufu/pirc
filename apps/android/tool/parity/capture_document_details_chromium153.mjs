@@ -29,7 +29,7 @@ try {
   assert.deepEqual(errors, []);
   assert.deepEqual(requests, ['https://details.example/test']);
   await writeFile(
-    new URL('./fixtures/document-details-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-details-chromium153.json', import.meta.url),
     JSON.stringify(
       { browserVersion: browser.version(), html: detailsHTML, actions: detailsActions, states },
       null,

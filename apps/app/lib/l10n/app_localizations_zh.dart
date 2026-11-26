@@ -3745,6 +3745,20 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get shareFailed => '無法分享。';
+
+  @override
+  String get messageMediaTap => '點一下以載入媒體';
+
+  @override
+  String messageMediaFrom(String host) {
+    return '來自 $host';
+  }
+
+  @override
+  String get messageMediaFailed => '無法載入媒體。';
+
+  @override
+  String get messageMediaUnsupported => '無法在此播放這個媒體。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

@@ -345,21 +345,21 @@ def build(vendor: Path, output_dir: Path) -> tuple[Path, str]:
     }
     output_provenance["nativeMedia"] = {
         "helperSha256": hashlib.sha256(media_runtime.encode("utf-8")).hexdigest(),
-        "browserOracle": "apps/android/tool/parity/fixtures/document-media-chromium153.json",
+        "browserOracle": "packages/pirc_render/test/fixtures/parity/document-media-chromium153.json",
     }
     output_provenance["nativeStylesheets"] = {
         "helperSha256": hashlib.sha256(stylesheets_runtime.encode("utf-8")).hexdigest(),
-        "browserOracle": "apps/android/tool/parity/fixtures/document-stylesheets-chromium153.json",
+        "browserOracle": "packages/pirc_render/test/fixtures/parity/document-stylesheets-chromium153.json",
     }
     output_provenance["nativeStorage"] = {
         "helperSha256": hashlib.sha256(storage_runtime.encode("utf-8")).hexdigest(),
         "bridgeSha256": hashlib.sha256(storage_bridge.encode("utf-8")).hexdigest(),
-        "browserOracle": "apps/android/tool/parity/fixtures/document-storage-chrome155.json",
+        "browserOracle": "packages/pirc_render/test/fixtures/parity/document-storage-chrome155.json",
     }
     output_provenance["nativeCookies"] = {
         "source": "apps/android/tool/parity/document_cookies_source.js",
         "sha256": hashlib.sha256(cookies_runtime.encode("utf-8")).hexdigest(),
-        "browserOracle": "apps/android/tool/parity/fixtures/document-cookies-chrome155.json",
+        "browserOracle": "packages/pirc_render/test/fixtures/parity/document-cookies-chrome155.json",
     }
     output_provenance["nativeMutationObserver"] = {
         "helperSha256": hashlib.sha256(mutation_runtime.encode("utf-8")).hexdigest(),

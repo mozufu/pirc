@@ -5,7 +5,7 @@ import { fixture, svgSource } from './document_live_svg_fixture.mjs';
 
 test('SVG reference records real browser states, source identity and HTML/Canvas pixels', () => {
   const f = JSON.parse(
-    readFileSync(new URL('./fixtures/document-live-svg-chromium153.json', import.meta.url), 'utf8'),
+    readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-live-svg-chromium153.json', import.meta.url), 'utf8'),
   );
   assert.equal(f.browserVersion, '153.0.8010.12');
   assert.equal(f.html, fixture.assetHTML);

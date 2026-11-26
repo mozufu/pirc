@@ -161,7 +161,7 @@ try {
         }
       }
   await writeFile(
-    new URL('./fixtures/document-into-view-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-into-view-chromium153.json', import.meta.url),
     JSON.stringify({ browserVersion: browser.version(), cases }) + '\n',
   );
   process.stdout.write(`Captured ${cases.length} scrollIntoView profiles\n`);

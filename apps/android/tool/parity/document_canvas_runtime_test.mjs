@@ -493,7 +493,7 @@ test('nonfinite arc and ellipse arguments take precedence over negative radii', 
 test('path no-ops and conversion errors match frozen Chromium observations', () => {
   const fixture = JSON.parse(
     readFileSync(
-      new URL('./fixtures/document-chart-types-chromium153.json', import.meta.url),
+      new URL('../../../../packages/pirc_render/test/fixtures/parity/document-chart-types-chromium153.json', import.meta.url),
       'utf8',
     ),
   );

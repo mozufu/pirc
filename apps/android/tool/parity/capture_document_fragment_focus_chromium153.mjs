@@ -142,7 +142,7 @@ try {
         }
       }
   await writeFile(
-    new URL('./fixtures/document-fragment-focus-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-fragment-focus-chromium153.json', import.meta.url),
     JSON.stringify({ browserVersion: browser.version(), cases }) + '\n',
   );
 } finally {

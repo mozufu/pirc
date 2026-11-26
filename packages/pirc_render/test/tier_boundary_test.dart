@@ -30,11 +30,14 @@ void main() {
   });
 }
 
-/// Script runtime, Canvas, computed-style export and script submissions.
+/// Script runtime, Canvas, computed-style export, the dialog top layer,
+/// script callbacks and script submissions.
 const _tier3Libraries = [
   '/document_canvas.dart',
   '/document_canvas_pointer.dart',
   '/document_computed_styles.dart',
+  '/document_top_layer.dart',
+  '/html_script_callbacks.dart',
   '/html_script_submission.dart',
 ];
 

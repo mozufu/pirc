@@ -362,7 +362,7 @@ try {
     },
     viewports,
   };
-  const output = new URL('./fixtures/document-canvas-ink-chromium153.json', import.meta.url);
+  const output = new URL('../../../../packages/pirc_render/test/fixtures/parity/document-canvas-ink-chromium153.json', import.meta.url);
   writeFileSync(output, JSON.stringify(fixture) + '\n');
   console.log(JSON.stringify({
     output: fileURLToPath(output),

@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 const fixture = JSON.parse(
   readFileSync(
-    new URL('./fixtures/document-chart-animation-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-chart-animation-chromium153.json', import.meta.url),
     'utf8',
   ),
 );

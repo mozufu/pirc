@@ -91,7 +91,7 @@ try {
         }
       }
   await writeFile(
-    new URL('./fixtures/document-transform-cb-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-transform-cb-chromium153.json', import.meta.url),
     JSON.stringify({ browserVersion: browser.version(), cases }) + '\n',
   );
   console.log(`Captured ${cases.length} transformed containing-block profiles`);

@@ -76,7 +76,7 @@ void main() {
   final fixture =
       jsonDecode(
             File(
-              'tool/parity/fixtures/document-transform-style-chromium153.json',
+              '../../packages/pirc_render/test/fixtures/parity/document-transform-style-chromium153.json',
             ).readAsStringSync(),
           )
           as Map;

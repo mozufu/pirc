@@ -448,8 +448,8 @@ class NativeDocumentTransportTest {
 
     @Test fun actualWireRequestsReplayThirtyIndependentChromium153PolicyCases() {
         val fixture = listOf(
-            File("../../tool/parity/fixtures/document-referrer-chromium153.json"),
-            File("../tool/parity/fixtures/document-referrer-chromium153.json"),
+            File("../../../../packages/pirc_render/test/fixtures/parity/document-referrer-chromium153.json"),
+            File("../../../packages/pirc_render/test/fixtures/parity/document-referrer-chromium153.json"),
         ).firstOrNull { it.isFile } ?: error("Chromium 153 referrer fixture is unavailable")
         val oracle = Json.parseToJsonElement(fixture.readText()).jsonObject
         val cases = oracle.getValue("cases").jsonArray

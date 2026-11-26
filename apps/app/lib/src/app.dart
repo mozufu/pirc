@@ -8,6 +8,7 @@ import 'connection/connection_screens.dart';
 import 'connection/hints.dart';
 import 'connection/pairing.dart';
 import 'connection/rotation.dart';
+import 'document_host.dart' if (dart.library.io) 'document_host_io.dart';
 import 'notifications/notification_open.dart';
 import 'preferences.dart';
 import 'render_bridge.dart';
@@ -61,8 +62,11 @@ class PircApp extends ConsumerWidget {
   }
 }
 
-/// Connects the renderer before the first frame.
+/// Connects the renderer before the first frame. On Android the host also
+/// plays message media after a tap; the document runtime (tier 3) is never
+/// installed here, only around fetched-document views.
 void installRenderer() {
   RenderL10n.delegate = const AppRenderLocalizations();
+  RenderHost.fallback = documentRenderHost();
   registerNativeRendererLicenses();
 }

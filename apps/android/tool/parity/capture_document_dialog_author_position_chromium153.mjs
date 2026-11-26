@@ -54,7 +54,7 @@ try {
       }
     } finally {await context.close();}
   }
-  const output=new URL('./fixtures/document-dialog-author-position-chromium153.json',import.meta.url);
+  const output=new URL('../../../../packages/pirc_render/test/fixtures/parity/document-dialog-author-position-chromium153.json',import.meta.url);
   await writeFile(output,JSON.stringify({
     oracle:'Dedicated Playwright-pinned Chromium Headless Shell; no external requests or daily Chrome profile.',
     browserVersion:browser.version(),cases:rows,

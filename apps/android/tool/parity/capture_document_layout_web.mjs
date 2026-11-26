@@ -2,7 +2,7 @@ import { requireTestBrowserExecutable } from './test_browser.mjs';
 import { createRequire } from 'node:module';
 import { writeFile } from 'node:fs/promises';
 
-const outputPath = new URL('./fixtures/document-layout-chromium153.json', import.meta.url);
+const outputPath = new URL('../../../../packages/pirc_render/test/fixtures/parity/document-layout-chromium153.json', import.meta.url);
 const gatewayRequire = createRequire(new URL('../../../gateway/package.json', import.meta.url));
 const { chromium } = gatewayRequire('playwright-core');
 

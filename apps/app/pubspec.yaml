@@ -19,6 +19,7 @@ dependencies:
   lucide_icons_flutter: ^3.0.0
   pirc_client:
   pirc_render:
+  pirc_render_document:
   pirc_ui:
   qr_flutter: ^4.1.0
   share_plus: ^13.3.1
@@ -28,6 +29,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  html: 0.15.6
 flutter:
   uses-material-design: true
   generate: true

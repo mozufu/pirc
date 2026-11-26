@@ -16,7 +16,7 @@ const bundle = readFileSync(
 );
 const fixture = JSON.parse(
   readFileSync(
-    new URL('./fixtures/document-script-picker-lifetime-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-script-picker-lifetime-chromium153.json', import.meta.url),
     'utf8',
   ),
 );

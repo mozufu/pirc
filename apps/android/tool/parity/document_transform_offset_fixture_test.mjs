@@ -8,7 +8,7 @@ import {
 } from './document_transform_offset_fixture.mjs';
 test('224 independent transformed-offset profiles preserve sources, parent identities and scroll-independent layout', () => {
   const fixture = JSON.parse(
-    readFileSync(new URL('./fixtures/document-transform-offset-chromium153.json', import.meta.url)),
+    readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-transform-offset-chromium153.json', import.meta.url)),
   );
   assert.equal(fixture.browserVersion, '153.0.8010.12');
   assert.equal(fixture.cases.length, 224);

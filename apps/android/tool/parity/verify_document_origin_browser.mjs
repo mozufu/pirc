@@ -804,7 +804,7 @@ try {
   }, {});
   const rawResults = normalizeFixtureValue(results);
   const fixturePath = process.env.PIRC_FIXTURE_PATH ??
-    path.join(scriptDirectory, 'fixtures/document-origin-chromium153.json');
+    path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-origin-chromium153.json');
   const runnerBytes = await readFile(fileURLToPath(import.meta.url));
   const fixture = normalizeFixtureValue({
     browserVersion: browser.version(),

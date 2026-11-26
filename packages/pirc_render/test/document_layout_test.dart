@@ -748,7 +748,7 @@ void main() {
         final fixture =
             jsonDecode(
                   File(
-                    '../../apps/android/tool/parity/fixtures/document-layout-chromium153.json',
+                    'test/fixtures/parity/document-layout-chromium153.json',
                   ).readAsStringSync(),
                 )
                 as Map<String, dynamic>;

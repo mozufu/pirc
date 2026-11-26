@@ -14,7 +14,7 @@ import 'package:pirc_render/src/native_html.dart';
 import 'package:pirc_mobile/theme.dart';
 
 const _fixturePath =
-    'tool/parity/fixtures/document-percentages-chromium153.json';
+    '../../packages/pirc_render/test/fixtures/parity/document-percentages-chromium153.json';
 const _revision = 41;
 
 // Load synchronously: testWidgets runs in a fake-async zone, where an async

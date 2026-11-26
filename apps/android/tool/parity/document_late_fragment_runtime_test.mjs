@@ -63,7 +63,7 @@ test('initial fragment readiness follows parser/defer/module and retains the DCL
 test('late fragment browser corpus covers all environments with identical page/resource sources', () => {
   const fixture = JSON.parse(
     readFileSync(
-      new URL('./fixtures/document-late-fragment-chromium153.json', import.meta.url),
+      new URL('../../../../packages/pirc_render/test/fixtures/parity/document-late-fragment-chromium153.json', import.meta.url),
       'utf8',
     ),
   );

@@ -261,7 +261,7 @@ try {
           }
         }
   await writeFile(
-    new URL('./fixtures/document-pointer-events-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-pointer-events-chromium153.json', import.meta.url),
     JSON.stringify({ schemaVersion: 1, browserVersion: browser.version(), driverSource, cases }) +
       '\n',
   );

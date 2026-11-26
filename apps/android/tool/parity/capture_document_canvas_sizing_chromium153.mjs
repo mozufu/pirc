@@ -171,7 +171,7 @@ try {
           }
         }
   await writeFile(
-    new URL('./fixtures/document-canvas-sizing-chromium153.json', import.meta.url),
+    new URL('../../../../packages/pirc_render/test/fixtures/parity/document-canvas-sizing-chromium153.json', import.meta.url),
     JSON.stringify({ browserVersion, cases }) + '\n',
   );
   console.log(

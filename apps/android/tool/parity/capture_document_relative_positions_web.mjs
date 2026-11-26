@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { writeFile } from 'node:fs/promises';
 
 const outputPath = new URL(
-  './fixtures/document-relative-positions-chromium153.json',
+  '../../../../packages/pirc_render/test/fixtures/parity/document-relative-positions-chromium153.json',
   import.meta.url,
 );
 const projectRequire = createRequire(

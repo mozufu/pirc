@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
 const fixture = JSON.parse(
-  readFileSync(new URL('./fixtures/document-fixed-chromium153.json', import.meta.url)),
+  readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-fixed-chromium153.json', import.meta.url)),
 );
 const modes = [
   'top_left',

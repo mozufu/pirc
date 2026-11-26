@@ -15,7 +15,7 @@ import 'package:pirc_render/src/native_html.dart';
 import 'package:pirc_mobile/theme.dart';
 
 const _fixturePath =
-    'tool/parity/fixtures/document-element-scroll-chromium153.json';
+    '../../packages/pirc_render/test/fixtures/parity/document-element-scroll-chromium153.json';
 const _revision = 63;
 
 // Keep fixture I/O synchronous: testWidgets runs in a fake-async zone.

@@ -5,6 +5,8 @@ import 'document_relative_position.dart';
 import 'document_computed_style_spec.dart';
 import 'package:html/dom.dart' as dom;
 
+import 'render_host.dart';
+
 /// A zero-size block marker preserves static position only in block-only flow.
 /// Mixed inline runs and flex/grid static-position rectangles need their own
 /// formatting-context geometry and are not guessed here.
@@ -100,6 +102,7 @@ Map<String, NativeDocumentOffsetSpec> nativeDocumentOffsetSpecs({
   required dom.Document document,
   required Map<dom.Element, Map<String, String>> stylesByElement,
   Map<String, NativeDocumentComputedStyleSpec> computedStyles = const {},
+  DocumentTopLayer? topLayer,
 }) {
   final result = <String, NativeDocumentOffsetSpec>{};
   final root = document.documentElement;
@@ -123,7 +126,7 @@ Map<String, NativeDocumentOffsetSpec> nativeDocumentOffsetSpecs({
         fontSize: 16,
         viewport: Size.zero,
         allowStaticPosition: true,
-        topLayer: element.attributes.containsKey('data-pirc-dialog-modal'),
+        topLayer: topLayer?.orderOf(element) != null,
       );
       if (spec == null ||
           (spec.needsStaticPosition &&

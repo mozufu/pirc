@@ -41,7 +41,7 @@ void main() {
   final oracle =
       jsonDecode(
             File(
-              'tool/parity/fixtures/document-stylesheets-chromium153.json',
+              '../../packages/pirc_render/test/fixtures/parity/document-stylesheets-chromium153.json',
             ).readAsStringSync(),
           )
           as Map;

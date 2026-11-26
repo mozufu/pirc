@@ -34,6 +34,8 @@ void main() {
                   styles: MarkdownStyleSheet(),
                   builders: const {},
                   markdownStyles: false,
+                  // The runtime draws canvases only in a document.
+                  scriptDocument: markup,
                 ),
               ),
             ),

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pirc_client/pirc_client.dart';
 
+import '../document_host.dart' if (dart.library.io) '../document_host_io.dart';
 import '../platform/media.dart';
 import '../platform/push.dart';
 import 'storage.dart';
@@ -357,6 +358,15 @@ class ConnectionController extends Notifier<ConnectionStatus> {
     } on Exception {
       // The players are already gone with the engine.
     }
+    // Message documents' scripts, storage and cookies end with the pairing.
+    // They hold no credentials, so this does not hold up the new pairing.
+    unawaited(
+      closeDocumentScripts().then<void>(
+        (_) {},
+        // The sessions are already gone with the engine.
+        onError: (Object _) {},
+      ),
+    );
   }
 
   /// Saves a checked pairing and connects with it.

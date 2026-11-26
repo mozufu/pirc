@@ -1,0 +1,83 @@
+{
+  "version": "0.18.13",
+  "tarball": "https://registry.npmjs.org/linkedom/-/linkedom-0.18.13.tgz",
+  "integrity": "sha512-ES/o9qotMpzpN2MHs+Iq/JcVoOj8Fa5wiQYrTdFpvAnwXL0g66XHHUc9WUMk6nAlBtGsFQ24ne+SYnvnaQ2FSw==",
+  "workerSha256": "ea9f1de69b009d210968dd8f4d3f4ecf1095bedf80d389ec83244c1713578288",
+  "urlPonyfill": {
+    "source": "core-js-pure@3.50.0 URL and URLSearchParams entry points",
+    "builder": "esbuild@0.28.2",
+    "sha256": "e9b958e8601c9b91176d20e032cf3491048a22cba25d127e26ac0533edb75966",
+    "packageLock": "apps/android/tool/parity/vendor/core-js-url-3.50.0/package-lock.json"
+  },
+  "nativeMedia": {
+    "helperSha256": "be174297ad431c27e9d63d046f34c005b6aec2d601676bfa3cf0d1bf55a9c248",
+    "browserOracle": "packages/pirc_render/test/fixtures/parity/document-media-chromium153.json"
+  },
+  "nativeStylesheets": {
+    "helperSha256": "4287eec3248396a8e7479324a27a4a2b83c8b1323b97fc3affae5ea9cfc6ea66",
+    "browserOracle": "packages/pirc_render/test/fixtures/parity/document-stylesheets-chromium153.json"
+  },
+  "nativeStorage": {
+    "helperSha256": "20abded2b40e2f0e3b8b728715a64783791d5ac77c21216a73decb3b799d4961",
+    "bridgeSha256": "5a7b911dc90885dcefce86525917e4fcdfde843f2f0d4298f14fb058f1e6d3a9",
+    "browserOracle": "packages/pirc_render/test/fixtures/parity/document-storage-chrome155.json"
+  },
+  "nativeCookies": {
+    "source": "apps/android/tool/parity/document_cookies_source.js",
+    "sha256": "e842c1d9edde16ef8ef10fe505cc680229aa82b04af01c127c385c92b8f887c8",
+    "browserOracle": "packages/pirc_render/test/fixtures/parity/document-cookies-chrome155.json"
+  },
+  "nativeMutationObserver": {
+    "helperSha256": "842a9ca3e4ee720fba945c422c87cdf80ad7e255c1424af098c4e4358defa65c"
+  },
+  "nativeMutationPatches": {
+    "source": "apps/android/tool/parity/document_linkedom_mutation_patches.json",
+    "sha256": "5a2eb2c027b1cf270e3d3080649e98493be89cdbfeac0f1964634c3ee483c65c"
+  },
+  "nativeResizeObserver": {
+    "helperSha256": "ee102a0c0a95f3f8ced8fe139cd6b9f0c796eda5cd629e2e8c2a815a7625a791"
+  },
+  "nativeLayout": {
+    "helperSha256": "4a67b1db6509af82143ec980d0ac676a3d01e0ce2768065ec6a9eae40206bbeb"
+  },
+  "nativeModules": {
+    "parser": {
+      "name": "acorn",
+      "version": "8.18.0",
+      "source": "https://registry.npmjs.org/acorn/-/acorn-8.18.0.tgz",
+      "license": "MIT",
+      "acornSha256": "fc3ed7b81e58464715d0291402892f22c3d86ea75302645a330390f85d8015c9",
+      "licenseSha256": "76a876cf886ff9be2a8b5e2e86514fed06223c8c9f0c1e9ee9606e93841e00b7",
+      "origin": "Existing pinned workspace dependency; no network download"
+    },
+    "compilerSha256": "5c16239a7db3857768cc2223fd63fcff0b7db38cb2be298b0264e2b7900a88a5",
+    "importMapsSha256": "f74e5d2d780803e8a74f65989d44ffd947b4bdd0d8c905234f0ae85846de902e",
+    "classicImportsSha256": "1c6003a22342211427c64b1843e541e6e2b3d67b54578ca2333c4c64b0ae6aa0",
+    "loaderSha256": "08001af70cac7ccf84a28083fc693ecf985f669cbeaab722283bc812ae1d9d28"
+  },
+  "encodingData": {
+    "fetchedAt": "2026-10-16",
+    "source": "WHATWG Encoding Standard",
+    "standardUrl": "https://encoding.spec.whatwg.org/",
+    "indexDate": "2024-09-18",
+    "license": "BSD-3-Clause for incorporated source portions; upstream complete license retained",
+    "files": {
+      "encodings.json": {
+        "url": "https://encoding.spec.whatwg.org/encodings.json",
+        "sha256": "078212b3697f60b81225b6671bd9da2604497abff0aa8e96e4d46605c02ac9e7",
+        "bytes": 8913
+      },
+      "index-big5.txt": {
+        "url": "https://encoding.spec.whatwg.org/index-big5.txt",
+        "sha256": "08e24270c8e95d998c994c03f907e972480dc01f58743e078654cc466203c8ff",
+        "bytes": 688943
+      },
+      "LICENSE": {
+        "url": "https://raw.githubusercontent.com/whatwg/encoding/main/LICENSE",
+        "sha256": "85dc6f5ccb57a6fe8c33d158f9fc8fc7ee5655a5d3db2cdd131c6a3d0f48a864",
+        "bytes": 16315
+      }
+    },
+    "generatedSha256": "b258a9e0f2dcc46458ed5dff7e9aa2474d43d69981271c8927158ac589632590"
+  }
+}

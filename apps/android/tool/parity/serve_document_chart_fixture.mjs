@@ -13,9 +13,9 @@ const actualSha256 = createHash('sha256').update(library).digest('hex');
 if (actualSha256 !== provenance.assetSha256) {
   throw new Error(`Chart.js checksum mismatch: expected ${provenance.assetSha256}, got ${actualSha256}`);
 }
-const reference = readFileSync(path.join(scriptDirectory, 'fixtures/document-chart-chromium153.json'));
+const reference = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-chart-chromium153.json'));
 const referenceSha256 = createHash('sha256').update(reference).digest('hex');
-const interactions = readFileSync(path.join(scriptDirectory, 'fixtures/document-chart-interactions-chromium153.json'));
+const interactions = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-chart-interactions-chromium153.json'));
 const interactionFixture = JSON.parse(interactions.toString('utf8'));
 if (interactionFixture.chartJs?.sha256 !== actualSha256 || !Array.isArray(interactionFixture.cases)) {
   throw new Error('Chart interaction fixture does not match the pinned library');
@@ -25,7 +25,7 @@ if (fixture.chartJs?.sha256 !== actualSha256 || !Array.isArray(fixture.cases)) {
   throw new Error('Chart.js reference fixture does not match the pinned library or has no cases');
 }
 
-const responsive = readFileSync(path.join(scriptDirectory, 'fixtures/document-chart-responsive-layout-chromium153.json'));
+const responsive = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-chart-responsive-layout-chromium153.json'));
 const responsiveFixture = JSON.parse(responsive.toString('utf8'));
 if (responsiveFixture.chartJs?.sha256 !== actualSha256 || typeof responsiveFixture.driverSource !== 'string') {
   throw new Error('Chart responsive fixture does not match the pinned library');
@@ -45,74 +45,74 @@ function configuredPort() {
   return port;
 }
 
-const targetState = readFileSync(path.join(scriptDirectory, 'fixtures/document-target-state-chromium153.json'));
+const targetState = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-target-state-chromium153.json'));
 
-const frameSteps = readFileSync(path.join(scriptDirectory, 'fixtures/document-frame-steps-chromium153.json'));
+const frameSteps = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-frame-steps-chromium153.json'));
 
-const layoutDependencies = readFileSync(path.join(scriptDirectory, 'fixtures/document-layout-dependencies-chromium153.json'));
+const layoutDependencies = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-layout-dependencies-chromium153.json'));
 
-const boxStyleProjection = readFileSync(path.join(scriptDirectory, 'fixtures/document-box-style-projection-chromium153.json'));
+const boxStyleProjection = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-box-style-projection-chromium153.json'));
 
-const canvasSizing = readFileSync(path.join(scriptDirectory, 'fixtures/document-canvas-sizing-chromium153.json'));
+const canvasSizing = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-canvas-sizing-chromium153.json'));
 
-const chartTypes = readFileSync(path.join(scriptDirectory, 'fixtures/document-chart-types-chromium153.json'));
+const chartTypes = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-chart-types-chromium153.json'));
 const chartTypesFixture = JSON.parse(chartTypes.toString('utf8'));
 if (chartTypesFixture.chartJs?.sha256 !== actualSha256 || typeof chartTypesFixture.driverSource !== 'string') {
   throw new Error('Chart types fixture does not match the pinned library');
 }
 
-const chartAnimation = readFileSync(path.join(scriptDirectory, 'fixtures/document-chart-animation-chromium153.json'));
+const chartAnimation = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-chart-animation-chromium153.json'));
 const chartAnimationFixture = JSON.parse(chartAnimation.toString('utf8'));
 if (chartAnimationFixture.chartJs?.sha256 !== actualSha256 || typeof chartAnimationFixture.driverSource !== 'string') {
   throw new Error('Chart animation fixture does not match the pinned library');
 }
 
-const absoluteFixture = readFileSync(path.join(scriptDirectory, 'fixtures/document-absolute-chromium153.json'));
+const absoluteFixture = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-absolute-chromium153.json'));
 if (JSON.parse(absoluteFixture.toString('utf8')).browserVersion !== '153.0.8010.12') throw new Error('Unexpected absolute layout browser');
 
-const pointerEvents = readFileSync(path.join(scriptDirectory, 'fixtures/document-pointer-events-chromium153.json'));
+const pointerEvents = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-pointer-events-chromium153.json'));
 if (JSON.parse(pointerEvents.toString('utf8')).browserVersion !== '153.0.8010.12') throw new Error('Unexpected pointer-events browser');
 
-const textStyle = readFileSync(path.join(scriptDirectory, 'fixtures/document-text-style-chromium153.json'));
+const textStyle = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-text-style-chromium153.json'));
 if (JSON.parse(textStyle.toString('utf8')).browserVersion !== '153.0.8010.12') throw new Error('Unexpected text-style browser');
 
-const fixed = readFileSync(path.join(scriptDirectory, 'fixtures/document-fixed-chromium153.json'));
+const fixed = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-fixed-chromium153.json'));
 if (JSON.parse(fixed.toString('utf8')).browserVersion !== '153.0.8010.12') throw new Error('Unexpected fixed browser');
 
-const scrollAnchor = readFileSync(path.join(scriptDirectory, 'fixtures/document-scroll-anchor-chromium153.json'));
+const scrollAnchor = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-scroll-anchor-chromium153.json'));
 if (JSON.parse(scrollAnchor.toString('utf8')).browserVersion !== '153.0.8010.12') throw new Error('Unexpected scroll-anchor browser');
 
-const elementAnchor = readFileSync(path.join(scriptDirectory, 'fixtures/document-element-anchor-chromium153.json'));
+const elementAnchor = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-element-anchor-chromium153.json'));
 if (JSON.parse(elementAnchor.toString('utf8')).browserVersion !== '153.0.8010.12') throw new Error('Unexpected element-anchor browser');
 
-const scrollRetention = readFileSync(path.join(scriptDirectory, 'fixtures/document-scroll-retention-chromium153.json'));
+const scrollRetention = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-scroll-retention-chromium153.json'));
 if (JSON.parse(scrollRetention.toString('utf8')).browserVersion !== '153.0.8010.12') throw new Error('Unexpected scroll-retention browser');
 
-const scrollCommands = readFileSync(path.join(scriptDirectory, 'fixtures/document-scroll-commands-chromium153.json'));
+const scrollCommands = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-scroll-commands-chromium153.json'));
 if (JSON.parse(scrollCommands.toString('utf8')).browserVersion !== '153.0.8010.12') throw new Error('Unexpected scroll-command browser');
 
-const scrollFeedback = readFileSync(path.join(scriptDirectory, 'fixtures/document-scroll-feedback-chromium153.json'));
+const scrollFeedback = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-scroll-feedback-chromium153.json'));
 if (JSON.parse(scrollFeedback.toString('utf8')).browserVersion !== '153.0.8010.12') throw new Error('Unexpected scroll-feedback browser');
 
-const scrollingElement = readFileSync(path.join(scriptDirectory, 'fixtures/document-scrolling-element-chromium153.json'));
+const scrollingElement = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-scrolling-element-chromium153.json'));
 if (JSON.parse(scrollingElement.toString('utf8')).browserVersion !== '153.0.8010.12') throw new Error('Unexpected scrolling-element browser');
 
-const scrollBehavior = readFileSync(path.join(scriptDirectory,'fixtures/document-scroll-behavior-chromium153.json'));
+const scrollBehavior = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-scroll-behavior-chromium153.json'));
 if(JSON.parse(scrollBehavior.toString('utf8')).browserVersion !== '153.0.8010.12') throw new Error('Unexpected scroll-behavior browser');
 
-const transformScroll = readFileSync(path.join(scriptDirectory, 'fixtures/document-transform-scroll-chromium153.json'));
+const transformScroll = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-transform-scroll-chromium153.json'));
 if (JSON.parse(transformScroll.toString('utf8')).browserVersion !== '153.0.8010.12') throw new Error('Unexpected transform-scroll browser');
 
-const transformOffset = readFileSync(path.join(scriptDirectory, 'fixtures/document-transform-offset-chromium153.json'));
+const transformOffset = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-transform-offset-chromium153.json'));
 if (JSON.parse(transformOffset.toString('utf8')).browserVersion !== '153.0.8010.12') throw new Error('Unexpected transform-offset browser');
 
-const transformCB = readFileSync(path.join(scriptDirectory, 'fixtures/document-transform-cb-chromium153.json'));
+const transformCB = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-transform-cb-chromium153.json'));
 if (JSON.parse(transformCB.toString('utf8')).browserVersion !== '153.0.8010.12') throw new Error('Unexpected transform-cb browser');
 
-const transformStyle = readFileSync(path.join(scriptDirectory, 'fixtures/document-transform-style-chromium153.json'));
+const transformStyle = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-transform-style-chromium153.json'));
 if (JSON.parse(transformStyle.toString('utf8')).browserVersion !== '153.0.8010.12') throw new Error('Unexpected transform-style browser');
 
-const scrollRect = readFileSync(path.join(scriptDirectory, 'fixtures/document-scroll-rect-chromium153.json'));
+const scrollRect = readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-scroll-rect-chromium153.json'));
 if (JSON.parse(scrollRect.toString('utf8')).browserVersion !== '153.0.8010.12') throw new Error('Unexpected scroll-rect browser');
 
 const requestedPort = configuredPort();
@@ -147,12 +147,12 @@ const server = createServer((request, response) => {
   }
   if (pathname === '/initial-history.json') {
     response.writeHead(200, {'cache-control':'no-store','content-type':'application/json; charset=utf-8'});
-    response.end(readFileSync(path.join(scriptDirectory, 'fixtures/document-initial-history-chromium153.json')));
+    response.end(readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-initial-history-chromium153.json')));
     return;
   }
   if (pathname === '/late-fragment.json') {
     response.writeHead(200, {'cache-control':'no-store','content-type':'application/json; charset=utf-8'});
-    response.end(readFileSync(path.join(scriptDirectory, 'fixtures/document-late-fragment-chromium153.json')));
+    response.end(readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-late-fragment-chromium153.json')));
     return;
   }
   if (pathname === '/target-state.json') {
@@ -162,19 +162,19 @@ const server = createServer((request, response) => {
   }
   if(pathname === '/fragment-focus.json') {
     response.writeHead(200,{'cache-control':'no-store','content-type':'application/json; charset=utf-8'});
-    response.end(readFileSync(path.join(scriptDirectory,'fixtures/document-fragment-focus-chromium153.json')));return;
+    response.end(readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-fragment-focus-chromium153.json')));return;
   }
   if(pathname === '/fragment-scroll.json') {
     response.writeHead(200,{'cache-control':'no-store','content-type':'application/json; charset=utf-8'});
-    response.end(readFileSync(path.join(scriptDirectory,'fixtures/document-fragment-scroll-chromium153.json')));return;
+    response.end(readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-fragment-scroll-chromium153.json')));return;
   }
   if(pathname === '/fragment.json') {
     response.writeHead(200,{'cache-control':'no-store','content-type':'application/json; charset=utf-8'});
-    response.end(readFileSync(path.join(scriptDirectory,'fixtures/document-fragment-chromium153.json')));return;
+    response.end(readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-fragment-chromium153.json')));return;
   }
   if(pathname === '/into-view.json') {
     response.writeHead(200,{'cache-control':'no-store','content-type':'application/json; charset=utf-8'});
-    response.end(readFileSync(path.join(scriptDirectory,'fixtures/document-into-view-chromium153.json')));return;
+    response.end(readFileSync(path.join(scriptDirectory, '../../../../packages/pirc_render/test/fixtures/parity/document-into-view-chromium153.json')));return;
   }
   if(pathname === '/scroll-behavior.json') {
     response.writeHead(200,{'cache-control':'no-store','content-type':'application/json; charset=utf-8'});

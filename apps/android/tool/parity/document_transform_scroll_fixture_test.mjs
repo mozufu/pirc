@@ -9,7 +9,7 @@ import {
 } from './document_transform_scroll_fixture.mjs';
 test('192 independent transform scroll profiles preserve sources, clipping pixels and offset parents', () => {
   const f = JSON.parse(
-    readFileSync(new URL('./fixtures/document-transform-scroll-chromium153.json', import.meta.url)),
+    readFileSync(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-transform-scroll-chromium153.json', import.meta.url)),
   );
   assert.equal(f.browserVersion, '153.0.8010.12');
   assert.equal(f.cases.length, 192);

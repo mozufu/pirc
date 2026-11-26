@@ -30,7 +30,7 @@ const fixtureSha256 = sha256(fixtureSource);
 const runnerSha256 = sha256(readFileSync(scriptPath));
 const fixturePathOut = path.join(
   repositoryRoot,
-  'apps/android/tool/parity/fixtures/document-focus-chrome155.json',
+  'packages/pirc_render/test/fixtures/parity/document-focus-chrome155.json',
 );
 const browserExecutable = [
   requireTestBrowserExecutable(),

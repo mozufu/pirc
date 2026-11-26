@@ -7,7 +7,7 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 
 const sourcePath = fileURLToPath(new URL('./document_cookies_source.js', import.meta.url));
-const fixturePath = fileURLToPath(new URL('./fixtures/document-cookies-chrome155.json', import.meta.url));
+const fixturePath = fileURLToPath(new URL('../../../../packages/pirc_render/test/fixtures/parity/document-cookies-chrome155.json', import.meta.url));
 const [source, fixtureText] = await Promise.all([
   readFile(sourcePath, 'utf8'),
   readFile(fixturePath, 'utf8'),
