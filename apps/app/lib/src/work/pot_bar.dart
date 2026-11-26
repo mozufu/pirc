@@ -1,23 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:pirc_client/pirc_client.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../chat/chat_data.dart';
+import '../chat/chat_list_screen.dart';
+import '../chat/thread_cards.dart';
 import '../connection/connection.dart';
 import '../connection/data.dart';
 import 'timeline.dart';
 import 'work_data.dart';
-
-/// The name of the pot that opened [work], if known.
-String potName(WidgetRef ref, PotWork work) =>
-    ref
-        .watch(potsProvider)
-        .value
-        ?.where((pot) => pot.id == work.potId)
-        .firstOrNull
-        ?.name ??
-    '';
 
 /// Takes the work over: the pot sends no more instructions to it. A second
 /// device's `409 taken_over` is success.
@@ -45,8 +39,10 @@ Future<void> takeOverWork(
   ref.invalidate(potWorksProvider);
 }
 
-/// While a pot coordinates the work: a dark bar with 接管 (Take over). After
-/// a take-over, from this device or another: a plain banner.
+/// While a pot coordinates the work (E36): a dark bar with the pot's avatar
+/// and 接管 (Take over). After a take-over, from this device or another: a
+/// plain banner. The avatar and the text link back to the pot's
+/// conversation while the pot is known.
 class PotBar extends ConsumerWidget {
   const PotBar({super.key, required this.sessionId});
   final String sessionId;
@@ -58,14 +54,37 @@ class PotBar extends ConsumerWidget {
     final text = Theme.of(context).textTheme;
     final work = ref.watch(potWorkOfSessionProvider(sessionId));
     if (work == null) return const SizedBox.shrink();
-    final name = potName(ref, work);
+    final pot = potById(ref, work.potId);
+    final name = pot?.name ?? '';
+    final VoidCallback? openPot = pot == null
+        ? null
+        : () => context.go(chatLocation(potChatKey(pot.id)));
+    // On the dark bar the ripple needs its own Material and a light colour.
+    Widget link(Widget child, {Color? ink}) => openPot == null
+        ? child
+        : Semantics(
+            link: true,
+            onTapHint: l10n.potBarOpen(name),
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                onTap: openPot,
+                borderRadius: BorderRadius.circular(PircRadius.md),
+                splashColor: ink?.withValues(alpha: 0.16),
+                highlightColor: ink?.withValues(alpha: 0.08),
+                child: child,
+              ),
+            ),
+          );
     if (!work.open) {
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-        child: Text(
-          l10n.takenOver(name),
-          textAlign: TextAlign.center,
-          style: text.bodySmall,
+        child: link(
+          Text(
+            l10n.takenOver(name),
+            textAlign: TextAlign.center,
+            style: text.bodySmall,
+          ),
         ),
       );
     }
@@ -73,7 +92,7 @@ class PotBar extends ConsumerWidget {
     final onDark = colors['action.onPrimary'];
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-      padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+      padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
       decoration: BoxDecoration(
         color: dark,
         borderRadius: BorderRadius.circular(PircRadius.lg),
@@ -81,9 +100,33 @@ class PotBar extends ConsumerWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              l10n.potCoordinates(name),
-              style: text.bodyMedium?.copyWith(color: onDark),
+            child: link(
+              Row(
+                spacing: 10,
+                children: [
+                  if (pot != null)
+                    // `box-shadow: 0 0 0 2px var(--bg)` in the prototype.
+                    DecoratedBox(
+                      key: const Key('pot-bar-avatar'),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: colors['surface.page'],
+                          width: 2,
+                          strokeAlign: BorderSide.strokeAlignOutside,
+                        ),
+                      ),
+                      child: PotAvatar(pot: pot, size: AvatarSize.sm),
+                    ),
+                  Expanded(
+                    child: Text(
+                      l10n.potCoordinates(name),
+                      style: text.bodyMedium?.copyWith(color: onDark),
+                    ),
+                  ),
+                ],
+              ),
+              ink: onDark,
             ),
           ),
           const SizedBox(width: 12),

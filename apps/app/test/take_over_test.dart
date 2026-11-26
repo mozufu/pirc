@@ -1,14 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pirc_app/src/router.dart';
+import 'package:pirc_app/src/work/work_data.dart';
+import 'package:pirc_ui/pirc_ui.dart';
 
 import 'support/harness.dart';
 import 'support/session_fixture.dart';
 
+late ProviderContainer _container;
+
+Uri _location() =>
+    _container.read(routerProvider).routeInformationProvider.value.uri;
+
 /// s2 opened by the pot "Tester", with one pot instruction in its history.
+/// Without [potKnown] the pot is missing from `GET /api/pots`.
 Future<FixtureSession> _open(
   WidgetTester tester, {
   String state = 'open',
   bool running = true,
+  bool potKnown = true,
+  String location = '/work?open=s2',
 }) async {
   final s = FixtureSession('joined-mid-stream.json');
   final history = s.snapshot['history']! as List;
@@ -31,11 +43,12 @@ Future<FixtureSession> _open(
   s.gateway = gateway;
   gateway.json['GET /api/pots'] = (_) => {
     'pots': [
-      {
-        'id': 'p-tester',
-        'state': 'active',
-        'profile': {'name': 'Tester', 'avatarColor': 2},
-      },
+      if (potKnown)
+        {
+          'id': 'p-tester',
+          'state': 'active',
+          'profile': {'name': 'Tester', 'avatarColor': 2},
+        },
     ],
   };
   gateway.json['GET /api/pot-works'] = (_) => {
@@ -50,7 +63,7 @@ Future<FixtureSession> _open(
       },
     ],
   };
-  await pumpApp(tester, gateway: gateway, location: '/work?open=s2');
+  _container = await pumpApp(tester, gateway: gateway, location: location);
   return s;
 }
 
@@ -163,5 +176,54 @@ void main() {
       find.text('Tester sends no more instructions here.'),
       findsOneWidget,
     );
+  });
+
+  appTest('an Opened by pots row opens the work with the pot bar', (
+    tester,
+  ) async {
+    await _open(tester, location: '/work');
+    final chips = find.byType(FilterChips<WorkFilter>);
+    final chip = find.descendant(
+      of: chips,
+      matching: find.text('Opened by pots'),
+    );
+    await tester.dragUntilVisible(chip, chips, const Offset(-80, 0));
+    await tester.ensureVisible(chip);
+    await tester.pumpAndSettle();
+    await tester.tap(chip);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('take it over'), findsOneWidget);
+    final row = find.textContaining('From Tester', findRichText: true);
+    expect(row, findsOneWidget);
+    await tester.tap(row);
+    await tester.pumpAndSettle();
+    expect(_location().queryParameters['open'], 's2');
+    expect(find.textContaining('Tester coordinates this work'), findsOneWidget);
+    expect(find.byKey(const Key('pot-bar-avatar')), findsOneWidget);
+  });
+
+  appTest('the pot bar links back to the pot conversation', (tester) async {
+    await _open(tester);
+    await tester.tap(find.byKey(const Key('pot-bar-avatar')));
+    await tester.pumpAndSettle();
+    expect(_location().toString(), '/chat?open=pot%3Ap-tester');
+  });
+
+  appTest('after a take-over the banner still links back to the pot', (
+    tester,
+  ) async {
+    await _open(tester, state: 'taken_over');
+    await tester.tap(find.text('Tester sends no more instructions here.'));
+    await tester.pumpAndSettle();
+    expect(_location().toString(), '/chat?open=pot%3Ap-tester');
+  });
+
+  appTest('an unknown pot gives the bar no avatar and no link', (tester) async {
+    await _open(tester, potKnown: false);
+    expect(find.byKey(const Key('pot-bar-avatar')), findsNothing);
+    await tester.tap(find.textContaining('coordinates this work'));
+    await tester.pumpAndSettle();
+    expect(_location().queryParameters['open'], 's2');
+    expect(find.textContaining('coordinates this work'), findsOneWidget);
   });
 }

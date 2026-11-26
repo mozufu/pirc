@@ -223,6 +223,7 @@
   "notSentByYou": "不是你直接傳的訊息",
   "potCoordinates": "由 {name} 協調中。你可以回答問題或停止；要直接下指令請先接管。",
   "takeOver": "接管",
+  "potBarOpen": "開啟和 {name} 的對話",
   "takenOver": "{name} 不會再對這個工作下指令。",
   "resultGenerating": "生成中…",
   "resultFailed": "失敗",

@@ -777,6 +777,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get takeOver => 'Take over';
 
   @override
+  String potBarOpen(String name) {
+    return 'open the conversation with $name';
+  }
+
+  @override
   String takenOver(String name) {
     return '$name sends no more instructions here.';
   }

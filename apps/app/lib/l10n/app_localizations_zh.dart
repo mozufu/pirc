@@ -745,6 +745,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get takeOver => '接管';
 
   @override
+  String potBarOpen(String name) {
+    return '開啟和 $name 的對話';
+  }
+
+  @override
   String takenOver(String name) {
     return '$name 不會再對這個工作下指令。';
   }

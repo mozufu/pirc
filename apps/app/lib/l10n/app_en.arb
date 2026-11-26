@@ -472,6 +472,14 @@
     }
   },
   "takeOver": "Take over",
+  "potBarOpen": "open the conversation with {name}",
+  "@potBarOpen": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "takenOver": "{name} sends no more instructions here.",
   "@takenOver": {
     "placeholders": {

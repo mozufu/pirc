@@ -1437,6 +1437,12 @@ abstract class AppLocalizations {
   /// **'Take over'**
   String get takeOver;
 
+  /// No description provided for @potBarOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'open the conversation with {name}'**
+  String potBarOpen(String name);
+
   /// No description provided for @takenOver.
   ///
   /// In en, this message translates to:
