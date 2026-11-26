@@ -1,4 +1,4 @@
-package dev.pirc.pirc_app
+package org.mozufu.pirc
 
 import io.flutter.embedding.android.FlutterActivity
 

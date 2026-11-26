@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "dev.pirc.pirc_app"
+    namespace = "org.mozufu.pirc"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -15,8 +15,8 @@ android {
     }
 
     defaultConfig {
-        // The new app replaces the old one in place at the cutover (plans/client.md).
-        applicationId = "dev.pirc.mobile"
+        // The old app is dev.pirc.mobile.preview; the two install side by side (plans/client.md).
+        applicationId = "org.mozufu.pirc"
         minSdk = 29
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

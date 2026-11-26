@@ -9,7 +9,7 @@ PRODUCT_NAME = pirc
 
 // The application's bundle identifier
 // The same as the Android `standard` build; macOS has only that build.
-PRODUCT_BUNDLE_IDENTIFIER = dev.pirc.mobile
+PRODUCT_BUNDLE_IDENTIFIER = org.mozufu.pirc
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 pirc. All rights reserved.
