@@ -2537,6 +2537,227 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get potProfileArchived => '已封存';
+
+  @override
+  String get handoverKindResponsibility => '負責';
+
+  @override
+  String get handoverKindReminder => '追蹤';
+
+  @override
+  String get handoverKindWork => '工作';
+
+  @override
+  String get handoverKindGroupHost => '主持';
+
+  @override
+  String get handoverToLabel => '交給';
+
+  @override
+  String get handoverMeAvatar => '我';
+
+  @override
+  String get handoverNoOne => '不交接';
+
+  @override
+  String get handoverFitOk => '權限足夠';
+
+  @override
+  String get handoverFitOkYou => '由你直接管理，等同接管';
+
+  @override
+  String handoverNeedsReach(String reach, String name) {
+    return '需要：和$name一樣「$reach」';
+  }
+
+  @override
+  String handoverWillDo(String text) {
+    return '會做：$text';
+  }
+
+  @override
+  String get handoverNeedsNothing => '需要：不用其他權限';
+
+  @override
+  String get handoverReminderDoes => '會做：在設定的時間提醒';
+
+  @override
+  String get handoverNeedsWork => '需要：可以在這個工作的位置開工作';
+
+  @override
+  String handoverWorkDoes(String name) {
+    return '會做：協調這個工作；紀錄仍標示 From $name';
+  }
+
+  @override
+  String get handoverNeedsMember => '需要：是這個群組的成員';
+
+  @override
+  String get handoverHostDoes => '會做：沒有 @ 時接話，並決定交給誰';
+
+  @override
+  String handoverGroupPots(int count) {
+    return '$count 位 pots';
+  }
+
+  @override
+  String handoverAdjust(String name) {
+    return '調整$name的權限…';
+  }
+
+  @override
+  String get handoverCheckLabel => '交接這一項';
+
+  @override
+  String get handoverTitle => '交接';
+
+  @override
+  String handoverRoute(String from, String to) {
+    return '$from → $to';
+  }
+
+  @override
+  String get handoverWho => '交給誰';
+
+  @override
+  String get handoverItems => '要交接的事';
+
+  @override
+  String handoverNote(String name) {
+    return '交接後$name不再負責這些事，之後可以再交接回來。兩邊的對話和動態都會記一筆。pots 自己提出的交接也要你確認。';
+  }
+
+  @override
+  String handoverProposedTitle(String name) {
+    return '$name提議交接。';
+  }
+
+  @override
+  String handoverProposedText(String items, String to) {
+    return '它想把$items交給$to，你確認後才生效。';
+  }
+
+  @override
+  String handoverQuoted(String text) {
+    return '「$text」';
+  }
+
+  @override
+  String get handoverNext => '下一步';
+
+  @override
+  String handoverConfirm(int count, String name) {
+    return '交接 $count 項給$name';
+  }
+
+  @override
+  String get handoverReject => '拒絕';
+
+  @override
+  String handoverNothingFits(String name) {
+    return '這些事都不能交給$name；請拒絕或重新選擇。';
+  }
+
+  @override
+  String get handoverApplied => '已交接。';
+
+  @override
+  String get handoverRejected => '已拒絕，沒有交接任何事。';
+
+  @override
+  String handoverTokensLeft(String tokens) {
+    return '今天剩 $tokens tokens';
+  }
+
+  @override
+  String get handoverYouSub => '工作交給你；其他事會停止';
+
+  @override
+  String handoverEmpty(String name) {
+    return '$name目前沒有可以交接的事。';
+  }
+
+  @override
+  String retireTitle(String name) {
+    return '移除$name';
+  }
+
+  @override
+  String get retireSubtitle => '先決定事情交給誰';
+
+  @override
+  String get retireArchive => '封存';
+
+  @override
+  String get retireDelete => '刪除';
+
+  @override
+  String get retireArchiveNote => '封存：停止運作，保留個性與記憶，之後可以恢復。';
+
+  @override
+  String get retireDeleteNote => '刪除：移除個性、記憶與設定，無法復原。';
+
+  @override
+  String retireItems(int count) {
+    return '可以交接 · $count';
+  }
+
+  @override
+  String get retireItemsNote => '點一項看細節。交接只轉移事情，不轉移權限。';
+
+  @override
+  String get retireGiveAll => '全部交給…';
+
+  @override
+  String get retireStops => '會移除或失效';
+
+  @override
+  String get retireKept => '保留';
+
+  @override
+  String retireArchiveButton(String name) {
+    return '交接並封存$name';
+  }
+
+  @override
+  String retireDeleteButton(String name) {
+    return '交接並刪除$name';
+  }
+
+  @override
+  String retirePickTitle(String item) {
+    return '$item交給誰？';
+  }
+
+  @override
+  String get retirePickSub => '接手者只用自己的權限；不夠時會縮小範圍，不會自動加權限';
+
+  @override
+  String get retirePickAllTitle => '全部交給誰？';
+
+  @override
+  String get retirePickAllSub => '每一項都會改成同一位；之後還能個別調整';
+
+  @override
+  String get retirePickAllFits => '每一項權限都足夠';
+
+  @override
+  String retirePickAllMisfits(int count) {
+    return '$count 項權限不足';
+  }
+
+  @override
+  String retireDeleteTitle(String name) {
+    return '刪除$name？';
+  }
+
+  @override
+  String retireDeleteBody(String name) {
+    return '它的個性、記憶與設定會永久移除，對話會保留為唯讀。輸入「$name」確認。';
+  }
+
+  @override
+  String get retireDeleteField => 'pots 名稱';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

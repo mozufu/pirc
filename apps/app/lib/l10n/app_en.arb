@@ -1588,5 +1588,230 @@
   "activityKindReminderSet": "Reminder",
   "activityKindAutonomyChanged": "Autonomy",
   "activityKindStatus": "Status",
-  "potProfileArchived": "Archived"
+  "potProfileArchived": "Archived",
+  "handoverKindResponsibility": "Duty",
+  "handoverKindReminder": "Follow-up",
+  "handoverKindWork": "Work",
+  "handoverKindGroupHost": "Host",
+  "handoverToLabel": "To",
+  "handoverMeAvatar": "Me",
+  "handoverNoOne": "No one",
+  "handoverFitOk": "Enough permissions",
+  "handoverFitOkYou": "You manage it yourself, as when you take work over",
+  "handoverNeedsReach": "Needs: “{reach}”, as {name} has",
+  "@handoverNeedsReach": {
+    "placeholders": {
+      "reach": {
+        "type": "String"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "handoverWillDo": "Will do: {text}",
+  "@handoverWillDo": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "handoverNeedsNothing": "Needs: nothing more",
+  "handoverReminderDoes": "Will do: remind at the time that was set",
+  "handoverNeedsWork": "Needs: may open work where this work runs",
+  "handoverWorkDoes": "Will do: coordinate this work; its record still says From {name}",
+  "@handoverWorkDoes": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "handoverNeedsMember": "Needs: to be in the group",
+  "handoverHostDoes": "Will do: answer messages without an @ and decide who takes them",
+  "handoverGroupPots": "{count, plural, =1{1 pot} other{{count} pots}}",
+  "@handoverGroupPots": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "handoverAdjust": "Adjust {name}'s permissions…",
+  "@handoverAdjust": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "handoverCheckLabel": "Hand over this item",
+  "handoverTitle": "Hand over",
+  "handoverRoute": "{from} → {to}",
+  "@handoverRoute": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "handoverWho": "To whom",
+  "handoverItems": "What to hand over",
+  "handoverNote": "After the handover {name} no longer does these; you can hand them back later. Both conversations and the activity record it. A pot's own proposal also needs your OK.",
+  "@handoverNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "handoverProposedTitle": "{name} proposes a handover.",
+  "@handoverProposedTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "handoverProposedText": "It wants to give {items} to {to}; nothing changes until you confirm.",
+  "@handoverProposedText": {
+    "placeholders": {
+      "items": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "handoverQuoted": "“{text}”",
+  "@handoverQuoted": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "handoverNext": "Next",
+  "handoverConfirm": "Hand over {count, plural, =1{1 item} other{{count} items}} to {name}",
+  "@handoverConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "handoverReject": "Reject",
+  "handoverNothingFits": "None of these can go to {name}; reject it or choose again.",
+  "@handoverNothingFits": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "handoverApplied": "Handed over.",
+  "handoverRejected": "Rejected; nothing was handed over.",
+  "handoverTokensLeft": "{tokens} tokens left today",
+  "@handoverTokensLeft": {
+    "placeholders": {
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "handoverYouSub": "Works come to you; other items stop",
+  "handoverEmpty": "{name} holds nothing to hand over.",
+  "@handoverEmpty": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "retireTitle": "Remove {name}",
+  "@retireTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "retireSubtitle": "First choose who takes what",
+  "retireArchive": "Archive",
+  "retireDelete": "Delete",
+  "retireArchiveNote": "Archive: it stops and keeps its personality and memory; you can restore it later.",
+  "retireDeleteNote": "Delete: its personality, memory and settings are removed; this can't be undone.",
+  "retireItems": "Can hand over · {count}",
+  "@retireItems": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "retireItemsNote": "Tap an item for details. A handover moves items, not permissions.",
+  "retireGiveAll": "Give everything to…",
+  "retireStops": "Will stop",
+  "retireKept": "Kept",
+  "retireArchiveButton": "Hand over and archive {name}",
+  "@retireArchiveButton": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "retireDeleteButton": "Hand over and delete {name}",
+  "@retireDeleteButton": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "retirePickTitle": "Who takes {item}?",
+  "@retirePickTitle": {
+    "placeholders": {
+      "item": {
+        "type": "String"
+      }
+    }
+  },
+  "retirePickSub": "The receiver uses only its own permissions; when they aren't enough the item narrows. No permission is added.",
+  "retirePickAllTitle": "Give everything to whom?",
+  "retirePickAllSub": "Every item goes to the same one; you can still change each item after.",
+  "retirePickAllFits": "Every item fits",
+  "retirePickAllMisfits": "{count, plural, =1{1 item doesn't fully fit} other{{count} items don't fully fit}}",
+  "@retirePickAllMisfits": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "retireDeleteTitle": "Delete {name}?",
+  "@retireDeleteTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "retireDeleteBody": "Its personality, memory and settings are removed for good; its conversations stay, read-only. Type {name} to confirm.",
+  "@retireDeleteBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "retireDeleteField": "Pot name"
 }

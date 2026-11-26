@@ -14,8 +14,8 @@ const newGroupKey = 'new-group';
 /// A pot's conversation (its direct thread) in the Chat tab.
 String potChatKey(String potId) => 'pot:$potId';
 
-/// A handover (E14), opened from a pot's `handover` card. Its screen comes
-/// with M7 step 8; until then the key shows the placeholder.
+/// A handover (E14), opened from a pot's `handover` card or after a new
+/// handover is proposed.
 String handoverKey(String handoverId) => 'handover:$handoverId';
 
 /// The Chat tab's `side` value of a pot's profile (E12): the right column
@@ -47,12 +47,10 @@ String potSettingsLocation(String potId, {String? section}) => Uri(
   queryParameters: {'open': potSettingsKey(potId), 'section': ?section},
 ).toString();
 
-/// Starting a handover of a pot's items (E14). Its screen comes with M7
-/// step 8; until then the key shows the placeholder.
+/// Starting a handover of a pot's items (E14).
 String handoverNewKey(String potId) => 'handover-new:$potId';
 
-/// Archiving or deleting a pot (E15). Its screen comes with M7 step 8;
-/// until then the key shows the placeholder.
+/// Archiving or deleting a pot (E15–E17).
 String retireKey(String potId) => 'retire:$potId';
 
 /// The Activity tab filtered to one pot (built in M7 step 10).

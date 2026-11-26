@@ -28,6 +28,7 @@ class HandoverTarget extends StatelessWidget {
     this.avatar,
     this.none = false,
     this.onTap,
+    this.color,
   });
 
   final String label;
@@ -35,11 +36,15 @@ class HandoverTarget extends StatelessWidget {
   final bool none;
   final VoidCallback? onTap;
 
+  /// The fill; `fill.hover` by default ("Give everything to…" sits on the
+  /// grouped page and uses `surface.layer`).
+  final Color? color;
+
   @override
   Widget build(BuildContext context) {
     final colors = PircColorTokens.of(context);
     return Material(
-      color: colors['fill.hover'],
+      color: color ?? colors['fill.hover'],
       shape: const StadiumBorder(),
       child: InkWell(
         onTap: onTap,
@@ -149,6 +154,7 @@ class HandoverItem extends StatelessWidget {
     this.fit,
     this.fitText,
     this.details = const [],
+    this.detailsAction,
     this.expanded = false,
     this.onExpand,
     this.first = false,
@@ -171,6 +177,10 @@ class HandoverItem extends StatelessWidget {
 
   /// Shown in a box when [expanded].
   final List<String> details;
+
+  /// A button under the [details] in their box ("Adjust ○○'s
+  /// permissions…").
+  final Widget? detailsAction;
   final bool expanded;
   final VoidCallback? onExpand;
 
@@ -194,7 +204,9 @@ class HandoverItem extends StatelessWidget {
           children: [
             Semantics(
               button: onExpand != null,
-              expanded: details.isEmpty ? null : expanded,
+              expanded: details.isEmpty && detailsAction == null
+                  ? null
+                  : expanded,
               child: InkWell(
                 onTap: onExpand,
                 child: Row(
@@ -273,7 +285,7 @@ class HandoverItem extends StatelessWidget {
                 ),
               ),
             if (fit != null && fitText != null) _FitLine(fit!, fitText!),
-            if (expanded && details.isNotEmpty)
+            if (expanded && (details.isNotEmpty || detailsAction != null))
               Container(
                 margin: const EdgeInsets.only(top: 10),
                 padding: const EdgeInsets.symmetric(
@@ -296,6 +308,11 @@ class HandoverItem extends StatelessWidget {
                           height: 19 / 13,
                           color: colors['text.secondary'],
                         ),
+                      ),
+                    if (detailsAction != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: detailsAction,
                       ),
                   ],
                 ),

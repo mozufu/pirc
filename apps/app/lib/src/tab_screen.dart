@@ -10,10 +10,12 @@ import 'calendar/calendar_screen.dart';
 import 'chat/chat_data.dart';
 import 'chat/chat_list_screen.dart';
 import 'chat/decision_sheet.dart';
+import 'chat/handover_screen.dart';
 import 'chat/new_pot_screen.dart';
 import 'chat/pot_conversation_screen.dart';
 import 'chat/pot_profile_screen.dart';
 import 'chat/pot_settings_screen.dart';
+import 'chat/retire_screen.dart';
 import 'router.dart';
 import 'shell/app_drawer.dart';
 import 'work/new_conversation/new_conversation_screen.dart';
@@ -65,6 +67,13 @@ class TabScreen extends ConsumerWidget {
             // A pot's settings go back to its profile.
             AppTab.chat when open.startsWith('settings:') => potProfileLocation(
               open.substring('settings:'.length),
+            ),
+            // Starting a handover goes back to the pot's profile, archive
+            // or delete to its settings.
+            AppTab.chat when open.startsWith('handover-new:') =>
+              potProfileLocation(open.substring('handover-new:'.length)),
+            AppTab.chat when open.startsWith('retire:') => potSettingsLocation(
+              open.substring('retire:'.length),
             ),
             _ => tab.path,
           });
@@ -134,14 +143,27 @@ class TabScreen extends ConsumerWidget {
                       potId: open.substring('settings:'.length),
                       section: location?.queryParameters['section'],
                     ),
+                  AppTab.chat when open.startsWith('handover-new:') =>
+                    HandoverScreen.start(
+                      key: ValueKey(open),
+                      potId: open.substring('handover-new:'.length),
+                    ),
+                  AppTab.chat when open.startsWith('handover:') =>
+                    HandoverScreen.existing(
+                      key: ValueKey(open),
+                      handoverId: open.substring('handover:'.length),
+                    ),
+                  AppTab.chat when open.startsWith('retire:') => RetireScreen(
+                    key: ValueKey(open),
+                    potId: open.substring('retire:'.length),
+                  ),
                   AppTab.chat when open == newPotKey => NewPotScreen(
                     key: const ValueKey(newPotKey),
                     showBack: !desktop,
                   ),
                   // A pot's conversation, or a direct thread by its ID (a
-                  // deleted pot's, read-only). Groups (step 9), handovers,
-                  // `handover-new:` and `retire:` (step 8) and `new-group`
-                  // keep the placeholder.
+                  // deleted pot's, read-only). Groups (step 9) and
+                  // `new-group` keep the placeholder.
                   AppTab.chat
                       when open.startsWith('pot:') ||
                           (open != newGroupKey && !open.contains(':')) =>

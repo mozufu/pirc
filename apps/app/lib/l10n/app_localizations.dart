@@ -4706,6 +4706,360 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Archived'**
   String get potProfileArchived;
+
+  /// No description provided for @handoverKindResponsibility.
+  ///
+  /// In en, this message translates to:
+  /// **'Duty'**
+  String get handoverKindResponsibility;
+
+  /// No description provided for @handoverKindReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up'**
+  String get handoverKindReminder;
+
+  /// No description provided for @handoverKindWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get handoverKindWork;
+
+  /// No description provided for @handoverKindGroupHost.
+  ///
+  /// In en, this message translates to:
+  /// **'Host'**
+  String get handoverKindGroupHost;
+
+  /// No description provided for @handoverToLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'To'**
+  String get handoverToLabel;
+
+  /// No description provided for @handoverMeAvatar.
+  ///
+  /// In en, this message translates to:
+  /// **'Me'**
+  String get handoverMeAvatar;
+
+  /// No description provided for @handoverNoOne.
+  ///
+  /// In en, this message translates to:
+  /// **'No one'**
+  String get handoverNoOne;
+
+  /// No description provided for @handoverFitOk.
+  ///
+  /// In en, this message translates to:
+  /// **'Enough permissions'**
+  String get handoverFitOk;
+
+  /// No description provided for @handoverFitOkYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You manage it yourself, as when you take work over'**
+  String get handoverFitOkYou;
+
+  /// No description provided for @handoverNeedsReach.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs: “{reach}”, as {name} has'**
+  String handoverNeedsReach(String reach, String name);
+
+  /// No description provided for @handoverWillDo.
+  ///
+  /// In en, this message translates to:
+  /// **'Will do: {text}'**
+  String handoverWillDo(String text);
+
+  /// No description provided for @handoverNeedsNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs: nothing more'**
+  String get handoverNeedsNothing;
+
+  /// No description provided for @handoverReminderDoes.
+  ///
+  /// In en, this message translates to:
+  /// **'Will do: remind at the time that was set'**
+  String get handoverReminderDoes;
+
+  /// No description provided for @handoverNeedsWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs: may open work where this work runs'**
+  String get handoverNeedsWork;
+
+  /// No description provided for @handoverWorkDoes.
+  ///
+  /// In en, this message translates to:
+  /// **'Will do: coordinate this work; its record still says From {name}'**
+  String handoverWorkDoes(String name);
+
+  /// No description provided for @handoverNeedsMember.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs: to be in the group'**
+  String get handoverNeedsMember;
+
+  /// No description provided for @handoverHostDoes.
+  ///
+  /// In en, this message translates to:
+  /// **'Will do: answer messages without an @ and decide who takes them'**
+  String get handoverHostDoes;
+
+  /// No description provided for @handoverGroupPots.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 pot} other{{count} pots}}'**
+  String handoverGroupPots(int count);
+
+  /// No description provided for @handoverAdjust.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust {name}\'s permissions…'**
+  String handoverAdjust(String name);
+
+  /// No description provided for @handoverCheckLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand over this item'**
+  String get handoverCheckLabel;
+
+  /// No description provided for @handoverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand over'**
+  String get handoverTitle;
+
+  /// No description provided for @handoverRoute.
+  ///
+  /// In en, this message translates to:
+  /// **'{from} → {to}'**
+  String handoverRoute(String from, String to);
+
+  /// No description provided for @handoverWho.
+  ///
+  /// In en, this message translates to:
+  /// **'To whom'**
+  String get handoverWho;
+
+  /// No description provided for @handoverItems.
+  ///
+  /// In en, this message translates to:
+  /// **'What to hand over'**
+  String get handoverItems;
+
+  /// No description provided for @handoverNote.
+  ///
+  /// In en, this message translates to:
+  /// **'After the handover {name} no longer does these; you can hand them back later. Both conversations and the activity record it. A pot\'s own proposal also needs your OK.'**
+  String handoverNote(String name);
+
+  /// No description provided for @handoverProposedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} proposes a handover.'**
+  String handoverProposedTitle(String name);
+
+  /// No description provided for @handoverProposedText.
+  ///
+  /// In en, this message translates to:
+  /// **'It wants to give {items} to {to}; nothing changes until you confirm.'**
+  String handoverProposedText(String items, String to);
+
+  /// No description provided for @handoverQuoted.
+  ///
+  /// In en, this message translates to:
+  /// **'“{text}”'**
+  String handoverQuoted(String text);
+
+  /// No description provided for @handoverNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get handoverNext;
+
+  /// No description provided for @handoverConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand over {count, plural, =1{1 item} other{{count} items}} to {name}'**
+  String handoverConfirm(int count, String name);
+
+  /// No description provided for @handoverReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get handoverReject;
+
+  /// No description provided for @handoverNothingFits.
+  ///
+  /// In en, this message translates to:
+  /// **'None of these can go to {name}; reject it or choose again.'**
+  String handoverNothingFits(String name);
+
+  /// No description provided for @handoverApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Handed over.'**
+  String get handoverApplied;
+
+  /// No description provided for @handoverRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Rejected; nothing was handed over.'**
+  String get handoverRejected;
+
+  /// No description provided for @handoverTokensLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{tokens} tokens left today'**
+  String handoverTokensLeft(String tokens);
+
+  /// No description provided for @handoverYouSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Works come to you; other items stop'**
+  String get handoverYouSub;
+
+  /// No description provided for @handoverEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} holds nothing to hand over.'**
+  String handoverEmpty(String name);
+
+  /// No description provided for @retireTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove {name}'**
+  String retireTitle(String name);
+
+  /// No description provided for @retireSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'First choose who takes what'**
+  String get retireSubtitle;
+
+  /// No description provided for @retireArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get retireArchive;
+
+  /// No description provided for @retireDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get retireDelete;
+
+  /// No description provided for @retireArchiveNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive: it stops and keeps its personality and memory; you can restore it later.'**
+  String get retireArchiveNote;
+
+  /// No description provided for @retireDeleteNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete: its personality, memory and settings are removed; this can\'t be undone.'**
+  String get retireDeleteNote;
+
+  /// No description provided for @retireItems.
+  ///
+  /// In en, this message translates to:
+  /// **'Can hand over · {count}'**
+  String retireItems(int count);
+
+  /// No description provided for @retireItemsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap an item for details. A handover moves items, not permissions.'**
+  String get retireItemsNote;
+
+  /// No description provided for @retireGiveAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Give everything to…'**
+  String get retireGiveAll;
+
+  /// No description provided for @retireStops.
+  ///
+  /// In en, this message translates to:
+  /// **'Will stop'**
+  String get retireStops;
+
+  /// No description provided for @retireKept.
+  ///
+  /// In en, this message translates to:
+  /// **'Kept'**
+  String get retireKept;
+
+  /// No description provided for @retireArchiveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand over and archive {name}'**
+  String retireArchiveButton(String name);
+
+  /// No description provided for @retireDeleteButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand over and delete {name}'**
+  String retireDeleteButton(String name);
+
+  /// No description provided for @retirePickTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Who takes {item}?'**
+  String retirePickTitle(String item);
+
+  /// No description provided for @retirePickSub.
+  ///
+  /// In en, this message translates to:
+  /// **'The receiver uses only its own permissions; when they aren\'t enough the item narrows. No permission is added.'**
+  String get retirePickSub;
+
+  /// No description provided for @retirePickAllTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Give everything to whom?'**
+  String get retirePickAllTitle;
+
+  /// No description provided for @retirePickAllSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Every item goes to the same one; you can still change each item after.'**
+  String get retirePickAllSub;
+
+  /// No description provided for @retirePickAllFits.
+  ///
+  /// In en, this message translates to:
+  /// **'Every item fits'**
+  String get retirePickAllFits;
+
+  /// No description provided for @retirePickAllMisfits.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item doesn\'t fully fit} other{{count} items don\'t fully fit}}'**
+  String retirePickAllMisfits(int count);
+
+  /// No description provided for @retireDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {name}?'**
+  String retireDeleteTitle(String name);
+
+  /// No description provided for @retireDeleteBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Its personality, memory and settings are removed for good; its conversations stay, read-only. Type {name} to confirm.'**
+  String retireDeleteBody(String name);
+
+  /// No description provided for @retireDeleteField.
+  ///
+  /// In en, this message translates to:
+  /// **'Pot name'**
+  String get retireDeleteField;
 }
 
 class _AppLocalizationsDelegate

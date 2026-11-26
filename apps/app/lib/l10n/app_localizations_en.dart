@@ -2632,4 +2632,250 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get potProfileArchived => 'Archived';
+
+  @override
+  String get handoverKindResponsibility => 'Duty';
+
+  @override
+  String get handoverKindReminder => 'Follow-up';
+
+  @override
+  String get handoverKindWork => 'Work';
+
+  @override
+  String get handoverKindGroupHost => 'Host';
+
+  @override
+  String get handoverToLabel => 'To';
+
+  @override
+  String get handoverMeAvatar => 'Me';
+
+  @override
+  String get handoverNoOne => 'No one';
+
+  @override
+  String get handoverFitOk => 'Enough permissions';
+
+  @override
+  String get handoverFitOkYou =>
+      'You manage it yourself, as when you take work over';
+
+  @override
+  String handoverNeedsReach(String reach, String name) {
+    return 'Needs: “$reach”, as $name has';
+  }
+
+  @override
+  String handoverWillDo(String text) {
+    return 'Will do: $text';
+  }
+
+  @override
+  String get handoverNeedsNothing => 'Needs: nothing more';
+
+  @override
+  String get handoverReminderDoes => 'Will do: remind at the time that was set';
+
+  @override
+  String get handoverNeedsWork => 'Needs: may open work where this work runs';
+
+  @override
+  String handoverWorkDoes(String name) {
+    return 'Will do: coordinate this work; its record still says From $name';
+  }
+
+  @override
+  String get handoverNeedsMember => 'Needs: to be in the group';
+
+  @override
+  String get handoverHostDoes =>
+      'Will do: answer messages without an @ and decide who takes them';
+
+  @override
+  String handoverGroupPots(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pots',
+      one: '1 pot',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String handoverAdjust(String name) {
+    return 'Adjust $name\'s permissions…';
+  }
+
+  @override
+  String get handoverCheckLabel => 'Hand over this item';
+
+  @override
+  String get handoverTitle => 'Hand over';
+
+  @override
+  String handoverRoute(String from, String to) {
+    return '$from → $to';
+  }
+
+  @override
+  String get handoverWho => 'To whom';
+
+  @override
+  String get handoverItems => 'What to hand over';
+
+  @override
+  String handoverNote(String name) {
+    return 'After the handover $name no longer does these; you can hand them back later. Both conversations and the activity record it. A pot\'s own proposal also needs your OK.';
+  }
+
+  @override
+  String handoverProposedTitle(String name) {
+    return '$name proposes a handover.';
+  }
+
+  @override
+  String handoverProposedText(String items, String to) {
+    return 'It wants to give $items to $to; nothing changes until you confirm.';
+  }
+
+  @override
+  String handoverQuoted(String text) {
+    return '“$text”';
+  }
+
+  @override
+  String get handoverNext => 'Next';
+
+  @override
+  String handoverConfirm(int count, String name) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return 'Hand over $_temp0 to $name';
+  }
+
+  @override
+  String get handoverReject => 'Reject';
+
+  @override
+  String handoverNothingFits(String name) {
+    return 'None of these can go to $name; reject it or choose again.';
+  }
+
+  @override
+  String get handoverApplied => 'Handed over.';
+
+  @override
+  String get handoverRejected => 'Rejected; nothing was handed over.';
+
+  @override
+  String handoverTokensLeft(String tokens) {
+    return '$tokens tokens left today';
+  }
+
+  @override
+  String get handoverYouSub => 'Works come to you; other items stop';
+
+  @override
+  String handoverEmpty(String name) {
+    return '$name holds nothing to hand over.';
+  }
+
+  @override
+  String retireTitle(String name) {
+    return 'Remove $name';
+  }
+
+  @override
+  String get retireSubtitle => 'First choose who takes what';
+
+  @override
+  String get retireArchive => 'Archive';
+
+  @override
+  String get retireDelete => 'Delete';
+
+  @override
+  String get retireArchiveNote =>
+      'Archive: it stops and keeps its personality and memory; you can restore it later.';
+
+  @override
+  String get retireDeleteNote =>
+      'Delete: its personality, memory and settings are removed; this can\'t be undone.';
+
+  @override
+  String retireItems(int count) {
+    return 'Can hand over · $count';
+  }
+
+  @override
+  String get retireItemsNote =>
+      'Tap an item for details. A handover moves items, not permissions.';
+
+  @override
+  String get retireGiveAll => 'Give everything to…';
+
+  @override
+  String get retireStops => 'Will stop';
+
+  @override
+  String get retireKept => 'Kept';
+
+  @override
+  String retireArchiveButton(String name) {
+    return 'Hand over and archive $name';
+  }
+
+  @override
+  String retireDeleteButton(String name) {
+    return 'Hand over and delete $name';
+  }
+
+  @override
+  String retirePickTitle(String item) {
+    return 'Who takes $item?';
+  }
+
+  @override
+  String get retirePickSub =>
+      'The receiver uses only its own permissions; when they aren\'t enough the item narrows. No permission is added.';
+
+  @override
+  String get retirePickAllTitle => 'Give everything to whom?';
+
+  @override
+  String get retirePickAllSub =>
+      'Every item goes to the same one; you can still change each item after.';
+
+  @override
+  String get retirePickAllFits => 'Every item fits';
+
+  @override
+  String retirePickAllMisfits(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items don\'t fully fit',
+      one: '1 item doesn\'t fully fit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String retireDeleteTitle(String name) {
+    return 'Delete $name?';
+  }
+
+  @override
+  String retireDeleteBody(String name) {
+    return 'Its personality, memory and settings are removed for good; its conversations stay, read-only. Type $name to confirm.';
+  }
+
+  @override
+  String get retireDeleteField => 'Pot name';
 }

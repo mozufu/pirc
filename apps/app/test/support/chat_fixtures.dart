@@ -594,3 +594,273 @@ class PotProfileFixture extends ConversationFixture {
     return g;
   }
 }
+
+/// E14–E17: Butler holds two responsibilities, a follow-up, a work and the
+/// Mobile team's host role. Researcher (observing) and Tester (may start
+/// work) can take them; Travel buddy is left out so the receivers are E14's.
+/// The handover, preview and retire routes answer as the Gateway does
+/// (`handover.rs` fit, `retire.rs` dropped and the preview's sentences),
+/// and record their bodies.
+class HandoverFixture extends PotProfileFixture {
+  HandoverFixture() {
+    pots = [
+      pots[0],
+      pots[2],
+      {
+        ...pots[1],
+        'budgetLeft': {'tokens': 1200000},
+      },
+      pots[4],
+    ];
+    messages.add(
+      messageJson(
+        6,
+        '',
+        authorKind: 'system',
+        card: {'kind': 'handover', 'handoverId': 'h1'},
+      ),
+    );
+    handover = {
+      'id': 'h1',
+      'fromPotId': 'p-butler',
+      'to': {'kind': 'pot', 'potId': 'p-tester'},
+      'proposedBy': 'pot',
+      'reason': 'Tester already watches the nightly runs',
+      'state': 'proposed',
+      'revision': 3,
+      'items': [
+        {
+          'kind': 'responsibility',
+          'ref': 'r2',
+          'label': 'Watch for stuck work in pirc mobile',
+          'fit': 'ok',
+        },
+      ],
+    };
+  }
+
+  List<Map<String, Object?>> held = [
+    {
+      'kind': 'responsibility',
+      'ref': 'r1',
+      'label': 'Sort your decisions every morning',
+    },
+    {
+      'kind': 'responsibility',
+      'ref': 'r2',
+      'label': 'Watch for stuck work in pirc mobile',
+    },
+    {
+      'kind': 'reminder',
+      'ref': 'rem1',
+      'label': 'Start “Tidy the API docs” after task A',
+    },
+    {'kind': 'work', 'ref': 'w-sched', 'label': 'Tidy the schedule report'},
+    {'kind': 'group_host', 'ref': 't-mobile', 'label': 'Mobile team'},
+  ];
+
+  /// Created handovers, by ID.
+  final created = <String, Map<String, Object?>>{};
+
+  /// Bodies of POST /api/handovers, …/confirm, …/reject, the previews and
+  /// the retire, in order.
+  final handoverBodies = <Map<String, Object?>>[];
+  final confirms = <String, Object?>{};
+  final rejects = <String>[];
+  final previews = <Map<String, Object?>>[];
+  final retires = <Map<String, Object?>>[];
+
+  /// Answers the next confirm with this refusal.
+  ApiResponse? confirmRefusal;
+
+  /// Answers the next retire with this refusal.
+  ApiResponse? retireRefusal;
+
+  static const _names = {'p-research': 'Researcher', 'p-tester': 'Tester'};
+
+  /// An item's fit at a receiver, as `handover.rs` decides it for these
+  /// pots: Researcher observes, so Butler's responsibilities narrow there
+  /// and it may not open work; Tester may start work where it runs.
+  static (String, String?) fitAt(Map<String, Object?> item, Object? to) {
+    final target = (to! as Map).cast<String, Object?>();
+    final kind = item['kind'];
+    if (target['kind'] == 'user') {
+      return switch (kind) {
+        'work' => ('ok', null),
+        'responsibility' => (
+          'stop',
+          'The user does not hold a pot\'s responsibilities',
+        ),
+        'reminder' => ('stop', 'The reminder ends'),
+        _ => ('stop', 'A group is hosted by a pot'),
+      };
+    }
+    final pot = target['potId'];
+    final name = _names[pot] ?? '';
+    if (pot == 'p-research') {
+      if (kind == 'responsibility' && item['ref'] == 'r1') {
+        return ('narrowed', '$name may do less');
+      }
+      if (kind == 'work') return ('stop', '$name may not work there');
+    }
+    return ('ok', null);
+  }
+
+  static String _dropped(Object? kind, Object? mode) => switch (kind) {
+    'responsibility' =>
+      mode == 'archive' ? 'stays with the archived pot' : 'is removed',
+    'reminder' => 'is cancelled',
+    'work' => 'goes on without a pot; you take it over',
+    _ => 'the group has no host',
+  };
+
+  Map<String, Object?> _preview(Map<String, Object?> body) {
+    final targets = [
+      for (final target in (body['targets'] as List? ?? const []))
+        (target as Map).cast<String, Object?>(),
+    ];
+    final mode = body['mode'];
+    return {
+      'mode': mode,
+      'revision': pot['revision'],
+      'items': [
+        for (final item in held)
+          () {
+            final target = targets.firstWhere(
+              (t) => t['kind'] == item['kind'] && t['ref'] == item['ref'],
+              orElse: () => {
+                'to': {'kind': 'none'},
+              },
+            );
+            final to = target['to'];
+            if ((to! as Map)['kind'] == 'none') {
+              return {
+                ...item,
+                'to': to,
+                'fit': 'stop',
+                'reason': _dropped(item['kind'], mode),
+              };
+            }
+            final (fit, reason) = fitAt(item, to);
+            return {...item, 'to': to, 'fit': fit, 'reason': reason};
+          }(),
+      ],
+      'stops': [
+        '2 waiting messages and events are dropped',
+        if (mode == 'archive')
+          'Butler takes no wakes and does nothing until restored'
+        else
+          'Its session, memory, personality and settings are deleted',
+      ],
+      'kept': [
+        'Its activity and its messages in threads, with its name, until '
+            'your retention removes them',
+        if (mode == 'archive')
+          'Its personality, settings and memory; restoring does not take '
+              'handed-over items back',
+      ],
+    };
+  }
+
+  Map<String, Object?> _decided(String id, String state) {
+    final current = id == 'h1' ? handover : created[id]!;
+    final next = {
+      ...current,
+      'state': state,
+      'revision': (current['revision']! as int) + 1,
+    };
+    if (id == 'h1') {
+      handover = next;
+    } else {
+      created[id] = next;
+    }
+    return {'handover': next};
+  }
+
+  @override
+  FakeGateway install([FakeGateway? gateway]) {
+    final g = super.install(gateway);
+    g.json['GET /api/pots/p-butler/held'] = (_) => {'items': held};
+    g.json['GET /api/pots/p-research'] = (_) => {
+      'pot': fullPotJson(pots[1], reach: 'observe'),
+    };
+    g.json['GET /api/pots/p-tester'] = (_) => {
+      'pot': fullPotJson(pots[2], reach: 'work'),
+    };
+    g.json['POST /api/handovers'] = (request) {
+      final body = (request.json! as Map).cast<String, Object?>();
+      handoverBodies.add(body);
+      final id = 'h${created.length + 2}';
+      final refs = [for (final ref in body['items']! as List) (ref as Map)];
+      created[id] = {
+        'id': id,
+        'fromPotId': body['fromPotId'],
+        'to': body['to'],
+        'proposedBy': 'user',
+        'reason': '',
+        'state': 'proposed',
+        'revision': 1,
+        'items': [
+          for (final item in held)
+            if (refs.any(
+              (r) => r['kind'] == item['kind'] && r['ref'] == item['ref'],
+            ))
+              () {
+                final (fit, reason) = fitAt(item, body['to']);
+                return {...item, 'fit': fit, 'reason': ?reason};
+              }(),
+        ],
+      };
+      return {'handover': created[id]};
+    };
+    g.routes.add((request) {
+      const prefix = '/api/handovers/';
+      if (!request.path.startsWith(prefix)) return null;
+      final rest = request.path.substring(prefix.length).split('/');
+      final id = rest.first;
+      if (request.method == 'GET' && rest.length == 1) {
+        final found = id == 'h1' ? handover : created[id];
+        return found == null
+            ? apiError(404, 'not_found', 'Handover not found')
+            : reply(200, {'handover': found});
+      }
+      if (request.method != 'POST' || rest.length != 2) return null;
+      if (rest[1] == 'confirm') {
+        confirms[id] = request.json;
+        final refusal = confirmRefusal;
+        if (refusal != null) {
+          confirmRefusal = null;
+          return refusal;
+        }
+        return reply(200, _decided(id, 'applied'));
+      }
+      if (rest[1] == 'reject') {
+        rejects.add(id);
+        return reply(200, _decided(id, 'rejected'));
+      }
+      return null;
+    });
+    g.json['POST /api/pots/p-butler/retire/preview'] = (request) {
+      final body = (request.json! as Map).cast<String, Object?>();
+      previews.add(body);
+      return _preview(body);
+    };
+    g.json['POST /api/pots/p-butler/retire'] = (request) {
+      final body = (request.json! as Map).cast<String, Object?>();
+      retires.add(body);
+      final refusal = retireRefusal;
+      if (refusal != null) {
+        retireRefusal = null;
+        return refusal;
+      }
+      if (body['mode'] == 'archive') {
+        pots[0] = {...pots[0], 'state': 'archived'};
+        pot = {...pot, 'state': 'archived'};
+        return {'pot': pot, 'deleted': false, 'handovers': <Object?>[]};
+      }
+      pots.removeAt(0);
+      return {'deleted': true, 'handovers': <Object?>[]};
+    };
+    return g;
+  }
+}

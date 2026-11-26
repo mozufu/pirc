@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pirc_app/src/chat/handover_screen.dart';
 import 'package:pirc_app/src/chat/pot_conversation_screen.dart';
 import 'package:pirc_app/src/chat/pot_profile_screen.dart';
 import 'package:pirc_app/src/format.dart';
@@ -736,7 +737,11 @@ void main() {
       );
       await _tap(tester, _inCard('card-handover-h1', find.text('Review')));
       expect(_location(container).queryParameters, {'open': 'handover:h1'});
-      expect(find.text('Item handover:h1'), findsOneWidget);
+      expect(find.byType(HandoverScreen), findsOneWidget);
+      expect(
+        find.textContaining('Butler proposes a handover.', findRichText: true),
+        findsOneWidget,
+      );
     });
 
     appTest('decided: one line', (tester) async {

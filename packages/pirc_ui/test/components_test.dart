@@ -473,6 +473,59 @@ void main() {
       expect(find.text('detail'), findsOneWidget);
     });
 
+    testWidgets('the details box holds an action under the lines', (
+      tester,
+    ) async {
+      var taps = 0;
+      await _pump(
+        tester,
+        HandoverItem(
+          kind: 'Duty',
+          title: 'Watch',
+          details: const ['Needs: more'],
+          detailsAction: TextButton(
+            onPressed: () => taps++,
+            child: const Text('Adjust'),
+          ),
+          expanded: true,
+        ),
+      );
+      expect(
+        tester.getTopLeft(find.text('Adjust')).dy,
+        greaterThan(tester.getBottomLeft(find.text('Needs: more')).dy),
+      );
+      await tester.tap(find.text('Adjust'));
+      expect(taps, 1);
+      await _pump(
+        tester,
+        HandoverItem(
+          kind: 'Duty',
+          title: 'Watch',
+          detailsAction: TextButton(
+            onPressed: () {},
+            child: const Text('Adjust'),
+          ),
+        ),
+      );
+      expect(find.text('Adjust'), findsNothing);
+    });
+
+    testWidgets('the receiver chip takes another fill', (tester) async {
+      await _pump(
+        tester,
+        const HandoverTarget(label: 'Give everything to…', color: Colors.red),
+      );
+      final material = tester.widget<Material>(
+        find
+            .descendant(
+              of: find.byType(HandoverTarget),
+              matching: find.byType(Material),
+            )
+            .first,
+      );
+      expect(material.color, Colors.red);
+    });
+
     testWidgets('the receiver chip; "no one" has no avatar', (tester) async {
       var taps = 0;
       await _pump(
