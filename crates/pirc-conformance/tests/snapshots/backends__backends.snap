@@ -1655,6 +1655,11 @@ expression: t.into_value()
   },
   {
     "body": {
+      "defaultModel": {
+        "id": "fake-model",
+        "provider": "fake",
+        "thinking": "low"
+      },
       "models": [
         {
           "contextWindow": 100000,
@@ -1665,7 +1670,13 @@ expression: t.into_value()
           "maxTokens": 1000,
           "name": "fake-model",
           "provider": "fake",
-          "reasoning": true
+          "reasoning": true,
+          "thinkingLevels": [
+            "minimal",
+            "low",
+            "medium",
+            "high"
+          ]
         }
       ]
     },
@@ -4270,6 +4281,11 @@ expression: t.into_value()
   },
   {
     "body": {
+      "defaultModel": {
+        "id": "gpt-5-mini",
+        "provider": "openai-preset",
+        "thinking": "high"
+      },
       "models": [
         {
           "contextWindow": 200000,
@@ -4280,7 +4296,13 @@ expression: t.into_value()
           "maxTokens": 32000,
           "name": "ui-model",
           "provider": "ui",
-          "reasoning": true
+          "reasoning": true,
+          "thinkingLevels": [
+            "minimal",
+            "low",
+            "medium",
+            "high"
+          ]
         },
         {
           "contextWindow": 1000,
@@ -4292,7 +4314,8 @@ expression: t.into_value()
           "maxTokens": 100,
           "name": "UI small, renamed",
           "provider": "ui",
-          "reasoning": false
+          "reasoning": false,
+          "thinkingLevels": []
         },
         {
           "contextWindow": 400000,
@@ -4304,7 +4327,13 @@ expression: t.into_value()
           "maxTokens": 128000,
           "name": "gpt-5-mini",
           "provider": "openai-preset",
-          "reasoning": true
+          "reasoning": true,
+          "thinkingLevels": [
+            "minimal",
+            "low",
+            "medium",
+            "high"
+          ]
         },
         {
           "contextWindow": 200000,
@@ -4315,7 +4344,8 @@ expression: t.into_value()
           "maxTokens": 32000,
           "name": "not-in-the-catalog",
           "provider": "openai-preset",
-          "reasoning": false
+          "reasoning": false,
+          "thinkingLevels": []
         },
         {
           "contextWindow": 100000,
@@ -4326,7 +4356,13 @@ expression: t.into_value()
           "maxTokens": 1000,
           "name": "fake-model",
           "provider": "fake",
-          "reasoning": true
+          "reasoning": true,
+          "thinkingLevels": [
+            "minimal",
+            "low",
+            "medium",
+            "high"
+          ]
         }
       ]
     },
@@ -5142,6 +5178,11 @@ expression: t.into_value()
   },
   {
     "body": {
+      "defaultModel": {
+        "id": "fake-model",
+        "provider": "fake",
+        "thinking": "low"
+      },
       "models": [
         {
           "contextWindow": 200000,
@@ -5152,7 +5193,13 @@ expression: t.into_value()
           "maxTokens": 32000,
           "name": "ui-model",
           "provider": "ui",
-          "reasoning": true
+          "reasoning": true,
+          "thinkingLevels": [
+            "minimal",
+            "low",
+            "medium",
+            "high"
+          ]
         },
         {
           "contextWindow": 1000,
@@ -5164,7 +5211,8 @@ expression: t.into_value()
           "maxTokens": 100,
           "name": "UI small, renamed",
           "provider": "ui",
-          "reasoning": false
+          "reasoning": false,
+          "thinkingLevels": []
         },
         {
           "contextWindow": 100000,
@@ -5175,7 +5223,13 @@ expression: t.into_value()
           "maxTokens": 1000,
           "name": "fake-model",
           "provider": "fake",
-          "reasoning": true
+          "reasoning": true,
+          "thinkingLevels": [
+            "minimal",
+            "low",
+            "medium",
+            "high"
+          ]
         }
       ]
     },
@@ -5637,6 +5691,11 @@ expression: t.into_value()
   },
   {
     "body": {
+      "defaultModel": {
+        "id": "ui-model",
+        "provider": "ui",
+        "thinking": "high"
+      },
       "models": [
         {
           "contextWindow": 200000,
@@ -5647,7 +5706,13 @@ expression: t.into_value()
           "maxTokens": 32000,
           "name": "ui-model",
           "provider": "ui",
-          "reasoning": true
+          "reasoning": true,
+          "thinkingLevels": [
+            "minimal",
+            "low",
+            "medium",
+            "high"
+          ]
         },
         {
           "contextWindow": 1000,
@@ -5659,7 +5724,8 @@ expression: t.into_value()
           "maxTokens": 100,
           "name": "UI small, renamed",
           "provider": "ui",
-          "reasoning": false
+          "reasoning": false,
+          "thinkingLevels": []
         },
         {
           "contextWindow": 200000,
@@ -5670,7 +5736,8 @@ expression: t.into_value()
           "maxTokens": 32000,
           "name": "Second",
           "provider": "second",
-          "reasoning": false
+          "reasoning": false,
+          "thinkingLevels": []
         },
         {
           "contextWindow": 100000,
@@ -5681,7 +5748,13 @@ expression: t.into_value()
           "maxTokens": 1000,
           "name": "fake-model",
           "provider": "fake",
-          "reasoning": true
+          "reasoning": true,
+          "thinkingLevels": [
+            "minimal",
+            "low",
+            "medium",
+            "high"
+          ]
         }
       ]
     },

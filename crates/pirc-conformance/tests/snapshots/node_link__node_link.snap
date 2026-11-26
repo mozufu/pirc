@@ -132,7 +132,7 @@ expression: t.into_value()
         "type": "agent_start"
       },
       "epoch": 0,
-      "sequence": 1,
+      "sequence": 3,
       "sessionId": "session_<uuid:1>",
       "timestamp": "<epoch-ms>",
       "type": "pi_event"

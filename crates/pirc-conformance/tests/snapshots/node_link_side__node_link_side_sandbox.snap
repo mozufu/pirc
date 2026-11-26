@@ -69,8 +69,11 @@ expression: t.into_value()
   },
   {
     "observed": {
+      "answeredBy": "browser",
       "interactionEpoch": 1,
-      "interactionId": "interaction_<uuid:1>"
+      "interactionId": "interaction_<uuid:1>",
+      "resolvedAt": "<epoch-ms>",
+      "status": "answered"
     },
     "step": "interaction_answered"
   },

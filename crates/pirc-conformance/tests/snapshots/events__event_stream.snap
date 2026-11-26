@@ -7,10 +7,36 @@ expression: t.into_value()
     "observed": [
       {
         "data": {
-          "n": 1
+          "clientId": "browser",
+          "holder": {
+            "kind": "browser",
+            "lastActionAt": null,
+            "name": "A browser"
+          }
         },
         "epoch": 0,
         "sequence": 1,
+        "sessionId": "session_<uuid:1>",
+        "timestamp": "<epoch-ms>",
+        "type": "control_changed"
+      },
+      {
+        "data": {
+          "clientId": null,
+          "holder": null
+        },
+        "epoch": 0,
+        "sequence": 2,
+        "sessionId": "session_<uuid:1>",
+        "timestamp": "<epoch-ms>",
+        "type": "control_changed"
+      },
+      {
+        "data": {
+          "n": 1
+        },
+        "epoch": 0,
+        "sequence": 3,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "pi_event"
@@ -18,7 +44,7 @@ expression: t.into_value()
       {
         "data": "events",
         "epoch": 0,
-        "sequence": 2,
+        "sequence": 4,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -34,7 +60,7 @@ expression: t.into_value()
           "source": "auto"
         },
         "epoch": 0,
-        "sequence": 3,
+        "sequence": 5,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "session_renamed"
@@ -51,7 +77,7 @@ expression: t.into_value()
       {
         "data": "titles",
         "epoch": 0,
-        "sequence": 4,
+        "sequence": 6,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -73,7 +99,7 @@ expression: t.into_value()
       {
         "data": "activity",
         "epoch": 0,
-        "sequence": 5,
+        "sequence": 7,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -129,7 +155,7 @@ expression: t.into_value()
       {
         "data": "question",
         "epoch": 0,
-        "sequence": 6,
+        "sequence": 8,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -223,7 +249,7 @@ expression: t.into_value()
       {
         "data": "read",
         "epoch": 0,
-        "sequence": 7,
+        "sequence": 9,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -235,10 +261,36 @@ expression: t.into_value()
     "observed": [
       {
         "data": {
-          "n": 1
+          "clientId": "browser",
+          "holder": {
+            "kind": "browser",
+            "lastActionAt": null,
+            "name": "A browser"
+          }
         },
         "epoch": 0,
         "sequence": 1,
+        "sessionId": "session_<uuid:1>",
+        "timestamp": "<epoch-ms>",
+        "type": "control_changed"
+      },
+      {
+        "data": {
+          "clientId": null,
+          "holder": null
+        },
+        "epoch": 0,
+        "sequence": 2,
+        "sessionId": "session_<uuid:1>",
+        "timestamp": "<epoch-ms>",
+        "type": "control_changed"
+      },
+      {
+        "data": {
+          "n": 1
+        },
+        "epoch": 0,
+        "sequence": 3,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "pi_event"
@@ -246,7 +298,7 @@ expression: t.into_value()
       {
         "data": "events",
         "epoch": 0,
-        "sequence": 2,
+        "sequence": 4,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -257,7 +309,7 @@ expression: t.into_value()
           "source": "auto"
         },
         "epoch": 0,
-        "sequence": 3,
+        "sequence": 5,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "session_renamed"
@@ -265,7 +317,7 @@ expression: t.into_value()
       {
         "data": "titles",
         "epoch": 0,
-        "sequence": 4,
+        "sequence": 6,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -273,7 +325,7 @@ expression: t.into_value()
       {
         "data": "activity",
         "epoch": 0,
-        "sequence": 5,
+        "sequence": 7,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -281,7 +333,7 @@ expression: t.into_value()
       {
         "data": "question",
         "epoch": 0,
-        "sequence": 6,
+        "sequence": 8,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -289,7 +341,7 @@ expression: t.into_value()
       {
         "data": "read",
         "epoch": 0,
-        "sequence": 7,
+        "sequence": 9,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -301,17 +353,16 @@ expression: t.into_value()
     "observed": [
       {
         "data": {
-          "name": "Generated",
-          "source": "auto"
+          "n": 1
         },
         "epoch": 0,
         "sequence": 3,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
-        "type": "session_renamed"
+        "type": "pi_event"
       },
       {
-        "data": "titles",
+        "data": "events",
         "epoch": 0,
         "sequence": 4,
         "sessionId": "session_<uuid:1>",
@@ -319,15 +370,18 @@ expression: t.into_value()
         "type": "marker"
       },
       {
-        "data": "activity",
+        "data": {
+          "name": "Generated",
+          "source": "auto"
+        },
         "epoch": 0,
         "sequence": 5,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
-        "type": "marker"
+        "type": "session_renamed"
       },
       {
-        "data": "question",
+        "data": "titles",
         "epoch": 0,
         "sequence": 6,
         "sessionId": "session_<uuid:1>",
@@ -335,7 +389,7 @@ expression: t.into_value()
         "type": "marker"
       },
       {
-        "data": "read",
+        "data": "activity",
         "epoch": 0,
         "sequence": 7,
         "sessionId": "session_<uuid:1>",
@@ -343,9 +397,25 @@ expression: t.into_value()
         "type": "marker"
       },
       {
-        "data": "replayed",
+        "data": "question",
         "epoch": 0,
         "sequence": 8,
+        "sessionId": "session_<uuid:1>",
+        "timestamp": "<epoch-ms>",
+        "type": "marker"
+      },
+      {
+        "data": "read",
+        "epoch": 0,
+        "sequence": 9,
+        "sessionId": "session_<uuid:1>",
+        "timestamp": "<epoch-ms>",
+        "type": "marker"
+      },
+      {
+        "data": "replayed",
+        "epoch": 0,
+        "sequence": 10,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -365,7 +435,7 @@ expression: t.into_value()
       {
         "data": "replayed",
         "epoch": 0,
-        "sequence": 8,
+        "sequence": 10,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -378,7 +448,7 @@ expression: t.into_value()
           "nodeId": "test"
         },
         "epoch": 0,
-        "sequence": 9,
+        "sequence": 11,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "node_offline"
@@ -391,7 +461,7 @@ expression: t.into_value()
           "nodeId": "test"
         },
         "epoch": 0,
-        "sequence": 10,
+        "sequence": 12,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "node_offline"

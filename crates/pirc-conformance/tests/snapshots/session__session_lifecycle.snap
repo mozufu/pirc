@@ -172,7 +172,7 @@ expression: t.into_value()
       "statuses": {},
       "watermark": {
         "epoch": 0,
-        "sequence": 0
+        "sequence": 3
       },
       "widgets": {}
     },
@@ -232,7 +232,7 @@ expression: t.into_value()
         0
       ],
       "every frame has them": true,
-      "sequences are consecutive from 1": true
+      "sequences are consecutive": true
     },
     "step": "events until the run settles"
   },
@@ -365,7 +365,7 @@ expression: t.into_value()
       "statuses": {},
       "watermark": {
         "epoch": 0,
-        "sequence": 23
+        "sequence": 26
       },
       "widgets": {}
     },
@@ -386,7 +386,7 @@ expression: t.into_value()
       "type": "reset",
       "watermark": {
         "epoch": 0,
-        "sequence": 23
+        "sequence": 26
       }
     },
     "step": "cursor from another epoch"
@@ -397,7 +397,7 @@ expression: t.into_value()
       "type": "reset",
       "watermark": {
         "epoch": 0,
-        "sequence": 23
+        "sequence": 26
       }
     },
     "step": "cursor ahead of the stream"

@@ -344,7 +344,7 @@ expression: t.into_value()
       },
       "watermark": {
         "epoch": 0,
-        "sequence": 1
+        "sequence": 3
       }
     },
     "headers": {
@@ -423,7 +423,12 @@ expression: t.into_value()
         "clientId": "browser",
         "expired": false,
         "expiresAt": 4000000000000,
-        "generation": 1
+        "generation": 1,
+        "holder": {
+          "kind": "browser",
+          "lastActionAt": "<epoch-ms>",
+          "name": "A browser"
+        }
       }
     },
     "headers": {
@@ -911,20 +916,11 @@ expression: t.into_value()
   },
   {
     "body": {
-      "error": {
-        "code": "invalid_input",
-        "message": "Only chats can be deleted"
-      }
-    },
-    "headers": {
-      "content-type": "application/json"
-    },
-    "request": "DELETE /api/sessions/session_<uuid:1>",
-    "status": 400,
-    "step": "only chats can be deleted"
-  },
-  {
-    "body": {
+      "defaultModel": {
+        "id": "fake-model",
+        "provider": "fake",
+        "thinking": "low"
+      },
       "models": [
         {
           "contextWindow": 100000,
@@ -935,7 +931,13 @@ expression: t.into_value()
           "maxTokens": 1000,
           "name": "fake-model",
           "provider": "fake",
-          "reasoning": true
+          "reasoning": true,
+          "thinkingLevels": [
+            "minimal",
+            "low",
+            "medium",
+            "high"
+          ]
         }
       ]
     },
@@ -948,6 +950,11 @@ expression: t.into_value()
   },
   {
     "body": {
+      "defaultModel": {
+        "id": "fake-model",
+        "provider": "fake",
+        "thinking": "low"
+      },
       "models": [
         {
           "contextWindow": 100000,
@@ -958,7 +965,13 @@ expression: t.into_value()
           "maxTokens": 1000,
           "name": "fake-model",
           "provider": "fake",
-          "reasoning": true
+          "reasoning": true,
+          "thinkingLevels": [
+            "minimal",
+            "low",
+            "medium",
+            "high"
+          ]
         }
       ]
     },
@@ -1070,5 +1083,34 @@ expression: t.into_value()
     "request": "GET /api/assistant/node",
     "status": 200,
     "step": "assistant node"
+  },
+  {
+    "body": {
+      "deletion": {
+        "cleanupPending": true,
+        "sessionId": "session_<uuid:1>",
+        "state": "deleting"
+      }
+    },
+    "headers": {
+      "content-type": "application/json"
+    },
+    "request": "DELETE /api/sessions/session_<uuid:1>",
+    "status": 202,
+    "step": "delete a directory conversation"
+  },
+  {
+    "observed": [
+      {
+        "method": "POST",
+        "payload": {
+          "submissionHash": "<sha256:4>",
+          "workspaceId": "ws"
+        },
+        "url": "/api/session-creations/creation_<uuid:2>/cancel",
+        "user": "test@example.com"
+      }
+    ],
+    "step": "delete a directory conversation: relayed"
   }
 ]

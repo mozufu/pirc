@@ -326,9 +326,35 @@ expression: s.t.into_value()
   {
     "observed": [
       {
-        "data": "refused",
+        "data": {
+          "clientId": "browser",
+          "holder": {
+            "kind": "browser",
+            "lastActionAt": null,
+            "name": "A browser"
+          }
+        },
         "epoch": 0,
         "sequence": 1,
+        "sessionId": "session_<uuid:1>",
+        "timestamp": "<epoch-ms>",
+        "type": "control_changed"
+      },
+      {
+        "data": {
+          "clientId": null,
+          "holder": null
+        },
+        "epoch": 0,
+        "sequence": 2,
+        "sessionId": "session_<uuid:1>",
+        "timestamp": "<epoch-ms>",
+        "type": "control_changed"
+      },
+      {
+        "data": "refused",
+        "epoch": 0,
+        "sequence": 3,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -386,7 +412,7 @@ expression: s.t.into_value()
       {
         "data": "created",
         "epoch": 0,
-        "sequence": 2,
+        "sequence": 4,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -833,7 +859,7 @@ expression: s.t.into_value()
       {
         "data": "changed",
         "epoch": 0,
-        "sequence": 3,
+        "sequence": 5,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -869,7 +895,7 @@ expression: s.t.into_value()
       {
         "data": "deleted",
         "epoch": 0,
-        "sequence": 4,
+        "sequence": 6,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -924,7 +950,7 @@ expression: s.t.into_value()
       {
         "data": "refused runs",
         "epoch": 0,
-        "sequence": 5,
+        "sequence": 7,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -2102,6 +2128,21 @@ expression: s.t.into_value()
   {
     "observed": [
       {
+        "data": {
+          "clientId": "browser",
+          "holder": {
+            "kind": "browser",
+            "lastActionAt": "<epoch-ms>",
+            "name": "A browser"
+          }
+        },
+        "epoch": 1,
+        "sequence": 5,
+        "sessionId": "session_<uuid:1>",
+        "timestamp": "<epoch-ms>",
+        "type": "control_changed"
+      },
+      {
         "type": "schedules_changed"
       },
       {
@@ -2110,7 +2151,7 @@ expression: s.t.into_value()
           "interactionId": "<proposal:1>"
         },
         "epoch": 1,
-        "sequence": 5,
+        "sequence": 6,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "interaction_answered"
@@ -2118,7 +2159,7 @@ expression: s.t.into_value()
       {
         "data": "approved",
         "epoch": 1,
-        "sequence": 6,
+        "sequence": 7,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -2227,7 +2268,7 @@ expression: s.t.into_value()
           "status": "pending"
         },
         "epoch": 1,
-        "sequence": 7,
+        "sequence": 8,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "interaction_created"
@@ -2238,7 +2279,7 @@ expression: s.t.into_value()
           "interactionId": "<proposal:2>"
         },
         "epoch": 1,
-        "sequence": 8,
+        "sequence": 9,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "interaction_answered"
@@ -2246,7 +2287,7 @@ expression: s.t.into_value()
       {
         "data": "declined",
         "epoch": 1,
-        "sequence": 9,
+        "sequence": 10,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"
@@ -2431,7 +2472,7 @@ expression: s.t.into_value()
       {
         "data": "managed",
         "epoch": 1,
-        "sequence": 10,
+        "sequence": 11,
         "sessionId": "session_<uuid:1>",
         "timestamp": "<epoch-ms>",
         "type": "marker"

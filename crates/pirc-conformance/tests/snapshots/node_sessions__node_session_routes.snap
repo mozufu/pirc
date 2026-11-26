@@ -335,34 +335,6 @@ expression: t.into_value()
   },
   {
     "body": {
-      "error": {
-        "code": "invalid_input",
-        "message": "Only chats can be deleted"
-      }
-    },
-    "headers": {
-      "content-type": "application/json"
-    },
-    "request": "DELETE /api/sessions/:id",
-    "status": 400,
-    "step": "delete a session of a directory workspace"
-  },
-  {
-    "body": {
-      "error": {
-        "code": "not_found",
-        "message": "Session not found"
-      }
-    },
-    "headers": {
-      "content-type": "application/json"
-    },
-    "request": "DELETE /api/sessions/session_missing",
-    "status": 404,
-    "step": "delete an unknown session"
-  },
-  {
-    "body": {
       "lease": null
     },
     "headers": {
@@ -407,7 +379,12 @@ expression: t.into_value()
         "clientId": "browser",
         "expired": false,
         "expiresAt": "<epoch-ms>",
-        "generation": 1
+        "generation": 1,
+        "holder": {
+          "kind": "browser",
+          "lastActionAt": "<epoch-ms>",
+          "name": "A browser"
+        }
       }
     },
     "headers": {
@@ -792,5 +769,25 @@ expression: t.into_value()
     "request": "GET /api/sessions/:id/snapshot",
     "status": 403,
     "step": "that user reads this session"
+  },
+  {
+    "body": null,
+    "request": "DELETE /api/sessions/:id",
+    "status": 204,
+    "step": "delete a directory conversation"
+  },
+  {
+    "body": {
+      "error": {
+        "code": "not_found",
+        "message": "Session not found"
+      }
+    },
+    "headers": {
+      "content-type": "application/json"
+    },
+    "request": "DELETE /api/sessions/session_missing",
+    "status": 404,
+    "step": "delete an unknown session"
   }
 ]

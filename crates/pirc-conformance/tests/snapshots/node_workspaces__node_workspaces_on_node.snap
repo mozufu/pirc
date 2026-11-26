@@ -305,15 +305,10 @@ expression: t.into_value()
     "observed": {
       "request": "DELETE /api/sessions/session_<uuid:1>",
       "response": {
-        "body": {
-          "error": {
-            "code": "invalid_input",
-            "message": "Only chats can be deleted"
-          }
-        },
-        "status": 400
+        "body": null,
+        "status": 204
       }
     },
-    "step": "deleting it: only chats can be deleted, 400"
+    "step": "deleting it: a directory conversation, 204"
   }
 ]

@@ -726,17 +726,9 @@ expression: t.into_value()
     "step": "assistant prompts without a chat node: 503"
   },
   {
-    "body": {
-      "error": {
-        "code": "invalid_input",
-        "message": "Only chats can be deleted"
-      }
-    },
-    "headers": {
-      "content-type": "application/json"
-    },
+    "body": null,
     "request": "DELETE /api/sessions/session_<uuid:1>",
-    "status": 400,
-    "step": "deleting a session of a directory workspace: 400"
+    "status": 204,
+    "step": "deleting a session of a directory workspace: 204"
   }
 ]

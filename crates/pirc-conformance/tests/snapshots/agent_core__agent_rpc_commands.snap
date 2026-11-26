@@ -82,8 +82,17 @@ expression: r.into_value()
   {
     "observed": {
       "command": "set_thinking_level",
-      "error": "Unknown thinking level max",
       "id": "c6",
+      "success": true,
+      "type": "response"
+    },
+    "step": "thinking max"
+  },
+  {
+    "observed": {
+      "command": "set_thinking_level",
+      "error": "Unknown thinking level huge",
+      "id": "c7",
       "success": false,
       "type": "response"
     },
@@ -92,7 +101,7 @@ expression: r.into_value()
   {
     "observed": {
       "command": "set_session_name",
-      "id": "c7",
+      "id": "c8",
       "success": true,
       "type": "response"
     },
@@ -120,9 +129,9 @@ expression: r.into_value()
         "sessionId": "<hex16:1>",
         "sessionName": "Conformance",
         "sessionNameSource": "user",
-        "thinkingLevel": "high"
+        "thinkingLevel": "max"
       },
-      "id": "c8",
+      "id": "c9",
       "success": true,
       "type": "response"
     },
@@ -132,7 +141,7 @@ expression: r.into_value()
     "observed": {
       "command": "get_panel_state",
       "data": {},
-      "id": "c9",
+      "id": "c10",
       "success": true,
       "type": "response"
     },
@@ -142,7 +151,7 @@ expression: r.into_value()
     "observed": {
       "command": "get_context",
       "data": null,
-      "id": "c10",
+      "id": "c11",
       "success": true,
       "type": "response"
     },
@@ -152,7 +161,7 @@ expression: r.into_value()
     "observed": {
       "command": "teleport",
       "error": "Unsupported command: teleport",
-      "id": "c11",
+      "id": "c12",
       "success": false,
       "type": "response"
     },
@@ -165,7 +174,7 @@ expression: r.into_value()
         "followUp": [],
         "steering": []
       },
-      "id": "c12",
+      "id": "c13",
       "success": true,
       "type": "response"
     },
@@ -174,7 +183,7 @@ expression: r.into_value()
   {
     "observed": {
       "command": "abort",
-      "id": "c13",
+      "id": "c14",
       "success": true,
       "type": "response"
     },
@@ -184,7 +193,7 @@ expression: r.into_value()
     "observed": {
       "command": "send_now",
       "error": "send_now needs queue: steering or followUp",
-      "id": "c14",
+      "id": "c15",
       "success": false,
       "type": "response"
     },
@@ -194,7 +203,7 @@ expression: r.into_value()
     "observed": {
       "command": "send_now",
       "error": "send_now needs a non-negative integer index",
-      "id": "c15",
+      "id": "c16",
       "success": false,
       "type": "response"
     },
@@ -204,7 +213,7 @@ expression: r.into_value()
     "observed": {
       "command": "send_now",
       "error": "That message is no longer queued",
-      "id": "c16",
+      "id": "c17",
       "success": false,
       "type": "response"
     },
@@ -214,7 +223,7 @@ expression: r.into_value()
     "observed": {
       "command": "deliver",
       "error": "deliver needs message.customType and message.content",
-      "id": "c17",
+      "id": "c18",
       "success": false,
       "type": "response"
     },
@@ -244,7 +253,7 @@ expression: r.into_value()
   {
     "observed": {
       "command": "deliver",
-      "id": "c18",
+      "id": "c19",
       "success": true,
       "type": "response"
     },
@@ -309,7 +318,7 @@ expression: r.into_value()
     "observed": {
       "command": "get_context",
       "data": null,
-      "id": "c19",
+      "id": "c20",
       "success": true,
       "type": "response"
     },
@@ -318,7 +327,7 @@ expression: r.into_value()
   {
     "observed": {
       "command": "prompt",
-      "id": "c20",
+      "id": "c21",
       "success": true,
       "type": "response"
     },
@@ -426,8 +435,15 @@ expression: r.into_value()
       },
       {
         "id": "<entry:5>",
-        "name": "Conformance",
         "parentId": "<entry:4>",
+        "thinkingLevel": "max",
+        "timestamp": "<epoch-ms>",
+        "type": "thinking_level_change"
+      },
+      {
+        "id": "<entry:6>",
+        "name": "Conformance",
+        "parentId": "<entry:5>",
         "source": "user",
         "timestamp": "<epoch-ms>",
         "type": "session_info"
@@ -444,12 +460,12 @@ expression: r.into_value()
           "role": "custom",
           "timestamp": "<epoch-ms>"
         },
-        "parentId": "<entry:5>",
+        "parentId": "<entry:6>",
         "timestamp": "<epoch-ms>",
         "type": "message"
       },
       {
-        "id": "<entry:6>",
+        "id": "<entry:7>",
         "message": {
           "content": "Hi",
           "role": "user",
@@ -465,8 +481,8 @@ expression: r.into_value()
           "key": "<sha256:1>",
           "reason": "threshold"
         },
-        "id": "<entry:7>",
-        "parentId": "<entry:6>",
+        "id": "<entry:8>",
+        "parentId": "<entry:7>",
         "timestamp": "<epoch-ms>",
         "type": "custom"
       }

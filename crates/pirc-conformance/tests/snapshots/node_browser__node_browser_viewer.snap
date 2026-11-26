@@ -467,7 +467,26 @@ expression: b.t.into_value()
     "step": "the handoff's result"
   },
   {
-    "observed": [],
+    "observed": [
+      {
+        "expiresAt": "<epoch-ms>",
+        "id": "interaction_<uuid:1>",
+        "kind": "confirm",
+        "request": {
+          "id": "<uuid:2>",
+          "message": "Please log in\n\nOpen the Browser tab in the side panel and press \"Take over\". When finished, press \"Return control\" there, or confirm here.",
+          "method": "confirm",
+          "title": "接手瀏覽器 / Take over the browser",
+          "toolCallId": "<uuid:3>:op1",
+          "type": "extension_ui_request"
+        },
+        "resolvedAt": "<epoch-ms>",
+        "rpcId": "<uuid:2>",
+        "runnerEpoch": 1,
+        "sessionId": "session_<uuid:4>",
+        "status": "cancelled"
+      }
+    ],
     "step": "the handoff's dialog is withdrawn"
   },
   {
