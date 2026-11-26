@@ -9,20 +9,20 @@ acceptance, activation.
 
 ## Status
 
-| Milestone                                                     | Design   | Code        | Acceptance | Notes                                                       |
-| ------------------------------------------------------------- | -------- | ----------- | ---------- | ----------------------------------------------------------- |
-| [M0 Unify the working tree](#m0-unify-the-working-tree)       | complete | complete    | n/a        | `e1a08db9`, `162c113b`                                      |
-| [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)         |
-| [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11   |
-| [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4 |
-| [M4 Pots backend](#m4-pots-backend)                           | complete | complete    |            | steps 0–13 done; 232 conformance tests on Linux             |
-| [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`               |
-| [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | finished after review; 12 rewritten; Memory panel removed   |
-| [M7 Pots screens](#m7-pots-screens)                           | complete | complete    |            | steps 0–14 done; goldens of every E screen at four widths   |
-| [M8 Android cutover](#m8-android-cutover)                     | complete |             |            | defaults A–F accepted 2026-11-26; ID `org.mozufu.pirc`      |
-| [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                          |
-| [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                                                             |
-| [M11 Release](#m11-release)                                   | outline  |             |            |                                                             |
+| Milestone                                                     | Design   | Code        | Acceptance | Notes                                                                |
+| ------------------------------------------------------------- | -------- | ----------- | ---------- | -------------------------------------------------------------------- |
+| [M0 Unify the working tree](#m0-unify-the-working-tree)       | complete | complete    | n/a        | `e1a08db9`, `162c113b`                                               |
+| [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)                  |
+| [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11            |
+| [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4          |
+| [M4 Pots backend](#m4-pots-backend)                           | complete | complete    |            | steps 0–13 done; 232 conformance tests on Linux                      |
+| [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`                        |
+| [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | finished after review; 12 rewritten; Memory panel removed            |
+| [M7 Pots screens](#m7-pots-screens)                           | complete | complete    |            | steps 0–14 done; goldens of every E screen at four widths            |
+| [M8 Android cutover](#m8-android-cutover)                     | complete |             |            | defaults A–F and the review additions accepted; ID `org.mozufu.pirc` |
+| [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                                   |
+| [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                                                                      |
+| [M11 Release](#m11-release)                                   | outline  |             |            |                                                                      |
 
 "Outline" milestones get their detailed steps written (rule P12) before they start,
 using what the earlier milestones produced.
@@ -1134,8 +1134,9 @@ in `apps/app/android`; `client.yml` adds that command in step 1. New strings go 
 both ARB files; strings that Kotlin shows without the Flutter engine (notifications,
 overlay) go into `values/strings.xml` and `values-zh-rTW/strings.xml`, and a test
 checks that both have the same keys. Step 0 comes first, then step 1. Steps 2, 3, 5, 6
-and 7 can then run in any order; step 4 needs step 3. Step 8 needs all of them, and
-step 9 closes the milestone.
+and 7 can then run in any order; step 4 needs step 3. Step 8, the owner's device
+acceptance, needs all of them; step 9 deletes the old app only after that acceptance,
+then closes the milestone.
 
 **Defaults the owner accepted on 2026-11-26.** The sources left these points open.
 The steps below use them.
@@ -1166,11 +1167,40 @@ The steps below use them.
   overlay, as in the old app. Pot model approvals (E25), budget requests, handovers
   and observation notifications open the app on their sheet or the Activity tab, with
   no preselected answer.
-- **F. Release signing (step 8).** The cutover moves the signing of the old app
+- **F. Release signing (step 9).** The cutover moves the signing of the old app
   (environment variables `PIRC_ANDROID_KEYSTORE`, `PIRC_ANDROID_STORE_PASSWORD`,
   `PIRC_ANDROID_KEY_ALIAS`, `PIRC_ANDROID_KEY_PASSWORD`, `PIRC_ANDROID_REQUIRE_SIGNING`)
   into `apps/app/android/app/build.gradle.kts`, so `release.yml` keeps making a signed
   APK. Distribution and the production key are still M11.
+
+**More defaults the owner accepted on 2026-11-26.**
+
+- The old app is not considered in use: the new app registers only
+  `pirc://pair`, and sharing a link with the old app installed is not handled.
+- CI has the signing secrets (`PIRC_ANDROID_KEYSTORE`, `PIRC_ANDROID_STORE_PASSWORD`,
+  `PIRC_ANDROID_KEY_ALIAS`, `PIRC_ANDROID_KEY_PASSWORD`,
+  `PIRC_ANDROID_REQUIRE_SIGNING`), so `release.yml` keeps producing a signed APK.
+- Every user installs the new app fresh; no token or data is moved from any earlier
+  build and no hint about the old app is shown.
+- The warning about a token's end uses its effective expiry,
+  `min(last use + the idle window, the maximum window)`, not the maximum alone; a
+  token already past its idle window sends the app to pairing with "Pairing expired;
+  your settings are kept".
+- A send from the quick-reply overlay takes control when another device holds it,
+  as the composer's send does; if that fails the overlay shows who holds it and
+  offers the full conversation.
+- Push settings list the installed UnifiedPush distributors and preselect the only
+  one; with none installed they show how to install one (for example ntfy) and
+  keep push off.
+- Each push target carries `digestAt` (local `HH:MM`, default 18:00) beside the
+  levels.
+- Categories: `needs_you` is agent questions, missed runs, model approvals, budget
+  requests and handovers; `done` is a completed schedule, a pot's reply and an
+  observation notification; `progress` is a pot opening work and work progress;
+  `calendar` is calendar reminders.
+- Quiet hours may cross midnight (end before start); the summary goes out when
+  they end, and a Gateway that was offline sends it on its next tick.
+- The old app is deleted only after the device acceptance of step 8.
 
 **Not in M8:** the live progress notification (C § 6.3 "即時進度"), iOS, and Gateway
 push relays. Real remote push delivery (UnifiedPush through a public distributor, Web
@@ -1210,7 +1240,8 @@ an agent never runs it.
       `{ levels, quietHours, timeZone, lockScreen }`. `levels` maps the D20
       categories `needs_you`, `done`, `progress` and `calendar` to `immediate`,
       `digest` or `off` (defaults: immediate, digest, off, immediate). `quietHours`
-      is `{ start, end }` or null. During quiet hours `needs_you` is sent as a silent
+      is `{ start, end }` or null (it may cross midnight; the summary then goes out
+      when it ends), and `digestAt` is `HH:MM` (default 18:00 in the target's zone). During quiet hours `needs_you` is sent as a silent
       notification and `calendar` is sent at its own level (the user set the
       reminder for that time); `done` and `progress` items that would be sent at
       once are held. The summary at the end of quiet hours lists the held items and
@@ -1278,9 +1309,11 @@ an agent never runs it.
    - Rotation (default B): when the app comes to the foreground and less than 23 days
      of the maximum window remain, it rotates once and saves the new token before it
      uses it. The idle window needs no check, because every use resets it. If rotation
-     fails and less than 3 days of the maximum window remain, Settings → this device and
-     the drawer user row show "Pairing ends on <date>. Open pirc on this phone before
-     then, or pair again."
+     fails, Settings → this device and the drawer user row show "Pairing ends on
+     <date>. Open pirc on this phone before then, or pair again." once less than 3
+     days of the effective expiry (the earlier of the idle and maximum windows)
+     remain; an expired token goes to pairing with "Pairing expired; your settings
+     are kept" (see the defaults below).
      Done when: tests for the scanner result, the deep link, each v2 state, a wrong
      code, the approval page (approve, deny, expired), rotation (saved before use,
      a lost response) and the warning.
@@ -1303,7 +1336,8 @@ an agent never runs it.
      expired, controlled on another device (with "Take control"), offline (the
      preselection is kept, only "Retry"). Pot pushes open their target (default E).
    - Settings → Notifications (C screenshots 11 and 30): push on or off, the
-     distributor, the four levels, quiet hours, the lock screen choice, "Send test",
+     distributor (installed ones, the only one preselected; with none, how to install
+     one and push off), the four levels, `digestAt`, quiet hours, the lock screen choice, "Send test",
      the notification permission (Android 13+), which is asked only from this page or
      the first question, and the quick-reply overlay switch (step 4). The switch opens
      the system page for "Display over other apps" when that permission is missing,
@@ -1320,9 +1354,9 @@ an agent never runs it.
    is shown, as the old app does (`isKeyguardLocked`).
    - It opens with "Checking the latest state…" and all buttons disabled. After the
      compact read it shows the choices, a send button and the control source
-     ("Control: this device" or the device that holds it). Sending gets a control
-     lease and sends the answer through the background client, as the old
-     `GatewayOverlayService.kt` does.
+     ("Control: this device" or the device that holds it). Sending takes the control lease when another device holds it (as the composer's
+     send does in M4 step 13) and sends the answer through the background client; if
+     the takeover fails it shows who holds control and opens the full conversation.
    - A missed run shows the schedule, the planned time and the reason, with "Run now"
      and "Skip". Before either, the overlay reads the run again (step 0.5) and sends
      the decision, with a command ID, only if the run is still missed; otherwise it
@@ -1375,7 +1409,18 @@ an agent never runs it.
    (`NativeCanvasTextFonts.kt` and the two font files next to it).
    Done when: Kotlin tests for each channel; a Dart test that an AVIF image is shown
    when the channel reports support and falls back when it does not.
-8. **Cutover: delete the old app.**
+8. **Device acceptance (the owner, on a physical phone with a real account).**
+   From [Carried-over items](#carried-over-items): pairing (v1 link and QR, rotation),
+   streaming, cancel and reconnect, panels, management consent; keyboard and CJK IME,
+   safe areas, rotation, background, low memory; notifications on the phone's own
+   Android version (permission, lock screen, quiet hours, the overlay); calendar
+   reminders; full multi-line approval bodies and labels, browser takeover, WebM
+   playback; the release build. Remote push delivery is part of this list only if the
+   owner chooses to run it.
+   Done when: every result is recorded in the status table's Notes; a skipped check
+   is not a pass (N8).
+
+9. **Cutover: delete the old app, then close.**
    - Delete `apps/android` and `.github/workflows/android.yml`. Remove `apps/android`
      from the root `pubspec.yaml` workspace and regenerate `pubspec.lock`.
    - Signing (default F): port the old signing block into
@@ -1388,7 +1433,8 @@ an agent never runs it.
      `scripts/prepare-native-first-send.py` (they compile the old Kotlin core); the
      e2e scripts that use `apps/android/tool/parity/test_browser.mjs` move that file
      to `scripts/e2e/` or drop the check.
-   - Docs: `README.md`, `docs/README.md`, `docs/development/{localization,first-send-acceptance,releasing}.md`,
+   - Docs: `README.md`, `docs/README.md`,
+     `docs/development/{localization,first-send-acceptance,releasing}.md`,
      `docs/guides/session-ui.md`, `fixtures/timeline/README.md`,
      `scripts/e2e/README.md`, `fixtures/mobile-parity/.gitignore` and
      `.prettierignore` no longer name `apps/android`. In `client.md`, the layout
@@ -1398,24 +1444,14 @@ an agent never runs it.
    - Record the last commit that contains `apps/android` in
      `docs/development/historical-records.md` with `git show` examples, as M1 step 3
      did for the old plans.
-     Done when: `rg -n 'apps/android' --glob '!plans/**'` finds only history
-     (`CHANGELOG.md`, `docs/development/historical-records.md`); `flutter analyze` and the default
-     suites pass for the workspace; both debug APKs and a signed release APK build
-     in CI.
-9. **Close the milestone.**
    - Goldens of every screen that M8 added or changed (pairing v2, the approval page,
      Settings → Notifications, the reconnect page and the five results) at the four
      widths, light and dark; the ARB key test and the `strings.xml` key test pass.
-   - Device acceptance, run by the owner on a physical phone with a real account
-     (from [Carried-over items](#carried-over-items)): pairing (v1 link and QR,
-     rotation), streaming, cancel and reconnect, panels, management consent; keyboard
-     and CJK IME, safe areas, rotation, background, low memory; notifications on the
-     phone's own Android version (permission, lock screen, quiet hours, the overlay);
-     calendar reminders; full multi-line approval bodies and labels, browser
-     takeover, WebM playback; the release build. Remote push delivery is part of this
-     list only if the owner chooses to run it. Each result is recorded in the status
-     table's Notes; a skipped check is not a pass (N8).
    - Update the status table.
+     Done when: `rg -n 'apps/android' --glob '!plans/**'` finds only history
+     (`CHANGELOG.md`, `docs/development/historical-records.md`); `flutter analyze` and
+     the default suites pass for the workspace; both debug APKs and a signed release
+     APK build in CI.
 
 ## M9 Web and macOS cutover
 
