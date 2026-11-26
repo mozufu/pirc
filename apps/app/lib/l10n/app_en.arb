@@ -1293,5 +1293,158 @@
         "type": "String"
       }
     }
-  }
+  },
+  "potHeaderAnswer": "Only answers you",
+  "potHeaderObserve": "Observing",
+  "potHeaderWork": "Can open work",
+  "potBudgetMonthUsed": "This month {used} / {limit}",
+  "@potBudgetMonthUsed": {
+    "placeholders": {
+      "used": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "potBudgetDayUsed": "Today {used} / {limit} tokens",
+  "@potBudgetDayUsed": {
+    "placeholders": {
+      "used": {
+        "type": "String"
+      },
+      "limit": {
+        "type": "String"
+      }
+    }
+  },
+  "potProfileOf": "{name}'s profile",
+  "@potProfileOf": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "threadDayToday": "Today {time}",
+  "@threadDayToday": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "threadDayYesterday": "Yesterday {time}",
+  "@threadDayYesterday": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "threadComposerHint": "Message {name}…",
+  "@threadComposerHint": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "threadReadOnlyDeleted": "{name} was deleted. This conversation is read-only.",
+  "@threadReadOnlyDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "threadReadOnlyArchived": "{name} is archived. This conversation is read-only.",
+  "@threadReadOnlyArchived": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "threadRefused": "{name} was not woken: {reason}",
+  "@threadRefused": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "threadFailed": "The conversation could not be loaded.",
+  "cardReview": "Review",
+  "cardFailed": "This item could not be loaded.",
+  "cardUnknown": "This version of the app can't show this item ({kind}).",
+  "@cardUnknown": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "cardWorkCoordinatedBy": "Coordinated by {name}",
+  "@cardWorkCoordinatedBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "cardWorkTakenOver": "You took it over",
+  "cardWorkMissing": "This work is no longer available",
+  "cardHandoverTitle": "{pot} proposes a handover",
+  "@cardHandoverTitle": {
+    "placeholders": {
+      "pot": {
+        "type": "String"
+      }
+    }
+  },
+  "cardHandoverTo": "To {to}",
+  "@cardHandoverTo": {
+    "placeholders": {
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "cardHandoverApplied": "Handover confirmed",
+  "cardHandoverRejected": "Handover rejected",
+  "cardLoopTitle": "Chain paused",
+  "cardLoopBody": "{pot} started it. Since the last progress: {wakes} wakes and {messages} messages.",
+  "@cardLoopBody": {
+    "placeholders": {
+      "pot": {
+        "type": "String"
+      },
+      "wakes": {
+        "type": "int"
+      },
+      "messages": {
+        "type": "int"
+      }
+    }
+  },
+  "cardLoopLastProgress": "Last progress {time}",
+  "@cardLoopLastProgress": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "cardLoopResume": "Resume",
+  "cardLoopStop": "Stop the chain",
+  "cardLoopPause": "Pause the pots involved",
+  "cardLoopStopConfirm": "Stop this chain? Its waiting messages are dropped, and it can't be resumed.",
+  "cardLoopResumed": "Resumed",
+  "cardLoopStopped": "Chain stopped",
+  "cardLoopPotsPaused": "The pots involved are paused"
 }

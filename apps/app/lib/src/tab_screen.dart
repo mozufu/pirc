@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide DrawerButton;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:pirc_client/pirc_client.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
 import '../l10n/app_localizations.dart';
@@ -11,6 +12,7 @@ import 'chat/chat_data.dart';
 import 'chat/chat_list_screen.dart';
 import 'chat/decision_sheet.dart';
 import 'chat/new_pot_screen.dart';
+import 'chat/pot_conversation_screen.dart';
 import 'router.dart';
 import 'shell/app_drawer.dart';
 import 'work/new_conversation/new_conversation_screen.dart';
@@ -38,7 +40,8 @@ class TabScreen extends ConsumerWidget {
   /// lands) opens that decision's sheet over the tab.
   final Uri? location;
 
-  /// What the side pane shows (`result:<id>`, `panel:<section>`).
+  /// What the side pane shows (`result:<id>`, `panel:<section>`, a pot's
+  /// `profile`).
   final String? side;
 
   @override
@@ -54,7 +57,12 @@ class TabScreen extends ConsumerWidget {
       canPop: open == null,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop && open != null) {
-          context.go(tab == AppTab.work ? workBackLocation(context) : tab.path);
+          context.go(switch (tab) {
+            AppTab.work => workBackLocation(context),
+            // The profile closes first, back to its conversation.
+            AppTab.chat when side != null => chatLocation(open),
+            _ => tab.path,
+          });
         }
       },
       child: PushDrawer(
@@ -119,6 +127,21 @@ class TabScreen extends ConsumerWidget {
                     key: const ValueKey(newPotKey),
                     showBack: !desktop,
                   ),
+                  // A pot's conversation, or a direct thread by its ID (a
+                  // deleted pot's, read-only). Groups (step 9), handovers
+                  // (step 8) and `new-group` keep the placeholder.
+                  AppTab.chat
+                      when open.startsWith('pot:') ||
+                          (open != newGroupKey && !open.contains(':')) =>
+                    PotConversationScreen(
+                      key: ValueKey(open),
+                      chatKey: open,
+                      showBack: !desktop,
+                      groupFallback: (context) => _ItemPlaceholder(
+                        title: l10n.openItem(open),
+                        onBack: () => context.go(tab.path),
+                      ),
+                    ),
                   AppTab.calendar => CalendarDetail(
                     key: ValueKey(open),
                     itemId: open,
@@ -130,10 +153,23 @@ class TabScreen extends ConsumerWidget {
                     onBack: () => context.go(tab.path),
                   ),
                 },
-          side: tab == AppTab.work && open != null && side != null
+          side: open == null || side == null
+              ? null
+              : tab == AppTab.work
               ? workSide(context, open, side!)
+              : tab == AppTab.chat &&
+                    side == profileSide &&
+                    open.startsWith('pot:')
+              // The pot's profile (E12) comes with step 7.
+              ? _ItemPlaceholder(
+                  key: ValueKey('profile:$open'),
+                  title: l10n.potProfileOf(_potName(ref, open)),
+                  onBack: () => context.go(chatLocation(open)),
+                )
               : null,
-          sideFullPage: true,
+          // Rule C makes work panels a page below 900; information about a
+          // chat item slides in from the right at 600–899 (E spec § 9).
+          sideFullPage: tab == AppTab.work,
           placeholder: _Empty(text: l10n.nothingOpen),
         ),
       ),
@@ -141,6 +177,15 @@ class TabScreen extends ConsumerWidget {
     final at = location;
     return at == null ? page : _DecisionOpener(location: at, child: page);
   }
+}
+
+/// The name of the pot of a `pot:<id>` key, once the pots are read.
+String _potName(WidgetRef ref, String open) {
+  final id = open.substring('pot:'.length);
+  for (final pot in ref.watch(potsProvider).value ?? const <PotSummary>[]) {
+    if (pot.id == id) return pot.name;
+  }
+  return '';
 }
 
 /// Opens the sheet of `approval=<id>` or `budget=<id>` once and takes the

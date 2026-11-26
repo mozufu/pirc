@@ -2258,4 +2258,134 @@ class AppLocalizationsEn extends AppLocalizations {
   String potWorkModelsOff(String reach, String name) {
     return 'In the last step you chose “$reach”, so $name can\'t open work and can\'t use other models. To let it use a stronger model, go back and choose “Can start work”.';
   }
+
+  @override
+  String get potHeaderAnswer => 'Only answers you';
+
+  @override
+  String get potHeaderObserve => 'Observing';
+
+  @override
+  String get potHeaderWork => 'Can open work';
+
+  @override
+  String potBudgetMonthUsed(String used, String limit) {
+    return 'This month $used / $limit';
+  }
+
+  @override
+  String potBudgetDayUsed(String used, String limit) {
+    return 'Today $used / $limit tokens';
+  }
+
+  @override
+  String potProfileOf(String name) {
+    return '$name\'s profile';
+  }
+
+  @override
+  String threadDayToday(String time) {
+    return 'Today $time';
+  }
+
+  @override
+  String threadDayYesterday(String time) {
+    return 'Yesterday $time';
+  }
+
+  @override
+  String threadComposerHint(String name) {
+    return 'Message $name…';
+  }
+
+  @override
+  String threadReadOnlyDeleted(String name) {
+    return '$name was deleted. This conversation is read-only.';
+  }
+
+  @override
+  String threadReadOnlyArchived(String name) {
+    return '$name is archived. This conversation is read-only.';
+  }
+
+  @override
+  String threadRefused(String name, String reason) {
+    return '$name was not woken: $reason';
+  }
+
+  @override
+  String get threadFailed => 'The conversation could not be loaded.';
+
+  @override
+  String get cardReview => 'Review';
+
+  @override
+  String get cardFailed => 'This item could not be loaded.';
+
+  @override
+  String cardUnknown(String kind) {
+    return 'This version of the app can\'t show this item ($kind).';
+  }
+
+  @override
+  String cardWorkCoordinatedBy(String name) {
+    return 'Coordinated by $name';
+  }
+
+  @override
+  String get cardWorkTakenOver => 'You took it over';
+
+  @override
+  String get cardWorkMissing => 'This work is no longer available';
+
+  @override
+  String cardHandoverTitle(String pot) {
+    return '$pot proposes a handover';
+  }
+
+  @override
+  String cardHandoverTo(String to) {
+    return 'To $to';
+  }
+
+  @override
+  String get cardHandoverApplied => 'Handover confirmed';
+
+  @override
+  String get cardHandoverRejected => 'Handover rejected';
+
+  @override
+  String get cardLoopTitle => 'Chain paused';
+
+  @override
+  String cardLoopBody(String pot, int wakes, int messages) {
+    return '$pot started it. Since the last progress: $wakes wakes and $messages messages.';
+  }
+
+  @override
+  String cardLoopLastProgress(String time) {
+    return 'Last progress $time';
+  }
+
+  @override
+  String get cardLoopResume => 'Resume';
+
+  @override
+  String get cardLoopStop => 'Stop the chain';
+
+  @override
+  String get cardLoopPause => 'Pause the pots involved';
+
+  @override
+  String get cardLoopStopConfirm =>
+      'Stop this chain? Its waiting messages are dropped, and it can\'t be resumed.';
+
+  @override
+  String get cardLoopResumed => 'Resumed';
+
+  @override
+  String get cardLoopStopped => 'Chain stopped';
+
+  @override
+  String get cardLoopPotsPaused => 'The pots involved are paused';
 }

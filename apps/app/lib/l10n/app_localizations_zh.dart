@@ -2174,6 +2174,135 @@ class AppLocalizationsZh extends AppLocalizations {
   String potWorkModelsOff(String reach, String name) {
     return '上一步選了「$reach」，$name不能開工作，也就不能用其他模型。要讓它用更強的模型，回上一步改成「可以開始工作」。';
   }
+
+  @override
+  String get potHeaderAnswer => '只回答你';
+
+  @override
+  String get potHeaderObserve => '觀察中';
+
+  @override
+  String get potHeaderWork => '可以開工作';
+
+  @override
+  String potBudgetMonthUsed(String used, String limit) {
+    return '本月 $used / $limit';
+  }
+
+  @override
+  String potBudgetDayUsed(String used, String limit) {
+    return '今天 $used / $limit tokens';
+  }
+
+  @override
+  String potProfileOf(String name) {
+    return '$name的資料';
+  }
+
+  @override
+  String threadDayToday(String time) {
+    return '今天 $time';
+  }
+
+  @override
+  String threadDayYesterday(String time) {
+    return '昨天 $time';
+  }
+
+  @override
+  String threadComposerHint(String name) {
+    return '傳訊息給$name…';
+  }
+
+  @override
+  String threadReadOnlyDeleted(String name) {
+    return '$name已刪除，這段對話只能閱讀。';
+  }
+
+  @override
+  String threadReadOnlyArchived(String name) {
+    return '$name已封存，這段對話只能閱讀。';
+  }
+
+  @override
+  String threadRefused(String name, String reason) {
+    return '沒有叫醒$name：$reason';
+  }
+
+  @override
+  String get threadFailed => '無法載入這段對話。';
+
+  @override
+  String get cardReview => '查看';
+
+  @override
+  String get cardFailed => '無法載入這一項。';
+
+  @override
+  String cardUnknown(String kind) {
+    return '這個版本的 App 無法顯示這一項（$kind）。';
+  }
+
+  @override
+  String cardWorkCoordinatedBy(String name) {
+    return '由$name協調';
+  }
+
+  @override
+  String get cardWorkTakenOver => '你已接手';
+
+  @override
+  String get cardWorkMissing => '這個工作已不存在';
+
+  @override
+  String cardHandoverTitle(String pot) {
+    return '$pot提議交接';
+  }
+
+  @override
+  String cardHandoverTo(String to) {
+    return '交給$to';
+  }
+
+  @override
+  String get cardHandoverApplied => '已確認交接';
+
+  @override
+  String get cardHandoverRejected => '已拒絕交接';
+
+  @override
+  String get cardLoopTitle => '已暫停連鎖';
+
+  @override
+  String cardLoopBody(String pot, int wakes, int messages) {
+    return '由$pot開始。上次有進展後，叫醒了 $wakes 次、傳了 $messages 則訊息。';
+  }
+
+  @override
+  String cardLoopLastProgress(String time) {
+    return '上次進展 $time';
+  }
+
+  @override
+  String get cardLoopResume => '繼續';
+
+  @override
+  String get cardLoopStop => '停止連鎖';
+
+  @override
+  String get cardLoopPause => '暫停相關的 pots';
+
+  @override
+  String get cardLoopStopConfirm => '要停止這個連鎖嗎？等待中的訊息會丟棄，之後不能再繼續。';
+
+  @override
+  String get cardLoopResumed => '已繼續';
+
+  @override
+  String get cardLoopStopped => '已停止連鎖';
+
+  @override
+  String get cardLoopPotsPaused => '相關的 pots 已暫停';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

@@ -4088,6 +4088,204 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'In the last step you chose “{reach}”, so {name} can\'t open work and can\'t use other models. To let it use a stronger model, go back and choose “Can start work”.'**
   String potWorkModelsOff(String reach, String name);
+
+  /// No description provided for @potHeaderAnswer.
+  ///
+  /// In en, this message translates to:
+  /// **'Only answers you'**
+  String get potHeaderAnswer;
+
+  /// No description provided for @potHeaderObserve.
+  ///
+  /// In en, this message translates to:
+  /// **'Observing'**
+  String get potHeaderObserve;
+
+  /// No description provided for @potHeaderWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Can open work'**
+  String get potHeaderWork;
+
+  /// No description provided for @potBudgetMonthUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'This month {used} / {limit}'**
+  String potBudgetMonthUsed(String used, String limit);
+
+  /// No description provided for @potBudgetDayUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Today {used} / {limit} tokens'**
+  String potBudgetDayUsed(String used, String limit);
+
+  /// No description provided for @potProfileOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s profile'**
+  String potProfileOf(String name);
+
+  /// No description provided for @threadDayToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today {time}'**
+  String threadDayToday(String time);
+
+  /// No description provided for @threadDayYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday {time}'**
+  String threadDayYesterday(String time);
+
+  /// No description provided for @threadComposerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Message {name}…'**
+  String threadComposerHint(String name);
+
+  /// No description provided for @threadReadOnlyDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was deleted. This conversation is read-only.'**
+  String threadReadOnlyDeleted(String name);
+
+  /// No description provided for @threadReadOnlyArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} is archived. This conversation is read-only.'**
+  String threadReadOnlyArchived(String name);
+
+  /// No description provided for @threadRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was not woken: {reason}'**
+  String threadRefused(String name, String reason);
+
+  /// No description provided for @threadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The conversation could not be loaded.'**
+  String get threadFailed;
+
+  /// No description provided for @cardReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get cardReview;
+
+  /// No description provided for @cardFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This item could not be loaded.'**
+  String get cardFailed;
+
+  /// No description provided for @cardUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'This version of the app can\'t show this item ({kind}).'**
+  String cardUnknown(String kind);
+
+  /// No description provided for @cardWorkCoordinatedBy.
+  ///
+  /// In en, this message translates to:
+  /// **'Coordinated by {name}'**
+  String cardWorkCoordinatedBy(String name);
+
+  /// No description provided for @cardWorkTakenOver.
+  ///
+  /// In en, this message translates to:
+  /// **'You took it over'**
+  String get cardWorkTakenOver;
+
+  /// No description provided for @cardWorkMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'This work is no longer available'**
+  String get cardWorkMissing;
+
+  /// No description provided for @cardHandoverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{pot} proposes a handover'**
+  String cardHandoverTitle(String pot);
+
+  /// No description provided for @cardHandoverTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To {to}'**
+  String cardHandoverTo(String to);
+
+  /// No description provided for @cardHandoverApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Handover confirmed'**
+  String get cardHandoverApplied;
+
+  /// No description provided for @cardHandoverRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Handover rejected'**
+  String get cardHandoverRejected;
+
+  /// No description provided for @cardLoopTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chain paused'**
+  String get cardLoopTitle;
+
+  /// No description provided for @cardLoopBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{pot} started it. Since the last progress: {wakes} wakes and {messages} messages.'**
+  String cardLoopBody(String pot, int wakes, int messages);
+
+  /// No description provided for @cardLoopLastProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Last progress {time}'**
+  String cardLoopLastProgress(String time);
+
+  /// No description provided for @cardLoopResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get cardLoopResume;
+
+  /// No description provided for @cardLoopStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop the chain'**
+  String get cardLoopStop;
+
+  /// No description provided for @cardLoopPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause the pots involved'**
+  String get cardLoopPause;
+
+  /// No description provided for @cardLoopStopConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop this chain? Its waiting messages are dropped, and it can\'t be resumed.'**
+  String get cardLoopStopConfirm;
+
+  /// No description provided for @cardLoopResumed.
+  ///
+  /// In en, this message translates to:
+  /// **'Resumed'**
+  String get cardLoopResumed;
+
+  /// No description provided for @cardLoopStopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Chain stopped'**
+  String get cardLoopStopped;
+
+  /// No description provided for @cardLoopPotsPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'The pots involved are paused'**
+  String get cardLoopPotsPaused;
 }
 
 class _AppLocalizationsDelegate

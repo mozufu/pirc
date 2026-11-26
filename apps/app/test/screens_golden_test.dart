@@ -136,6 +136,11 @@ final _screens = <String, (String, FakeGateway Function(), Saved Function())>{
   'pairing': ('/chat', FakeGateway.new, Saved.unpaired),
   'calendar': ('/calendar', _calendar, Saved.new),
   'chat': ('/chat', () => ChatFixture().install(), Saved.new),
+  'pot_conversation': (
+    '/chat?open=pot:p-butler',
+    () => ConversationFixture().install(),
+    Saved.new,
+  ),
 };
 
 void main() {

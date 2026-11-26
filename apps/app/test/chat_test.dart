@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/chat/chat_data.dart';
 import 'package:pirc_app/src/chat/chat_list_screen.dart';
+import 'package:pirc_app/src/chat/pot_conversation_screen.dart';
 import 'package:pirc_app/src/format.dart';
 import 'package:pirc_app/src/preferences.dart';
 import 'package:pirc_client/pirc_client.dart';
@@ -200,7 +201,14 @@ void main() {
       await _pumpChat(tester);
       await tester.tap(_rowFinder('Researcher'));
       await tester.pumpAndSettle();
-      expect(find.text('Item pot:p-research'), findsOneWidget);
+      expect(find.byType(PotConversationScreen), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(PotConversationScreen),
+          matching: find.text('Researcher'),
+        ),
+        findsOneWidget,
+      );
     });
 
     appTest('the open row is highlighted where the list stays', (tester) async {

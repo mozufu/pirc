@@ -167,3 +167,195 @@ class ChatFixture {
     for (final json in threads) PotThread.fromJson(json),
   ];
 }
+
+Map<String, Object?> messageJson(
+  int seq,
+  String body, {
+  String authorKind = 'pot',
+  String? authorId,
+  String? authorName,
+  int? createdAt,
+  Map<String, Object?>? card,
+  String threadId = 't-butler',
+}) => {
+  'id': 'm$seq',
+  'threadId': threadId,
+  'seq': seq,
+  'authorKind': authorKind,
+  'authorId': ?authorId,
+  'authorName': ?authorName,
+  'body': body,
+  'createdAt': createdAt ?? at(9, 0),
+  'card': ?card,
+};
+
+/// A whole pot as `GET /api/pots/{id}` answers it.
+Map<String, Object?> fullPotJson(
+  Map<String, Object?> summary, {
+  String reach = 'observe',
+  int? moneyMicros = 20000000,
+  int? tokens = 2000000,
+  int revision = 7,
+}) => {
+  ...summary,
+  'revision': revision,
+  'permissions': {
+    'reach': reach,
+    'budgetMoneyMonthMicros': moneyMicros,
+    'budgetTokensDay': tokens,
+  },
+  'models': {
+    'main': {'provider': 'anthropic', 'model': 'claude-sonnet'},
+  },
+};
+
+/// E11: Butler's direct thread (`t-butler`) with a bubble of each side,
+/// a model approval, the handoff line with Tester's work and an answered
+/// budget request; each card's item, the read position and posting.
+class ConversationFixture extends ChatFixture {
+  ConversationFixture() {
+    pots[0]['budgetLeft'] = {'moneyMicros': 15800000, 'tokens': 1200000};
+    pots[0]['needsYou'] = 1;
+  }
+
+  late List<Map<String, Object?>> messages = [
+    messageJson(
+      1,
+      'Anything from last night?',
+      authorKind: 'user',
+      createdAt: at(8, 58),
+    ),
+    messageJson(
+      2,
+      "Good morning. Last night's nightly had 3 failures; Tester is "
+      'already looking. One thing needs your decision.',
+      authorId: 'p-butler',
+    ),
+    messageJson(
+      3,
+      '',
+      authorKind: 'system',
+      card: {'kind': 'model_approval', 'approvalId': 'a1'},
+    ),
+    messageJson(
+      4,
+      'Butler asked Tester to handle “Check the nightly test”',
+      authorKind: 'system',
+      card: {'kind': 'work', 'workId': 'w1', 'sessionId': 's-nightly'},
+    ),
+    messageJson(
+      5,
+      '',
+      authorKind: 'system',
+      card: {'kind': 'budget_request', 'requestId': 'b1'},
+    ),
+  ];
+
+  /// Messages after the read position.
+  int unread = 2;
+
+  /// `GET /api/threads/{id}/messages?before=<seq>` pages, by `before`.
+  final older = <int, List<Map<String, Object?>>>{};
+
+  Map<String, Object?> approval = {
+    'id': 'a1',
+    'potId': 'p-butler',
+    'workTitle': 'Tidy the API docs',
+    'workspaceId': 'laptop:pirc',
+    'provider': 'anthropic',
+    'model': 'Claude Opus',
+    'thinking': 'high',
+    'reason': 'Three specs disagree',
+    'estimateMicros': 300000,
+    'remainingMicros': 15800000,
+    'state': 'pending',
+    'createdAt': at(9),
+  };
+
+  Map<String, Object?> budget = {
+    'id': 'b1',
+    'potId': 'p-butler',
+    'window': 'month',
+    'amountMicros': 10000000,
+    'reason': 'Two more comparison runs',
+    'state': 'approved',
+    'createdAt': at(9),
+  };
+
+  Map<String, Object?> work = {
+    'id': 'w1',
+    'potId': 'p-tester',
+    'sessionId': 's-nightly',
+    'workspaceId': 'ci:pirc',
+    'title': 'Check the nightly test',
+    'state': 'open',
+  };
+
+  Map<String, Object?> handover = {
+    'id': 'h1',
+    'fromPotId': 'p-butler',
+    'to': {'kind': 'user'},
+    'proposedBy': 'pot',
+    'reason': 'You review the release notes yourself',
+    'state': 'proposed',
+    'revision': 3,
+    'items': [
+      {'kind': 'responsibility', 'ref': 'r1', 'label': 'Release notes'},
+    ],
+  };
+
+  Map<String, Object?> root = {
+    'id': 'root1',
+    'initiatorPot': 'p-butler',
+    'state': 'suspended',
+    'lastProgressAt': at(8, 30),
+    'wakesSinceProgress': 12,
+    'messagesSinceProgress': 30,
+  };
+
+  /// The posted message's reply; [refused] wakes come with it.
+  List<Map<String, Object?>> refused = [];
+
+  Map<String, Object?> get thread => threadJson(
+    't-butler',
+    pots: ['p-butler'],
+    unread: unread,
+    last: lastJson('', at(9)),
+  )..['lastSeq'] = messages.isEmpty ? 0 : messages.last['seq'];
+
+  @override
+  FakeGateway install([FakeGateway? gateway]) {
+    final g = super.install(gateway);
+    g.json['GET /api/pots/p-butler'] = (_) => {'pot': fullPotJson(pots.first)};
+    g.json['GET /api/pots/p-butler/thread'] = (_) => {'thread': thread};
+    g.json['GET /api/threads/t-butler'] = (_) => {'thread': thread};
+    g.json['GET /api/threads/t-butler/messages'] = (request) {
+      final before = int.tryParse(request.query['before'] ?? '');
+      return {
+        'messages': before == null ? messages : older[before] ?? const [],
+      };
+    };
+    g.json['POST /api/threads/t-butler/read'] = (_) => <String, Object?>{};
+    g.json['POST /api/threads/t-butler/messages'] = (request) {
+      final body = (request.json! as Map)['body'] as String;
+      final message = messageJson(
+        (messages.last['seq']! as int) + 1,
+        body,
+        authorKind: 'user',
+        createdAt: at(10, 59),
+      );
+      messages.add(message);
+      return {
+        'message': message,
+        'woken': refused.isEmpty ? ['p-butler'] : const [],
+        'refused': refused,
+      };
+    };
+    g.json['GET /api/model-approvals/a1'] = (_) => {'approval': approval};
+    g.json['GET /api/budget-requests/b1'] = (_) => {'budgetRequest': budget};
+    g.json['GET /api/pot-works/w1'] = (_) => {'work': work};
+    g.json['GET /api/handovers/h1'] = (_) => {'handover': handover};
+    g.json['GET /api/causal-roots/root1'] = (_) => {'causalRoot': root};
+    return g;
+  }
+}

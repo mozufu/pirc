@@ -302,13 +302,21 @@ class WorkCard extends StatelessWidget {
   });
 
   final String title;
-  final String subtitle;
+
+  /// A [String], or an [InlineSpan] (a state symbol as a [WidgetSpan]).
+  final Object subtitle;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final colors = PircColorTokens.of(context);
     final dark = Theme.of(context).brightness == Brightness.dark;
+    final subtitleStyle = TextStyle(
+      fontSize: 12.5,
+      height: 17 / 12.5,
+      color: colors['text.muted'],
+    );
+    final subtitle = this.subtitle;
     return Container(
       decoration: BoxDecoration(
         color: colors['surface.layer'],
@@ -341,16 +349,19 @@ class WorkCard extends StatelessWidget {
                           color: colors['text.primary'],
                         ),
                       ),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          height: 17 / 12.5,
-                          color: colors['text.muted'],
-                        ),
-                      ),
+                      subtitle is InlineSpan
+                          ? Text.rich(
+                              subtitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: subtitleStyle,
+                            )
+                          : Text(
+                              '$subtitle',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: subtitleStyle,
+                            ),
                     ],
                   ),
                 ),

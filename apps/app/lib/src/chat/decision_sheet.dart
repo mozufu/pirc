@@ -32,9 +32,38 @@ Future<void> showApprovalSheet(BuildContext context, String approvalId) =>
     _show(context, _ApprovalSheet(id: approvalId));
 
 /// The budget request sheet: the same layout with Approve / Approve
-/// another amount / Deny.
-Future<void> showBudgetRequestSheet(BuildContext context, String requestId) =>
-    _show(context, _BudgetSheet(id: requestId));
+/// another amount / Deny. [otherAmount] opens it on the amount field (the
+/// card's "Approve another amount").
+Future<void> showBudgetRequestSheet(
+  BuildContext context,
+  String requestId, {
+  bool otherAmount = false,
+}) => _show(context, _BudgetSheet(id: requestId, otherAmount: otherAmount));
+
+/// Sends [answer] (`approve`, `approve_amount` with [amount] in the
+/// request's unit, or `deny`) for budget request [id], then reads the
+/// request again. Returns false when it was already answered (409, on
+/// another device): the request read again shows that answer. Other
+/// failures throw. The sheet and the conversation's card both use it.
+Future<bool> answerBudgetRequest(
+  WidgetRef ref,
+  ApiClient api,
+  String id, {
+  required String answer,
+  int? amount,
+}) async {
+  try {
+    await DecisionsApi(
+      api,
+    ).answerBudgetRequest(id, answer: answer, amount: amount);
+    return true;
+  } on ApiError catch (error) {
+    if (error.status != 409) rethrow;
+    return false;
+  } finally {
+    ref.invalidate(budgetRequestProvider(id));
+  }
+}
 
 Future<void> _show(BuildContext context, Widget sheet) =>
     showModalBottomSheet<void>(
@@ -90,6 +119,7 @@ class _ApprovalSheetState extends ConsumerState<_ApprovalSheet> {
         api,
       ).answerApproval(widget.id, answer: answer, reason: reason);
       ref.invalidate(pendingApprovalsProvider);
+      ref.invalidate(approvalProvider(widget.id));
       if (mounted) Navigator.pop(context);
     } on ApiError catch (error) {
       if (!mounted) return;
@@ -215,8 +245,9 @@ class _ApprovalSheetState extends ConsumerState<_ApprovalSheet> {
 }
 
 class _BudgetSheet extends ConsumerStatefulWidget {
-  const _BudgetSheet({required this.id});
+  const _BudgetSheet({required this.id, this.otherAmount = false});
   final String id;
+  final bool otherAmount;
 
   @override
   ConsumerState<_BudgetSheet> createState() => _BudgetSheetState();
@@ -224,7 +255,7 @@ class _BudgetSheet extends ConsumerStatefulWidget {
 
 class _BudgetSheetState extends ConsumerState<_BudgetSheet> {
   final _amount = TextEditingController();
-  bool _other = false;
+  late bool _other = widget.otherAmount;
   bool _busy = false;
   String? _error;
 
@@ -254,20 +285,18 @@ class _BudgetSheetState extends ConsumerState<_BudgetSheet> {
       _error = null;
     });
     try {
-      await DecisionsApi(
+      final sent = await answerBudgetRequest(
+        ref,
         api,
-      ).answerBudgetRequest(widget.id, answer: answer, amount: amount);
-      if (mounted) Navigator.pop(context);
-    } on ApiError catch (error) {
+        widget.id,
+        answer: answer,
+        amount: amount,
+      );
       if (!mounted) return;
-      if (error.status == 409) {
-        ref.invalidate(budgetRequestProvider(widget.id));
-        setState(() => _busy = false);
+      if (sent) {
+        Navigator.pop(context);
       } else {
-        setState(() {
-          _busy = false;
-          _error = error.message;
-        });
+        setState(() => _busy = false);
       }
     } on PircException catch (error) {
       if (mounted) {

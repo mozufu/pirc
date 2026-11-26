@@ -14,9 +14,24 @@ const newGroupKey = 'new-group';
 /// A pot's conversation (its direct thread) in the Chat tab.
 String potChatKey(String potId) => 'pot:$potId';
 
-/// The Chat tab's location with [open] as its open item.
-String chatLocation(String open) =>
-    Uri(path: '/chat', queryParameters: {'open': open}).toString();
+/// A handover (E14), opened from a pot's `handover` card. Its screen comes
+/// with M7 step 8; until then the key shows the placeholder.
+String handoverKey(String handoverId) => 'handover:$handoverId';
+
+/// The Chat tab's `side` value of a pot's profile (E12): the right column
+/// on wide layouts, a page on phones (E spec § 9). Step 7 builds it.
+const profileSide = 'profile';
+
+/// The Chat tab's location with [open] as its open item and [side] in the
+/// side pane.
+String chatLocation(String open, {String? side}) => Uri(
+  path: '/chat',
+  queryParameters: {'open': open, 'side': ?side},
+).toString();
+
+/// A pot's profile beside (or over) its conversation.
+String potProfileLocation(String potId) =>
+    chatLocation(potChatKey(potId), side: profileSide);
 
 /// Every thread of the user; read again on `threads_changed`.
 final threadsProvider = FutureProvider<List<PotThread>>((ref) {
