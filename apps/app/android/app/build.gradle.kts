@@ -57,3 +57,29 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+// The Kotlin side of M8, added once (the versions of the old app).
+dependencies {
+    implementation("com.squareup.okhttp3:okhttp:5.1.0")
+    implementation("org.unifiedpush.android:connector:3.3.5") {
+        // flutter_secure_storage (macOS keeps it) brings tink-android; the connector's
+        // plain tink would duplicate its classes.
+        exclude(group = "com.google.crypto.tink", module = "tink")
+    }
+    // The connector needs Tink; take the Android build directly, at the version
+    // flutter_secure_storage brings, instead of through that plugin.
+    implementation("com.google.crypto.tink:tink-android:1.23.0")
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
+    implementation("androidx.javascriptengine:javascriptengine:1.1.1")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.16")
+    testImplementation("com.squareup.okhttp3:mockwebserver3:5.1.0")
+}
+
+// Android assets are unavailable in local JVM tests. Use OkHttp's published JVM
+// runtime (including its public suffix list); the app keeps okhttp-android.
+configurations.matching { it.name.endsWith("UnitTestCompileClasspath") || it.name.endsWith("UnitTestRuntimeClasspath") }.configureEach {
+    resolutionStrategy.dependencySubstitution {
+        substitute(module("com.squareup.okhttp3:okhttp")).using(module("com.squareup.okhttp3:okhttp-jvm:5.1.0"))
+    }
+}

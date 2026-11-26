@@ -6,7 +6,7 @@ import 'platform_android.dart';
 /// Static AVIF uses Android decoding and an 8-bit sRGB PNG for Flutter painting.
 /// The representation never leaves memory; source download/save bytes are intact.
 class NativeRasterImages {
-  static const _channel = MethodChannel('dev.pirc.mobile/gateway');
+  static const _channel = MethodChannel('org.mozufu.pirc/images');
   static bool avifSupported = false;
   static Future<void> loadCapabilities() async {
     if (!runsOnAndroid) return;

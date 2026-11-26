@@ -111,6 +111,19 @@ jobs:
         working-directory: apps/app
         run: flutter build apk --debug --no-pub --flavor tailscale --dart-define=PIRC_TAILSCALE=true
 
+      # The Kotlin unit tests (plans/roadmap.md M8). After the APK builds:
+      # they put the Gradle wrapper and local.properties in place.
+      - name: Kotlin unit tests
+        working-directory: apps/app/android
+        run: ./gradlew --no-configuration-cache testStandardDebugUnitTest
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: failure()
+        with:
+          name: kotlin-unit-test-reports
+          path: apps/app/build/app/reports/tests/testStandardDebugUnitTest/
+          if-no-files-found: ignore
+
       - name: Build for the Web
         working-directory: apps/app
         run: flutter build web --no-pub

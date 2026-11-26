@@ -214,7 +214,8 @@ void appTest(
 );
 
 /// Pumps the whole app at [width] against [gateway]. [reduceMotion] asks
-/// for less motion, as the system setting does.
+/// for less motion, as the system setting does. [platformSecrets] keeps the
+/// platform's secret store instead of [Saved.secrets].
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   required FakeGateway gateway,
@@ -226,6 +227,7 @@ Future<ProviderContainer> pumpApp(
   List overrides = const [],
   bool settle = true,
   bool reduceMotion = false,
+  bool platformSecrets = false,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = Size(width, height);
@@ -244,7 +246,8 @@ Future<ProviderContainer> pumpApp(
     retry: noRetry,
     overrides: [
       sharedPreferencesProvider.overrideWithValue(preferences),
-      secretStoreProvider.overrideWithValue(state.secrets),
+      if (!platformSecrets)
+        secretStoreProvider.overrideWithValue(state.secrets),
       transportFactoryProvider.overrideWithValue(gateway.transport),
       isWebProvider.overrideWithValue(web),
       webOriginProvider.overrideWithValue(Uri.parse('https://gateway.test/')),

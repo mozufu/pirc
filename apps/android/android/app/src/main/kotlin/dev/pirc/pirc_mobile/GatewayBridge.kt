@@ -420,6 +420,23 @@ class GatewayBridge(private val activity: MainActivity, engine: FlutterEngine) {
                 htmlMedia.closeAll()
             }
         })
+        // pirc_render now calls these two on the new app's images channel (M8 step 1).
+        MethodChannel(engine.dartExecutor.binaryMessenger, "org.mozufu.pirc/images").setMethodCallHandler { call, result ->
+            runtime.scope.launch {
+                try {
+                    val value: Any? = when (call.method) {
+                        "imageCapabilities" -> NativeRasterImages.capabilities()
+                        "normalizeAvif" -> withContext(Dispatchers.Default) {
+                            NativeRasterImages.normalize(call.argument<ByteArray>("bytes") ?: throw IllegalArgumentException("Image bytes are required"))
+                        }
+                        else -> { result.notImplemented(); return@launch }
+                    }
+                    result.success(value)
+                } catch (e: Exception) {
+                    result.error(if (e is IllegalArgumentException) "INVALID" else "NETWORK", e.message ?: NativeI18n.text("連線失敗"), null)
+                }
+            }
+        }
         channel.setMethodCallHandler { call, result ->
             val args = call.arguments as? Map<*, *> ?: emptyMap<Any, Any>()
             fun str(key: String) = args[key] as String

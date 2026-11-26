@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:pirc_client/pirc_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../platform/credentials.dart';
 
 /// Failed providers are not retried on a timer: lists read again on hints
 /// and offer "Try again".
@@ -34,8 +37,9 @@ abstract final class PrefKeys {
   static const firstSendJournal = 'firstSendJournal';
 }
 
-/// Secrets: the device token. Android and macOS keep it in the platform's
-/// secure store (default A); the Web build has no token.
+/// Secrets: the device token. Android keeps it in the Keystore through the
+/// credentials channel, macOS in the Keychain through
+/// `flutter_secure_storage` (default A); the Web build has no token.
 abstract interface class SecretStore {
   Future<String?> read(String key);
   Future<void> write(String key, String value);
@@ -58,6 +62,40 @@ class SecureSecretStore implements SecretStore {
   Future<void> delete(String key) => _storage.delete(key: key);
 }
 
+/// Android: the device token through the `org.mozufu.pirc/credentials`
+/// channel, which holds only that one secret.
+class CredentialsSecretStore implements SecretStore {
+  const CredentialsSecretStore([
+    this._credentials = const ChannelCredentials(),
+  ]);
+
+  final Credentials _credentials;
+
+  static void _check(String key) {
+    if (key != deviceTokenKey) {
+      throw ArgumentError.value(key, 'key', 'only the device token is kept');
+    }
+  }
+
+  @override
+  Future<String?> read(String key) {
+    _check(key);
+    return _credentials.readToken();
+  }
+
+  @override
+  Future<void> write(String key, String value) {
+    _check(key);
+    return _credentials.saveToken(value);
+  }
+
+  @override
+  Future<void> delete(String key) {
+    _check(key);
+    return _credentials.deleteToken();
+  }
+}
+
 /// For tests and the Web build.
 class MemorySecretStore implements SecretStore {
   MemorySecretStore([Map<String, String>? values]) : values = values ?? {};
@@ -75,7 +113,9 @@ class MemorySecretStore implements SecretStore {
 }
 
 final secretStoreProvider = Provider<SecretStore>(
-  (ref) => const SecureSecretStore(),
+  (ref) => !kIsWeb && defaultTargetPlatform == TargetPlatform.android
+      ? const CredentialsSecretStore()
+      : const SecureSecretStore(),
 );
 
 const deviceTokenKey = 'deviceToken';
