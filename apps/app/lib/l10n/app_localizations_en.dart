@@ -3535,4 +3535,178 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get povUncertain => 'Not confirmed';
+
+  @override
+  String get pairScan => 'Scan QR code';
+
+  @override
+  String get pairScanFailed =>
+      'The scanner could not be opened. Try again, or paste the link.';
+
+  @override
+  String get pairScanDownloading =>
+      'The scanner is still being installed. Try again in a moment.';
+
+  @override
+  String get pairScanUnsupported =>
+      'This device cannot scan QR codes. Paste the link instead.';
+
+  @override
+  String get pairNotACode => 'This QR code is not a pairing link.';
+
+  @override
+  String get pairNotACodeV2 =>
+      'This QR code is not a pairing link or a Gateway address.';
+
+  @override
+  String pairLinkOpened(String gateway) {
+    return 'A pairing link for $gateway was opened. Tap Pair to use it.';
+  }
+
+  @override
+  String get pairExpired => 'Pairing expired; your settings are kept.';
+
+  @override
+  String get pairV2Title => 'Pair with a browser';
+
+  @override
+  String get pairV2Body =>
+      'Give the Gateway address, typed or from a QR code. You approve this device in a browser that is signed in to the Gateway.';
+
+  @override
+  String get pairV2AddressLabel => 'Gateway address';
+
+  @override
+  String get pairV2DefaultName => 'Android phone';
+
+  @override
+  String get pairV2Start => 'Continue';
+
+  @override
+  String get pairV2Creating => 'Asking the Gateway…';
+
+  @override
+  String get pairV2NotAnAddress =>
+      'This is not a Gateway address, such as https://pirc.example.';
+
+  @override
+  String get pairV2BadName => 'Give a device name of 1 to 100 characters.';
+
+  @override
+  String pairV2Device(String name) {
+    return 'This device: $name';
+  }
+
+  @override
+  String get pairV2OpenInBrowser => 'Open in a browser to approve';
+
+  @override
+  String get pairV2OpenBrowser => 'Open the browser';
+
+  @override
+  String get pairV2BrowserFailed =>
+      'The browser could not be opened. Open this address yourself:';
+
+  @override
+  String pairV2Expires(String time) {
+    return 'The request ends at $time.';
+  }
+
+  @override
+  String get pairV2Waiting => 'Waiting for the approval in the browser…';
+
+  @override
+  String get pairV2Approved =>
+      'Approved. Type the 6-digit code that the browser shows.';
+
+  @override
+  String get pairV2CodeLabel => '6-digit code';
+
+  @override
+  String get pairV2Claim => 'Pair';
+
+  @override
+  String get pairV2Claiming => 'Checking…';
+
+  @override
+  String pairV2WrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Wrong code. $count tries left.',
+      one: 'Wrong code. 1 try left.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pairV2TooManyCodes =>
+      'Too many wrong codes ended this request. Start again to make a new one.';
+
+  @override
+  String get pairV2Denied =>
+      'The request was denied in the browser. Start again to make a new one.';
+
+  @override
+  String get pairV2Expired =>
+      'The request expired. Start again to make a new one.';
+
+  @override
+  String get pairV2TooManyRequests =>
+      'Too many pairing requests are open on the Gateway. Try again in a few minutes.';
+
+  @override
+  String get pairV2TooManyPhones =>
+      'This account already has 10 paired phones. Remove one in a browser, then send the code again.';
+
+  @override
+  String get pairV2Failed => 'Pairing failed. Start again.';
+
+  @override
+  String get pairV2StartAgain => 'Start again';
+
+  @override
+  String get pairV2Paired => 'Paired. Connecting…';
+
+  @override
+  String pairApprovalTitle(String device) {
+    return 'Pair $device?';
+  }
+
+  @override
+  String pairApprovalPlatform(String platform) {
+    return 'Platform: $platform';
+  }
+
+  @override
+  String get pairApprovalNote =>
+      'Approve only a device you are pairing now. Once paired, it can do everything you can on this Gateway.';
+
+  @override
+  String get pairApprovalCodeTitle => 'Type this code in the app';
+
+  @override
+  String pairApprovalCodeNote(String time) {
+    return 'The code works until $time. Do not share it.';
+  }
+
+  @override
+  String get pairApprovalDenied => 'Denied. The device was not paired.';
+
+  @override
+  String get pairApprovalDecided => 'This request was already decided.';
+
+  @override
+  String get pairApprovalExpired =>
+      'This request expired. Start again in the app.';
+
+  @override
+  String pairingEndsWarning(String date) {
+    return 'Pairing ends on $date. Open pirc on this phone before then, or pair again.';
+  }
+
+  @override
+  String pairLinkScanned(String gateway) {
+    return 'A pairing link for $gateway was scanned. Tap Pair to use it.';
+  }
 }

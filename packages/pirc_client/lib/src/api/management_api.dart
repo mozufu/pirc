@@ -133,6 +133,7 @@ class DeviceSummary {
     this.createdAt = 0,
     this.lastUsedAt = 0,
     this.expiresAt = 0,
+    this.idleExpiresAt = 0,
   });
 
   factory DeviceSummary.fromJson(Object? json) => DeviceSummary(
@@ -141,13 +142,27 @@ class DeviceSummary {
     createdAt: number(field(json, 'createdAt')) ?? 0,
     lastUsedAt: number(field(json, 'lastUsedAt')) ?? 0,
     expiresAt: number(field(json, 'expiresAt')) ?? 0,
+    idleExpiresAt: number(field(json, 'idleExpiresAt')) ?? 0,
   );
 
   final String id;
   final String name;
   final int createdAt;
   final int lastUsedAt;
+
+  /// In `GET /api/devices`, when the token dies if it is not used again (the
+  /// earlier of the two windows). In `GET /api/device` and the pairing and
+  /// rotation replies, the end of the maximum window.
   final int expiresAt;
+
+  /// The end of the idle window; 0 when the Gateway did not send it.
+  final int idleExpiresAt;
+
+  /// When the token dies without another use: the earlier of the idle and
+  /// the maximum window.
+  int get effectiveExpiresAt => idleExpiresAt > 0 && idleExpiresAt < expiresAt
+      ? idleExpiresAt
+      : expiresAt;
 }
 
 /// `/api/devices`; a paired app needs the management grant for each call.

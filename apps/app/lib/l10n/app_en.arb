@@ -2272,5 +2272,113 @@
   "povNoInstructions": "It has sent no instructions into this work yet.",
   "povDelivered": "Delivered",
   "povRefused": "Refused",
-  "povUncertain": "Not confirmed"
+  "povUncertain": "Not confirmed",
+  "pairScan": "Scan QR code",
+  "pairScanFailed": "The scanner could not be opened. Try again, or paste the link.",
+  "pairScanDownloading": "The scanner is still being installed. Try again in a moment.",
+  "pairScanUnsupported": "This device cannot scan QR codes. Paste the link instead.",
+  "pairNotACode": "This QR code is not a pairing link.",
+  "pairNotACodeV2": "This QR code is not a pairing link or a Gateway address.",
+  "pairLinkOpened": "A pairing link for {gateway} was opened. Tap Pair to use it.",
+  "@pairLinkOpened": {
+    "placeholders": {
+      "gateway": {
+        "type": "String"
+      }
+    }
+  },
+  "pairExpired": "Pairing expired; your settings are kept.",
+  "pairV2Title": "Pair with a browser",
+  "pairV2Body": "Give the Gateway address, typed or from a QR code. You approve this device in a browser that is signed in to the Gateway.",
+  "pairV2AddressLabel": "Gateway address",
+  "pairV2DefaultName": "Android phone",
+  "pairV2Start": "Continue",
+  "pairV2Creating": "Asking the Gateway…",
+  "pairV2NotAnAddress": "This is not a Gateway address, such as https://pirc.example.",
+  "pairV2BadName": "Give a device name of 1 to 100 characters.",
+  "pairV2Device": "This device: {name}",
+  "@pairV2Device": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pairV2OpenInBrowser": "Open in a browser to approve",
+  "pairV2OpenBrowser": "Open the browser",
+  "pairV2BrowserFailed": "The browser could not be opened. Open this address yourself:",
+  "pairV2Expires": "The request ends at {time}.",
+  "@pairV2Expires": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "pairV2Waiting": "Waiting for the approval in the browser…",
+  "pairV2Approved": "Approved. Type the 6-digit code that the browser shows.",
+  "pairV2CodeLabel": "6-digit code",
+  "pairV2Claim": "Pair",
+  "pairV2Claiming": "Checking…",
+  "pairV2WrongCode": "{count, plural, =1{Wrong code. 1 try left.} other{Wrong code. {count} tries left.}}",
+  "@pairV2WrongCode": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pairV2TooManyCodes": "Too many wrong codes ended this request. Start again to make a new one.",
+  "pairV2Denied": "The request was denied in the browser. Start again to make a new one.",
+  "pairV2Expired": "The request expired. Start again to make a new one.",
+  "pairV2TooManyRequests": "Too many pairing requests are open on the Gateway. Try again in a few minutes.",
+  "pairV2TooManyPhones": "This account already has 10 paired phones. Remove one in a browser, then send the code again.",
+  "pairV2Failed": "Pairing failed. Start again.",
+  "pairV2StartAgain": "Start again",
+  "pairV2Paired": "Paired. Connecting…",
+  "pairApprovalTitle": "Pair {device}?",
+  "@pairApprovalTitle": {
+    "placeholders": {
+      "device": {
+        "type": "String"
+      }
+    }
+  },
+  "pairApprovalPlatform": "Platform: {platform}",
+  "@pairApprovalPlatform": {
+    "placeholders": {
+      "platform": {
+        "type": "String"
+      }
+    }
+  },
+  "pairApprovalNote": "Approve only a device you are pairing now. Once paired, it can do everything you can on this Gateway.",
+  "pairApprovalCodeTitle": "Type this code in the app",
+  "pairApprovalCodeNote": "The code works until {time}. Do not share it.",
+  "@pairApprovalCodeNote": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "pairApprovalDenied": "Denied. The device was not paired.",
+  "pairApprovalDecided": "This request was already decided.",
+  "pairApprovalExpired": "This request expired. Start again in the app.",
+  "pairingEndsWarning": "Pairing ends on {date}. Open pirc on this phone before then, or pair again.",
+  "@pairingEndsWarning": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "pairLinkScanned": "A pairing link for {gateway} was scanned. Tap Pair to use it.",
+  "@pairLinkScanned": {
+    "placeholders": {
+      "gateway": {
+        "type": "String"
+      }
+    }
+  }
 }

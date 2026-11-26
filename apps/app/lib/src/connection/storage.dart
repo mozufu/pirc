@@ -32,6 +32,10 @@ abstract final class PrefKeys {
   /// The Web build's chosen client name; empty means the Gateway names it.
   static const clientName = 'clientName';
 
+  /// When a token rotation whose reply was lost was sent (milliseconds);
+  /// absent when no rotation outcome is unknown. Holds no secret.
+  static const rotationUnknownSince = 'rotationUnknownSince';
+
   /// Per-session drafts and the first-send journal use these prefixes.
   static const draftPrefix = 'draft.';
   static const firstSendJournal = 'firstSendJournal';
@@ -136,5 +140,11 @@ class SecretTokenStore implements TokenStore {
       _loaded = true;
     }
     return _cached;
+  }
+
+  /// Uses [token] from now on; it is already saved (token rotation).
+  void replace(String token) {
+    _cached = token;
+    _loaded = true;
   }
 }

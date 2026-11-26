@@ -311,7 +311,7 @@ fn requests_expire_after_ten_minutes_and_at_most_twenty_are_open() {
         .create_pairing("Pixel", "android", &sha256_hex(&secret))
         .unwrap();
     assert_eq!(first.expires_at - first.server_now, PAIRING_REQUEST_TTL_MS);
-    assert_eq!(first.approve_path, format!("/?pairing={}", first.id));
+    assert_eq!(first.approve_path, format!("/?pair={}", first.id));
     for _ in 1..MAX_OPEN_PAIRING_REQUESTS {
         grants
             .create_pairing("Pixel", "android", &sha256_hex(verifier()))

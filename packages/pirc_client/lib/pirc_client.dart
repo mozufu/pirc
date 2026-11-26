@@ -17,6 +17,7 @@ export 'src/api/me_api.dart';
 export 'src/api/memory_api.dart';
 export 'src/api/modes_api.dart';
 export 'src/api/models_api.dart';
+export 'src/api/pairing_api.dart';
 export 'src/api/pots_api.dart';
 export 'src/api/providers_api.dart';
 export 'src/api/push_api.dart';

@@ -275,7 +275,7 @@ impl NativeManagementGrants {
             },
         );
         Ok(PairingCreated {
-            approve_path: format!("/?pairing={id}"),
+            approve_path: format!("/?pair={id}"),
             id,
             expires_at: request_expires_at,
             server_now: stamp,

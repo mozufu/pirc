@@ -12,6 +12,11 @@ class PlatformChannelsTest {
     private class Feature(override val name: String) : PlatformFeature {
         var detached = false
         var inFront = true
+        var channel: MethodChannel? = null
+
+        override fun attached(channel: MethodChannel) {
+            this.channel = channel
+        }
 
         override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) = result.success(null)
 
@@ -48,6 +53,7 @@ class PlatformChannelsTest {
         channels.attach(messenger)
         assertEquals(setOf("org.mozufu.pirc/credentials", "org.mozufu.pirc/push"), messenger.handlers.keys)
         assertTrue(messenger.handlers.values.all { it != null })
+        assertTrue(features.all { it.channel != null })
 
         channels.detach()
         assertTrue(messenger.handlers.values.all { it == null })

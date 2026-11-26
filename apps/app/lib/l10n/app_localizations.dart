@@ -6104,6 +6104,276 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Not confirmed'**
   String get povUncertain;
+
+  /// No description provided for @pairScan.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR code'**
+  String get pairScan;
+
+  /// No description provided for @pairScanFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The scanner could not be opened. Try again, or paste the link.'**
+  String get pairScanFailed;
+
+  /// No description provided for @pairScanDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'The scanner is still being installed. Try again in a moment.'**
+  String get pairScanDownloading;
+
+  /// No description provided for @pairScanUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This device cannot scan QR codes. Paste the link instead.'**
+  String get pairScanUnsupported;
+
+  /// No description provided for @pairNotACode.
+  ///
+  /// In en, this message translates to:
+  /// **'This QR code is not a pairing link.'**
+  String get pairNotACode;
+
+  /// No description provided for @pairNotACodeV2.
+  ///
+  /// In en, this message translates to:
+  /// **'This QR code is not a pairing link or a Gateway address.'**
+  String get pairNotACodeV2;
+
+  /// No description provided for @pairLinkOpened.
+  ///
+  /// In en, this message translates to:
+  /// **'A pairing link for {gateway} was opened. Tap Pair to use it.'**
+  String pairLinkOpened(String gateway);
+
+  /// No description provided for @pairExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing expired; your settings are kept.'**
+  String get pairExpired;
+
+  /// No description provided for @pairV2Title.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair with a browser'**
+  String get pairV2Title;
+
+  /// No description provided for @pairV2Body.
+  ///
+  /// In en, this message translates to:
+  /// **'Give the Gateway address, typed or from a QR code. You approve this device in a browser that is signed in to the Gateway.'**
+  String get pairV2Body;
+
+  /// No description provided for @pairV2AddressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gateway address'**
+  String get pairV2AddressLabel;
+
+  /// No description provided for @pairV2DefaultName.
+  ///
+  /// In en, this message translates to:
+  /// **'Android phone'**
+  String get pairV2DefaultName;
+
+  /// No description provided for @pairV2Start.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get pairV2Start;
+
+  /// No description provided for @pairV2Creating.
+  ///
+  /// In en, this message translates to:
+  /// **'Asking the Gateway…'**
+  String get pairV2Creating;
+
+  /// No description provided for @pairV2NotAnAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'This is not a Gateway address, such as https://pirc.example.'**
+  String get pairV2NotAnAddress;
+
+  /// No description provided for @pairV2BadName.
+  ///
+  /// In en, this message translates to:
+  /// **'Give a device name of 1 to 100 characters.'**
+  String get pairV2BadName;
+
+  /// No description provided for @pairV2Device.
+  ///
+  /// In en, this message translates to:
+  /// **'This device: {name}'**
+  String pairV2Device(String name);
+
+  /// No description provided for @pairV2OpenInBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Open in a browser to approve'**
+  String get pairV2OpenInBrowser;
+
+  /// No description provided for @pairV2OpenBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the browser'**
+  String get pairV2OpenBrowser;
+
+  /// No description provided for @pairV2BrowserFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The browser could not be opened. Open this address yourself:'**
+  String get pairV2BrowserFailed;
+
+  /// No description provided for @pairV2Expires.
+  ///
+  /// In en, this message translates to:
+  /// **'The request ends at {time}.'**
+  String pairV2Expires(String time);
+
+  /// No description provided for @pairV2Waiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for the approval in the browser…'**
+  String get pairV2Waiting;
+
+  /// No description provided for @pairV2Approved.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved. Type the 6-digit code that the browser shows.'**
+  String get pairV2Approved;
+
+  /// No description provided for @pairV2CodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'6-digit code'**
+  String get pairV2CodeLabel;
+
+  /// No description provided for @pairV2Claim.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair'**
+  String get pairV2Claim;
+
+  /// No description provided for @pairV2Claiming.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get pairV2Claiming;
+
+  /// No description provided for @pairV2WrongCode.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Wrong code. 1 try left.} other{Wrong code. {count} tries left.}}'**
+  String pairV2WrongCode(int count);
+
+  /// No description provided for @pairV2TooManyCodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many wrong codes ended this request. Start again to make a new one.'**
+  String get pairV2TooManyCodes;
+
+  /// No description provided for @pairV2Denied.
+  ///
+  /// In en, this message translates to:
+  /// **'The request was denied in the browser. Start again to make a new one.'**
+  String get pairV2Denied;
+
+  /// No description provided for @pairV2Expired.
+  ///
+  /// In en, this message translates to:
+  /// **'The request expired. Start again to make a new one.'**
+  String get pairV2Expired;
+
+  /// No description provided for @pairV2TooManyRequests.
+  ///
+  /// In en, this message translates to:
+  /// **'Too many pairing requests are open on the Gateway. Try again in a few minutes.'**
+  String get pairV2TooManyRequests;
+
+  /// No description provided for @pairV2TooManyPhones.
+  ///
+  /// In en, this message translates to:
+  /// **'This account already has 10 paired phones. Remove one in a browser, then send the code again.'**
+  String get pairV2TooManyPhones;
+
+  /// No description provided for @pairV2Failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing failed. Start again.'**
+  String get pairV2Failed;
+
+  /// No description provided for @pairV2StartAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Start again'**
+  String get pairV2StartAgain;
+
+  /// No description provided for @pairV2Paired.
+  ///
+  /// In en, this message translates to:
+  /// **'Paired. Connecting…'**
+  String get pairV2Paired;
+
+  /// No description provided for @pairApprovalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pair {device}?'**
+  String pairApprovalTitle(String device);
+
+  /// No description provided for @pairApprovalPlatform.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform: {platform}'**
+  String pairApprovalPlatform(String platform);
+
+  /// No description provided for @pairApprovalNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve only a device you are pairing now. Once paired, it can do everything you can on this Gateway.'**
+  String get pairApprovalNote;
+
+  /// No description provided for @pairApprovalCodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Type this code in the app'**
+  String get pairApprovalCodeTitle;
+
+  /// No description provided for @pairApprovalCodeNote.
+  ///
+  /// In en, this message translates to:
+  /// **'The code works until {time}. Do not share it.'**
+  String pairApprovalCodeNote(String time);
+
+  /// No description provided for @pairApprovalDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied. The device was not paired.'**
+  String get pairApprovalDenied;
+
+  /// No description provided for @pairApprovalDecided.
+  ///
+  /// In en, this message translates to:
+  /// **'This request was already decided.'**
+  String get pairApprovalDecided;
+
+  /// No description provided for @pairApprovalExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'This request expired. Start again in the app.'**
+  String get pairApprovalExpired;
+
+  /// No description provided for @pairingEndsWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Pairing ends on {date}. Open pirc on this phone before then, or pair again.'**
+  String pairingEndsWarning(String date);
+
+  /// No description provided for @pairLinkScanned.
+  ///
+  /// In en, this message translates to:
+  /// **'A pairing link for {gateway} was scanned. Tap Pair to use it.'**
+  String pairLinkScanned(String gateway);
 }
 
 class _AppLocalizationsDelegate

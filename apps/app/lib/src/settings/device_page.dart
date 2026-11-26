@@ -5,6 +5,7 @@ import 'package:pirc_ui/pirc_ui.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../connection/connection.dart';
+import '../connection/connection_screens.dart';
 import '../connection/data.dart';
 import '../work/client_names.dart';
 import '../work/session_controller.dart';
@@ -158,7 +159,7 @@ class _ThisDevicePageState extends ConsumerState<ThisDevicePage> {
     return SettingsPage(
       title: l10n.settingsThisDevice,
       children: [
-        SettingsGroup(children: [body]),
+        SettingsGroup(children: [if (!web) const PairingEndWarning(), body]),
       ],
     );
   }

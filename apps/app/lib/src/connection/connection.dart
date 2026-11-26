@@ -79,9 +79,19 @@ enum ConnectionPhase {
 
 @immutable
 class ConnectionStatus {
-  const ConnectionStatus(this.phase, {this.connection, this.error});
+  const ConnectionStatus(
+    this.phase, {
+    this.connection,
+    this.error,
+    this.pairingExpired = false,
+  });
 
   final ConnectionPhase phase;
+
+  /// [ConnectionPhase.unpaired] because the Gateway refused the token (it
+  /// expired or was revoked), not because the user unpaired or never paired.
+  /// The settings are kept.
+  final bool pairingExpired;
 
   /// The last good connection; kept while offline so screens can show what
   /// they had, marked as possibly out of date.
@@ -100,6 +110,11 @@ final connectionProvider =
 class ConnectionController extends Notifier<ConnectionStatus> {
   Timer? _retry;
   Transport? _transport;
+  SecretTokenStore? _tokens;
+
+  /// The token this connection started with. A refusal after a rotation
+  /// is for that old token and must not remove the new one.
+  String? _startedWith;
   String? _account;
   int _attempts = 0;
   int _generation = 0;
@@ -121,7 +136,8 @@ class ConnectionController extends Notifier<ConnectionStatus> {
     _retry?.cancel();
     final web = ref.read(isWebProvider);
     final Uri gateway;
-    TokenStore? tokens;
+    SecretTokenStore? tokens;
+    String? startedWith;
     if (web) {
       gateway = ref.read(webOriginProvider);
     } else {
@@ -136,7 +152,8 @@ class ConnectionController extends Notifier<ConnectionStatus> {
         return;
       }
       gateway = Uri.parse(url);
-      tokens = SecretTokenStore(secrets);
+      tokens = SecretTokenStore(secrets)..replace(token);
+      startedWith = token;
     }
     _transport?.close();
     final transport = ref.read(transportFactoryProvider)(
@@ -148,6 +165,8 @@ class ConnectionController extends Notifier<ConnectionStatus> {
       tokens,
     );
     _transport = transport;
+    _tokens = tokens;
+    _startedWith = startedWith;
     _account = null;
     state = const ConnectionStatus(ConnectionPhase.connecting);
     await _connect(generation, gateway, transport);
@@ -231,9 +250,7 @@ class ConnectionController extends Notifier<ConnectionStatus> {
         if (ref.read(isWebProvider)) {
           _set(ConnectionPhase.signedOut, error);
         } else {
-          unawaited(_forgetToken());
-          unawaited(_closeMedia());
-          _set(ConnectionPhase.unpaired, error);
+          unawaited(_refused(_generation, _startedWith, error));
         }
         return true;
       case ClientUpgradeRequired():
@@ -244,14 +261,70 @@ class ConnectionController extends Notifier<ConnectionStatus> {
     }
   }
 
-  void _set(ConnectionPhase phase, Object error) {
+  /// The Gateway refused the token. When the saved token is no longer the
+  /// one this connection started with, the app rotated it meanwhile and the
+  /// refusal was for the old one (its sockets close with 4401 once the new
+  /// token is used): connect again with the new token. Otherwise the
+  /// pairing ended; the settings are kept.
+  Future<void> _refused(
+    int generation,
+    String? startedWith,
+    PircException error,
+  ) async {
+    final saved = await ref.read(secretStoreProvider).read(deviceTokenKey);
+    if (generation != _generation) return;
+    if (saved != null && saved.isNotEmpty && saved != startedWith) {
+      await start();
+      return;
+    }
+    unawaited(_forgetToken());
+    unawaited(_closeMedia());
+    _set(ConnectionPhase.unpaired, error, pairingExpired: true);
+  }
+
+  void _set(
+    ConnectionPhase phase,
+    Object error, {
+    bool pairingExpired = false,
+  }) {
     _generation++;
     _retry?.cancel();
     ref.read(managementGrantProvider.notifier).set(null);
     _transport?.close();
     _transport = null;
+    _tokens = null;
+    _startedWith = null;
     _account = null;
-    state = ConnectionStatus(phase, error: error);
+    state = ConnectionStatus(
+      phase,
+      error: error,
+      pairingExpired: pairingExpired,
+    );
+  }
+
+  /// The device token the transport sends now; null without one.
+  Future<String?> currentToken() async => _tokens?.read();
+
+  /// Token rotation: saves [token] in the secret store and only then sends
+  /// it, in place of [previous]. Returns false and keeps nothing when the
+  /// pairing changed meanwhile (the user unpaired or paired again).
+  Future<bool> replaceToken(String token, {required String previous}) async {
+    final generation = _generation;
+    final tokens = _tokens;
+    if (tokens == null) return false;
+    final secrets = ref.read(secretStoreProvider);
+    if (await secrets.read(deviceTokenKey) != previous ||
+        generation != _generation) {
+      return false;
+    }
+    await secrets.write(deviceTokenKey, token);
+    if (generation != _generation) {
+      // Unpaired while the write ran: do not bring the pairing back.
+      if (state.phase == ConnectionPhase.unpaired) await _forgetToken();
+      return false;
+    }
+    tokens.replace(token);
+    return true;
   }
 
   Future<void> _forgetToken() =>

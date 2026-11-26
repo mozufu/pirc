@@ -3358,6 +3358,165 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get povUncertain => '未確認';
+
+  @override
+  String get pairScan => '掃描 QR 碼';
+
+  @override
+  String get pairScanFailed => '無法開啟掃描器，請重試或貼上連結。';
+
+  @override
+  String get pairScanDownloading => '掃描器仍在安裝中，請稍後再試。';
+
+  @override
+  String get pairScanUnsupported => '這台裝置無法掃描 QR 碼，請改為貼上連結。';
+
+  @override
+  String get pairNotACode => '這個 QR 碼不是配對連結。';
+
+  @override
+  String get pairNotACodeV2 => '這個 QR 碼不是配對連結，也不是 Gateway 網址。';
+
+  @override
+  String pairLinkOpened(String gateway) {
+    return '已開啟 $gateway 的配對連結。點「配對」即可使用。';
+  }
+
+  @override
+  String get pairExpired => '配對已過期；你的設定都保留著。';
+
+  @override
+  String get pairV2Title => '用瀏覽器配對';
+
+  @override
+  String get pairV2Body =>
+      '輸入 Gateway 網址，或掃描只含網址的 QR 碼。接著在已登入 Gateway 的瀏覽器核准這台裝置。';
+
+  @override
+  String get pairV2AddressLabel => 'Gateway 網址';
+
+  @override
+  String get pairV2DefaultName => 'Android 手機';
+
+  @override
+  String get pairV2Start => '繼續';
+
+  @override
+  String get pairV2Creating => '正在詢問 Gateway…';
+
+  @override
+  String get pairV2NotAnAddress => '這不是 Gateway 網址，例如 https://pirc.example。';
+
+  @override
+  String get pairV2BadName => '裝置名稱須為 1 到 100 個字元。';
+
+  @override
+  String pairV2Device(String name) {
+    return '這台裝置：$name';
+  }
+
+  @override
+  String get pairV2OpenInBrowser => '在瀏覽器開啟以核准';
+
+  @override
+  String get pairV2OpenBrowser => '開啟瀏覽器';
+
+  @override
+  String get pairV2BrowserFailed => '無法開啟瀏覽器，請自行開啟這個網址：';
+
+  @override
+  String pairV2Expires(String time) {
+    return '請求將於 $time 失效。';
+  }
+
+  @override
+  String get pairV2Waiting => '正在等待瀏覽器核准…';
+
+  @override
+  String get pairV2Approved => '已核准。請輸入瀏覽器顯示的 6 位數代碼。';
+
+  @override
+  String get pairV2CodeLabel => '6 位數代碼';
+
+  @override
+  String get pairV2Claim => '配對';
+
+  @override
+  String get pairV2Claiming => '檢查中…';
+
+  @override
+  String pairV2WrongCode(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '代碼錯誤，還可以再試 $count 次。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get pairV2TooManyCodes => '錯誤次數過多，這個請求已結束。請重新開始。';
+
+  @override
+  String get pairV2Denied => '瀏覽器已拒絕這個請求。請重新開始。';
+
+  @override
+  String get pairV2Expired => '這個請求已過期。請重新開始。';
+
+  @override
+  String get pairV2TooManyRequests => 'Gateway 上待處理的配對請求太多，請幾分鐘後再試。';
+
+  @override
+  String get pairV2TooManyPhones => '這個帳號已配對 10 支手機。請在瀏覽器移除一支，再送出代碼。';
+
+  @override
+  String get pairV2Failed => '配對失敗，請重新開始。';
+
+  @override
+  String get pairV2StartAgain => '重新開始';
+
+  @override
+  String get pairV2Paired => '已配對，連線中…';
+
+  @override
+  String pairApprovalTitle(String device) {
+    return '要配對 $device 嗎？';
+  }
+
+  @override
+  String pairApprovalPlatform(String platform) {
+    return '平台：$platform';
+  }
+
+  @override
+  String get pairApprovalNote => '只核准你現在正在配對的裝置。配對後，它在這個 Gateway 上能做你能做的一切。';
+
+  @override
+  String get pairApprovalCodeTitle => '在 App 輸入這組代碼';
+
+  @override
+  String pairApprovalCodeNote(String time) {
+    return '代碼在 $time 前有效，請勿分享。';
+  }
+
+  @override
+  String get pairApprovalDenied => '已拒絕，裝置沒有配對。';
+
+  @override
+  String get pairApprovalDecided => '這個請求已經處理過了。';
+
+  @override
+  String get pairApprovalExpired => '這個請求已過期，請在 App 重新開始。';
+
+  @override
+  String pairingEndsWarning(String date) {
+    return '配對將於 $date 結束。請在那之前在這支手機開啟 pirc，或重新配對。';
+  }
+
+  @override
+  String pairLinkScanned(String gateway) {
+    return '已掃描 $gateway 的配對連結。點「配對」即可使用。';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

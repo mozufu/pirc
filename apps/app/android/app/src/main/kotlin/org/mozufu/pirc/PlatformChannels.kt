@@ -1,6 +1,7 @@
 package org.mozufu.pirc
 
 import android.app.Activity
+import android.content.Intent
 import io.flutter.plugin.common.BinaryMessenger
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.view.TextureRegistry
@@ -8,7 +9,9 @@ import org.mozufu.pirc.credentials.CredentialsChannel
 import org.mozufu.pirc.credentials.KeystoreCredentialStore
 import org.mozufu.pirc.fonts.FontsChannel
 import org.mozufu.pirc.images.ImagesChannel
+import org.mozufu.pirc.links.LinksChannel
 import org.mozufu.pirc.media.MediaChannel
+import org.mozufu.pirc.scanner.ScannerChannel
 
 /**
  * One feature's method channel, named `org.mozufu.pirc/<name>`. Each feature
@@ -18,6 +21,9 @@ interface PlatformFeature : MethodChannel.MethodCallHandler {
     /** The last part of the channel name, for example `credentials`. */
     val name: String
 
+    /** The feature's channel, to call Dart with; given on each attach. */
+    fun attached(channel: MethodChannel) {}
+
     /** The engine is going away: stop work and drop references to it. */
     fun detach() {}
 
@@ -26,6 +32,9 @@ interface PlatformFeature : MethodChannel.MethodCallHandler {
 
     /** The activity is in front again. */
     fun foreground() {}
+
+    /** The running activity received [intent] (a link opened it again). */
+    fun newIntent(intent: Intent) {}
 }
 
 /** Registers every feature's channel on the engine and removes them again. */
@@ -43,6 +52,7 @@ class PlatformChannels(private val features: List<PlatformFeature>) {
             val channel = MethodChannel(messenger, channelName(feature.name))
             channel.setMethodCallHandler(feature)
             channels += channel
+            feature.attached(channel)
         }
     }
 
@@ -55,6 +65,8 @@ class PlatformChannels(private val features: List<PlatformFeature>) {
 
     fun foreground() = features.forEach { it.foreground() }
 
+    fun newIntent(intent: Intent) = features.forEach { it.newIntent(intent) }
+
     private fun detachChannels() {
         channels.forEach { it.setMethodCallHandler(null) }
         channels.clear()
@@ -66,11 +78,18 @@ class PlatformChannels(private val features: List<PlatformFeature>) {
         fun channelName(feature: String) = PREFIX + feature
 
         /** The features of the app. Later M8 steps add theirs here. */
-        fun features(activity: Activity, textures: TextureRegistry): List<PlatformFeature> = listOf(
+        /** [restored]: the activity was created again from saved state. */
+        fun features(
+            activity: Activity,
+            textures: TextureRegistry,
+            restored: Boolean = false,
+        ): List<PlatformFeature> = listOf(
             CredentialsChannel(KeystoreCredentialStore.create(activity.applicationContext)),
             MediaChannel.create(activity, textures),
             ImagesChannel(),
             FontsChannel(),
+            ScannerChannel.create(activity),
+            LinksChannel.create(activity, restored),
         )
     }
 }

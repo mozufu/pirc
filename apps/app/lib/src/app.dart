@@ -6,6 +6,8 @@ import 'package:pirc_render/pirc_render.dart';
 import '../l10n/app_localizations.dart';
 import 'connection/connection_screens.dart';
 import 'connection/hints.dart';
+import 'connection/pairing.dart';
+import 'connection/rotation.dart';
 import 'preferences.dart';
 import 'render_bridge.dart';
 import 'router.dart';
@@ -17,6 +19,10 @@ class PircApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Keeps the hint socket open while the app runs.
     ref.watch(hintsProvider);
+    // Takes pairing links (Android) and rotates the device token when the
+    // app comes to the foreground.
+    ref.listen(pairLinkInboxProvider, (_, _) {});
+    ref.listen(deviceLifetimeProvider, (_, _) {});
     final textScale = ref.watch(textScaleProvider);
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,

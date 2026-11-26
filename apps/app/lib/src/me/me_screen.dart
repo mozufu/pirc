@@ -14,6 +14,7 @@ import '../chat/handover_parts.dart';
 import '../chat/new_pot_screen.dart';
 import '../chat/pot_form.dart';
 import '../connection/connection.dart';
+import '../connection/connection_screens.dart' show PairingEndWarning;
 import '../connection/data.dart';
 import '../format.dart';
 import '../settings/pots_page.dart';
@@ -133,6 +134,7 @@ class MeDrawerRow extends ConsumerWidget {
                             color: colors['text.muted'],
                           ),
                         ),
+                      const PairingEndWarning(compact: true),
                     ],
                   ),
                 ),

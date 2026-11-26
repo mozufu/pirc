@@ -7,7 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/app.dart';
 import 'package:pirc_app/src/connection/connection.dart';
 import 'package:pirc_app/src/connection/storage.dart';
+import 'package:pirc_app/src/platform/links.dart';
 import 'package:pirc_app/src/platform/media.dart';
+import 'package:pirc_app/src/platform/scanner.dart';
 import 'package:pirc_app/src/router.dart';
 import 'package:pirc_client/pirc_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -218,7 +220,9 @@ void appTest(
 /// for less motion, as the system setting does. [platformSecrets] keeps the
 /// platform's secret store instead of [Saved.secrets]. [media] stands in for
 /// the Android media channel ([FakeMediaPlayers]); without it the app has no
-/// in-app player, as on Web and macOS.
+/// in-app player, as on Web and macOS. [scanner] and [links] stand in for
+/// the scanner and links channels; without them the app has neither, as on
+/// Web and macOS.
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   required FakeGateway gateway,
@@ -232,6 +236,8 @@ Future<ProviderContainer> pumpApp(
   bool reduceMotion = false,
   bool platformSecrets = false,
   MediaPlayers? media,
+  Scanner? scanner,
+  AppLinks? links,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = Size(width, height);
@@ -255,6 +261,8 @@ Future<ProviderContainer> pumpApp(
       transportFactoryProvider.overrideWithValue(gateway.transport),
       isWebProvider.overrideWithValue(web),
       mediaPlayersProvider.overrideWithValue(media),
+      scannerProvider.overrideWithValue(scanner),
+      appLinksProvider.overrideWithValue(links),
       webOriginProvider.overrideWithValue(Uri.parse('https://gateway.test/')),
       if (location != null) initialLocationProvider.overrideWithValue(location),
       ...overrides.cast(),

@@ -9,6 +9,7 @@ import 'preferences.dart';
 import 'settings/basic_pages.dart';
 import 'settings/device_page.dart';
 import 'settings/devices_page.dart';
+import 'settings/pairing_approval.dart';
 import 'settings/more_pages.dart';
 import 'settings/pots_page.dart';
 import 'settings/providers_page.dart';
@@ -60,10 +61,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       final here = state.matchedLocation;
       if (gate != null) return here == gate ? null : gate;
       if (_gatePaths.contains(here)) return ref.read(startTabProvider);
-      // `/` is only the Web build's management approval screen.
+      // `/` is only the Web build's approval pages: management access
+      // (`?nativeManagement=`) and pairing v2 (`?pair=`).
+      final query = state.uri.queryParameters;
       if (here == '/' &&
           !(ref.read(isWebProvider) &&
-              state.uri.queryParameters.containsKey('nativeManagement'))) {
+              (query.containsKey('nativeManagement') ||
+                  query.containsKey('pair')))) {
         return ref.read(startTabProvider);
       }
       return null;
@@ -106,9 +110,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/',
-        builder: (context, state) => ManagementApprovalScreen(
-          requestId: state.uri.queryParameters['nativeManagement'] ?? '',
-        ),
+        builder: (context, state) {
+          final query = state.uri.queryParameters;
+          final pair = query['pair'];
+          return pair != null && !query.containsKey('nativeManagement')
+              ? PairingApprovalScreen(requestId: pair)
+              : ManagementApprovalScreen(
+                  requestId: query['nativeManagement'] ?? '',
+                );
+        },
       ),
       for (final (path, page) in [
         ('device', const ThisDevicePage()),
