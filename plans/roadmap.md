@@ -1144,7 +1144,10 @@ The steps below use them.
   the `apps/app` Web build, which is served only from M9; `apps/web` gets no new work
   (P14). So M8 builds v2 completely and keeps v1 (the `pirc://pair?url=&token=` link
   and the Devices page that shows it) working: the Android app scans and opens v1
-  links. M9 deploys the Web build, switches the app to v2 only, and deletes v1
+  links. Until the approval page is served, the app's v2 entry is hidden behind the
+  define `PIRC_PAIRING_V2` (off by default; tests turn it on), and the two v2 routes
+  without identity stay behind forward auth, so M8 opens no public route that nothing
+  uses yet. M9 deploys the Web build, switches the app to v2 only, and deletes v1
   (`POST /api/devices` returning a token, the link, and the Devices page "Pair a new
   device").
 - **B. Token rotation (A7, steps 0, 2).** `POST /api/device/rotate` gives a new token
@@ -1194,7 +1197,8 @@ an agent never runs it.
         codes end the request. The token is the same `pirc_dev_` token as v1, with
         the same limits (10 phones, `Cache-Control: no-store`).
       - The two routes without identity still need a trusted proxy peer and an
-        allowed `Host`. `docs/deploy/` and the Traefik example in
+        allowed `Host`. Until M9 they stay behind forward auth like every other
+        route (default A). In M9, `docs/deploy/` and the Traefik example in
         `gateway-and-node.md` gain the router that sends exactly these two paths to
         the Gateway without forward auth.
    2. _Rotation_ (default B): `POST /api/device/rotate` (device token only) returns a
@@ -1206,8 +1210,11 @@ an agent never runs it.
       `{ levels, quietHours, timeZone, lockScreen }`. `levels` maps the D20
       categories `needs_you`, `done`, `progress` and `calendar` to `immediate`,
       `digest` or `off` (defaults: immediate, digest, off, immediate). `quietHours`
-      is `{ start, end }` or null; during quiet hours only `needs_you` is sent, as a
-      silent notification. `lockScreen` is `hidden`, `title` or `full` (default
+      is `{ start, end }` or null. During quiet hours `needs_you` is sent as a silent
+      notification and `calendar` is sent at its own level (the user set the
+      reminder for that time); `done` and `progress` items that would be sent at
+      once are held. The summary at the end of quiet hours lists the held items and
+      the digest items, and nothing else. `lockScreen` is `hidden`, `title` or `full` (default
       `title`). `PATCH /api/push/subscriptions/{id}` changes them with a revision.
       Every sender (interactions, schedules, calendar, pots) names its category; the
       digest sender is new.
@@ -1235,26 +1242,30 @@ an agent never runs it.
    - `credentials` channel: the Keystore store of the old `CredentialStore.kt`
      (AES-GCM, alias `pirc-device-token`). On Android it replaces
      `flutter_secure_storage` (M6 default A); macOS keeps the Keychain through
-     `flutter_secure_storage`. On first start after the update the app moves an
-     existing token from the old store into the Keystore and deletes the old entry.
+     `flutter_secure_storage`. No token is moved from the store of the M5–M7 builds
+     (P5): a phone that ran one of them pairs again.
    - Background client: one OkHttp factory (redirects off, `Authorization: Bearer`,
      `X-Pirc-Client: pirc-app/<apiVersion>`, `X-Pirc-Request: 1` on every non-GET, a
      proxy hook for M10). It reads only the compact routes of step 0.5 and sends
      answers and schedule decisions with a client-generated command ID. It never
      re-sends a request whose outcome is unknown (N8); it reports "Not sure it
-     arrived" instead.
+     arrived" instead. A `401` is a known refusal, not an unknown outcome: the client
+     reads the token from the Keystore again and, only if it changed (the app rotated
+     it in the meantime, step 2), sends the request once more with the new token.
    - `pirc_render` calls `dev.pirc.mobile/gateway` for `imageCapabilities` and
      `normalizeAvif`; this step renames that call to `org.mozufu.pirc/images`. Step 7
      adds the Kotlin side.
-     Done when: Kotlin tests for the store (save, read, delete, move from the old
-     store), for the request headers and for redirects being refused; a Dart test
+     Done when: Kotlin tests for the store (save, read, delete), for the request
+     headers, for redirects being refused and for a `401` (retried once only when the
+     stored token changed); a Dart test
      that the app reads its token through the channel; `client.yml` runs the Kotlin
      tests.
 2. **Pairing on Android.**
    - QR scanner (`scanner` channel, ML Kit code scanner as in `BarcodeScanFlow.kt`)
      and the `pirc://pair` intent filter. Both feed the pairing page of M6 step 2. A
      v1 link pairs as today (default A).
-   - Pairing v2 in the app: the user gives the Gateway address (typed, or a QR code
+   - Pairing v2 in the app, shown only when `PIRC_PAIRING_V2` is on (default A): the
+     user gives the Gateway address (typed, or a QR code
      that holds only the address). The app creates a request, shows the device name
      and "Open in a browser to approve", opens `approvePath` in the browser, and asks
      for the 6-digit code shown there. It claims with the verifier and the code. The
@@ -1293,29 +1304,37 @@ an agent never runs it.
      preselection is kept, only "Retry"). Pot pushes open their target (default E).
    - Settings → Notifications (C screenshots 11 and 30): push on or off, the
      distributor, the four levels, quiet hours, the lock screen choice, "Send test",
-     and the notification permission (Android 13+), which is asked only from this
-     page or the first question.
+     the notification permission (Android 13+), which is asked only from this page or
+     the first question, and the quick-reply overlay switch (step 4). The switch opens
+     the system page for "Display over other apps" when that permission is missing,
+     and shows off until it is granted.
      Deletes: the M8 placeholder text in `more_pages.dart`.
      Done when: Kotlin tests for each push kind (shown, updated, removed, state not
      readable), the lock screen versions and the channel of each category; Dart tests
      for the five results, each pot target and the settings page (save, conflict);
      goldens of the settings page.
 4. **Quick-reply overlay.** An overlay service drawn by Kotlin above other apps (C
-   § 6.4, screenshots 13–15 and 28), shown for a question push when the user has
-   granted "Display over other apps"; without the permission, the normal
-   notification is shown.
+   § 6.4, screenshots 13–15 and 28), shown for a question push or a missed-run push
+   (default E) when the overlay switch of step 3 is on, the user has granted "Display
+   over other apps" and the screen is not locked. Otherwise the normal notification
+   is shown, as the old app does (`isKeyguardLocked`).
    - It opens with "Checking the latest state…" and all buttons disabled. After the
      compact read it shows the choices, a send button and the control source
      ("Control: this device" or the device that holds it). Sending gets a control
      lease and sends the answer through the background client, as the old
      `GatewayOverlayService.kt` does.
+   - A missed run shows the schedule, the planned time and the reason, with "Run now"
+     and "Skip". Before either, the overlay reads the run again (step 0.5) and sends
+     the decision, with a command ID, only if the run is still missed; otherwise it
+     shows the run's current state.
    - States: checking, ready, sent (closes by itself), answered elsewhere (result and
      "OK"), expired, offline, no control, and "Not sure it arrived". Close does not
      answer; the item stays in "Needs you". The top right opens the full
      conversation.
    - The overlay uses the token colours and type of `tokens.json`, in light and dark.
-     Done when: Kotlin tests for each state and for the lease and command ID of a
-     send; screenshots of each state next to C 13–15 and 28 in the commit, with each
+     Done when: Kotlin tests for each state, for the lease and command ID of a send,
+     for a missed run (run, skip, no longer missed) and for the fallback to the
+     notification (switch off, no permission, locked screen); screenshots of each state next to C 13–15 and 28 in the commit, with each
      difference listed.
 5. **Files, sharing and input.** `files` channel: the system picker for attachments
    and project files (replaces `file_selector`), the save picker for downloads and
@@ -1389,8 +1408,7 @@ an agent never runs it.
      widths, light and dark; the ARB key test and the `strings.xml` key test pass.
    - Device acceptance, run by the owner on a physical phone with a real account
      (from [Carried-over items](#carried-over-items)): pairing (v1 link and QR,
-     rotation), streaming, cancel and reconnect, panels, management consent,
-     answering the same question on Web and on the phone at the same time; keyboard
+     rotation), streaming, cancel and reconnect, panels, management consent; keyboard
      and CJK IME, safe areas, rotation, background, low memory; notifications on the
      phone's own Android version (permission, lock screen, quiet hours, the overlay);
      calendar reminders; full multi-line approval bodies and labels, browser
@@ -1405,9 +1423,12 @@ Outline: Flutter Web build (self-hosted CanvasKit and fonts, CSP with
 `'wasm-unsafe-eval'`, no inline scripts, hand-written service worker with build ID,
 Web Push, cache headers); agent HTML in a sandboxed opaque-origin iframe (Q3);
 web-only screens (management approval, pairing QR, the pairing v2 approval route
-built in M8); if M8 default A stands, the app switches to pairing v2 only and v1 is
-deleted (`POST /api/devices` returning a token, the `pirc://pair` token link, the
-Devices page "Pair a new device"); Nix packaging and nginx headers;
+built in M8); if M8 default A stands, the app switches to pairing v2 only
+(`PIRC_PAIRING_V2` removed, v2 always on), the deploy docs gain the router for the two
+v2 routes without identity, and v1 is deleted (`POST /api/devices` returning a token,
+the `pirc://pair` token link, the Devices page "Pair a new device"); device acceptance
+of answering the same question on Web and on the phone at the same time (moved from
+M8, whose Web is the old `apps/web`, not kept working with the pirc 2 Gateway); Nix packaging and nginx headers;
 delete `apps/web`. macOS desktop target, building on the scaffold from M5: Keychain
 credentials, pairing, isolated web view for script-bearing documents (Q8),
 notifications while running.
@@ -1444,8 +1465,8 @@ that commit.
 **Acceptance and validation**
 
 - **M8** Physical Android acceptance with a real account: pairing,
-  streaming/cancel/reconnect, panels, management consent, simultaneous Web/App
-  confirmations; keyboard and CJK IME, safe areas, rotation, background, low memory,
+  streaming/cancel/reconnect, panels, management consent (simultaneous Web/App
+  confirmations moved to M9); keyboard and CJK IME, safe areas, rotation, background, low memory,
   OEM notifications and permissions, terminal HTTPS asset origin, release build.
   (mobile.md § Remaining work; old README § Manual validation)
 - **M8** On a device: full multi-line approval bodies and labels, PTC approval
@@ -1467,6 +1488,8 @@ that commit.
   warnings yet.
 - **M9** `/api/hints` refuses any query key outside its hint names, so the Web build's
   `client=` query is refused and its hint stream cannot connect.
+- **M9** Answering the same question on Web and on the phone at the same time, once
+  the Flutter Web build is served (moved from M8).
 - **M9** Browser acceptance of the approval-mode picker and warning, and of project
   deletion including recovery after a real Node disconnect; installed-PWA Web Push on
   a real iPhone; iOS Safari keyboard and safe areas. (old README § Manual validation)
