@@ -2889,6 +2889,164 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get groupGone => '這個群組已刪除。';
+
+  @override
+  String get settingsPots => 'pots';
+
+  @override
+  String settingsPotsCount(int count) {
+    return '$count 位';
+  }
+
+  @override
+  String settingsPotsMonth(String used, String cap) {
+    return '本月合計 $used / $cap';
+  }
+
+  @override
+  String settingsPotsMonthNoCap(String used) {
+    return '本月合計 $used';
+  }
+
+  @override
+  String get potsPageSubtitle => '點一位打開它的設定';
+
+  @override
+  String get potsTotals => '全部 pots 合計';
+
+  @override
+  String get potsTotalMonth => '本月';
+
+  @override
+  String get potsTotalToday => '今天 token';
+
+  @override
+  String potsTotalNoCap(String used) {
+    return '$used · 不設上限';
+  }
+
+  @override
+  String get potsCaps => '合計上限';
+
+  @override
+  String potsCapsBoth(String money, String tokens) {
+    return '每月 $money · 每天 $tokens tokens';
+  }
+
+  @override
+  String potsCapsMoney(String money) {
+    return '每月 $money';
+  }
+
+  @override
+  String potsCapsTokens(String tokens) {
+    return '每天 $tokens tokens';
+  }
+
+  @override
+  String get potsNoLimit => '不設上限';
+
+  @override
+  String get potsCapsMonth => '每月';
+
+  @override
+  String get potsCapsDay => '每天';
+
+  @override
+  String get potsCapsUsd => '美元';
+
+  @override
+  String get potsCapsTokensUnit => 'tokens';
+
+  @override
+  String get potsCapsSheetNote => '0 表示不設合計上限。訂閱的用量只有在打開「顯示 API 等價價格」時才計入金額。';
+
+  @override
+  String get potsCapsMoneyInvalid => '請輸入 0 以上的金額，例如 50 或 12.5。';
+
+  @override
+  String get potsCapsTokensInvalid => '請輸入 0 以上的整數 token。';
+
+  @override
+  String get potsExhausted => '用完時';
+
+  @override
+  String get potsExhaustedAsk => '停止開新工作並通知你';
+
+  @override
+  String get potsExhaustedAskDetail => 'pots 下一次要用模型時會被擋下，並通知你。';
+
+  @override
+  String get potsExhaustedPause => '暫停所有 pots';
+
+  @override
+  String get potsExhaustedPauseDetail => '訊息和事件會等到額度重新計算。';
+
+  @override
+  String get potsRetention => '動態保存';
+
+  @override
+  String potsRetentionDays(int days) {
+    return '$days 天';
+  }
+
+  @override
+  String get potsRetentionUnit => '天';
+
+  @override
+  String get potsRetentionNote => '1 到 3650 天。更早的動態，以及已刪除 pots 的名字，會被移除。';
+
+  @override
+  String get potsRetentionInvalid => '請輸入 1 到 3650 天。';
+
+  @override
+  String get potsApiEquivalent => '顯示 API 等價價格';
+
+  @override
+  String get potsApiEquivalentDetail => '訂閱的用量依 API 價格計入金額上限，並標示為估計。';
+
+  @override
+  String get potsCapsNote => '每位 pots 還有自己的額度；兩個上限先到哪個就停在哪個。';
+
+  @override
+  String get potsSettingsConflict => '設定在別的裝置上改過了，已重新讀取。你的修改還在，再儲存一次即可套用。';
+
+  @override
+  String get potsNone => '還沒有 pots。';
+
+  @override
+  String potsThinkingAuto(String level) {
+    return '$level（自動）';
+  }
+
+  @override
+  String get potsArchived => '已封存';
+
+  @override
+  String potsArchivedOn(String date) {
+    return '$date 封存';
+  }
+
+  @override
+  String get potsRestore => '恢復…';
+
+  @override
+  String potsRestoreTitle(String name) {
+    return '恢復$name？';
+  }
+
+  @override
+  String potsRestoreBody(String name) {
+    return '$name會以暫停狀態回來，設定和對話都還在。要讓它工作，到它的資料頁按繼續。';
+  }
+
+  @override
+  String get potsRestoreConfirm => '恢復';
+
+  @override
+  String potsRestoreConflict(String name) {
+    return '$name在別處改過了，已重新讀取，請再試一次。';
+  }
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

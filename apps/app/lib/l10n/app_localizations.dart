@@ -5294,6 +5294,270 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This group was deleted.'**
   String get groupGone;
+
+  /// No description provided for @settingsPots.
+  ///
+  /// In en, this message translates to:
+  /// **'Pots'**
+  String get settingsPots;
+
+  /// No description provided for @settingsPotsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 pot} other{{count} pots}}'**
+  String settingsPotsCount(int count);
+
+  /// No description provided for @settingsPotsMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'this month {used} / {cap}'**
+  String settingsPotsMonth(String used, String cap);
+
+  /// No description provided for @settingsPotsMonthNoCap.
+  ///
+  /// In en, this message translates to:
+  /// **'this month {used}'**
+  String settingsPotsMonthNoCap(String used);
+
+  /// No description provided for @potsPageSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap one to open its settings'**
+  String get potsPageSubtitle;
+
+  /// No description provided for @potsTotals.
+  ///
+  /// In en, this message translates to:
+  /// **'All pots together'**
+  String get potsTotals;
+
+  /// No description provided for @potsTotalMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'This month'**
+  String get potsTotalMonth;
+
+  /// No description provided for @potsTotalToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens today'**
+  String get potsTotalToday;
+
+  /// No description provided for @potsTotalNoCap.
+  ///
+  /// In en, this message translates to:
+  /// **'{used} · no limit'**
+  String potsTotalNoCap(String used);
+
+  /// No description provided for @potsCaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Total limits'**
+  String get potsCaps;
+
+  /// No description provided for @potsCapsBoth.
+  ///
+  /// In en, this message translates to:
+  /// **'{money}/month · {tokens}/day'**
+  String potsCapsBoth(String money, String tokens);
+
+  /// No description provided for @potsCapsMoney.
+  ///
+  /// In en, this message translates to:
+  /// **'{money}/month'**
+  String potsCapsMoney(String money);
+
+  /// No description provided for @potsCapsTokens.
+  ///
+  /// In en, this message translates to:
+  /// **'{tokens} tokens/day'**
+  String potsCapsTokens(String tokens);
+
+  /// No description provided for @potsNoLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'No limit'**
+  String get potsNoLimit;
+
+  /// No description provided for @potsCapsMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'A month'**
+  String get potsCapsMonth;
+
+  /// No description provided for @potsCapsDay.
+  ///
+  /// In en, this message translates to:
+  /// **'A day'**
+  String get potsCapsDay;
+
+  /// No description provided for @potsCapsUsd.
+  ///
+  /// In en, this message translates to:
+  /// **'USD'**
+  String get potsCapsUsd;
+
+  /// No description provided for @potsCapsTokensUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'tokens'**
+  String get potsCapsTokensUnit;
+
+  /// No description provided for @potsCapsSheetNote.
+  ///
+  /// In en, this message translates to:
+  /// **'0 means no total limit. Subscription use counts toward money only when \"Show API-equivalent price\" is on.'**
+  String get potsCapsSheetNote;
+
+  /// No description provided for @potsCapsMoneyInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an amount of 0 or more, such as 50 or 12.5.'**
+  String get potsCapsMoneyInvalid;
+
+  /// No description provided for @potsCapsTokensInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a whole number of tokens, 0 or more.'**
+  String get potsCapsTokensInvalid;
+
+  /// No description provided for @potsExhausted.
+  ///
+  /// In en, this message translates to:
+  /// **'When used up'**
+  String get potsExhausted;
+
+  /// No description provided for @potsExhaustedAsk.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop and tell you'**
+  String get potsExhaustedAsk;
+
+  /// No description provided for @potsExhaustedAskDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'A pot\'s next model request is refused, and you are told.'**
+  String get potsExhaustedAskDetail;
+
+  /// No description provided for @potsExhaustedPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause all pots'**
+  String get potsExhaustedPause;
+
+  /// No description provided for @potsExhaustedPauseDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages and events wait until the limit starts over.'**
+  String get potsExhaustedPauseDetail;
+
+  /// No description provided for @potsRetention.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity kept'**
+  String get potsRetention;
+
+  /// No description provided for @potsRetentionDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{1 day} other{{days} days}}'**
+  String potsRetentionDays(int days);
+
+  /// No description provided for @potsRetentionUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'days'**
+  String get potsRetentionUnit;
+
+  /// No description provided for @potsRetentionNote.
+  ///
+  /// In en, this message translates to:
+  /// **'1 to 3650 days. Older activity, and the names of deleted pots, are removed.'**
+  String get potsRetentionNote;
+
+  /// No description provided for @potsRetentionInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number of days from 1 to 3650.'**
+  String get potsRetentionInvalid;
+
+  /// No description provided for @potsApiEquivalent.
+  ///
+  /// In en, this message translates to:
+  /// **'Show API-equivalent price'**
+  String get potsApiEquivalent;
+
+  /// No description provided for @potsApiEquivalentDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscription use counts toward money limits at API prices, marked as an estimate.'**
+  String get potsApiEquivalentDetail;
+
+  /// No description provided for @potsCapsNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Each pot also has its own limits; whichever is reached first applies.'**
+  String get potsCapsNote;
+
+  /// No description provided for @potsSettingsConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'The settings changed on another device and are read again. Your edit is kept; save again to use it.'**
+  String get potsSettingsConflict;
+
+  /// No description provided for @potsNone.
+  ///
+  /// In en, this message translates to:
+  /// **'No pots yet.'**
+  String get potsNone;
+
+  /// No description provided for @potsThinkingAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'{level} (auto)'**
+  String potsThinkingAuto(String level);
+
+  /// No description provided for @potsArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get potsArchived;
+
+  /// No description provided for @potsArchivedOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived {date}'**
+  String potsArchivedOn(String date);
+
+  /// No description provided for @potsRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore…'**
+  String get potsRestore;
+
+  /// No description provided for @potsRestoreTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore {name}?'**
+  String potsRestoreTitle(String name);
+
+  /// No description provided for @potsRestoreBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} comes back paused, with its settings and conversation. Resume it from its profile.'**
+  String potsRestoreBody(String name);
+
+  /// No description provided for @potsRestoreConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get potsRestoreConfirm;
+
+  /// No description provided for @potsRestoreConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} changed elsewhere and was read again. Try again.'**
+  String potsRestoreConflict(String name);
 }
 
 class _AppLocalizationsDelegate

@@ -1901,5 +1901,146 @@
   },
   "groupDeleteBody": "Its messages are deleted for good. The member pots and their works stay.",
   "groupConflict": "The group changed on another device. Your edit is kept; check it and save again.",
-  "groupGone": "This group was deleted."
+  "groupGone": "This group was deleted.",
+  "settingsPots": "Pots",
+  "settingsPotsCount": "{count, plural, =1{1 pot} other{{count} pots}}",
+  "@settingsPotsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsPotsMonth": "this month {used} / {cap}",
+  "@settingsPotsMonth": {
+    "placeholders": {
+      "used": {
+        "type": "String"
+      },
+      "cap": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsPotsMonthNoCap": "this month {used}",
+  "@settingsPotsMonthNoCap": {
+    "placeholders": {
+      "used": {
+        "type": "String"
+      }
+    }
+  },
+  "potsPageSubtitle": "Tap one to open its settings",
+  "potsTotals": "All pots together",
+  "potsTotalMonth": "This month",
+  "potsTotalToday": "Tokens today",
+  "potsTotalNoCap": "{used} · no limit",
+  "@potsTotalNoCap": {
+    "placeholders": {
+      "used": {
+        "type": "String"
+      }
+    }
+  },
+  "potsCaps": "Total limits",
+  "potsCapsBoth": "{money}/month · {tokens}/day",
+  "@potsCapsBoth": {
+    "placeholders": {
+      "money": {
+        "type": "String"
+      },
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "potsCapsMoney": "{money}/month",
+  "@potsCapsMoney": {
+    "placeholders": {
+      "money": {
+        "type": "String"
+      }
+    }
+  },
+  "potsCapsTokens": "{tokens} tokens/day",
+  "@potsCapsTokens": {
+    "placeholders": {
+      "tokens": {
+        "type": "String"
+      }
+    }
+  },
+  "potsNoLimit": "No limit",
+  "potsCapsMonth": "A month",
+  "potsCapsDay": "A day",
+  "potsCapsUsd": "USD",
+  "potsCapsTokensUnit": "tokens",
+  "potsCapsSheetNote": "0 means no total limit. Subscription use counts toward money only when \"Show API-equivalent price\" is on.",
+  "potsCapsMoneyInvalid": "Enter an amount of 0 or more, such as 50 or 12.5.",
+  "potsCapsTokensInvalid": "Enter a whole number of tokens, 0 or more.",
+  "potsExhausted": "When used up",
+  "potsExhaustedAsk": "Stop and tell you",
+  "potsExhaustedAskDetail": "A pot's next model request is refused, and you are told.",
+  "potsExhaustedPause": "Pause all pots",
+  "potsExhaustedPauseDetail": "Messages and events wait until the limit starts over.",
+  "potsRetention": "Activity kept",
+  "potsRetentionDays": "{days, plural, =1{1 day} other{{days} days}}",
+  "@potsRetentionDays": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "potsRetentionUnit": "days",
+  "potsRetentionNote": "1 to 3650 days. Older activity, and the names of deleted pots, are removed.",
+  "potsRetentionInvalid": "Enter a number of days from 1 to 3650.",
+  "potsApiEquivalent": "Show API-equivalent price",
+  "potsApiEquivalentDetail": "Subscription use counts toward money limits at API prices, marked as an estimate.",
+  "potsCapsNote": "Each pot also has its own limits; whichever is reached first applies.",
+  "potsSettingsConflict": "The settings changed on another device and are read again. Your edit is kept; save again to use it.",
+  "potsNone": "No pots yet.",
+  "potsThinkingAuto": "{level} (auto)",
+  "@potsThinkingAuto": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      }
+    }
+  },
+  "potsArchived": "Archived",
+  "potsArchivedOn": "Archived {date}",
+  "@potsArchivedOn": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "potsRestore": "Restore…",
+  "potsRestoreTitle": "Restore {name}?",
+  "@potsRestoreTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "potsRestoreBody": "{name} comes back paused, with its settings and conversation. Resume it from its profile.",
+  "@potsRestoreBody": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "potsRestoreConfirm": "Restore",
+  "potsRestoreConflict": "{name} changed elsewhere and was read again. Try again.",
+  "@potsRestoreConflict": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

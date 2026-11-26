@@ -9,6 +9,7 @@ import 'settings/basic_pages.dart';
 import 'settings/device_page.dart';
 import 'settings/devices_page.dart';
 import 'settings/more_pages.dart';
+import 'settings/pots_page.dart';
 import 'settings/providers_page.dart';
 import 'settings/settings_screen.dart';
 import 'tab_screen.dart';
@@ -110,6 +111,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         ('account', const AccountPage()),
         ('about', const AboutPage()),
         ('providers', const ProvidersPage()),
+        ('pots', const PotsSettingsPage()),
         ('memory', const MemoryPage()),
         ('notifications', const NotificationsPage()),
         ('calendar', const CalendarAccessPage()),

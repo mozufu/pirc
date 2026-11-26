@@ -3026,4 +3026,183 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get groupGone => 'This group was deleted.';
+
+  @override
+  String get settingsPots => 'Pots';
+
+  @override
+  String settingsPotsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pots',
+      one: '1 pot',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String settingsPotsMonth(String used, String cap) {
+    return 'this month $used / $cap';
+  }
+
+  @override
+  String settingsPotsMonthNoCap(String used) {
+    return 'this month $used';
+  }
+
+  @override
+  String get potsPageSubtitle => 'Tap one to open its settings';
+
+  @override
+  String get potsTotals => 'All pots together';
+
+  @override
+  String get potsTotalMonth => 'This month';
+
+  @override
+  String get potsTotalToday => 'Tokens today';
+
+  @override
+  String potsTotalNoCap(String used) {
+    return '$used · no limit';
+  }
+
+  @override
+  String get potsCaps => 'Total limits';
+
+  @override
+  String potsCapsBoth(String money, String tokens) {
+    return '$money/month · $tokens/day';
+  }
+
+  @override
+  String potsCapsMoney(String money) {
+    return '$money/month';
+  }
+
+  @override
+  String potsCapsTokens(String tokens) {
+    return '$tokens tokens/day';
+  }
+
+  @override
+  String get potsNoLimit => 'No limit';
+
+  @override
+  String get potsCapsMonth => 'A month';
+
+  @override
+  String get potsCapsDay => 'A day';
+
+  @override
+  String get potsCapsUsd => 'USD';
+
+  @override
+  String get potsCapsTokensUnit => 'tokens';
+
+  @override
+  String get potsCapsSheetNote =>
+      '0 means no total limit. Subscription use counts toward money only when \"Show API-equivalent price\" is on.';
+
+  @override
+  String get potsCapsMoneyInvalid =>
+      'Enter an amount of 0 or more, such as 50 or 12.5.';
+
+  @override
+  String get potsCapsTokensInvalid =>
+      'Enter a whole number of tokens, 0 or more.';
+
+  @override
+  String get potsExhausted => 'When used up';
+
+  @override
+  String get potsExhaustedAsk => 'Stop and tell you';
+
+  @override
+  String get potsExhaustedAskDetail =>
+      'A pot\'s next model request is refused, and you are told.';
+
+  @override
+  String get potsExhaustedPause => 'Pause all pots';
+
+  @override
+  String get potsExhaustedPauseDetail =>
+      'Messages and events wait until the limit starts over.';
+
+  @override
+  String get potsRetention => 'Activity kept';
+
+  @override
+  String potsRetentionDays(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: '$days days',
+      one: '1 day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get potsRetentionUnit => 'days';
+
+  @override
+  String get potsRetentionNote =>
+      '1 to 3650 days. Older activity, and the names of deleted pots, are removed.';
+
+  @override
+  String get potsRetentionInvalid => 'Enter a number of days from 1 to 3650.';
+
+  @override
+  String get potsApiEquivalent => 'Show API-equivalent price';
+
+  @override
+  String get potsApiEquivalentDetail =>
+      'Subscription use counts toward money limits at API prices, marked as an estimate.';
+
+  @override
+  String get potsCapsNote =>
+      'Each pot also has its own limits; whichever is reached first applies.';
+
+  @override
+  String get potsSettingsConflict =>
+      'The settings changed on another device and are read again. Your edit is kept; save again to use it.';
+
+  @override
+  String get potsNone => 'No pots yet.';
+
+  @override
+  String potsThinkingAuto(String level) {
+    return '$level (auto)';
+  }
+
+  @override
+  String get potsArchived => 'Archived';
+
+  @override
+  String potsArchivedOn(String date) {
+    return 'Archived $date';
+  }
+
+  @override
+  String get potsRestore => 'Restore…';
+
+  @override
+  String potsRestoreTitle(String name) {
+    return 'Restore $name?';
+  }
+
+  @override
+  String potsRestoreBody(String name) {
+    return '$name comes back paused, with its settings and conversation. Resume it from its profile.';
+  }
+
+  @override
+  String get potsRestoreConfirm => 'Restore';
+
+  @override
+  String potsRestoreConflict(String name) {
+    return '$name changed elsewhere and was read again. Try again.';
+  }
 }

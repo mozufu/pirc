@@ -19,6 +19,7 @@ void main() {
     for (final label in [
       'This device',
       'Account and this device',
+      'Pots',
       'Model providers and default model',
       'Memory',
       'Modes',

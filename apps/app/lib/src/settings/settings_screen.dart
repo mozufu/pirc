@@ -5,10 +5,11 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../l10n/app_localizations.dart';
 import '../connection/connection.dart';
 import 'basic_pages.dart';
+import 'pots_page.dart';
 import 'settings_widgets.dart';
 
 /// Settings (E22), opened from the drawer. A row is shown only when it does
-/// something; the pots and usage rows are M7.
+/// something.
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
@@ -40,6 +41,12 @@ class SettingsScreen extends ConsumerWidget {
         SettingsGroup(
           title: l10n.settingsAi,
           children: [
+            SettingsLink(
+              icon: LucideIcons.users,
+              label: l10n.settingsPots,
+              subtitle: potsSettingsSummary(l10n, ref),
+              path: '/settings/pots',
+            ),
             SettingsLink(
               icon: LucideIcons.cpu,
               label: l10n.settingsProviders,
