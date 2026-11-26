@@ -637,6 +637,26 @@ void main() {
     expect((pov, open), (1, 1));
   });
 
+  testWidgets('PovBar.note shows the note without a chevron', (tester) async {
+    await _pump(
+      tester,
+      Builder(
+        builder: (context) => PovBar.note(
+          avatar: const Avatar(name: 'T', size: AvatarSize.sm),
+          note: TextSpan(
+            children: [
+              const TextSpan(text: 'As '),
+              PovBar.name(context, 'Tester'),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(find.text('As Tester', findRichText: true), findsOneWidget);
+    expect(find.byType(Icon), findsNothing);
+    expect(find.byType(InkWell), findsNothing);
+  });
+
   group('Stats', () {
     testWidgets('the grid has the given columns', (tester) async {
       await _pump(

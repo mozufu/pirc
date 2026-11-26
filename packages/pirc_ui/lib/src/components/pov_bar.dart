@@ -10,16 +10,33 @@ import '../tokens.g.dart';
 class PovBar extends StatelessWidget {
   const PovBar({
     super.key,
-    required this.avatar,
-    required this.title,
-    required this.subtitle,
+    required Widget this.avatar,
+    required String this.title,
+    required String this.subtitle,
     this.onTap,
-  });
+  }) : note = null;
 
-  final Widget avatar;
-  final String title;
-  final String subtitle;
+  /// The fixed note at the top of a point of view: an optional [avatar]
+  /// (28) and the [note] (names in bold, `text.primary`); no chevron.
+  const PovBar.note({super.key, this.avatar, required InlineSpan this.note})
+    : title = null,
+      subtitle = null,
+      onTap = null;
+
+  final Widget? avatar;
+  final String? title;
+  final String? subtitle;
+  final InlineSpan? note;
   final VoidCallback? onTap;
+
+  /// A bold name inside a [PovBar.note] (`e-pov b`).
+  static TextSpan name(BuildContext context, String text) => TextSpan(
+    text: text,
+    style: TextStyle(
+      fontWeight: FontWeight.w600,
+      color: PircColorTokens.of(context)['text.primary'],
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +46,24 @@ class PovBar extends StatelessWidget {
       height: 18 / 13,
       color: colors['text.secondary'],
     );
+    final note = this.note;
+    if (note != null) {
+      return Container(
+        margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        decoration: BoxDecoration(
+          color: colors['surface.subtle'],
+          borderRadius: BorderRadius.circular(PircRadius.md),
+        ),
+        child: Row(
+          spacing: 10,
+          children: [
+            ?avatar,
+            Expanded(child: Text.rich(note, style: style)),
+          ],
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
       child: Material(
@@ -42,7 +77,7 @@ class PovBar extends StatelessWidget {
             child: Row(
               spacing: 10,
               children: [
-                avatar,
+                ?avatar,
                 Expanded(
                   child: Text.rich(
                     TextSpan(
@@ -117,7 +152,7 @@ class PovReadOnlyBar extends StatelessWidget {
                 minimumSize: const Size(0, 36),
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 shape: const StadiumBorder(),
-                textStyle: const TextStyle(
+                textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),

@@ -264,20 +264,24 @@ class _Header extends ConsumerWidget {
 class ThreadHeader extends StatelessWidget {
   const ThreadHeader({
     super.key,
-    required this.avatar,
+    this.avatar,
     required this.name,
     required this.line,
     required this.showBack,
     required this.onOpen,
     required this.openTooltip,
+    this.onBack,
   });
 
-  final Widget avatar;
+  final Widget? avatar;
   final String name;
   final String line;
   final bool showBack;
   final VoidCallback? onOpen;
   final String openTooltip;
+
+  /// Where Back goes; the Chat tab's list by default.
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
@@ -294,7 +298,7 @@ class ThreadHeader extends StatelessWidget {
               IconButton(
                 tooltip: l10n.back,
                 color: colors['text.secondary'],
-                onPressed: () => context.go('/chat'),
+                onPressed: onBack ?? () => context.go('/chat'),
                 icon: const Icon(LucideIcons.chevronLeft, size: 22),
               )
             else
@@ -307,7 +311,7 @@ class ThreadHeader extends StatelessWidget {
                 child: Row(
                   spacing: 8,
                   children: [
-                    avatar,
+                    ?avatar,
                     Expanded(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,

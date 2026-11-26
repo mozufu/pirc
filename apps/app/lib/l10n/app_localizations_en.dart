@@ -243,11 +243,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get nothingOpen => 'Select an item to open it';
 
   @override
-  String openItem(String id) {
-    return 'Item $id';
-  }
-
-  @override
   String get language => 'Language';
 
   @override
@@ -3369,4 +3364,136 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get meConflict =>
       'Your profile changed on another device and is read again. Your edit is kept; save again to use it.';
+
+  @override
+  String get activitySubtitle => 'What pots are doing';
+
+  @override
+  String get activityFilterKind => 'Filter by type';
+
+  @override
+  String get activityFilterPots => 'Filter by pot';
+
+  @override
+  String get activityAllKinds => 'All types';
+
+  @override
+  String activitySeePov(String name) {
+    return 'See $name\'s point of view';
+  }
+
+  @override
+  String get activitySeePovDetail =>
+      'Browse its record through the chat list it sees · read only';
+
+  @override
+  String get activityFootnote =>
+      'Messages between pots, instructions sent to work and files read are all recorded here; there is no channel you can\'t see.';
+
+  @override
+  String get activityEmptyFilter => 'Nothing matches this filter.';
+
+  @override
+  String get activityNoticed => 'Noticed';
+
+  @override
+  String get activityMarkRead => 'Mark read';
+
+  @override
+  String get activityNoticeOpen => 'New';
+
+  @override
+  String get activityNoticeSeen => 'Seen';
+
+  @override
+  String activityNoticedMerged(int count) {
+    return '$count pots';
+  }
+
+  @override
+  String get activityConditionRunFinished => 'A work finished its run';
+
+  @override
+  String get activityConditionWaitingInput => 'A work is waiting for you';
+
+  @override
+  String get activityConditionStartingSoon => 'Starting soon';
+
+  @override
+  String get activityConditionRunFailed => 'A work\'s run failed';
+
+  @override
+  String povTitle(String name) {
+    return '$name\'s point of view';
+  }
+
+  @override
+  String get povSubtitle => 'Read only · the chat list it sees';
+
+  @override
+  String povNote(String name) {
+    return 'This is what $name sees, including the messages it sends into work. You can\'t send messages as it here.';
+  }
+
+  @override
+  String povThreadNote(String name) {
+    return 'As $name · on the right is what it sent';
+  }
+
+  @override
+  String get povWorks => 'Works I coordinate';
+
+  @override
+  String get povSent => 'Messages it sent';
+
+  @override
+  String get povShowOlder => 'Show older';
+
+  @override
+  String get povNoThreads => 'It is in no conversation yet.';
+
+  @override
+  String get povYou => 'You (user)';
+
+  @override
+  String get povAuthorMe => 'Me';
+
+  @override
+  String povMe(String name) {
+    return 'Me ($name)';
+  }
+
+  @override
+  String get povWorkLabel => 'Work';
+
+  @override
+  String povReadOnly(String name) {
+    return 'Read only: $name\'s record';
+  }
+
+  @override
+  String get povGoToWork => 'Go to work';
+
+  @override
+  String get povBackToActivity => 'Back to activity';
+
+  @override
+  String get povDmSubtitle =>
+      'Message · you can see every message between pots';
+
+  @override
+  String get povDirectSubtitle => 'Its conversation with you';
+
+  @override
+  String get povNoInstructions =>
+      'It has sent no instructions into this work yet.';
+
+  @override
+  String get povDelivered => 'Delivered';
+
+  @override
+  String get povRefused => 'Refused';
+
+  @override
+  String get povUncertain => 'Not confirmed';
 }

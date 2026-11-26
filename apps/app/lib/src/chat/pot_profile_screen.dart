@@ -6,7 +6,9 @@ import 'package:pirc_client/pirc_client.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../activity/activity_data.dart';
 import '../activity/activity_kinds.dart';
+import '../activity/activity_screen.dart';
 import '../connection/data.dart';
 import '../connection/hints.dart';
 import '../format.dart';
@@ -429,20 +431,10 @@ class _ActivitySection extends ConsumerWidget {
     final now = ref.watch(clockProvider)();
     final pots = ref.watch(potsProvider).value ?? const <PotSummary>[];
     final rows = entries.value ?? const <ActivityEntry>[];
-    String? target(ActivityEntry entry) {
-      final counterpart = entry.counterpart;
-      return switch (counterpart?.kind) {
-        'user' => '→ ${l10n.activityToYou}',
-        'pot' => () {
-          final name = pots
-              .where((p) => p.id == counterpart!.id)
-              .firstOrNull
-              ?.name;
-          return name == null ? null : '→ $name';
-        }(),
-        _ => null,
-      };
-    }
+    final works = watchPotWorks(ref);
+    final threads = ref.watch(threadsProvider).value ?? const <PotThread>[];
+    String? target(ActivityEntry entry) =>
+        activityTarget(l10n, entry, pots: pots, works: works, threads: threads);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -484,6 +476,10 @@ class _ActivitySection extends ConsumerWidget {
                     tone: activityKindTone(entry.kind),
                   ),
                   quote: entry.summary.isEmpty ? null : entry.summary,
+                  onTap: switch (activityOpenOf(entry, threads)) {
+                    final open? => () => openActivity(context, open),
+                    null => null,
+                  },
                 ),
             ],
           ),

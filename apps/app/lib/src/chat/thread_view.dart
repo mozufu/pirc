@@ -25,9 +25,15 @@ class ThreadMessageList extends ConsumerStatefulWidget {
     this.nameOf,
     this.hostLabelOf,
     this.mineTextOf,
+    this.bubbleOf,
   });
 
   final ThreadView view;
+
+  /// A point of view (E18–E20) builds every author's bubble itself and is
+  /// read only: system messages and cards show as notices, without
+  /// buttons. Null keeps the conversation's bubbles and live cards.
+  final Widget Function(ThreadMessage message)? bubbleOf;
 
   /// The avatar of a pot's message (28).
   final Widget Function(ThreadMessage message) avatarOf;
@@ -143,6 +149,11 @@ class _ThreadMessageListState extends ConsumerState<ThreadMessageList> {
   }
 
   Widget _message(ThreadMessage message) {
+    final bubbleOf = widget.bubbleOf;
+    if (bubbleOf != null) {
+      if (message.fromUser || message.fromPot) return bubbleOf(message);
+      return ThreadNotice(text: readOnlyNotice(context, message));
+    }
     if (message.fromUser) {
       return Bubble.mine(
         text: widget.mineTextOf?.call(message) ?? message.body,
@@ -192,6 +203,22 @@ class _ThreadMessageListState extends ConsumerState<ThreadMessageList> {
     final b = DateTime.fromMillisecondsSinceEpoch(message.createdAt);
     return !DateUtils.isSameDay(a, b) || b.difference(a).inMinutes >= 60;
   }
+}
+
+/// A system message in a read-only view: its text, else what its card is
+/// about (the Activity tag of that kind).
+String readOnlyNotice(BuildContext context, ThreadMessage message) {
+  if (message.body.isNotEmpty) return message.body;
+  final l10n = AppLocalizations.of(context);
+  return switch (message.card) {
+    ModelApprovalCard() => l10n.activityKindAwaitingApproval,
+    BudgetRequestCard() => l10n.activityKindBudgetRequest,
+    HandoverCard() => l10n.activityKindHandoverProposed,
+    LoopGuardCard() => l10n.activityKindLoopGuard,
+    WorkSessionCard() => l10n.activityKindWorkOpened,
+    final UnknownCard card => l10n.cardUnknown(card.kind),
+    null => '',
+  };
 }
 
 /// "Today 09:00", "Yesterday 18:00", else the date and time.

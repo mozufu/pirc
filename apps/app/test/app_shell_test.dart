@@ -13,17 +13,37 @@ import 'package:pirc_ui/pirc_ui.dart';
 
 import 'support/harness.dart';
 
+FakeGateway _gateway() {
+  final g = FakeGateway();
+  g.json['GET /api/sessions'] = (_) => {'sessions': <Object?>[]};
+  g.json['GET /api/activity'] = (_) => {'activity': <Object?>[]};
+  g.json['GET /api/pots'] = (_) => {
+    'pots': [
+      {
+        'id': 'p1',
+        'state': 'active',
+        'status': 'idle',
+        'profile': {'name': 'Tester', 'avatarColor': 2},
+      },
+    ],
+  };
+  g.json['GET /api/pots/p1/view'] = (_) => {
+    'potId': 'p1',
+    'threads': <Object?>[],
+    'sent': <Object?>[],
+    'instructions': <Object?>[],
+  };
+  return g;
+}
+
 Future<ProviderContainer> _pump(
   WidgetTester tester, {
   required double width,
   String location = '/chat',
-}) => pumpApp(
-  tester,
-  gateway: FakeGateway()
-    ..json['GET /api/sessions'] = (_) => {'sessions': <Object?>[]},
-  width: width,
-  location: location,
-);
+}) => pumpApp(tester, gateway: _gateway(), width: width, location: location);
+
+/// Tester's point of view, the list filtered to it.
+const _pov = '/activity?pot=p1&open=pov:p1';
 
 Future<void> _resize(WidgetTester tester, double width) async {
   tester.view.physicalSize = Size(width, 900);
@@ -38,14 +58,17 @@ void main() {
     (1300.0, PircLayout.desktop),
   ]) {
     testWidgets('$width wide uses the $layout layout', (tester) async {
-      await _pump(tester, width: width, location: '/activity?open=s1');
+      await _pump(tester, width: width, location: _pov);
       expect(find.byType(AdaptiveScaffold), findsOneWidget);
       expect(
         find.byType(NavigationBar),
         layout == PircLayout.compact ? findsOneWidget : findsNothing,
       );
-      expect(find.text('Item s1'), findsOneWidget);
-      final listShown = find.text('No activity yet').evaluate().isNotEmpty;
+      expect(find.text("Tester's point of view"), findsOneWidget);
+      final listShown = find
+          .text('Nothing matches this filter.')
+          .evaluate()
+          .isNotEmpty;
       expect(
         listShown,
         layout == PircLayout.landscape || layout == PircLayout.desktop,
@@ -56,10 +79,14 @@ void main() {
   testWidgets('a layout change keeps the tab and the open item', (
     tester,
   ) async {
-    await _pump(tester, width: 1300, location: '/activity?open=s1');
+    await _pump(tester, width: 1300, location: _pov);
     for (final width in [1000.0, 700.0, 375.0, 1300.0]) {
       await _resize(tester, width);
-      expect(find.text('Item s1'), findsOneWidget, reason: '$width');
+      expect(
+        find.text("Tester's point of view"),
+        findsOneWidget,
+        reason: '$width',
+      );
       final scaffold = tester.widget<AdaptiveScaffold>(
         find.byType(AdaptiveScaffold),
       );
@@ -68,21 +95,25 @@ void main() {
   });
 
   testWidgets('tabs switch and keep their own open item', (tester) async {
-    await _pump(tester, width: 1300, location: '/activity?open=s1');
+    await _pump(tester, width: 1300, location: _pov);
     await tester.tap(find.text('Calendar'));
     await tester.pumpAndSettle();
     expect(find.byType(CalendarScreen), findsOneWidget);
     await tester.tap(find.text('Activity'));
     await tester.pumpAndSettle();
-    expect(find.text('Item s1'), findsOneWidget);
+    expect(find.text("Tester's point of view"), findsOneWidget);
   });
 
   testWidgets('back closes the open item on a phone', (tester) async {
-    await _pump(tester, width: 375, location: '/activity?open=s1');
+    await _pump(tester, width: 375, location: _pov);
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
-    expect(find.text('Item s1'), findsNothing);
-    expect(find.text('No activity yet'), findsOneWidget);
+    expect(find.text("Tester's point of view"), findsNothing);
+    // Back to the list filtered to the pot.
+    expect(
+      find.textContaining("See Tester's point of view", findRichText: true),
+      findsOneWidget,
+    );
   });
 
   testWidgets('Traditional Chinese labels the tabs and the renderer', (

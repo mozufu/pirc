@@ -187,14 +187,6 @@
   "emptyActivity": "No activity yet",
   "emptyCalendar": "Nothing scheduled",
   "nothingOpen": "Select an item to open it",
-  "openItem": "Item {id}",
-  "@openItem": {
-    "placeholders": {
-      "id": {
-        "type": "String"
-      }
-    }
-  },
   "language": "Language",
   "languageSystem": "Follow the system",
   "languageEnglish": "English",
@@ -2158,5 +2150,92 @@
   "meNameHint": "Your name",
   "meNameNote": "Pots call you by this name; groups and Activity show it too.",
   "meNameInvalid": "A name is 1 to 60 characters.",
-  "meConflict": "Your profile changed on another device and is read again. Your edit is kept; save again to use it."
+  "meConflict": "Your profile changed on another device and is read again. Your edit is kept; save again to use it.",
+  "activitySubtitle": "What pots are doing",
+  "activityFilterKind": "Filter by type",
+  "activityFilterPots": "Filter by pot",
+  "activityAllKinds": "All types",
+  "activitySeePov": "See {name}'s point of view",
+  "@activitySeePov": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "activitySeePovDetail": "Browse its record through the chat list it sees · read only",
+  "activityFootnote": "Messages between pots, instructions sent to work and files read are all recorded here; there is no channel you can't see.",
+  "activityEmptyFilter": "Nothing matches this filter.",
+  "activityNoticed": "Noticed",
+  "activityMarkRead": "Mark read",
+  "activityNoticeOpen": "New",
+  "activityNoticeSeen": "Seen",
+  "activityNoticedMerged": "{count} pots",
+  "@activityNoticedMerged": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "activityConditionRunFinished": "A work finished its run",
+  "activityConditionWaitingInput": "A work is waiting for you",
+  "activityConditionStartingSoon": "Starting soon",
+  "activityConditionRunFailed": "A work's run failed",
+  "povTitle": "{name}'s point of view",
+  "@povTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "povSubtitle": "Read only · the chat list it sees",
+  "povNote": "This is what {name} sees, including the messages it sends into work. You can't send messages as it here.",
+  "@povNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "povThreadNote": "As {name} · on the right is what it sent",
+  "@povThreadNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "povWorks": "Works I coordinate",
+  "povSent": "Messages it sent",
+  "povShowOlder": "Show older",
+  "povNoThreads": "It is in no conversation yet.",
+  "povYou": "You (user)",
+  "povAuthorMe": "Me",
+  "povMe": "Me ({name})",
+  "@povMe": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "povWorkLabel": "Work",
+  "povReadOnly": "Read only: {name}'s record",
+  "@povReadOnly": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "povGoToWork": "Go to work",
+  "povBackToActivity": "Back to activity",
+  "povDmSubtitle": "Message · you can see every message between pots",
+  "povDirectSubtitle": "Its conversation with you",
+  "povNoInstructions": "It has sent no instructions into this work yet.",
+  "povDelivered": "Delivered",
+  "povRefused": "Refused",
+  "povUncertain": "Not confirmed"
 }

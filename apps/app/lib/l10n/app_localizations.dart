@@ -501,12 +501,6 @@ abstract class AppLocalizations {
   /// **'Select an item to open it'**
   String get nothingOpen;
 
-  /// No description provided for @openItem.
-  ///
-  /// In en, this message translates to:
-  /// **'Item {id}'**
-  String openItem(String id);
-
   /// No description provided for @language.
   ///
   /// In en, this message translates to:
@@ -5816,6 +5810,234 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Your profile changed on another device and is read again. Your edit is kept; save again to use it.'**
   String get meConflict;
+
+  /// No description provided for @activitySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What pots are doing'**
+  String get activitySubtitle;
+
+  /// No description provided for @activityFilterKind.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by type'**
+  String get activityFilterKind;
+
+  /// No description provided for @activityFilterPots.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter by pot'**
+  String get activityFilterPots;
+
+  /// No description provided for @activityAllKinds.
+  ///
+  /// In en, this message translates to:
+  /// **'All types'**
+  String get activityAllKinds;
+
+  /// No description provided for @activitySeePov.
+  ///
+  /// In en, this message translates to:
+  /// **'See {name}\'s point of view'**
+  String activitySeePov(String name);
+
+  /// No description provided for @activitySeePovDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse its record through the chat list it sees · read only'**
+  String get activitySeePovDetail;
+
+  /// No description provided for @activityFootnote.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages between pots, instructions sent to work and files read are all recorded here; there is no channel you can\'t see.'**
+  String get activityFootnote;
+
+  /// No description provided for @activityEmptyFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing matches this filter.'**
+  String get activityEmptyFilter;
+
+  /// No description provided for @activityNoticed.
+  ///
+  /// In en, this message translates to:
+  /// **'Noticed'**
+  String get activityNoticed;
+
+  /// No description provided for @activityMarkRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark read'**
+  String get activityMarkRead;
+
+  /// No description provided for @activityNoticeOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get activityNoticeOpen;
+
+  /// No description provided for @activityNoticeSeen.
+  ///
+  /// In en, this message translates to:
+  /// **'Seen'**
+  String get activityNoticeSeen;
+
+  /// No description provided for @activityNoticedMerged.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} pots'**
+  String activityNoticedMerged(int count);
+
+  /// No description provided for @activityConditionRunFinished.
+  ///
+  /// In en, this message translates to:
+  /// **'A work finished its run'**
+  String get activityConditionRunFinished;
+
+  /// No description provided for @activityConditionWaitingInput.
+  ///
+  /// In en, this message translates to:
+  /// **'A work is waiting for you'**
+  String get activityConditionWaitingInput;
+
+  /// No description provided for @activityConditionStartingSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting soon'**
+  String get activityConditionStartingSoon;
+
+  /// No description provided for @activityConditionRunFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'A work\'s run failed'**
+  String get activityConditionRunFailed;
+
+  /// No description provided for @povTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s point of view'**
+  String povTitle(String name);
+
+  /// No description provided for @povSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read only · the chat list it sees'**
+  String get povSubtitle;
+
+  /// No description provided for @povNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This is what {name} sees, including the messages it sends into work. You can\'t send messages as it here.'**
+  String povNote(String name);
+
+  /// No description provided for @povThreadNote.
+  ///
+  /// In en, this message translates to:
+  /// **'As {name} · on the right is what it sent'**
+  String povThreadNote(String name);
+
+  /// No description provided for @povWorks.
+  ///
+  /// In en, this message translates to:
+  /// **'Works I coordinate'**
+  String get povWorks;
+
+  /// No description provided for @povSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Messages it sent'**
+  String get povSent;
+
+  /// No description provided for @povShowOlder.
+  ///
+  /// In en, this message translates to:
+  /// **'Show older'**
+  String get povShowOlder;
+
+  /// No description provided for @povNoThreads.
+  ///
+  /// In en, this message translates to:
+  /// **'It is in no conversation yet.'**
+  String get povNoThreads;
+
+  /// No description provided for @povYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You (user)'**
+  String get povYou;
+
+  /// No description provided for @povAuthorMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Me'**
+  String get povAuthorMe;
+
+  /// No description provided for @povMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Me ({name})'**
+  String povMe(String name);
+
+  /// No description provided for @povWorkLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Work'**
+  String get povWorkLabel;
+
+  /// No description provided for @povReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Read only: {name}\'s record'**
+  String povReadOnly(String name);
+
+  /// No description provided for @povGoToWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to work'**
+  String get povGoToWork;
+
+  /// No description provided for @povBackToActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to activity'**
+  String get povBackToActivity;
+
+  /// No description provided for @povDmSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Message · you can see every message between pots'**
+  String get povDmSubtitle;
+
+  /// No description provided for @povDirectSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Its conversation with you'**
+  String get povDirectSubtitle;
+
+  /// No description provided for @povNoInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'It has sent no instructions into this work yet.'**
+  String get povNoInstructions;
+
+  /// No description provided for @povDelivered.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivered'**
+  String get povDelivered;
+
+  /// No description provided for @povRefused.
+  ///
+  /// In en, this message translates to:
+  /// **'Refused'**
+  String get povRefused;
+
+  /// No description provided for @povUncertain.
+  ///
+  /// In en, this message translates to:
+  /// **'Not confirmed'**
+  String get povUncertain;
 }
 
 class _AppLocalizationsDelegate

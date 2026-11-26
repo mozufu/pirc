@@ -5,6 +5,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
 import '../l10n/app_localizations.dart';
+import 'activity/activity_data.dart';
+import 'activity/activity_screen.dart';
+import 'activity/pov_screen.dart';
 import 'calendar/calendar_detail.dart';
 import 'calendar/calendar_screen.dart';
 import 'chat/chat_data.dart';
@@ -28,8 +31,8 @@ import 'work/work_side.dart';
 import 'work/work_data.dart';
 import 'work/work_list_screen.dart';
 
-/// One tab in the adaptive frame: the Chat, Work and Calendar lists and
-/// items; Activity and the Chat items not built yet stay placeholders.
+/// One tab in the adaptive frame: the Chat, Work, Activity and Calendar
+/// lists and their open items.
 class TabScreen extends ConsumerWidget {
   const TabScreen({
     super.key,
@@ -58,9 +61,11 @@ class TabScreen extends ConsumerWidget {
         PircLayout.forWidth(MediaQuery.sizeOf(context).width) ==
         PircLayout.desktop;
     final open = openItem;
+    final here = location ?? Uri(path: tab.path);
+    final content = open == null ? null : _content(context, open, desktop);
     final page = PopScope(
       // Back closes the open item first (one-pane layouts show it alone).
-      canPop: open == null,
+      canPop: content == null,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop && open != null) {
           context.go(switch (tab) {
@@ -78,6 +83,9 @@ class TabScreen extends ConsumerWidget {
             AppTab.chat when open.startsWith('retire:') => potSettingsLocation(
               open.substring('retire:'.length),
             ),
+            // A point of view's thread or work goes back to the point of
+            // view, the point of view to the list filtered to its pot.
+            AppTab.activity => activityBackLocation(here),
             _ => tab.path,
           });
         }
@@ -102,6 +110,7 @@ class TabScreen extends ConsumerWidget {
             PircDestination(
               icon: LucideIcons.activity,
               label: l10n.tabActivity,
+              badge: ref.watch(activityBadgeProvider),
             ),
             PircDestination(
               icon: LucideIcons.calendar,
@@ -120,84 +129,9 @@ class TabScreen extends ConsumerWidget {
               onNew: () => context.go('/work?open=$newConversationKey'),
             ),
             AppTab.calendar => const CalendarScreen(),
-            _ => const _TabList(),
+            AppTab.activity => ActivityListScreen(location: here),
           },
-          content: open == null
-              ? null
-              : switch (tab) {
-                  AppTab.work when open.startsWith('project:') => ProjectScreen(
-                    key: ValueKey(open),
-                    workspaceId: open.substring('project:'.length),
-                    showBack: !desktop,
-                  ),
-                  AppTab.work when open == newConversationKey =>
-                    NewConversationScreen(
-                      key: const ValueKey(newConversationKey),
-                      showBack: !desktop,
-                    ),
-                  AppTab.work => WorkConversation(
-                    key: ValueKey(open),
-                    sessionId: open,
-                    showBack: !desktop,
-                  ),
-                  AppTab.chat when open.startsWith('settings:') =>
-                    PotSettingsScreen(
-                      key: ValueKey(open),
-                      potId: open.substring('settings:'.length),
-                      section: location?.queryParameters['section'],
-                    ),
-                  AppTab.chat when open.startsWith('handover-new:') =>
-                    HandoverScreen.start(
-                      key: ValueKey(open),
-                      potId: open.substring('handover-new:'.length),
-                    ),
-                  AppTab.chat when open.startsWith('handover:') =>
-                    HandoverScreen.existing(
-                      key: ValueKey(open),
-                      handoverId: open.substring('handover:'.length),
-                    ),
-                  AppTab.chat when open.startsWith('retire:') => RetireScreen(
-                    key: ValueKey(open),
-                    potId: open.substring('retire:'.length),
-                  ),
-                  AppTab.chat when open == newPotKey => NewPotScreen(
-                    key: const ValueKey(newPotKey),
-                    showBack: !desktop,
-                  ),
-                  AppTab.chat when open == newGroupKey => NewGroupScreen(
-                    key: const ValueKey(newGroupKey),
-                    showBack: !desktop,
-                  ),
-                  // A pot's conversation, a direct thread by its ID (a
-                  // deleted pot's, read-only) or a group by its ID. A pot
-                  // DM (step 10) keeps the placeholder.
-                  AppTab.chat
-                      when open.startsWith('pot:') || !open.contains(':') =>
-                    PotConversationScreen(
-                      key: ValueKey(open),
-                      chatKey: open,
-                      showBack: !desktop,
-                      otherThread: (context, thread) => thread.isGroup
-                          ? GroupConversationScreen(
-                              threadId: open,
-                              showBack: !desktop,
-                            )
-                          : _ItemPlaceholder(
-                              title: l10n.openItem(open),
-                              onBack: () => context.go(tab.path),
-                            ),
-                    ),
-                  AppTab.calendar => CalendarDetail(
-                    key: ValueKey(open),
-                    itemId: open,
-                    showBack: !desktop,
-                  ),
-                  _ => _ItemPlaceholder(
-                    key: ValueKey(open),
-                    title: l10n.openItem(open),
-                    onBack: () => context.go(tab.path),
-                  ),
-                },
+          content: content,
           side: open == null || side == null
               ? null
               : tab == AppTab.work
@@ -230,6 +164,96 @@ class TabScreen extends ConsumerWidget {
     );
     final at = location;
     return at == null ? page : _DecisionOpener(location: at, child: page);
+  }
+
+  /// The open item's screen, or null when [open] names nothing this tab
+  /// shows (the list then stays).
+  Widget? _content(BuildContext context, String open, bool desktop) {
+    final params = location?.queryParameters ?? const <String, String>{};
+    return switch (tab) {
+      AppTab.work when open.startsWith('project:') => ProjectScreen(
+        key: ValueKey(open),
+        workspaceId: open.substring('project:'.length),
+        showBack: !desktop,
+      ),
+      AppTab.work when open == newConversationKey => NewConversationScreen(
+        key: const ValueKey(newConversationKey),
+        showBack: !desktop,
+      ),
+      AppTab.work => WorkConversation(
+        key: ValueKey(open),
+        sessionId: open,
+        showBack: !desktop,
+      ),
+      AppTab.chat when open.startsWith('settings:') => PotSettingsScreen(
+        key: ValueKey(open),
+        potId: open.substring('settings:'.length),
+        section: params['section'],
+      ),
+      AppTab.chat when open.startsWith('handover-new:') => HandoverScreen.start(
+        key: ValueKey(open),
+        potId: open.substring('handover-new:'.length),
+      ),
+      AppTab.chat when open.startsWith('handover:') => HandoverScreen.existing(
+        key: ValueKey(open),
+        handoverId: open.substring('handover:'.length),
+      ),
+      AppTab.chat when open.startsWith('retire:') => RetireScreen(
+        key: ValueKey(open),
+        potId: open.substring('retire:'.length),
+      ),
+      AppTab.chat when open == newPotKey => NewPotScreen(
+        key: const ValueKey(newPotKey),
+        showBack: !desktop,
+      ),
+      AppTab.chat when open == newGroupKey => NewGroupScreen(
+        key: const ValueKey(newGroupKey),
+        showBack: !desktop,
+      ),
+      // A pot's conversation, a direct thread by its ID (a deleted pot's,
+      // read-only), a group by its ID, or a pot DM by its ID: read only, as
+      // its first pot sees it (E20).
+      AppTab.chat when open.startsWith('pot:') || !open.contains(':') =>
+        PotConversationScreen(
+          key: ValueKey(open),
+          chatKey: open,
+          showBack: !desktop,
+          otherThread: (context, thread) => thread.isGroup
+              ? GroupConversationScreen(threadId: open, showBack: !desktop)
+              : PovThreadScreen(
+                  potId: thread.pots.firstOrNull ?? '',
+                  threadId: open,
+                  showBack: !desktop,
+                  onBack: () => context.go(tab.path),
+                ),
+        ),
+      AppTab.calendar => CalendarDetail(
+        key: ValueKey(open),
+        itemId: open,
+        showBack: !desktop,
+      ),
+      AppTab.activity when povPotOf(open) != null => switch ((
+        params['thread'],
+        params['work'],
+      )) {
+        (final String thread, _) => PovThreadScreen(
+          key: ValueKey('$open/thread/$thread'),
+          potId: povPotOf(open)!,
+          threadId: thread,
+        ),
+        (_, final String work) => PovWorkScreen(
+          key: ValueKey('$open/work/$work'),
+          potId: povPotOf(open)!,
+          workId: work,
+        ),
+        _ => PovScreen(
+          key: ValueKey(open),
+          potId: povPotOf(open)!,
+          showBack: !desktop,
+        ),
+      },
+      _ => null,
+    };
   }
 }
 
@@ -284,51 +308,6 @@ class _DecisionOpenerState extends State<_DecisionOpener> {
 
   @override
   Widget build(BuildContext context) => widget.child;
-}
-
-/// The Activity tab until M7 step 10 builds it.
-class _TabList extends StatelessWidget {
-  const _TabList();
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        leading: const DrawerButton(),
-        title: Text(l10n.tabActivity),
-      ),
-      body: _Empty(text: l10n.emptyActivity),
-    );
-  }
-}
-
-/// An open Chat or Activity item whose screen is not built yet.
-class _ItemPlaceholder extends StatelessWidget {
-  const _ItemPlaceholder({
-    super.key,
-    required this.title,
-    required this.onBack,
-  });
-
-  final String title;
-  final VoidCallback onBack;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        leading: IconButton(
-          tooltip: l10n.back,
-          icon: const Icon(LucideIcons.arrowLeft),
-          onPressed: onBack,
-        ),
-      ),
-      body: const SizedBox.expand(),
-    );
-  }
 }
 
 class _Empty extends StatelessWidget {

@@ -240,11 +240,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get nothingOpen => '選取項目以開啟';
 
   @override
-  String openItem(String id) {
-    return '項目 $id';
-  }
-
-  @override
   String get language => '語言';
 
   @override
@@ -3196,6 +3191,134 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get meConflict => '你的個人資料在別的裝置上改過了，已重新讀取。你的修改還在，再儲存一次即可套用。';
+
+  @override
+  String get activitySubtitle => 'pots 在做什麼';
+
+  @override
+  String get activityFilterKind => '依類型篩選';
+
+  @override
+  String get activityFilterPots => '依 pots 篩選';
+
+  @override
+  String get activityAllKinds => '全部類型';
+
+  @override
+  String activitySeePov(String name) {
+    return '查看$name的視角';
+  }
+
+  @override
+  String get activitySeePovDetail => '用它看到的聊天列表瀏覽紀錄 · 唯讀';
+
+  @override
+  String get activityFootnote => 'pots 之間的私訊、對工作送出的指示、讀取的檔案都會記在這裡；沒有你看不到的頻道。';
+
+  @override
+  String get activityEmptyFilter => '沒有符合篩選的動態。';
+
+  @override
+  String get activityNoticed => '注意到';
+
+  @override
+  String get activityMarkRead => '標為已讀';
+
+  @override
+  String get activityNoticeOpen => '新';
+
+  @override
+  String get activityNoticeSeen => '已讀';
+
+  @override
+  String activityNoticedMerged(int count) {
+    return '$count 位 pots';
+  }
+
+  @override
+  String get activityConditionRunFinished => '工作跑完了';
+
+  @override
+  String get activityConditionWaitingInput => '工作在等你回答';
+
+  @override
+  String get activityConditionStartingSoon => '快開始了';
+
+  @override
+  String get activityConditionRunFailed => '工作執行失敗';
+
+  @override
+  String povTitle(String name) {
+    return '$name的視角';
+  }
+
+  @override
+  String get povSubtitle => '唯讀 · 模擬它看到的聊天列表';
+
+  @override
+  String povNote(String name) {
+    return '這是$name看到的對話，包含它送進工作的訊息。你不能在這裡用它的身分發訊息。';
+  }
+
+  @override
+  String povThreadNote(String name) {
+    return '以$name的視角 · 右邊是它送出的訊息';
+  }
+
+  @override
+  String get povWorks => '我協調的工作';
+
+  @override
+  String get povSent => '它送出的訊息';
+
+  @override
+  String get povShowOlder => '顯示更早的';
+
+  @override
+  String get povNoThreads => '它還沒有加入任何對話。';
+
+  @override
+  String get povYou => '你（使用者）';
+
+  @override
+  String get povAuthorMe => '我';
+
+  @override
+  String povMe(String name) {
+    return '我（$name）';
+  }
+
+  @override
+  String get povWorkLabel => '工作';
+
+  @override
+  String povReadOnly(String name) {
+    return '唯讀：$name的紀錄';
+  }
+
+  @override
+  String get povGoToWork => '前往工作';
+
+  @override
+  String get povBackToActivity => '回到動態';
+
+  @override
+  String get povDmSubtitle => '私訊 · pots 之間的私訊你都看得到';
+
+  @override
+  String get povDirectSubtitle => '它和你的對話';
+
+  @override
+  String get povNoInstructions => '它還沒有對這個工作送出指示。';
+
+  @override
+  String get povDelivered => '已送達';
+
+  @override
+  String get povRefused => '被拒絕';
+
+  @override
+  String get povUncertain => '未確認';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

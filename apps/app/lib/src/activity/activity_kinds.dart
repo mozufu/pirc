@@ -39,6 +39,40 @@ String activityKindLabel(AppLocalizations l10n, String kind) => switch (kind) {
   _ => kind,
 };
 
+/// The type filter's choices (E5's filter button), each the kinds it sends
+/// as `kind=`: one per settled label, the lifecycle kinds together as
+/// "Status".
+const activityKindFilters = <List<String>>[
+  ['dm'],
+  ['group_message'],
+  ['assign'],
+  ['work_opened'],
+  ['work_instruction'],
+  ['file_read'],
+  ['thinking_adjust'],
+  ['fallback'],
+  ['awaiting_confirm'],
+  ['awaiting_approval'],
+  ['approval_answered'],
+  ['forwarded_to_user'],
+  ['budget_request'],
+  ['budget_exhausted'],
+  ['loop_guard'],
+  ['handover_proposed'],
+  ['review'],
+  ['reminder_set'],
+  ['autonomy_changed'],
+  [
+    'created',
+    'updated',
+    'paused',
+    'resumed',
+    'archived',
+    'restored',
+    'deleted',
+  ],
+];
+
 /// The tag's look: yellow where the user is waited on, the stronger fill
 /// for private messages between pots (`e-tag.attn`, `e-tag.dm`).
 LogTagTone activityKindTone(String kind) => switch (kind) {

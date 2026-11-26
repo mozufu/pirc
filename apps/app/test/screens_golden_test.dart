@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/format.dart';
 import 'package:pirc_app/src/preferences.dart';
 
+import 'support/activity_fixtures.dart';
 import 'support/chat_fixtures.dart';
 import 'support/fonts.dart';
 import 'support/harness.dart';
@@ -153,6 +154,7 @@ final _screens = <String, (String, FakeGateway Function(), Saved Function())>{
     Saved.new,
   ),
   'me': ('/me', () => MeFixture.e28().install(), Saved.new),
+  'activity': ('/activity', () => ActivityFixture().install(), Saved.new),
 };
 
 void main() {
