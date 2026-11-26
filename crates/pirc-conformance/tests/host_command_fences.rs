@@ -77,7 +77,7 @@ async fn host_terminal(gw: &mut Gateway, session: &str, generation: &Value, requ
     assert_eq!(opened["data"]["status"], 201, "{opened}");
 }
 
-#[ignore = "pirc 2: a plain stop is rejected because Runner::dispatch validates generation 0"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn approved_host_commands_settle_before_stop_and_transition_acknowledgement() {
     let server = FakeGateway::bind().await;

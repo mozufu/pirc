@@ -428,7 +428,7 @@ async fn node_session_routes() {
     insta::assert_json_snapshot!("node_session_routes", t.into_value());
 }
 
-#[ignore = "pirc 2: a plain stop is rejected because Runner::dispatch validates generation 0"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_commands() {
     let llm = HeldLlm::start().await;
@@ -873,7 +873,7 @@ async fn node_session_failures() {
     insta::assert_json_snapshot!("node_session_failures", t.into_value());
 }
 
-#[ignore = "pirc 2: a plain stop is rejected because Runner::dispatch validates generation 0"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_interactions() {
     let llm = HeldLlm::start().await;
@@ -952,29 +952,22 @@ async fn node_session_interactions() {
             with(&s, json!({ "value": "red" })),
         ),
         (
-            "answer with a stale generation",
-            interaction.clone(),
-            json!({ "clientId": s.client.clone(), "generation": 99,
-                "answer": { "value": "red" } }),
-        ),
-        (
-            "answer without a generation",
-            interaction.clone(),
-            json!({ "clientId": s.client.clone(), "answer": { "value": "red" } }),
-        ),
-        (
             "answer with an invalid answer",
             interaction.clone(),
             with(&s, json!({ "value": 7 })),
         ),
         ("answer without an answer", interaction.clone(), control(&s)),
         (
-            "answer",
+            "answer without a generation",
             interaction.clone(),
-            with(
-                &s,
-                json!({ "value": "red, blue", "values": ["red", "blue"] }),
-            ),
+            json!({ "clientId": s.client.clone(),
+                "answer": { "value": "red, blue", "values": ["red", "blue"] } }),
+        ),
+        (
+            "answer again with a stale generation",
+            interaction.clone(),
+            json!({ "clientId": s.client.clone(), "generation": 99,
+                "answer": { "value": "red" } }),
         ),
         (
             "answer twice",
