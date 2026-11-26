@@ -7,6 +7,8 @@ import 'package:pirc_ui/pirc_ui.dart';
 import '../l10n/app_localizations.dart';
 import 'calendar/calendar_detail.dart';
 import 'calendar/calendar_screen.dart';
+import 'chat/chat_data.dart';
+import 'chat/chat_list_screen.dart';
 import 'router.dart';
 import 'shell/app_drawer.dart';
 import 'work/new_conversation/new_conversation_screen.dart';
@@ -16,8 +18,8 @@ import 'work/work_side.dart';
 import 'work/work_data.dart';
 import 'work/work_list_screen.dart';
 
-/// One tab in the adaptive frame: the Work and Calendar lists and items;
-/// Chat and Activity stay placeholders until M7.
+/// One tab in the adaptive frame: the Chat, Work and Calendar lists and
+/// items; Activity and the Chat items not built yet stay placeholders.
 class TabScreen extends ConsumerWidget {
   const TabScreen({super.key, required this.tab, this.openItem, this.side});
 
@@ -53,6 +55,7 @@ class TabScreen extends ConsumerWidget {
             PircDestination(
               icon: LucideIcons.messageCircle,
               label: l10n.tabChat,
+              badge: ref.watch(chatBadgeProvider),
             ),
             PircDestination(
               icon: LucideIcons.briefcase,
@@ -74,12 +77,13 @@ class TabScreen extends ConsumerWidget {
             initialLocation: index == shell.currentIndex,
           ),
           list: switch (tab) {
+            AppTab.chat => ChatListScreen(openId: open),
             AppTab.work => WorkListScreen(
               openId: open,
               onNew: () => context.go('/work?open=$newConversationKey'),
             ),
             AppTab.calendar => const CalendarScreen(),
-            _ => _TabList(tab: tab),
+            _ => const _TabList(),
           },
           content: open == null
               ? null
@@ -121,27 +125,24 @@ class TabScreen extends ConsumerWidget {
   }
 }
 
-/// The Chat and Activity tabs until M7 builds them.
+/// The Activity tab until M7 step 10 builds it.
 class _TabList extends StatelessWidget {
-  const _TabList({required this.tab});
-
-  final AppTab tab;
+  const _TabList();
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final (title, empty) = switch (tab) {
-      AppTab.chat => (l10n.tabChat, l10n.emptyChat),
-      _ => (l10n.tabActivity, l10n.emptyActivity),
-    };
     return Scaffold(
-      appBar: AppBar(leading: const DrawerButton(), title: Text(title)),
-      body: _Empty(text: empty),
+      appBar: AppBar(
+        leading: const DrawerButton(),
+        title: Text(l10n.tabActivity),
+      ),
+      body: _Empty(text: l10n.emptyActivity),
     );
   }
 }
 
-/// An open Chat or Activity item until M7.
+/// An open Chat or Activity item whose screen is not built yet.
 class _ItemPlaceholder extends StatelessWidget {
   const _ItemPlaceholder({
     super.key,

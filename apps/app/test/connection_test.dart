@@ -7,6 +7,7 @@ import 'package:pirc_app/src/connection/pairing.dart';
 import 'package:pirc_app/src/connection/storage.dart';
 import 'package:pirc_app/src/preferences.dart';
 import 'package:pirc_client/pirc_client.dart';
+import 'package:pirc_ui/pirc_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/harness.dart';
@@ -226,7 +227,14 @@ void main() {
     expect(container.read(hintRevisionsProvider)['threads_changed'], 2);
     hints.serverClose(1006);
     await tester.pump();
-    expect(find.text('Reconnecting…'), findsOneWidget);
+    // The bar, and the Chat tab's title line.
+    expect(
+      find.descendant(
+        of: find.byType(ConnectionBanner),
+        matching: find.text('Reconnecting…'),
+      ),
+      findsOneWidget,
+    );
     await tester.pump(const Duration(seconds: 2));
     await tester.pumpAndSettle();
     expect(find.text('Reconnecting…'), findsNothing);

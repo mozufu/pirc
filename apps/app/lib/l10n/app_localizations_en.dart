@@ -33,6 +33,79 @@ class AppLocalizationsEn extends AppLocalizations {
   String get emptyChat => 'No pots or groups yet';
 
   @override
+  String get chatOnline => 'Connected';
+
+  @override
+  String get chatOffline => 'Offline';
+
+  @override
+  String get chatNewTooltip => 'New pot or group';
+
+  @override
+  String get searchChat => 'Search pots, groups and messages';
+
+  @override
+  String get chatFilterUnread => 'Unread';
+
+  @override
+  String get chatFilterPots => 'Pots';
+
+  @override
+  String get chatFilterGroups => 'Groups';
+
+  @override
+  String get chatEmptyFilter => 'No chats here.';
+
+  @override
+  String get chatNoMessages => 'No messages yet';
+
+  @override
+  String get chatAuthorYou => 'You';
+
+  @override
+  String chatPreviewBy(String name, String message) {
+    return '$name: $message';
+  }
+
+  @override
+  String groupMemberCount(int count) {
+    return '$count pots';
+  }
+
+  @override
+  String get potPaused => 'Paused';
+
+  @override
+  String get potWorking => 'Working';
+
+  @override
+  String get potUnavailable => 'Unavailable';
+
+  @override
+  String get chatNewPot => 'New pot';
+
+  @override
+  String get chatNewGroup => 'Create group';
+
+  @override
+  String get newSheetTitle => 'New';
+
+  @override
+  String get newSheetNote =>
+      'New conversations (work) start from the top right of the Work tab.';
+
+  @override
+  String get newPotDetail =>
+      'Set its name, avatar, personality and what it looks after';
+
+  @override
+  String get newGroupDetail =>
+      'Bring a few pots together to talk, with one as host';
+
+  @override
+  String get newGroupNeedsTwo => 'Create at least two pots first';
+
+  @override
   String get emptyWork => 'No sessions yet';
 
   @override

@@ -147,6 +147,138 @@ abstract class AppLocalizations {
   /// **'No pots or groups yet'**
   String get emptyChat;
 
+  /// No description provided for @chatOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get chatOnline;
+
+  /// No description provided for @chatOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get chatOffline;
+
+  /// No description provided for @chatNewTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'New pot or group'**
+  String get chatNewTooltip;
+
+  /// No description provided for @searchChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Search pots, groups and messages'**
+  String get searchChat;
+
+  /// No description provided for @chatFilterUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get chatFilterUnread;
+
+  /// No description provided for @chatFilterPots.
+  ///
+  /// In en, this message translates to:
+  /// **'Pots'**
+  String get chatFilterPots;
+
+  /// No description provided for @chatFilterGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'Groups'**
+  String get chatFilterGroups;
+
+  /// No description provided for @chatEmptyFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'No chats here.'**
+  String get chatEmptyFilter;
+
+  /// No description provided for @chatNoMessages.
+  ///
+  /// In en, this message translates to:
+  /// **'No messages yet'**
+  String get chatNoMessages;
+
+  /// No description provided for @chatAuthorYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get chatAuthorYou;
+
+  /// No description provided for @chatPreviewBy.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: {message}'**
+  String chatPreviewBy(String name, String message);
+
+  /// No description provided for @groupMemberCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} pots'**
+  String groupMemberCount(int count);
+
+  /// No description provided for @potPaused.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get potPaused;
+
+  /// No description provided for @potWorking.
+  ///
+  /// In en, this message translates to:
+  /// **'Working'**
+  String get potWorking;
+
+  /// No description provided for @potUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get potUnavailable;
+
+  /// No description provided for @chatNewPot.
+  ///
+  /// In en, this message translates to:
+  /// **'New pot'**
+  String get chatNewPot;
+
+  /// No description provided for @chatNewGroup.
+  ///
+  /// In en, this message translates to:
+  /// **'Create group'**
+  String get chatNewGroup;
+
+  /// No description provided for @newSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get newSheetTitle;
+
+  /// No description provided for @newSheetNote.
+  ///
+  /// In en, this message translates to:
+  /// **'New conversations (work) start from the top right of the Work tab.'**
+  String get newSheetNote;
+
+  /// No description provided for @newPotDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Set its name, avatar, personality and what it looks after'**
+  String get newPotDetail;
+
+  /// No description provided for @newGroupDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring a few pots together to talk, with one as host'**
+  String get newGroupDetail;
+
+  /// No description provided for @newGroupNeedsTwo.
+  ///
+  /// In en, this message translates to:
+  /// **'Create at least two pots first'**
+  String get newGroupNeedsTwo;
+
   /// No description provided for @emptyWork.
   ///
   /// In en, this message translates to:

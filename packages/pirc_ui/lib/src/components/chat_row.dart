@@ -39,6 +39,7 @@ class ChatRow extends StatelessWidget {
     this.onTap,
     this.onLongPress,
     this.minHeight,
+    this.previewMaxLines = 1,
   });
 
   final Widget? avatar;
@@ -62,6 +63,9 @@ class ChatRow extends StatelessWidget {
 
   /// 72 with an avatar, 64 without; the mention popover uses 56.
   final double? minHeight;
+
+  /// 1 in lists; a menu row's description may wrap (null: no limit).
+  final int? previewMaxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -130,8 +134,10 @@ class ChatRow extends StatelessWidget {
                     Expanded(
                       child: Text(
                         preview ?? '',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: previewMaxLines,
+                        overflow: previewMaxLines == null
+                            ? null
+                            : TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 14,
                           height: 20 / 14,

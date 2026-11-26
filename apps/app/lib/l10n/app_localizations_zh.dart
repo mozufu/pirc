@@ -33,6 +33,76 @@ class AppLocalizationsZh extends AppLocalizations {
   String get emptyChat => '還沒有 pot 或群組';
 
   @override
+  String get chatOnline => '已連線';
+
+  @override
+  String get chatOffline => '離線';
+
+  @override
+  String get chatNewTooltip => '新增 pots 或群組';
+
+  @override
+  String get searchChat => '搜尋 pots、群組與訊息';
+
+  @override
+  String get chatFilterUnread => '未讀';
+
+  @override
+  String get chatFilterPots => 'pots';
+
+  @override
+  String get chatFilterGroups => '群組';
+
+  @override
+  String get chatEmptyFilter => '這裡沒有對話。';
+
+  @override
+  String get chatNoMessages => '還沒有訊息';
+
+  @override
+  String get chatAuthorYou => '你';
+
+  @override
+  String chatPreviewBy(String name, String message) {
+    return '$name：$message';
+  }
+
+  @override
+  String groupMemberCount(int count) {
+    return '$count 人';
+  }
+
+  @override
+  String get potPaused => '已暫停';
+
+  @override
+  String get potWorking => '工作中';
+
+  @override
+  String get potUnavailable => '無法工作';
+
+  @override
+  String get chatNewPot => '新增 pots';
+
+  @override
+  String get chatNewGroup => '建立群組';
+
+  @override
+  String get newSheetTitle => '新增';
+
+  @override
+  String get newSheetNote => '新對話（工作）在「工作」分頁右上';
+
+  @override
+  String get newPotDetail => '設定名字、頭像、個性和負責的事';
+
+  @override
+  String get newGroupDetail => '拉幾個 pots 一起討論，指定一位主持';
+
+  @override
+  String get newGroupNeedsTwo => '先建立至少兩個 pots';
+
+  @override
   String get emptyWork => '還沒有工作階段';
 
   @override

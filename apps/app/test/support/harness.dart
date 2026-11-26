@@ -213,7 +213,8 @@ void appTest(
   skip: skip,
 );
 
-/// Pumps the whole app at [width] against [gateway].
+/// Pumps the whole app at [width] against [gateway]. [reduceMotion] asks
+/// for less motion, as the system setting does.
 Future<ProviderContainer> pumpApp(
   WidgetTester tester, {
   required FakeGateway gateway,
@@ -224,10 +225,18 @@ Future<ProviderContainer> pumpApp(
   bool web = false,
   List overrides = const [],
   bool settle = true,
+  bool reduceMotion = false,
 }) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = Size(width, height);
   addTearDown(tester.view.reset);
+  if (reduceMotion) {
+    // Endless motion (a working pot's pulsing dots) stops, so the app
+    // settles.
+    tester.platformDispatcher.accessibilityFeaturesTestValue =
+        const FakeAccessibilityFeatures(disableAnimations: true);
+    addTearDown(tester.platformDispatcher.clearAccessibilityFeaturesTestValue);
+  }
   final state = saved ?? Saved();
   SharedPreferences.setMockInitialValues(state.prefs);
   final preferences = await SharedPreferences.getInstance();

@@ -8,6 +8,45 @@
   "settings": "Settings",
   "back": "Back",
   "emptyChat": "No pots or groups yet",
+  "chatOnline": "Connected",
+  "chatOffline": "Offline",
+  "chatNewTooltip": "New pot or group",
+  "searchChat": "Search pots, groups and messages",
+  "chatFilterUnread": "Unread",
+  "chatFilterPots": "Pots",
+  "chatFilterGroups": "Groups",
+  "chatEmptyFilter": "No chats here.",
+  "chatNoMessages": "No messages yet",
+  "chatAuthorYou": "You",
+  "chatPreviewBy": "{name}: {message}",
+  "@chatPreviewBy": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "groupMemberCount": "{count} pots",
+  "@groupMemberCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "potPaused": "Paused",
+  "potWorking": "Working",
+  "potUnavailable": "Unavailable",
+  "chatNewPot": "New pot",
+  "chatNewGroup": "Create group",
+  "newSheetTitle": "New",
+  "newSheetNote": "New conversations (work) start from the top right of the Work tab.",
+  "newPotDetail": "Set its name, avatar, personality and what it looks after",
+  "newGroupDetail": "Bring a few pots together to talk, with one as host",
+  "newGroupNeedsTwo": "Create at least two pots first",
   "emptyWork": "No sessions yet",
   "emptyActivity": "No activity yet",
   "emptyCalendar": "Nothing scheduled",

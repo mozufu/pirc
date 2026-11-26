@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/format.dart';
 import 'package:pirc_app/src/preferences.dart';
 
+import 'support/chat_fixtures.dart';
 import 'support/fonts.dart';
 import 'support/harness.dart';
 import 'support/session_fixture.dart';
@@ -134,6 +135,7 @@ final _screens = <String, (String, FakeGateway Function(), Saved Function())>{
   'devices': ('/settings/devices', FakeGateway.new, Saved.new),
   'pairing': ('/chat', FakeGateway.new, Saved.unpaired),
   'calendar': ('/calendar', _calendar, Saved.new),
+  'chat': ('/chat', () => ChatFixture().install(), Saved.new),
 };
 
 void main() {
@@ -150,6 +152,7 @@ void main() {
             width: width,
             location: location,
             overrides: [clockProvider.overrideWithValue(() => fixedNow)],
+            reduceMotion: true,
           );
           container.read(themeModeProvider.notifier).select(mode);
           await tester.pumpAndSettle();
