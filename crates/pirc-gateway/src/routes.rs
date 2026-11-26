@@ -969,8 +969,11 @@ pub async fn command(
     let ready = atomic(&app.db.lock(), |tx| {
         crate::auth::require_current_device(&app, tx, &identity)?;
         let current = tx.claim_session(session_id, &identity.user, false)?;
-        tx.validate_lease(session_id, &input.client_id, input.generation as i64)?;
-        tx.validate_lease_user(session_id, &identity.user)?;
+        // A plain Stop needs no control, here as everywhere (M4 step 13).
+        if !plain_stop {
+            tx.validate_lease(session_id, &input.client_id, input.generation as i64)?;
+            tx.validate_lease_user(session_id, &identity.user)?;
+        }
         if current.binding != claimed.session.binding {
             return Err(ApiError::new(
                 409,
