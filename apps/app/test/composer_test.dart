@@ -100,12 +100,13 @@ Future<_Composer> _open(
   List<String> queue = const [],
   Map<String, Object?>? lease,
   List overrides = const [],
+  double width = 1300,
 }) async {
   final composer = _Composer(running: running, queue: queue, lease: lease);
   await pumpApp(
     tester,
     gateway: composer.gateway,
-    width: 1300,
+    width: width,
     location: '/work?open=s2',
     overrides: overrides,
   );
@@ -144,14 +145,14 @@ void main() {
 
     appTest('while a run is active: steer, queue and stop', (tester) async {
       final c = await _open(tester, running: true);
-      expect(find.text('Stop this work'), findsOneWidget);
+      expect(find.byTooltip('Stop this work'), findsOneWidget);
       await _type(tester, 'Also check B');
       await _send(tester);
       await tester.tap(find.text('Queue'));
       await tester.pump();
       await _type(tester, 'Then C');
       await _send(tester);
-      await tester.tap(find.text('Stop this work'));
+      await tester.tap(find.byTooltip('Stop this work'));
       await tester.pumpAndSettle();
       expect(
         [for (final p in c.payloads) p['type']],
@@ -159,6 +160,21 @@ void main() {
       );
       final stop = c.gateway.sent('POST', '/api/sessions/s2/commands').last;
       expect((stop.json! as Map).containsKey('expectedBinding'), isFalse);
+    });
+
+    appTest('at phone width a run fits: round Stop beside the toggle', (
+      tester,
+    ) async {
+      // The test font is wider than the app's, so this also stands for
+      // large text: the toggle scales down instead of overflowing.
+      await _open(tester, running: true, width: 375);
+      expect(tester.takeException(), isNull, reason: 'no overflow');
+      expect(find.text('Steer'), findsOneWidget);
+      // A 40 circle inside the 48 tap target.
+      expect(
+        tester.getSize(find.byKey(const Key('stop-button'))),
+        const Size.square(48),
+      );
     });
 
     appTest('Stop works without control and sends only the client ID', (
@@ -169,14 +185,11 @@ void main() {
         running: true,
         lease: {'clientId': 'other-phone', 'generation': 4},
       );
-      final stop = tester.widget<TextButton>(
-        find.ancestor(
-          of: find.text('Stop this work'),
-          matching: find.byType(TextButton),
-        ),
+      final stop = tester.widget<IconButton>(
+        find.byKey(const Key('stop-button')),
       );
       expect(stop.onPressed, isNotNull);
-      await tester.tap(find.text('Stop this work'));
+      await tester.tap(find.byTooltip('Stop this work'));
       await tester.pumpAndSettle();
       final prefs = await SharedPreferences.getInstance();
       expect(c.lastBody['clientId'], prefs.getString(PrefKeys.clientId));
@@ -272,7 +285,7 @@ void main() {
     appTest('stop returns the cleared queue text to the draft', (tester) async {
       await _open(tester, running: true, queue: ['first', 'second']);
       await _type(tester, 'draft');
-      await tester.tap(find.text('Stop this work'));
+      await tester.tap(find.byTooltip('Stop this work'));
       await tester.pumpAndSettle();
       expect(_fieldText(tester), 'draft\n\nfirst\n\nsecond');
     });

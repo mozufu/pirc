@@ -21,6 +21,7 @@ Future<FixtureSession> _open(
   bool running = true,
   bool potKnown = true,
   String location = '/work?open=s2',
+  double width = 1300,
 }) async {
   final s = FixtureSession('joined-mid-stream.json');
   final history = s.snapshot['history']! as List;
@@ -63,7 +64,12 @@ Future<FixtureSession> _open(
       },
     ],
   };
-  _container = await pumpApp(tester, gateway: gateway, location: location);
+  _container = await pumpApp(
+    tester,
+    gateway: gateway,
+    location: location,
+    width: width,
+  );
   return s;
 }
 
@@ -93,13 +99,22 @@ void main() {
     );
     expect(field.enabled, isFalse);
     expect(field.decoration!.hintText, 'Take over to send messages');
-    final stop = tester.widget<TextButton>(
-      find.ancestor(
-        of: find.text('Stop this work'),
-        matching: find.byType(TextButton),
-      ),
+    final stop = tester.widget<IconButton>(
+      find.byKey(const Key('stop-button')),
     );
     expect(stop.onPressed, isNotNull);
+  });
+
+  appTest('at phone width the bar and the locked composer fit', (tester) async {
+    await _open(tester, width: 375);
+    expect(tester.takeException(), isNull, reason: 'no overflow');
+    expect(find.byKey(const Key('pot-bar-avatar')), findsOneWidget);
+    expect(find.byTooltip('Stop this work'), findsOneWidget);
+    expect(
+      tester.getSize(find.byKey(const Key('model-button'))).width,
+      greaterThan(40),
+      reason: 'the model button keeps its text',
+    );
   });
 
   appTest('take over uses the work ID, then a plain banner shows', (

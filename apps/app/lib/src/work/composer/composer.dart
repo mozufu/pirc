@@ -190,59 +190,92 @@ class _SessionComposerState extends ConsumerState<SessionComposer> {
                   child: Row(
                     children: [
                       const SizedBox(width: 6),
-                      IconButton(
-                        tooltip: l10n.attach,
-                        icon: const Icon(LucideIcons.plus),
-                        onPressed: canWrite ? actions.attach : null,
+                      // The left group takes the room the buttons leave. The
+                      // steer/queue toggle keeps its size beside + when it
+                      // fits and scales down when it does not; the model
+                      // button gets what is left.
+                      Expanded(
+                        child: LayoutBuilder(
+                          builder: (context, box) => Row(
+                            children: [
+                              IconButton(
+                                tooltip: l10n.attach,
+                                icon: const Icon(LucideIcons.plus),
+                                onPressed: canWrite ? actions.attach : null,
+                              ),
+                              Flexible(
+                                child: TextButton(
+                                  key: const Key('model-button'),
+                                  onPressed: canCommand
+                                      ? () => showModelSheet(
+                                          context,
+                                          provider: state.selectedModelProvider,
+                                          modelId: state.selectedModelId,
+                                          thinking: state.thinkingLevel,
+                                          onModel: actions.changeModel,
+                                          onThinking: actions.setThinking,
+                                        )
+                                      : null,
+                                  style: TextButton.styleFrom(
+                                    backgroundColor: colors['fill.hover'],
+                                    shape: const StadiumBorder(),
+                                  ),
+                                  child: Text(
+                                    [
+                                      model?.name ??
+                                          state.selectedModelId ??
+                                          l10n.modelDefault,
+                                      if (state.thinkingLevel != null)
+                                        thinkingLabel(
+                                          l10n,
+                                          state.thinkingLevel,
+                                        ),
+                                    ].join(' · '),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                              if (active && canWrite) ...[
+                                const SizedBox(width: 4),
+                                ConstrainedBox(
+                                  constraints: BoxConstraints(
+                                    maxWidth: (box.maxWidth - 52).clamp(
+                                      0.0,
+                                      double.infinity,
+                                    ),
+                                  ),
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: _WhenToggle(
+                                      when: composer.when,
+                                      onChanged: actions.setWhen,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ),
-                      Flexible(
-                        child: TextButton(
-                          key: const Key('model-button'),
-                          onPressed: canCommand
-                              ? () => showModelSheet(
-                                  context,
-                                  provider: state.selectedModelProvider,
-                                  modelId: state.selectedModelId,
-                                  thinking: state.thinkingLevel,
-                                  onModel: actions.changeModel,
-                                  onThinking: actions.setThinking,
-                                )
-                              : null,
-                          style: TextButton.styleFrom(
+                      // `c-stop2`: a round secondary button (default D, E36).
+                      if (active) ...[
+                        IconButton(
+                          key: const Key('stop-button'),
+                          tooltip: l10n.stopWork,
+                          style: IconButton.styleFrom(
+                            fixedSize: const Size.square(40),
+                            minimumSize: const Size.square(40),
                             backgroundColor: colors['fill.hover'],
-                            shape: const StadiumBorder(),
+                            foregroundColor: colors['text.primary'],
+                            disabledBackgroundColor: colors['fill.hover'],
+                            disabledForegroundColor: colors['text.faint'],
                           ),
-                          child: Text(
-                            [
-                              model?.name ??
-                                  state.selectedModelId ??
-                                  l10n.modelDefault,
-                              if (state.thinkingLevel != null)
-                                thinkingLabel(l10n, state.thinkingLevel),
-                            ].join(' · '),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          onPressed: online ? actions.stop : null,
+                          icon: const _StopGlyph(),
                         ),
-                      ),
-                      if (active && canWrite) ...[
                         const SizedBox(width: 4),
-                        _WhenToggle(
-                          when: composer.when,
-                          onChanged: actions.setWhen,
-                        ),
                       ],
-                      const Spacer(),
-                      if (active)
-                        Tooltip(
-                          message: l10n.stopWork,
-                          child: TextButton.icon(
-                            key: const Key('stop-button'),
-                            onPressed: online ? actions.stop : null,
-                            icon: const Icon(LucideIcons.square, size: 14),
-                            label: Text(l10n.stopWork),
-                          ),
-                        ),
                       IconButton.filled(
                         tooltip: l10n.send,
                         style: IconButton.styleFrom(
@@ -278,6 +311,26 @@ class _SessionComposerState extends ConsumerState<SessionComposer> {
       ),
     );
   }
+}
+
+/// ■: the prototype's filled `rect` (14 of 24 units, radius 2) drawn at
+/// 14 px, in the button's icon colour so a disabled Stop dims too.
+class _StopGlyph extends StatelessWidget {
+  const _StopGlyph();
+
+  @override
+  Widget build(BuildContext context) => SizedBox.square(
+    dimension: 14,
+    child: Center(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: IconTheme.of(context).color,
+          borderRadius: BorderRadius.circular(1.2),
+        ),
+        child: const SizedBox.square(dimension: 8.2),
+      ),
+    ),
+  );
 }
 
 /// Steer the current turn, or queue after it.
