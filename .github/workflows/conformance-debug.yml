@@ -1,23 +1,15 @@
 name: Conformance Debug
 
 on:
-  workflow_dispatch:
-    inputs:
-      record:
-        description: Re-record snapshots (INSTA_UPDATE=always)
-        type: boolean
-        default: false
-      scope:
-        description: Cargo test target to run, or "all" for the full suite
-        type: string
-        default: all
+  push:
+    branches: [ci-conformance-fix]
 
 permissions:
   contents: read
 
 jobs:
   conformance:
-    name: conformance (${{ inputs.scope }})
+    name: conformance
     runs-on: ubuntu-latest
     timeout-minutes: 75
     steps:
@@ -57,8 +49,8 @@ jobs:
         env:
           PIRC_BROWSER_EXECUTABLE: ${{ steps.chrome.outputs.chrome-path }}
           PIRC_BROWSER_REQUIRED: '1'
-          RECORD: ${{ inputs.record }}
-          SCOPE: ${{ inputs.scope }}
+          RECORD: 'false'
+          SCOPE: all
         run: |
           set -o pipefail
           if [ "$SCOPE" = "all" ]; then
