@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/chat/pot_conversation_screen.dart';
+import 'package:pirc_app/src/chat/pot_profile_screen.dart';
 import 'package:pirc_app/src/format.dart';
 import 'package:pirc_app/src/router.dart';
 import 'package:pirc_client/pirc_client.dart';
@@ -143,7 +144,7 @@ void main() {
         'open': 'pot:p-butler',
         'side': 'profile',
       });
-      expect(find.text("Butler's profile"), findsOneWidget);
+      expect(find.byType(PotProfileScreen), findsOneWidget);
     });
 
     appTest('on a phone the profile is a page; Back returns to the '
@@ -151,7 +152,7 @@ void main() {
       final (_, container) = await _pump(tester, ConversationFixture());
       await _tap(tester, find.byTooltip("Butler's profile"));
       expect(_location(container).queryParameters['side'], 'profile');
-      expect(find.text("Butler's profile"), findsWidgets);
+      expect(find.byType(PotProfileScreen), findsOneWidget);
       await _tap(tester, find.byTooltip('Back').last);
       expect(_location(container).queryParameters, {'open': 'pot:p-butler'});
       expect(find.byType(PotConversationScreen), findsOneWidget);

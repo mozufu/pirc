@@ -141,6 +141,11 @@ final _screens = <String, (String, FakeGateway Function(), Saved Function())>{
     () => ConversationFixture().install(),
     Saved.new,
   ),
+  'pot_profile': (
+    '/chat?open=pot:p-butler&side=profile',
+    () => PotProfileFixture().install(),
+    Saved.new,
+  ),
 };
 
 void main() {

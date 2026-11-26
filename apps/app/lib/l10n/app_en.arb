@@ -1446,5 +1446,147 @@
   "cardLoopStopConfirm": "Stop this chain? Its waiting messages are dropped, and it can't be resumed.",
   "cardLoopResumed": "Resumed",
   "cardLoopStopped": "Chain stopped",
-  "cardLoopPotsPaused": "The pots involved are paused"
+  "cardLoopPotsPaused": "The pots involved are paused",
+  "potActionMessage": "Message",
+  "potActionPause": "Pause",
+  "potActionResume": "Resume",
+  "potActionHandOver": "Hand over",
+  "potActionActivity": "Activity",
+  "potHostsGroups": "{count, plural, =1{Hosts 1 group} other{Hosts {count} groups}}",
+  "@potHostsGroups": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "potPausedBannerTitle": "Paused.",
+  "potPausedBannerText": "New messages and events wait until you resume it, and it starts no work.",
+  "potProfileNoResponsibilities": "No responsibilities yet.",
+  "potProfileMayDo": "What it may do",
+  "potProfileObserveNothing": "Nothing yet",
+  "potProfileWorkPlaces": "Where it opens work",
+  "potProfileNoPlaces": "Nowhere yet",
+  "potProfilePlace": "{name} ({access})",
+  "@potProfilePlace": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "access": {
+        "type": "String"
+      }
+    }
+  },
+  "potProfileMoneyMonth": "{amount} a month",
+  "@potProfileMoneyMonth": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  },
+  "potProfileTokensDay": "{count} tokens a day",
+  "@potProfileTokensDay": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "potProfileReviewDays": "{count, plural, =1{Every day} other{Every {count} days}}",
+  "@potProfileReviewDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "potProfileReviewWeekly": "Every week",
+  "potListSeparator": ", ",
+  "potProfileActivity": "Recent activity",
+  "potProfileSeeAll": "See all",
+  "potProfileNoActivity": "Nothing yet.",
+  "potProfileMemory": "Memory",
+  "potProfileForget": "Forget",
+  "potProfileNoMemory": "No notes yet.",
+  "potProfileMemoryNote": "Notes {name} keeps for itself; only it reads them. {used} of {budget} characters used.",
+  "@potProfileMemoryNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "used": {
+        "type": "String"
+      },
+      "budget": {
+        "type": "String"
+      }
+    }
+  },
+  "activityToYou": "You",
+  "potPauseTitle": "Pause {name}?",
+  "@potPauseTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "potPauseWhile": "While paused",
+  "potPauseNoDelivery": "No new messages or events reach it",
+  "potPauseNoDeliveryDetail": "They wait and arrive when you resume it",
+  "potPauseWait": "Its reviews and reminders wait",
+  "potPauseNoWork": "It starts no work",
+  "potPauseGoesOn": "Goes on",
+  "potPauseWorks": "Works it already opened keep running",
+  "potPauseWorksDetail": "Each follows its own controls; to stop one, stop it in that work",
+  "potPauseThreads": "Its conversations stay readable",
+  "potPauseNothingMoves": "Nothing is handed over",
+  "potPauseNothingMovesDetail": "Its responsibilities, permissions and memory stay; to give them away, hand over or archive",
+  "potSettingsTitle": "{name}'s settings",
+  "@potSettingsTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "potSettingsSubtitle": "Saved section by section",
+  "potSettingsSave": "Save",
+  "potSettingsSaved": "Saved",
+  "potSettingsConflict": "{name} was changed elsewhere and is read again. Your edit is kept; save again to use it.",
+  "@potSettingsConflict": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "potSettingsOther": "Other",
+  "potSettingsPause": "Pause…",
+  "potSettingsResume": "Resume",
+  "potSettingsHandOver": "Hand over…",
+  "potSettingsRetire": "Archive or delete…",
+  "activityKindDm": "Message",
+  "activityKindGroupMessage": "Group",
+  "activityKindAssign": "Handed over",
+  "activityKindWorkOpened": "Opened work",
+  "activityKindWorkInstruction": "Instruction",
+  "activityKindFileRead": "Read",
+  "activityKindThinkingAdjust": "Auto-adjusted",
+  "activityKindFallback": "Fallback",
+  "activityKindAwaitingConfirm": "Needs your OK",
+  "activityKindAwaitingApproval": "Needs approval",
+  "activityKindApprovalAnswered": "Approval answered",
+  "activityKindForwardedToUser": "To you",
+  "activityKindBudgetRequest": "Budget request",
+  "activityKindBudgetExhausted": "Out of budget",
+  "activityKindLoopGuard": "Chain paused",
+  "activityKindHandoverProposed": "Proposed handover",
+  "activityKindReview": "Review",
+  "activityKindReminderSet": "Reminder",
+  "activityKindAutonomyChanged": "Autonomy",
+  "activityKindStatus": "Status",
+  "potProfileArchived": "Archived"
 }

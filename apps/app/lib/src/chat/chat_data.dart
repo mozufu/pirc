@@ -33,6 +33,32 @@ String chatLocation(String open, {String? side}) => Uri(
 String potProfileLocation(String potId) =>
     chatLocation(potChatKey(potId), side: profileSide);
 
+/// A pot's settings (E24) in the Chat tab's content pane.
+String potSettingsKey(String potId) => 'settings:$potId';
+
+/// The `section` value that scrolls a pot's settings to step ③ (E16's
+/// "Adjust ○○'s permissions…").
+const reachSection = 'reach';
+
+/// A pot's settings (E24); [section] (`look`, `work`, `reach`, `models`)
+/// scrolls to that section.
+String potSettingsLocation(String potId, {String? section}) => Uri(
+  path: '/chat',
+  queryParameters: {'open': potSettingsKey(potId), 'section': ?section},
+).toString();
+
+/// Starting a handover of a pot's items (E14). Its screen comes with M7
+/// step 8; until then the key shows the placeholder.
+String handoverNewKey(String potId) => 'handover-new:$potId';
+
+/// Archiving or deleting a pot (E15). Its screen comes with M7 step 8;
+/// until then the key shows the placeholder.
+String retireKey(String potId) => 'retire:$potId';
+
+/// The Activity tab filtered to one pot (built in M7 step 10).
+String potActivityLocation(String potId) =>
+    Uri(path: '/activity', queryParameters: {'pot': potId}).toString();
+
 /// Every thread of the user; read again on `threads_changed`.
 final threadsProvider = FutureProvider<List<PotThread>>((ref) {
   watchHint(ref, 'threads_changed');

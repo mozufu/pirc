@@ -2388,4 +2388,248 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get cardLoopPotsPaused => 'The pots involved are paused';
+
+  @override
+  String get potActionMessage => 'Message';
+
+  @override
+  String get potActionPause => 'Pause';
+
+  @override
+  String get potActionResume => 'Resume';
+
+  @override
+  String get potActionHandOver => 'Hand over';
+
+  @override
+  String get potActionActivity => 'Activity';
+
+  @override
+  String potHostsGroups(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Hosts $count groups',
+      one: 'Hosts 1 group',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get potPausedBannerTitle => 'Paused.';
+
+  @override
+  String get potPausedBannerText =>
+      'New messages and events wait until you resume it, and it starts no work.';
+
+  @override
+  String get potProfileNoResponsibilities => 'No responsibilities yet.';
+
+  @override
+  String get potProfileMayDo => 'What it may do';
+
+  @override
+  String get potProfileObserveNothing => 'Nothing yet';
+
+  @override
+  String get potProfileWorkPlaces => 'Where it opens work';
+
+  @override
+  String get potProfileNoPlaces => 'Nowhere yet';
+
+  @override
+  String potProfilePlace(String name, String access) {
+    return '$name ($access)';
+  }
+
+  @override
+  String potProfileMoneyMonth(String amount) {
+    return '$amount a month';
+  }
+
+  @override
+  String potProfileTokensDay(String count) {
+    return '$count tokens a day';
+  }
+
+  @override
+  String potProfileReviewDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Every $count days',
+      one: 'Every day',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get potProfileReviewWeekly => 'Every week';
+
+  @override
+  String get potListSeparator => ', ';
+
+  @override
+  String get potProfileActivity => 'Recent activity';
+
+  @override
+  String get potProfileSeeAll => 'See all';
+
+  @override
+  String get potProfileNoActivity => 'Nothing yet.';
+
+  @override
+  String get potProfileMemory => 'Memory';
+
+  @override
+  String get potProfileForget => 'Forget';
+
+  @override
+  String get potProfileNoMemory => 'No notes yet.';
+
+  @override
+  String potProfileMemoryNote(String name, String used, String budget) {
+    return 'Notes $name keeps for itself; only it reads them. $used of $budget characters used.';
+  }
+
+  @override
+  String get activityToYou => 'You';
+
+  @override
+  String potPauseTitle(String name) {
+    return 'Pause $name?';
+  }
+
+  @override
+  String get potPauseWhile => 'While paused';
+
+  @override
+  String get potPauseNoDelivery => 'No new messages or events reach it';
+
+  @override
+  String get potPauseNoDeliveryDetail =>
+      'They wait and arrive when you resume it';
+
+  @override
+  String get potPauseWait => 'Its reviews and reminders wait';
+
+  @override
+  String get potPauseNoWork => 'It starts no work';
+
+  @override
+  String get potPauseGoesOn => 'Goes on';
+
+  @override
+  String get potPauseWorks => 'Works it already opened keep running';
+
+  @override
+  String get potPauseWorksDetail =>
+      'Each follows its own controls; to stop one, stop it in that work';
+
+  @override
+  String get potPauseThreads => 'Its conversations stay readable';
+
+  @override
+  String get potPauseNothingMoves => 'Nothing is handed over';
+
+  @override
+  String get potPauseNothingMovesDetail =>
+      'Its responsibilities, permissions and memory stay; to give them away, hand over or archive';
+
+  @override
+  String potSettingsTitle(String name) {
+    return '$name\'s settings';
+  }
+
+  @override
+  String get potSettingsSubtitle => 'Saved section by section';
+
+  @override
+  String get potSettingsSave => 'Save';
+
+  @override
+  String get potSettingsSaved => 'Saved';
+
+  @override
+  String potSettingsConflict(String name) {
+    return '$name was changed elsewhere and is read again. Your edit is kept; save again to use it.';
+  }
+
+  @override
+  String get potSettingsOther => 'Other';
+
+  @override
+  String get potSettingsPause => 'Pause…';
+
+  @override
+  String get potSettingsResume => 'Resume';
+
+  @override
+  String get potSettingsHandOver => 'Hand over…';
+
+  @override
+  String get potSettingsRetire => 'Archive or delete…';
+
+  @override
+  String get activityKindDm => 'Message';
+
+  @override
+  String get activityKindGroupMessage => 'Group';
+
+  @override
+  String get activityKindAssign => 'Handed over';
+
+  @override
+  String get activityKindWorkOpened => 'Opened work';
+
+  @override
+  String get activityKindWorkInstruction => 'Instruction';
+
+  @override
+  String get activityKindFileRead => 'Read';
+
+  @override
+  String get activityKindThinkingAdjust => 'Auto-adjusted';
+
+  @override
+  String get activityKindFallback => 'Fallback';
+
+  @override
+  String get activityKindAwaitingConfirm => 'Needs your OK';
+
+  @override
+  String get activityKindAwaitingApproval => 'Needs approval';
+
+  @override
+  String get activityKindApprovalAnswered => 'Approval answered';
+
+  @override
+  String get activityKindForwardedToUser => 'To you';
+
+  @override
+  String get activityKindBudgetRequest => 'Budget request';
+
+  @override
+  String get activityKindBudgetExhausted => 'Out of budget';
+
+  @override
+  String get activityKindLoopGuard => 'Chain paused';
+
+  @override
+  String get activityKindHandoverProposed => 'Proposed handover';
+
+  @override
+  String get activityKindReview => 'Review';
+
+  @override
+  String get activityKindReminderSet => 'Reminder';
+
+  @override
+  String get activityKindAutonomyChanged => 'Autonomy';
+
+  @override
+  String get activityKindStatus => 'Status';
+
+  @override
+  String get potProfileArchived => 'Archived';
 }

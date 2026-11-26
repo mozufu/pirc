@@ -301,6 +301,64 @@ class PotDraft {
     autonomy: autonomy,
   );
 
+  /// What [step] sends to the Gateway, to compare two drafts section by
+  /// section. Step ③ holds the permissions and the review interval.
+  Object? sectionJson(int step) => switch (step) {
+    PotStep.look => profile.toJson(),
+    PotStep.work => work.toJson(),
+    PotStep.reach => [_permissionsJson(), autonomy.toJson()],
+    _ => models.toJson(),
+  };
+
+  Object? _permissionsJson() {
+    try {
+      return permissions.toJson();
+    } on ArgumentError {
+      return null;
+    }
+  }
+
+  /// Whether [step] sends the same as in [other].
+  bool sameSection(int step, PotDraft other) =>
+      _equalJson(sectionJson(step), other.sectionJson(step));
+
+  /// This draft with [step]'s fields taken from [other] (a pot read again
+  /// keeps the user's unsaved edit of that section).
+  PotDraft withSectionFrom(int step, PotDraft other) => switch (step) {
+    PotStep.look => copyWith(
+      name: other.name,
+      avatarColor: other.avatarColor,
+      avatarImage: other.avatarImage,
+      avatarBytes: other.avatarBytes,
+      personality: other.personality,
+      template: other.template,
+    ),
+    PotStep.work => copyWith(
+      intro: other.intro,
+      description: other.description,
+      responsibilities: other.responsibilities,
+    ),
+    PotStep.reach => copyWith(
+      reach: other.reach,
+      observe: other.observe,
+      dm: other.dm,
+      workLocations: other.workLocations,
+      maxConcurrentWorks: other.maxConcurrentWorks,
+      moneyOn: other.moneyOn,
+      moneyMicros: other.moneyMicros,
+      tokensOn: other.tokensOn,
+      tokens: other.tokens,
+      reviewIntervalS: other.reviewIntervalS,
+    ),
+    _ => copyWith(
+      main: other.main,
+      fallbacks: other.fallbacks,
+      thinking: other.thinking,
+      thinkingAuto: other.thinkingAuto,
+      workModels: other.workModels,
+    ),
+  };
+
   /// What keeps [step] from going on.
   Set<PotIssue> issues(int step) => switch (step) {
     PotStep.look => {
@@ -319,6 +377,21 @@ class PotDraft {
     PotStep.models => {if (main == null) PotIssue.noModel},
     _ => const {},
   };
+}
+
+bool _equalJson(Object? a, Object? b) {
+  if (a is Map && b is Map) {
+    return a.length == b.length &&
+        a.keys.every((key) => b.containsKey(key) && _equalJson(a[key], b[key]));
+  }
+  if (a is List && b is List) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (!_equalJson(a[i], b[i])) return false;
+    }
+    return true;
+  }
+  return a == b;
 }
 
 /// [current] fitted to [levels]: kept when the model accepts it, else the

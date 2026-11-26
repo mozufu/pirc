@@ -2,7 +2,6 @@ import 'package:flutter/material.dart' hide DrawerButton;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:pirc_client/pirc_client.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
 import '../l10n/app_localizations.dart';
@@ -13,6 +12,8 @@ import 'chat/chat_list_screen.dart';
 import 'chat/decision_sheet.dart';
 import 'chat/new_pot_screen.dart';
 import 'chat/pot_conversation_screen.dart';
+import 'chat/pot_profile_screen.dart';
+import 'chat/pot_settings_screen.dart';
 import 'router.dart';
 import 'shell/app_drawer.dart';
 import 'work/new_conversation/new_conversation_screen.dart';
@@ -61,6 +62,10 @@ class TabScreen extends ConsumerWidget {
             AppTab.work => workBackLocation(context),
             // The profile closes first, back to its conversation.
             AppTab.chat when side != null => chatLocation(open),
+            // A pot's settings go back to its profile.
+            AppTab.chat when open.startsWith('settings:') => potProfileLocation(
+              open.substring('settings:'.length),
+            ),
             _ => tab.path,
           });
         }
@@ -123,13 +128,20 @@ class TabScreen extends ConsumerWidget {
                     sessionId: open,
                     showBack: !desktop,
                   ),
+                  AppTab.chat when open.startsWith('settings:') =>
+                    PotSettingsScreen(
+                      key: ValueKey(open),
+                      potId: open.substring('settings:'.length),
+                      section: location?.queryParameters['section'],
+                    ),
                   AppTab.chat when open == newPotKey => NewPotScreen(
                     key: const ValueKey(newPotKey),
                     showBack: !desktop,
                   ),
                   // A pot's conversation, or a direct thread by its ID (a
-                  // deleted pot's, read-only). Groups (step 9), handovers
-                  // (step 8) and `new-group` keep the placeholder.
+                  // deleted pot's, read-only). Groups (step 9), handovers,
+                  // `handover-new:` and `retire:` (step 8) and `new-group`
+                  // keep the placeholder.
                   AppTab.chat
                       when open.startsWith('pot:') ||
                           (open != newGroupKey && !open.contains(':')) =>
@@ -160,11 +172,11 @@ class TabScreen extends ConsumerWidget {
               : tab == AppTab.chat &&
                     side == profileSide &&
                     open.startsWith('pot:')
-              // The pot's profile (E12) comes with step 7.
-              ? _ItemPlaceholder(
+              ? PotProfileScreen(
                   key: ValueKey('profile:$open'),
-                  title: l10n.potProfileOf(_potName(ref, open)),
-                  onBack: () => context.go(chatLocation(open)),
+                  potId: open.substring('pot:'.length),
+                  closeIcon: desktop,
+                  onClose: () => context.go(chatLocation(open)),
                 )
               : null,
           // Rule C makes work panels a page below 900; information about a
@@ -177,15 +189,6 @@ class TabScreen extends ConsumerWidget {
     final at = location;
     return at == null ? page : _DecisionOpener(location: at, child: page);
   }
-}
-
-/// The name of the pot of a `pot:<id>` key, once the pots are read.
-String _potName(WidgetRef ref, String open) {
-  final id = open.substring('pot:'.length);
-  for (final pot in ref.watch(potsProvider).value ?? const <PotSummary>[]) {
-    if (pot.id == id) return pot.name;
-  }
-  return '';
 }
 
 /// Opens the sheet of `approval=<id>` or `budget=<id>` once and takes the

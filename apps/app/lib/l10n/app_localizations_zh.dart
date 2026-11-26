@@ -2303,6 +2303,240 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get cardLoopPotsPaused => '相關的 pots 已暫停';
+
+  @override
+  String get potActionMessage => '訊息';
+
+  @override
+  String get potActionPause => '暫停';
+
+  @override
+  String get potActionResume => '恢復';
+
+  @override
+  String get potActionHandOver => '交接';
+
+  @override
+  String get potActionActivity => '動態';
+
+  @override
+  String potHostsGroups(int count) {
+    return '主持 $count 個群組';
+  }
+
+  @override
+  String get potPausedBannerTitle => '已暫停。';
+
+  @override
+  String get potPausedBannerText => '新的訊息與事件會等到恢復後再送達，也不開新工作。';
+
+  @override
+  String get potProfileNoResponsibilities => '還沒有負責的事。';
+
+  @override
+  String get potProfileMayDo => '能做什麼';
+
+  @override
+  String get potProfileObserveNothing => '還沒有';
+
+  @override
+  String get potProfileWorkPlaces => '在哪裡開工';
+
+  @override
+  String get potProfileNoPlaces => '還沒有';
+
+  @override
+  String potProfilePlace(String name, String access) {
+    return '$name（$access）';
+  }
+
+  @override
+  String potProfileMoneyMonth(String amount) {
+    return '每月 $amount';
+  }
+
+  @override
+  String potProfileTokensDay(String count) {
+    return '每天 $count tokens';
+  }
+
+  @override
+  String potProfileReviewDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '每 $count 天',
+      one: '每天',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get potProfileReviewWeekly => '每週';
+
+  @override
+  String get potListSeparator => '、';
+
+  @override
+  String get potProfileActivity => '最近動態';
+
+  @override
+  String get potProfileSeeAll => '查看全部';
+
+  @override
+  String get potProfileNoActivity => '還沒有動態。';
+
+  @override
+  String get potProfileMemory => '記憶';
+
+  @override
+  String get potProfileForget => '忘記';
+
+  @override
+  String get potProfileNoMemory => '還沒有筆記。';
+
+  @override
+  String potProfileMemoryNote(String name, String used, String budget) {
+    return '$name自己記下的筆記，只有它會讀。已用 $used / $budget 字。';
+  }
+
+  @override
+  String get activityToYou => '你';
+
+  @override
+  String potPauseTitle(String name) {
+    return '暫停$name？';
+  }
+
+  @override
+  String get potPauseWhile => '暫停期間';
+
+  @override
+  String get potPauseNoDelivery => '不會收到新的訊息或事件';
+
+  @override
+  String get potPauseNoDeliveryDetail => '它們會等著，恢復後再送達';
+
+  @override
+  String get potPauseWait => '自主檢視與提醒先等著';
+
+  @override
+  String get potPauseNoWork => '不開新工作';
+
+  @override
+  String get potPauseGoesOn => '照常';
+
+  @override
+  String get potPauseWorks => '已經開的工作會繼續';
+
+  @override
+  String get potPauseWorksDetail => '各自照工作的控制進行；要停請到那個工作按停止';
+
+  @override
+  String get potPauseThreads => '它的對話照樣可以看';
+
+  @override
+  String get potPauseNothingMoves => '不移交任何東西';
+
+  @override
+  String get potPauseNothingMovesDetail => '負責的事、權限與記憶都保留；不想保留請改用交接或封存';
+
+  @override
+  String potSettingsTitle(String name) {
+    return '$name的設定';
+  }
+
+  @override
+  String get potSettingsSubtitle => '每一段分開儲存';
+
+  @override
+  String get potSettingsSave => '儲存';
+
+  @override
+  String get potSettingsSaved => '已儲存';
+
+  @override
+  String potSettingsConflict(String name) {
+    return '$name在別處改過了，已重新讀取。你的修改還在，再儲存一次即可套用。';
+  }
+
+  @override
+  String get potSettingsOther => '其他';
+
+  @override
+  String get potSettingsPause => '暫停…';
+
+  @override
+  String get potSettingsResume => '恢復';
+
+  @override
+  String get potSettingsHandOver => '交接…';
+
+  @override
+  String get potSettingsRetire => '封存或刪除…';
+
+  @override
+  String get activityKindDm => '私訊';
+
+  @override
+  String get activityKindGroupMessage => '群組';
+
+  @override
+  String get activityKindAssign => '交辦';
+
+  @override
+  String get activityKindWorkOpened => '開工';
+
+  @override
+  String get activityKindWorkInstruction => '送出指示';
+
+  @override
+  String get activityKindFileRead => '讀取';
+
+  @override
+  String get activityKindThinkingAdjust => '自動調整';
+
+  @override
+  String get activityKindFallback => '備援';
+
+  @override
+  String get activityKindAwaitingConfirm => '等你確認';
+
+  @override
+  String get activityKindAwaitingApproval => '等你核准';
+
+  @override
+  String get activityKindApprovalAnswered => '已核准';
+
+  @override
+  String get activityKindForwardedToUser => '轉給你';
+
+  @override
+  String get activityKindBudgetRequest => '申請額度';
+
+  @override
+  String get activityKindBudgetExhausted => '額度用完';
+
+  @override
+  String get activityKindLoopGuard => '已暫停連鎖';
+
+  @override
+  String get activityKindHandoverProposed => '提議交接';
+
+  @override
+  String get activityKindReview => '自主檢視';
+
+  @override
+  String get activityKindReminderSet => '提醒';
+
+  @override
+  String get activityKindAutonomyChanged => '自主設定';
+
+  @override
+  String get activityKindStatus => '狀態';
+
+  @override
+  String get potProfileArchived => '已封存';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).

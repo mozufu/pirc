@@ -6,8 +6,12 @@ import '../theme.dart';
 /// optional state dot before the text.
 @immutable
 class ProfileChip {
-  const ProfileChip(this.label, {this.dot});
+  const ProfileChip(this.label, {this.dot, this.labelColor});
   final String label;
+
+  /// The colour token of the label (`accent.pressed` for a running state,
+  /// `d-chip.run`); `text.secondary` when null.
+  final String? labelColor;
 
   /// The colour token of a 6 dot before the label (`accent.default` while
   /// observing), or null.
@@ -103,7 +107,11 @@ class ProfileHeader extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               spacing: 8,
-              children: [for (final action in actions) _Action(action)],
+              // Long labels (or a narrow pane) shrink the actions instead
+              // of overflowing.
+              children: [
+                for (final action in actions) Flexible(child: _Action(action)),
+              ],
             ),
           ),
       ],
@@ -143,7 +151,7 @@ class _Chip extends StatelessWidget {
             style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w500,
-              color: colors['text.secondary'],
+              color: colors[chip.labelColor ?? 'text.secondary'],
             ),
           ),
         ],
@@ -188,6 +196,9 @@ class _Action extends StatelessWidget {
                 ),
                 Text(
                   action.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12.5,
                     color: colors['text.secondary'],

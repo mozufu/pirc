@@ -165,7 +165,7 @@ class _NewPotScreenState extends ConsumerState<NewPotScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _TopBar(
+            PotTopBar(
               title: l10n.newPotTitle,
               subtitle: l10n.newPotStep(_step + 1, stepTitle),
               leading: _step > PotStep.look
@@ -265,14 +265,22 @@ class _NewPotScreenState extends ConsumerState<NewPotScreen> {
   }
 }
 
-/// `c-top`: 56 high, the leading button at the left and the centred
-/// title (16/600) with its step line (12 muted).
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.title, required this.subtitle, this.leading});
+/// `c-top`: 56 high, the leading button at the left, the centred title
+/// (16/600) with its line (12 muted), and an optional trailing button.
+/// New pot, the pot's profile and its settings use it.
+class PotTopBar extends StatelessWidget {
+  const PotTopBar({
+    super.key,
+    this.title = '',
+    this.subtitle = '',
+    this.leading,
+    this.trailing,
+  });
 
   final String title;
   final String subtitle;
   final Widget? leading;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
@@ -313,6 +321,13 @@ class _TopBar extends StatelessWidget {
               top: 0,
               bottom: 0,
               child: Center(child: leading),
+            ),
+          if (trailing != null)
+            Positioned(
+              right: 6,
+              top: 0,
+              bottom: 0,
+              child: Center(child: trailing),
             ),
         ],
       ),

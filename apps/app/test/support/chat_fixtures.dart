@@ -359,3 +359,238 @@ class ConversationFixture extends ChatFixture {
     return g;
   }
 }
+
+/// E12, E13, E24: Butler in full (personality, two responsibilities,
+/// observing one project, DMs from two pots, Sonnet adjusting by itself,
+/// a review every 2 days), five activity rows, two memory notes and the
+/// models. The PATCH, pause, resume and forget routes change the pot as
+/// the Gateway does (each change moves the revision on); [conflictOnce]
+/// answers the next PATCH with a 409 after another device's change.
+class PotProfileFixture extends ConversationFixture {
+  PotProfileFixture() {
+    pots[0]['work'] = {
+      'intro': 'Manager: sorts your to-dos and gives work to the right pots',
+    };
+  }
+
+  late Map<String, Object?> pot = {
+    ...pots.first,
+    'revision': 7,
+    'profile': {
+      'name': 'Butler',
+      'avatarColor': 1,
+      'personality':
+          'Brief, conclusion first. Reminds you without pushing. Asks you '
+          'when unsure instead of guessing.',
+    },
+    'work': {
+      'intro': 'Manager: sorts your to-dos and gives work to the right pots',
+      'description':
+          'Looks at what needs your decision first; picks pots with just '
+          'enough permissions; doesn\'t edit files.',
+      'responsibilities': [
+        {
+          'title': 'Sort your decisions every morning',
+          'detail': '09:00 · summary',
+        },
+        {
+          'title': 'Watch for stuck work in pirc mobile',
+          'detail': 'Suggests something when one is stuck over 30 minutes',
+        },
+      ],
+    },
+    'permissions': {
+      'reach': 'observe',
+      'observe': [
+        {'kind': 'workspace', 'ref': 'laptop:pirc', 'lead': false},
+      ],
+      'dm': {
+        'send': 'all',
+        'receive': 'selected',
+        'sendTo': <String>[],
+        'receiveFrom': ['p-tester', 'p-research'],
+      },
+      'workLocations': <Object?>[],
+      'maxConcurrentWorks': 2,
+      'budgetMoneyMonthMicros': 20000000,
+      'budgetTokensDay': 2000000,
+    },
+    'models': {
+      'main': {'provider': 'anthropic', 'model': 'claude-sonnet'},
+      'fallbacks': <Object?>[],
+      'thinking': 'medium',
+      'thinkingAuto': true,
+      'workModels': <Object?>[],
+    },
+    'autonomy': {'intervalS': 172800},
+  };
+
+  List<Map<String, Object?>> activity = [
+    _activity(
+      'e1',
+      'awaiting_approval',
+      at(10, 45),
+      'Wants to open work '
+          'with Claude Opus: compare three API specs',
+    ),
+    _activity(
+      'e2',
+      'assign',
+      at(10, 40),
+      'Check the nightly test: find '
+          'the cause first, don\'t change code.',
+      to: 'p-tester',
+    ),
+    _activity(
+      'e3',
+      'assign',
+      at(10, 31),
+      'You asked whether split view '
+          'on iPad has keyboard problems; please look.',
+      to: 'p-research',
+    ),
+    _activity(
+      'e4',
+      'awaiting_confirm',
+      at(9, 20),
+      'Proposed handing '
+          '“Watch for stuck work in pirc mobile” to Tester',
+    ),
+    _activity(
+      'e5',
+      'dm',
+      at(9),
+      'Good morning. Last night\'s nightly had '
+          '3 failures; Tester is already looking.',
+      user: true,
+    ),
+  ];
+
+  List<Map<String, Object?>> notes = [
+    {
+      'id': 'n1',
+      'content': 'The user reads summaries at 09:00 and prefers lists.',
+      'revision': 1,
+      'createdAt': at(8),
+    },
+    {
+      'id': 'n2',
+      'content':
+          'Tester handles CI failures; Researcher answers with '
+          'sources.',
+      'revision': 1,
+      'createdAt': at(8, 30),
+    },
+  ];
+
+  /// The PATCH bodies, in order.
+  final patches = <Map<String, Object?>>[];
+
+  /// Answers the next PATCH with 409 and moves the revision on, as if
+  /// another device had saved.
+  bool conflictOnce = false;
+
+  static Map<String, Object?> _activity(
+    String id,
+    String kind,
+    int time,
+    String summary, {
+    String? to,
+    bool user = false,
+  }) => {
+    'id': id,
+    'kind': kind,
+    'potId': 'p-butler',
+    'potName': 'Butler',
+    'potAvatarColor': 1,
+    'at': time,
+    'counterpart': ?(to != null
+        ? {'kind': 'pot', 'id': to}
+        : user
+        ? {'kind': 'user'}
+        : null),
+    'summary': summary,
+    'refs': <String, Object?>{},
+  };
+
+  Map<String, Object?> _bump(Map<String, Object?> changes) {
+    pot = {...pot, ...changes, 'revision': (pot['revision']! as int) + 1};
+    pots[0] = {
+      ...pots[0],
+      if (changes['state'] != null) 'state': changes['state'],
+    };
+    return {'pot': pot};
+  }
+
+  @override
+  FakeGateway install([FakeGateway? gateway]) {
+    final g = super.install(gateway);
+    g.json['GET /api/pots/p-butler'] = (_) => {'pot': pot};
+    g.json['PATCH /api/pots/p-butler'] = (request) {
+      final body = (request.json! as Map).cast<String, Object?>();
+      patches.add(body);
+      if (conflictOnce) {
+        conflictOnce = false;
+        _bump({});
+        return apiError(
+          409,
+          'revision_conflict',
+          'The pot changed; reload it and try again',
+        );
+      }
+      if (body['revision'] != pot['revision']) {
+        return apiError(409, 'revision_conflict', 'stale');
+      }
+      return _bump({...body}..remove('revision'));
+    };
+    g.json['POST /api/pots/p-butler/pause'] = (request) {
+      patches.add({'pause': request.json});
+      return _bump({'state': 'paused'});
+    };
+    g.json['POST /api/pots/p-butler/resume'] = (request) {
+      patches.add({'resume': request.json});
+      return _bump({'state': 'active'});
+    };
+    g.json['GET /api/activity'] = (_) => {'activity': activity};
+    g.json['GET /api/pots/p-butler/memory'] = (_) => {
+      'notes': notes,
+      'budget': 8000,
+    };
+    g.routes.add((request) {
+      const prefix = '/api/pots/p-butler/memory/';
+      if (request.method != 'DELETE' || !request.path.startsWith(prefix)) {
+        return null;
+      }
+      final id = request.path.substring(prefix.length);
+      notes = [
+        for (final note in notes)
+          if (note['id'] != id) note,
+      ];
+      return reply(204);
+    });
+    g.json['GET /api/models'] = (_) => {
+      'models': [
+        {
+          'provider': 'anthropic',
+          'id': 'claude-sonnet',
+          'name': 'Claude Sonnet',
+          'reasoning': true,
+          'thinkingLevels': ['low', 'medium', 'high', 'max'],
+        },
+        {
+          'provider': 'anthropic',
+          'id': 'claude-opus',
+          'name': 'Claude Opus',
+          'reasoning': true,
+          'thinkingLevels': ['low', 'medium', 'high', 'xhigh', 'max'],
+        },
+      ],
+      'defaultModel': {
+        'provider': 'anthropic',
+        'id': 'claude-sonnet',
+        'thinking': 'medium',
+      },
+    };
+    return g;
+  }
+}

@@ -4286,6 +4286,426 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The pots involved are paused'**
   String get cardLoopPotsPaused;
+
+  /// No description provided for @potActionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get potActionMessage;
+
+  /// No description provided for @potActionPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get potActionPause;
+
+  /// No description provided for @potActionResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get potActionResume;
+
+  /// No description provided for @potActionHandOver.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand over'**
+  String get potActionHandOver;
+
+  /// No description provided for @potActionActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Activity'**
+  String get potActionActivity;
+
+  /// No description provided for @potHostsGroups.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Hosts 1 group} other{Hosts {count} groups}}'**
+  String potHostsGroups(int count);
+
+  /// No description provided for @potPausedBannerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused.'**
+  String get potPausedBannerTitle;
+
+  /// No description provided for @potPausedBannerText.
+  ///
+  /// In en, this message translates to:
+  /// **'New messages and events wait until you resume it, and it starts no work.'**
+  String get potPausedBannerText;
+
+  /// No description provided for @potProfileNoResponsibilities.
+  ///
+  /// In en, this message translates to:
+  /// **'No responsibilities yet.'**
+  String get potProfileNoResponsibilities;
+
+  /// No description provided for @potProfileMayDo.
+  ///
+  /// In en, this message translates to:
+  /// **'What it may do'**
+  String get potProfileMayDo;
+
+  /// No description provided for @potProfileObserveNothing.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing yet'**
+  String get potProfileObserveNothing;
+
+  /// No description provided for @potProfileWorkPlaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Where it opens work'**
+  String get potProfileWorkPlaces;
+
+  /// No description provided for @potProfileNoPlaces.
+  ///
+  /// In en, this message translates to:
+  /// **'Nowhere yet'**
+  String get potProfileNoPlaces;
+
+  /// No description provided for @potProfilePlace.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} ({access})'**
+  String potProfilePlace(String name, String access);
+
+  /// No description provided for @potProfileMoneyMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'{amount} a month'**
+  String potProfileMoneyMonth(String amount);
+
+  /// No description provided for @potProfileTokensDay.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} tokens a day'**
+  String potProfileTokensDay(String count);
+
+  /// No description provided for @potProfileReviewDays.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Every day} other{Every {count} days}}'**
+  String potProfileReviewDays(int count);
+
+  /// No description provided for @potProfileReviewWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Every week'**
+  String get potProfileReviewWeekly;
+
+  /// No description provided for @potListSeparator.
+  ///
+  /// In en, this message translates to:
+  /// **', '**
+  String get potListSeparator;
+
+  /// No description provided for @potProfileActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Recent activity'**
+  String get potProfileActivity;
+
+  /// No description provided for @potProfileSeeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'See all'**
+  String get potProfileSeeAll;
+
+  /// No description provided for @potProfileNoActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing yet.'**
+  String get potProfileNoActivity;
+
+  /// No description provided for @potProfileMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory'**
+  String get potProfileMemory;
+
+  /// No description provided for @potProfileForget.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget'**
+  String get potProfileForget;
+
+  /// No description provided for @potProfileNoMemory.
+  ///
+  /// In en, this message translates to:
+  /// **'No notes yet.'**
+  String get potProfileNoMemory;
+
+  /// No description provided for @potProfileMemoryNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes {name} keeps for itself; only it reads them. {used} of {budget} characters used.'**
+  String potProfileMemoryNote(String name, String used, String budget);
+
+  /// No description provided for @activityToYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get activityToYou;
+
+  /// No description provided for @potPauseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause {name}?'**
+  String potPauseTitle(String name);
+
+  /// No description provided for @potPauseWhile.
+  ///
+  /// In en, this message translates to:
+  /// **'While paused'**
+  String get potPauseWhile;
+
+  /// No description provided for @potPauseNoDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'No new messages or events reach it'**
+  String get potPauseNoDelivery;
+
+  /// No description provided for @potPauseNoDeliveryDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'They wait and arrive when you resume it'**
+  String get potPauseNoDeliveryDetail;
+
+  /// No description provided for @potPauseWait.
+  ///
+  /// In en, this message translates to:
+  /// **'Its reviews and reminders wait'**
+  String get potPauseWait;
+
+  /// No description provided for @potPauseNoWork.
+  ///
+  /// In en, this message translates to:
+  /// **'It starts no work'**
+  String get potPauseNoWork;
+
+  /// No description provided for @potPauseGoesOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Goes on'**
+  String get potPauseGoesOn;
+
+  /// No description provided for @potPauseWorks.
+  ///
+  /// In en, this message translates to:
+  /// **'Works it already opened keep running'**
+  String get potPauseWorks;
+
+  /// No description provided for @potPauseWorksDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Each follows its own controls; to stop one, stop it in that work'**
+  String get potPauseWorksDetail;
+
+  /// No description provided for @potPauseThreads.
+  ///
+  /// In en, this message translates to:
+  /// **'Its conversations stay readable'**
+  String get potPauseThreads;
+
+  /// No description provided for @potPauseNothingMoves.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing is handed over'**
+  String get potPauseNothingMoves;
+
+  /// No description provided for @potPauseNothingMovesDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'Its responsibilities, permissions and memory stay; to give them away, hand over or archive'**
+  String get potPauseNothingMovesDetail;
+
+  /// No description provided for @potSettingsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}\'s settings'**
+  String potSettingsTitle(String name);
+
+  /// No description provided for @potSettingsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved section by section'**
+  String get potSettingsSubtitle;
+
+  /// No description provided for @potSettingsSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get potSettingsSave;
+
+  /// No description provided for @potSettingsSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved'**
+  String get potSettingsSaved;
+
+  /// No description provided for @potSettingsConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was changed elsewhere and is read again. Your edit is kept; save again to use it.'**
+  String potSettingsConflict(String name);
+
+  /// No description provided for @potSettingsOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get potSettingsOther;
+
+  /// No description provided for @potSettingsPause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause…'**
+  String get potSettingsPause;
+
+  /// No description provided for @potSettingsResume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume'**
+  String get potSettingsResume;
+
+  /// No description provided for @potSettingsHandOver.
+  ///
+  /// In en, this message translates to:
+  /// **'Hand over…'**
+  String get potSettingsHandOver;
+
+  /// No description provided for @potSettingsRetire.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive or delete…'**
+  String get potSettingsRetire;
+
+  /// No description provided for @activityKindDm.
+  ///
+  /// In en, this message translates to:
+  /// **'Message'**
+  String get activityKindDm;
+
+  /// No description provided for @activityKindGroupMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Group'**
+  String get activityKindGroupMessage;
+
+  /// No description provided for @activityKindAssign.
+  ///
+  /// In en, this message translates to:
+  /// **'Handed over'**
+  String get activityKindAssign;
+
+  /// No description provided for @activityKindWorkOpened.
+  ///
+  /// In en, this message translates to:
+  /// **'Opened work'**
+  String get activityKindWorkOpened;
+
+  /// No description provided for @activityKindWorkInstruction.
+  ///
+  /// In en, this message translates to:
+  /// **'Instruction'**
+  String get activityKindWorkInstruction;
+
+  /// No description provided for @activityKindFileRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get activityKindFileRead;
+
+  /// No description provided for @activityKindThinkingAdjust.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-adjusted'**
+  String get activityKindThinkingAdjust;
+
+  /// No description provided for @activityKindFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Fallback'**
+  String get activityKindFallback;
+
+  /// No description provided for @activityKindAwaitingConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs your OK'**
+  String get activityKindAwaitingConfirm;
+
+  /// No description provided for @activityKindAwaitingApproval.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs approval'**
+  String get activityKindAwaitingApproval;
+
+  /// No description provided for @activityKindApprovalAnswered.
+  ///
+  /// In en, this message translates to:
+  /// **'Approval answered'**
+  String get activityKindApprovalAnswered;
+
+  /// No description provided for @activityKindForwardedToUser.
+  ///
+  /// In en, this message translates to:
+  /// **'To you'**
+  String get activityKindForwardedToUser;
+
+  /// No description provided for @activityKindBudgetRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Budget request'**
+  String get activityKindBudgetRequest;
+
+  /// No description provided for @activityKindBudgetExhausted.
+  ///
+  /// In en, this message translates to:
+  /// **'Out of budget'**
+  String get activityKindBudgetExhausted;
+
+  /// No description provided for @activityKindLoopGuard.
+  ///
+  /// In en, this message translates to:
+  /// **'Chain paused'**
+  String get activityKindLoopGuard;
+
+  /// No description provided for @activityKindHandoverProposed.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposed handover'**
+  String get activityKindHandoverProposed;
+
+  /// No description provided for @activityKindReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Review'**
+  String get activityKindReview;
+
+  /// No description provided for @activityKindReminderSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminder'**
+  String get activityKindReminderSet;
+
+  /// No description provided for @activityKindAutonomyChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Autonomy'**
+  String get activityKindAutonomyChanged;
+
+  /// No description provided for @activityKindStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get activityKindStatus;
+
+  /// No description provided for @potProfileArchived.
+  ///
+  /// In en, this message translates to:
+  /// **'Archived'**
+  String get potProfileArchived;
 }
 
 class _AppLocalizationsDelegate
