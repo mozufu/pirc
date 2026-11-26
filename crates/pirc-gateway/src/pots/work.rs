@@ -455,7 +455,7 @@ pub async fn open(app: &App, owner: &str, pot_id: &str, input: Open) -> ApiResul
         if let Some(dispatch) = &dispatch {
             super::observe::dispatch_started(&conn, dispatch, &id)?;
         }
-        super::threads::post_card(
+        let card = super::threads::post_card(
             &conn,
             owner,
             pot_id,
@@ -465,6 +465,11 @@ pub async fn open(app: &App, owner: &str, pot_id: &str, input: Open) -> ApiResul
                 session_id: session.id.clone(),
             },
         )?;
+        crate::push::notify(
+            app,
+            owner,
+            super::notify::work_opened(&conn, pot_id, title, &card),
+        );
         conn.query_row(&format!("{SELECT} WHERE id=?1"), [&id], work_row)?
     };
     app.pots_changed(owner);

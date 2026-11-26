@@ -198,6 +198,27 @@ impl App {
         )
     }
 
+    /// The proxy and `Host` checks alone, for the routes that need no
+    /// identity.
+    pub fn validate_anonymous(
+        &self,
+        peer: &SocketAddr,
+        headers: &HeaderMap,
+        uri: &Uri,
+        method: &Method,
+    ) -> ApiResult<()> {
+        let peer = auth::peer_address(peer.ip());
+        auth::validate_anonymous(
+            &RequestInfo {
+                peer: &peer,
+                headers,
+                path: uri.path(),
+                method,
+            },
+            &self.config.auth,
+        )
+    }
+
     /// The session, if the user owns it, together with its node.
     pub fn claim(&self, identity: &Identity, session_id: &str) -> ApiResult<Claimed> {
         let session = self
@@ -418,6 +439,10 @@ pub fn router(app: AppState) -> Router {
         )
         .route("/api/sessions/{id}/control/release", post(routes::release))
         .route(
+            "/api/sessions/{id}/interactions/{interaction_id}",
+            get(routes::interaction_state),
+        )
+        .route(
             "/api/sessions/{id}/interactions/{interaction_id}/answer",
             post(routes::answer),
         )
@@ -551,6 +576,13 @@ const PARAM_ROUTES: &[(&str, &str)] = &[
     ("POST", "/api/native-management/requests/{id}/approve"),
     ("POST", "/api/native-management/requests/{id}/deny"),
     ("POST", "/api/native-management/requests/{id}/claim"),
+    ("POST", "/api/pairing/requests/{id}/claim"),
+    ("GET", "/api/pairing/approvals/{id}"),
+    ("POST", "/api/pairing/approvals/{id}/approve"),
+    ("POST", "/api/pairing/approvals/{id}/deny"),
+    ("GET", "/api/sessions/{id}/interactions/{interaction_id}"),
+    ("GET", "/api/schedules/{id}/runs/{run_id}"),
+    ("PATCH", "/api/push/subscriptions/{id}"),
     ("DELETE", "/api/devices/{id}"),
     ("PUT", "/api/providers/{id}"),
     ("DELETE", "/api/providers/{id}"),
@@ -645,6 +677,29 @@ async fn authenticate(
     if request.uri().path() == "/node/connect" && is_websocket_upgrade(request.headers()) {
         return next.run(request).await;
     }
+    // Pairing v2's request and claim come from an app with no token yet.
+    if crate::management::is_anonymous_route(request.method(), request.uri().path()) {
+        if let Err(error) =
+            app.validate_anonymous(&peer, request.headers(), request.uri(), request.method())
+        {
+            return error.into_response();
+        }
+        // These bodies are a few short strings: keep them small whatever
+        // shape the request declares.
+        let request = match small_body(request, ANONYMOUS_BODY_MAX_BYTES).await {
+            Ok(request) => request,
+            Err(error) => return error.into_response(),
+        };
+        let request =
+            match crate::request_shape::enforce(request, app.config.upload_max_bytes).await {
+                Ok(request) => request,
+                Err(error) => return error.into_response(),
+            };
+        if let Err(error) = crate::capabilities::require(request.headers(), request.uri(), false) {
+            return error.into_response();
+        }
+        return next.run(request).await;
+    }
     let require_origin = auth::requires_origin(request.method());
     match app.validate(
         &peer,
@@ -691,6 +746,35 @@ async fn authenticate(
         }
         Err(error) => error.into_response(),
     }
+}
+
+/// The largest body the routes without identity read.
+pub const ANONYMOUS_BODY_MAX_BYTES: usize = 4096;
+
+/// The request with its body read into memory, refused with 413 past `limit`.
+async fn small_body(request: Request, limit: usize) -> ApiResult<Request> {
+    use http_body_util::{BodyExt, Limited};
+    let declared = request
+        .headers()
+        .get(header::CONTENT_LENGTH)
+        .and_then(|value| value.to_str().ok())
+        .and_then(|value| value.trim().parse::<u64>().ok());
+    if declared.is_some_and(|length| length > limit as u64) {
+        return Err(ApiError::payload_too_large());
+    }
+    let (parts, body) = request.into_parts();
+    let bytes = Limited::new(body, limit)
+        .collect()
+        .await
+        .map_err(|error| {
+            if error.is::<http_body_util::LengthLimitError>() {
+                ApiError::payload_too_large()
+            } else {
+                ApiError::internal()
+            }
+        })?
+        .to_bytes();
+    Ok(Request::from_parts(parts, axum::body::Body::from(bytes)))
 }
 
 /// Fastify parsed the body before it found no route: a bad one fails first.

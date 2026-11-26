@@ -978,3 +978,68 @@ async fn dismissing_a_missed_run_needs_the_request_shape() {
     )
     .await;
 }
+
+#[tokio::test]
+async fn a_missed_run_reads_compactly_and_its_push_names_the_run() {
+    use crate::push::tests::{Subscriber, input, push_service};
+    let f = fixture();
+    f.app.slots.set(Arc::new(crate::push::Push::new(
+        f.app.db.clone(),
+        crate::push::generate_vapid_keys(),
+        "mailto:ops@example.com".into(),
+        true,
+    )));
+    let (url, service) = push_service().await;
+    let phone = Subscriber::new();
+    f.app
+        .slots
+        .get::<crate::push::Push>()
+        .unwrap()
+        .subscribe(
+            USER,
+            &input(&format!("{url}/p"), phone.keys(), "unifiedpush", None),
+            None,
+        )
+        .unwrap();
+    let schedule = create(
+        &f.app,
+        json!({ "workspace": "work:test", "prompt": "Summarize.", "cron": hourly(), "notify": "all" }),
+    )
+    .unwrap();
+    sql(
+        &f.app,
+        "UPDATE schedules SET next_run_at=? WHERE id=?",
+        rusqlite::params![now_ms() - 3_600_000, schedule.id],
+    );
+    tick(&f.app);
+    let missed = runs(&f.app, &schedule.id).remove(0);
+    let path = format!("/api/schedules/{}/runs/{}", schedule.id, missed.id);
+    let (status, body) =
+        crate::test_support::call(&f.app, "GET", &path, Some(USER), None, None).await;
+    assert_eq!(status, 200, "{body}");
+    let run = &body["run"];
+    assert_eq!(run["state"], "missed");
+    assert_eq!(run["dueAt"], missed.due_at);
+    assert!(run["reason"].as_str().unwrap().contains("not running"));
+    assert_eq!(run.get("result"), None);
+    let other = format!("/api/schedules/other/runs/{}", missed.id);
+    assert_eq!(
+        crate::test_support::call(&f.app, "GET", &other, Some(USER), None, None)
+            .await
+            .0,
+        404
+    );
+
+    for _ in 0..100 {
+        if !service.lock().unwrap().received.is_empty() {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+    }
+    let pushed = phone.read(&service.lock().unwrap().received[0].2);
+    assert_eq!(pushed["category"], "needs_you");
+    assert_eq!(
+        pushed["target"],
+        json!({ "schedules": true, "scheduleId": schedule.id, "runId": missed.id })
+    );
+}

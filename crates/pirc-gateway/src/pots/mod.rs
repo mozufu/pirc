@@ -18,6 +18,7 @@ fn images_release(conn: &rusqlite::Connection, id: Option<&str>) -> crate::error
     crate::images::release(conn, id)
 }
 pub mod memory;
+pub mod notify;
 pub mod observe;
 pub mod ops;
 pub mod retire;

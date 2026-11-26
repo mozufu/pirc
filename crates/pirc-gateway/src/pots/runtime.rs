@@ -379,6 +379,29 @@ pub async fn pump(app: &AppState, owner: &str, pot_id: &str) -> ApiResult<()> {
     Ok(())
 }
 
+/// The push for a pot's reply: only a pot's message in a thread the user
+/// reads is news to the user.
+pub(super) fn reply_push(
+    conn: &Connection,
+    pot_id: &str,
+    message: &super::threads::Message,
+) -> ApiResult<Option<crate::push::PushMessage>> {
+    Ok(
+        (message.author_kind == "pot" && user_in_thread(conn, &message.thread_id)?)
+            .then(|| super::notify::reply(conn, pot_id, message)),
+    )
+}
+
+/// Whether the user reads `thread` (a direct or group thread, not a pot DM).
+fn user_in_thread(conn: &Connection, thread_id: &str) -> ApiResult<bool> {
+    let kind: Option<String> = conn
+        .query_row("SELECT kind FROM threads WHERE id=?1", [thread_id], |r| {
+            r.get(0)
+        })
+        .optional()?;
+    Ok(matches!(kind.as_deref(), Some("direct" | "group")))
+}
+
 /// Follow the pot's delivered wake; when its run is over, keep the answer and
 /// move on to the next wake.
 pub async fn check(app: &AppState, owner: &str, pot_id: &str) -> ApiResult<()> {
@@ -418,9 +441,12 @@ pub async fn check(app: &AppState, owner: &str, pot_id: &str) -> ApiResult<()> {
                     "UPDATE pot_wakes SET state='settled',settled_at=?2,reply=?3,error=?4 WHERE id=?1",
                     params![id, now_ms(), answer, failure_reason],
                 )?;
-                if super::threads::post_reply(&conn, &id)?.is_some() {
+                if let Some(message) = super::threads::post_reply(&conn, &id)? {
                     app.threads_changed(owner);
                     app.causal_roots_changed(owner);
+                    if let Some(push) = reply_push(&conn, pot_id, &message)? {
+                        crate::push::notify(app, owner, push);
+                    }
                 }
                 true
             }

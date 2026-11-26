@@ -58,6 +58,8 @@ fn no_store_route(method: &Method, path: &str) -> bool {
         (_, ["api", "sessions", id, "checkpoints", ..]) => one(id),
         ("GET", ["api", "sessions", id, "environment"]) => one(id),
         ("GET" | "POST", ["api", "devices"]) => true,
+        // A rotated device token is shown once.
+        ("POST", ["api", "device", "rotate"]) => true,
         ("DELETE", ["api", "devices", id]) => one(id),
         ("GET" | "POST", ["api", "providers"]) => true,
         ("GET", ["api", "providers", "presets"]) => true,

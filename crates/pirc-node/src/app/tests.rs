@@ -937,3 +937,95 @@ async fn session_creation_routes_are_durable_strict_and_read_only_on_lookup() {
     assert_eq!(deleted.status, 200);
     assert_eq!(deleted.body.unwrap()["creation"]["state"], "deleting");
 }
+
+#[tokio::test]
+async fn one_interaction_reads_without_a_snapshot_and_only_in_its_session() {
+    let (_dir, node) = workspace_test_node().await;
+    let root = Path::new(node.env.get("HOME").unwrap());
+    let repository = root.join("repository");
+    std::fs::create_dir(&repository).unwrap();
+    let (session, other) = {
+        let db = node.db.lock();
+        db.add_workspace(
+            "repo",
+            "test-node",
+            "Repository",
+            &repository.to_string_lossy(),
+            ModeId::new("directory").unwrap(),
+        )
+        .unwrap();
+        (
+            db.create_session("repo", "/private/one", "test-user")
+                .unwrap(),
+            db.create_session("repo", "/private/two", "test-user")
+                .unwrap(),
+        )
+    };
+    let mut asked = Map::new();
+    asked.insert("title".into(), json!("Which?"));
+    let (live, late) = {
+        let db = node.db.lock();
+        (
+            db.create_interaction(
+                &session.id,
+                0,
+                "r1",
+                "select",
+                &asked,
+                crate::util::now_ms() + 60_000,
+            )
+            .unwrap(),
+            db.create_interaction(
+                &session.id,
+                0,
+                "r2",
+                "input",
+                &asked,
+                crate::util::now_ms() - 1,
+            )
+            .unwrap(),
+        )
+    };
+    let read = |session: &str, interaction: &str| {
+        let mut request = request(Some(session), json!({}));
+        request.method = pirc_protocol::HttpMethod::Get;
+        request
+            .params
+            .push(("interactionId".into(), interaction.into()));
+        interaction_route(node.clone(), request)
+    };
+    let body = read(&session.id, &live.id).await.unwrap().body.unwrap();
+    assert_eq!(body["interaction"]["status"], "pending");
+    assert_eq!(body["interaction"]["request"]["title"], "Which?");
+    // The fields the Gateway's compact route reads, on the real row.
+    let row = &body["interaction"];
+    assert_eq!(row["runnerEpoch"], 0);
+    assert_eq!(row["kind"], "select");
+    assert_eq!(row["expiresAt"], live.expires_at);
+    assert_eq!(row.get("answeredBy"), None);
+    let body = read(&session.id, &late.id).await.unwrap().body.unwrap();
+    assert_eq!(body["interaction"]["status"], "expired");
+    assert_eq!(body["interaction"]["resolvedAt"], late.expires_at);
+    let answered = node
+        .db
+        .lock()
+        .claim_interaction(
+            &live.id,
+            &session.id,
+            0,
+            &json!({ "value": "A" }),
+            Some("web-1"),
+        )
+        .unwrap();
+    let body = read(&session.id, &live.id).await.unwrap().body.unwrap();
+    let row = &body["interaction"];
+    assert_eq!(row["status"], "answered");
+    assert_eq!(row["answeredBy"], "web-1");
+    assert_eq!(row["resolvedAt"], answered.resolved_at.unwrap());
+    assert_eq!(row["runnerEpoch"], 0);
+    assert_eq!(
+        read(&other.id, &live.id).await.unwrap_err().status,
+        404,
+        "another session's question"
+    );
+}

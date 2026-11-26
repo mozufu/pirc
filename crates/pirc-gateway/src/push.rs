@@ -6,6 +6,7 @@
 //! push service relays them without reading them. They still say little: a
 //! title, a short line and where to open, never an agent's answer.
 
+use std::collections::BTreeMap;
 use std::fs;
 use std::io::Write;
 use std::os::unix::fs::{DirBuilderExt, OpenOptionsExt};
@@ -32,20 +33,32 @@ use rusqlite::{OptionalExtension, Row, params};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::Sha256;
-use tokio::sync::mpsc;
 use url::Url;
 
 use crate::app::{App, AppState, ReqBody};
 use crate::auth::Identity;
-use crate::db::{Db, Store};
+use crate::db::Db;
 use crate::error::{ApiError, ApiResult, json_response};
-use crate::events::{EventHub, GatewayEvent};
 use crate::http::{no_content, ok};
 use crate::routes::Handled;
 use crate::util::{new_id, now_ms, present, random_bytes};
 
+mod interactions;
+mod preferences;
+mod summary;
+
+#[cfg(not(test))]
+use interactions::watch_interactions;
+pub use interactions::{answered_by, single_choices};
+#[cfg(test)]
+use interactions::{answered_message, hex_utf8, waiting_message, watch_interactions};
+
+pub use preferences::{Category, Decision, Level, LockScreen, Preferences};
+
 /// One notification (`PushMessage`): `target` is what it opens:
-/// `{sessionId}`, `{schedules: true, scheduleId?}` or `{memory: true}`.
+/// `{sessionId}`, `{schedules: true, scheduleId?, runId?}`, `{calendar: true, …}`,
+/// `{potId, threadId}`, `{activityNotificationId}`, `{approvalId}` or
+/// `{budgetRequestId}`.
 #[derive(Clone, Debug)]
 pub struct PushMessage {
     pub title: String,
@@ -53,16 +66,39 @@ pub struct PushMessage {
     /// Notifications with the same tag replace each other on the device.
     pub tag: String,
     pub target: Value,
+    /// Every sender names its category; each target's preferences decide
+    /// what happens with it. Only the test notification has none.
+    pub category: Option<Category>,
     /// Exact question metadata for create/revoke pushes. Refresh hints omit the tuple.
     pub interaction: Option<InteractionPush>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct InteractionPush {
     pub kind: &'static str,
     pub session_id: String,
     pub interaction_id: Option<String>,
     pub interaction_epoch: Option<String>,
+    /// When the question stops taking answers.
+    pub expires_at: Option<i64>,
+    /// The options of a single-choice question with at most 3 of them.
+    pub choices: Vec<Choice>,
+    /// Who answered (`{deviceName, at}`), on `interaction_answered`.
+    pub answered_by: Option<Value>,
+}
+
+/// An option a notification can answer with: `id` is the answer's value.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct Choice {
+    pub id: String,
+    pub label: String,
+}
+
+/// How one target gets a notification.
+#[derive(Clone, Copy, Debug, Default)]
+struct Delivery {
+    silent: bool,
+    lock_screen: Option<LockScreen>,
 }
 
 /// A push service's answer before giving up on it for this message.
@@ -449,9 +485,48 @@ fn js_json_string(units: &[u16]) -> String {
     out
 }
 
-/// What the subscriber decrypts: `{title, body, tag, target, at}`.
-fn payload(message: &PushMessage, at: i64) -> String {
+/// A payload stays well inside one `aes128gcm` record (4096 bytes less the
+/// header and tag), so no push service refuses it for its size.
+const MAX_PAYLOAD_BYTES: usize = 3072;
+
+/// What the subscriber decrypts: `{title, body, tag, target, at}`, the
+/// category, the target's lock screen setting and question details. It holds
+/// no secret: the app reads the state before it shows any answer. Past
+/// [`MAX_PAYLOAD_BYTES`] the choices go first, then the body shortens.
+fn payload(message: &PushMessage, at: i64, delivery: Delivery) -> String {
+    let full = payload_text(message, at, delivery, BODY_UNITS);
+    if full.len() <= MAX_PAYLOAD_BYTES {
+        return full;
+    }
+    let mut smaller = message.clone();
+    if let Some(interaction) = smaller.interaction.as_mut() {
+        interaction.choices.clear();
+    }
+    for body_units in [BODY_UNITS, 80] {
+        let text = payload_text(&smaller, at, delivery, body_units);
+        if text.len() <= MAX_PAYLOAD_BYTES {
+            return text;
+        }
+    }
+    smaller.body.clear();
+    payload_text(&smaller, at, delivery, BODY_UNITS)
+}
+
+/// A push body's length, in UTF-16 units.
+const BODY_UNITS: usize = 240;
+
+fn payload_text(message: &PushMessage, at: i64, delivery: Delivery, body_units: usize) -> String {
     let tag: Vec<u16> = message.tag.encode_utf16().collect();
+    let mut extra = String::new();
+    if let Some(category) = message.category {
+        extra.push_str(&format!(",\"category\":\"{}\"", category.as_str()));
+    }
+    if let Some(lock_screen) = delivery.lock_screen {
+        extra.push_str(&format!(",\"lockScreen\":\"{}\"", lock_screen.as_str()));
+    }
+    if delivery.silent {
+        extra.push_str(",\"silent\":true");
+    }
     let interaction = message
         .interaction
         .as_ref()
@@ -473,13 +548,25 @@ fn payload(message: &PushMessage, at: i64) -> String {
                     serde_json::to_string(epoch).unwrap_or_else(|_| "null".into()),
                 ));
             }
+            if let Some(expires_at) = interaction.expires_at {
+                fields.push_str(&format!(",\"expiresAt\":{expires_at}"));
+            }
+            if !interaction.choices.is_empty() {
+                fields.push_str(&format!(
+                    ",\"choices\":{}",
+                    serde_json::to_string(&interaction.choices).unwrap_or_else(|_| "[]".into()),
+                ));
+            }
+            if let Some(answered_by) = &interaction.answered_by {
+                fields.push_str(&format!(",\"answeredBy\":{answered_by}"));
+            }
             fields
         })
         .unwrap_or_default();
     format!(
-        r#"{{"title":{},"body":{},"tag":{},"target":{},"at":{at}{interaction}}}"#,
+        r#"{{"title":{},"body":{},"tag":{},"target":{},"at":{at}{extra}{interaction}}}"#,
         js_json_string(&clip(&message.title, 120)),
-        js_json_string(&clip(&message.body, 240)),
+        js_json_string(&clip(&message.body, body_units)),
         js_json_string(&tag),
         serde_json::to_string(&message.target).unwrap_or_else(|_| "null".into()),
     )
@@ -553,11 +640,38 @@ struct SubscriptionRow {
     created_at: i64,
     last_success_at: Option<i64>,
     failures: i64,
+    preferences: Preferences,
+    revision: i64,
+    summary_mark: i64,
+    /// A summary is due at the next tick (quiet hours ended by a change).
+    summary_now: bool,
 }
 
 impl SubscriptionRow {
     fn from_row(row: &Row<'_>) -> rusqlite::Result<Self> {
+        let quiet = match (
+            row.get::<_, Option<String>>("quiet_start")?,
+            row.get::<_, Option<String>>("quiet_end")?,
+        ) {
+            (Some(start), Some(end)) => preferences::ClockTime::parse(&start)
+                .zip(preferences::ClockTime::parse(&end))
+                .map(|(start, end)| preferences::QuietHours { start, end }),
+            _ => None,
+        };
+        let preferences = Preferences {
+            levels: preferences::levels_from_json(&row.get::<_, String>("levels_json")?),
+            quiet_hours: quiet,
+            time_zone: row.get("time_zone")?,
+            lock_screen: LockScreen::parse(&row.get::<_, String>("lock_screen")?)
+                .unwrap_or(LockScreen::Title),
+            digest_at: preferences::ClockTime::parse(&row.get::<_, String>("digest_at")?)
+                .unwrap_or(preferences::ClockTime::DIGEST_DEFAULT),
+        };
         Ok(Self {
+            preferences,
+            revision: row.get("revision")?,
+            summary_mark: row.get("summary_mark")?,
+            summary_now: row.get::<_, i64>("summary_now")? != 0,
             id: row.get("id")?,
             endpoint: row.get("endpoint")?,
             p256dh: row.get("p256dh")?,
@@ -594,7 +708,39 @@ pub struct Push {
     subject: String,
     /// Plain http endpoints are refused unless this allows them (tests, loopback distributors).
     allow_http: bool,
+    /// A new target's time zone until it sets its own (`PIRC_TIMEZONE`).
+    time_zone: String,
     client: reqwest::Client,
+    /// Held while summaries are read, sent and settled, so two calls never
+    /// send the same items.
+    summaries: tokio::sync::Mutex<()>,
+}
+
+/// A target as its owner sees it: where it is, how it is doing and its
+/// notification preferences.
+fn subscription_view(row: SubscriptionRow) -> Value {
+    let host = host_of(&row.endpoint);
+    let levels: serde_json::Map<String, Value> = row
+        .preferences
+        .levels
+        .iter()
+        .map(|(category, level)| (category.as_str().to_owned(), json!(level)))
+        .collect();
+    json!({
+        "id": row.id,
+        "kind": row.kind,
+        "name": row.name.unwrap_or_else(|| host.clone()),
+        "host": host,
+        "createdAt": row.created_at,
+        "lastSuccessAt": row.last_success_at,
+        "failing": row.failures > 0,
+        "levels": levels,
+        "quietHours": row.preferences.quiet_hours,
+        "timeZone": row.preferences.time_zone,
+        "lockScreen": row.preferences.lock_screen,
+        "digestAt": row.preferences.digest_at,
+        "revision": row.revision,
+    })
 }
 
 impl Push {
@@ -612,8 +758,19 @@ impl Push {
             vapid,
             subject,
             allow_http,
+            time_zone: "UTC".to_owned(),
             client,
+            summaries: tokio::sync::Mutex::new(()),
         }
+    }
+
+    /// New targets start in `zone` (an IANA name or offset) until they set
+    /// their own.
+    pub fn with_time_zone(mut self, zone: &str) -> Self {
+        if crate::schedules::Zone::parse(zone).is_some() {
+            zone.clone_into(&mut self.time_zone);
+        }
+        self
     }
 
     pub fn public_key(&self) -> &str {
@@ -629,21 +786,89 @@ impl Push {
         let rows = statement
             .query_map([user], SubscriptionRow::from_row)?
             .collect::<rusqlite::Result<Vec<_>>>()?;
-        Ok(rows
-            .into_iter()
-            .map(|row| {
-                let host = host_of(&row.endpoint);
-                json!({
-                    "id": row.id,
-                    "kind": row.kind,
-                    "name": row.name.unwrap_or_else(|| host.clone()),
-                    "host": host,
-                    "createdAt": row.created_at,
-                    "lastSuccessAt": row.last_success_at,
-                    "failing": row.failures > 0,
-                })
-            })
-            .collect())
+        Ok(rows.into_iter().map(subscription_view).collect())
+    }
+
+    /// Change one target's preferences. `patch.revision` must be the
+    /// target's current revision, so two devices cannot overwrite each
+    /// other's change unseen.
+    pub fn update_preferences(
+        &self,
+        user: &str,
+        id: &str,
+        patch: &preferences::PreferencesPatch,
+    ) -> ApiResult<Value> {
+        self.update_preferences_at(user, id, patch, now_ms())
+    }
+
+    /// [`Push::update_preferences`] as of `now`. A new digest time, quiet
+    /// hours or time zone counts summary moments from `now` on, so a moment
+    /// of the new settings that fell between the last summary and now is
+    /// not sent at once. Quiet hours that this change ends (removed, or no
+    /// longer covering `now`) end now: what they held goes out next tick.
+    pub fn update_preferences_at(
+        &self,
+        user: &str,
+        id: &str,
+        patch: &preferences::PreferencesPatch,
+        now: i64,
+    ) -> ApiResult<Value> {
+        let conn = self.db.lock();
+        prune(&conn)?;
+        let row = conn
+            .query_row(
+                "SELECT * FROM push_subscriptions WHERE id=? AND owner_user=?",
+                [id, user],
+                SubscriptionRow::from_row,
+            )
+            .optional()?
+            .ok_or_else(|| ApiError::not_found("Push subscription not found"))?;
+        if row.revision != patch.revision {
+            return Err(ApiError::new(
+                409,
+                "revision_mismatch",
+                "These notification settings changed elsewhere; read them again",
+            )
+            .with_details(json!({ "subscription": subscription_view(row) })));
+        }
+        let next = patch.apply(&row.preferences)?;
+        let old = &row.preferences;
+        let timing = next.digest_at != old.digest_at
+            || next.quiet_hours != old.quiet_hours
+            || next.time_zone != old.time_zone;
+        let quiet_ended = old.quiet_at(now) && !next.quiet_at(now);
+        let levels: BTreeMap<&str, Level> = next
+            .levels
+            .iter()
+            .map(|(category, level)| (category.as_str(), *level))
+            .collect();
+        conn.execute(
+            "UPDATE push_subscriptions SET levels_json=?3, quiet_start=?4, quiet_end=?5, time_zone=?6,
+               lock_screen=?7, digest_at=?8, revision=revision+1,
+               summary_mark=CASE WHEN ?10 THEN ?11 ELSE summary_mark END,
+               summary_now=CASE WHEN ?12 THEN 1 ELSE summary_now END
+             WHERE id=?1 AND owner_user=?2 AND revision=?9",
+            params![
+                id,
+                user,
+                serde_json::to_string(&levels).unwrap_or_else(|_| "{}".into()),
+                next.quiet_hours.map(|quiet| quiet.start.text()),
+                next.quiet_hours.map(|quiet| quiet.end.text()),
+                next.time_zone,
+                next.lock_screen.as_str(),
+                next.digest_at.text(),
+                patch.revision,
+                timing,
+                now,
+                quiet_ended,
+            ],
+        )?;
+        let row = conn.query_row(
+            "SELECT * FROM push_subscriptions WHERE id=?",
+            [id],
+            SubscriptionRow::from_row,
+        )?;
+        Ok(subscription_view(row))
     }
 
     /// Add or refresh a subscription; one endpoint belongs to one user.
@@ -691,9 +916,12 @@ impl Push {
                 .as_deref()
                 .filter(|name| !name.is_empty())
                 .map(|name| String::from_utf16_lossy(&clip(name, 100)));
+            let stamp = now_ms();
+            // A refreshed subscription keeps its preferences.
             conn.execute(
-                "INSERT INTO push_subscriptions (id,owner_user,endpoint,p256dh,auth,kind,name,device_id,created_at,failures)
-                 VALUES (?,?,?,?,?,?,?,?,?,0)
+                "INSERT INTO push_subscriptions (id,owner_user,endpoint,p256dh,auth,kind,name,device_id,created_at,failures,
+                   time_zone,summary_mark)
+                 VALUES (?,?,?,?,?,?,?,?,?,0,?,?)
                  ON CONFLICT(endpoint) DO UPDATE SET p256dh=excluded.p256dh, auth=excluded.auth, kind=excluded.kind,
                    name=excluded.name, device_id=excluded.device_id, failures=0",
                 params![
@@ -705,7 +933,9 @@ impl Push {
                     input.kind.as_deref().unwrap_or("web"),
                     name,
                     device_id,
-                    now_ms(),
+                    stamp,
+                    self.time_zone,
+                    stamp,
                 ],
             )?;
             id
@@ -735,6 +965,12 @@ impl Push {
     /// took it. Never fails: a push that cannot be delivered is only
     /// logged, and dead endpoints go.
     pub async fn notify(self: &Arc<Self>, user: &str, message: &PushMessage) -> usize {
+        self.notify_at(user, message, now_ms()).await
+    }
+
+    /// [`Push::notify`] as of `now`: each target's preferences decide whether
+    /// the message goes now, silently, or waits for a summary.
+    pub async fn notify_at(self: &Arc<Self>, user: &str, message: &PushMessage, now: i64) -> usize {
         let rows = {
             let conn = self.db.lock();
             let rows = prune(&conn).and_then(|()| {
@@ -750,12 +986,33 @@ impl Push {
                 }
             }
         };
-        let payload = Arc::new(payload(message, now_ms()));
         let topic = Arc::new(topic_of(&message.tag));
+        let update = message
+            .interaction
+            .as_ref()
+            .is_some_and(|interaction| interaction.kind != "interaction_created");
         let mut sends = tokio::task::JoinSet::new();
         for row in rows {
+            let decision = match message.category {
+                Some(category) => row.preferences.decide(category, update, now),
+                None => Decision::Send,
+            };
+            let silent = match decision {
+                Decision::Send => false,
+                Decision::SendSilent => true,
+                Decision::Hold | Decision::Digest => {
+                    self.keep_for_summary(&row.id, message, now);
+                    continue;
+                }
+                Decision::Skip => continue,
+            };
+            let delivery = Delivery {
+                silent,
+                lock_screen: Some(row.preferences.lock_screen),
+            };
+            let payload = payload(message, now_ms(), delivery);
             let push = self.clone();
-            let (payload, topic) = (payload.clone(), topic.clone());
+            let topic = topic.clone();
             sends.spawn(async move { push.send(row, &payload, &topic).await });
         }
         let mut delivered = 0;
@@ -872,6 +1129,7 @@ fn state(app: &App) -> Result<Arc<Push>, String> {
             app.config.vapid_subject.clone(),
             app.config.push_allow_http,
         )
+        .with_time_zone(&app.config.timezone)
     }))
 }
 
@@ -880,159 +1138,6 @@ fn push_of(app: &App) -> ApiResult<Arc<Push>> {
         crate::log::error(&format!("push: {error}"));
         ApiError::internal()
     })
-}
-
-// ---------------------------------------------------------------------------
-// The interaction watcher
-
-/// A session that starts waiting for its user (a dangerous command to
-/// confirm, a question) pushes to them; the gateway's own confirmations (a
-/// schedule to approve) count too (`watchInteractions`).
-fn waiting_message(
-    conn: &rusqlite::Connection,
-    session_id: &str,
-    data: Option<&Value>,
-) -> Option<(String, PushMessage)> {
-    let session = conn.get_session(session_id).ok()?;
-    let user = session.owner_user?;
-    let request = data.and_then(|data| data.get("request"));
-    let asked = request
-        .and_then(|request| request.get("title"))
-        .and_then(Value::as_str)
-        .filter(|title| !title.trim_matches(js_space).is_empty());
-    let interaction = exact_interaction_push("interaction_created", session_id, data);
-    Some((
-        user,
-        PushMessage {
-            title: format!("{} is waiting for you", session.name),
-            body: asked.unwrap_or("It needs your answer to go on.").to_owned(),
-            tag: interaction
-                .as_ref()
-                .map(interaction_tag)
-                .unwrap_or_else(|| format!("session:{}", session.id)),
-            target: json!({ "sessionId": session.id }),
-            interaction,
-        },
-    ))
-}
-
-fn exact_interaction_push(
-    kind: &'static str,
-    session_id: &str,
-    data: Option<&Value>,
-) -> Option<InteractionPush> {
-    let data = data?;
-    let id_key = if kind == "interaction_created" {
-        "id"
-    } else {
-        "interactionId"
-    };
-    let id = data.get(id_key)?.as_str()?.to_owned();
-    if id.is_empty() {
-        return None;
-    }
-    // `interactionEpoch` is copied from the row's `runnerEpoch`. The hub
-    // envelope epoch is deliberately never used as a fallback.
-    let epoch = data
-        .get("interactionEpoch")
-        .or_else(|| data.get("runnerEpoch"))?;
-    let epoch = match epoch {
-        Value::Number(number) => number.as_u64()?.to_string(),
-        Value::String(text) => text.parse::<u64>().ok()?.to_string(),
-        _ => return None,
-    };
-    Some(InteractionPush {
-        kind,
-        session_id: session_id.to_owned(),
-        interaction_id: Some(id),
-        interaction_epoch: Some(epoch),
-    })
-}
-
-fn hex_utf8(text: &str) -> String {
-    text.as_bytes()
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
-}
-
-fn interaction_tag(interaction: &InteractionPush) -> String {
-    format!(
-        "interaction:{}:{}:{}",
-        hex_utf8(&interaction.session_id),
-        interaction.interaction_epoch.as_deref().unwrap_or_default(),
-        hex_utf8(interaction.interaction_id.as_deref().unwrap_or_default()),
-    )
-}
-
-fn answered_message(
-    conn: &rusqlite::Connection,
-    session_id: &str,
-    data: Option<&Value>,
-) -> Option<(String, PushMessage)> {
-    let session = conn.get_session(session_id).ok()?;
-    let user = session.owner_user?;
-    let interaction =
-        exact_interaction_push("interaction_answered", session_id, data).or_else(|| {
-            Some(InteractionPush {
-                kind: "interaction_refresh",
-                session_id: session_id.to_owned(),
-                interaction_id: None,
-                interaction_epoch: None,
-            })
-        });
-    let exact = interaction
-        .as_ref()
-        .is_some_and(|interaction| interaction.kind == "interaction_answered");
-    Some((
-        user,
-        PushMessage {
-            title: String::new(),
-            body: String::new(),
-            tag: if exact {
-                interaction
-                    .as_ref()
-                    .map(interaction_tag)
-                    .unwrap_or_default()
-            } else {
-                format!("session:{}", session.id)
-            },
-            target: json!({ "sessionId": session.id }),
-            interaction,
-        },
-    ))
-}
-
-/// Hand `interaction_created` events from the hub (whose listeners run
-/// under its lock) to a task that pushes them, for as long as the hub lives.
-fn watch_interactions(events: &Arc<EventHub>, db: Arc<Db>, push: Arc<Push>) {
-    let (sender, mut receiver) = mpsc::unbounded_channel();
-    let subscription = events.subscribe_all(Arc::new(move |event: &GatewayEvent| {
-        if matches!(
-            event.kind.as_str(),
-            "interaction_created" | "interaction_answered"
-        ) {
-            let _ = sender.send((
-                event.session_id.clone(),
-                event.kind.clone(),
-                event.data.clone(),
-            ));
-        }
-    }));
-    tokio::spawn(async move {
-        let _subscription = subscription;
-        while let Some((session_id, kind, data)) = receiver.recv().await {
-            let message = match kind.as_str() {
-                "interaction_created" => waiting_message(&db.lock(), &session_id, data.as_ref()),
-                "interaction_answered" => answered_message(&db.lock(), &session_id, data.as_ref()),
-                _ => None,
-            };
-            if let Some((user, message)) = message {
-                let push = push.clone();
-                tokio::spawn(async move { push.notify(&user, &message).await });
-            }
-        }
-    });
 }
 
 // ---------------------------------------------------------------------------
@@ -1046,6 +1151,10 @@ pub fn routes() -> Router<AppState> {
             "/api/push/subscriptions",
             post(add_subscription).delete(remove_subscription),
         )
+        .route(
+            "/api/push/subscriptions/{id}",
+            axum::routing::patch(update_subscription),
+        )
         .route("/api/push/test", post(test_push))
 }
 
@@ -1055,12 +1164,13 @@ pub fn routes() -> Router<AppState> {
 /// Fails, before the gateway listens, on unusable VAPID keys.
 pub fn start(app: &AppState) -> Result<(), String> {
     let push = state(app)?;
-    watch_interactions(&app.events, app.db.clone(), push);
+    watch_interactions(&app.events, app.db.clone(), push.clone());
+    summary::start(push);
     Ok(())
 }
 
 /// Send `message` to every subscription of `user`, in the background.
-pub fn notify(app: &AppState, user: &str, message: PushMessage) {
+pub fn notify(app: &App, user: &str, message: PushMessage) {
     let Ok(push) = push_of(app) else {
         return;
     };
@@ -1105,6 +1215,21 @@ struct RemoveBody {
     id: Option<String>,
 }
 
+/// Change one target's notification preferences, at the revision read.
+async fn update_subscription(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    axum::extract::Path(id): axum::extract::Path<String>,
+    ReqBody(body): ReqBody,
+) -> Handled {
+    if utf16_len(&id) > 100 {
+        return Err(ApiError::invalid_input().into());
+    }
+    let patch: preferences::PreferencesPatch = body.parse()?;
+    let subscription = push_of(&app)?.update_preferences(&identity.user, &id, &patch)?;
+    Ok(ok(json!({ "subscription": subscription })))
+}
+
 async fn remove_subscription(
     State(app): State<AppState>,
     Extension(identity): Extension<Identity>,
@@ -1137,6 +1262,8 @@ async fn test_push(
                 body: "Scheduled runs and anything waiting for you will show up here.".into(),
                 tag: "test".into(),
                 target: json!({ "schedules": true }),
+                // Shows whatever the settings are.
+                category: None,
                 interaction: None,
             },
         )
@@ -1145,4 +1272,4 @@ async fn test_push(
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

@@ -217,18 +217,36 @@ fn open_events(
     Ok(EventSocket {
         _subscription: subscription,
         _hints: hints,
-        _tracked: track_device(app, &identity, outbox),
+        _tracked: track_device(app, &identity, headers, outbox),
     })
 }
 
-/// Close a device's socket once its token is revoked or expires.
-fn track_device(app: &AppState, identity: &Identity, outbox: &Arc<Outbox>) -> Option<Tracked> {
+/// Close a device's socket once its token is revoked or expires. A token
+/// that a rotation ended between authentication and tracking (the new
+/// token's first use closed the sockets tracked then) closes it at once.
+fn track_device(
+    app: &AppState,
+    identity: &Identity,
+    headers: &HeaderMap,
+    outbox: &Arc<Outbox>,
+) -> Option<Tracked> {
     let device_id = identity.device_id.as_deref()?;
-    let outbox = outbox.clone();
-    Some(app.devices.track(
+    let closer = outbox.clone();
+    let tracked = app.devices.track(
         device_id,
-        Box::new(move || outbox.close(4401, "device token revoked or expired")),
-    ))
+        Box::new(move || closer.close(4401, "device token revoked or expired")),
+    );
+    let live = match auth::device_token(headers) {
+        Some(token) => app.devices.still_live(&token),
+        None => Ok(false),
+    };
+    match live {
+        Ok(true) => {}
+        Ok(false) => outbox.close(4401, "device token revoked or expired"),
+        // A server failure, not a dead token: the app reconnects.
+        Err(_) => outbox.close(1011, "internal error"),
+    }
+    Some(tracked)
 }
 
 /// The change hints a socket asked for (`directory=1`, `pots=1`, …).
@@ -396,7 +414,7 @@ fn open_hints(
     };
     Ok(HintSocket {
         _hints: subscribe_hints(app, &identity.user, &flags, hint),
-        _tracked: track_device(app, &identity, outbox),
+        _tracked: track_device(app, &identity, headers, outbox),
     })
 }
 
@@ -590,7 +608,7 @@ async fn relay(
         let stream = app
             .nodes
             .open_stream(&claimed.node_id, open, browser, relay.clone())?;
-        Ok((stream, track_device(&app, &identity, &outbox)))
+        Ok((stream, track_device(&app, &identity, &headers, &outbox)))
     })();
     match opened {
         Err(error) => relay.close(close_code(&error), &error.message),

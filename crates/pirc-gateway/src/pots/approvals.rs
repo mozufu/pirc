@@ -505,9 +505,15 @@ impl App {
         pot_id: &str,
         input: NewApproval,
     ) -> ApiResult<Approval> {
-        let approval = request(&self.db.lock(), owner, pot_id, input)?;
+        let (approval, message) = {
+            let conn = self.db.lock();
+            let approval = request(&conn, owner, pot_id, input)?;
+            let message = super::notify::approval(&conn, &approval);
+            (approval, message)
+        };
         self.approvals_changed(owner);
         self.activity_changed(owner);
+        crate::push::notify(self, owner, message);
         Ok(approval)
     }
 }

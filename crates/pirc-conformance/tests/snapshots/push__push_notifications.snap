@@ -201,12 +201,23 @@ expression: t.into_value()
     "body": {
       "subscription": {
         "createdAt": "<epoch-ms>",
+        "digestAt": "18:00",
         "failing": false,
         "host": "<push-host>",
         "id": "push_<uuid:1>",
         "kind": "web",
         "lastSuccessAt": null,
-        "name": "Laptop"
+        "levels": {
+          "calendar": "immediate",
+          "done": "digest",
+          "needs_you": "immediate",
+          "progress": "off"
+        },
+        "lockScreen": "title",
+        "name": "Laptop",
+        "quietHours": null,
+        "revision": 1,
+        "timeZone": "UTC"
       }
     },
     "headers": {
@@ -220,12 +231,23 @@ expression: t.into_value()
     "body": {
       "subscription": {
         "createdAt": "<epoch-ms>",
+        "digestAt": "18:00",
         "failing": false,
         "host": "<push-host>",
         "id": "push_<uuid:1>",
         "kind": "unifiedpush",
         "lastSuccessAt": null,
-        "name": "<push-host>"
+        "levels": {
+          "calendar": "immediate",
+          "done": "digest",
+          "needs_you": "immediate",
+          "progress": "off"
+        },
+        "lockScreen": "title",
+        "name": "<push-host>",
+        "quietHours": null,
+        "revision": 1,
+        "timeZone": "UTC"
       }
     },
     "headers": {
@@ -241,57 +263,123 @@ expression: t.into_value()
       "subscriptions": [
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": false,
           "host": "<push-host>",
           "id": "push_<uuid:1>",
           "kind": "unifiedpush",
           "lastSuccessAt": null,
-          "name": "<push-host>"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "<push-host>",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         },
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": false,
           "host": "<push-host>",
           "id": "push_<uuid:2>",
           "kind": "web",
           "lastSuccessAt": null,
-          "name": "gone"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "gone",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         },
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": false,
           "host": "<push-host>",
           "id": "push_<uuid:3>",
           "kind": "web",
           "lastSuccessAt": null,
-          "name": "broken"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "broken",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         },
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": false,
           "host": "<push-host>",
           "id": "push_<uuid:4>",
           "kind": "web",
           "lastSuccessAt": null,
-          "name": "moved"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "moved",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         },
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": false,
           "host": "<push-host>",
           "id": "push_<uuid:5>",
           "kind": "web",
           "lastSuccessAt": null,
-          "name": "missing"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "missing",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         },
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": false,
           "host": "<push-host>",
           "id": "push_<uuid:6>",
           "kind": "web",
           "lastSuccessAt": null,
-          "name": "short-auth"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "short-auth",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         }
       ]
     },
@@ -331,7 +419,7 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "270",
+          "content-length": "291",
           "content-type": "application/octet-stream",
           "topic": "t2487m4",
           "ttl": "86400",
@@ -342,6 +430,7 @@ expression: t.into_value()
         "payload": {
           "at": "<epoch-ms>",
           "body": "Scheduled runs and anything waiting for you will show up here.",
+          "lockScreen": "title",
           "tag": "test",
           "target": {
             "schedules": true
@@ -369,7 +458,7 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "270",
+          "content-length": "291",
           "content-type": "application/octet-stream",
           "topic": "t2487m4",
           "ttl": "86400",
@@ -380,6 +469,7 @@ expression: t.into_value()
         "payload": {
           "at": "<epoch-ms>",
           "body": "Scheduled runs and anything waiting for you will show up here.",
+          "lockScreen": "title",
           "tag": "test",
           "target": {
             "schedules": true
@@ -407,7 +497,7 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "270",
+          "content-length": "291",
           "content-type": "application/octet-stream",
           "topic": "t2487m4",
           "ttl": "86400",
@@ -418,6 +508,7 @@ expression: t.into_value()
         "payload": {
           "at": "<epoch-ms>",
           "body": "Scheduled runs and anything waiting for you will show up here.",
+          "lockScreen": "title",
           "tag": "test",
           "target": {
             "schedules": true
@@ -445,7 +536,7 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "270",
+          "content-length": "291",
           "content-type": "application/octet-stream",
           "topic": "t2487m4",
           "ttl": "86400",
@@ -456,6 +547,7 @@ expression: t.into_value()
         "payload": {
           "at": "<epoch-ms>",
           "body": "Scheduled runs and anything waiting for you will show up here.",
+          "lockScreen": "title",
           "tag": "test",
           "target": {
             "schedules": true
@@ -483,7 +575,7 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "270",
+          "content-length": "291",
           "content-type": "application/octet-stream",
           "topic": "t2487m4",
           "ttl": "86400",
@@ -494,6 +586,7 @@ expression: t.into_value()
         "payload": {
           "at": "<epoch-ms>",
           "body": "Scheduled runs and anything waiting for you will show up here.",
+          "lockScreen": "title",
           "tag": "test",
           "target": {
             "schedules": true
@@ -514,39 +607,83 @@ expression: t.into_value()
       "subscriptions": [
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": false,
           "host": "<push-host>",
           "id": "push_<uuid:1>",
           "kind": "unifiedpush",
           "lastSuccessAt": "<epoch-ms>",
-          "name": "<push-host>"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "<push-host>",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         },
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": true,
           "host": "<push-host>",
           "id": "push_<uuid:3>",
           "kind": "web",
           "lastSuccessAt": null,
-          "name": "broken"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "broken",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         },
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": true,
           "host": "<push-host>",
           "id": "push_<uuid:4>",
           "kind": "web",
           "lastSuccessAt": null,
-          "name": "moved"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "moved",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         },
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": true,
           "host": "<push-host>",
           "id": "push_<uuid:6>",
           "kind": "web",
           "lastSuccessAt": null,
-          "name": "short-auth"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "short-auth",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         }
       ]
     },
@@ -561,12 +698,23 @@ expression: t.into_value()
     "body": {
       "subscription": {
         "createdAt": "<epoch-ms>",
+        "digestAt": "18:00",
         "failing": false,
         "host": "<push-host>",
         "id": "push_<uuid:7>",
         "kind": "unifiedpush",
         "lastSuccessAt": null,
-        "name": "<push-host>"
+        "levels": {
+          "calendar": "immediate",
+          "done": "digest",
+          "needs_you": "immediate",
+          "progress": "off"
+        },
+        "lockScreen": "title",
+        "name": "<push-host>",
+        "quietHours": null,
+        "revision": 1,
+        "timeZone": "UTC"
       }
     },
     "headers": {
@@ -582,48 +730,103 @@ expression: t.into_value()
       "subscriptions": [
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": false,
           "host": "<push-host>",
           "id": "push_<uuid:1>",
           "kind": "unifiedpush",
           "lastSuccessAt": "<epoch-ms>",
-          "name": "<push-host>"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "<push-host>",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         },
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": true,
           "host": "<push-host>",
           "id": "push_<uuid:3>",
           "kind": "web",
           "lastSuccessAt": null,
-          "name": "broken"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "broken",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         },
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": true,
           "host": "<push-host>",
           "id": "push_<uuid:4>",
           "kind": "web",
           "lastSuccessAt": null,
-          "name": "moved"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "moved",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         },
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": true,
           "host": "<push-host>",
           "id": "push_<uuid:6>",
           "kind": "web",
           "lastSuccessAt": null,
-          "name": "short-auth"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "short-auth",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         },
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": false,
           "host": "<push-host>",
           "id": "push_<uuid:7>",
           "kind": "unifiedpush",
           "lastSuccessAt": null,
-          "name": "<push-host>"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "<push-host>",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         }
       ]
     },
@@ -640,39 +843,83 @@ expression: t.into_value()
       "subscriptions": [
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": false,
           "host": "<push-host>",
           "id": "push_<uuid:1>",
           "kind": "unifiedpush",
           "lastSuccessAt": "<epoch-ms>",
-          "name": "<push-host>"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "<push-host>",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         },
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": true,
           "host": "<push-host>",
           "id": "push_<uuid:3>",
           "kind": "web",
           "lastSuccessAt": null,
-          "name": "broken"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "broken",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         },
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": true,
           "host": "<push-host>",
           "id": "push_<uuid:4>",
           "kind": "web",
           "lastSuccessAt": null,
-          "name": "moved"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "moved",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         },
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": true,
           "host": "<push-host>",
           "id": "push_<uuid:6>",
           "kind": "web",
           "lastSuccessAt": null,
-          "name": "short-auth"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "short-auth",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         }
       ]
     },
@@ -701,7 +948,7 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "324",
+          "content-length": "368",
           "content-type": "application/octet-stream",
           "topic": "<topic of session:<session id>>",
           "ttl": "86400",
@@ -712,6 +959,8 @@ expression: t.into_value()
         "payload": {
           "at": "<epoch-ms>",
           "body": "Allow rm -rf build?",
+          "category": "needs_you",
+          "lockScreen": "title",
           "tag": "session:session_<uuid:8>",
           "target": {
             "sessionId": "session_<uuid:8>"
@@ -739,7 +988,7 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "324",
+          "content-length": "368",
           "content-type": "application/octet-stream",
           "topic": "<topic of session:<session id>>",
           "ttl": "86400",
@@ -750,6 +999,8 @@ expression: t.into_value()
         "payload": {
           "at": "<epoch-ms>",
           "body": "Allow rm -rf build?",
+          "category": "needs_you",
+          "lockScreen": "title",
           "tag": "session:session_<uuid:8>",
           "target": {
             "sessionId": "session_<uuid:8>"
@@ -777,7 +1028,7 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "324",
+          "content-length": "368",
           "content-type": "application/octet-stream",
           "topic": "<topic of session:<session id>>",
           "ttl": "86400",
@@ -788,6 +1039,8 @@ expression: t.into_value()
         "payload": {
           "at": "<epoch-ms>",
           "body": "Allow rm -rf build?",
+          "category": "needs_you",
+          "lockScreen": "title",
           "tag": "session:session_<uuid:8>",
           "target": {
             "sessionId": "session_<uuid:8>"
@@ -820,7 +1073,7 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "335",
+          "content-length": "379",
           "content-type": "application/octet-stream",
           "topic": "<topic of session:<session id>>",
           "ttl": "86400",
@@ -831,6 +1084,8 @@ expression: t.into_value()
         "payload": {
           "at": "<epoch-ms>",
           "body": "It needs your answer to go on.",
+          "category": "needs_you",
+          "lockScreen": "title",
           "tag": "session:session_<uuid:8>",
           "target": {
             "sessionId": "session_<uuid:8>"
@@ -858,7 +1113,7 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "335",
+          "content-length": "379",
           "content-type": "application/octet-stream",
           "topic": "<topic of session:<session id>>",
           "ttl": "86400",
@@ -869,6 +1124,8 @@ expression: t.into_value()
         "payload": {
           "at": "<epoch-ms>",
           "body": "It needs your answer to go on.",
+          "category": "needs_you",
+          "lockScreen": "title",
           "tag": "session:session_<uuid:8>",
           "target": {
             "sessionId": "session_<uuid:8>"
@@ -896,7 +1153,7 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "335",
+          "content-length": "379",
           "content-type": "application/octet-stream",
           "topic": "<topic of session:<session id>>",
           "ttl": "86400",
@@ -907,6 +1164,8 @@ expression: t.into_value()
         "payload": {
           "at": "<epoch-ms>",
           "body": "It needs your answer to go on.",
+          "category": "needs_you",
+          "lockScreen": "title",
           "tag": "session:session_<uuid:8>",
           "target": {
             "sessionId": "session_<uuid:8>"
@@ -1015,21 +1274,43 @@ expression: t.into_value()
       "subscriptions": [
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": true,
           "host": "<push-host>",
           "id": "push_<uuid:4>",
           "kind": "web",
           "lastSuccessAt": null,
-          "name": "moved"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "moved",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         },
         {
           "createdAt": "<epoch-ms>",
+          "digestAt": "18:00",
           "failing": true,
           "host": "<push-host>",
           "id": "push_<uuid:6>",
           "kind": "web",
           "lastSuccessAt": null,
-          "name": "short-auth"
+          "levels": {
+            "calendar": "immediate",
+            "done": "digest",
+            "needs_you": "immediate",
+            "progress": "off"
+          },
+          "lockScreen": "title",
+          "name": "short-auth",
+          "quietHours": null,
+          "revision": 1,
+          "timeZone": "UTC"
         }
       ]
     },
@@ -1069,7 +1350,7 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "270",
+          "content-length": "291",
           "content-type": "application/octet-stream",
           "topic": "t2487m4",
           "ttl": "86400",
@@ -1080,6 +1361,7 @@ expression: t.into_value()
         "payload": {
           "at": "<epoch-ms>",
           "body": "Scheduled runs and anything waiting for you will show up here.",
+          "lockScreen": "title",
           "tag": "test",
           "target": {
             "schedules": true

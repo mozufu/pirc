@@ -136,6 +136,12 @@ fn bearer_token(authorization: &str) -> &str {
     token
 }
 
+/// The device token a request carries, as authentication read it.
+pub(crate) fn device_token(headers: &HeaderMap) -> Option<String> {
+    let authorization = header(headers, "authorization")?;
+    is_device_bearer(&authorization).then(|| bearer_token(&authorization).to_owned())
+}
+
 /// Routes a device token may not reach: device management and model backends/credentials.
 fn device_denied(path: &str) -> bool {
     let decoded = percent_decode(path);
@@ -180,14 +186,9 @@ pub struct RequestInfo<'a> {
     pub method: &'a Method,
 }
 
-/// Identify the caller of a browser-API request (`validateRequest`).
-pub fn validate_request(
-    request: &RequestInfo<'_>,
-    config: &BrowserAuth,
-    devices: &dyn DeviceAuthenticator,
-    require_origin: bool,
-    management: &dyn ManagementGrantAuthorizer,
-) -> ApiResult<Identity> {
+/// The checks every request passes, with or without an identity: a trusted
+/// proxy peer (and its secret, when set) and an allowed `Host`.
+fn trusted_proxy_and_host(request: &RequestInfo<'_>, config: &BrowserAuth) -> ApiResult<()> {
     let untrusted = || {
         ApiError::new(
             401,
@@ -211,6 +212,54 @@ pub fn validate_request(
     if !host.is_some_and(|host| config.allowed_hosts.contains(&host)) {
         return Err(ApiError::new(403, "invalid_host", "Host is not allowed"));
     }
+    Ok(())
+}
+
+/// A route that needs no identity (pairing v2's request and claim): the
+/// proxy and `Host` checks, and an `Origin` that is sent must be allowed.
+///
+/// A request with a bearer `Authorization` header is refused. The proxies
+/// send device-bearer requests past forward auth (the `pirc-device` router),
+/// so a made-up `Bearer pirc_dev_…` would otherwise reach these routes from
+/// anywhere. An app that is pairing has no token: it sends no
+/// `Authorization` header, and its request goes through forward auth like
+/// every other route until M9 opens these two paths on purpose. A
+/// forward-auth identity header, when present, is ignored.
+pub fn validate_anonymous(request: &RequestInfo<'_>, config: &BrowserAuth) -> ApiResult<()> {
+    trusted_proxy_and_host(request, config)?;
+    if request
+        .headers
+        .get_all("authorization")
+        .iter()
+        .any(|value| after_bearer(&latin1(value.as_bytes())).is_some())
+    {
+        return Err(ApiError::new(
+            401,
+            "bearer_not_allowed",
+            "Pairing requests must not carry an Authorization bearer token",
+        ));
+    }
+    if header(request.headers, "origin")
+        .is_some_and(|origin| !config.allowed_origins.contains(&origin))
+    {
+        return Err(ApiError::new(
+            403,
+            "invalid_origin",
+            "Origin is not allowed",
+        ));
+    }
+    Ok(())
+}
+
+/// Identify the caller of a browser-API request (`validateRequest`).
+pub fn validate_request(
+    request: &RequestInfo<'_>,
+    config: &BrowserAuth,
+    devices: &dyn DeviceAuthenticator,
+    require_origin: bool,
+    management: &dyn ManagementGrantAuthorizer,
+) -> ApiResult<Identity> {
+    trusted_proxy_and_host(request, config)?;
     let origin = header(request.headers, "origin");
     let invalid_origin = || ApiError::new(403, "invalid_origin", "Origin is not allowed");
     let forbidden = || ApiError::new(403, "forbidden", "Identity is not allowed");

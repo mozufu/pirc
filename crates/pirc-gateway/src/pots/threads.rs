@@ -310,7 +310,7 @@ pub fn post_card_in(
 }
 
 /// The DM thread between two pots, made on first use.
-fn pot_dm(conn: &Connection, owner: &str, a: &str, b: &str) -> ApiResult<Thread> {
+pub(super) fn pot_dm(conn: &Connection, owner: &str, a: &str, b: &str) -> ApiResult<Thread> {
     let (a, b) = if a < b { (a, b) } else { (b, a) };
     let found: Option<String> = conn
         .query_row(
@@ -616,7 +616,7 @@ pub fn message(conn: &Connection, id: &str) -> ApiResult<Message> {
     )?)
 }
 
-fn pot_name(conn: &Connection, pot: &str) -> String {
+pub(crate) fn pot_name(conn: &Connection, pot: &str) -> String {
     conn.query_row("SELECT name FROM pots WHERE id=?1", [pot], |r| r.get(0))
         .unwrap_or_else(|_| pot.to_owned())
 }

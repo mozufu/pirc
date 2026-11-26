@@ -61,7 +61,10 @@ CREATE TABLE workspace_deletions (
 CREATE TABLE device_tokens (
   id TEXT PRIMARY KEY, owner_user TEXT NOT NULL, name TEXT NOT NULL,
   token_hash TEXT NOT NULL UNIQUE, created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL,
-  last_used_at INTEGER NOT NULL
+  last_used_at INTEGER NOT NULL,
+  -- After a rotation (devices.rs), the token it replaced works until the new
+  -- one is first used or `previous_expires_at`, whichever comes first.
+  previous_token_hash TEXT UNIQUE, previous_expires_at INTEGER
 );
 CREATE INDEX device_tokens_owner ON device_tokens(owner_user);
 -- Clients that took control, by the clientId they send (clients.rs): a paired
@@ -161,9 +164,30 @@ CREATE TABLE push_subscriptions (
   id TEXT PRIMARY KEY, owner_user TEXT NOT NULL, endpoint TEXT NOT NULL UNIQUE,
   p256dh TEXT NOT NULL, auth TEXT NOT NULL, kind TEXT NOT NULL, name TEXT,
   device_id TEXT, created_at INTEGER NOT NULL, last_success_at INTEGER,
-  failures INTEGER NOT NULL DEFAULT 0
+  failures INTEGER NOT NULL DEFAULT 0,
+  -- Notification preferences (push/preferences.rs): a level per category,
+  -- quiet hours (local HH:MM, may cross midnight), the target's time zone,
+  -- what the lock screen shows and the local time of the daily summary.
+  levels_json TEXT NOT NULL DEFAULT '{}',
+  quiet_start TEXT, quiet_end TEXT,
+  time_zone TEXT NOT NULL DEFAULT 'UTC',
+  lock_screen TEXT NOT NULL DEFAULT 'title' CHECK(lock_screen IN ('hidden','title','full')),
+  digest_at TEXT NOT NULL DEFAULT '18:00',
+  revision INTEGER NOT NULL DEFAULT 1,
+  -- Summary moments (digest time, end of quiet hours) up to here are handled.
+  summary_mark INTEGER NOT NULL DEFAULT 0,
+  -- 1: a change ended quiet hours, so a summary is due at the next tick.
+  summary_now INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX push_subscriptions_owner ON push_subscriptions(owner_user);
+-- Items waiting for a target's next summary: at level "digest", or held
+-- during quiet hours.
+CREATE TABLE push_digest_items (
+  id INTEGER PRIMARY KEY,
+  subscription_id TEXT NOT NULL REFERENCES push_subscriptions(id) ON DELETE CASCADE,
+  category TEXT NOT NULL, title TEXT NOT NULL, created_at INTEGER NOT NULL
+);
+CREATE INDEX push_digest_items_subscription ON push_digest_items(subscription_id);
 
 -- A chat workspace's capability policy (gateway-owned; node sync never touches it).
 CREATE TABLE workspace_capabilities (

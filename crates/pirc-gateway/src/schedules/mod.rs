@@ -401,6 +401,9 @@ pub struct Input {
     pub notify: Option<String>,
 }
 
+/// A run's reason in its compact state, at most this long (UTF-16 units).
+const RUN_REASON_CHARS: usize = 300;
+
 /// UTF-16 length, as JavaScript counts.
 fn units(text: &str) -> usize {
     text.encode_utf16().count()
@@ -470,7 +473,7 @@ enum Effect {
         kind: &'static str,
         data: Value,
     },
-    Push(String, PushMessage),
+    Push(String, Box<PushMessage>),
     Dispatch(Box<(Schedule, Run, Workspace)>),
 }
 
@@ -502,7 +505,7 @@ fn apply_effects(app: &AppState, fx: Fx) {
             } => {
                 app.events.publish(&session_id, epoch, kind, data);
             }
-            Effect::Push(user, message) => crate::push::notify(app, &user, message),
+            Effect::Push(user, message) => crate::push::notify(app, &user, *message),
             Effect::Dispatch(job) => {
                 let (schedule, run, workspace) = *job;
                 tokio::spawn(timer::dispatch(app.clone(), schedule, run, workspace));
@@ -668,6 +671,33 @@ impl Ctx<'_> {
             },
         );
         Value::Object(view)
+    }
+
+    /// One run as the background client reads it (plans/roadmap.md M8 step
+    /// 0.5): its state, times and, for a run that did not finish, why. A
+    /// finished run's result stays in the full view.
+    fn run_state(&self, user: &str, schedule_id: &str, run_id: &str) -> ApiResult<Value> {
+        let run = self.get_run(user, run_id)?;
+        if run.schedule_id != schedule_id {
+            return Err(ApiError::not_found(format!("No run {run_id}")));
+        }
+        let reason = match run.status {
+            RunStatus::Missed | RunStatus::Failed | RunStatus::Skipped => run
+                .result
+                .as_deref()
+                .map(|reason| clip(reason, RUN_REASON_CHARS)),
+            _ => None,
+        };
+        Ok(json!({
+            "id": run.id,
+            "scheduleId": run.schedule_id,
+            "state": run.status,
+            "dueAt": run.due_at,
+            "startedAt": run.started_at,
+            "finishedAt": run.finished_at,
+            "sessionId": run.session_id,
+            "reason": reason,
+        }))
     }
 
     /// The user's run `id`, owner-checked.
@@ -1794,13 +1824,21 @@ impl Ctx<'_> {
                 Some(session_id) if run.status != RunStatus::Missed => {
                     json!({ "sessionId": session_id })
                 }
-                _ => json!({ "schedules": true, "scheduleId": schedule.id }),
+                // The background client reads the run (`GET …/runs/{runId}`).
+                _ => json!({ "schedules": true, "scheduleId": schedule.id, "runId": run.id }),
             },
+            // A finished run is "done"; one that failed, was missed or waits
+            // for an answer needs the user.
+            category: Some(if run.status == RunStatus::Completed {
+                crate::push::Category::Done
+            } else {
+                crate::push::Category::NeedsYou
+            }),
             interaction: None,
         };
         self.fx
             .0
-            .push(Effect::Push(schedule.owner_user.clone(), message));
+            .push(Effect::Push(schedule.owner_user.clone(), Box::new(message)));
         Ok(())
     }
 
@@ -1947,6 +1985,11 @@ fn parse_at(at: &str, zone: Zone) -> ApiResult<i64> {
 /// Schedule proposals of this session waiting for the user, as interactions.
 pub fn pending_interactions(app: &App, session_id: &str) -> Vec<Value> {
     read(app, |ctx| ctx.pending_interactions(session_id)).unwrap_or_default()
+}
+
+/// The compact state of one run of the user's schedule.
+pub fn run_state(app: &App, user: &str, schedule_id: &str, run_id: &str) -> ApiResult<Value> {
+    read(app, |ctx| ctx.run_state(user, schedule_id, run_id))
 }
 
 /// Answer a schedule proposal's confirmation; `None` when it is not one.

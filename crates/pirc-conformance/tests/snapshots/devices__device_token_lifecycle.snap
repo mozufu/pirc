@@ -9,6 +9,7 @@ expression: t.into_value()
         "createdAt": "<epoch-ms>",
         "expiresAt": "<epoch-ms>",
         "id": "dev_<uuid:1>",
+        "idleExpiresAt": "<epoch-ms>",
         "lastUsedAt": "<epoch-ms>",
         "name": "Phone"
       },
@@ -48,6 +49,7 @@ expression: t.into_value()
           "createdAt": "<epoch-ms>",
           "expiresAt": "<epoch-ms>",
           "id": "dev_<uuid:1>",
+          "idleExpiresAt": "<epoch-ms>",
           "lastUsedAt": "<epoch-ms>",
           "name": "Phone"
         }

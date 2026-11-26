@@ -312,6 +312,75 @@ mod budget {
     }
 
     #[test]
+    fn pot_pushes_name_their_target_and_category() {
+        use crate::push::Category;
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        let other = create(&mut conn, "alice", input("Other")).unwrap();
+        let request = budget::request(&mut conn, "alice", &pot.id, ask_money(1_000_000)).unwrap();
+        let pushed = super::super::notify::budget_request(&conn, &request);
+        assert_eq!(pushed.target, json!({ "budgetRequestId": request.id }));
+        assert_eq!(pushed.category, Some(Category::NeedsYou));
+        assert_eq!(pushed.title, "Tester asks for more budget");
+
+        let direct = threads::direct(&conn, "alice", &pot.id).unwrap();
+        let dm = threads::pot_dm(&conn, "alice", &pot.id, &other.id).unwrap();
+        let message = |thread: &str, author: &str| threads::Message {
+            id: "m1".into(),
+            thread_id: thread.into(),
+            seq: 1,
+            author_kind: author.into(),
+            author_id: Some(pot.id.clone()),
+            author_name: None,
+            body: "The secret plan".into(),
+            mentions: vec![],
+            all: false,
+            created_at: 0,
+            card: None,
+        };
+        let card = message(&direct.id, "system");
+        let handover = super::super::notify::handover(&conn, &pot.id, &card);
+        assert_eq!(
+            handover.target,
+            json!({ "potId": pot.id, "threadId": direct.id })
+        );
+        assert_eq!(handover.category, Some(Category::NeedsYou));
+        let work = super::super::notify::work_opened(&conn, &pot.id, "Fix CI", &card);
+        assert_eq!(
+            work.target,
+            json!({ "potId": pot.id, "threadId": direct.id })
+        );
+        assert_eq!(
+            (work.category, work.body.as_str()),
+            (Some(Category::Progress), "Fix CI")
+        );
+
+        // A pot's reply is pushed only in a thread the user reads, and
+        // without its text.
+        let reply = super::super::runtime::reply_push(&conn, &pot.id, &message(&direct.id, "pot"))
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            reply.target,
+            json!({ "potId": pot.id, "threadId": direct.id })
+        );
+        assert_eq!(reply.category, Some(Category::Done));
+        assert!(!reply.body.contains("secret") && !reply.title.contains("secret"));
+        assert!(
+            super::super::runtime::reply_push(&conn, &pot.id, &message(&dm.id, "pot"))
+                .unwrap()
+                .is_none(),
+            "a pot DM is not the user's"
+        );
+        assert!(
+            super::super::runtime::reply_push(&conn, &pot.id, &message(&direct.id, "system"))
+                .unwrap()
+                .is_none()
+        );
+    }
+
+    #[test]
     fn a_budget_request_is_asked_once_answered_and_raises_only_that_window() {
         let db = db();
         let mut conn = db.lock();
@@ -3163,6 +3232,41 @@ mod approvals {
         }
 
         #[tokio::test]
+        async fn a_model_approval_pushes_its_target_and_category() {
+            use crate::push::tests::{Subscriber, input, push_service};
+            let (app, _dir) = app();
+            let pot = create_pot(&app).await;
+            app.slots.set(Arc::new(crate::push::Push::new(
+                app.db.clone(),
+                crate::push::generate_vapid_keys(),
+                "mailto:ops@example.com".into(),
+                true,
+            )));
+            let (url, service) = push_service().await;
+            let phone = Subscriber::new();
+            app.slots
+                .get::<crate::push::Push>()
+                .unwrap()
+                .subscribe(
+                    "alice",
+                    &input(&format!("{url}/p"), phone.keys(), "unifiedpush", None),
+                    None,
+                )
+                .unwrap();
+            let approval = app.request_approval("alice", &pot, ask()).unwrap();
+            for _ in 0..100 {
+                if !service.lock().unwrap().received.is_empty() {
+                    break;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            }
+            let pushed = phone.read(&service.lock().unwrap().received[0].2);
+            assert_eq!(pushed["category"], "needs_you");
+            assert_eq!(pushed["target"], json!({ "approvalId": approval.id }));
+            assert_eq!(pushed["title"], "Tester asks to use a model");
+        }
+
+        #[tokio::test]
         async fn approvals_are_listed_and_answered_over_http() {
             let (app, _dir) = app();
             let pot = create_pot(&app).await;
@@ -4381,6 +4485,14 @@ mod observe {
         assert!(first.notification_id.is_none());
         let told = noted(&conn, &lead, &event, "Build broke on main", true);
         assert!(told.notified);
+        // Its push names the notification and is "done".
+        let pushed =
+            observe::push_message(&conn, told.notification_id.as_deref().unwrap()).unwrap();
+        assert_eq!(
+            pushed.target,
+            json!({ "activityNotificationId": told.notification_id })
+        );
+        assert_eq!(pushed.category, Some(crate::push::Category::Done));
         let shown = observe::notifications(&conn, "alice", Some("open")).unwrap();
         assert_eq!(shown.len(), 1);
         assert_eq!(shown[0].issuer_pot_id.as_deref(), Some(lead.as_str()));

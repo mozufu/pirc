@@ -24,6 +24,7 @@ pub fn routes() -> Router<AppState> {
             get(show).patch(update).delete(remove),
         )
         .route("/api/schedules/{id}/run", post(run))
+        .route("/api/schedules/{id}/runs/{run_id}", get(show_run))
         .route("/api/schedules/{id}/runs/{run_id}/dismiss", post(dismiss))
 }
 
@@ -181,6 +182,18 @@ async fn run(
         Ok(ctx.run_view(&run))
     })?;
     Ok(json_response(202, &json!({ "run": view })))
+}
+
+/// One run's state, time and reason, without the schedule's other runs.
+async fn show_run(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path((id, run_id)): Path<(String, String)>,
+) -> Handled {
+    param(&id)?;
+    param(&run_id)?;
+    let run = super::run_state(&app, &identity.user, &id, &run_id)?;
+    Ok(ok(json!({ "run": run })))
 }
 
 async fn dismiss(

@@ -1005,10 +1005,16 @@ pub fn request_with_hints(
     pot_id: &str,
     input: RequestInput,
 ) -> ApiResult<BudgetRequest> {
-    let request = request(&mut app.db.lock(), owner, pot_id, input)?;
+    let (request, message) = {
+        let mut conn = app.db.lock();
+        let request = request(&mut conn, owner, pot_id, input)?;
+        let message = super::notify::budget_request(&conn, &request);
+        (request, message)
+    };
     app.budget_requests_changed(owner);
     app.threads_changed(owner);
     app.activity_changed(owner);
+    crate::push::notify(app, owner, message);
     Ok(request)
 }
 

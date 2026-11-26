@@ -1,6 +1,14 @@
 //! Browser-approved, short-lived native management grants. Request
 //! challenges and grant tokens are intentionally held in memory only, so a
 //! gateway restart invalidates every pending request and grant.
+//!
+//! The same request store holds pairing v2 requests ([`pairing`]): an app
+//! that has no token yet asks, a browser approves, and the app claims a
+//! device token with its verifier and the confirmation code.
+
+mod pairing;
+
+pub use pairing::is_anonymous_route;
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -112,9 +120,21 @@ pub trait ManagementGrantAuthorizer: Send + Sync {
     ) -> bool;
 }
 
+/// What a stored request is for. Each kind's routes see only their own
+/// requests.
+#[derive(Clone)]
+enum RequestKind {
+    /// A paired device asks for a short-lived management grant.
+    Management,
+    /// An app without a token asks to be paired (pairing v2).
+    Pairing(pairing::Pairing),
+}
+
 #[derive(Clone)]
 struct ManagementRequest {
     id: String,
+    kind: RequestKind,
+    /// The requesting device's owner (management requests only).
     owner: String,
     device_id: String,
     device_name: String,
@@ -142,6 +162,10 @@ impl ManagementRequest {
                 .contains(&ManagementCapability::DevicesPair)
                 .then_some(terms),
         }
+    }
+
+    fn is_management(&self) -> bool {
+        matches!(self.kind, RequestKind::Management)
     }
 
     fn is_active(&self, stamp: i64) -> bool {
@@ -218,6 +242,9 @@ impl NativeManagementGrants {
                 .flatten();
             let token_hash = request.grant_token_hash.take();
             request.challenge.clear();
+            if let RequestKind::Pairing(pairing) = &mut request.kind {
+                pairing.code.clear();
+            }
             request.status = status;
             request.grant_expires_at = keep_expiry;
             request.cleanup_at = stamp.saturating_add(TERMINAL_RETENTION_MS);
@@ -257,7 +284,7 @@ impl NativeManagementGrants {
             Self::finish(state, request_id, status, stamp);
             return Ok(());
         }
-        let device = if check_device && request.is_active(stamp) {
+        let device = if check_device && request.is_management() && request.is_active(stamp) {
             Some((request.owner.clone(), request.device_id.clone()))
         } else {
             None
@@ -307,7 +334,8 @@ impl NativeManagementGrants {
         Self::checked_id(id)?;
         self.sweep_locked(state, stamp)?;
         let request = state.requests.get(id).ok_or_else(request_not_found)?;
-        if request.owner != owner
+        if !request.is_management()
+            || request.owner != owner
             || device_id.is_some_and(|device_id| request.device_id != device_id)
         {
             return Err(request_not_found());
@@ -352,7 +380,10 @@ impl NativeManagementGrants {
             .requests
             .iter()
             .filter(|(_, request)| {
-                request.owner == owner && request.device_id == device_id && request.is_active(stamp)
+                request.is_management()
+                    && request.owner == owner
+                    && request.device_id == device_id
+                    && request.is_active(stamp)
             })
             .map(|(id, _)| id.clone())
             .collect();
@@ -367,7 +398,8 @@ impl NativeManagementGrants {
             .requests
             .values()
             .filter(|request| {
-                request.owner == owner
+                request.is_management()
+                    && request.owner == owner
                     && request.device_id == device_id
                     && stamp.saturating_sub(request.created_at) < REQUEST_RATE_WINDOW_MS
             })
@@ -394,6 +426,7 @@ impl NativeManagementGrants {
         let request_expires_at = stamp.saturating_add(MANAGEMENT_REQUEST_TTL_MS);
         let request = ManagementRequest {
             id: id.clone(),
+            kind: RequestKind::Management,
             owner: owner.to_owned(),
             device_id: device_id.to_owned(),
             device_name: device.name,
@@ -570,7 +603,8 @@ impl ManagementGrantAuthorizer for NativeManagementGrants {
         let Some(request) = state.requests.get(&request_id) else {
             return false;
         };
-        request.status == ManagementRequestStatus::Claimed
+        request.is_management()
+            && request.status == ManagementRequestStatus::Claimed
             && request.owner == user
             && request.device_id == device_id
             && request
@@ -671,6 +705,7 @@ fn body_value<T: Serialize>(value: &T) -> Value {
 
 pub fn routes() -> Router<AppState> {
     Router::new()
+        .merge(pairing::routes())
         .route("/api/native-management/requests", post(create))
         .route(
             "/api/native-management/requests/{id}",
@@ -772,7 +807,8 @@ async fn cancel(
 pub async fn response_headers(request: axum::extract::Request, next: Next) -> Response {
     let path = request.uri().path();
     let management_route = path == "/api/native-management/requests"
-        || path.starts_with("/api/native-management/requests/");
+        || path.starts_with("/api/native-management/requests/")
+        || path.starts_with("/api/pairing/");
     let mut response = next.run(request).await;
     if management_route {
         response

@@ -808,7 +808,8 @@ pub fn push_message(
             .map(|o| o.note.chars().take(200).collect())
             .unwrap_or_default(),
         tag: format!("pot-notification:{}", shown.id),
-        target: json!({ "potNotification": shown.id }),
+        target: json!({ "activityNotificationId": shown.id }),
+        category: Some(crate::push::Category::Done),
         interaction: None,
     })
 }

@@ -478,7 +478,7 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
                     },
                     super::handover::ProposedBy::Pot,
                 )?;
-                super::threads::post_card(
+                let card = super::threads::post_card(
                     &conn,
                     &context.user,
                     &pot.id,
@@ -487,11 +487,14 @@ pub async fn run_op(app: &AppState, context: &OpContext, op: Op) -> ApiResult<Va
                         handover_id: handover.id.clone(),
                     },
                 )?;
-                handover
+                let message = super::notify::handover(&conn, &pot.id, &card);
+                (handover, message)
             };
+            let (handover, message) = handover;
             app.pots_changed(&context.user);
             app.threads_changed(&context.user);
             app.activity_changed(&context.user);
+            crate::push::notify(app, &context.user, message);
             Ok(json!({ "handover": handover }))
         }
         Op::MemoryNote(input) => {

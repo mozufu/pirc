@@ -6,6 +6,8 @@ use p256::ecdsa::VerifyingKey;
 use p256::ecdsa::signature::Verifier;
 
 use super::*;
+use crate::db::Store;
+use crate::events::EventHub;
 
 fn b64(text: &str) -> Vec<u8> {
     URL_SAFE_NO_PAD.decode(text).unwrap()
@@ -204,10 +206,11 @@ fn audiences_topics_and_payloads_as_web_push_made_them() {
         body: "b".into(),
         tag: "a\u{1}\"\\\n".into(),
         target: json!({ "sessionId": "s" }),
+        category: None,
         interaction: None,
     };
     assert_eq!(
-        payload(&message, 5),
+        payload(&message, 5, Delivery::default()),
         format!(
             r#"{{"title":"{}…","body":"b","tag":"a\u0001\"\\\n","target":{{"sessionId":"s"}},"at":5}}"#,
             "t".repeat(119)
@@ -218,14 +221,31 @@ fn audiences_topics_and_payloads_as_web_push_made_them() {
         body: String::new(),
         tag: "interaction:7331:0:6d656d6f72793a703a30".into(),
         target: json!({ "sessionId": "s1" }),
+        category: Some(Category::NeedsYou),
         interaction: Some(InteractionPush {
             kind: "interaction_answered",
             session_id: "s1".into(),
             interaction_id: Some("memory:p:0".into()),
             interaction_epoch: Some("0".into()),
+            answered_by: Some(json!({ "deviceName": "Pixel 9", "at": 7 })),
+            ..InteractionPush::default()
         }),
     };
-    let revoke: Value = serde_json::from_str(&payload(&revoke, 6)).unwrap();
+    let revoke: Value = serde_json::from_str(&payload(
+        &revoke,
+        6,
+        Delivery {
+            silent: false,
+            lock_screen: Some(LockScreen::Hidden),
+        },
+    ))
+    .unwrap();
+    assert_eq!(revoke["category"], "needs_you");
+    assert_eq!(revoke["lockScreen"], "hidden");
+    assert_eq!(
+        revoke["answeredBy"],
+        json!({ "deviceName": "Pixel 9", "at": 7 })
+    );
     assert_eq!(revoke["kind"], "interaction_answered");
     assert_eq!(revoke["sessionId"], "s1");
     assert_eq!(revoke["interactionId"], "memory:p:0");
@@ -241,20 +261,20 @@ fn audiences_topics_and_payloads_as_web_push_made_them() {
 }
 
 /// A browser's push subscription keys.
-struct Subscriber {
+pub(crate) struct Subscriber {
     secret: SecretKey,
     auth: [u8; 16],
 }
 
 impl Subscriber {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             secret: SecretKey::from_slice(&random_bytes::<32>()).unwrap(),
             auth: random_bytes(),
         }
     }
 
-    fn keys(&self) -> SubscriptionKeys {
+    pub(crate) fn keys(&self) -> SubscriptionKeys {
         SubscriptionKeys {
             p256dh: URL_SAFE_NO_PAD
                 .encode(self.secret.public_key().to_encoded_point(false).as_bytes()),
@@ -262,19 +282,19 @@ impl Subscriber {
         }
     }
 
-    fn read(&self, body: &[u8]) -> Value {
+    pub(crate) fn read(&self, body: &[u8]) -> Value {
         serde_json::from_slice(&decrypt(&self.secret, &self.auth, body)).unwrap()
     }
 }
 
 #[derive(Default)]
-struct Service {
+pub(crate) struct Service {
     status: u16,
-    received: Vec<(String, HeaderMap, Bytes)>,
+    pub(crate) received: Vec<(String, HeaderMap, Bytes)>,
 }
 
 /// A push service on loopback that records what it receives and answers `status`.
-async fn push_service() -> (String, Arc<Mutex<Service>>) {
+pub(crate) async fn push_service() -> (String, Arc<Mutex<Service>>) {
     let service = Arc::new(Mutex::new(Service {
         status: 201,
         received: Vec::new(),
@@ -305,7 +325,7 @@ fn setup() -> Arc<Push> {
     ))
 }
 
-fn input(
+pub(crate) fn input(
     endpoint: &str,
     keys: SubscriptionKeys,
     kind: &str,
@@ -325,6 +345,7 @@ fn message(tag: &str) -> PushMessage {
         body: "b".into(),
         tag: tag.into(),
         target: json!({ "memory": true }),
+        category: None,
         interaction: None,
     }
 }
@@ -348,6 +369,7 @@ async fn sends_encrypted_signed_notifications_only_the_subscriber_can_read() {
                 body: "Scheduled run: open it to read the result.".into(),
                 tag: "session:s1".into(),
                 target: json!({ "sessionId": "s1" }),
+                category: Some(Category::NeedsYou),
                 interaction: None,
             },
         )
@@ -571,17 +593,30 @@ async fn pushes_when_a_session_starts_waiting_for_its_user() {
     };
     let events = EventHub::new(100);
     watch_interactions(&events, push.db.clone(), push.clone());
+    crate::clients::record(
+        &push.db.lock(),
+        &crate::auth::Identity {
+            user: "me".into(),
+            device_id: None,
+            management_authorized: false,
+        },
+        "web-1",
+        Some("Office iMac"),
+        &axum::http::HeaderMap::new(),
+    )
+    .unwrap();
     events.publish(
         &session.id,
         17,
         "interaction_created",
-        json!({ "id": "i1", "runnerEpoch": 0, "request": { "title": "Allow rm -rf build?" } }),
+        json!({ "id": "i1", "runnerEpoch": 0, "kind": "select", "expiresAt": 1234,
+                "request": { "title": "Allow rm -rf build?", "options": ["Yes", "No", "Ask later"] } }),
     );
     events.publish(
         &session.id,
         17,
         "interaction_answered",
-        json!({ "interactionId": "i1", "interactionEpoch": 0 }),
+        json!({ "interactionId": "i1", "interactionEpoch": 0, "answeredBy": "web-1", "resolvedAt": 99 }),
     );
     events.publish("unknown", 0, "interaction_created", json!({}));
     for _ in 0..100 {
@@ -603,6 +638,13 @@ async fn pushes_when_a_session_starts_waiting_for_its_user() {
         format!("{} is waiting for you", session.name)
     );
     assert_eq!(created["body"], "Allow rm -rf build?");
+    assert_eq!(created["category"], "needs_you");
+    assert_eq!(created["expiresAt"], 1234);
+    assert_eq!(created["lockScreen"], "title");
+    assert_eq!(
+        created["choices"],
+        json!([{ "id": "Yes", "label": "Yes" }, { "id": "No", "label": "No" }, { "id": "Ask later", "label": "Ask later" }])
+    );
     assert_eq!(created["interactionId"], "i1");
     assert_eq!(created["interactionEpoch"], "0");
     assert_eq!(
@@ -615,6 +657,10 @@ async fn pushes_when_a_session_starts_waiting_for_its_user() {
         .find(|payload| payload["kind"] == "interaction_answered")
         .unwrap();
     assert_eq!(answered["title"], "");
+    assert_eq!(
+        answered["answeredBy"],
+        json!({ "deviceName": "Office iMac", "at": 99 })
+    );
     assert_eq!(answered["interactionId"], "i1");
     assert_eq!(answered["interactionEpoch"], "0");
     assert_eq!(answered["tag"], created["tag"]);
@@ -682,4 +728,526 @@ async fn the_test_notification_needs_the_request_shape() {
             assert_eq!(received(), before + 1);
         }
     }
+}
+
+#[test]
+fn only_a_single_choice_with_three_or_fewer_options_gets_buttons() {
+    let options =
+        |n: usize| json!({ "options": (0..n).map(|i| format!("o{i}")).collect::<Vec<_>>() });
+    assert_eq!(single_choices("select", &options(3)).len(), 3);
+    assert!(single_choices("select", &options(4)).is_empty());
+    assert!(single_choices("select", &options(0)).is_empty());
+    let mut multiple = options(2);
+    multiple["multiple"] = json!(true);
+    assert!(single_choices("select", &multiple).is_empty());
+    assert!(single_choices("confirm", &options(2)).is_empty());
+    assert!(single_choices("input", &options(2)).is_empty());
+    assert!(single_choices("select", &json!({ "options": ["a", "x".repeat(101)] })).is_empty());
+}
+
+/// 2030-01-01T10:00:00Z.
+const T0: i64 = 1_893_492_000_000;
+const MINUTE: i64 = 60_000;
+
+fn kind(category: Category, tag: &str) -> PushMessage {
+    PushMessage {
+        title: format!("{} item", category.as_str()),
+        body: "b".into(),
+        tag: tag.into(),
+        target: json!({ "activity": true }),
+        category: Some(category),
+        interaction: None,
+    }
+}
+
+/// One subscriber on a loopback service, its summaries handled up to `mark`.
+async fn subscribed(
+    patch: Value,
+    mark: i64,
+) -> (Arc<Push>, Arc<Mutex<Service>>, Subscriber, String) {
+    let push = setup();
+    let (url, service) = push_service().await;
+    let phone = Subscriber::new();
+    let added = push
+        .subscribe(
+            "me",
+            &input(&format!("{url}/p"), phone.keys(), "unifiedpush", None),
+            None,
+        )
+        .unwrap();
+    let id = added["id"].as_str().unwrap().to_owned();
+    let mut patch = patch;
+    patch["revision"] = added["revision"].clone();
+    let patch: preferences::PreferencesPatch = serde_json::from_value(patch).unwrap();
+    push.update_preferences("me", &id, &patch).unwrap();
+    push.db
+        .lock()
+        .execute("UPDATE push_subscriptions SET summary_mark=?", [mark])
+        .unwrap();
+    (push, service, phone, id)
+}
+
+fn received(service: &Mutex<Service>, phone: &Subscriber) -> Vec<Value> {
+    service
+        .lock()
+        .unwrap()
+        .received
+        .iter()
+        .map(|(_, _, body)| phone.read(body))
+        .collect()
+}
+
+#[tokio::test]
+async fn a_category_set_to_off_is_never_sent() {
+    let (push, service, phone, _) =
+        subscribed(json!({ "levels": { "needs_you": "off" } }), T0).await;
+    assert_eq!(
+        push.notify_at("me", &kind(Category::NeedsYou, "a"), T0)
+            .await,
+        0
+    );
+    // Progress is off by default.
+    assert_eq!(
+        push.notify_at("me", &kind(Category::Progress, "b"), T0)
+            .await,
+        0
+    );
+    assert_eq!(
+        push.notify_at("me", &kind(Category::Calendar, "c"), T0)
+            .await,
+        1
+    );
+    let got = received(&service, &phone);
+    assert_eq!(got.len(), 1);
+    assert_eq!(got[0]["category"], "calendar");
+    // Nothing was kept for a summary either.
+    assert_eq!(push.send_summaries(T0 + 24 * 60 * MINUTE).await, 0);
+}
+
+#[tokio::test]
+async fn quiet_hours_send_questions_silently_and_hold_the_rest_until_they_end() {
+    // 09:00–11:00 UTC; T0 is 10:00.
+    let (push, service, phone, _) = subscribed(
+        json!({
+            "quietHours": { "start": "09:00", "end": "11:00" },
+            "timeZone": "UTC",
+            "levels": { "done": "immediate" },
+            "digestAt": "20:00",
+        }),
+        T0 - 5 * MINUTE,
+    )
+    .await;
+    assert_eq!(
+        push.notify_at("me", &kind(Category::NeedsYou, "q"), T0)
+            .await,
+        1
+    );
+    assert_eq!(
+        push.notify_at("me", &kind(Category::Calendar, "c"), T0)
+            .await,
+        1
+    );
+    assert_eq!(
+        push.notify_at("me", &kind(Category::Done, "d"), T0).await,
+        0,
+        "held"
+    );
+    let got = received(&service, &phone);
+    assert_eq!(got.len(), 2);
+    assert_eq!(got[0]["silent"], true, "needs_you is silent");
+    assert_eq!(got[1].get("silent"), None, "calendar at its own level");
+    // No summary while quiet hours last.
+    assert_eq!(push.send_summaries(T0 + 30 * MINUTE).await, 0);
+    // When they end, one summary lists the held item and nothing else.
+    assert_eq!(push.send_summaries(T0 + 61 * MINUTE).await, 1);
+    let summary = received(&service, &phone).pop().unwrap();
+    assert_eq!(summary["title"], "1 new update");
+    assert_eq!(summary["body"], "done item");
+    assert_eq!(summary["target"]["summary"]["count"], 1);
+    assert_eq!(summary["lockScreen"], "title");
+    assert_eq!(push.send_summaries(T0 + 62 * MINUTE).await, 0, "only once");
+}
+
+#[tokio::test]
+async fn quiet_hours_may_cross_midnight() {
+    let (push, service, phone, _) = subscribed(
+        json!({
+            "quietHours": { "start": "22:00", "end": "07:00" },
+            "timeZone": "+08:00",
+            "levels": { "progress": "immediate" },
+        }),
+        T0,
+    )
+    .await;
+    // T0 is 18:00 at +08:00; 23:30 and 06:30 are quiet, 07:00 is not.
+    let at = |hours: i64, minutes: i64| T0 + (hours - 18) * 60 * MINUTE + minutes * MINUTE;
+    assert_eq!(
+        push.notify_at("me", &kind(Category::Progress, "p1"), at(23, 30))
+            .await,
+        0
+    );
+    assert_eq!(
+        push.notify_at("me", &kind(Category::Progress, "p2"), at(30, 30))
+            .await,
+        0
+    );
+    // The digest time (18:00) fell before; nothing was due then.
+    assert_eq!(push.send_summaries(at(30, 59)).await, 0);
+    assert_eq!(push.send_summaries(at(31, 0)).await, 1);
+    let got = received(&service, &phone);
+    assert_eq!(got.len(), 1);
+    assert_eq!(got[0]["title"], "2 new updates");
+    assert_eq!(
+        push.notify_at("me", &kind(Category::Progress, "p3"), at(31, 0))
+            .await,
+        1
+    );
+}
+
+#[tokio::test]
+async fn the_digest_goes_out_at_its_time_and_after_the_gateway_was_offline() {
+    let (push, service, phone, _) =
+        subscribed(json!({ "timeZone": "UTC", "digestAt": "10:10" }), T0).await;
+    // `done` is at level digest by default.
+    assert_eq!(
+        push.notify_at("me", &kind(Category::Done, "d1"), T0 + MINUTE)
+            .await,
+        0
+    );
+    assert_eq!(
+        push.notify_at("me", &kind(Category::Done, "d2"), T0 + MINUTE)
+            .await,
+        0
+    );
+    assert_eq!(push.send_summaries(T0 + 5 * MINUTE).await, 0, "not yet");
+    assert_eq!(push.send_summaries(T0 + 10 * MINUTE).await, 1);
+    let summary = received(&service, &phone).pop().unwrap();
+    assert_eq!(summary["title"], "2 new updates");
+    assert_eq!(summary["body"], "done item · done item");
+    assert_eq!(summary["target"]["summary"]["categories"]["done"], 2);
+    // Nothing new at the next digest time: no summary.
+    assert_eq!(
+        push.send_summaries(T0 + 24 * 60 * MINUTE + 10 * MINUTE)
+            .await,
+        0
+    );
+    // The Gateway is offline over the next digest time; its first tick sends it.
+    push.notify_at("me", &kind(Category::Done, "d3"), T0 + 25 * 60 * MINUTE)
+        .await;
+    assert_eq!(push.send_summaries(T0 + 50 * 60 * MINUTE).await, 1);
+    assert_eq!(received(&service, &phone).len(), 2);
+}
+
+#[tokio::test]
+async fn preferences_change_with_a_revision() {
+    let (app, _dir) = crate::test_support::app_with_models(json!({}));
+    app.slots.set(Arc::new(
+        Push::new(
+            app.db.clone(),
+            generate_vapid_keys(),
+            "mailto:ops@example.com".into(),
+            true,
+        )
+        .with_time_zone("Asia/Taipei"),
+    ));
+    let push = app.slots.get::<Push>().unwrap();
+    let added = push
+        .subscribe(
+            "alice",
+            &input(
+                "http://127.0.0.1:1/p",
+                Subscriber::new().keys(),
+                "web",
+                None,
+            ),
+            None,
+        )
+        .unwrap();
+    assert_eq!(
+        (
+            &added["levels"],
+            &added["quietHours"],
+            &added["timeZone"],
+            &added["lockScreen"],
+            &added["digestAt"],
+            &added["revision"]
+        ),
+        (
+            &json!({ "needs_you": "immediate", "done": "digest", "progress": "off", "calendar": "immediate" }),
+            &Value::Null,
+            &json!("Asia/Taipei"),
+            &json!("title"),
+            &json!("18:00"),
+            &json!(1)
+        )
+    );
+    let path = format!("/api/push/subscriptions/{}", added["id"].as_str().unwrap());
+    let call = |user: &'static str, body: Value| {
+        let (app, path) = (app.clone(), path.clone());
+        async move {
+            crate::test_support::call(&app, "PATCH", &path, Some(user), None, Some(body)).await
+        }
+    };
+    let (status, changed) = call(
+        "alice",
+        json!({ "revision": 1, "levels": { "done": "off" }, "quietHours": { "start": "22:30", "end": "07:00" },
+                "lockScreen": "hidden", "digestAt": "08:15", "timeZone": "Europe/Berlin" }),
+    )
+    .await;
+    assert_eq!(status, 200, "{changed}");
+    let changed = &changed["subscription"];
+    assert_eq!(changed["revision"], 2);
+    assert_eq!(changed["levels"]["done"], "off");
+    assert_eq!(changed["levels"]["needs_you"], "immediate");
+    assert_eq!(
+        changed["quietHours"],
+        json!({ "start": "22:30", "end": "07:00" })
+    );
+    assert_eq!(changed["lockScreen"], "hidden");
+    assert_eq!(changed["digestAt"], "08:15");
+    assert_eq!(changed["timeZone"], "Europe/Berlin");
+    // A stale revision is refused with the current settings.
+    let (status, stale) = call("alice", json!({ "revision": 1, "lockScreen": "full" })).await;
+    assert_eq!(status, 409);
+    assert_eq!(stale["error"]["details"]["subscription"]["revision"], 2);
+    let (status, off) = call("alice", json!({ "revision": 2, "quietHours": null })).await;
+    assert_eq!(
+        (status, &off["subscription"]["quietHours"]),
+        (200, &Value::Null)
+    );
+    for bad in [
+        json!({ "revision": 3, "timeZone": "Mars/Base" }),
+        json!({ "revision": 3, "quietHours": { "start": "07:00", "end": "07:00" } }),
+        json!({ "revision": 3, "digestAt": "24:00" }),
+        json!({ "revision": 3, "levels": { "chat": "off" } }),
+        json!({ "revision": 3, "levels": { "done": "loud" } }),
+        json!({ "revision": 3, "lockScreen": "none" }),
+        json!({ "lockScreen": "full" }),
+    ] {
+        assert_eq!(call("alice", bad.clone()).await.0, 400, "{bad}");
+    }
+    assert_eq!(call("bob", json!({ "revision": 3 })).await.0, 404);
+}
+
+#[test]
+fn quiet_hours_and_summary_moments() {
+    let prefs = |quiet: Option<(&str, &str)>, zone: &str| Preferences {
+        levels: preferences::levels_from_json("{}"),
+        quiet_hours: quiet.map(|(start, end)| preferences::QuietHours {
+            start: preferences::ClockTime::parse(start).unwrap(),
+            end: preferences::ClockTime::parse(end).unwrap(),
+        }),
+        time_zone: zone.into(),
+        lock_screen: LockScreen::Title,
+        digest_at: preferences::ClockTime::DIGEST_DEFAULT,
+    };
+    let crossing = prefs(Some(("22:00", "07:00")), "UTC");
+    let utc = |hours: i64, minutes: i64| T0 + (hours - 10) * 60 * MINUTE + minutes * MINUTE;
+    assert!(crossing.quiet_at(utc(23, 0)));
+    assert!(crossing.quiet_at(utc(30, 59)));
+    assert!(!crossing.quiet_at(utc(31, 0)));
+    assert!(!crossing.quiet_at(utc(12, 0)));
+    assert_eq!(
+        crossing.decide(Category::Done, false, utc(23, 0)),
+        Decision::Digest
+    );
+    assert_eq!(
+        crossing.decide(Category::NeedsYou, false, utc(23, 0)),
+        Decision::SendSilent
+    );
+    // An update follows the preferences: silent in quiet hours, sent
+    // outside them, never for a category at level digest or off.
+    assert_eq!(
+        crossing.decide(Category::NeedsYou, true, utc(23, 0)),
+        Decision::SendSilent
+    );
+    assert_eq!(
+        crossing.decide(Category::NeedsYou, true, utc(12, 0)),
+        Decision::Send
+    );
+    assert_eq!(
+        crossing.decide(Category::Done, true, utc(12, 0)),
+        Decision::Skip
+    );
+    assert_eq!(
+        crossing.decide(Category::Progress, true, utc(12, 0)),
+        Decision::Skip
+    );
+    assert_eq!(
+        crossing.decide(Category::Progress, false, utc(12, 0)),
+        Decision::Skip
+    );
+    // Digest time 18:00 passed after a mark at 17:00.
+    assert!(crossing.summary_due(utc(17, 0), utc(18, 0)));
+    assert!(!crossing.summary_due(utc(18, 0), utc(19, 0)));
+    // Quiet hours ended at 07:00 the next day.
+    assert!(crossing.summary_due(utc(18, 0), utc(31, 0)));
+    assert!(!crossing.summary_due(utc(18, 0), utc(30, 0)));
+    assert!(preferences::ClockTime::parse("7:00").is_none());
+    assert!(preferences::ClockTime::parse("23:59").is_some());
+}
+
+fn waiting(push: &Push) -> i64 {
+    push.db
+        .lock()
+        .query_row("SELECT count(*) FROM push_digest_items", [], |r| r.get(0))
+        .unwrap()
+}
+
+#[tokio::test]
+async fn a_summary_that_fails_is_kept_and_sent_once_later() {
+    let (push, service, phone, _) =
+        subscribed(json!({ "timeZone": "UTC", "digestAt": "10:10" }), T0).await;
+    push.notify_at("me", &kind(Category::Done, "d1"), T0 + MINUTE)
+        .await;
+    service.lock().unwrap().status = 500;
+    assert_eq!(push.send_summaries(T0 + 10 * MINUTE).await, 0);
+    assert_eq!(waiting(&push), 1, "the items stay");
+    service.lock().unwrap().status = 201;
+    // Two ticks at once send it once.
+    let (a, b) = tokio::join!(
+        push.send_summaries(T0 + 11 * MINUTE),
+        push.send_summaries(T0 + 11 * MINUTE)
+    );
+    assert_eq!(a + b, 1);
+    assert_eq!(waiting(&push), 0);
+    assert_eq!(push.send_summaries(T0 + 12 * MINUTE).await, 0);
+    let got = received(&service, &phone);
+    assert_eq!(got.len(), 2, "one failed try, one summary");
+    assert_eq!(got[1]["title"], "1 new update");
+}
+
+fn patch(revision: i64, body: Value) -> preferences::PreferencesPatch {
+    let mut body = body;
+    body["revision"] = json!(revision);
+    serde_json::from_value(body).unwrap()
+}
+
+#[tokio::test]
+async fn a_new_digest_time_counts_from_the_change() {
+    let (push, _service, _phone, id) =
+        subscribed(json!({ "timeZone": "UTC", "digestAt": "20:00" }), T0).await;
+    push.notify_at("me", &kind(Category::Done, "d1"), T0 + MINUTE)
+        .await;
+    // At 10:05 the digest moves to 10:02: that moment is already past.
+    push.update_preferences_at(
+        "me",
+        &id,
+        &patch(2, json!({ "digestAt": "10:02" })),
+        T0 + 5 * MINUTE,
+    )
+    .unwrap();
+    assert_eq!(push.send_summaries(T0 + 6 * MINUTE).await, 0);
+    assert_eq!(
+        push.send_summaries(T0 + 24 * 60 * MINUTE + 2 * MINUTE)
+            .await,
+        1
+    );
+}
+
+#[tokio::test]
+async fn ending_quiet_hours_by_a_change_sends_what_they_held() {
+    let (push, service, phone, id) = subscribed(
+        json!({
+            "quietHours": { "start": "09:00", "end": "11:00" },
+            "timeZone": "UTC",
+            "levels": { "done": "immediate" },
+        }),
+        T0,
+    )
+    .await;
+    assert_eq!(
+        push.notify_at("me", &kind(Category::Done, "d"), T0).await,
+        0,
+        "held"
+    );
+    push.update_preferences_at(
+        "me",
+        &id,
+        &patch(2, json!({ "quietHours": null })),
+        T0 + 5 * MINUTE,
+    )
+    .unwrap();
+    assert_eq!(push.send_summaries(T0 + 6 * MINUTE).await, 1);
+    assert_eq!(received(&service, &phone)[0]["body"], "done item");
+    assert_eq!(push.send_summaries(T0 + 7 * MINUTE).await, 0);
+}
+
+#[test]
+fn a_payload_stays_within_one_record() {
+    let question = |target_bytes: usize| PushMessage {
+        title: "Session is waiting for you".into(),
+        body: "b".repeat(200),
+        tag: "t".into(),
+        target: json!({ "pad": "x".repeat(target_bytes) }),
+        category: Some(Category::NeedsYou),
+        interaction: Some(InteractionPush {
+            kind: "interaction_created",
+            session_id: "s".into(),
+            choices: (0..3)
+                .map(|i| Choice {
+                    id: format!("{i}{}", "é".repeat(99)),
+                    label: format!("{i}{}", "é".repeat(99)),
+                })
+                .collect(),
+            ..InteractionPush::default()
+        }),
+    };
+    let fits = payload(&question(100), 1, Delivery::default());
+    assert!(fits.contains("\"choices\""));
+    let read = |text: &str| serde_json::from_str::<Value>(text).unwrap();
+    let no_choices = payload(&question(2200), 1, Delivery::default());
+    assert!(
+        no_choices.len() <= MAX_PAYLOAD_BYTES,
+        "{}",
+        no_choices.len()
+    );
+    assert_eq!(read(&no_choices).get("choices"), None);
+    assert_eq!(read(&no_choices)["body"], "b".repeat(200));
+    let short = payload(&question(2800), 1, Delivery::default());
+    assert!(short.len() <= MAX_PAYLOAD_BYTES, "{}", short.len());
+    assert!(read(&short)["body"].as_str().unwrap().chars().count() < 200);
+}
+
+#[tokio::test]
+async fn a_change_during_a_summary_send_keeps_its_mark_and_flag() {
+    let (push, _service, _phone, id) =
+        subscribed(json!({ "timeZone": "UTC", "digestAt": "10:10" }), T0).await;
+    let revision: i64 = push
+        .db
+        .lock()
+        .query_row("SELECT revision FROM push_subscriptions", [], |r| r.get(0))
+        .unwrap();
+    // A PATCH lands while the summary is out: a newer revision, a later
+    // mark and a summary due now.
+    push.db
+        .lock()
+        .execute(
+            "UPDATE push_subscriptions SET revision=revision+1, summary_mark=?, summary_now=1",
+            [T0 + 30 * MINUTE],
+        )
+        .unwrap();
+    summary::settle(&push.db.lock(), &id, None, T0 + 10 * MINUTE, revision).unwrap();
+    let (mark, now): (i64, i64) = push
+        .db
+        .lock()
+        .query_row(
+            "SELECT summary_mark, summary_now FROM push_subscriptions",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!((mark, now), (T0 + 30 * MINUTE, 1));
+    // Without a change in between, the flag clears and the mark moves on.
+    summary::settle(&push.db.lock(), &id, None, T0 + 40 * MINUTE, revision + 1).unwrap();
+    let (mark, now): (i64, i64) = push
+        .db
+        .lock()
+        .query_row(
+            "SELECT summary_mark, summary_now FROM push_subscriptions",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
+        .unwrap();
+    assert_eq!((mark, now), (T0 + 40 * MINUTE, 0));
 }

@@ -199,6 +199,7 @@ fn message(
             "date": start_date,
             "startAt": start_at,
         }),
+        category: Some(crate::push::Category::Calendar),
         interaction: None,
     }
 }

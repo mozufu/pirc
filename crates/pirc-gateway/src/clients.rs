@@ -221,6 +221,7 @@ pub fn routes() -> Router<AppState> {
         .route("/api/clients", get(list_clients))
         .route("/api/clients/{id}", axum::routing::put(rename_client))
         .route("/api/device", get(read_device).patch(rename_device))
+        .route("/api/device/rotate", axum::routing::post(rotate_device))
 }
 
 async fn list_clients(
@@ -268,15 +269,24 @@ fn this_device(identity: &Identity) -> ApiResult<&str> {
         .ok_or_else(|| invalid("Only a paired device has a device record"))
 }
 
-fn device_json(conn: &Connection, owner: &str, id: &str) -> ApiResult<Value> {
+/// The device record; `expiresAt` is the maximum window and `idleExpiresAt`
+/// when the token dies if it is not used again (the earlier of the two wins).
+pub(crate) fn device_json(
+    conn: &Connection,
+    owner: &str,
+    id: &str,
+    idle_ms: i64,
+) -> ApiResult<Value> {
     conn.query_row(
         "SELECT id,name,created_at,expires_at,last_used_at FROM device_tokens WHERE id=?1 AND owner_user=?2",
         params![id, owner],
         |r| {
+            let last_used_at = r.get::<_, i64>(4)?;
             Ok(json!({
                 "id": r.get::<_, String>(0)?, "name": r.get::<_, String>(1)?,
                 "createdAt": r.get::<_, i64>(2)?, "expiresAt": r.get::<_, i64>(3)?,
-                "lastUsedAt": r.get::<_, i64>(4)?,
+                "lastUsedAt": last_used_at,
+                "idleExpiresAt": last_used_at.saturating_add(idle_ms),
             }))
         },
     )
@@ -290,8 +300,36 @@ async fn read_device(
     Extension(identity): Extension<Identity>,
 ) -> ApiResult<axum::Json<Value>> {
     let id = this_device(&identity)?;
+    let idle = app.devices.idle_ms();
     Ok(axum::Json(
-        json!({ "device": device_json(&app.db.lock(), &identity.user, id)? }),
+        json!({ "device": device_json(&app.db.lock(), &identity.user, id, idle)? }),
+    ))
+}
+
+/// A paired device swaps its token for a new one with new idle and maximum
+/// windows (plans/roadmap.md M8 default B). Only a device token may ask; a
+/// management grant is neither added nor extended.
+async fn rotate_device(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    headers: HeaderMap,
+    ReqBody(_): ReqBody,
+) -> ApiResult<axum::response::Response> {
+    let Some(id) = identity.device_id.as_deref() else {
+        return Err(ApiError::new(
+            403,
+            "forbidden",
+            "Only a paired device can rotate its token",
+        ));
+    };
+    let presented = crate::auth::device_token(&headers).ok_or_else(|| {
+        ApiError::new(401, "unauthenticated", "Device authentication is required")
+    })?;
+    let (_, token) = app.devices.rotate(&identity.user, id, &presented)?;
+    let device = device_json(&app.db.lock(), &identity.user, id, app.devices.idle_ms())?;
+    Ok(crate::error::json_response(
+        200,
+        &json!({ "device": device, "token": token }),
     ))
 }
 
@@ -311,7 +349,7 @@ async fn rename_device(
         params![id, identity.user, name],
     )?;
     Ok(axum::Json(
-        json!({ "device": device_json(&conn, &identity.user, id)? }),
+        json!({ "device": device_json(&conn, &identity.user, id, app.devices.idle_ms())? }),
     ))
 }
 
@@ -477,6 +515,142 @@ mod tests {
             .0,
             404
         );
+    }
+}
+
+#[cfg(test)]
+mod rotation_tests {
+    use super::*;
+    use crate::test_support::{app_with_models, call};
+
+    #[tokio::test]
+    async fn a_device_rotates_its_own_token_and_gains_no_management_access() {
+        let (app, _dir) = app_with_models(json!({}));
+        let (device, old) = app.devices.create("alice", "Pixel 9").unwrap();
+        // A management grant and a push target from before the rotation.
+        let verifier = "v".repeat(43);
+        let grant = app
+            .management
+            .create(
+                "alice",
+                &device.id,
+                &crate::util::sha256_hex(&verifier),
+                vec![crate::management::ManagementCapability::DevicesRead],
+                false,
+            )
+            .unwrap();
+        app.management
+            .decide("alice", None, &grant.request.id, true)
+            .unwrap();
+        let granted = app
+            .management
+            .claim("alice", &device.id, &grant.request.id, &verifier)
+            .unwrap();
+        app.db
+            .lock()
+            .execute(
+                "INSERT INTO push_subscriptions (id,owner_user,endpoint,p256dh,auth,kind,device_id,created_at)
+                 VALUES ('push_1','alice','https://p.example/x','k','a','unifiedpush',?1,0)",
+                [&device.id],
+            )
+            .unwrap();
+        let (status, read) = call(&app, "GET", "/api/device", None, Some(&old), None).await;
+        assert_eq!(status, 200);
+        assert_eq!(
+            read["device"]["idleExpiresAt"].as_i64().unwrap()
+                - read["device"]["lastUsedAt"].as_i64().unwrap(),
+            app.devices.idle_ms()
+        );
+        let (status, _) = call(
+            &app,
+            "POST",
+            "/api/device/rotate",
+            Some("alice"),
+            None,
+            None,
+        )
+        .await;
+        assert_eq!(status, 403, "a browser has no device token");
+
+        use tower::ServiceExt;
+        let request = axum::http::Request::builder()
+            .method("POST")
+            .uri("/api/device/rotate")
+            .header("host", "a.example")
+            .header(crate::capabilities::HEADER, "test/2")
+            .header(
+                crate::request_shape::REQUEST_HEADER,
+                crate::request_shape::REQUEST_VALUE,
+            )
+            .header("authorization", format!("Bearer {old}"))
+            .extension(axum::extract::ConnectInfo(
+                "127.0.0.1:40000".parse::<std::net::SocketAddr>().unwrap(),
+            ))
+            .body(axum::body::Body::empty())
+            .unwrap();
+        let response = crate::app::router(app.clone())
+            .oneshot(request)
+            .await
+            .unwrap();
+        assert_eq!(response.status(), 200);
+        assert_eq!(response.headers()["cache-control"], "no-store");
+        let body: Value = serde_json::from_slice(
+            &axum::body::to_bytes(response.into_body(), 1 << 20)
+                .await
+                .unwrap(),
+        )
+        .unwrap();
+        let new = body["token"].as_str().unwrap().to_owned();
+        assert_eq!(body["device"]["id"], device.id.as_str());
+        assert_eq!(body["device"]["name"], "Pixel 9");
+
+        // The old token works until the new one is used, then never again.
+        assert_eq!(
+            call(&app, "GET", "/api/device", None, Some(&old), None)
+                .await
+                .0,
+            200
+        );
+        assert_eq!(
+            call(&app, "GET", "/api/device", None, Some(&new), None)
+                .await
+                .0,
+            200
+        );
+        assert_eq!(
+            call(&app, "GET", "/api/device", None, Some(&old), None)
+                .await
+                .0,
+            401
+        );
+        // Still a device token: device management stays closed without a grant.
+        assert_eq!(
+            call(&app, "GET", "/api/devices", None, Some(&new), None)
+                .await
+                .0,
+            403
+        );
+        // The grant from before is neither extended nor widened.
+        let view = app
+            .management
+            .view("alice", None, &grant.request.id)
+            .unwrap();
+        assert_eq!(view.expires_at, granted.expires_at);
+        assert_eq!(
+            view.capabilities,
+            vec![crate::management::ManagementCapability::DevicesRead]
+        );
+        // The push target stays with the device.
+        let targets: Vec<String> = app
+            .db
+            .lock()
+            .prepare("SELECT id FROM push_subscriptions WHERE device_id=?1")
+            .unwrap()
+            .query_map([&device.id], |r| r.get(0))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert_eq!(targets, ["push_1"]);
     }
 }
 

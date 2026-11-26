@@ -578,6 +578,20 @@ async fn every_registered_state_changing_route_requires_the_request_shape() {
                 assert_eq!(status, 403, "{} {method} {path}", who.label());
                 continue;
             }
+            // Pairing v2's routes without identity refuse any bearer first.
+            let pairing_route = crate::management::is_anonymous_route(
+                &axum::http::Method::from_bytes(method.as_bytes()).unwrap(),
+                &path,
+            );
+            if pairing_route && matches!(who, Who::Device(_)) {
+                assert_eq!(
+                    (status, body["error"]["code"].as_str()),
+                    (401, Some("bearer_not_allowed")),
+                    "{} {method} {path}",
+                    who.label()
+                );
+                continue;
+            }
             assert!(
                 is_shape_rejection(status, &body),
                 "{} {method} {path}: {status} {body}",

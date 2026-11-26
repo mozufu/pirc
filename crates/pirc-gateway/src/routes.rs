@@ -21,7 +21,7 @@ use crate::db::{CapabilitiesPatch, DeletionStatus, Lease, Store, atomic};
 use crate::error::{ApiError, json_response};
 use crate::http::{Body, no_content, ok};
 use crate::node_events::run_name;
-use crate::util::present;
+use crate::util::{now_ms, present};
 
 /// A route's failure: an error, or a node's reply passed through as it is.
 pub enum Fail {
@@ -1460,6 +1460,96 @@ pub async fn answer(
     ))
 }
 
+/// The compact state of one question for the background client (push
+/// receipt, quick-reply overlay; plans/roadmap.md M8 step 0.5), without a
+/// session snapshot: whether it still takes an answer, its epoch, question,
+/// choices and expiry, who holds control and who answered.
+pub async fn interaction_state(
+    State(app): State<AppState>,
+    Extension(identity): Extension<Identity>,
+    Path((session_id, interaction_id)): Path<(String, String)>,
+) -> Handled {
+    length_within(&interaction_id, 1, 200)?;
+    let claimed = app.claim(&identity, &session_id)?;
+    // The Gateway's own confirmations are known here only while they wait.
+    let gateway = app
+        .pending_gateway_interactions(&claimed.session.id, &identity.user)
+        .into_iter()
+        .find(|row| row["id"] == interaction_id.as_str());
+    let row = match gateway {
+        Some(row) => row,
+        None => {
+            let remote = expect_ok(
+                &app,
+                &claimed.node_id,
+                &identity,
+                HttpMethod::Get,
+                node_url(
+                    &claimed,
+                    &format!("/interactions/{}", urlencoding_component(&interaction_id)),
+                ),
+                None,
+            )
+            .await?;
+            match remote.get("interaction") {
+                Some(row) if row.is_object() => row.clone(),
+                _ => {
+                    return Err(ApiError::new(
+                        502,
+                        "node_error",
+                        "Node answered an invalid interaction",
+                    )
+                    .into());
+                }
+            }
+        }
+    };
+    let now = now_ms();
+    let expires_at = row["expiresAt"].as_i64();
+    let state = match row["status"].as_str() {
+        Some("pending") if expires_at.is_none_or(|at| at > now) => "pending",
+        Some("answered") => "answered",
+        _ => "expired",
+    };
+    let epoch = match &row["runnerEpoch"] {
+        Value::Number(number) => number.as_u64().map(|epoch| epoch.to_string()),
+        Value::String(text) => Some(text.clone()),
+        _ => None,
+    };
+    let request = &row["request"];
+    let conn = app.db.lock();
+    let lease = conn.get_lease(&claimed.session.id)?;
+    let control_holder = if lease.is_object() && lease["expired"] != true {
+        crate::clients::holder(&conn, &identity.user, &claimed.session.id, &lease)?
+    } else {
+        Value::Null
+    };
+    let answered_by = (state == "answered")
+        .then(|| {
+            crate::push::answered_by(
+                &conn,
+                &identity.user,
+                row["answeredBy"].as_str(),
+                row["resolvedAt"].as_i64(),
+            )
+        })
+        .flatten();
+    Ok(ok(json!({
+        "id": row["id"],
+        "state": state,
+        "epoch": epoch,
+        "question": {
+            "kind": row["kind"],
+            "title": request["title"],
+            "message": request["message"],
+        },
+        "choices": crate::push::single_choices(row["kind"].as_str().unwrap_or_default(), request),
+        "expiresAt": expires_at,
+        "controlHolder": control_holder,
+        "answeredBy": answered_by,
+    })))
+}
+
 /// Images and other files are stored on the session's node, where its agent reads them.
 pub async fn upload(
     State(app): State<AppState>,
@@ -1805,6 +1895,132 @@ pub fn feature_routes() -> axum::Router<AppState> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn one_question_reads_compactly_with_its_holder_and_answerer() {
+        use crate::db::Store;
+        let (app, _dir) = crate::test_support::app_with_models(json!({}));
+        let directory = || pirc_protocol::ModeId::new("directory").unwrap();
+        let session = {
+            let conn = app.db.lock();
+            conn.sync_remote_workspaces("node", &[("repo".into(), "Repo".into(), directory())])
+                .unwrap();
+            let session = conn
+                .create_session("node:repo", "node://node/r1", "node", "r1", "alice")
+                .unwrap()
+                .id;
+            conn.execute(
+                "INSERT INTO leases(session_id,client_id,generation,expires_at,updated_at,owner_user)
+                 VALUES(?1,'web-1',1,?2,0,'alice')",
+                rusqlite::params![session, now_ms() + 60_000],
+            )
+            .unwrap();
+            let me = Identity {
+                user: "alice".into(),
+                device_id: None,
+                management_authorized: false,
+            };
+            crate::clients::record(&conn, &me, "web-1", Some("Office iMac"), &HeaderMap::new())
+                .unwrap();
+            session
+        };
+        let node = crate::nodes::ConnectedNode {
+            id: "node".into(),
+            role: pirc_protocol::NodeRole::Node,
+            modes: vec![directory()],
+            workspaces: vec![pirc_protocol::RegisteredWorkspace {
+                checkpoint_private: false,
+                id: "repo".into(),
+                display_name: "Repo".into(),
+                mode: directory(),
+                roles: None,
+                repo: None,
+            }],
+            connected_at: now_ms(),
+            last_seen_at: now_ms(),
+            added: Default::default(),
+        };
+        let soon = now_ms() + 60_000;
+        app.nodes.set_test_node(node, move |request| {
+            let row = |id: &str, status: &str, kind: &str, request: Value, answered: Value| {
+                json!({ "interaction": { "id": id, "rpcId": "rpc", "sessionId": "r1",
+                    "runnerEpoch": 3, "kind": kind, "status": status, "request": request,
+                    "expiresAt": soon, "answeredBy": answered, "resolvedAt": 77 } })
+            };
+            let (status, body) = match request.url.as_str() {
+                "/api/sessions/r1/interactions/ask" => (
+                    200,
+                    row(
+                        "ask",
+                        "pending",
+                        "select",
+                        json!({ "title": "Which?", "options": ["A", "B"] }),
+                        Value::Null,
+                    ),
+                ),
+                "/api/sessions/r1/interactions/done" => (
+                    200,
+                    row(
+                        "done",
+                        "answered",
+                        "confirm",
+                        json!({ "title": "Go?" }),
+                        json!("web-1"),
+                    ),
+                ),
+                "/api/sessions/r1/interactions/gone" => (
+                    200,
+                    row(
+                        "gone",
+                        "stale",
+                        "input",
+                        json!({ "title": "Name?" }),
+                        Value::Null,
+                    ),
+                ),
+                _ => (
+                    404,
+                    json!({ "error": { "code": "not_found", "message": "Interaction not found" } }),
+                ),
+            };
+            Ok(pirc_protocol::NodeHttpResponse {
+                status,
+                body: Some(body),
+            })
+        });
+        let read = |id: &str, user: &str| {
+            let (app, path, user) = (
+                app.clone(),
+                format!("/api/sessions/{session}/interactions/{id}"),
+                user.to_owned(),
+            );
+            async move { crate::test_support::call(&app, "GET", &path, Some(&user), None, None).await }
+        };
+        let (status, ask) = read("ask", "alice").await;
+        assert_eq!(status, 200, "{ask}");
+        assert_eq!(ask["state"], "pending");
+        assert_eq!(ask["epoch"], "3");
+        assert_eq!(ask["question"]["title"], "Which?");
+        assert_eq!(
+            ask["choices"],
+            json!([{ "id": "A", "label": "A" }, { "id": "B", "label": "B" }])
+        );
+        assert_eq!(ask["expiresAt"], soon);
+        assert_eq!(ask["controlHolder"]["name"], "Office iMac");
+        assert_eq!(ask["answeredBy"], Value::Null);
+        assert_eq!(ask.get("history"), None, "no snapshot");
+
+        let (_, done) = read("done", "alice").await;
+        assert_eq!(done["state"], "answered");
+        assert_eq!(done["choices"], json!([]));
+        assert_eq!(
+            done["answeredBy"],
+            json!({ "deviceName": "Office iMac", "at": 77 })
+        );
+        assert_eq!(read("gone", "alice").await.1["state"], "expired");
+        assert_eq!(read("nothing", "alice").await.0, 404);
+        assert_eq!(read("ask", "bob").await.0, 403, "another user's session");
+    }
 
     fn payload(value: Value) -> Result<Value, ApiError> {
         let Value::Object(map) = value else {

@@ -12,6 +12,7 @@
 //!   `GET /api/sessions/:id/snapshot`, `POST /api/sessions/:id/deliver`,
 //!   `POST /api/sessions/:id/commands`, control (`GET .../control`,
 //!   `POST .../control/acquire|heartbeat|release`),
+//!   `GET .../interactions/:interactionId`,
 //!   `POST .../interactions/:interactionId/answer`, `POST .../uploads`.
 //! - `POST /api/workspace-memory/recall`.
 //!
@@ -184,6 +185,10 @@ pub fn routes(_config: &NodeConfig) -> Vec<Route> {
         post("/api/sessions/:id/control/acquire", acquire),
         post("/api/sessions/:id/control/heartbeat", heartbeat),
         post("/api/sessions/:id/control/release", release),
+        get(
+            "/api/sessions/:id/interactions/:interactionId",
+            interaction_route,
+        ),
         post(
             "/api/sessions/:id/interactions/:interactionId/answer",
             answer,
@@ -1435,6 +1440,26 @@ fn interaction_answer(value: &Value) -> ApiResult<Map<String, Value>> {
         return Ok(answer);
     }
     Err(ApiError::invalid_input())
+}
+
+/// One interaction of the session, as the Gateway's compact state reads it;
+/// a pending one past its expiry reads as expired.
+async fn interaction_route(node: Node, request: Request) -> ApiResult<Response> {
+    let session = claim(&node, &request)?;
+    let mut row = node
+        .db
+        .lock()
+        .get_interaction(param(&request, "interactionId"))?;
+    if row.session_id != session.id {
+        return Err(ApiError::not_found("Interaction not found"));
+    }
+    if row.status == crate::store::InteractionStatus::Pending
+        && row.expires_at <= crate::util::now_ms()
+    {
+        row.status = crate::store::InteractionStatus::Expired;
+        row.resolved_at = Some(row.expires_at);
+    }
+    Ok(Response::json(json!({ "interaction": row })))
 }
 
 /// Any of the owner's clients may answer, without control: the first answer
