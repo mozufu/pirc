@@ -817,7 +817,7 @@ fn outcomes(frames: &[Value]) -> Value {
     )
 }
 
-#[ignore = "pirc 2: the gateway still validates the lease for a plain Stop before relaying it"]
+#[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn node_session_stop_without_control() {
     let llm = HeldLlm::start().await;
