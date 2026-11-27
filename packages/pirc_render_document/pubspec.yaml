@@ -9,10 +9,13 @@ resolution: workspace
 dependencies:
   flutter:
     sdk: flutter
+  crypto: 3.0.8
   csslib: 1.0.2
+  flutter_svg: 2.3.0
   html: 0.15.6
   pirc_render:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_markdown_plus: 1.0.12
   flutter_lints: ^6.0.0

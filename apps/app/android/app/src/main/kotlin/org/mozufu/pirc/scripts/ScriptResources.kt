@@ -86,8 +86,12 @@ class ScriptResources(
      * after it is cancelled: its thread is busy until [end]. A second request with the same ID
      * is refused, so the cap of [MAX_IN_FLIGHT] holds, and so does the thread budget of
      * `ScriptsChannel.NETWORK_THREADS`.
+     *
+     * `resourceCancel` runs on the control pool and `resource` on the network pool, so a cancel
+     * can arrive before its request begins. Such a cancel is kept for [EARLY_CANCEL_NANOS] (at
+     * most [MAX_EARLY_CANCELS] IDs), and [begin] refuses that ID once.
      */
-    class Calls {
+    class Calls(private val clock: () -> Long = System::nanoTime) {
         /** One reserved request ID: its HTTP calls, and whether it was cancelled. */
         private class Reservation {
             val calls = HashSet<Call>()
@@ -100,7 +104,13 @@ class ScriptResources(
         }
 
         private val active = HashMap<String, Reservation>()
+        private val early = LinkedHashMap<String, Long>()
         private var closed = false
+
+        private fun forgetOldCancels() {
+            val now = clock()
+            early.entries.removeAll { now - it.value > EARLY_CANCEL_NANOS }
+        }
 
         /** Reserves [id] for one request. */
         @Synchronized
@@ -108,6 +118,8 @@ class ScriptResources(
             require(REQUEST_ID.matches(id)) { "Invalid request ID" }
             if (closed) throw ScriptFailure("SCRIPT_CLOSED", "The document closed.")
             if (id in active) throw ScriptFailure("RESOURCE", "The request ID $id is already in use.")
+            forgetOldCancels()
+            if (early.remove(id) != null) throw ScriptFailure("RESOURCE", "The request was cancelled.")
             if (active.size >= MAX_IN_FLIGHT) {
                 throw ScriptFailure("RESOURCE", "A document may have at most $MAX_IN_FLIGHT requests at once.")
             }
@@ -135,10 +147,22 @@ class ScriptResources(
             active[id]?.calls?.remove(call)
         }
 
-        /** Cancels the request [id] with its preflight; the ID stays reserved until it ends. */
+        /**
+         * Cancels the request [id] with its preflight; the ID stays reserved until it ends. A
+         * request that has not begun yet is refused when it does.
+         */
         @Synchronized
         fun cancel(id: String) {
-            active[id]?.cancel()
+            val reservation = active[id]
+            if (reservation != null) {
+                reservation.cancel()
+                return
+            }
+            if (!REQUEST_ID.matches(id)) return
+            forgetOldCancels()
+            early.remove(id)
+            early[id] = clock()
+            while (early.size > MAX_EARLY_CANCELS) early.remove(early.keys.first())
         }
 
         /** Cancels every request; later ones are allowed once the cancelled ones end. */
@@ -454,6 +478,10 @@ class ScriptResources(
         const val MAX_HEADERS = 128
         /** Requests of one document at once (as a browser's 6 connections per host). */
         const val MAX_IN_FLIGHT = 6
+
+        /** How long a cancel that came before its request is kept (see [Calls]). */
+        const val EARLY_CANCEL_NANOS = 30_000_000_000L
+        const val MAX_EARLY_CANCELS = 64
         const val MAX_REDIRECTS = 10
         const val TIMEOUT_SECONDS = 30L
 

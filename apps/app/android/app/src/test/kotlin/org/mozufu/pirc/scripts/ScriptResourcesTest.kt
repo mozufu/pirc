@@ -225,6 +225,28 @@ class ScriptResourcesTest {
         calls.end("more")
     }
 
+    @Test fun aCancelThatArrivesBeforeItsRequestRefusesIt() {
+        fun refusal(action: () -> Unit) = (runCatching(action).exceptionOrNull() as? ScriptFailure)?.code
+        var now = 0L
+        val calls = ScriptResources.Calls(clock = { now })
+        // The cancel ran on the control pool before the request reached the network pool.
+        calls.cancel("fetch-1")
+        assertEquals("RESOURCE", refusal { calls.begin("fetch-1") })
+        // Refused once: the ID is free again afterwards.
+        calls.begin("fetch-1")
+        calls.end("fetch-1")
+        // An old early cancel is forgotten.
+        calls.cancel("fetch-2")
+        now += ScriptResources.EARLY_CANCEL_NANOS + 1
+        assertNull(refusal { calls.begin("fetch-2") })
+        calls.end("fetch-2")
+        // Only a bounded number of early cancels are kept, oldest first out.
+        (0..ScriptResources.MAX_EARLY_CANCELS).forEach { calls.cancel("x$it") }
+        assertNull(refusal { calls.begin("x0") })
+        calls.end("x0")
+        assertEquals("RESOURCE", refusal { calls.begin("x1") })
+    }
+
     @Test fun mediaRedirectsAreFollowedHopByHop() {
         server.enqueue(MockResponse.Builder().code(302).addHeader("Location", "/real.mp3").build())
         server.enqueue(MockResponse.Builder().code(200).addHeader("Content-Type", "audio/mpeg").body("ID3").build())
