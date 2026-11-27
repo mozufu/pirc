@@ -11,18 +11,24 @@ and F (release APK on a phone); both remain to be verified. G1 is optional and
 was not confirmed. The detailed run below is the earlier agent run, not the
 owner's results.
 
+**Cutover:** the old app was removed in `34a49c41`. Use the current Android
+build for the remaining E–F checks. CI verified the signed standard release APK
+at the cutover revision; the smoke run did not publish or upload that APK and
+does not replace F on a physical phone.
+
 ## Before you start
 
-- **Gateway and Node from `main` at `20bccbed` or later.** Steps 0–7 need the pirc 2
+- **Gateway and Node from current `main`.** Steps 0–7 need the pirc 2
   Gateway (pairing v2 tables, `POST /api/device/rotate`, notification preferences,
   compact endpoints for the background client).
 - **APKs**, built from the same revision in `apps/app/build/app/outputs/flutter-apk/`:
   - `app-standard-debug.apk`: debug build, for most checks.
-  - `app-standard-release.apk`: release mode, **signed with the debug key**. Real
-    signing moves in step 9 (default F). Use it for the "release build" check.
-  - Both have the ID `org.mozufu.pirc` (no debug suffix). Installing one over the
-    other with `adb install -r` keeps the pairing; uninstall first to test a fresh
-    install.
+  - `app-standard-release.apk`: use the configured signing key for the release
+    checks (see [Release setup](../docs/development/releasing.md)). Local release
+    builds without that key use the debug key and are not the CI-signed APK.
+  - Both have the ID `org.mozufu.pirc` (no debug suffix). In-place installs also
+    require matching signing certificates; moving from a debug-key APK to the
+    CI-signed APK requires uninstalling and pairing again.
 - **A UnifiedPush distributor on the phone** (for example ntfy). Every notification
   goes through push (`push/PircPushService.kt` → `notifications/`). There is no local
   path. Without a distributor, sections D and E cannot be run and are `skipped`. The
@@ -34,8 +40,6 @@ owner's results.
   - Settings → Devices → Phones in the browser (forward auth), or
   - Settings → Devices → "Pair a new device" in `apps/app` on a device that holds a
     `devices:read` management grant (`settings/devices_page.dart`).
-- After pairing the new app, uninstall the old "pirc preview" (`dev.pirc.mobile.preview`)
-  if it is still installed (P5).
 
 ## Short token windows (for section A)
 
@@ -168,7 +172,7 @@ Findings:
   (`pirc-agent/src/auto_mode/mod.rs:729`). From the app: `panelTasks` is "Tasks" in
   `app_zh.arb:282`. **App side, `0578cd95`:** "Tasks" stays, as design-spec-C § 41 names the
   panel; `fromPot` in zh now shows only the pot's name, like 你 for `fromYou`.
-  **Server strings, fixed in `b9d6480f`, owner's decision: translate in the app.** The
+  **Server strings, fixed in `557ab608`, owner's decision: translate in the app.** The
   fixed English stays on the wire; `pirc_protocol` holds it, `pirc_client` and the
   Android app mirror it and show their own words: Other, "New session" (work list,
   conversation header, chat work cards, pot form, overlay header), the auto mode and
@@ -181,10 +185,9 @@ Findings:
   Reason…) and the agent's "Enter your answer" placeholder.
 - **S4 Text before stop is dropped.** After 停止 the streamed part of the reply is gone;
   only "已停止。" stays.
-  **Fixed in `21333e44` (coffeecat; it keeps thinking too), owner's decision: keep it.** The agent dropped it: its remote
-  stream returned an empty aborted message. It now keeps the text blocks streamed so
-  far (not unfinished tool calls or thinking); providers already skip aborted
-  messages, so the text is for display only. Checked on the emulator with an equivalent local fix: the text up to
+  **Fixed in `21333e44`, owner's decision: keep it.** The remote stream returned
+  an empty aborted message. It now keeps text and thinking streamed so far, not
+  unfinished tool calls. Checked on the emulator with an equivalent local fix: the text up to
   the stop stays, with 已停止。 under it.
 - **S5 Pair button label.** On the "pairing expired" screen the button read 已配對 until
   a link was opened. **Fixed in `3d78d17c`:** the pairing state now lives only while the
