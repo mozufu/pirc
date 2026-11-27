@@ -1,5 +1,5 @@
 name: Prepare Android signing
-description: Validate the configured preview signing identity and write a temporary keystore.
+description: Validate the configured Android release signing identity and write a temporary keystore.
 runs:
   using: composite
   steps:

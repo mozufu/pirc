@@ -2,7 +2,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const manifests = ['package.json', 'apps/web/package.json'];
-const mobile = 'apps/android/pubspec.yaml';
+const mobile = 'apps/app/pubspec.yaml';
+const appVersion = 'apps/app/lib/src/settings/settings_widgets.dart';
 function mobileVersion(text: string): { version: string; code: number } {
   const value = field(text, /(?:^|\n)version:\s*([0-9.]+\+[0-9]+)/);
   const [version, build] = value.split('+');
@@ -11,6 +12,9 @@ function mobileVersion(text: string): { version: string; code: number } {
   if (!Number.isInteger(code) || code < 1 || code > 2100000000)
     throw new Error('Invalid Flutter Android versionCode');
   return { version: version!, code };
+}
+function dartAppVersion(text: string): string {
+  return field(text, /(?:^|\n)const appVersion = '([^']+)';/);
 }
 /** The Rust workspace (docs/development/historical-records.md): every member inherits `[workspace.package]`. */
 const cargo = 'Cargo.toml';
@@ -55,6 +59,7 @@ export function checkVersions(root: string): string {
   for (const file of manifests.slice(1))
     if (JSON.parse(read(file)).version !== version) throw new Error(`Version mismatch: ${file}`);
   if (mobileVersion(read(mobile)).version !== version) throw new Error('Flutter version mismatch');
+  if (dartAppVersion(read(appVersion)) !== version) throw new Error('App version mismatch');
   // Bun's lockfile is JSONC; inspect only workspace headers, not dependency versions.
   const lock = read('bun.lock');
   for (const workspace of ['apps/web']) {
@@ -84,6 +89,8 @@ export function bumpVersion(root: string, next: string): void {
   const mobileText = read(mobile);
   const mobileCurrent = mobileVersion(mobileText);
   if (mobileCurrent.code >= 2100000000) throw new Error('Flutter Android versionCode exhausted');
+  const appVersionText = read(appVersion);
+  if (dartAppVersion(appVersionText) !== current) throw new Error('App version mismatch');
   const cargoLines = read(cargo).split('\n');
   const cargoLine = cargoVersionLine(cargoLines);
   // Validate every input before writing anything. No git/network/release side effects.
@@ -93,6 +100,10 @@ export function bumpVersion(root: string, next: string): void {
     return [file, JSON.stringify(manifest, null, 2) + '\n'] as const;
   });
   for (const [file, content] of changes) writeFileSync(path.join(root, file), content);
+  writeFileSync(
+    path.join(root, appVersion),
+    appVersionText.replace(/(^|\n)const appVersion = '[^']+';/, `$1const appVersion = '${next}';`),
+  );
   writeFileSync(
     path.join(root, mobile),
     mobileText.replace(/(^|\n)version:[^\n]+/, `$1version: ${next}+${mobileCurrent.code + 1}`),

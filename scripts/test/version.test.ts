@@ -15,10 +15,12 @@ function fixture() {
     mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
     writeFileSync(path.join(root, file), JSON.stringify({ name: 'test', version: '0.1.0' }));
   }
-  mkdirSync(path.join(root, 'apps/android'), { recursive: true });
+  mkdirSync(path.join(root, 'apps/app'), { recursive: true });
+  writeFileSync(path.join(root, 'apps/app/pubspec.yaml'), 'name: pirc_app\nversion: 0.1.0+7\n');
+  mkdirSync(path.join(root, 'apps/app/lib/src/settings'), { recursive: true });
   writeFileSync(
-    path.join(root, 'apps/android/pubspec.yaml'),
-    'name: pirc_mobile\nversion: 0.1.0+7\n',
+    path.join(root, 'apps/app/lib/src/settings/settings_widgets.dart'),
+    "const appVersion = '0.1.0';\n",
   );
   writeFileSync(
     path.join(root, 'bun.lock'),
@@ -43,9 +45,12 @@ it('uses the Flutter manifest as Android version metadata and increments its bui
   expect(checkVersions(root)).toBe('0.1.0');
   bumpVersion(root, '0.2.0');
   expect(JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')).version).toBe('0.2.0');
-  expect(readFileSync(path.join(root, 'apps/android/pubspec.yaml'), 'utf8')).toContain(
+  expect(readFileSync(path.join(root, 'apps/app/pubspec.yaml'), 'utf8')).toContain(
     'version: 0.2.0+8',
   );
+  expect(
+    readFileSync(path.join(root, 'apps/app/lib/src/settings/settings_widgets.dart'), 'utf8'),
+  ).toBe("const appVersion = '0.2.0';\n");
   expect(() => checkVersions(root)).toThrow('Lockfile mismatch');
   const cargoToml = readFileSync(path.join(root, 'Cargo.toml'), 'utf8');
   expect(cargoToml).toContain('authors = ["a"]\nversion = "0.2.0"');
@@ -68,6 +73,15 @@ it('rejects mismatches and malformed versions without writing', () => {
   writeFileSync(path.join(root, 'apps/web/package.json'), JSON.stringify({ version: '0.9.0' }));
   expect(() => bumpVersion(root, '1.0.0')).toThrow('mismatch');
   expect(JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')).version).toBe('0.1.0');
+  const appVersion = fixture();
+  writeFileSync(
+    path.join(appVersion, 'apps/app/lib/src/settings/settings_widgets.dart'),
+    "const appVersion = '0.9.0';\n",
+  );
+  expect(() => bumpVersion(appVersion, '1.0.0')).toThrow('App version mismatch');
+  expect(JSON.parse(readFileSync(path.join(appVersion, 'package.json'), 'utf8')).version).toBe(
+    '0.1.0',
+  );
   const cargo = fixture();
   writeFileSync(
     path.join(cargo, 'Cargo.toml'),
@@ -85,10 +99,10 @@ it('keeps the actual repository versions synchronized', () => {
 it('rejects a mismatched Flutter version or exhausted Android build number before writing', () => {
   for (const mobileVersion of ['0.9.0+7', '0.1.0+2100000000']) {
     const root = fixture();
-    writeFileSync(path.join(root, 'apps/android/pubspec.yaml'), `version: ${mobileVersion}\n`);
+    writeFileSync(path.join(root, 'apps/app/pubspec.yaml'), `version: ${mobileVersion}\n`);
     expect(() => bumpVersion(root, '0.2.0')).toThrow(/Flutter/);
     expect(JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')).version).toBe('0.1.0');
-    expect(readFileSync(path.join(root, 'apps/android/pubspec.yaml'), 'utf8')).toContain(
+    expect(readFileSync(path.join(root, 'apps/app/pubspec.yaml'), 'utf8')).toContain(
       `version: ${mobileVersion}`,
     );
   }

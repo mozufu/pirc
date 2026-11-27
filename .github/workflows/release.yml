@@ -119,10 +119,6 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: ./.github/actions/android-signing
-      - name: Set up Node.js for document runtime integration tests
-        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
-        with:
-          node-version: '22'
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: flutter/flutter
@@ -135,8 +131,8 @@ jobs:
         run: echo "$GITHUB_WORKSPACE/.flutter-sdk/bin" >> "$GITHUB_PATH"
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
-      - name: Analyze, test and build release APK
-        working-directory: apps/android
+      - name: Analyze, test and build signed release APKs
+        working-directory: apps/app
         env:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
@@ -144,32 +140,25 @@ jobs:
           flutter pub get
           flutter analyze --no-pub
           flutter test --no-pub
-          flutter build apk --debug --no-pub
+          flutter build apk --debug --no-pub --flavor standard --dart-define=PIRC_TAILSCALE=false
           cd android
           # Flutter exposes JVM unit tests on the debug variant.
-          ./gradlew --no-configuration-cache testDebugUnitTest
+          ./gradlew --no-configuration-cache testStandardDebugUnitTest
           cd ..
           # Release must regenerate registrants after tests to strip dev plugins.
-          flutter build apk --release
-          python3 tool/check_release.py
-          python3 - <<'PYAPK'
-          import hashlib, os, re, subprocess
-          from pathlib import Path
-          sdk = Path(os.environ.get('ANDROID_HOME') or os.environ['ANDROID_SDK_ROOT'])
-          signer = sorted(sdk.glob('build-tools/*/apksigner'))[-1]
-          result = subprocess.check_output([str(signer), 'verify', '--print-certs', 'build/app/outputs/flutter-apk/app-release.apk'], text=True)
-          # apksigner reports `Signer #1 certificate …` or, newer, `V2 Signer: certificate …`.
-          actual = set(re.findall(r'certificate SHA-256 digest: ([0-9a-f]+)', result))
-          expected = hashlib.sha256((Path(os.environ['RUNNER_TEMP']) / 'pirc-signing.der').read_bytes()).hexdigest()
-          if actual != {expected}:
-              # Certificate digests and signer details are public; print them to diagnose.
-              print(result)
-              print('expected configured certificate SHA-256: ' + expected)
-              raise SystemExit('APK signing certificate does not match configured identity')
-          print('APK signature verified against configured certificate: ' + expected)
-          PYAPK
+          flutter build apk --release --no-pub --flavor standard --dart-define=PIRC_TAILSCALE=false
+          flutter build apk --release --no-pub --flavor tailscale --dart-define=PIRC_TAILSCALE=true
+          python3 tool/verify_release.py --flavor standard \
+            --apk build/app/outputs/flutter-apk/app-standard-release.apk \
+            --mapping build/app/outputs/mapping/standardRelease/mapping.txt \
+            --cert-der "$RUNNER_TEMP/pirc-signing.der"
+          python3 tool/verify_release.py --flavor tailscale \
+            --apk build/app/outputs/flutter-apk/app-tailscale-release.apk \
+            --mapping build/app/outputs/mapping/tailscaleRelease/mapping.txt \
+            --cert-der "$RUNNER_TEMP/pirc-signing.der"
+          # The published beta asset remains the standard flavor (M11 adds tailscale).
           mkdir -p ../../dist/ci/android
-          cp build/app/outputs/flutter-apk/app-release.apk "../../dist/ci/android/pirc-$VERSION-beta.apk"
+          cp build/app/outputs/flutter-apk/app-standard-release.apk "../../dist/ci/android/pirc-$VERSION-beta.apk"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: release-android

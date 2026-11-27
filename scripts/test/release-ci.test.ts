@@ -8,6 +8,7 @@ import {
   releaseNotes,
   releaseTag,
   requireGreenCheck,
+  requiredWorkflows,
 } from '../release-ci.js';
 
 const dirs: string[] = [];
@@ -39,6 +40,11 @@ it('does not accept a green PR, other commit, branch or incomplete main check', 
   expect(() =>
     requireGreenCheck([{ ...green, conclusion: 'failure' }, green], 'abc', 'check.yml'),
   ).toThrow();
+});
+
+it('requires the pirc 2 client workflow instead of the old Android workflow', () => {
+  expect(requiredWorkflows(true)).toEqual(['check.yml', 'client.yml']);
+  expect(requiredWorkflows(false)).toEqual(['check.yml']);
 });
 
 it('checks the exact asset set and hashes the actual bytes, including optional APK', () => {

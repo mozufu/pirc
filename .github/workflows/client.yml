@@ -1,7 +1,9 @@
 name: Client
 
 # The pirc 2 Flutter client (plans/client.md): the workspace packages and
-# apps/app. The old apps/android app is built by android.yml.
+# apps/app. Until the M8 cutover the old apps/android app is built by android.yml.
+# Release CI requires this workflow at the exact main commit; a release commit
+# bumps apps/app/pubspec.yaml, so the path filter below always includes it.
 on:
   push:
     branches: [main]

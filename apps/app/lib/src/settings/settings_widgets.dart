@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
 /// The app version; `test/version_test.dart` keeps it equal to pubspec.yaml.
-const appVersion = '0.1.0';
+const appVersion = '0.10.0';
 
 /// A settings page: at most 720 wide, grouped rows on `surface.grouped`.
 class SettingsPage extends StatelessWidget {

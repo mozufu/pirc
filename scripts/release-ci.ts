@@ -42,6 +42,11 @@ export function requireGreenCheck(runs: Run[], commit: string, workflow: string)
     );
 }
 
+/** Main-branch workflows that must be green at the exact release commit. */
+export function requiredWorkflows(android: boolean): string[] {
+  return ['check.yml', ...(android ? ['client.yml'] : [])];
+}
+
 export function assetNames(version: string, android: boolean): string[] {
   parseVersion(version);
   return [
@@ -88,7 +93,7 @@ if (import.meta.main) {
       throw new Error('Checkout does not match tag');
     git('merge-base', '--is-ancestor', commit, 'origin/main');
     if (git('status', '--porcelain')) throw new Error('Release checkout must be clean');
-    for (const workflow of ['check.yml', ...(android ? ['android.yml'] : [])]) {
+    for (const workflow of requiredWorkflows(android)) {
       const result = Bun.spawnSync(
         [
           'gh',
@@ -114,7 +119,7 @@ if (import.meta.main) {
     notes +=
       '\n## Build assets\n\nmacOS ARM64 binaries are not Developer ID signed or notarized. Web static files are included separately.\n';
     notes += android
-      ? '\nAndroid APK: beta preview (`dev.pirc.mobile.preview`), signed with the configured CI identity. This does not certify physical-device or remote-push acceptance.\n'
+      ? '\nAndroid APK: standard flavor (`org.mozufu.pirc`), signed with the configured CI identity. This does not certify physical-device or remote-push acceptance.\n'
       : '\nAndroid APK was not requested for this release.\n';
     mkdirSync(path.join(root, 'dist/ci'), { recursive: true });
     writeFileSync(path.join(root, 'dist/ci/RELEASE.md'), notes);

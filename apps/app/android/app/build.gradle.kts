@@ -4,6 +4,14 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val releaseKeystore = System.getenv("PIRC_ANDROID_KEYSTORE")
+val requireReleaseSigning = System.getenv("PIRC_ANDROID_REQUIRE_SIGNING") == "1"
+if (requireReleaseSigning && releaseKeystore.isNullOrBlank()) {
+    error("CI release builds require PIRC_ANDROID_KEYSTORE; run Release setup first")
+}
+fun signingEnvironment(name: String): String = System.getenv(name)
+    ?.takeIf { it.isNotBlank() } ?: error("Missing release signing setting: $name")
+
 android {
     namespace = "org.mozufu.pirc"
     compileSdk = flutter.compileSdkVersion
@@ -47,10 +55,25 @@ android {
         }
     }
 
+    signingConfigs {
+        if (!releaseKeystore.isNullOrBlank()) {
+            create("ciRelease") {
+                storeFile = file(releaseKeystore)
+                storePassword = signingEnvironment("PIRC_ANDROID_STORE_PASSWORD")
+                keyAlias = signingEnvironment("PIRC_ANDROID_KEY_ALIAS")
+                keyPassword = signingEnvironment("PIRC_ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // Release signing is added with the release pipeline (M11).
-            signingConfig = signingConfigs.getByName("debug")
+            // Local installs keep the debug identity. CI requires the explicitly
+            // configured persistent key instead of generating one (plans/roadmap.md M8).
+            signingConfig = signingConfigs.getByName(
+                if (!releaseKeystore.isNullOrBlank()) "ciRelease" else "debug"
+            )
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }

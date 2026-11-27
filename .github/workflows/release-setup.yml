@@ -2,6 +2,11 @@ name: Release setup
 
 on:
   workflow_dispatch:
+    inputs:
+      smoke:
+        description: Build, sign and verify the standard release APK (trusted main only; no release)
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -26,6 +31,52 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: ./.github/actions/android-signing
+      - name: Remove signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/pirc-release.keystore" "$RUNNER_TEMP/pirc-signing.csr" "$RUNNER_TEMP/pirc-signing.der"
+
+  smoke:
+    name: Build, sign and verify standard release APK
+    needs: signing
+    if: github.ref == 'refs/heads/main' && inputs.smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      PIRC_ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+      PIRC_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      PIRC_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      PIRC_ANDROID_REQUIRE_SIGNING: '1'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: ./.github/actions/android-signing
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: flutter/flutter
+          ref: ad70ec4617166f1c38e5d2bfd388af71fda14f06
+          path: .flutter-sdk
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Add pinned Flutter SDK to PATH
+        run: echo "$GITHUB_WORKSPACE/.flutter-sdk/bin" >> "$GITHUB_PATH"
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6
+      - name: Build and verify a signed standard release APK
+        working-directory: apps/app
+        run: |
+          set -euo pipefail
+          flutter pub get
+          flutter build apk --release --no-pub --flavor standard --dart-define=PIRC_TAILSCALE=false
+          python3 tool/verify_release.py --flavor standard \
+            --apk build/app/outputs/flutter-apk/app-standard-release.apk \
+            --mapping build/app/outputs/mapping/standardRelease/mapping.txt \
+            --cert-der "$RUNNER_TEMP/pirc-signing.der"
       - name: Remove signing material
         if: always()
         run: rm -f "$RUNNER_TEMP/pirc-release.keystore" "$RUNNER_TEMP/pirc-signing.csr" "$RUNNER_TEMP/pirc-signing.der"
