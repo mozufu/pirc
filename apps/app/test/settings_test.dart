@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pirc_app/src/connection/storage.dart';
 import 'package:pirc_app/src/preferences.dart';
+import 'package:pirc_app/src/settings/settings_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/harness.dart';
@@ -120,7 +121,7 @@ void main() {
 
   appTest('about: app and Gateway versions, and licences', (tester) async {
     await pumpApp(tester, gateway: FakeGateway(), location: '/settings/about');
-    expect(find.text('0.1.0'), findsOneWidget);
+    expect(find.text(appVersion), findsOneWidget);
     expect(find.text('2.0.0-test'), findsOneWidget);
     await _open(tester, 'Licences');
     expect(find.byType(LicensePage), findsOneWidget);
