@@ -5290,6 +5290,338 @@ mod guard {
     }
 
     #[test]
+    fn wakes_in_the_roots_creation_millisecond_count_toward_suspension() {
+        let db = db();
+        let mut conn = db.lock();
+        settings_with(&mut conn, |settings| {
+            settings.loop_no_progress_wakes = 100;
+            settings.loop_no_progress_messages = 1000;
+        });
+        let a = pot(&mut conn, "A");
+        let b = pot(&mut conn, "B");
+        let room = group(&conn, &a, std::slice::from_ref(&b));
+        threads::post_user(&conn, "alice", &room, "Start", vec![], true).unwrap();
+        let root = last_root(&conn);
+        assert_eq!(root.created_at, root.last_progress_at);
+        // The root and both of its wakes share the creation millisecond.
+        conn.execute(
+            "UPDATE causal_root_events SET at=?1 WHERE root_id=?2",
+            rusqlite::params![root.created_at, root.id],
+        )
+        .unwrap();
+        assert_eq!(
+            roots::read(&conn, "alice", &root.id)
+                .unwrap()
+                .wakes_since_progress,
+            2
+        );
+        settings_with(&mut conn, |settings| settings.loop_no_progress_wakes = 3);
+        guard::note_wake(
+            &conn,
+            &root.id,
+            &a,
+            None,
+            &guard::purpose("pot:a", "dm", "creation-ms"),
+        )
+        .unwrap();
+        let root = roots::read(&conn, "alice", &root.id).unwrap();
+        assert_eq!(root.state, roots::State::Suspended);
+        assert!(
+            root.suspend_reason
+                .as_deref()
+                .is_some_and(|reason| reason.contains("3 wakes without progress (3 now)")),
+            "{:?}",
+            root.suspend_reason
+        );
+        assert_eq!(root.wakes_since_progress, 3);
+    }
+
+    #[test]
+    fn progress_orders_same_millisecond_events_after_its_marker() {
+        let db = db();
+        let mut conn = db.lock();
+        settings_with(&mut conn, |settings| {
+            settings.loop_no_progress_wakes = 100;
+            settings.loop_no_progress_messages = 1000;
+        });
+        let a = pot(&mut conn, "A");
+        let b = pot(&mut conn, "B");
+        let root = roots::start(
+            &conn,
+            "alice",
+            &a,
+            roots::Origin::UserMessage,
+            "message-1",
+            None,
+        )
+        .unwrap();
+        for index in 0..3 {
+            guard::note_wake(
+                &conn,
+                &root.id,
+                &a,
+                None,
+                &guard::purpose("pot:a", "dm", &format!("before:{index}")),
+            )
+            .unwrap();
+        }
+        guard::progress(&conn, &root.id, &a, "work_run").unwrap();
+        for index in 0..2 {
+            guard::note_wake(
+                &conn,
+                &root.id,
+                &a,
+                None,
+                &guard::purpose("pot:a", "dm", &format!("after:{index}")),
+            )
+            .unwrap();
+        }
+        guard::note_message(
+            &conn,
+            &root.id,
+            &a,
+            &b,
+            &guard::purpose("pot:b", "dm", "after:message"),
+        )
+        .unwrap();
+        // The marker, the wakes before it and the wakes after it all share
+        // one millisecond; only insertion order separates them.
+        let marker_at: i64 = conn
+            .query_row(
+                "SELECT at FROM causal_root_events
+                 WHERE root_id=?1 AND kind='progress' ORDER BY rowid DESC LIMIT 1",
+                [&root.id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        conn.execute(
+            "UPDATE causal_root_events SET at=?1 WHERE root_id=?2",
+            rusqlite::params![marker_at, root.id],
+        )
+        .unwrap();
+        conn.execute(
+            "UPDATE causal_roots SET created_at=?2 WHERE id=?1",
+            rusqlite::params![root.id, marker_at - 1],
+        )
+        .unwrap();
+        let root = roots::read(&conn, "alice", &root.id).unwrap();
+        assert_eq!(
+            (root.wakes_since_progress, root.messages_since_progress),
+            (2, 1),
+            "events before the marker stay out of the streak"
+        );
+        settings_with(&mut conn, |settings| settings.loop_no_progress_wakes = 3);
+        guard::note_wake(
+            &conn,
+            &root.id,
+            &a,
+            None,
+            &guard::purpose("pot:a", "dm", "after:final"),
+        )
+        .unwrap();
+        let root = roots::read(&conn, "alice", &root.id).unwrap();
+        assert_eq!(root.state, roots::State::Suspended);
+        assert!(
+            root.suspend_reason
+                .as_deref()
+                .is_some_and(|reason| reason.contains("3 wakes without progress (3 now)")),
+            "{:?}",
+            root.suspend_reason
+        );
+        assert_eq!(
+            (root.wakes_since_progress, root.messages_since_progress),
+            (3, 1)
+        );
+    }
+
+    #[test]
+    fn resume_orders_same_millisecond_events_after_its_marker() {
+        let db = db();
+        let mut conn = db.lock();
+        settings_with(&mut conn, |settings| {
+            settings.loop_no_progress_wakes = 4;
+            settings.loop_no_progress_messages = 1000;
+        });
+        let a = pot(&mut conn, "A");
+        let b = pot(&mut conn, "B");
+        let root = roots::start(
+            &conn,
+            "alice",
+            &a,
+            roots::Origin::UserMessage,
+            "message-1",
+            None,
+        )
+        .unwrap();
+        for index in 0..4 {
+            guard::note_wake(
+                &conn,
+                &root.id,
+                &a,
+                None,
+                &guard::purpose("pot:a", "dm", &format!("before:{index}")),
+            )
+            .unwrap();
+        }
+        assert_eq!(
+            roots::read(&conn, "alice", &root.id).unwrap().state,
+            roots::State::Suspended
+        );
+        let resumed = roots::resume(&conn, "alice", &root.id).unwrap();
+        assert_eq!(resumed.state, roots::State::Active);
+        assert_eq!(
+            (
+                resumed.wakes_since_progress,
+                resumed.messages_since_progress
+            ),
+            (0, 0),
+            "the resume marker resets the prior streak"
+        );
+        let marker_at: i64 = conn
+            .query_row(
+                "SELECT at FROM causal_root_events
+                 WHERE root_id=?1 AND kind='progress' ORDER BY rowid DESC LIMIT 1",
+                [&root.id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        // The prior suspension and the queued events share the resume
+        // millisecond; they must stay before its marker.
+        conn.execute(
+            "UPDATE causal_root_events SET at=?1 WHERE root_id=?2",
+            rusqlite::params![marker_at, root.id],
+        )
+        .unwrap();
+        conn.execute(
+            "UPDATE causal_roots SET created_at=?2 WHERE id=?1",
+            rusqlite::params![root.id, marker_at - 1],
+        )
+        .unwrap();
+        assert_eq!(
+            roots::read(&conn, "alice", &root.id)
+                .unwrap()
+                .wakes_since_progress,
+            0
+        );
+        for index in 0..2 {
+            guard::note_wake(
+                &conn,
+                &root.id,
+                &a,
+                None,
+                &guard::purpose("pot:a", "dm", &format!("after:{index}")),
+            )
+            .unwrap();
+        }
+        guard::note_message(
+            &conn,
+            &root.id,
+            &a,
+            &b,
+            &guard::purpose("pot:b", "dm", "after:message"),
+        )
+        .unwrap();
+        conn.execute(
+            "UPDATE causal_root_events SET at=?1 WHERE root_id=?2",
+            rusqlite::params![marker_at, root.id],
+        )
+        .unwrap();
+        let root = roots::read(&conn, "alice", &root.id).unwrap();
+        assert_eq!(root.state, roots::State::Active);
+        assert_eq!(
+            (root.wakes_since_progress, root.messages_since_progress),
+            (2, 1),
+            "wakes after the resume count even in its millisecond"
+        );
+        settings_with(&mut conn, |settings| settings.loop_no_progress_wakes = 3);
+        guard::note_wake(
+            &conn,
+            &root.id,
+            &a,
+            None,
+            &guard::purpose("pot:a", "dm", "after:final"),
+        )
+        .unwrap();
+        let root = roots::read(&conn, "alice", &root.id).unwrap();
+        assert_eq!(root.state, roots::State::Suspended);
+        assert!(
+            root.suspend_reason
+                .as_deref()
+                .is_some_and(|reason| reason.contains("3 wakes without progress (3 now)")),
+            "{:?}",
+            root.suspend_reason
+        );
+        assert_eq!(
+            (root.wakes_since_progress, root.messages_since_progress),
+            (3, 1)
+        );
+    }
+
+    #[test]
+    fn an_old_resume_without_a_marker_does_not_resurrect_its_streak() {
+        let db = db();
+        let mut conn = db.lock();
+        settings_with(&mut conn, |settings| {
+            settings.loop_no_progress_wakes = 100;
+            settings.loop_no_progress_messages = 1000;
+        });
+        let a = pot(&mut conn, "A");
+        let root = roots::start(
+            &conn,
+            "alice",
+            &a,
+            roots::Origin::UserMessage,
+            "message-1",
+            None,
+        )
+        .unwrap();
+        for index in 0..4 {
+            guard::note_wake(
+                &conn,
+                &root.id,
+                &a,
+                None,
+                &guard::purpose("pot:a", "dm", &format!("before:{index}")),
+            )
+            .unwrap();
+        }
+        // Simulate a resume from before resume wrote progress markers.
+        conn.execute(
+            "UPDATE causal_root_events SET at=1000 WHERE root_id=?1",
+            [&root.id],
+        )
+        .unwrap();
+        conn.execute(
+            "UPDATE causal_roots SET created_at=900,last_progress_at=1000 WHERE id=?1",
+            [&root.id],
+        )
+        .unwrap();
+        assert_eq!(
+            roots::read(&conn, "alice", &root.id)
+                .unwrap()
+                .wakes_since_progress,
+            0,
+            "the fallback boundary clears the prior streak"
+        );
+        settings_with(&mut conn, |settings| settings.loop_no_progress_wakes = 2);
+        guard::note_wake(
+            &conn,
+            &root.id,
+            &a,
+            None,
+            &guard::purpose("pot:a", "dm", "after"),
+        )
+        .unwrap();
+        let root = roots::read(&conn, "alice", &root.id).unwrap();
+        assert_eq!(
+            root.state,
+            roots::State::Active,
+            "the four old wakes do not suspend the root again"
+        );
+        assert_eq!(root.wakes_since_progress, 1);
+    }
+
+    #[test]
     fn a_long_exchange_with_progress_every_few_turns_is_not_suspended() {
         let db = db();
         let mut conn = db.lock();

@@ -110,16 +110,56 @@ pub struct Root {
     pub messages_since_progress: i64,
 }
 
-const SELECT: &str =
-    "SELECT id,origin_kind,origin_ref,thread_id,initiator_pot,depth_limit,fanout_limit,
+/// The insertion-order boundary of a root's current streak.
+///
+/// `last_progress_at` cannot order events recorded in the same millisecond:
+/// the wake that caused a progress, a wake after it, and the root's first
+/// wakes all share `at`. Progress rows are inserted with the timestamp they
+/// record, so the latest matching progress marker gives the ordered boundary;
+/// every event with a greater rowid belongs to the current streak.
+///
+/// A root that has never progressed has no marker. Its boundary is 0, so wakes
+/// recorded in its creation millisecond count from the start. An older root
+/// resumed before resume wrote markers also has none; fall back to the last
+/// event at or before its resume so the prior streak is not resurrected. That
+/// fallback is conservative for events in the resume millisecond: it cannot
+/// distinguish a queued wake before the resume from a wake caused after it.
+pub(super) const STREAK_BOUNDARY: &str = "COALESCE(
+    (SELECT max(e.rowid) FROM causal_root_events e
+      WHERE e.root_id=causal_roots.id AND e.kind='progress'
+        AND e.at=causal_roots.last_progress_at),
+    CASE WHEN causal_roots.last_progress_at=causal_roots.created_at THEN 0
+         ELSE (SELECT COALESCE(max(e.rowid),0) FROM causal_root_events e
+               WHERE e.root_id=causal_roots.id AND e.at<=causal_roots.last_progress_at)
+    END
+  )";
+
+/// A root's current event boundary, for the loop guard's own streak query.
+pub(super) fn streak_boundary(conn: &Connection, root_id: &str) -> ApiResult<i64> {
+    Ok(conn.query_row(
+        &format!("SELECT {STREAK_BOUNDARY} FROM causal_roots WHERE id=?1"),
+        [root_id],
+        |r| r.get(0),
+    )?)
+}
+
+fn select() -> String {
+    format!(
+        "WITH bounded AS (
+           SELECT causal_roots.*,{STREAK_BOUNDARY} AS streak_boundary
+           FROM causal_roots
+         )
+         SELECT id,origin_kind,origin_ref,thread_id,initiator_pot,depth_limit,fanout_limit,
   budget_money_micros,budget_tokens,spent_money_micros,spent_tokens,
   reserved_money_micros,reserved_tokens,state,suspend_reason,suspended_at,
   last_progress_at,created_at,
   (SELECT count(*) FROM causal_root_events e
-    WHERE e.root_id=causal_roots.id AND e.kind='wake' AND e.at>causal_roots.last_progress_at),
+    WHERE e.root_id=bounded.id AND e.kind='wake' AND e.rowid>bounded.streak_boundary),
   (SELECT count(*) FROM causal_root_events e
-    WHERE e.root_id=causal_roots.id AND e.kind='message' AND e.at>causal_roots.last_progress_at)
-  FROM causal_roots";
+    WHERE e.root_id=bounded.id AND e.kind='message' AND e.rowid>bounded.streak_boundary)
+  FROM bounded"
+    )
+}
 
 fn row(r: &rusqlite::Row) -> rusqlite::Result<Root> {
     Ok(Root {
@@ -153,7 +193,7 @@ fn not_found() -> ApiError {
 /// The owner's root by id.
 pub fn read(conn: &Connection, owner: &str, id: &str) -> ApiResult<Root> {
     conn.query_row(
-        &format!("{SELECT} WHERE id=?1 AND owner_user=?2"),
+        &format!("{} WHERE id=?1 AND owner_user=?2", select()),
         params![id, owner],
         row,
     )
@@ -164,7 +204,7 @@ pub fn read(conn: &Connection, owner: &str, id: &str) -> ApiResult<Root> {
 /// A root by id, whether the caller names the owner or not (internal only).
 pub fn find(conn: &Connection, id: &str) -> ApiResult<Option<Root>> {
     Ok(conn
-        .query_row(&format!("{SELECT} WHERE id=?1"), [id], row)
+        .query_row(&format!("{} WHERE id=?1", select()), [id], row)
         .optional()?)
 }
 
@@ -466,14 +506,18 @@ pub fn resume(conn: &Connection, owner: &str, id: &str) -> ApiResult<Root> {
     let root = read(conn, owner, id)?;
     match root.state {
         State::Suspended => {
-            let now = now_ms();
-            conn.execute(
+            // The resume timestamp and its progress marker must agree: queued
+            // wakes from before it stay outside the new streak, while wakes
+            // caused after it count even in the same millisecond.
+            let tx = conn.unchecked_transaction()?;
+            tx.execute(
                 "UPDATE causal_roots SET state='active',suspend_reason=NULL,suspended_at=NULL,
-                   blocked_since=NULL,last_progress_at=?2 WHERE id=?1",
-                params![id, now],
+                   blocked_since=NULL WHERE id=?1",
+                [id],
             )?;
+            super::guard::progress(&tx, id, &root.initiator_pot, "user_resume")?;
             super::activity::log(
-                conn,
+                &tx,
                 owner,
                 &root.initiator_pot,
                 super::activity::Entry::new(
@@ -487,6 +531,7 @@ pub fn resume(conn: &Connection, owner: &str, id: &str) -> ApiResult<Root> {
                 })
                 .root(Some(id)),
             )?;
+            tx.commit()?;
             read(conn, owner, id)
         }
         State::Active => Ok(root),

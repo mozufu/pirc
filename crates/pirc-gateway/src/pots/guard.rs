@@ -151,14 +151,14 @@ fn pair_key(a: &str, b: Option<&str>) -> String {
     }
 }
 
-fn streak(conn: &Connection, root_id: &str, since: i64) -> ApiResult<Streak> {
+fn streak(conn: &Connection, root_id: &str, boundary: i64) -> ApiResult<Streak> {
     let mut streak = Streak::default();
     let rows: Vec<(String, Option<String>, String, String)> = conn
         .prepare(
             "SELECT pot_id,peer_pot_id,kind,purpose_json FROM causal_root_events
-             WHERE root_id=?1 AND at>?2 AND kind IN ('wake','message') ORDER BY at, rowid",
+             WHERE root_id=?1 AND rowid>?2 AND kind IN ('wake','message') ORDER BY rowid",
         )?
-        .query_map(params![root_id, since], |r| {
+        .query_map(params![root_id, boundary], |r| {
             Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))
         })?
         .collect::<Result<_, _>>()?;
@@ -215,7 +215,8 @@ fn evaluate(conn: &Connection, root_id: &str) -> ApiResult<()> {
         return Ok(());
     };
     let settings = store::settings(conn, &owner)?;
-    let streak = streak(conn, root_id, root.last_progress_at)?;
+    let boundary = roots::streak_boundary(conn, root_id)?;
+    let streak = streak(conn, root_id, boundary)?;
     let over_rate = rate_over(conn, &root, &settings)?;
     if over_rate {
         // Delivery is delayed; a root that stays over the ceilings is stopped
