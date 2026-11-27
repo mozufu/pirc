@@ -4,7 +4,7 @@
 
 Workspace modes are gateway-managed combinations of capabilities, prompt
 sections, features and tools. Work is a default file, not a reserved built-in
-kind. Gateway and nodes must run **protocol 13 together**.
+kind. Gateway and nodes must run **protocol 17 together**.
 
 Workspaces are grouped by device; a workspace whose mode is missing from the
 catalog appears read-only. Panels and settings follow capabilities: Git with
