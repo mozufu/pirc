@@ -684,6 +684,18 @@ class AppLocalizationsZh extends AppLocalizations {
   String get questionAnswered => '已回答';
 
   @override
+  String get questionOther => '其他（自行輸入答案）';
+
+  @override
+  String get sessionUntitled => '新對話';
+
+  @override
+  String get approvalAutoModeTitle => '自動模式：要允許這個可能有風險的動作嗎？';
+
+  @override
+  String get approvalReadOnlyTitle => '唯讀模式：要允許這個動作嗎？';
+
+  @override
   String get questionWithdrawn => '已撤回';
 
   @override

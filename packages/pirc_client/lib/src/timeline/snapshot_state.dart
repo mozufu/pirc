@@ -3,6 +3,7 @@
 library;
 
 import '../json.dart';
+import '../known_text.dart';
 import '../models/session.dart';
 import 'events.dart' show approvalModes, queueItems, thinkingLevels;
 import 'pi_messages.dart';
@@ -88,12 +89,12 @@ Interaction _interaction(Object? raw) {
   switch (kind) {
     case 'select':
       final descriptions = array(field(request, 'optionDescriptions'));
+      final options = array(field(request, 'options')) ?? const [];
       return build(
         kind: 'select',
         multiple: truthy(field(request, 'multiple')),
         options: [
-          for (final (index, option)
-              in (array(field(request, 'options')) ?? const []).indexed)
+          for (final (index, option) in options.indexed)
             InteractionOption(
               text(option) ?? '',
               text(option) ?? '',
@@ -102,6 +103,8 @@ Interaction _interaction(Object? raw) {
                       truthy(descriptions[index])
                   ? text(descriptions[index])
                   : null,
+              // Only the last option is the agent's "Other".
+              index == options.length - 1 && text(option) == askOtherLabel,
             ),
         ],
       );

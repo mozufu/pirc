@@ -95,6 +95,7 @@ pub(super) fn waiting_message(
             interaction.expires_at = data
                 .and_then(|data| data.get("expiresAt"))
                 .and_then(Value::as_i64);
+            interaction.session_name = Some(session.name.clone());
             interaction.choices = single_choices(
                 data.and_then(|data| data.get("kind"))
                     .and_then(Value::as_str)

@@ -7,6 +7,7 @@ import 'package:pirc_client/pirc_client.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../known_text.dart';
 import '../connection/data.dart';
 import '../format.dart';
 import '../chat/decision_sheet.dart';
@@ -344,7 +345,9 @@ class WorkRow extends ConsumerWidget {
                             ),
                           ),
                         TextSpan(
-                          text: item.title,
+                          text: item is SessionItem
+                              ? sessionTitle(l10n, item.title)
+                              : item.title,
                           style: text.bodyLarge?.copyWith(
                             fontWeight: unread
                                 ? FontWeight.w600

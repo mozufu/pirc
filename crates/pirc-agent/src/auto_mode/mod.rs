@@ -724,9 +724,9 @@ impl AutoMode {
             .ui()
             .confirm(
                 if request.read_only {
-                    "Read-only mode: allow this action?"
+                    pirc_protocol::READ_ONLY_APPROVAL_TITLE
                 } else {
-                    "Auto mode: allow a potentially dangerous action?"
+                    pirc_protocol::AUTO_MODE_APPROVAL_TITLE
                 },
                 &message,
                 DialogOptions {

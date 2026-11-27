@@ -70,7 +70,7 @@ const SCHEMA: &str = concat!(
 );
 
 /// Placeholder name of a new session until the agent's title replaces it.
-pub const PLACEHOLDER_SESSION_NAME: &str = "New session";
+pub const PLACEHOLDER_SESSION_NAME: &str = pirc_protocol::PLACEHOLDER_SESSION_NAME;
 
 /// The open store. Never hold the lock across an `await`.
 pub struct Db(Mutex<Connection>);

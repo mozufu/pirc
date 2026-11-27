@@ -288,7 +288,7 @@ class OverlayController(
                 for (i in 0 until list.length()) {
                     val choice = list.optJSONObject(i) ?: continue
                     val id = choice.text("id") ?: continue
-                    add(OverlayChoice(id, choice.text("label") ?: id))
+                    add(OverlayChoice(id, choice.text("label") ?: id, choice.optBoolean("other")))
                 }
             }
         }

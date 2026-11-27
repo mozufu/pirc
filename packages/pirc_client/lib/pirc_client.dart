@@ -4,6 +4,7 @@
 /// the `dart:io` one by conditional import.
 library;
 
+export 'src/known_text.dart';
 export 'src/api/activity_api.dart';
 export 'src/api/calendar_api.dart';
 export 'src/api/clients_api.dart';

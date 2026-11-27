@@ -8,6 +8,7 @@ import 'package:pirc_client/pirc_client.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../known_text.dart';
 import '../connection/connection.dart';
 import '../connection/data.dart';
 import '../format.dart';
@@ -237,13 +238,14 @@ class _ResolvedLine extends ConsumerWidget {
     final IconData icon;
     final Color color;
     if (summary != null) {
-      status = '${interaction.title} · $summary';
+      status = '${questionTitle(l10n, interaction.title)} · $summary';
       icon = LucideIcons.check;
       color = colors['status.success'];
     } else {
       switch (interaction.status) {
         case 'answered' when mine:
-          status = '${interaction.title} · ${l10n.questionAnswered}';
+          status =
+              '${questionTitle(l10n, interaction.title)} · ${l10n.questionAnswered}';
           icon = LucideIcons.check;
           color = colors['status.success'];
         case 'answered':
@@ -266,7 +268,7 @@ class _ResolvedLine extends ConsumerWidget {
           icon = LucideIcons.refreshCw;
           color = colors['text.muted'];
         default:
-          status = l10n.questionEnded(interaction.title);
+          status = l10n.questionEnded(questionTitle(l10n, interaction.title));
           icon = LucideIcons.circleHelp;
           color = colors['text.muted'];
       }
@@ -284,7 +286,7 @@ class _ResolvedLine extends ConsumerWidget {
               children: [
                 if (!combined)
                   Text(
-                    interaction.title,
+                    questionTitle(l10n, interaction.title),
                     style: text,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -383,7 +385,7 @@ class _QuestionCardState extends ConsumerState<QuestionCard> {
           children: [
             for (final option in _q.options)
               _Option(
-                label: option.label,
+                label: optionLabel(l10n, option),
                 description: option.description,
                 selected: _picked.contains(option.value),
                 multiple: _q.multiple,
@@ -412,7 +414,7 @@ class _QuestionCardState extends ConsumerState<QuestionCard> {
               : {'value': values.single};
           summary = [
             for (final option in _q.options)
-              if (_picked.contains(option.value)) option.label,
+              if (_picked.contains(option.value)) optionLabel(l10n, option),
           ].join(', ');
         }
       case 'confirm':
@@ -521,7 +523,10 @@ class _QuestionCardState extends ConsumerState<QuestionCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(_q.title, style: text.titleMedium),
+                      Text(
+                        questionTitle(l10n, _q.title),
+                        style: text.titleMedium,
+                      ),
                       if (_q.description?.isNotEmpty ?? false)
                         Text(_q.description!, style: text.bodySmall),
                     ],

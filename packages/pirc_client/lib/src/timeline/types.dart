@@ -4,6 +4,7 @@
 /// port to the web implementation; change them together.
 library;
 
+import '../known_text.dart';
 import '../models/session.dart';
 
 /// An image inline in a message or tool result; [base64] is the raw data.
@@ -292,10 +293,19 @@ class QueueItem {
 }
 
 class InteractionOption {
-  const InteractionOption(this.value, this.label, [this.description]);
+  const InteractionOption(
+    this.value,
+    this.label, [
+    this.description,
+    this.other = false,
+  ]);
   final String value;
   final String label;
   final String? description;
+
+  /// The agent's "Other" option ([askOtherLabel]), shown in the app's words;
+  /// [value] stays the answer.
+  final bool other;
 }
 
 /// Optional checkbox on a confirmation, used for delegated user requests.

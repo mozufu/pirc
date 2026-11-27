@@ -21,6 +21,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import java.util.Date
 import org.mozufu.pirc.R
+import org.mozufu.pirc.notifications.KnownText
 
 /** What the overlay's buttons do; [OverlayController] and the window answer them. */
 interface OverlayActions {
@@ -264,7 +265,7 @@ class OverlayView(context: Context, private val actions: OverlayActions) {
             importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         }
         row.addView(mark, LinearLayout.LayoutParams(dp(26), dp(26)))
-        val name = sessionName ?: if (run) string(R.string.overlay_schedule) else null
+        val name = sessionName?.let { KnownText.sessionName(ctx, it) } ?: if (run) string(R.string.overlay_schedule) else null
         val label = TextView(ctx).apply {
             text = if (name.isNullOrBlank()) string(R.string.notification_app_name) else string(R.string.overlay_header, name)
             style(OverlayTokens.secondary, palette.textMuted)
@@ -301,7 +302,7 @@ class OverlayView(context: Context, private val actions: OverlayActions) {
     }
 
     private fun title(text: String) {
-        sheet.addView(TextView(ctx).apply { this.text = text; style(OverlayTokens.titleCard, palette.textPrimary) }, block(top = OverlayTokens.STACK_SM))
+        sheet.addView(TextView(ctx).apply { this.text = KnownText.questionTitle(ctx, text); style(OverlayTokens.titleCard, palette.textPrimary) }, block(top = OverlayTokens.STACK_SM))
     }
 
     private fun body(text: String) {
@@ -357,13 +358,13 @@ class OverlayView(context: Context, private val actions: OverlayActions) {
             isSelected = selected
             isClickable = enabled
             isEnabled = enabled
-            contentDescription = choice.label
+            contentDescription = label(choice)
             setOnClickListener { actions.select(choice.id) }
         }
         row.addView(View(ctx).apply { background = radio(selected) }, LinearLayout.LayoutParams(dp(20), dp(20)))
         row.addView(
             TextView(ctx).apply {
-                text = choice.label
+                text = label(choice)
                 style(OverlayTokens.row, palette.textPrimary)
             },
             LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dp(OverlayTokens.STACK_MD) },
@@ -478,4 +479,9 @@ class OverlayView(context: Context, private val actions: OverlayActions) {
         fun isDark(context: Context) =
             context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
     }
+
+    /** The agent's "Other" option in the system language; other options as sent. */
+    private fun label(choice: OverlayChoice): String =
+        if (choice.other) ctx.getString(R.string.question_other) else choice.label
+
 }

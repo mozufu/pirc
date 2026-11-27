@@ -6,6 +6,7 @@ import 'package:pirc_client/pirc_client.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../known_text.dart';
 import '../connection/data.dart';
 import '../platform/files.dart';
 import '../work/composer/model_sheet.dart';
@@ -1333,7 +1334,7 @@ class _PotReachFormState extends ConsumerState<PotReachForm> {
 
     String sessionName(String id) {
       for (final s in sessions) {
-        if (s.id == id) return s.name;
+        if (s.id == id) return sessionTitle(l10n, s.name);
       }
       return id;
     }

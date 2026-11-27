@@ -190,6 +190,31 @@ class NotificationRendererTest {
         assertTrue(shadowOf(manager).allNotifications.isEmpty())
     }
 
+    @Test fun aQuestionsTitleIsWordedHereFromItsSessionName() {
+        val note = renderer.build(spec().copy(waitingSession = "New session", body = KnownText.AUTO_MODE_APPROVAL_TITLE))
+        assertEquals("New session is waiting for you", note.title())
+        assertEquals("Auto mode: allow a potentially dangerous action?", note.text())
+        // Without a session name, the title as sent.
+        assertEquals("Build is waiting for you", renderer.build(spec()).title())
+    }
+
+    @Test @Config(qualifiers = "zh-rTW")
+    fun knownServerTextFollowsTheSystemLanguage() {
+        val waiting = renderer.build(
+            spec().copy(
+                waitingSession = "New session",
+                body = KnownText.AUTO_MODE_APPROVAL_TITLE,
+                choices = listOf(
+                    NotificationChoice("A", question),
+                    NotificationChoice("Other (type your own answer)", question, other = true),
+                ),
+            ),
+        )
+        assertEquals("新對話 正在等你回覆", waiting.title())
+        assertEquals("自動模式：要允許這個可能有風險的動作嗎？", waiting.text())
+        assertEquals("Build 正在等你回覆", renderer.build(spec().copy(waitingSession = "Build")).title())
+    }
+
     @Test @Config(qualifiers = "zh-rTW")
     fun stringsFollowTheSystemLanguage() {
         val note = renderer.build(spec(lockScreen = "title"))

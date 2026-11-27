@@ -136,6 +136,12 @@ class PushReceiptTest {
         assertEquals(listOf(ReceiptStep.Remove(tag)), receipt.plan(expired))
     }
 
+    @Test fun aQuestionKeepsItsSessionNameForTheTitle() {
+        reads.interaction = compact("pending")
+        assertEquals("Build", shownSpec(receipt.plan(question(""","sessionName":"Build""""))).waitingSession)
+        assertNull(shownSpec(receipt.plan(question())).waitingSession)
+    }
+
     @Test fun otherIsNotCountedAndTakesASlotOnlyWhenOneIsLeft() {
         reads.interaction = compact("pending", choices = 3, other = true)
         assertEquals(listOf("Choice 1", "Choice 2", "Choice 3"), shownSpec(receipt.plan(question())).choices.map { it.label })

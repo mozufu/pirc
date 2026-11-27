@@ -70,7 +70,8 @@ enum class ActionLabel { ANSWER, OPEN_CONVERSATION, VIEW_AND_RUN, SKIP }
 data class NotificationAction(val label: ActionLabel, val open: OpenTarget)
 
 /** A choice of the expanded question; it only opens the app with the choice preselected. */
-data class NotificationChoice(val label: String, val open: OpenTarget)
+/** One option; [other] marks the agent's "Other" option, shown with the app's own words. */
+data class NotificationChoice(val label: String, val open: OpenTarget, val other: Boolean = false)
 
 /** One notification to show, before Android strings and PendingIntents are added. */
 data class NotificationSpec(
@@ -90,6 +91,8 @@ data class NotificationSpec(
     val answeredOn: String? = null,
     /** Removed by Android after this long. */
     val timeoutMillis: Long? = null,
+    /** A question's session: the title becomes "<name> is waiting for you" in the system language. */
+    val waitingSession: String? = null,
 )
 
 sealed interface ReceiptStep {
@@ -183,7 +186,8 @@ class PushReceipt(
                     val choice = choices.optJSONObject(i) ?: continue
                     val id = choice.text("id") ?: continue
                     val label = choice.text("label") ?: id
-                    add(choice.optBoolean("other") to NotificationChoice(label, OpenTarget.question(q.sessionId, q.interactionId, q.epoch, id, label)))
+                    val other = choice.optBoolean("other")
+                    add(other to NotificationChoice(label, OpenTarget.question(q.sessionId, q.interactionId, q.epoch, id, label), other))
                 }
             }
         }
@@ -286,6 +290,7 @@ class PushReceipt(
         lockScreen = note.lockScreen,
         silent = note.silent,
         open = open,
+        waitingSession = note.sessionName?.takeIf { note.kind is PushKind.Question },
     )
 
     companion object {

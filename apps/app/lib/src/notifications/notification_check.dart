@@ -8,6 +8,7 @@ import 'package:pirc_client/pirc_client.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../known_text.dart';
 import '../connection/connection.dart';
 import '../connection/data.dart';
 import '../format.dart';
@@ -164,10 +165,17 @@ class _NotificationCheckScreenState
   /// Still open: the conversation, with the answer sheet when the question
   /// has choices (else its card in the conversation answers it).
   void _open(Map body) {
+    final l10n = AppLocalizations.of(context);
     final choices = [
       for (final c in (body['choices'] as List? ?? const []).whereType<Map>())
         if ('${c['id'] ?? ''}'.isNotEmpty)
-          AnswerChoice('${c['id']}', '${c['label'] ?? c['id']}'),
+          AnswerChoice(
+            '${c['id']}',
+            // The agent's "Other" (`other`) in the app's words.
+            c['other'] == true
+                ? l10n.questionOther
+                : '${c['label'] ?? c['id']}',
+          ),
     ];
     final question = body['question'];
     if (choices.isNotEmpty) {
@@ -177,7 +185,9 @@ class _NotificationCheckScreenState
             NotificationAnswer(
               sessionId: _q.sessionId,
               interactionId: _q.interactionId,
-              title: question is Map ? '${question['title'] ?? ''}' : '',
+              title: question is Map
+                  ? questionTitle(l10n, '${question['title'] ?? ''}')
+                  : '',
               choices: choices,
               checkedAt: ref.read(clockProvider)().millisecondsSinceEpoch,
               // Only a choice the Gateway still offers stays preselected.

@@ -148,8 +148,9 @@ class NotificationRenderer(
     fun build(spec: NotificationSpec): Notification {
         val body = spec.answeredOn?.let { name ->
             context.getString(R.string.notification_answered_on, name.ifEmpty { context.getString(R.string.notification_another_device) })
-        } ?: spec.body
-        val title = spec.title.ifBlank { context.getString(R.string.notification_app_name) }
+        } ?: KnownText.questionTitle(context, spec.body)
+        val title = spec.waitingSession?.let { context.getString(R.string.notification_waiting_title, KnownText.sessionName(context, it)) }
+            ?: spec.title.ifBlank { context.getString(R.string.notification_app_name) }
         val builder = Notification.Builder(context, spec.channel)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
@@ -216,7 +217,7 @@ class NotificationRenderer(
                 views.setViewVisibility(slot, View.GONE)
             } else {
                 views.setViewVisibility(slot, View.VISIBLE)
-                views.setTextViewText(slot, choice.label)
+                views.setTextViewText(slot, if (choice.other) context.getString(R.string.question_other) else choice.label)
                 views.setOnClickPendingIntent(slot, open(spec.tag, "choice$index", choice.open))
             }
         }

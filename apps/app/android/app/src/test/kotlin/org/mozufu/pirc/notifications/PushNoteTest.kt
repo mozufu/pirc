@@ -36,6 +36,16 @@ class PushNoteTest {
         assertEquals(PushKind.PotThread("p", "t1"), note.kind)
     }
 
+    @Test fun readsTheSessionNameOfAQuestion() {
+        val note = parse(
+            """{"title":"New session is waiting for you","body":"B","tag":"interaction:7331:3:7131",
+               "target":{"sessionId":"s1"},"at":1,"kind":"interaction_created","sessionId":"s1",
+               "interactionId":"q1","interactionEpoch":"3","sessionName":"New session"}""",
+        )!!
+        assertEquals("New session", note.sessionName)
+        assertNull(parse("""{"title":"T","body":"B","tag":"test","target":{"schedules":true},"at":1}""")!!.sessionName)
+    }
+
     @Test fun defaultsWhenFieldsAreMissingOrUnknown() {
         val note = parse("""{"title":"T","body":"B","tag":"test","target":{"schedules":true},"at":1,"lockScreen":"odd","category":"odd"}""")!!
         assertEquals("title", note.lockScreen)

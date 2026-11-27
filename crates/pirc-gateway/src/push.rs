@@ -85,6 +85,9 @@ pub struct InteractionPush {
     pub choices: Vec<Choice>,
     /// Who answered (`{deviceName, at}`), on `interaction_answered`.
     pub answered_by: Option<Value>,
+    /// The session's name, so the app can word the title in its own
+    /// language (`interaction_created`).
+    pub session_name: Option<String>,
 }
 
 /// An option a notification can answer with: `id` is the answer's value.
@@ -497,7 +500,8 @@ const MAX_PAYLOAD_BYTES: usize = 3072;
 /// What the subscriber decrypts: `{title, body, tag, target, at}`, the
 /// category, the target's lock screen setting and question details. It holds
 /// no secret: the app reads the state before it shows any answer. Past
-/// [`MAX_PAYLOAD_BYTES`] the choices go first, then the body shortens.
+/// [`MAX_PAYLOAD_BYTES`] the choices go first, then the body shortens, then
+/// the session name goes (the app then shows the title as sent).
 fn payload(message: &PushMessage, at: i64, delivery: Delivery) -> String {
     let full = payload_text(message, at, delivery, BODY_UNITS);
     if full.len() <= MAX_PAYLOAD_BYTES {
@@ -512,6 +516,13 @@ fn payload(message: &PushMessage, at: i64, delivery: Delivery) -> String {
         if text.len() <= MAX_PAYLOAD_BYTES {
             return text;
         }
+    }
+    if let Some(interaction) = smaller.interaction.as_mut() {
+        interaction.session_name = None;
+    }
+    let text = payload_text(&smaller, at, delivery, 80);
+    if text.len() <= MAX_PAYLOAD_BYTES {
+        return text;
     }
     smaller.body.clear();
     payload_text(&smaller, at, delivery, BODY_UNITS)
@@ -564,6 +575,12 @@ fn payload_text(message: &PushMessage, at: i64, delivery: Delivery, body_units: 
             }
             if let Some(answered_by) = &interaction.answered_by {
                 fields.push_str(&format!(",\"answeredBy\":{answered_by}"));
+            }
+            if let Some(name) = &interaction.session_name {
+                fields.push_str(&format!(
+                    ",\"sessionName\":{}",
+                    js_json_string(&clip(name, 120))
+                ));
             }
             fields
         })

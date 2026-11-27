@@ -14,6 +14,12 @@
     <string name="channel_summary">Summaries</string>
     <string name="channel_summary_description">The daily summary, the summary after quiet hours and test notifications</string>
     <string name="notification_answer">Answer…</string>
+    <!-- The agent's last option, which asks for typed text. -->
+    <string name="question_other">Other (type your own answer)</string>
+    <string name="session_untitled">New session</string>
+    <string name="notification_waiting_title">%1$s is waiting for you</string>
+    <string name="approval_auto_mode_title">Auto mode: allow a potentially dangerous action?</string>
+    <string name="approval_read_only_title">Read-only mode: allow this action?</string>
     <string name="notification_open_conversation">Open conversation</string>
     <string name="notification_view_and_run">View and run</string>
     <string name="notification_skip">Skip…</string>

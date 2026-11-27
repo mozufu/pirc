@@ -716,6 +716,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get questionAnswered => 'Answered';
 
   @override
+  String get questionOther => 'Other (type your own answer)';
+
+  @override
+  String get sessionUntitled => 'New session';
+
+  @override
+  String get approvalAutoModeTitle =>
+      'Auto mode: allow a potentially dangerous action?';
+
+  @override
+  String get approvalReadOnlyTitle => 'Read-only mode: allow this action?';
+
+  @override
   String get questionWithdrawn => 'Withdrawn';
 
   @override

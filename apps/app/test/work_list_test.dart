@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pirc_app/src/connection/storage.dart';
 import 'package:pirc_app/src/format.dart';
 import 'package:pirc_app/src/preferences.dart';
 import 'package:pirc_app/src/work/work_data.dart';
+import 'package:pirc_client/pirc_client.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
 import 'support/fonts.dart';
@@ -44,6 +46,40 @@ Future<FakeGateway> _pumpWork(
   return gateway;
 }
 
+void _placeholderNameTests() {
+  testWidgets('a new session\'s placeholder name is in the app\'s language', (
+    tester,
+  ) async {
+    final fixture = WorkFixture();
+    fixture.sessions.add(
+      sessionJson(
+        's-new',
+        placeholderSessionName,
+        pinned: true,
+        updatedAt: fixedNow.millisecondsSinceEpoch,
+      ),
+    );
+    await pumpApp(
+      tester,
+      gateway: fixture.install(),
+      width: 375,
+      location: '/work',
+      saved: Saved(
+        prefs: {
+          PrefKeys.gatewayUrl: 'https://gateway.test/',
+          PrefKeys.language: 'zh-TW',
+        },
+      ),
+      overrides: [clockProvider.overrideWithValue(() => fixedNow)],
+    );
+    expect(find.textContaining('新對話', findRichText: true), findsOneWidget);
+    expect(
+      find.textContaining(placeholderSessionName, findRichText: true),
+      findsNothing,
+    );
+  });
+}
+
 Future<void> _openActions(WidgetTester tester, String title) async {
   await tester.longPress(find.textContaining(title, findRichText: true));
   await tester.pumpAndSettle();
@@ -70,6 +106,7 @@ Future<void> _chip(WidgetTester tester, String label) async {
 }
 
 void main() {
+  _placeholderNameTests();
   group('the list', () {
     test('rows are grouped by project, newest group first; '
         'unknown projects are "No project", last', () {

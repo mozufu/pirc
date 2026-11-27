@@ -12,6 +12,11 @@
     <string name="channel_summary">摘要</string>
     <string name="channel_summary_description">每日摘要、勿擾時段結束後的摘要與測試通知</string>
     <string name="notification_answer">回答…</string>
+    <string name="question_other">其他（自行輸入答案）</string>
+    <string name="session_untitled">新對話</string>
+    <string name="notification_waiting_title">%1$s 正在等你回覆</string>
+    <string name="approval_auto_mode_title">自動模式：要允許這個可能有風險的動作嗎？</string>
+    <string name="approval_read_only_title">唯讀模式：要允許這個動作嗎？</string>
     <string name="notification_open_conversation">開啟對話</string>
     <string name="notification_view_and_run">查看並執行</string>
     <string name="notification_skip">略過…</string>

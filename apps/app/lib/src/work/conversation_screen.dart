@@ -6,6 +6,7 @@ import 'package:pirc_client/pirc_client.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../known_text.dart';
 import '../connection/data.dart';
 import 'session_controller.dart';
 import 'timeline.dart';
@@ -156,7 +157,7 @@ class _Title extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          session.name,
+          sessionTitle(AppLocalizations.of(context), session.name),
           style: text.titleSmall,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,

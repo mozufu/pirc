@@ -34,7 +34,8 @@ sealed interface OverlayItem {
     }
 }
 
-data class OverlayChoice(val id: String, val label: String)
+/** One option; [other] marks the agent's "Other" option, shown with the app's own words. */
+data class OverlayChoice(val id: String, val label: String, val other: Boolean = false)
 
 /** Who holds the session's control lease, from the compact read. */
 sealed interface OverlayControl {

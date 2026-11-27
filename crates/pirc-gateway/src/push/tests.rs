@@ -638,6 +638,7 @@ async fn pushes_when_a_session_starts_waiting_for_its_user() {
         format!("{} is waiting for you", session.name)
     );
     assert_eq!(created["body"], "Allow rm -rf build?");
+    assert_eq!(created["sessionName"], session.name.as_str());
     assert_eq!(created["category"], "needs_you");
     assert_eq!(created["expiresAt"], 1234);
     assert_eq!(created["lockScreen"], "title");
@@ -1401,6 +1402,27 @@ fn a_payload_stays_within_one_record() {
     let short = payload(&question(2800), 1, Delivery::default());
     assert!(short.len() <= MAX_PAYLOAD_BYTES, "{}", short.len());
     assert!(read(&short)["body"].as_str().unwrap().chars().count() < 200);
+
+    // A long session name is clipped like the title.
+    let named = |target_bytes: usize| {
+        let mut message = question(target_bytes);
+        message.interaction.as_mut().unwrap().session_name = Some("名".repeat(500));
+        payload(&message, 1, Delivery::default())
+    };
+    let roomy = named(100);
+    assert_eq!(
+        read(&roomy)["sessionName"]
+            .as_str()
+            .unwrap()
+            .chars()
+            .count(),
+        120
+    );
+    // Short of room it goes after the choices and before the body empties.
+    let tight = named(2800);
+    assert!(tight.len() <= MAX_PAYLOAD_BYTES, "{}", tight.len());
+    assert_eq!(read(&tight).get("sessionName"), None);
+    assert!(!read(&tight)["body"].as_str().unwrap().is_empty());
 }
 
 #[tokio::test]

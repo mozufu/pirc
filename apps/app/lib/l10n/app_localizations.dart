@@ -1329,6 +1329,30 @@ abstract class AppLocalizations {
   /// **'Answered'**
   String get questionAnswered;
 
+  /// No description provided for @questionOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other (type your own answer)'**
+  String get questionOther;
+
+  /// No description provided for @sessionUntitled.
+  ///
+  /// In en, this message translates to:
+  /// **'New session'**
+  String get sessionUntitled;
+
+  /// No description provided for @approvalAutoModeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto mode: allow a potentially dangerous action?'**
+  String get approvalAutoModeTitle;
+
+  /// No description provided for @approvalReadOnlyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only mode: allow this action?'**
+  String get approvalReadOnlyTitle;
+
   /// No description provided for @questionWithdrawn.
   ///
   /// In en, this message translates to:

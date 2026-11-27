@@ -63,6 +63,8 @@ data class PushNote(
     val kind: PushKind,
     /** When a question stops taking answers, from the payload. */
     val expiresAt: Long? = null,
+    /** The session's name on a question, so the title is worded here. */
+    val sessionName: String? = null,
 ) {
     companion object {
         /** Null for anything that is not a push of this Gateway's shape. */
@@ -81,6 +83,7 @@ data class PushNote(
                 at = json.long("at") ?: 0,
                 kind = kind,
                 expiresAt = json.long("expiresAt"),
+                sessionName = json.text("sessionName"),
             )
         }
 

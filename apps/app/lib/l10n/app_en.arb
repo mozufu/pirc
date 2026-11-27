@@ -433,6 +433,10 @@
     }
   },
   "questionAnswered": "Answered",
+  "questionOther": "Other (type your own answer)",
+  "sessionUntitled": "New session",
+  "approvalAutoModeTitle": "Auto mode: allow a potentially dangerous action?",
+  "approvalReadOnlyTitle": "Read-only mode: allow this action?",
   "questionWithdrawn": "Withdrawn",
   "questionStale": "Ended when the session restarted",
   "questionEnded": "{title} · ended",

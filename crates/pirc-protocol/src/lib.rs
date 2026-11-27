@@ -47,6 +47,15 @@ pub const PROTOCOL_MISMATCH_CLOSE: u16 = 4426;
 /// toward the options a notification can show.
 pub const ASK_OTHER_LABEL: &str = "Other (type your own answer)";
 
+/// The name of a new session until its title replaces it. Clients show their
+/// own words for it (`pirc_client`, the Android app).
+pub const PLACEHOLDER_SESSION_NAME: &str = "New session";
+
+/// The titles of the agent's approval questions in read-only and auto mode.
+/// Clients show their own words for them; the body stays as sent.
+pub const READ_ONLY_APPROVAL_TITLE: &str = "Read-only mode: allow this action?";
+pub const AUTO_MODE_APPROVAL_TITLE: &str = "Auto mode: allow a potentially dangerous action?";
+
 /// WebSocket close code the gateway sends a node whose `x-pirc-node-id` and
 /// bearer token match no entry of its `PIRC_NODE_TOKENS`.
 pub const INVALID_NODE_CREDENTIALS_CLOSE: u16 = 4401;

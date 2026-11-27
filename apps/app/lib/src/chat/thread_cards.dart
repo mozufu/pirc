@@ -6,6 +6,7 @@ import 'package:pirc_client/pirc_client.dart';
 import 'package:pirc_ui/pirc_ui.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../known_text.dart';
 import '../connection/data.dart';
 import '../format.dart';
 import '../work/composer/model_sheet.dart';
@@ -572,7 +573,9 @@ class WorkCardView extends ConsumerWidget {
     final lead = [?coordinator, ?session?.nodeId].join(' · ');
     return WorkCard(
       key: ValueKey('card-work-${card.workId}'),
-      title: work?.title ?? session?.name ?? '',
+      title:
+          work?.title ??
+          (session == null ? '' : sessionTitle(l10n, session.name)),
       subtitle: TextSpan(
         children: [
           TextSpan(text: lead),

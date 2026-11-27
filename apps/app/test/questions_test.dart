@@ -38,6 +38,7 @@ Future<FixtureSession> _open(
   Map<String, Object?>? lease,
   Map<String, Object?>? agent,
   List<Map<String, Object?>>? clients,
+  String? language,
 }) async {
   final session = FixtureSession('joined-mid-stream.json')
     ..lease = lease
@@ -63,6 +64,7 @@ Future<FixtureSession> _open(
       prefs: {
         PrefKeys.gatewayUrl: 'https://gateway.test/',
         PrefKeys.clientId: 'me',
+        PrefKeys.language: ?language,
       },
     ),
     overrides: [clockProvider.overrideWithValue(() => _now)],
@@ -143,6 +145,30 @@ void main() {
     await tester.pumpAndSettle();
     expect(_answer(s, 'q1')['answer'], {'value': 'Only the 3 failures'});
     expect(find.text('Q q1 · Only the 3 failures'), findsOneWidget);
+  });
+
+  appTest('the agent\'s fixed English shows in the app\'s language', (
+    tester,
+  ) async {
+    final s = await _open(tester, language: 'zh-TW', [
+      _question(
+        'q1',
+        'select',
+        request: {
+          'title': autoModeApprovalTitle,
+          'options': ['A', 'B', askOtherLabel],
+        },
+      ),
+    ]);
+    expect(find.text('自動模式：要允許這個可能有風險的動作嗎？'), findsOneWidget);
+    expect(find.text(askOtherLabel), findsNothing);
+    expect(find.text('其他（自行輸入答案）'), findsOneWidget);
+    await tester.tap(find.text('其他（自行輸入答案）'));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('send-answer-q1')));
+    await tester.pumpAndSettle();
+    // The answer is the agent's own label.
+    expect(_answer(s, 'q1')['answer'], {'value': askOtherLabel});
   });
 
   appTest('select: several options', (tester) async {
