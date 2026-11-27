@@ -72,8 +72,8 @@ Phone: Xiaomi `2412DPC0AG` (`rodin`) Android version: 16 OEM skin: HyperOS 3.0
 | A2  | Pair by scanning the v1 QR code (ML Kit scanner, camera permission prompt)             | skipped (needs a camera scan)                                                                                            |
 | A3  | Token rotation happens on its own with a short maximum window; the app stays connected | partial: the pre-fix build rotated and kept the old token for 5 minutes but looped (S6); retest with `33d19dab` or later |
 | A4  | The near-expiry warning shows and uses the effective expiry                            | skipped (shown only after a failed rotation, `rotation.dart:210`; not forced)                                            |
-| A5  | Revoked token → pairing screen with "Pairing expired; your settings are kept"          | pass; the button on that screen reads 已配對 instead of 配對                                                             |
-| A6  | Streaming a reply; cancel mid-stream; reconnect after airplane mode on and off         | partial: streamed, stopped and reconnected; text streamed before stop disappeared (S4)                                   |
+| A5  | Revoked token → pairing screen with "Pairing expired; your settings are kept"          | pass; the 已配對 label seen on that screen is fixed in `3d78d17c`                                                        |
+| A6  | Streaming a reply; cancel mid-stream; reconnect after airplane mode on and off         | partial: streamed, stopped and reconnected; the text before stop now stays (S4, checked on the emulator)                 |
 | A7  | Panels: files, git, terminal (including the terminal's HTTPS asset origin), work panel | fail: 新終端 fails silently (S1); Back from a file leaves the session (S2). Files pass; Git, browser not checked         |
 | A8  | Management consent (approve and decline a grant)                                       | not run                                                                                                                  |
 
@@ -167,10 +167,25 @@ Findings:
   `pirc-gateway/src/db.rs:71`) and "Auto mode: allow a potentially dangerous action?"
   (`pirc-agent/src/auto_mode/mod.rs:729`). From the app: `panelTasks` is "Tasks" in
   `app_zh.arb:282`. **App side, `0578cd95`:** "Tasks" stays, as design-spec-C § 41 names the
-  panel; `fromPot` in zh now shows only the pot's name, like 你 for `fromYou`. The
-  server strings stay open.
+  panel; `fromPot` in zh now shows only the pot's name, like 你 for `fromYou`.
+  **Server strings, fixed in `b9d6480f`, owner's decision: translate in the app.** The
+  fixed English stays on the wire; `pirc_protocol` holds it, `pirc_client` and the
+  Android app mirror it and show their own words: Other, "New session" (work list,
+  conversation header, chat work cards, pot form, overlay header), the auto mode and
+  read-only approval titles (question card and notification), and the question push
+  title, built on the phone from a new `sessionName` push field. Checked on the
+  emulator (zh): Other, 新對話 and the auto mode title. The push title is covered by
+  Kotlin tests only (the phone's adb dropped). Still English: the other push kinds
+  (pot requests and replies, schedules, calendar, the test push, digest summaries), the
+  fallback body "It needs your answer to go on.", the approval body (Command…,
+  Reason…) and the agent's "Enter your answer" placeholder.
 - **S4 Text before stop is dropped.** After 停止 the streamed part of the reply is gone;
   only "已停止。" stays.
+  **Fixed in `21333e44` (coffeecat; it keeps thinking too), owner's decision: keep it.** The agent dropped it: its remote
+  stream returned an empty aborted message. It now keeps the text blocks streamed so
+  far (not unfinished tool calls or thinking); providers already skip aborted
+  messages, so the text is for display only. Checked on the emulator with an equivalent local fix: the text up to
+  the stop stays, with 已停止。 under it.
 - **S5 Pair button label.** On the "pairing expired" screen the button read 已配對 until
   a link was opened. **Fixed in `3d78d17c`:** the pairing state now lives only while the
   pairing page shows it.
@@ -198,6 +213,11 @@ Findings:
   `apps/android` (`ic_pirc`). Not yet seen on the phone.
 - **S10 Session times moved.** During the rotation loop (S6) all three sessions in the
   Work list showed 17:46 though nothing happened in them. Cause not checked.
+  Cause: Gateway startup recovery marks every session with a live runner stopped and
+  sets its `updated_at` (`pirc-gateway/src/db.rs:819`), and runner state changes do the
+  same (`db.rs:1420`); the Work list shows `updated_at` as the last activity, so a
+  Gateway restart moves every such session to the restart time. Not fixed:
+  `updated_at` may also drive sync.
 
 ## Choices to confirm or change
 
