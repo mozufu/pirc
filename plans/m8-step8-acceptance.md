@@ -7,10 +7,10 @@ reason.
 
 ## Before you start
 
-- **Gateway and Node from `main` at `f316edd6` or later.** Steps 0–7 need the pirc 2
+- **Gateway and Node from `main` at `20bccbed` or later.** Steps 0–7 need the pirc 2
   Gateway (pairing v2 tables, `POST /api/device/rotate`, notification preferences,
   compact endpoints for the background client).
-- **APKs**, built from `f316edd6` in `apps/app/build/app/outputs/flutter-apk/`:
+- **APKs**, built from the same revision in `apps/app/build/app/outputs/flutter-apk/`:
   - `app-standard-debug.apk`: debug build, for most checks.
   - `app-standard-release.apk`: release mode, **signed with the debug key**. Real
     signing moves in step 9 (default F). Use it for the "release build" check.
@@ -33,17 +33,20 @@ reason.
 
 ## Short token windows (for section A)
 
-The app rotates when less than 23 days of the maximum window are left
-(`connection/rotation.dart` `rotateBefore`). It warns when less than 3 days of the
-effective expiry are left (`warnBefore`). The Gateway reads whole days.
+Since `33d19dab`, the app rotates when less than 23/30 of the Gateway's maximum
+window remains, i.e. 23 days for the default 30-day window
+(`connection/rotation.dart` `rotateBeforeFor`). The Gateway reads whole days.
 
-- **Rotation now:** start the Gateway with `PIRC_DEVICE_TOKEN_MAX_DAYS=20` (idle at
-  most the same, for example `PIRC_DEVICE_TOKEN_IDLE_DAYS=7`). On connect and on each
-  return to the foreground, the app should rotate at once. The Gateway's device record
-  then shows a new maximum window.
-- **Near-expiry warning:** `PIRC_DEVICE_TOKEN_IDLE_DAYS=2` and
-  `PIRC_DEVICE_TOKEN_MAX_DAYS=2`. Rotation also runs here, so check that the warning
-  uses the effective expiry `min(last use + idle, max)`.
+- **Rotation on the next connect:** in a test Gateway, pair a fresh device with a
+  2-day maximum and idle window. Restart the same Gateway database with
+  `PIRC_DEVICE_TOKEN_MAX_DAYS=30` while the token is still valid. Reconnect and see
+  the new maximum expiry on the same device record. Foreground the app again and
+  verify that the new token does not rotate a second time. A short maximum window
+  alone no longer makes a fresh token rotate immediately.
+- **Near-expiry warning:** keep `PIRC_DEVICE_TOKEN_IDLE_DAYS=2` in the preceding
+  setup. On the next connect, force only `POST /api/device/rotate` to fail in the
+  test setup. Check that the warning shows the earlier of the refreshed idle expiry
+  and the saved maximum expiry, not a 30-day date.
 - **"Pairing expired; your settings are kept":** revoke the phone on the Devices page
   and bring the app to the foreground (a `401` is treated the same as expiry).
 - Put the defaults (7 and 30) back afterwards.
@@ -57,16 +60,16 @@ Phone: Xiaomi `2412DPC0AG` (`rodin`) Android version: 16 OEM skin: HyperOS 3.0
 
 ### A. Pairing and connection
 
-| #   | Check                                                                                  | Result                                                                                                           |
-| --- | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| A1  | Pair with a v1 `pirc://pair` link opened from another app (the `links` channel)        | pass (agent, local Gateway; VIEW intent sent by adb)                                                             |
-| A2  | Pair by scanning the v1 QR code (ML Kit scanner, camera permission prompt)             | skipped (needs a camera scan)                                                                                    |
-| A3  | Token rotation happens on its own with a short maximum window; the app stays connected | pass (rotated right after pairing; old token kept 5 min). With MAX_DAYS ≤ 23 it rotates on every foreground      |
-| A4  | The near-expiry warning shows and uses the effective expiry                            | skipped (shown only after a failed rotation, `rotation.dart:210`; not forced)                                    |
-| A5  | Revoked token → pairing screen with "Pairing expired; your settings are kept"          | pass; the button on that screen reads 已配對 instead of 配對                                                     |
-| A6  | Streaming a reply; cancel mid-stream; reconnect after airplane mode on and off         | pass (stream, stop, reconnect after the link dropped); text streamed before stop disappears                      |
-| A7  | Panels: files, git, terminal (including the terminal's HTTPS asset origin), work panel | fail: 新終端 fails silently (S1); Back from a file leaves the session (S2). Files pass; Git, browser not checked |
-| A8  | Management consent (approve and decline a grant)                                       | not run                                                                                                          |
+| #   | Check                                                                                  | Result                                                                                                                   |
+| --- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| A1  | Pair with a v1 `pirc://pair` link opened from another app (the `links` channel)        | pass (agent, local Gateway; VIEW intent sent by adb)                                                                     |
+| A2  | Pair by scanning the v1 QR code (ML Kit scanner, camera permission prompt)             | skipped (needs a camera scan)                                                                                            |
+| A3  | Token rotation happens on its own with a short maximum window; the app stays connected | partial: the pre-fix build rotated and kept the old token for 5 minutes but looped (S6); retest with `33d19dab` or later |
+| A4  | The near-expiry warning shows and uses the effective expiry                            | skipped (shown only after a failed rotation, `rotation.dart:210`; not forced)                                            |
+| A5  | Revoked token → pairing screen with "Pairing expired; your settings are kept"          | pass; the button on that screen reads 已配對 instead of 配對                                                             |
+| A6  | Streaming a reply; cancel mid-stream; reconnect after airplane mode on and off         | partial: streamed, stopped and reconnected; text streamed before stop disappeared (S4)                                   |
+| A7  | Panels: files, git, terminal (including the terminal's HTTPS asset origin), work panel | fail: 新終端 fails silently (S1); Back from a file leaves the session (S2). Files pass; Git, browser not checked         |
+| A8  | Management consent (approve and decline a grant)                                       | not run                                                                                                                  |
 
 ### B. Input, layout and lifecycle
 
@@ -99,7 +102,7 @@ Phone: Xiaomi `2412DPC0AG` (`rodin`) Android version: 16 OEM skin: HyperOS 3.0
 | D4  | A missed schedule run arrives with buttons; failed and waiting runs count as `needs_you`                                                                      | not run                                                                                                                                                                |
 | D5  | Model approval, budget request and handover open the app on their sheet, with no answer chosen                                                                | not run                                                                                                                                                                |
 | D6  | Levels per category (`needs_you`, `done`, `progress`, `calendar`): `off` sends nothing, `digest` sends one summary at `digestAt` (set it a few minutes ahead) | partial: `off` sends nothing (checked); `digest` not run                                                                                                               |
-| D7  | Quiet hours set to start now and end a few minutes later (try also crossing midnight): silent during, summary when they end                                   | pass (during quiet hours the question arrived in a `silent:` group, no overlay)                                                                                        |
+| D7  | Quiet hours set to start now and end a few minutes later (try also crossing midnight): silent during, summary when they end                                   | partial: question arrived in a `silent:` group without an overlay; end-of-quiet-hours summary and midnight crossing not checked on the phone                           |
 | D8  | Lock screen `hidden` (secret notification) and `title` (text hidden only while Android hides sensitive content)                                               | pass for `hidden` (`vis=SECRET` in dumpsys); the lock screen itself not looked at; `title` not run                                                                     |
 | D9  | Calendar reminders arrive on time with the app in the background                                                                                              | not run                                                                                                                                                                |
 | D10 | OEM battery and notification limits (autostart, battery optimisation) do not stop delivery                                                                    | partial: delivered on HyperOS with the app in the background (not killed)                                                                                              |
