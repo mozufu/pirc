@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use rusqlite::params;
+use rusqlite::{Connection, params};
 use serde_json::json;
 
 use super::{Delivery, Push, PushMessage, SubscriptionRow, clip, payload, prune, topic_of};
@@ -22,32 +22,6 @@ const MAX_DIGEST_ITEMS: i64 = 100;
 const SUMMARY_TICK: Duration = Duration::from_secs(60);
 
 impl Push {
-    /// Keep a message for the target's next summary.
-    pub(super) fn keep_for_summary(&self, subscription_id: &str, message: &PushMessage, now: i64) {
-        let Some(category) = message.category else {
-            return;
-        };
-        let title = String::from_utf16_lossy(&clip(&message.title, 120));
-        let conn = self.db.lock();
-        let kept = conn
-            .execute(
-                "INSERT INTO push_digest_items (subscription_id,category,title,created_at) VALUES (?,?,?,?)",
-                params![subscription_id, category.as_str(), title, now],
-            )
-            .and_then(|_| {
-                conn.execute(
-                    "DELETE FROM push_digest_items WHERE subscription_id=?1 AND id NOT IN
-                       (SELECT id FROM push_digest_items WHERE subscription_id=?1 ORDER BY id DESC LIMIT ?2)",
-                    params![subscription_id, MAX_DIGEST_ITEMS],
-                )
-            });
-        if let Err(error) = kept {
-            crate::log::warn(&format!(
-                "push: cannot keep an item for the summary: {error}"
-            ));
-        }
-    }
-
     /// Send every summary that is due as of `now`: one push per target at
     /// its digest time and one when its quiet hours end, each only when
     /// items wait. A summary missed while the Gateway was offline goes out
@@ -129,6 +103,38 @@ impl Push {
             }
         }
         sent
+    }
+}
+
+/// Keep a message for the target's next summary. The caller decides and
+/// keeps under the same database guard as the preference change, so an off
+/// category is either seen before the decision or drains its queue there.
+pub(super) fn keep_for_summary(
+    conn: &Connection,
+    subscription_id: &str,
+    message: &PushMessage,
+    now: i64,
+) {
+    let Some(category) = message.category else {
+        return;
+    };
+    let title = String::from_utf16_lossy(&clip(&message.title, 120));
+    let kept = conn
+        .execute(
+            "INSERT INTO push_digest_items (subscription_id,category,title,created_at) VALUES (?,?,?,?)",
+            params![subscription_id, category.as_str(), title, now],
+        )
+        .and_then(|_| {
+            conn.execute(
+                "DELETE FROM push_digest_items WHERE subscription_id=?1 AND id NOT IN
+                   (SELECT id FROM push_digest_items WHERE subscription_id=?1 ORDER BY id DESC LIMIT ?2)",
+                params![subscription_id, MAX_DIGEST_ITEMS],
+            )
+        });
+    if let Err(error) = kept {
+        crate::log::warn(&format!(
+            "push: cannot keep an item for the summary: {error}"
+        ));
     }
 }
 

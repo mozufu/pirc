@@ -853,6 +853,171 @@ async fn a_category_set_to_off_is_never_sent() {
 }
 
 #[tokio::test]
+async fn turning_a_category_off_discards_its_queued_summary_items() {
+    let (push, service, phone, id) = subscribed(
+        json!({
+            "timeZone": "UTC",
+            "digestAt": "10:10",
+            "levels": { "done": "digest", "calendar": "digest" },
+        }),
+        T0,
+    )
+    .await;
+    assert_eq!(
+        push.notify_at("me", &kind(Category::Done, "d1"), T0 + MINUTE)
+            .await,
+        0
+    );
+    assert_eq!(
+        push.notify_at("me", &kind(Category::Calendar, "c1"), T0 + MINUTE)
+            .await,
+        0
+    );
+    assert_eq!(waiting(&push), 2);
+    push.update_preferences_at(
+        "me",
+        &id,
+        &patch(2, json!({ "levels": { "done": "off" } })),
+        T0 + 2 * MINUTE,
+    )
+    .unwrap();
+    assert_eq!(
+        waiting(&push),
+        1,
+        "only the muted category's item is dropped"
+    );
+    assert_eq!(
+        push.notify_at("me", &kind(Category::Done, "d2"), T0 + 3 * MINUTE)
+            .await,
+        0,
+        "an item decided after the change is skipped"
+    );
+    assert_eq!(waiting(&push), 1);
+    assert_eq!(push.send_summaries(T0 + 10 * MINUTE).await, 1);
+    let summary = received(&service, &phone).pop().unwrap();
+    assert_eq!(summary["title"], "1 new update");
+    assert_eq!(summary["body"], "calendar item");
+    assert_eq!(summary["target"]["summary"]["count"], 1);
+    assert_eq!(
+        summary["target"]["summary"]["categories"],
+        json!({ "calendar": 1 })
+    );
+}
+
+#[tokio::test]
+async fn turning_a_category_back_on_does_not_revive_old_summary_items() {
+    let (push, service, phone, id) =
+        subscribed(json!({ "timeZone": "UTC", "digestAt": "10:10" }), T0).await;
+    let mut old = kind(Category::Done, "old");
+    old.title = "old done item".into();
+    assert_eq!(
+        push.notify_at("me", &old, T0 + MINUTE).await,
+        0,
+        "queued for the digest"
+    );
+    push.update_preferences_at(
+        "me",
+        &id,
+        &patch(2, json!({ "levels": { "done": "off" } })),
+        T0 + 2 * MINUTE,
+    )
+    .unwrap();
+    assert_eq!(waiting(&push), 0, "muting drops the queued item");
+    // Turning it back on before the digest does not revive anything either.
+    push.update_preferences_at(
+        "me",
+        &id,
+        &patch(3, json!({ "levels": { "done": "digest" } })),
+        T0 + 3 * MINUTE,
+    )
+    .unwrap();
+    assert_eq!(push.send_summaries(T0 + 10 * MINUTE).await, 0);
+    assert!(received(&service, &phone).is_empty());
+    // A new item after the flip is kept and sent normally.
+    let mut fresh = kind(Category::Done, "fresh");
+    fresh.title = "new done item".into();
+    assert_eq!(push.notify_at("me", &fresh, T0 + 11 * MINUTE).await, 0);
+    assert_eq!(
+        push.send_summaries(T0 + 24 * 60 * MINUTE + 10 * MINUTE)
+            .await,
+        1
+    );
+    let summary = received(&service, &phone).pop().unwrap();
+    assert_eq!(summary["title"], "1 new update");
+    assert_eq!(summary["body"], "new done item");
+}
+
+#[tokio::test]
+async fn unrelated_preference_changes_keep_queued_summary_items() {
+    let (push, service, phone, id) =
+        subscribed(json!({ "timeZone": "UTC", "digestAt": "10:10" }), T0).await;
+    assert_eq!(
+        push.notify_at("me", &kind(Category::Done, "d"), T0 + MINUTE)
+            .await,
+        0,
+        "queued for the digest"
+    );
+    // A lock-screen or digest-time change does not mute the category, so
+    // what waits stays queued.
+    push.update_preferences_at(
+        "me",
+        &id,
+        &patch(2, json!({ "lockScreen": "full", "digestAt": "20:00" })),
+        T0 + 2 * MINUTE,
+    )
+    .unwrap();
+    assert_eq!(waiting(&push), 1);
+    assert_eq!(push.send_summaries(T0 + 10 * 60 * MINUTE).await, 1);
+    let summary = received(&service, &phone).pop().unwrap();
+    assert_eq!(summary["title"], "1 new update");
+    assert_eq!(summary["body"], "done item");
+    assert_eq!(summary["lockScreen"], "full");
+}
+
+#[tokio::test]
+async fn turning_a_category_off_leaves_other_targets_alone() {
+    let (push, _service, _phone, id) =
+        subscribed(json!({ "timeZone": "UTC", "digestAt": "10:10" }), T0).await;
+    let other = push
+        .subscribe(
+            "me",
+            &input(
+                "http://127.0.0.1:1/p2",
+                Subscriber::new().keys(),
+                "web",
+                None,
+            ),
+            None,
+        )
+        .unwrap();
+    let other_id = other["id"].as_str().unwrap().to_owned();
+    assert_eq!(
+        push.notify_at("me", &kind(Category::Done, "d"), T0 + MINUTE)
+            .await,
+        0
+    );
+    push.update_preferences_at(
+        "me",
+        &id,
+        &patch(2, json!({ "levels": { "done": "off" } })),
+        T0 + 2 * MINUTE,
+    )
+    .unwrap();
+    let items = |subscription: &str| {
+        push.db
+            .lock()
+            .query_row(
+                "SELECT count(*) FROM push_digest_items WHERE subscription_id=?",
+                [subscription],
+                |r| r.get::<_, i64>(0),
+            )
+            .unwrap()
+    };
+    assert_eq!(items(&id), 0);
+    assert_eq!(items(&other_id), 1, "the other target keeps its item");
+}
+
+#[tokio::test]
 async fn quiet_hours_send_questions_silently_and_hold_the_rest_until_they_end() {
     // 09:00–11:00 UTC; T0 is 10:00.
     let (push, service, phone, _) = subscribed(

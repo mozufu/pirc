@@ -819,61 +819,73 @@ impl Push {
         now: i64,
     ) -> ApiResult<Value> {
         let conn = self.db.lock();
-        prune(&conn)?;
-        let row = conn
-            .query_row(
-                "SELECT * FROM push_subscriptions WHERE id=? AND owner_user=?",
-                [id, user],
+        crate::db::atomic(&conn, |conn| {
+            prune(conn)?;
+            let row = conn
+                .query_row(
+                    "SELECT * FROM push_subscriptions WHERE id=? AND owner_user=?",
+                    [id, user],
+                    SubscriptionRow::from_row,
+                )
+                .optional()?
+                .ok_or_else(|| ApiError::not_found("Push subscription not found"))?;
+            if row.revision != patch.revision {
+                return Err(ApiError::new(
+                    409,
+                    "revision_mismatch",
+                    "These notification settings changed elsewhere; read them again",
+                )
+                .with_details(json!({ "subscription": subscription_view(row) })));
+            }
+            let next = patch.apply(&row.preferences)?;
+            let old = &row.preferences;
+            let timing = next.digest_at != old.digest_at
+                || next.quiet_hours != old.quiet_hours
+                || next.time_zone != old.time_zone;
+            let quiet_ended = old.quiet_at(now) && !next.quiet_at(now);
+            let levels: BTreeMap<&str, Level> = next
+                .levels
+                .iter()
+                .map(|(category, level)| (category.as_str(), *level))
+                .collect();
+            conn.execute(
+                "UPDATE push_subscriptions SET levels_json=?3, quiet_start=?4, quiet_end=?5, time_zone=?6,
+                   lock_screen=?7, digest_at=?8, revision=revision+1,
+                   summary_mark=CASE WHEN ?10 THEN ?11 ELSE summary_mark END,
+                   summary_now=CASE WHEN ?12 THEN 1 ELSE summary_now END
+                 WHERE id=?1 AND owner_user=?2 AND revision=?9",
+                params![
+                    id,
+                    user,
+                    serde_json::to_string(&levels).unwrap_or_else(|_| "{}".into()),
+                    next.quiet_hours.map(|quiet| quiet.start.text()),
+                    next.quiet_hours.map(|quiet| quiet.end.text()),
+                    next.time_zone,
+                    next.lock_screen.as_str(),
+                    next.digest_at.text(),
+                    patch.revision,
+                    timing,
+                    now,
+                    quiet_ended,
+                ],
+            )?;
+            // A muted category is never sent (M8 default C), including what
+            // it queued for the next summary before this change.
+            for category in Category::ALL {
+                if next.level(category) == Level::Off {
+                    conn.execute(
+                        "DELETE FROM push_digest_items WHERE subscription_id=? AND category=?",
+                        params![id, category.as_str()],
+                    )?;
+                }
+            }
+            let row = conn.query_row(
+                "SELECT * FROM push_subscriptions WHERE id=?",
+                [id],
                 SubscriptionRow::from_row,
-            )
-            .optional()?
-            .ok_or_else(|| ApiError::not_found("Push subscription not found"))?;
-        if row.revision != patch.revision {
-            return Err(ApiError::new(
-                409,
-                "revision_mismatch",
-                "These notification settings changed elsewhere; read them again",
-            )
-            .with_details(json!({ "subscription": subscription_view(row) })));
-        }
-        let next = patch.apply(&row.preferences)?;
-        let old = &row.preferences;
-        let timing = next.digest_at != old.digest_at
-            || next.quiet_hours != old.quiet_hours
-            || next.time_zone != old.time_zone;
-        let quiet_ended = old.quiet_at(now) && !next.quiet_at(now);
-        let levels: BTreeMap<&str, Level> = next
-            .levels
-            .iter()
-            .map(|(category, level)| (category.as_str(), *level))
-            .collect();
-        conn.execute(
-            "UPDATE push_subscriptions SET levels_json=?3, quiet_start=?4, quiet_end=?5, time_zone=?6,
-               lock_screen=?7, digest_at=?8, revision=revision+1,
-               summary_mark=CASE WHEN ?10 THEN ?11 ELSE summary_mark END,
-               summary_now=CASE WHEN ?12 THEN 1 ELSE summary_now END
-             WHERE id=?1 AND owner_user=?2 AND revision=?9",
-            params![
-                id,
-                user,
-                serde_json::to_string(&levels).unwrap_or_else(|_| "{}".into()),
-                next.quiet_hours.map(|quiet| quiet.start.text()),
-                next.quiet_hours.map(|quiet| quiet.end.text()),
-                next.time_zone,
-                next.lock_screen.as_str(),
-                next.digest_at.text(),
-                patch.revision,
-                timing,
-                now,
-                quiet_ended,
-            ],
-        )?;
-        let row = conn.query_row(
-            "SELECT * FROM push_subscriptions WHERE id=?",
-            [id],
-            SubscriptionRow::from_row,
-        )?;
-        Ok(subscription_view(row))
+            )?;
+            Ok(subscription_view(row))
+        })
     }
 
     /// Add or refresh a subscription; one endpoint belongs to one user.
@@ -976,41 +988,47 @@ impl Push {
     /// [`Push::notify`] as of `now`: each target's preferences decide whether
     /// the message goes now, silently, or waits for a summary.
     pub async fn notify_at(self: &Arc<Self>, user: &str, message: &PushMessage, now: i64) -> usize {
-        let rows = {
+        let update = message
+            .interaction
+            .as_ref()
+            .is_some_and(|interaction| interaction.kind != "interaction_created");
+        // Decide and queue under the short database guard: a preference
+        // change either lands before this read or drains the items queued
+        // here in its own atomic write. Payloads and sends stay outside it.
+        let immediate: Vec<(SubscriptionRow, bool)> = {
             let conn = self.db.lock();
             let rows = prune(&conn).and_then(|()| {
                 conn.prepare("SELECT * FROM push_subscriptions WHERE owner_user=?")?
                     .query_map([user], SubscriptionRow::from_row)?
                     .collect::<rusqlite::Result<Vec<_>>>()
             });
-            match rows {
+            let rows = match rows {
                 Ok(rows) => rows,
                 Err(error) => {
                     crate::log::warn(&format!("push: cannot read subscriptions: {error}"));
                     return 0;
                 }
+            };
+            let mut immediate = Vec::new();
+            for row in rows {
+                let decision = match message.category {
+                    Some(category) => row.preferences.decide(category, update, now),
+                    None => Decision::Send,
+                };
+                match decision {
+                    Decision::Send => immediate.push((row, false)),
+                    Decision::SendSilent => immediate.push((row, true)),
+                    Decision::Hold | Decision::Digest => {
+                        summary::keep_for_summary(&conn, &row.id, message, now);
+                    }
+                    Decision::Skip => {}
+                }
             }
+            immediate
         };
         let topic = Arc::new(topic_of(&message.tag));
-        let update = message
-            .interaction
-            .as_ref()
-            .is_some_and(|interaction| interaction.kind != "interaction_created");
         let mut sends = tokio::task::JoinSet::new();
-        for row in rows {
-            let decision = match message.category {
-                Some(category) => row.preferences.decide(category, update, now),
-                None => Decision::Send,
-            };
-            let silent = match decision {
-                Decision::Send => false,
-                Decision::SendSilent => true,
-                Decision::Hold | Decision::Digest => {
-                    self.keep_for_summary(&row.id, message, now);
-                    continue;
-                }
-                Decision::Skip => continue,
-            };
+        for (row, silent) in immediate {
             let delivery = Delivery {
                 silent,
                 lock_screen: Some(row.preferences.lock_screen),
