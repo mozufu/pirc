@@ -117,7 +117,7 @@
   "noteMine": "只看你自己開的工作。",
   "groupCount": "{count} 個",
   "noProject": "沒有專案",
-  "fromPot": "From {name}",
+  "fromPot": "{name}",
   "fromYou": "你",
   "stateWaiting": "等你回答",
   "stateRunning": "執行中",

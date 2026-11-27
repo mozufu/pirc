@@ -395,7 +395,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String fromPot(String name) {
-    return 'From $name';
+    return '$name';
   }
 
   @override
