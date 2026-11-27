@@ -948,9 +948,9 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "368",
+          "content-length": "583",
           "content-type": "application/octet-stream",
-          "topic": "<topic of session:<session id>>",
+          "topic": "<topic of interaction i1>",
           "ttl": "86400",
           "urgency": "normal"
         },
@@ -960,8 +960,13 @@ expression: t.into_value()
           "at": "<epoch-ms>",
           "body": "Allow rm -rf build?",
           "category": "needs_you",
+          "interactionEpoch": "0",
+          "interactionId": "i1",
+          "kind": "interaction_created",
           "lockScreen": "title",
-          "tag": "session:session_<uuid:8>",
+          "sessionId": "session_<uuid:8>",
+          "sessionName": "New session",
+          "tag": "<tag of interaction i1>",
           "target": {
             "sessionId": "session_<uuid:8>"
           },
@@ -988,9 +993,9 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "368",
+          "content-length": "583",
           "content-type": "application/octet-stream",
-          "topic": "<topic of session:<session id>>",
+          "topic": "<topic of interaction i1>",
           "ttl": "86400",
           "urgency": "normal"
         },
@@ -1000,8 +1005,13 @@ expression: t.into_value()
           "at": "<epoch-ms>",
           "body": "Allow rm -rf build?",
           "category": "needs_you",
+          "interactionEpoch": "0",
+          "interactionId": "i1",
+          "kind": "interaction_created",
           "lockScreen": "title",
-          "tag": "session:session_<uuid:8>",
+          "sessionId": "session_<uuid:8>",
+          "sessionName": "New session",
+          "tag": "<tag of interaction i1>",
           "target": {
             "sessionId": "session_<uuid:8>"
           },
@@ -1028,9 +1038,9 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "368",
+          "content-length": "583",
           "content-type": "application/octet-stream",
-          "topic": "<topic of session:<session id>>",
+          "topic": "<topic of interaction i1>",
           "ttl": "86400",
           "urgency": "normal"
         },
@@ -1040,8 +1050,13 @@ expression: t.into_value()
           "at": "<epoch-ms>",
           "body": "Allow rm -rf build?",
           "category": "needs_you",
+          "interactionEpoch": "0",
+          "interactionId": "i1",
+          "kind": "interaction_created",
           "lockScreen": "title",
-          "tag": "session:session_<uuid:8>",
+          "sessionId": "session_<uuid:8>",
+          "sessionName": "New session",
+          "tag": "<tag of interaction i1>",
           "target": {
             "sessionId": "session_<uuid:8>"
           },
@@ -1073,9 +1088,9 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "379",
+          "content-length": "594",
           "content-type": "application/octet-stream",
-          "topic": "<topic of session:<session id>>",
+          "topic": "<topic of interaction i2>",
           "ttl": "86400",
           "urgency": "normal"
         },
@@ -1085,8 +1100,13 @@ expression: t.into_value()
           "at": "<epoch-ms>",
           "body": "It needs your answer to go on.",
           "category": "needs_you",
+          "interactionEpoch": "0",
+          "interactionId": "i2",
+          "kind": "interaction_created",
           "lockScreen": "title",
-          "tag": "session:session_<uuid:8>",
+          "sessionId": "session_<uuid:8>",
+          "sessionName": "New session",
+          "tag": "<tag of interaction i2>",
           "target": {
             "sessionId": "session_<uuid:8>"
           },
@@ -1113,9 +1133,9 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "379",
+          "content-length": "594",
           "content-type": "application/octet-stream",
-          "topic": "<topic of session:<session id>>",
+          "topic": "<topic of interaction i2>",
           "ttl": "86400",
           "urgency": "normal"
         },
@@ -1125,8 +1145,13 @@ expression: t.into_value()
           "at": "<epoch-ms>",
           "body": "It needs your answer to go on.",
           "category": "needs_you",
+          "interactionEpoch": "0",
+          "interactionId": "i2",
+          "kind": "interaction_created",
           "lockScreen": "title",
-          "tag": "session:session_<uuid:8>",
+          "sessionId": "session_<uuid:8>",
+          "sessionName": "New session",
+          "tag": "<tag of interaction i2>",
           "target": {
             "sessionId": "session_<uuid:8>"
           },
@@ -1153,9 +1178,9 @@ expression: t.into_value()
         },
         "headers": {
           "content-encoding": "aes128gcm",
-          "content-length": "379",
+          "content-length": "594",
           "content-type": "application/octet-stream",
-          "topic": "<topic of session:<session id>>",
+          "topic": "<topic of interaction i2>",
           "ttl": "86400",
           "urgency": "normal"
         },
@@ -1165,8 +1190,13 @@ expression: t.into_value()
           "at": "<epoch-ms>",
           "body": "It needs your answer to go on.",
           "category": "needs_you",
+          "interactionEpoch": "0",
+          "interactionId": "i2",
+          "kind": "interaction_created",
           "lockScreen": "title",
-          "tag": "session:session_<uuid:8>",
+          "sessionId": "session_<uuid:8>",
+          "sessionName": "New session",
+          "tag": "<tag of interaction i2>",
           "target": {
             "sessionId": "session_<uuid:8>"
           },

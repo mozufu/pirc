@@ -82,6 +82,14 @@ fn topic_of(tag: &str) -> String {
     topic.chars().take(32).collect()
 }
 
+/// `hex_utf8` of the gateway, for the tag of an exact interaction push.
+fn hex_utf8(text: &str) -> String {
+    text.as_bytes()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
 #[cfg_attr(not(conformance_enabled), ignore = "needs PIRC_CONFORMANCE_BIN_DIR")]
 #[tokio::test(flavor = "multi_thread")]
 async fn push_notifications() {
@@ -121,6 +129,20 @@ async fn push_notifications() {
         topic_of(&format!("session:{session}")),
         "<topic of session:<session id>>",
     ));
+    // Exact question pushes have the session's id and the interaction's id in
+    // their tag, both as hex.
+    let interaction_tag =
+        |id: &str| format!("interaction:{}:0:{}", hex_utf8(&session), hex_utf8(id));
+    volatile.push((
+        topic_of(&interaction_tag("i1")),
+        "<topic of interaction i1>",
+    ));
+    volatile.push((interaction_tag("i1"), "<tag of interaction i1>"));
+    volatile.push((
+        topic_of(&interaction_tag("i2")),
+        "<topic of interaction i2>",
+    ));
+    volatile.push((interaction_tag("i2"), "<tag of interaction i2>"));
     let mut t = Transcript::new(volatile);
     let subscriptions = "/api/push/subscriptions";
 
@@ -303,11 +325,11 @@ async fn push_notifications() {
     for (step, data) in [
         (
             "an interaction with a title",
-            json!({ "id": "i1", "request": { "title": "Allow rm -rf build?" } }),
+            json!({ "id": "i1", "runnerEpoch": 0, "request": { "title": "Allow rm -rf build?" } }),
         ),
         (
             "an interaction with a blank title",
-            json!({ "id": "i2", "request": { "title": "  " } }),
+            json!({ "id": "i2", "runnerEpoch": 0, "request": { "title": "  " } }),
         ),
     ] {
         send(
