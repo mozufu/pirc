@@ -1061,6 +1061,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String get terminalReadOnly => '唯讀：取得控制權才能輸入。';
 
   @override
+  String get terminalIsolatedUnavailable => '這個 Node 無法啟動隔離的工作終端，沒有執行任何指令。';
+
+  @override
+  String terminalNotStarted(String reason) {
+    return '終端沒有啟動（$reason）。';
+  }
+
+  @override
   String get browserUnavailable => '這台主機沒有瀏覽器。';
 
   @override

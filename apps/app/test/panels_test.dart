@@ -580,6 +580,36 @@ void main() {
     });
   });
 
+  for (final (code, message) in [
+    (
+      'isolated_terminal_unavailable',
+      'This Node cannot start an isolated work terminal. No command was '
+          'started.',
+    ),
+    (
+      'work_environment_failed',
+      'The terminal did not start '
+          '(work_environment_failed).',
+    ),
+  ]) {
+    appTest('terminal: a refused start says why ($code)', (tester) async {
+      await _open(
+        tester,
+        PanelSection.terminal,
+        route: (r) => r.method == 'POST' && r.path == '$_base/terminals'
+            ? reply(202, {
+                'workRequest': {'state': 'not_started', 'errorCode': code},
+                'terminal': null,
+              })
+            : null,
+      );
+      await tester.tap(find.text('New terminal'));
+      await tester.pumpAndSettle();
+      expect(find.text(message), findsOneWidget);
+      expect(find.byType(TerminalPage), findsNothing);
+    });
+  }
+
   appTest('git: a staged file asks for the staged diff', (tester) async {
     final s = await _open(
       tester,

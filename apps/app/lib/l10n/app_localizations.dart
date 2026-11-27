@@ -2001,6 +2001,18 @@ abstract class AppLocalizations {
   /// **'Read only: take control to type here.'**
   String get terminalReadOnly;
 
+  /// No description provided for @terminalIsolatedUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This Node cannot start an isolated work terminal. No command was started.'**
+  String get terminalIsolatedUnavailable;
+
+  /// No description provided for @terminalNotStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'The terminal did not start ({reason}).'**
+  String terminalNotStarted(String reason);
+
   /// No description provided for @browserUnavailable.
   ///
   /// In en, this message translates to:

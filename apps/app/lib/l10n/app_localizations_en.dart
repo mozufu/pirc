@@ -1104,6 +1104,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get terminalReadOnly => 'Read only: take control to type here.';
 
   @override
+  String get terminalIsolatedUnavailable =>
+      'This Node cannot start an isolated work terminal. No command was started.';
+
+  @override
+  String terminalNotStarted(String reason) {
+    return 'The terminal did not start ($reason).';
+  }
+
+  @override
   String get browserUnavailable => 'The browser is not available on this host.';
 
   @override

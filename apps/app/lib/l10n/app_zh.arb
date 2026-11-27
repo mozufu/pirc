@@ -317,6 +317,8 @@
   "terminalExited": "已結束（{code}）",
   "terminalClose": "關閉終端",
   "terminalReadOnly": "唯讀：取得控制權才能輸入。",
+  "terminalIsolatedUnavailable": "這個 Node 無法啟動隔離的工作終端，沒有執行任何指令。",
+  "terminalNotStarted": "終端沒有啟動（{reason}）。",
   "browserUnavailable": "這台主機沒有瀏覽器。",
   "browserEmpty": "這個工作沒有開啟瀏覽器。",
   "browserReturn": "交還控制",

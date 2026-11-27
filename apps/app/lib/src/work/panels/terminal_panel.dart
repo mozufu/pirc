@@ -61,7 +61,26 @@ class _TerminalsPanelState extends ConsumerState<TerminalsPanel> {
       }
       ref.invalidate(panelReadProvider(_key));
       final terminal = (reply as Map?)?['terminal'];
-      if (terminal is Map && mounted) _open(terminal);
+      if (!mounted) return;
+      if (terminal is Map) {
+        _open(terminal);
+      } else {
+        // The Node refused (`not_started`), the outcome is unknown, or the
+        // environment was still being prepared after the last read.
+        final request = reply is Map ? reply['workRequest'] : null;
+        final code = request is Map ? request['errorCode'] : null;
+        final state = request is Map ? request['state'] : null;
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              code == 'isolated_terminal_unavailable'
+                  ? l10n.terminalIsolatedUnavailable
+                  : l10n.terminalNotStarted('${code ?? state ?? '-'}'),
+            ),
+          ),
+        );
+      }
     } on PircException catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
