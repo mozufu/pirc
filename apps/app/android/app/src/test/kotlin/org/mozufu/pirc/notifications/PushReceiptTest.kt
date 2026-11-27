@@ -48,7 +48,7 @@ class PushReceiptTest {
            "choices":[{"id":"payload","label":"From the payload"}]$extra}""",
     )
 
-    private fun compact(state: String, epoch: String = "3", choices: Int = 2, expiresAt: Long? = now + 60_000) =
+    private fun compact(state: String, epoch: String = "3", choices: Int = 2, expiresAt: Long? = now + 60_000, other: Boolean = false) =
         BackgroundResult.Done(
             JSONObject()
                 .put("id", "q1")
@@ -59,6 +59,7 @@ class PushReceiptTest {
                     "choices",
                     JSONArray().apply {
                         for (i in 1..choices) put(JSONObject().put("id", "c$i").put("label", "Choice $i"))
+                        if (other) put(JSONObject().put("id", "Other").put("label", "Other").put("other", true))
                     },
                 )
                 .put("expiresAt", expiresAt ?: JSONObject.NULL)
@@ -133,6 +134,15 @@ class PushReceiptTest {
         // A compact read without its own expiry uses the push's.
         reads.interaction = compact("pending", expiresAt = null)
         assertEquals(listOf(ReceiptStep.Remove(tag)), receipt.plan(expired))
+    }
+
+    @Test fun otherIsNotCountedAndTakesASlotOnlyWhenOneIsLeft() {
+        reads.interaction = compact("pending", choices = 3, other = true)
+        assertEquals(listOf("Choice 1", "Choice 2", "Choice 3"), shownSpec(receipt.plan(question())).choices.map { it.label })
+        reads.interaction = compact("pending", choices = 2, other = true)
+        assertEquals(listOf("Choice 1", "Choice 2", "Other"), shownSpec(receipt.plan(question())).choices.map { it.label })
+        reads.interaction = compact("pending", choices = 4, other = true)
+        assertTrue(shownSpec(receipt.plan(question())).choices.isEmpty())
     }
 
     @Test fun moreThanThreeOptionsGiveNoChoices() {

@@ -177,18 +177,21 @@ class PushReceipt(
         if (!pending) return listOf(ReceiptStep.Remove(note.tag))
         val question = body.optJSONObject("question")?.text("title")?.takeIf { it.isNotBlank() }
         val choices = body.optJSONArray("choices")
-        val listed = buildList {
+        val all = buildList {
             if (choices != null) {
-                for (i in 0 until minOf(choices.length(), MAX_CHOICES)) {
+                for (i in 0 until choices.length()) {
                     val choice = choices.optJSONObject(i) ?: continue
                     val id = choice.text("id") ?: continue
                     val label = choice.text("label") ?: id
-                    add(NotificationChoice(label, OpenTarget.question(q.sessionId, q.interactionId, q.epoch, id, label)))
+                    add(choice.optBoolean("other") to NotificationChoice(label, OpenTarget.question(q.sessionId, q.interactionId, q.epoch, id, label)))
                 }
             }
         }
-        // More than 3 options is never sent as choices; a longer list is not cut.
-        val usable = if ((choices?.length() ?: 0) > MAX_CHOICES) emptyList() else listed
+        // The agent's "Other" option (`other`) is not counted, and takes a slot only
+        // when one is left. More than 3 options is never sent as choices; a longer
+        // list is not cut.
+        val (others, options) = all.partition { it.first }
+        val usable = if (options.size > MAX_CHOICES) emptyList() else (options + others).take(MAX_CHOICES).map { it.second }
         return listOf(
             ReceiptStep.Show(
                 plain.copy(

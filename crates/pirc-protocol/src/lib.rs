@@ -42,6 +42,11 @@ pub const NODE_PROTOCOL_VERSION: u32 = 17;
 /// Close code for a node that speaks another protocol version.
 pub const PROTOCOL_MISMATCH_CLOSE: u16 = 4426;
 
+/// The option the agent adds after the options of every `ask_user_question`
+/// select. Picking it asks for typed text; the gateway does not count it
+/// toward the options a notification can show.
+pub const ASK_OTHER_LABEL: &str = "Other (type your own answer)";
+
 /// WebSocket close code the gateway sends a node whose `x-pirc-node-id` and
 /// bearer token match no entry of its `PIRC_NODE_TOKENS`.
 pub const INVALID_NODE_CREDENTIALS_CLOSE: u16 = 4401;

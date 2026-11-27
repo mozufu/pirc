@@ -11,13 +11,15 @@ use super::{Category, Choice, InteractionPush, Push, PushMessage};
 use crate::db::{Db, Store};
 use crate::events::{EventHub, GatewayEvent};
 
-/// At most this many options get buttons.
-const MAX_CHOICES: usize = 3;
+/// At most this many options get buttons; the agent's "Other" option is not
+/// counted ([`pirc_protocol::ASK_OTHER_LABEL`]).
+pub(crate) const MAX_CHOICES: usize = 3;
 /// An option longer than this (UTF-16 units) gets no button.
 const MAX_CHOICE_UNITS: usize = 100;
 
 /// The buttons of a question: only a single choice (`select`, not
-/// `multiple`) with 1 to 3 short options; any other question gets none.
+/// `multiple`) with 1 to 3 short options, plus the agent's "Other" option
+/// when it comes last (flagged `other`); any other question gets none.
 pub fn single_choices(kind: &str, request: &Value) -> Vec<Choice> {
     if kind != "select"
         || request
@@ -29,7 +31,9 @@ pub fn single_choices(kind: &str, request: &Value) -> Vec<Choice> {
     let Some(options) = request.get("options").and_then(Value::as_array) else {
         return Vec::new();
     };
-    if options.is_empty() || options.len() > MAX_CHOICES {
+    let other = options.last().and_then(Value::as_str) == Some(pirc_protocol::ASK_OTHER_LABEL);
+    let counted = options.len() - usize::from(other);
+    if counted == 0 || counted > MAX_CHOICES {
         return Vec::new();
     }
     let labels: Option<Vec<&str>> = options
@@ -44,9 +48,11 @@ pub fn single_choices(kind: &str, request: &Value) -> Vec<Choice> {
         .map(|labels| {
             labels
                 .into_iter()
-                .map(|label| Choice {
+                .enumerate()
+                .map(|(index, label)| Choice {
                     id: label.to_owned(),
                     label: label.to_owned(),
+                    other: other && index == counted,
                 })
                 .collect()
         })

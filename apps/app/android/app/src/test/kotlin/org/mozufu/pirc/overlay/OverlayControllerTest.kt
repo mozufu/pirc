@@ -121,6 +121,7 @@ class OverlayControllerTest {
         holder: JSONObject? = null,
         expiresAt: Long? = now + 14 * 60_000,
         answeredBy: JSONObject? = null,
+        other: Boolean = false,
     ) = BackgroundResult.Done(
         JSONObject()
             .put("id", "q1")
@@ -132,6 +133,7 @@ class OverlayControllerTest {
                 "choices",
                 JSONArray().apply {
                     for (i in 1..choices) put(JSONObject().put("id", "c$i").put("label", "Choice $i"))
+                    if (other) put(JSONObject().put("id", "Other").put("label", "Other").put("other", true))
                 },
             )
             .put("expiresAt", expiresAt ?: JSONObject.NULL)
@@ -166,6 +168,18 @@ class OverlayControllerTest {
         assertNull(state.selected)
         assertFalse("nothing is preselected", state.canSend)
         assertEquals(OverlayControl.Mine, state.control)
+    }
+
+    @Test fun otherIsOfferedButNotCounted() {
+        gateway.reads += compact(choices = 3, other = true)
+        controller().check()
+        assertEquals(listOf("c1", "c2", "c3", "Other"), ready.choices.map { it.id })
+    }
+
+    @Test fun moreThanThreeChoicesBesideOtherAreNotOffered() {
+        gateway.reads += compact(choices = 4, other = true)
+        controller().check()
+        assertEquals(emptyList<OverlayChoice>(), ready.choices)
     }
 
     @Test fun moreThanThreeChoicesAreNotOffered() {

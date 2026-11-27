@@ -17,7 +17,7 @@ use crate::tools::result_schema::{arr, fields, obj, one_of_strings, str_};
 use crate::tools::{Tool, ToolContext, ToolResult, ToolSpec, js, spec_tool, typed};
 use crate::ui::{Choice, DialogOptions, Ui};
 
-const OTHER: &str = "Other (type your own answer)";
+const OTHER: &str = pirc_protocol::ASK_OTHER_LABEL;
 
 /// `unsafe`: control characters other than tab and line feed.
 fn has_unsafe(text: &str) -> bool {

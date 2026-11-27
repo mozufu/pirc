@@ -745,6 +745,34 @@ fn only_a_single_choice_with_three_or_fewer_options_gets_buttons() {
     assert!(single_choices("select", &json!({ "options": ["a", "x".repeat(101)] })).is_empty());
 }
 
+#[test]
+fn the_agents_other_option_is_not_counted() {
+    let other = pirc_protocol::ASK_OTHER_LABEL;
+    let with_other = |n: usize| {
+        let mut list: Vec<String> = (0..n).map(|i| format!("o{i}")).collect();
+        list.push(other.to_owned());
+        json!({ "options": list })
+    };
+    let three = single_choices("select", &with_other(3));
+    assert_eq!(three.len(), 4);
+    assert!(three[..3].iter().all(|choice| !choice.other));
+    assert!(three[3].other);
+    assert_eq!(three[3].id, other);
+    assert_eq!(
+        serde_json::to_value(&three[2..]).unwrap(),
+        json!([{ "id": "o2", "label": "o2" }, { "id": other, "label": other, "other": true }])
+    );
+    assert_eq!(single_choices("select", &with_other(2)).len(), 3);
+    assert!(single_choices("select", &with_other(4)).is_empty());
+    assert!(
+        single_choices("select", &with_other(0)).is_empty(),
+        "Other alone"
+    );
+    // Only a last "Other" is the agent's; elsewhere it is an ordinary option.
+    let first = json!({ "options": [other, "a", "b", "c"] });
+    assert!(single_choices("select", &first).is_empty());
+}
+
 /// 2030-01-01T10:00:00Z.
 const T0: i64 = 1_893_492_000_000;
 const MINUTE: i64 = 60_000;
@@ -1188,6 +1216,7 @@ fn a_payload_stays_within_one_record() {
                 .map(|i| Choice {
                     id: format!("{i}{}", "é".repeat(99)),
                     label: format!("{i}{}", "é".repeat(99)),
+                    other: false,
                 })
                 .collect(),
             ..InteractionPush::default()

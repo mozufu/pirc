@@ -281,8 +281,10 @@ class OverlayController(
         }
         if (uncertain.commandOf(item.key) != null) return OverlayState.NotSure(run = false)
         val list = body.optJSONArray("choices")
+        // The agent's "Other" option (`other`) is not counted toward the limit.
+        val counted = list?.let { all -> (0 until all.length()).count { all.optJSONObject(it)?.optBoolean("other") != true } } ?: 0
         val choices = buildList {
-            if (list != null && list.length() <= MAX_CHOICES) {
+            if (list != null && counted <= MAX_CHOICES) {
                 for (i in 0 until list.length()) {
                     val choice = list.optJSONObject(i) ?: continue
                     val id = choice.text("id") ?: continue

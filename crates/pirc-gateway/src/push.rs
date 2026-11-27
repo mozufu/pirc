@@ -92,6 +92,11 @@ pub struct InteractionPush {
 pub struct Choice {
     pub id: String,
     pub label: String,
+    /// The agent's "Other" option ([`pirc_protocol::ASK_OTHER_LABEL`]): not
+    /// counted toward the 3 options a notification can show; picking it asks
+    /// for text.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub other: bool,
 }
 
 /// How one target gets a notification.
