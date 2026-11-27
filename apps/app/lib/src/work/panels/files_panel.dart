@@ -44,6 +44,32 @@ class _FilesPanelState extends ConsumerState<FilesPanel> {
       for (final part in (_file ?? _dir).split('/'))
         if (part.isNotEmpty) part,
     ];
+    // System Back leaves an open file for its folder, then goes up one
+    // folder at a time; at the root it closes the panel (tab_screen.dart).
+    return BackButtonListener(
+      onBackButtonPressed: () async {
+        if (_file == null && _dir.isEmpty) return false;
+        setState(() {
+          if (_file != null) {
+            _file = null;
+          } else {
+            final cut = _dir.lastIndexOf('/');
+            _dir = cut < 0 ? '' : _dir.substring(0, cut);
+          }
+        });
+        return true;
+      },
+      child: _body(context, l10n, key, value, parts),
+    );
+  }
+
+  Widget _body(
+    BuildContext context,
+    AppLocalizations l10n,
+    PanelKey key,
+    AsyncValue<Object?> value,
+    List<String> parts,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

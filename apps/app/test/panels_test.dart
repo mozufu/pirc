@@ -12,6 +12,7 @@ import 'package:pirc_app/src/platform/media.dart';
 import 'package:pirc_app/src/work/panels/browser_panel.dart';
 import 'package:pirc_app/src/work/panels/panel_container.dart';
 import 'package:pirc_app/src/work/panels/terminal_panel.dart';
+import 'package:pirc_app/src/work/work_conversation.dart';
 import 'package:pirc_client/pirc_client.dart';
 
 import 'support/harness.dart';
@@ -578,6 +579,55 @@ void main() {
     expect(s.gateway!.sent('GET', '$_base/files/content').single.query, {
       'path': 'lib/main.dart',
     });
+  });
+
+  appTest('files: Back leaves the file, then the folder, then the panel', (
+    tester,
+  ) async {
+    await _open(
+      tester,
+      PanelSection.files,
+      width: 375,
+      route: (r) {
+        if (r.path == '$_base/files' && r.query['path'] == 'lib') {
+          return reply(200, {
+            'path': 'lib',
+            'entries': [
+              {'name': 'main.dart', 'kind': 'file', 'size': 20},
+            ],
+          });
+        }
+        if (r.path == '$_base/files/content') {
+          return reply(200, {
+            'path': r.query['path'],
+            'size': 20,
+            'binary': false,
+            'truncated': false,
+            'content': 'void main() {}',
+          });
+        }
+        return null;
+      },
+    );
+    await tester.tap(find.text('lib'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('main.dart'));
+    await tester.pumpAndSettle();
+    expect(find.text('void main() {}'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('void main() {}'), findsNothing);
+    expect(find.text('main.dart'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('README.md'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(PanelContainer), findsNothing);
+    expect(find.byType(WorkConversation), findsOneWidget);
   });
 
   for (final (code, message) in [

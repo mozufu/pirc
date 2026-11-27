@@ -71,6 +71,11 @@ class TabScreen extends ConsumerWidget {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop && open != null) {
           context.go(switch (tab) {
+            // A panel or result closes first, back to its conversation.
+            AppTab.work when side != null => workLocation(
+              open,
+              context: context,
+            ),
             AppTab.work => workBackLocation(context),
             // The profile closes first, back to its conversation.
             AppTab.chat when side != null => chatLocation(open),
