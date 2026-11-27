@@ -19,7 +19,7 @@ acceptance, activation.
 | [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`                        |
 | [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | finished after review; 12 rewritten; Memory panel removed            |
 | [M7 Pots screens](#m7-pots-screens)                           | complete | complete    |            | steps 0–14 done; goldens of every E screen at four widths            |
-| [M8 Android cutover](#m8-android-cutover)                     | complete |             |            | defaults A–F and the review additions accepted; ID `org.mozufu.pirc` |
+| [M8 Android cutover](#m8-android-cutover)                     | complete | in progress |            | steps 0–5 and 7 done; step 6 core only (no entry point); 8, 9 to do. |
 | [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                                   |
 | [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                                                                      |
 | [M11 Release](#m11-release)                                   | outline  |             |            |                                                                      |
@@ -1206,6 +1206,34 @@ The steps below use them.
 push relays. Real remote push delivery (UnifiedPush through a public distributor, Web
 Push) is tested only by the owner: the owner declined third-party relay testing, so
 an agent never runs it.
+
+**Progress (2026-11-27).** Steps 0–5 and 7 are built, reviewed and committed: step 0
+`64d4b50e`, 1 `73b06b57`, 2 `1bc244fe`, 3 `4d5d06f1`, 4 `3af79804`, 5 `a0153952`, 7
+`462ba176`. Step 6 has the scripts channel, the isolation of message documents and the
+moved fixtures (`3ac162b9`), and the core of the document runtime (`31731564`). The rest
+of step 6 (navigation, the window manager, the document view and the app wiring) waits,
+because pirc 2 has no place that opens a script document (owner decision, 2026-11-27; see
+[m8-step6-port.md](m8-step6-port.md)). Steps 8 and 9 are the owner's.
+
+Choices made while building, to confirm in step 8:
+
+- A `links` channel (`org.mozufu.pirc/links`) receives `pirc://pair` and opens the
+  browser; it is not in the channel list above.
+- Failed and waiting schedule runs are `needs_you`.
+- Update pushes (answered, refresh) follow the levels: none at `digest` or `off`, silent
+  during quiet hours.
+- `lockScreen: hidden` uses a secret notification. `title` hides the text only while
+  Android's lock screen hides sensitive content; Settings → Notifications says so.
+- The overlay opens only after the compact read shows a question with 1 to 3 choices or a
+  run that is still missed, never during quiet hours, and the notification is always
+  posted as well.
+- The overlay's send takes control (`POST …/control/acquire` with `force`) and asks first
+  when the holder acted in the last 30 seconds, as the composer does.
+- Files: 11 MiB per file, at most 16 files and 64 MiB at once. `file_selector` and
+  `share_plus` stay for macOS and the Web.
+- Message documents keep storage and cookies in memory only, per document.
+- Kotlin notification and overlay text follows the system language, not the app's
+  language setting.
 
 0. **Backend additions** (Gateway; done before steps 2–4 need them).
    1. _Pairing v2._ App-initiated and bound to a challenge, built on the request
