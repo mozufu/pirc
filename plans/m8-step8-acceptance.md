@@ -147,40 +147,46 @@ Findings:
   `not_started`, finds no `terminal` and returns without a message
   (`work/panels/terminal_panel.dart:52-62`). Whether this local setup (a macOS Node,
   a workspace that is not a Git repository) should give an isolated terminal is a
-  second question; the missing error is the bug. **Fixed (uncommitted):** the panel now
+  second question; the missing error is the bug. **Fixed in `22b4f08a`:** the panel now
   shows why the terminal did not start; checked on the phone.
 - **S2 Back leaves the session.** In the full-screen panel, open a file, press the
-  system Back once: the app goes to the Work list, not to the file list. **Fixed
-  (uncommitted):** Back closes a file, then goes up a folder, then closes the panel, then
+  system Back once: the app goes to the Work list, not to the file list. **Fixed in
+  `da138a04`:** Back closes a file, then goes up a folder, then closes the panel, then
   leaves the session; checked on the phone.
 - **S3 English text in the zh-TW UI.** From the server: "Other (type your own answer)"
   (`pirc-agent/src/features/ask_question.rs:20`), "New session" (placeholder name,
   `pirc-gateway/src/db.rs:71`) and "Auto mode: allow a potentially dangerous action?"
   (`pirc-agent/src/auto_mode/mod.rs:729`). From the app: `panelTasks` is "Tasks" in
-  `app_zh.arb:282`.
+  `app_zh.arb:282`. **App side, `0578cd95`:** "Tasks" stays, as design-spec-C § 41 names the
+  panel; `fromPot` in zh now shows only the pot's name, like 你 for `fromYou`. The
+  server strings stay open.
 - **S4 Text before stop is dropped.** After 停止 the streamed part of the reply is gone;
   only "已停止。" stays.
 - **S5 Pair button label.** On the "pairing expired" screen the button read 已配對 until
-  a link was opened.
+  a link was opened. **Fixed in `3d78d17c`:** the pairing state now lives only while the
+  pairing page shows it.
 - **S6 Rotation loop with a short maximum.** With `PIRC_DEVICE_TOKEN_MAX_DAYS` at 23 or
   less, the app rotates about every 10 seconds while open: each rotation reconnects, the
   reconnect checks again and finds less than `rotateBefore` (23 days) left. Each
   reconnect resets the screen ("正在重新連線並取得最新狀態…", an open file closes). With
   the default 30 days it settles after one rotation.
-
+  **Fixed in `33d19dab`:** `GET /api/device` and the rotation reply carry
+  `maxAgeMs`, and the app rotates at 23/30 of that window (23 days for 30).
 - **S7 No expandable question notification (caused by S8).** A question with 3 options
   plus Other reached the phone with no choices, so its notification had nothing to
   expand. With 2 options plus Other the owner could expand it and saw the 3 choices
   on HyperOS 3. Not a HyperOS limit.
 - **S8 Three options never got choices or the overlay.** The agent adds "Other (type
   your own answer)" to every select question, so 3 options reached the Gateway as 4,
-  over the limit of 3. **Fixed (uncommitted), owner's decision: Other is not counted.**
+  over the limit of 3. **Fixed in `1b3e6a2e`, owner's decision: Other is not counted.**
   The Gateway leaves a last Other out of the count and marks it `other: true`
   (`pirc_protocol::ASK_OTHER_LABEL`, shared with the agent). The overlay shows all
   options and Other; the notification has 3 slots, filled with the real options first
   and Other only when a slot is left. Checked on the phone: a 3-option question opened
   the overlay with A, B, C and Other, and the answer reached the agent.
-- **S9 Notification icon.** The small icon in the shade is the default Flutter logo.
+- **S9 Notification icon.** The small icon in the shade is the default Flutter logo. The cause was the launcher icon, the Flutter default; HyperOS shows it
+  in the shade. **Fixed in `b12136cb`:** the app uses the pirc adaptive icon from
+  `apps/android` (`ic_pirc`). Not yet seen on the phone.
 - **S10 Session times moved.** During the rotation loop (S6) all three sessions in the
   Work list showed 17:46 though nothing happened in them. Cause not checked.
 
