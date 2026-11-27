@@ -19,6 +19,7 @@ const _day = Duration(days: 1);
 Map<String, Object?> _device({
   required Duration max,
   Duration idle = const Duration(days: 7),
+  Duration? window,
 }) => {
   'id': 'd1',
   'name': 'Pixel 9',
@@ -26,6 +27,7 @@ Map<String, Object?> _device({
   'lastUsedAt': _now.millisecondsSinceEpoch,
   'expiresAt': _now.add(max).millisecondsSinceEpoch,
   'idleExpiresAt': _now.add(idle).millisecondsSinceEpoch,
+  'maxAgeMs': ?window?.inMilliseconds,
 };
 
 /// The secret store, whose writes can be held to see what is sent meanwhile.
@@ -193,6 +195,27 @@ void main() {
     await tester.pumpAndSettle();
     expect(container.read(connectionProvider).phase, ConnectionPhase.online);
     expect(await r.secrets.inner.read(deviceTokenKey), 'pirc_dev_rotated');
+  });
+
+  appTest('a 20-day window rotates once, not on every return', (tester) async {
+    const window = Duration(days: 20);
+    final r = _Rotation(max: const Duration(days: 14))
+      ..rotate = (_) => reply(200, {
+        'device': _device(max: window, window: window),
+        'token': 'pirc_dev_rotated',
+      });
+    r.device = _device(max: const Duration(days: 14), window: window);
+    await r.pump(tester);
+    expect(r.rotations, 1, reason: 'less than 23/30 of 20 days left');
+    // The Gateway's record now shows the whole new window.
+    r.device = _device(max: window, window: window);
+    for (var i = 0; i < 3; i++) {
+      _background(tester);
+      _foreground(tester);
+      await tester.pumpAndSettle();
+    }
+    expect(r.rotations, 1);
+    expect(await r.sending(), 'pirc_dev_rotated');
   });
 
   appTest('coming to the foreground rotates when it is time', (tester) async {

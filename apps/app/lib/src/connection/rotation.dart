@@ -10,8 +10,16 @@ import 'storage.dart';
 
 /// Rotate once less than this much of the maximum window is left
 /// (plans/roadmap.md M8 default B: a phone used once a week never pairs
-/// again).
+/// again). This is 23/30 of the Gateway's default 30-day window.
 const rotateBefore = Duration(days: 23);
+
+/// When to rotate for [device]: [rotateBefore] scaled to the Gateway's
+/// maximum window (`maxAgeMs`), so a window shorter than [rotateBefore]
+/// does not rotate a token that was just rotated, again and again. A
+/// Gateway that does not send the window gets [rotateBefore].
+Duration rotateBeforeFor(DeviceSummary device) => device.maxAgeMs > 0
+    ? Duration(milliseconds: device.maxAgeMs * 23 ~/ 30)
+    : rotateBefore;
 
 /// Warn once less than this much of the effective expiry is left.
 const warnBefore = Duration(days: 3);
@@ -142,7 +150,7 @@ class TokenRotation extends Notifier<DeviceLifetime> {
       final left = DateTime.fromMillisecondsSinceEpoch(
         device.expiresAt,
       ).difference(_now());
-      if (left < rotateBefore) {
+      if (left < rotateBeforeFor(device)) {
         // Not rotated (or never needed): the record is right; this
         // rotation starts its own window.
         if (unknown) await _setUnknownSince(null);

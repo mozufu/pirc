@@ -134,6 +134,7 @@ class DeviceSummary {
     this.lastUsedAt = 0,
     this.expiresAt = 0,
     this.idleExpiresAt = 0,
+    this.maxAgeMs = 0,
   });
 
   factory DeviceSummary.fromJson(Object? json) => DeviceSummary(
@@ -143,6 +144,7 @@ class DeviceSummary {
     lastUsedAt: number(field(json, 'lastUsedAt')) ?? 0,
     expiresAt: number(field(json, 'expiresAt')) ?? 0,
     idleExpiresAt: number(field(json, 'idleExpiresAt')) ?? 0,
+    maxAgeMs: number(field(json, 'maxAgeMs')) ?? 0,
   );
 
   final String id;
@@ -157,6 +159,10 @@ class DeviceSummary {
 
   /// The end of the idle window; 0 when the Gateway did not send it.
   final int idleExpiresAt;
+
+  /// The length of the maximum window (`GET /api/device` and the pairing and
+  /// rotation replies); 0 when the Gateway did not send it.
+  final int maxAgeMs;
 
   /// When the token dies without another use: the earlier of the idle and
   /// the maximum window.

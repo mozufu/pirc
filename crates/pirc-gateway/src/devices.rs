@@ -124,6 +124,11 @@ impl DeviceTokens {
         self.idle_ms
     }
 
+    /// How long a token lives after pairing or its last rotation.
+    pub fn max_age_ms(&self) -> i64 {
+        self.max_age_ms
+    }
+
     pub fn new(db: Arc<Db>, idle_ms: u64, max_age_ms: u64) -> Arc<Self> {
         Arc::new(Self {
             db,

@@ -275,7 +275,7 @@ pub(crate) fn device_json(
     conn: &Connection,
     owner: &str,
     id: &str,
-    idle_ms: i64,
+    windows: &crate::devices::DeviceTokens,
 ) -> ApiResult<Value> {
     conn.query_row(
         "SELECT id,name,created_at,expires_at,last_used_at FROM device_tokens WHERE id=?1 AND owner_user=?2",
@@ -286,7 +286,10 @@ pub(crate) fn device_json(
                 "id": r.get::<_, String>(0)?, "name": r.get::<_, String>(1)?,
                 "createdAt": r.get::<_, i64>(2)?, "expiresAt": r.get::<_, i64>(3)?,
                 "lastUsedAt": last_used_at,
-                "idleExpiresAt": last_used_at.saturating_add(idle_ms),
+                "idleExpiresAt": last_used_at.saturating_add(windows.idle_ms()),
+                // The length of the maximum window, so the app knows when to
+                // rotate whatever the Gateway's PIRC_DEVICE_TOKEN_MAX_DAYS.
+                "maxAgeMs": windows.max_age_ms(),
             }))
         },
     )
@@ -300,9 +303,8 @@ async fn read_device(
     Extension(identity): Extension<Identity>,
 ) -> ApiResult<axum::Json<Value>> {
     let id = this_device(&identity)?;
-    let idle = app.devices.idle_ms();
     Ok(axum::Json(
-        json!({ "device": device_json(&app.db.lock(), &identity.user, id, idle)? }),
+        json!({ "device": device_json(&app.db.lock(), &identity.user, id, &app.devices)? }),
     ))
 }
 
@@ -326,7 +328,7 @@ async fn rotate_device(
         ApiError::new(401, "unauthenticated", "Device authentication is required")
     })?;
     let (_, token) = app.devices.rotate(&identity.user, id, &presented)?;
-    let device = device_json(&app.db.lock(), &identity.user, id, app.devices.idle_ms())?;
+    let device = device_json(&app.db.lock(), &identity.user, id, &app.devices)?;
     Ok(crate::error::json_response(
         200,
         &json!({ "device": device, "token": token }),
@@ -349,7 +351,7 @@ async fn rename_device(
         params![id, identity.user, name],
     )?;
     Ok(axum::Json(
-        json!({ "device": device_json(&conn, &identity.user, id, app.devices.idle_ms())? }),
+        json!({ "device": device_json(&conn, &identity.user, id, &app.devices)? }),
     ))
 }
 
@@ -458,6 +460,11 @@ mod tests {
         assert_eq!(renamed["device"]["name"], "Brian's phone");
         let (_, read) = call(&app, "GET", "/api/device", None, Some(&token), None).await;
         assert_eq!(read["device"]["id"], device.id.as_str());
+        assert_eq!(
+            read["device"]["maxAgeMs"],
+            30 * 86_400_000_i64,
+            "the default window"
+        );
         let (_, listed) = call(&app, "GET", "/api/clients", None, Some(&token), None).await;
         let names: Vec<&str> = listed["clients"]
             .as_array()

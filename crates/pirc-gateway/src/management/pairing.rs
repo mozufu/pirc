@@ -508,12 +508,8 @@ async fn claim(
             device,
             token,
         } => {
-            let device = crate::clients::device_json(
-                &app.db.lock(),
-                &owner,
-                &device.id,
-                app.devices.idle_ms(),
-            )?;
+            let device =
+                crate::clients::device_json(&app.db.lock(), &owner, &device.id, &app.devices)?;
             Ok(ok(json!({ "device": device, "token": token })))
         }
     }
