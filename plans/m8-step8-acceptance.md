@@ -5,6 +5,12 @@ Android phone with a real account. Delete it when step 8 closes, after the resul
 the status table's Notes. A skipped check is not a pass (N8): mark it `skipped` with the
 reason.
 
+**Owner update (2026-11-27):** sections A–D passed on a physical device. The
+owner approved proceeding with cutover before finishing E (quick-reply overlay)
+and F (release APK on a phone); both remain to be verified. G1 is optional and
+was not confirmed. The detailed run below is the earlier agent run, not the
+owner's results.
+
 ## Before you start
 
 - **Gateway and Node from `main` at `20bccbed` or later.** Steps 0–7 need the pirc 2

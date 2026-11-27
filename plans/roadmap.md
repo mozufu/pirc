@@ -9,20 +9,20 @@ acceptance, activation.
 
 ## Status
 
-| Milestone                                                     | Design   | Code        | Acceptance | Notes                                                                |
-| ------------------------------------------------------------- | -------- | ----------- | ---------- | -------------------------------------------------------------------- |
-| [M0 Unify the working tree](#m0-unify-the-working-tree)       | complete | complete    | n/a        | `e1a08db9`, `162c113b`                                               |
-| [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)                  |
-| [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11            |
-| [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4          |
-| [M4 Pots backend](#m4-pots-backend)                           | complete | complete    |            | steps 0–13 done; 232 conformance tests on Linux                      |
-| [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`                        |
-| [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | finished after review; 12 rewritten; Memory panel removed            |
-| [M7 Pots screens](#m7-pots-screens)                           | complete | complete    |            | steps 0–14 done; goldens of every E screen at four widths            |
-| [M8 Android cutover](#m8-android-cutover)                     | complete | in progress |            | steps 0–5 and 7 done; step 6 core only (no entry point); 8, 9 to do. |
-| [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                                   |
-| [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                                                                      |
-| [M11 Release](#m11-release)                                   | outline  |             |            |                                                                      |
+| Milestone                                                     | Design   | Code        | Acceptance | Notes                                                                                                      |
+| ------------------------------------------------------------- | -------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------------------- |
+| [M0 Unify the working tree](#m0-unify-the-working-tree)       | complete | complete    | n/a        | `e1a08db9`, `162c113b`                                                                                     |
+| [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)                                                        |
+| [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11                                                  |
+| [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4                                                |
+| [M4 Pots backend](#m4-pots-backend)                           | complete | complete    |            | steps 0–13 done; 232 conformance tests on Linux                                                            |
+| [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`                                                              |
+| [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | finished after review; 12 rewritten; Memory panel removed                                                  |
+| [M7 Pots screens](#m7-pots-screens)                           | complete | complete    |            | steps 0–14 done; goldens of every E screen at four widths                                                  |
+| [M8 Android cutover](#m8-android-cutover)                     | complete | in progress |            | Step 8: owner passed A–D; E–F deferred, G1 optional. Step 9 authorized; step 6 core only (no entry point). |
+| [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                                                                         |
+| [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                                                                                                            |
+| [M11 Release](#m11-release)                                   | outline  |             |            |                                                                                                            |
 
 "Outline" milestones get their detailed steps written (rule P12) before they start,
 using what the earlier milestones produced.
@@ -1213,7 +1213,11 @@ an agent never runs it.
 moved fixtures (`3ac162b9`), and the core of the document runtime (`31731564`). The rest
 of step 6 (navigation, the window manager, the document view and the app wiring) waits,
 because pirc 2 has no place that opens a script document (owner decision, 2026-11-27; see
-[m8-step6-port.md](m8-step6-port.md)). Steps 8 and 9 are the owner's.
+[m8-step6-port.md](m8-step6-port.md)). The owner confirmed sections A–D of
+[step 8](m8-step8-acceptance.md) and authorized step 9 to proceed before sections
+E–F are finished. Those checks remain open, and optional G1 is not recorded as
+passed. Verify both debug builds and the new signed release build in CI before
+removing the old app; keep the physical-device results separate from build verification.
 
 Choices made while building, to confirm in step 8:
 
