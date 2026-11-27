@@ -1,6 +1,6 @@
 # pirc 行動版設計 · 統一對話增補（方向 D）
 
-版本 0.2 · 2026-11-05 · 依據 `mozufu/pirc` `b6f2f41`：`plans/unified-conversations.md`、`plans/conversation-execution-contracts.md`、`plans/pots/design.md`、`docs/guides/pots.md`、`plans/checkpoints.md`、`docs/guides/calendar.md`，以及目前的 `apps/web`、`apps/android`（Flutter）。
+版本 0.2 · 2026-11-05 · 依據 `mozufu/pirc` `b6f2f41`：`plans/unified-conversations.md`、`plans/conversation-execution-contracts.md`、`plans/pots/design.md`、`docs/guides/pots.md`、`plans/checkpoints.md`、`docs/guides/calendar.md`，以及目前的 `apps/web` 與已於 M8 切換時刪除的 Android（Flutter）用戶端（見 [歷史紀錄](../development/historical-records.md#old-android-client-m8-cutover)）。
 
 這份文件只描述**因架構調整需要改的前端**。沒有提到的部分沿用 `design-spec.md`（方向 C）、`components.md` 與 `tokens.json`，不另行變更。原型在 Design 畫布「D · 統一對話（架構調整）」頁，畫面編號 D1–D20。原型是網頁模擬，不能直接編譯成 App。
 

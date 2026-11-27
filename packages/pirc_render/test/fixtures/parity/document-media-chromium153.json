@@ -1,12 +1,16 @@
 {
-  "fixture": "apps/mobile/tool/parity/fixtures/document-media-chromium153.json",
+  "origin": {
+    "commit": "b32b0554",
+    "note": "pre-cutover Android parity capture; see docs/development/historical-records.md"
+  },
+  "fixture": "fixtures/document-media-chromium153.json",
   "capturedAtUtc": "2026-10-16T13:21:30.245Z",
   "browserProduct": "Playwright-pinned Chromium Headless Shell 153",
   "browserVersion": "153.0.8010.12",
   "browserExecutable": "<repository>/.pirc/test-browsers/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell",
   "nodeVersion": "v26.8.1",
   "playwrightVersion": "1.63.0",
-  "runner": "apps/mobile/tool/parity/verify_document_media_browser.mjs",
+  "runner": "verify_document_media_browser.mjs",
   "runnerSha256": "ca55a5304f6946a24fb8b7dc107efd5ed009e70ed5778fa11e98bfa6d9e478ea",
   "viewportMatrix": {
     "design": "Full 16-row Cartesian product of width 390/768 × height 844/1024 × color scheme light/dark × root-font-scale 1x/2x; every screen/theme/font-size tuple is present. All primary rows use desktop input emulation (hasTouch=false, isMobile=false).",

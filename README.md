@@ -21,7 +21,7 @@ pirc 2 keeps these parts:
 
 pirc 2 changes the product that the user sees:
 
-- **One Flutter client for Android, Web and macOS** ([`apps/app`](apps/app/README.md)). It follows design direction E ([design handoff](docs/design/README.md)). It replaces the Svelte web app ([`apps/web`](apps/web/README.md)) and the current Android UI ([`apps/android`](apps/android/README.md)). These two old clients receive no new work. They are deleted at the Android cutover (M8) and the Web and macOS cutover (M9).
+- **One Flutter client for Android, Web and macOS** ([`apps/app`](apps/app/README.md)). It follows design direction E ([design handoff](docs/design/README.md)). It replaced the old Flutter Android client at the M8 cutover. It replaces the Svelte web app ([`apps/web`](apps/web/README.md)) at the Web and macOS cutover (M9). The old web client receives no new work.
 - **Named pots replace the assistant chat.** Each pot is a persistent agent with its own personality, memory, permissions, models and budget. See [pots.md](plans/pots.md).
 - **Four tabs.** The Chat tab holds pots and groups of pots. The Work tab holds coding sessions, grouped by project. Activity and Calendar are the other two tabs.
 - **New flows only.** First-send is the only way to create a session. The database schemas start again from a new baseline, and no migrations are written.
@@ -43,7 +43,6 @@ On one machine, run the gateway and a node next to each other. For more than one
 | [`apps/app/`](apps/app/README.md)                 | The new Flutter client (Android, Web, macOS)                               |
 | [`packages/`](packages)                           | Dart packages of the new client: transport, UI and native rendering        |
 | [`apps/web/`](apps/web/README.md)                 | Old Svelte web client; deleted at M9                                       |
-| [`apps/android/`](apps/android/README.md)         | Old Flutter Android client; deleted at M8                                  |
 | [`plans/`](plans/README.md)                       | Direction, decisions, roadmap and open work for the rewrite                |
 | [`docs/`](docs/README.md)                         | Guides, architecture, deployment and design                                |
 | [`nix/`](nix/README.md), [`flake.nix`](flake.nix) | Nix packages, development shell and NixOS module                           |

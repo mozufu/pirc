@@ -19,14 +19,14 @@ them and macOS limits that path to about 100 characters.
 ## What is real, and what is not
 
 - Real: the Gateway and Node executables, their SQLite and file state (fresh per run), the dedicated test browser
-  (`apps/android/tool/parity/test_browser.mjs`, a headless shell with a new temporary profile; the everyday Chrome is
-  never started), the web app (Vite dev server over `apps/web`), the App's `PircApi.kt` (compiled for the JVM).
+  (`scripts/e2e/test_browser.mjs`, a headless shell with a new temporary profile; the everyday Chrome is never
+  started), and the web app (Vite dev server over `apps/web`).
 - A local Node adapter (`startAdapter` in `lib.mjs`) plays the trusted proxy: it strips client-supplied identity and
   proxy-secret headers, adds the fixture identity, Host/Origin and (V2) the proxy secret, and forwards everything else.
 - The memory proposals are made by the real chat node: a scripted OpenAI-compatible model server returns the
   `memory_propose_user` call, and the Gateway stores the proposal. Approving one makes the active entry.
 - Not real: a nginx, Caddy or Traefik (none is installed; installing one needs the owner's approval), an APK, an
-  emulator or a device. The "App" cells run the real `PircApi.kt`, not an APK.
+  emulator or a device.
 
 ## V1 `v1-hostile-forms.mjs`: hostile forms in a real browser
 
@@ -46,7 +46,7 @@ for real.
   previewed forms then do reach the Gateway (20 POSTs, all 415) and the state is still unchanged.
 
 The run prints the commits it covered (`coverage`): HEAD, the last commit touching the sanitiser and the Gateway,
-and uncommitted changes in `apps/web`, `crates` and `apps/android` (a run over a dirty tree is labelled by that list).
+and uncommitted changes in `apps/web` and `crates` (a run over a dirty tree is labelled by that list).
 
 ## V2 `v2-proxy.mjs`, `v2-proxy-config.mjs`: a reverse proxy and `X-Pirc-Request`
 
@@ -58,23 +58,20 @@ and uncommitted changes in `apps/web`, `crates` and `apps/android` (a run over a
   `docs/deploy/reverse-proxy.md` for anything that would drop, overwrite or limit `X-Pirc-*` request headers.
   Informational lines (never failures) list what the docs do not say.
 
-## V3 `v3-compat.mjs`, `jvm.mjs`, `jvm/AppCompat.kt`: old and new clients against old and new Gateways
+## V3 `v3-compat.mjs`: old and new web clients against old and new Gateways
 
 OLD is commit 645b262f (before the request-shape rule). The script creates a temporary detached worktree of it, builds
 its Gateway and Node into `target/suites/compat-645b262f` (kept as the build cache) and removes the worktree at the end.
 Each Gateway gets its own fresh state.
 
-| Client           | Gateway          | Expected                                                                                                                             |
-| ---------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Web new          | Gateway new      | JSON writes, body-less writes and raw uploads succeed                                                                                |
-| Web new          | Gateway old      | the same operations succeed (the old Gateway ignores the header)                                                                     |
-| Web old          | Gateway new      | JSON succeeds; body-less writes and raw uploads get `415 request_shape_required`; the old UI is driven and what it shows is recorded |
-| Web old          | Gateway old      | baseline: everything succeeds                                                                                                        |
-| App new, App old | Gateway new, old | the same matrix with the real `PircApi.kt` of each tree                                                                              |
+| Client  | Gateway     | Expected                                                                                                                             |
+| ------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Web new | Gateway new | JSON writes, body-less writes and raw uploads succeed                                                                                |
+| Web new | Gateway old | the same operations succeed (the old Gateway ignores the header)                                                                     |
+| Web old | Gateway new | JSON succeeds; body-less writes and raw uploads get `415 request_shape_required`; the old UI is driven and what it shows is recorded |
+| Web old | Gateway old | baseline: everything succeeds                                                                                                        |
 
 The web cells run the app's own api modules in the test browser (so the requests are the ones the app builds); the
-old-Web cell also drives the project Settings file input, the composer's attach control and an unread chat. The App
-cells compile `dev/pirc/android/core` of each tree to the JVM with the Kotlin compiler and libraries already in the
-local Gradle cache and the Android SDK jar (the recipe of `scripts/prepare-native-first-send.py`), plus the harness
-`jvm/AppCompat.kt`; classes are cached under `target/suites/e2e-jvm/`. No Android source is modified. This is the real
-client code on the JVM, not an APK and not on a device.
+old-Web cell also drives the project Settings file input, the composer's attach control and an unread chat. The old
+Android JVM App cells were retired with the M8 cutover; their harness and instructions remain in the pre-cutover
+commit described in [historical records](../../docs/development/historical-records.md#old-android-client-m8-cutover).

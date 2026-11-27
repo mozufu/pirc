@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { mkdir, readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { requireTestBrowserExecutable } from '../../../android/tool/parity/test_browser.mjs';
+import { requireTestBrowserExecutable } from '../../../../scripts/e2e/test_browser.mjs';
 import { createServer } from 'vite';
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));

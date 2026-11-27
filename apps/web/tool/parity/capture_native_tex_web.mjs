@@ -2,7 +2,7 @@
 // node apps/web/tool/parity/capture_native_tex_web.mjs
 // Uses production markdown.ts + markdown.css and pinned Chrome 154 to capture
 // the shared TeX corpus at UI text scales 1× and 2×. Outputs go to the ignored
-// apps/android/build/parity/native-tex-web directory.
+// apps/web/build/parity/native-tex-web directory.
 import { createRequire } from 'node:module';
 import { execFileSync } from 'node:child_process';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
@@ -47,7 +47,7 @@ const katexCss = (await readFile(katexCssPath, 'utf8')).replaceAll(
   `url(${katexFontDirectory}/`,
 );
 const markdownCss = await readFile(resolve(root, 'apps/web/src/markdown.css'), 'utf8');
-const outputDir = resolve(root, 'apps/android/build/parity/native-tex-web');
+const outputDir = resolve(root, 'apps/web/build/parity/native-tex-web');
 await mkdir(outputDir, { recursive: true });
 
 const browser = await chromium.launch({

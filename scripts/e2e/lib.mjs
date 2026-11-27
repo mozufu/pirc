@@ -636,9 +636,7 @@ export async function startWebApp({ tree = repoRoot, cacheDir }) {
 /** The dedicated test browser (never the everyday Chrome) with a fresh profile. */
 export async function launchTestBrowser(profileDir) {
   const { chromium } = await import('playwright-core');
-  const { requireTestBrowserExecutable } = await import(
-    path.join(repoRoot, 'apps/android/tool/parity/test_browser.mjs')
-  );
+  const { requireTestBrowserExecutable } = await import('./test_browser.mjs');
   const executablePath = requireTestBrowserExecutable();
   const context = await chromium.launchPersistentContext(profileDir, {
     executablePath,
@@ -808,7 +806,6 @@ export function coverage() {
     uncommitted: {
       web: dirty('apps/web'),
       gateway: dirty('crates'),
-      android: dirty('apps/android'),
     },
   };
 }

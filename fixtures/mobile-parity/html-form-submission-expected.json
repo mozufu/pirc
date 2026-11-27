@@ -1,6 +1,7 @@
 {
   "fixture": "html-form-submission-v1",
   "reference": "bd3d90981271e1f93cf3d1d1a5bbf9b61136b74c",
+  "screenshotRoot": "pre-cutover mobile client build/parity (b32b0554; see docs/development/historical-records.md)",
   "browserVersion": "154.0.8037.98",
   "locale": {
     "language": "zh-TW",
@@ -5639,7 +5640,7 @@
   "screenshots": [
     {
       "colorScheme": "light",
-      "file": "<repository>/apps/mobile/build/parity/html-form-submission-validation-light.png",
+      "file": "<repository>/html-form-submission-validation-light.png",
       "focusedId": "required-first",
       "invalidCount": 1,
       "firstInvalidSelector": "#required-first",
@@ -5647,7 +5648,7 @@
     },
     {
       "colorScheme": "dark",
-      "file": "<repository>/apps/mobile/build/parity/html-form-submission-validation-dark.png",
+      "file": "<repository>/html-form-submission-validation-dark.png",
       "focusedId": "required-first",
       "invalidCount": 1,
       "firstInvalidSelector": "#required-first",
@@ -5657,7 +5658,7 @@
   "controlScreenshots": [
     {
       "id": "input-default-submit",
-      "file": "<repository>/apps/mobile/build/parity/html-form-submission-input-default-submit.png",
+      "file": "<repository>/html-form-submission-input-default-submit.png",
       "value": "",
       "valueAttribute": null,
       "rect": {
@@ -5669,7 +5670,7 @@
     },
     {
       "id": "input-default-reset",
-      "file": "<repository>/apps/mobile/build/parity/html-form-submission-input-default-reset.png",
+      "file": "<repository>/html-form-submission-input-default-reset.png",
       "value": "",
       "valueAttribute": null,
       "rect": {

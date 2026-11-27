@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright-core';
-import { requireTestBrowserExecutable } from '../../../android/tool/parity/test_browser.mjs';
+import { requireTestBrowserExecutable } from '../../../../scripts/e2e/test_browser.mjs';
 
 export const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 export const repositoryRoot = path.resolve(webRoot, '../..');

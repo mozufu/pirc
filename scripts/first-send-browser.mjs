@@ -8,7 +8,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { chromium } from 'playwright-core';
 import { runClientRaces, runOfflineRace, runAllocationRecovery } from './first-send-races.mjs';
-import { requireTestBrowserExecutable } from '../apps/android/tool/parity/test_browser.mjs';
+import { requireTestBrowserExecutable } from './e2e/test_browser.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const config = JSON.parse(await readFile(process.argv[2], 'utf8'));

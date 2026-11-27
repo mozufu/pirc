@@ -1,7 +1,11 @@
 {
+  "origin": {
+    "commit": "b32b0554",
+    "note": "pre-cutover Android parity capture; see docs/development/historical-records.md"
+  },
   "browserVersion": "155.0.8059.80",
   "browserExecutable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  "runner": "apps/mobile/tool/parity/verify_document_storage_browser.mjs",
+  "runner": "verify_document_storage_browser.mjs",
   "runnerSha256": "4b86728eac6eafdc7c193bba480da038a50637dd3f03cf1381d83c885e05d243",
   "browserFlags": {
     "hostResolverRules": "MAP localhost 127.0.0.1",

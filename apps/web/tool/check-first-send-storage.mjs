@@ -5,7 +5,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import assert from 'node:assert/strict';
-import { requireTestBrowserExecutable } from '../../android/tool/parity/test_browser.mjs';
+import { requireTestBrowserExecutable } from '../../../scripts/e2e/test_browser.mjs';
 const root = resolve(import.meta.dirname, '../../..');
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright-core');

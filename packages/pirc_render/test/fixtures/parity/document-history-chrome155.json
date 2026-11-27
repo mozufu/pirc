@@ -1,7 +1,11 @@
 {
+  "origin": {
+    "commit": "b32b0554",
+    "note": "pre-cutover Android parity capture; see docs/development/historical-records.md"
+  },
   "browserVersion": "155.0.8059.80",
   "browserExecutable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  "runner": "apps/mobile/tool/parity/verify_document_history_browser.mjs",
+  "runner": "verify_document_history_browser.mjs",
   "runnerSha256": "58a4c3955db45c5f628a922858d1ecee89e918d4b915ead68687eb05cb152ec3",
   "browserFlags": {
     "disableBackForwardCacheFlagPresent": true,

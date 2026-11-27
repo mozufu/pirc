@@ -1,8 +1,12 @@
 {
+  "origin": {
+    "commit": "b32b0554",
+    "note": "pre-cutover Android parity capture; see docs/development/historical-records.md"
+  },
   "browserVersion": "153.0.8010.12",
   "browserProduct": "Playwright chromium-headless-shell dedicated test browser",
   "browserExecutable": "<repository>/.pirc/test-browsers/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell",
-  "runner": "apps/mobile/tool/parity/verify_document_stylesheets_browser.mjs",
+  "runner": "verify_document_stylesheets_browser.mjs",
   "runnerSha256": "9072e8d2d1fe8fad9617d44d9b00f006c7d7d2c2e25b5998835de78ad6e2c088",
   "captureProvenance": {
     "frozenOriginalSixCasesRunnerSha256": "718239561a60c25739bfb51838f90d2c6301114d0397fff92c130efcab263c50",

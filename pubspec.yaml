@@ -5,7 +5,6 @@ publish_to: none
 environment:
   sdk: ^3.12.2
 workspace:
-  - apps/android
   - apps/app
   - packages/pirc_client
   - packages/pirc_render

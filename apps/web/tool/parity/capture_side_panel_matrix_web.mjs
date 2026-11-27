@@ -1,4 +1,4 @@
-import { requireTestBrowserExecutable } from '../../../mobile/tool/parity/test_browser.mjs';
+import { requireTestBrowserExecutable } from '../../../../scripts/e2e/test_browser.mjs';
 import assert from 'node:assert/strict';
 import { createServer } from '../../node_modules/vite/dist/node/index.js';
 import { createRequire } from 'node:module';
@@ -9,7 +9,7 @@ import { resolve } from 'node:path';
 const root = resolve(import.meta.dirname, '../../../..');
 const fixtureDir = resolve(root, 'fixtures/mobile-parity');
 const matrix = JSON.parse(await readFile(resolve(fixtureDir, 'side-panel-matrix.json'), 'utf8'));
-const out = resolve(root, 'apps/android/build/parity/side-panel-matrix-web');
+const out = resolve(root, 'apps/web/build/parity/side-panel-matrix-web');
 const smoke = process.argv.includes('--smoke');
 const port = Number(process.env.PIRC_PARITY_PORT ?? 18924);
 const require = createRequire(resolve(root, 'apps/gateway/package.json'));

@@ -6,10 +6,6 @@ state
 data
 *.sqlite*
 bun.lock
-apps/android/.gradle
-apps/android/.kotlin
-apps/android/build
-apps/android/app/build
 
 # Tool descriptions are prompt text: keep them exactly as written.
 crates/pirc-agent/prompts/**
@@ -26,21 +22,14 @@ crates/pirc-node/src/browser/assets/
 crates/pirc-ptc/src/prelude.js
 
 # Flutter generated output and pinned rendering/oracle sources.
-apps/android/.dart_tool/
-apps/android/android/.gradle/
-apps/android/android/.kotlin/
-apps/android/android/app/build/
-apps/android/assets/
-apps/android/tool/parity/
 # Chromium captures the renderer tests compare against (moved in M8 step 6).
 packages/pirc_render/test/fixtures/parity/
-# The packaged document runtime and Canvas text engine (copies of apps/android/assets).
+# The packaged document runtime and Canvas text engine (pre-cutover Android assets).
 apps/app/android/app/src/main/assets/scripts/
 fixtures/mobile-parity/
 
-# Public upstream model data and generated Flutter translations.
+# Public upstream model data.
 scripts/catalog/providers.json
-apps/android/lib/l10n/catalogs.g.dart
 
 # Design handoff from Claude Design, kept exactly as delivered.
 docs/design/

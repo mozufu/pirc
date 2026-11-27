@@ -1,12 +1,10 @@
 import 'dart:io';
 
-import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// The document runtime and the Canvas text engine are packaged twice until
-/// M8 step 9 deletes the old app: in the old app's Flutter assets and in this
-/// app's Android assets (Kotlin reads them, so Web never ships them). The two
-/// copies must not drift apart.
+/// The document runtime and the Canvas text engine are packaged in the app's
+/// Android assets (Kotlin reads them, so Web never ships them). Their provenance
+/// names the retained pre-cutover source in docs/development/historical-records.md.
 void main() {
   const names = [
     'document-script-runtime.js',
@@ -20,20 +18,10 @@ void main() {
   ];
 
   for (final name in names) {
-    test('$name is the same in both apps', () {
-      final ours = File('android/app/src/main/assets/scripts/$name');
-      final old = File('../android/assets/$name');
-      expect(ours.existsSync(), isTrue, reason: ours.path);
-      expect(old.existsSync(), isTrue, reason: old.path);
-      // Digests, not the bytes: a 7 MB byte list makes a slow and unreadable diff.
-      final ourBytes = ours.readAsBytesSync();
-      final oldBytes = old.readAsBytesSync();
-      expect(ourBytes.length, oldBytes.length, reason: name);
-      expect(
-        sha256.convert(ourBytes).toString(),
-        sha256.convert(oldBytes).toString(),
-        reason: name,
-      );
+    test('$name is packaged and non-empty', () {
+      final file = File('android/app/src/main/assets/scripts/$name');
+      expect(file.existsSync(), isTrue, reason: file.path);
+      expect(file.lengthSync(), greaterThan(0), reason: file.path);
     });
   }
 }

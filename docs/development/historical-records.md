@@ -27,6 +27,57 @@ The retired files are `calendar.md`, `checkpoints.md`, `conversation-binding-mig
 plans index before the reset is `git show 162c113b:plans/README.md`. Their status
 lines and authorization statements are history, not instructions.
 
+## Old Android client (M8 cutover)
+
+The M8 cutover removed the old Flutter Android client (`apps/android`, application
+ID `dev.pirc.mobile.preview`) and its `.github/workflows/android.yml` workflow. The
+last `main` commit containing the old app is `2b30db27`; read it without
+restoring the files:
+
+```sh
+git ls-tree -r --name-only 2b30db27 -- apps/android
+git show 2b30db27:apps/android/README.md
+git show 2b30db27:apps/android/tool/parity/build_document_script_runtime.py
+git show 2b30db27:scripts/prepare-native-first-send.py
+git show 2b30db27:crates/pirc-conformance/tests/conversation_native_client.rs
+```
+
+The packaged document runtime and Canvas text engine in
+`apps/app/android/app/src/main/assets/scripts/` came from that tree. Regeneration
+was verified in a temporary extraction of `b32b0554`, without network access:
+
+```sh
+git archive b32b0554 apps/android | tar -x -C <temporary-directory>
+python3 <temporary-directory>/apps/android/tool/parity/build_document_script_runtime.py \
+  --output-dir <new-output-directory>
+```
+
+It reproduced the committed `document-script-runtime.js` (SHA-256
+`2cd126e8768ea707d2c86b94df35e281d4a58bbbfffcd0fe6cd988798c5b5396`), its license
+and third-party notice, the Canvas text bundle, license and provenance, byte for
+byte. The generator verifies the committed Canvas wasm against its pinned hash
+instead of rewriting it; that hash also matched. The script-runtime provenance
+now names `b32b0554` as its source commit instead of the retired paths, so the
+historical input remains identifiable without implying that the old tree still
+exists.
+
+The parity fixtures in `packages/pirc_render/test/fixtures/parity/` likewise
+record `b32b0554` as their pre-cutover origin and keep generator names as
+basenames. Retrieve the original generators, for example:
+
+```sh
+git show b32b0554:apps/android/tool/parity/capture_document_chart_chromium153.mjs
+git show b32b0554:apps/android/tool/parity/verify_document_origin_browser.mjs
+git show b32b0554:apps/android/tool/parity/vendor/canvas-text-fixture-font/Roboto-Regular.ttf
+```
+
+The old Android JVM first-send helper, the V3 App cells and the native conformance
+test were retired with the same cutover because they compiled Kotlin from the
+deleted client. The Web first-send acceptance and V3 Web cells remain current.
+The old acceptance instructions are available at
+`git show b32b0554:docs/development/first-send-acceptance.md`; marking those
+fixtures removed does not record them as passed.
+
 ## Upgrade notes before pirc 2
 
 `docs/deploy/upgrades.md` was reset for pirc 2, which starts from fresh state. The

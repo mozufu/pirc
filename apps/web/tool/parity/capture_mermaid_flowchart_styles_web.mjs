@@ -1,4 +1,4 @@
-import { requireTestBrowserExecutable } from '../../../mobile/tool/parity/test_browser.mjs';
+import { requireTestBrowserExecutable } from '../../../../scripts/e2e/test_browser.mjs';
 // node apps/web/tool/parity/capture_mermaid_flowchart_styles_web.mjs
 // Captures pinned Markdown-rendered Mermaid flowchart style cases.
 import assert from 'node:assert/strict';
@@ -30,7 +30,7 @@ const mermaidPackage = JSON.parse(
 );
 assert.equal(mermaidPackage.version, fixture.mermaidVersion);
 
-const outputDir = resolve(root, 'apps/android/build/parity/mermaid-flowchart-styles-web');
+const outputDir = resolve(root, 'apps/web/build/parity/mermaid-flowchart-styles-web');
 await mkdir(outputDir, { recursive: true });
 const fixtureSource = JSON.stringify(fixture).replaceAll('<', '\\u003c');
 const server = await createServer({

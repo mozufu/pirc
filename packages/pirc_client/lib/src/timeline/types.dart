@@ -1,7 +1,6 @@
-/// The chat timeline, ported from the web client (`apps/web/src/lib/types.ts`)
-/// through the Android port (`core/timeline/Timeline.kt`). Timestamps are
-/// epoch milliseconds. The shared fixtures in `fixtures/timeline` pin this
-/// port to the web implementation; change them together.
+/// The chat timeline, ported from the web client (`apps/web/src/lib/types.ts`).
+/// Timestamps are epoch milliseconds. The shared fixtures in `fixtures/timeline`
+/// pin this port to the web implementation; change them together.
 library;
 
 import '../known_text.dart';

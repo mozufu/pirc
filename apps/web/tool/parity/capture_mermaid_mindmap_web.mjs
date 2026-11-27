@@ -1,4 +1,4 @@
-import { requireTestBrowserExecutable } from '../../../mobile/tool/parity/test_browser.mjs';
+import { requireTestBrowserExecutable } from '../../../../scripts/e2e/test_browser.mjs';
 // node apps/web/tool/parity/capture_mermaid_mindmap_web.mjs
 // Captures actual pinned Markdown-rendered Mermaid mindmap SVG and COSE positions.
 import assert from 'node:assert/strict';
@@ -30,7 +30,7 @@ const mermaidPackage = JSON.parse(
 );
 assert.equal(mermaidPackage.version, fixture.mermaidVersion);
 
-const outputDir = resolve(root, 'apps/android/build/parity/mermaid-mindmap-web');
+const outputDir = resolve(root, 'apps/web/build/parity/mermaid-mindmap-web');
 await mkdir(outputDir, { recursive: true });
 const server = await createServer({
   cacheDir: resolve(outputDir, 'vite-cache'),

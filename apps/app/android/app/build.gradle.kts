@@ -23,7 +23,8 @@ android {
     }
 
     defaultConfig {
-        // The old app is dev.pirc.mobile.preview; the two install side by side (plans/client.md).
+        // The old app used dev.pirc.mobile.preview and can remain installed beside
+        // this one until removed (plans/client.md).
         applicationId = "org.mozufu.pirc"
         minSdk = 29
         targetSdk = flutter.targetSdkVersion

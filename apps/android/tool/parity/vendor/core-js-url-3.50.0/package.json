@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "core-js-pure": "3.50.0",
-    "esbuild": "0.28.2"
-  }
-}

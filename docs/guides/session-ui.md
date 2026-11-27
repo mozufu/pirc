@@ -2,7 +2,7 @@
 
 [User guides](README.md) · [All documentation](../README.md)
 
-Shared web/Android behavior from the completed UI redesign of 2026-09-29, implemented in `4ce2c40`, `4a3e46f` and `ea76001`. The original design source was `遠端助手UI設計改進.zip` (`pirc Redesign.dc.html`, options 2a–2d); mock screenshots were local `.pirc/tmp/ui/` artifacts, not product requirements. See also the [Android client](../../apps/android/README.md).
+Shared web/Android behavior from the completed UI redesign of 2026-09-29, implemented in `4ce2c40`, `4a3e46f` and `ea76001`. The original design source was `遠端助手UI設計改進.zip` (`pirc Redesign.dc.html`, options 2a–2d); mock screenshots were local `.pirc/tmp/ui/` artifacts, not product requirements.
 
 ## Chat, Work, and Needs you
 

@@ -1,4 +1,4 @@
-# Raw capture outputs: regenerate with apps/android/tool/parity capture tools.
+# Raw capture outputs: regenerate with the parity capture tools.
 # Regression tests use the committed compact expectations.
 /app-document-overlays-expected.json
 /app-document-route-actions-expected.json

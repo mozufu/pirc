@@ -1,4 +1,4 @@
-import { requireTestBrowserExecutable } from '../../../mobile/tool/parity/test_browser.mjs';
+import { requireTestBrowserExecutable } from '../../../../scripts/e2e/test_browser.mjs';
 // Bounded Chrome probe of the actual Markdown -> Mermaid unified mindmap path.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -63,7 +63,7 @@ const cases = [
   },
 ];
 
-const outputDir = resolve(root, 'apps/android/build/parity/mindmap-unified-web-probe');
+const outputDir = resolve(root, 'apps/web/build/parity/mindmap-unified-web-probe');
 await mkdir(outputDir, { recursive: true });
 const server = await createServer({
   cacheDir: resolve(outputDir, 'vite-cache'),

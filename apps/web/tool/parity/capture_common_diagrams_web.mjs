@@ -1,4 +1,4 @@
-import { requireTestBrowserExecutable } from '../../../mobile/tool/parity/test_browser.mjs';
+import { requireTestBrowserExecutable } from '../../../../scripts/e2e/test_browser.mjs';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { readFile, mkdir, writeFile, realpath } from 'node:fs/promises';
@@ -20,7 +20,7 @@ const cases = {
   sankey: sankey.cases[0].source,
   block: block.cases[2].source,
 };
-const output = resolve(root, 'apps/android/build/parity/common-diagrams-web');
+const output = resolve(root, 'apps/web/build/parity/common-diagrams-web');
 await mkdir(output, { recursive: true });
 const pkg = JSON.parse(
   await readFile(resolve(root, 'apps/web/node_modules/mermaid/package.json'), 'utf8'),

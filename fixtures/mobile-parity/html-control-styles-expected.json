@@ -1,6 +1,7 @@
 {
   "fixture": "html-control-styles-v1",
   "reference": "bd3d90981271e1f93cf3d1d1a5bbf9b61136b74c",
+  "screenshotRoot": "pre-cutover mobile client build/parity (b32b0554; see docs/development/historical-records.md)",
   "browserVersion": "154.0.8037.98",
   "locale": {
     "language": "zh-TW",
@@ -2685,7 +2686,7 @@
           "kind": "form-submit"
         }
       ],
-      "screenshot": "apps/mobile/build/parity/html-control-styles-light-390.png"
+      "screenshot": "html-control-styles-light-390.png"
     },
     {
       "width": 390,
@@ -5357,7 +5358,7 @@
           "kind": "form-submit"
         }
       ],
-      "screenshot": "apps/mobile/build/parity/html-control-styles-dark-390.png"
+      "screenshot": "html-control-styles-dark-390.png"
     },
     {
       "width": 768,
@@ -8029,7 +8030,7 @@
           "kind": "form-submit"
         }
       ],
-      "screenshot": "apps/mobile/build/parity/html-control-styles-light-768.png"
+      "screenshot": "html-control-styles-light-768.png"
     },
     {
       "width": 768,
@@ -10701,7 +10702,7 @@
           "kind": "form-submit"
         }
       ],
-      "screenshot": "apps/mobile/build/parity/html-control-styles-dark-768.png"
+      "screenshot": "html-control-styles-dark-768.png"
     }
   ],
   "serverResponses": [

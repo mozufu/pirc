@@ -19,7 +19,7 @@ Vite proxies `/api` and WebSocket upgrades to `http://localhost:8787` in develop
 ## Runtime behavior
 
 - Fetch requests include forward-auth cookies with `credentials: include`.
-- Session snapshots are reduced with sequenced WebSocket events; reset or epoch mismatch requests a fresh snapshot. The reduction is shared with the Android client through the golden cases in [`fixtures/timeline`](../../fixtures/timeline/README.md).
+- Session snapshots are reduced with sequenced WebSocket events; reset or epoch mismatch requests a fresh snapshot. The reduction is shared with the other clients through the golden cases in [`fixtures/timeline`](../../fixtures/timeline/README.md).
 - Drafts are stored per session in local storage. Offline drafts are **never** automatically submitted after reconnecting.
 - Only hashed Vite assets below `/assets/` are cached by the hand-written service worker. HTML, API responses, conversations, uploads, and credentials are never cached.
 - A waiting service worker shows an update prompt and does not force a page reload. Every build stamps its own identifier into `sw.js` (`sw-build-id.ts`), so a release is noticed by pages that are already open.

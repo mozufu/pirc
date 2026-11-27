@@ -1,9 +1,13 @@
 {
+  "origin": {
+    "commit": "b32b0554",
+    "note": "pre-cutover Android parity capture; see docs/development/historical-records.md"
+  },
   "browserVersion": "153.0.8010.12",
   "browserExecutable": "chrome-headless-shell",
   "generatedAt": "2026-10-17T07:41:24.506Z",
   "oracle": "Dedicated Chromium 153 headless shell; all navigations and download responses served on two 127.0.0.1 loopback origins; non-local browser requests are blocked.",
-  "runner": "apps/android/tool/parity/verify_document_referrer_navigation_browser.mjs",
+  "runner": "verify_document_referrer_navigation_browser.mjs",
   "runnerSha256": "19f5b6b641a93d5e944c137a552ed059830efc2408c15c81e99b7108bb8fc9e8",
   "origins": {
     "sameOrigin": "http://127.0.0.1:51335",

@@ -10,9 +10,6 @@
  *               driven in the page, so the requests are the ones the app
  *               builds. Old-Web x new-Gateway also drives the real UI and
  *               records what the user sees.
- *  App cells  - the REAL PircApi.kt of each tree, compiled to JVM (no APK, no
- *               emulator) with the harness scripts/e2e/jvm/AppCompat.kt and run
- *               against the real binaries. Not an APK; not on a device.
  *
  * Expected: a JSON body works everywhere; a body-less write or a raw upload
  * from an OLD client is refused by the NEW Gateway (415 request_shape_required);
@@ -40,7 +37,6 @@ import {
   git,
   encode,
 } from './lib.mjs';
-import { buildAppClient, runAppClient } from './jvm.mjs';
 
 const OLD_COMMIT = '645b262f';
 const OLD_TARGET = path.join(repoRoot, 'target/suites/compat-645b262f');
@@ -275,43 +271,6 @@ async function oldUiProbe({ page, adapter, f }) {
   return shots;
 }
 
-async function appCells({ newGw, oldGw, oldTree, llm }) {
-  const clients = {
-    new: buildAppClient(repoRoot, 'new'),
-    old: buildAppClient(oldTree, 'old'),
-  };
-  console.log(`App clients compiled: new ${clients.new.key}, old ${clients.old.key}`);
-  for (const [clientName, gatewayName] of [
-    ['new', 'new'],
-    ['new', 'old'],
-    ['old', 'new'],
-    ['old', 'old'],
-  ]) {
-    const root = makeTempDir('v3a');
-    let f;
-    try {
-      f = await fixture({ bins: gatewayName === 'new' ? newGw : oldGw, llm, root });
-      const ops = runAppClient(clients[clientName], [
-        f.stack.base,
-        f.token,
-        f.session,
-        f.project.id,
-        f.memory.pendingB,
-        'chat:chats',
-      ]);
-      judge(
-        `App(${clientName}) x Gateway(${gatewayName})`,
-        ops,
-        clientName === 'old',
-        gatewayName === 'old',
-      );
-    } finally {
-      await f?.stack.stop().catch(() => {});
-      removeDir(root);
-    }
-  }
-}
-
 async function main() {
   const info = coverage();
   console.log(
@@ -327,7 +286,7 @@ async function main() {
   const llm = await new FakeLlm().start();
   const old = ensureOldTree();
   try {
-    const only = (process.env.PIRC_E2E_V3_ONLY || 'web,app').split(',');
+    const only = (process.env.PIRC_E2E_V3_ONLY || 'web').split(',');
     if (only.includes('web')) {
       const common = { llm };
       const v = await webCell({
@@ -369,8 +328,6 @@ async function main() {
         gatewayIsOld: true,
       });
     }
-    if (only.includes('app'))
-      await appCells({ newGw: newBins, oldGw: old.bins, oldTree: old.dir, llm });
   } finally {
     await llm.stop().catch(() => {});
     await stopAllProcesses();

@@ -1,11 +1,15 @@
 {
+  "origin": {
+    "commit": "b32b0554",
+    "note": "pre-cutover Android parity capture; see docs/development/historical-records.md"
+  },
   "browserVersion": "155.0.8059.40",
   "browserExecutable": "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
   "checkedAt": "2026-10-16T02:30:23.649Z",
   "oracle": "Local Google Chrome over a loopback-only page served from 127.0.0.1",
-  "fixture": "apps/mobile/integration_test/document_focus_fixture.dart#documentFocusFixture",
+  "fixture": "document_focus_fixture.dart#documentFocusFixture",
   "fixtureSha256": "2a40f988f2e6f9449c0e0d269d33b48efad18d5be01603ba09d4ca49126363e8",
-  "runner": "apps/mobile/tool/parity/verify_document_focus_browser.mjs",
+  "runner": "verify_document_focus_browser.mjs",
   "runnerSha256": "34db006bf620fc61f5b6f6ad6f102138a523272943e59c9364899e843b7f66f1",
   "loopbackOrigin": "http://127.0.0.1:49324",
   "invocation": "A visible per-case button is clicked after page.evaluate records initial focus. Its mousedown default is canceled so the trigger does not change activeElement.",

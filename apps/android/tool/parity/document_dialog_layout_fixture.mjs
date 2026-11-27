@@ -1,6 +1,0 @@
-export const dialogLayoutHTML = `<!doctype html><html><head><style>
-html{color-scheme:light dark}body{margin:0;font:16px/24px Arial;background:#708090}
-#open,#close,#tint{display:block;box-sizing:border-box;width:80px;height:32px;margin:0;padding:0;border:0;font:inherit}
-#before{height:24px}#after{height:20px}#content{width:120px;height:40px;background:#204060}
-</style></head><body><button id="open" onclick="document.getElementById('dialog').show()">Open</button><div id="before"></div><dialog id="dialog"><div id="content">Panel</div></dialog><div id="after"></div><button id="close" onclick="document.getElementById('dialog').close()">Close</button><button id="tint" onclick="document.getElementById('dialog').style.color='red'">Tint</button></body></html>`;
-export const readDialogLayout = `(()=>{const d=document.getElementById('dialog'),s=getComputedStyle(d),r=d.getBoundingClientRect();return {open:d.open,rect:d.open?[r.x,r.y,r.width,r.height]:null,after:[document.getElementById('after').getBoundingClientRect().y,document.getElementById('close').getBoundingClientRect().y],css:Object.fromEntries(['display','position','left','right','top','bottom','padding-top','border-top-width','border-top-style','border-top-color','color','background-color','box-sizing'].map(k=>[k,s.getPropertyValue(k)]))}})()`;
