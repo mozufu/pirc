@@ -279,6 +279,7 @@ async fn authenticates_projects_requests_and_keeps_replay_metadata() {
     );
 }
 
+/// A stop before any text keeps the reply empty, as before.
 #[tokio::test]
 async fn abort_gives_the_request_up() {
     let server = serve(|_| {
@@ -321,6 +322,110 @@ async fn abort_gives_the_request_up() {
         .await
         .unwrap();
     assert_eq!(server.seen.lock().unwrap().len(), 1);
+}
+
+/// A stop after text keeps exactly what was already delivered, without an
+/// open tool call.
+#[tokio::test]
+async fn abort_keeps_the_text_already_streamed() {
+    let server = serve(|_| {
+        chunked(
+            &[
+                br#"{"type":"model_delta","delta":{"type":"text_start","contentIndex":0}}"#,
+                b"\n",
+                br#"{"type":"model_delta","delta":{"type":"text_delta","contentIndex":0,"delta":"hello "}}"#,
+                b"\n",
+                br#"{"type":"model_delta","delta":{"type":"text_delta","contentIndex":0,"delta":"world"}}"#,
+                b"\n",
+            ],
+            true,
+        )
+    })
+    .await;
+    let controller = AbortController::new();
+    let signal = controller.signal();
+    let remote = RemoteStream {
+        config: server.config.clone(),
+    };
+    let mut deltas = Vec::new();
+    let mut on_delta = |delta: &AssistantDelta| {
+        deltas.push(
+            serde_json::to_value(delta).unwrap()["type"]
+                .as_str()
+                .unwrap()
+                .to_owned(),
+        );
+        // The user stops as the second text piece arrives.
+        if matches!(delta, AssistantDelta::TextDelta { delta, .. } if delta == "world") {
+            controller.abort();
+        }
+    };
+    let message = remote.stream(request(signal), &mut on_delta).await;
+    assert_eq!(deltas, ["text_start", "text_delta", "text_delta"]);
+    assert_eq!(message.stop_reason, StopReason::Aborted);
+    assert_eq!(
+        message.content,
+        [AssistantContent::Text {
+            text: "hello world".to_owned(),
+            text_signature: None,
+        }]
+    );
+    assert_eq!(
+        message.error_message.as_deref(),
+        Some("Inference request cancelled")
+    );
+    assert!(message.completed_at.is_some());
+    // The node sees the connection close (and cancels upstream).
+    tokio::time::timeout(std::time::Duration::from_secs(5), server.closed.notified())
+        .await
+        .unwrap();
+}
+
+/// Text and thinking survive a stop; an incomplete tool call does not.
+#[test]
+fn a_stopped_reply_keeps_only_complete_visible_content() {
+    let mut streamed = StreamedContent::default();
+    for delta in [
+        AssistantDelta::TextStart { content_index: 0 },
+        AssistantDelta::TextDelta {
+            content_index: 0,
+            delta: "hel".to_owned(),
+        },
+        AssistantDelta::TextDelta {
+            content_index: 0,
+            delta: "lo".to_owned(),
+        },
+        AssistantDelta::ThinkingStart { content_index: 1 },
+        AssistantDelta::ThinkingDelta {
+            content_index: 1,
+            delta: "why".to_owned(),
+        },
+        AssistantDelta::ToolcallStart {
+            content_index: 2,
+            id: "call-1".to_owned(),
+            tool_name: "write".to_owned(),
+        },
+        AssistantDelta::ToolcallDelta {
+            content_index: 2,
+            delta: "{\"path\":".to_owned(),
+        },
+    ] {
+        streamed.apply(&delta);
+    }
+    assert_eq!(
+        streamed.into_content(),
+        [
+            AssistantContent::Text {
+                text: "hello".to_owned(),
+                text_signature: None,
+            },
+            AssistantContent::Thinking {
+                thinking: "why".to_owned(),
+                signature: None,
+                redacted: None,
+            },
+        ]
+    );
 }
 
 #[tokio::test]

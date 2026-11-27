@@ -515,7 +515,7 @@ expression: t.into_value()
         "role": "user"
       },
       {
-        "content": "[Your previous response was interrupted by the user before it produced any text.]",
+        "content": "[Your previous response was interrupted by the user.] Partial output:\n\nFirst a",
         "role": "user"
       },
       {
@@ -557,7 +557,12 @@ expression: t.into_value()
         {
           "api": "openai-completions",
           "completedAt": "<epoch-ms>",
-          "content": [],
+          "content": [
+            {
+              "text": "First a",
+              "type": "text"
+            }
+          ],
           "entryId": "<entry:2>",
           "errorMessage": "Inference request cancelled",
           "model": "fake-model",
@@ -574,7 +579,7 @@ expression: t.into_value()
           }
         },
         {
-          "content": "[Your previous response was interrupted by the user before it produced any text.]",
+          "content": "[Your previous response was interrupted by the user.] Partial output:\n\nFirst a",
           "customType": "interrupted",
           "display": false,
           "entryId": "<entry:3>",
@@ -720,7 +725,12 @@ expression: t.into_value()
         {
           "api": "openai-completions",
           "completedAt": "<epoch-ms>",
-          "content": [],
+          "content": [
+            {
+              "text": "First a",
+              "type": "text"
+            }
+          ],
           "entryId": "<entry:2>",
           "errorMessage": "Inference request cancelled",
           "model": "fake-model",
@@ -737,7 +747,7 @@ expression: t.into_value()
           }
         },
         {
-          "content": "[Your previous response was interrupted by the user before it produced any text.]",
+          "content": "[Your previous response was interrupted by the user.] Partial output:\n\nFirst a",
           "customType": "interrupted",
           "display": false,
           "entryId": "<entry:3>",
@@ -773,7 +783,12 @@ expression: t.into_value()
         {
           "api": "openai-completions",
           "completedAt": "<epoch-ms>",
-          "content": [],
+          "content": [
+            {
+              "text": "Second ",
+              "type": "text"
+            }
+          ],
           "entryId": "<entry:6>",
           "errorMessage": "Inference request cancelled",
           "model": "fake-model",
@@ -966,7 +981,7 @@ expression: t.into_value()
           "role": "user"
         },
         {
-          "content": "[Your previous response was interrupted by the user before it produced any text.]",
+          "content": "[Your previous response was interrupted by the user.] Partial output:\n\nFirst a",
           "role": "user"
         },
         {
@@ -988,7 +1003,7 @@ expression: t.into_value()
           "role": "user"
         },
         {
-          "content": "[Your previous response was interrupted by the user before it produced any text.]",
+          "content": "[Your previous response was interrupted by the user.] Partial output:\n\nFirst a",
           "role": "user"
         },
         {
@@ -1018,7 +1033,7 @@ expression: t.into_value()
           "role": "user"
         },
         {
-          "content": "[Your previous response was interrupted by the user before it produced any text.]",
+          "content": "[Your previous response was interrupted by the user.] Partial output:\n\nFirst a",
           "role": "user"
         },
         {
@@ -1377,7 +1392,12 @@ expression: t.into_value()
         {
           "api": "openai-completions",
           "completedAt": "<epoch-ms>",
-          "content": [],
+          "content": [
+            {
+              "text": "First a",
+              "type": "text"
+            }
+          ],
           "entryId": "<entry:2>",
           "errorMessage": "Inference request cancelled",
           "model": "fake-model",
@@ -1394,7 +1414,7 @@ expression: t.into_value()
           }
         },
         {
-          "content": "[Your previous response was interrupted by the user before it produced any text.]",
+          "content": "[Your previous response was interrupted by the user.] Partial output:\n\nFirst a",
           "customType": "interrupted",
           "display": false,
           "entryId": "<entry:3>",
@@ -1430,7 +1450,12 @@ expression: t.into_value()
         {
           "api": "openai-completions",
           "completedAt": "<epoch-ms>",
-          "content": [],
+          "content": [
+            {
+              "text": "Second ",
+              "type": "text"
+            }
+          ],
           "entryId": "<entry:6>",
           "errorMessage": "Inference request cancelled",
           "model": "fake-model",
@@ -1655,7 +1680,7 @@ expression: t.into_value()
         "role": "user"
       },
       {
-        "content": "[Your previous response was interrupted by the user before it produced any text.]",
+        "content": "[Your previous response was interrupted by the user.] Partial output:\n\nFirst a",
         "role": "user"
       },
       {
@@ -1730,7 +1755,12 @@ expression: t.into_value()
           {
             "api": "openai-completions",
             "completedAt": "<epoch-ms>",
-            "content": [],
+            "content": [
+              {
+                "text": "First a",
+                "type": "text"
+              }
+            ],
             "entryId": "<entry:2>",
             "errorMessage": "Inference request cancelled",
             "model": "fake-model",
@@ -1747,7 +1777,7 @@ expression: t.into_value()
             }
           },
           {
-            "content": "[Your previous response was interrupted by the user before it produced any text.]",
+            "content": "[Your previous response was interrupted by the user.] Partial output:\n\nFirst a",
             "customType": "interrupted",
             "display": false,
             "entryId": "<entry:3>",
@@ -1783,7 +1813,12 @@ expression: t.into_value()
           {
             "api": "openai-completions",
             "completedAt": "<epoch-ms>",
-            "content": [],
+            "content": [
+              {
+                "text": "Second ",
+                "type": "text"
+              }
+            ],
             "entryId": "<entry:6>",
             "errorMessage": "Inference request cancelled",
             "model": "fake-model",

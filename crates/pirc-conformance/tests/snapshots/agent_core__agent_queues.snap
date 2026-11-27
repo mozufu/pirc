@@ -1102,7 +1102,12 @@ expression: r.into_value()
         "message": {
           "api": "openai-completions",
           "completedAt": "<epoch-ms>",
-          "content": [],
+          "content": [
+            {
+              "text": "Thinking about",
+              "type": "text"
+            }
+          ],
           "errorMessage": "Inference request cancelled",
           "model": "fake-model",
           "provider": "fake",
@@ -1135,7 +1140,7 @@ expression: r.into_value()
       },
       {
         "message": {
-          "content": "[Your previous response was interrupted by the user before it produced any text.]",
+          "content": "[Your previous response was interrupted by the user.] Partial output:\n\nThinking about",
           "customType": "interrupted",
           "display": false,
           "role": "custom",
@@ -1145,7 +1150,7 @@ expression: r.into_value()
       },
       {
         "message": {
-          "content": "[Your previous response was interrupted by the user before it produced any text.]",
+          "content": "[Your previous response was interrupted by the user.] Partial output:\n\nThinking about",
           "customType": "interrupted",
           "display": false,
           "role": "custom",
@@ -1697,7 +1702,12 @@ expression: r.into_value()
           {
             "api": "openai-completions",
             "completedAt": "<epoch-ms>",
-            "content": [],
+            "content": [
+              {
+                "text": "Thinking about",
+                "type": "text"
+              }
+            ],
             "errorMessage": "Inference request cancelled",
             "model": "fake-model",
             "provider": "fake",
@@ -1713,7 +1723,7 @@ expression: r.into_value()
             }
           },
           {
-            "content": "[Your previous response was interrupted by the user before it produced any text.]",
+            "content": "[Your previous response was interrupted by the user.] Partial output:\n\nThinking about",
             "customType": "interrupted",
             "display": false,
             "role": "custom",
@@ -1803,7 +1813,12 @@ expression: r.into_value()
         "message": {
           "api": "openai-completions",
           "completedAt": "<epoch-ms>",
-          "content": [],
+          "content": [
+            {
+              "text": "Partial",
+              "type": "text"
+            }
+          ],
           "errorMessage": "Inference request cancelled",
           "model": "fake-model",
           "provider": "fake",
@@ -1996,7 +2011,12 @@ expression: r.into_value()
           {
             "api": "openai-completions",
             "completedAt": "<epoch-ms>",
-            "content": [],
+            "content": [
+              {
+                "text": "Thinking about",
+                "type": "text"
+              }
+            ],
             "errorMessage": "Inference request cancelled",
             "model": "fake-model",
             "provider": "fake",
@@ -2012,7 +2032,7 @@ expression: r.into_value()
             }
           },
           {
-            "content": "[Your previous response was interrupted by the user before it produced any text.]",
+            "content": "[Your previous response was interrupted by the user.] Partial output:\n\nThinking about",
             "customType": "interrupted",
             "display": false,
             "role": "custom",
@@ -2342,7 +2362,12 @@ expression: r.into_value()
           {
             "api": "openai-completions",
             "completedAt": "<epoch-ms>",
-            "content": [],
+            "content": [
+              {
+                "text": "Thinking about",
+                "type": "text"
+              }
+            ],
             "errorMessage": "Inference request cancelled",
             "model": "fake-model",
             "provider": "fake",
@@ -2358,7 +2383,7 @@ expression: r.into_value()
             }
           },
           {
-            "content": "[Your previous response was interrupted by the user before it produced any text.]",
+            "content": "[Your previous response was interrupted by the user.] Partial output:\n\nThinking about",
             "customType": "interrupted",
             "display": false,
             "role": "custom",
@@ -2399,7 +2424,12 @@ expression: r.into_value()
           {
             "api": "openai-completions",
             "completedAt": "<epoch-ms>",
-            "content": [],
+            "content": [
+              {
+                "text": "Partial",
+                "type": "text"
+              }
+            ],
             "errorMessage": "Inference request cancelled",
             "model": "fake-model",
             "provider": "fake",
@@ -2656,7 +2686,12 @@ expression: r.into_value()
         "message": {
           "api": "openai-completions",
           "completedAt": "<epoch-ms>",
-          "content": [],
+          "content": [
+            {
+              "text": "Thinking about",
+              "type": "text"
+            }
+          ],
           "errorMessage": "Inference request cancelled",
           "model": "fake-model",
           "provider": "fake",
@@ -2678,7 +2713,7 @@ expression: r.into_value()
       {
         "id": "<entry:13>",
         "message": {
-          "content": "[Your previous response was interrupted by the user before it produced any text.]",
+          "content": "[Your previous response was interrupted by the user.] Partial output:\n\nThinking about",
           "customType": "interrupted",
           "display": false,
           "role": "custom",
@@ -2743,7 +2778,12 @@ expression: r.into_value()
         "message": {
           "api": "openai-completions",
           "completedAt": "<epoch-ms>",
-          "content": [],
+          "content": [
+            {
+              "text": "Partial",
+              "type": "text"
+            }
+          ],
           "errorMessage": "Inference request cancelled",
           "model": "fake-model",
           "provider": "fake",

@@ -9,6 +9,7 @@
 
 mod http;
 
+use std::collections::BTreeMap;
 use std::time::Duration;
 
 use pirc_protocol::{
@@ -214,6 +215,87 @@ enum Failure {
     Broken,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum StreamedKind {
+    Text,
+    Thinking,
+}
+
+/// The visible content a stream delivered, for a reply that stops early.
+/// Like the local adapters' abort, it keeps only complete text and thinking
+/// blocks: a tool call's arguments stream as unparsed JSON, so an unfinished
+/// call is never part of a stopped reply. The stream's byte limit bounds it.
+#[derive(Default)]
+struct StreamedContent {
+    blocks: BTreeMap<u32, (StreamedKind, String)>,
+}
+
+impl StreamedContent {
+    fn set(&mut self, index: u32, kind: StreamedKind, content: &str) {
+        self.blocks.insert(index, (kind, content.to_owned()));
+    }
+
+    fn append(&mut self, index: u32, kind: StreamedKind, delta: &str) {
+        match self.blocks.get_mut(&index) {
+            Some((current, content)) if *current == kind => content.push_str(delta),
+            _ => self.set(index, kind, delta),
+        }
+    }
+
+    fn apply(&mut self, delta: &AssistantDelta) {
+        match delta {
+            AssistantDelta::TextStart { content_index } => {
+                self.set(*content_index, StreamedKind::Text, "");
+            }
+            AssistantDelta::TextDelta {
+                content_index,
+                delta,
+            } => self.append(*content_index, StreamedKind::Text, delta),
+            AssistantDelta::TextEnd {
+                content_index,
+                content,
+            } => self.set(*content_index, StreamedKind::Text, content),
+            AssistantDelta::ThinkingStart { content_index } => {
+                self.set(*content_index, StreamedKind::Thinking, "");
+            }
+            AssistantDelta::ThinkingDelta {
+                content_index,
+                delta,
+            } => self.append(*content_index, StreamedKind::Thinking, delta),
+            AssistantDelta::ThinkingEnd {
+                content_index,
+                content,
+            } => self.set(*content_index, StreamedKind::Thinking, content),
+            // A tool call is kept only in the final `model_end` message.
+            AssistantDelta::ToolcallStart { .. }
+            | AssistantDelta::ToolcallDelta { .. }
+            | AssistantDelta::ToolcallEnd { .. } => {}
+        }
+    }
+
+    fn into_content(self) -> Vec<AssistantContent> {
+        self.blocks
+            .into_values()
+            .filter_map(|(kind, content)| {
+                if content.is_empty() {
+                    return None;
+                }
+                Some(match kind {
+                    StreamedKind::Text => AssistantContent::Text {
+                        text: content,
+                        text_signature: None,
+                    },
+                    StreamedKind::Thinking => AssistantContent::Thinking {
+                        thinking: content,
+                        signature: None,
+                        redacted: None,
+                    },
+                })
+            })
+            .collect()
+    }
+}
+
 /// The request's stream: deltas as they come, then the final message.
 async fn run(
     config: &InferenceConfig,
@@ -301,9 +383,10 @@ impl StreamFn for RemoteStream {
                 response_model: None,
             };
             let signal = request.signal.clone();
-            let failure = |code: InferenceErrorCode| {
+            let failure = |code: InferenceErrorCode, content: Vec<AssistantContent>| {
                 let aborted = signal.aborted();
                 AssistantMessage {
+                    content: if aborted { content } else { Vec::new() },
                     stop_reason: if aborted {
                         StopReason::Aborted
                     } else {
@@ -323,21 +406,40 @@ impl StreamFn for RemoteStream {
             };
             let deadline = tokio::time::sleep(Duration::from_millis(INFERENCE_TIMEOUT_MS));
             let Ok(body) = serde_json::to_vec(&inference_request(&request)) else {
-                return failure(InferenceErrorCode::Unavailable);
+                return failure(InferenceErrorCode::Unavailable, Vec::new());
             };
             if body.len() > INFERENCE_REQUEST_MAX_BYTES {
-                return failure(InferenceErrorCode::LimitExceeded);
+                return failure(InferenceErrorCode::LimitExceeded, Vec::new());
             }
+            let mut streamed = StreamedContent::default();
+            let mut forward = |delta: &AssistantDelta| {
+                if signal.aborted() {
+                    return;
+                }
+                streamed.apply(delta);
+                on_delta(delta);
+            };
             let outcome = tokio::select! {
                 biased;
                 () = signal.cancelled() => Err(Failure::Code(InferenceErrorCode::Cancelled)),
                 () = deadline => Err(Failure::Code(InferenceErrorCode::Timeout)),
-                outcome = run(&self.config, body, on_delta) => outcome,
+                outcome = run(&self.config, body, &mut forward) => outcome,
             };
             match outcome {
                 Ok(message) => message,
-                Err(Failure::Code(code)) => failure(code),
-                Err(Failure::Broken) => failure(InferenceErrorCode::Unavailable),
+                Err(failed) => {
+                    // Only a stop keeps what was delivered; provider errors
+                    // stay content-free and retry as before.
+                    let content = if signal.aborted() {
+                        streamed.into_content()
+                    } else {
+                        Vec::new()
+                    };
+                    match failed {
+                        Failure::Code(code) => failure(code, content),
+                        Failure::Broken => failure(InferenceErrorCode::Unavailable, content),
+                    }
+                }
             }
         })
     }

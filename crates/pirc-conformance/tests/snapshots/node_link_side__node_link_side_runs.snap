@@ -408,7 +408,12 @@ expression: t.into_value()
     "observed": {
       "api": "openai-completions",
       "completedAt": "<epoch-ms>",
-      "content": [],
+      "content": [
+        {
+          "text": "Partial",
+          "type": "text"
+        }
+      ],
       "errorMessage": "Inference request cancelled",
       "model": "fake-model",
       "provider": "fake",

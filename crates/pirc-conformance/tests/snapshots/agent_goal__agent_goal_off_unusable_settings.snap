@@ -1,6 +1,5 @@
 ---
 source: crates/pirc-conformance/tests/agent_goal.rs
-assertion_line: 328
 expression: r.into_value()
 ---
 [
@@ -713,7 +712,12 @@ expression: r.into_value()
         "message": {
           "api": "openai-completions",
           "completedAt": "<epoch-ms>",
-          "content": [],
+          "content": [
+            {
+              "text": "Working",
+              "type": "text"
+            }
+          ],
           "errorMessage": "Inference request cancelled",
           "model": "fake-model",
           "provider": "fake",
@@ -926,7 +930,12 @@ expression: r.into_value()
         "message": {
           "api": "openai-completions",
           "completedAt": "<epoch-ms>",
-          "content": [],
+          "content": [
+            {
+              "text": "Working",
+              "type": "text"
+            }
+          ],
           "errorMessage": "Inference request cancelled",
           "model": "fake-model",
           "provider": "fake",

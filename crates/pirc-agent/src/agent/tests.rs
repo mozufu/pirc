@@ -688,6 +688,57 @@ async fn run_prompt(agent: &Rc<Agent>, text: &str) {
     assert!(agent.run_loop.borrow().is_none());
 }
 
+/// A stopped reply's text reaches both `message_end` and the session, so a
+/// reload shows it beside the stopped marker.
+#[tokio::test]
+async fn a_stopped_reply_keeps_its_text_when_emitted_and_stored() {
+    let dir = tempfile::tempdir().unwrap();
+    let config = crate::tools::testing::config(&dir.path().display().to_string(), json!({}));
+    let workspace = config.workspace.clone();
+    let run = ScriptedRun::new(vec![(
+        vec![reply_text("Partial answer")],
+        StopReason::Aborted,
+    )]);
+    let events = Rc::new(RefCell::new(Vec::new()));
+    let recorded = events.clone();
+    let emit: crate::rpc::Write = Rc::new(move |event| recorded.borrow_mut().push(event));
+    tokio::task::LocalSet::new()
+        .run_until(async {
+            let agent = run.agent_with_emitter(dir.path(), config, Some(emit));
+            run_prompt(&agent, "Stop this").await;
+
+            let end = events
+                .borrow()
+                .iter()
+                .find(|event| {
+                    event["type"] == "message_end" && event["message"]["role"] == "assistant"
+                })
+                .cloned()
+                .expect("the assistant's message_end");
+            assert_eq!(end["message"]["stopReason"], "aborted", "{end}");
+            assert_eq!(
+                end["message"]["content"],
+                json!([{ "type": "text", "text": "Partial answer" }])
+            );
+            drop(agent);
+        })
+        .await;
+
+    // A new store over the same file reads the text back.
+    let store = SessionStore::open(dir.path().join("session"), &workspace).unwrap();
+    let stored = store
+        .branch()
+        .into_iter()
+        .filter_map(|entry| entry.message().cloned())
+        .find_map(|message| match message {
+            Message::Assistant(message) => Some(message),
+            _ => None,
+        })
+        .expect("the aborted assistant message");
+    assert_eq!(stored.stop_reason, StopReason::Aborted);
+    assert_eq!(stored.content, [reply_text("Partial answer")]);
+}
+
 /// A `bash` that runs nothing: it records each command it was given, with
 /// the agent loop's waits at that point.
 #[derive(Default)]
