@@ -484,6 +484,29 @@ void main() {
       );
     });
 
+    appTest('pairing again starts from Pair, not Paired', (tester) async {
+      final container = await pumpApp(
+        tester,
+        gateway: FakeGateway(),
+        saved: Saved.unpaired(),
+      );
+      await tester.enterText(
+        find.byKey(const Key('pairing-link')),
+        'pirc://pair?url=https%3A%2F%2Fgateway.test&token=new-token',
+      );
+      await tester.tap(find.text('Pair'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('pairing-submit')), findsNothing);
+      await container.read(connectionProvider.notifier).unpair();
+      await tester.pumpAndSettle();
+      final submit = find.byKey(const Key('pairing-submit'));
+      expect(
+        find.descendant(of: submit, matching: find.text('Pair')),
+        findsOneWidget,
+      );
+      expect(find.text('Paired'), findsNothing);
+    });
+
     appTest('a first start has no such note', (tester) async {
       await pumpApp(tester, gateway: FakeGateway(), saved: Saved.unpaired());
       expect(

@@ -106,9 +106,12 @@ class PairingState {
   final PairingProblem? problem;
 }
 
-final pairingProvider = NotifierProvider<PairingController, PairingState>(
-  PairingController.new,
-);
+/// Lives only while the pairing page shows it, so a page shown again after
+/// the pairing ended starts idle, not "Paired".
+final pairingProvider =
+    NotifierProvider.autoDispose<PairingController, PairingState>(
+      PairingController.new,
+    );
 
 /// Checks a pasted link with `ApiClient.connect()` before saving the token.
 class PairingController extends Notifier<PairingState> {
@@ -133,6 +136,7 @@ class PairingController extends Notifier<PairingState> {
     try {
       await ApiClient(transport).connect();
     } on PircException catch (error) {
+      if (!ref.mounted) return;
       state = PairingState(
         PairingPhase.invalid,
         problem: switch (error) {
@@ -146,6 +150,7 @@ class PairingController extends Notifier<PairingState> {
     } finally {
       transport.close();
     }
+    if (!ref.mounted) return;
     state = const PairingState(PairingPhase.paired);
     await ref
         .read(connectionProvider.notifier)
