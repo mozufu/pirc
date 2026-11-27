@@ -18,7 +18,9 @@ use super::runtime::{self, NewWake, Source};
 use super::store::{self, PotState};
 use super::threads;
 use crate::app::AppState;
+use crate::db::atomic;
 use crate::error::{ApiError, ApiResult};
+use crate::push::PushMessage;
 use crate::util::{new_id, now_ms};
 
 /// A request body or answer is bounded like its activity row.
@@ -302,73 +304,93 @@ pub fn exhaustion(
     Ok(None)
 }
 
-/// Record an exhaustion once per cap and window, not once per wake.
+/// What [`note_exhausted`] recorded: whether this call was the first notice
+/// for the cap and window, and the owner's push for a pot's own cap.
+#[derive(Debug, Default)]
+pub struct ExhaustionNotice {
+    pub recorded: bool,
+    pub push: Option<PushMessage>,
+}
+
+/// Record an exhaustion once per cap and window, not once per wake. The
+/// dedup lookup, activity row and direct-thread notice share one transaction:
+/// a failed notice leaves the cap retryable instead of committing its key.
 pub fn note_exhausted(
     conn: &Connection,
     owner: &str,
     pot_id: &str,
     exhaustion: Exhaustion,
     window_start: i64,
-) -> ApiResult<bool> {
+) -> ApiResult<ExhaustionNotice> {
     let key = format!(
         "{}:{}:{}",
         exhaustion.scope.as_str(),
         exhaustion.unit.as_str(),
         window_start
     );
-    let seen: Option<i64> = conn
-        .query_row(
-            "SELECT 1 FROM pot_activity
-             WHERE owner_user=?1 AND pot_id=?2 AND kind='budget_exhausted'
-               AND json_extract(refs_json,'$.budget')=?3 LIMIT 1",
-            params![owner, pot_id, key],
-            |r| r.get(0),
-        )
-        .optional()?;
-    if seen.is_some() {
-        return Ok(false);
-    }
-    let window = if exhaustion.unit == Unit::Money {
-        "this month"
-    } else {
-        "today"
-    };
-    activity::log(
-        conn,
-        owner,
-        pot_id,
-        Entry::new(
-            Kind::BudgetExhausted,
-            format!(
-                "{} {} budget exhausted {window}",
-                match exhaustion.scope {
-                    Scope::Pot => "Its",
-                    Scope::Owner => "The owner's",
-                    Scope::Root => "The causal root's",
-                },
-                exhaustion.unit.as_str()
+    atomic(conn, |conn| {
+        let seen: Option<i64> = conn
+            .query_row(
+                "SELECT 1 FROM pot_activity
+                 WHERE owner_user=?1 AND pot_id=?2 AND kind='budget_exhausted'
+                   AND json_extract(refs_json,'$.budget')=?3 LIMIT 1",
+                params![owner, pot_id, key],
+                |r| r.get(0),
+            )
+            .optional()?;
+        if seen.is_some() {
+            return Ok(ExhaustionNotice::default());
+        }
+        let window = if exhaustion.unit == Unit::Money {
+            "this month"
+        } else {
+            "today"
+        };
+        activity::log(
+            conn,
+            owner,
+            pot_id,
+            Entry::new(
+                Kind::BudgetExhausted,
+                format!(
+                    "{} {} budget exhausted {window}",
+                    match exhaustion.scope {
+                        Scope::Pot => "Its",
+                        Scope::Owner => "The owner's",
+                        Scope::Root => "The causal root's",
+                    },
+                    exhaustion.unit.as_str()
+                ),
+            )
+            .toward(Counterpart::User)
+            .refs(Refs {
+                budget: Some(key.clone()),
+                ..Refs::default()
+            }),
+        )?;
+        // A notice in the pot's own thread, so the user sees it where the pot is.
+        let what = match exhaustion.unit {
+            Unit::Money => "This month's spending limit",
+            Unit::Tokens => "Today's token limit",
+        };
+        let message = super::threads::post_system(
+            conn,
+            owner,
+            pot_id,
+            &format!(
+                "{what} is used up. The pot tells you when it asks for more; until then it takes no new model work for {window}."
             ),
-        )
-        .toward(Counterpart::User)
-        .refs(Refs {
-            budget: Some(key),
-            ..Refs::default()
-        }),
-    )?;
-    // A notice in the pot's own thread, so the user sees it where the pot is.
-    let what = match exhaustion.unit {
-        Unit::Money => "This month's spending limit",
-        Unit::Tokens => "Today's token limit",
-    };
-    super::threads::post_system(
-        conn,
-        owner,
-        pot_id,
-        &format!(
-            "{what} is used up. The pot tells you when it asks for more; until then it takes no new model work for {window}."
-        ),
-    )?;
-    Ok(true)
+        )?;
+        // Only the pot's own caps are news to the owner here. Owner-wide and
+        // causal-root caps keep their existing policy and do not push from
+        // this notice.
+        let push = (exhaustion.scope == Scope::Pot)
+            .then(|| super::notify::budget_exhausted(conn, pot_id, &message.thread_id, &key));
+        Ok(ExhaustionNotice {
+            recorded: true,
+            push,
+        })
+    })
 }
 
 /// How full a pot's limits are, for its next run's prompt: the units at or
@@ -412,26 +434,33 @@ pub fn nearly_exhausted(
 
 /// Whether a wake must wait for budget. Called from `runtime::claim`, so the
 /// exhausted pot's queued (and future) wakes stay queued. It also records the
-/// exhaustion once per window.
-pub fn wake_blocked(conn: &Connection, owner: &str, pot_id: &str, zone: &str) -> ApiResult<bool> {
+/// exhaustion once per window and returns that notice so the caller can push
+/// after it releases the database lock.
+pub fn wake_blocked(
+    conn: &Connection,
+    owner: &str,
+    pot_id: &str,
+    zone: &str,
+) -> ApiResult<Option<ExhaustionNotice>> {
     let windows = windows(zone, now_ms());
     let Some(exhaustion) = exhaustion(conn, owner, pot_id, &windows)? else {
-        return Ok(false);
+        return Ok(None);
     };
     // Owner-wide exhaustion follows `on_exhausted`: `pause_all` stops every
     // pot's wakes; `ask` lets a wake run, be refused by admission and tell the
     // user, instead of silently queueing forever.
     if exhaustion.scope == Scope::Owner && store::settings(conn, owner)?.on_exhausted != "pause_all"
     {
-        return Ok(false);
+        return Ok(None);
     }
     let start = if exhaustion.unit == Unit::Money {
         windows.month_start
     } else {
         windows.day_start
     };
-    note_exhausted(conn, owner, pot_id, exhaustion, start)?;
-    Ok(true)
+    Ok(Some(note_exhausted(
+        conn, owner, pot_id, exhaustion, start,
+    )?))
 }
 
 fn used(

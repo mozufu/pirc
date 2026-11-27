@@ -143,6 +143,29 @@ fn window_start(exhaustion: Exhaustion, windows: &Windows) -> i64 {
     }
 }
 
+/// Record a refused cap and send its owner push after the database lock is
+/// released. A notice failure never changes the admission outcome.
+fn note_cap(app: &AppState, owner: &str, pot_id: &str, exhaustion: Exhaustion, windows: &Windows) {
+    let notice = {
+        let db = app.db.lock();
+        budget::note_exhausted(
+            &db,
+            owner,
+            pot_id,
+            exhaustion,
+            window_start(exhaustion, windows),
+        )
+        .unwrap_or_default()
+    };
+    if notice.recorded {
+        app.activity_changed(owner);
+        app.threads_changed(owner);
+    }
+    if let Some(push) = notice.push {
+        crate::push::notify(app, owner, push);
+    }
+}
+
 /// Hold `reservation` against its pot and owner caps, or report which cap has
 /// no room. The sums include reservations still held by other requests.
 pub fn reserve(
@@ -343,17 +366,7 @@ pub fn begin(
     let Some(exhaustion) = refused else {
         return Ok(Some(reservation));
     };
-    if budget::note_exhausted(
-        &app.db.lock(),
-        &owner,
-        &pot_id,
-        exhaustion,
-        window_start(exhaustion, &windows),
-    )
-    .unwrap_or(false)
-    {
-        app.activity_changed(&owner);
-    }
+    note_cap(app, &owner, &pot_id, exhaustion, &windows);
     Err(exhausted(exhaustion))
 }
 
@@ -466,17 +479,13 @@ fn settle(app: &AppState, reservation: &Reservation, usage: Option<&Usage>) {
     let Some(exhaustion) = exhausted else {
         return;
     };
-    let logged = budget::note_exhausted(
-        &app.db.lock(),
+    note_cap(
+        app,
         &reservation.owner,
         &reservation.pot_id,
         exhaustion,
-        window_start(exhaustion, &windows),
-    )
-    .unwrap_or(false);
-    if logged {
-        app.activity_changed(&reservation.owner);
-    }
+        &windows,
+    );
 }
 
 /// The money actual usage costs at the reservation's accepted prices.

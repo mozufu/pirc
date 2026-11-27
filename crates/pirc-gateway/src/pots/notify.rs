@@ -26,6 +26,24 @@ pub fn approval(conn: &Connection, approval: &super::approvals::Approval) -> Pus
     }
 }
 
+/// One of a pot's own caps is used up: its model work waits for the user.
+/// The tag and the activity key make this once per cap and window.
+pub fn budget_exhausted(
+    conn: &Connection,
+    pot_id: &str,
+    thread_id: &str,
+    key: &str,
+) -> PushMessage {
+    PushMessage {
+        title: format!("{} is blocked by its budget", pot_name(conn, pot_id)),
+        body: "A budget limit is used up. Open the thread to review its limits.".to_owned(),
+        tag: format!("budget-exhausted:{pot_id}:{key}"),
+        target: json!({ "potId": pot_id, "threadId": thread_id }),
+        category: Some(Category::NeedsYou),
+        interaction: None,
+    }
+}
+
 /// A pot asks for more budget: it needs the user.
 pub fn budget_request(conn: &Connection, request: &super::budget::BudgetRequest) -> PushMessage {
     PushMessage {

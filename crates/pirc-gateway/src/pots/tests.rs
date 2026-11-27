@@ -552,6 +552,7 @@ mod budget {
 }
 
 mod exhaustion {
+    use super::super::budget::{self, Exhaustion, Scope, Unit};
     use super::super::runtime::{self, NewWake, Source};
     use super::*;
 
@@ -584,6 +585,24 @@ mod exhaustion {
             rusqlite::params![money as i64, tokens as i64],
         )
         .unwrap();
+    }
+
+    fn watch(
+        listeners: &std::sync::Arc<crate::hints::Listeners<String>>,
+        owner: &str,
+    ) -> (
+        std::sync::Arc<std::sync::atomic::AtomicUsize>,
+        crate::hints::HintGuard,
+    ) {
+        let hits = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let count = hits.clone();
+        let guard = listeners.add(
+            owner.to_owned(),
+            std::sync::Arc::new(move || {
+                count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            }),
+        );
+        (hits, guard)
     }
 
     #[test]
@@ -671,6 +690,210 @@ mod exhaustion {
                 .unwrap()
                 .is_some()
         );
+    }
+
+    #[test]
+    fn only_a_pots_own_cap_pushes_and_only_once() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        for scope in [Scope::Owner, Scope::Root] {
+            let notice = budget::note_exhausted(
+                &conn,
+                "alice",
+                &pot.id,
+                Exhaustion {
+                    scope,
+                    unit: Unit::Money,
+                },
+                1,
+            )
+            .unwrap();
+            assert!(notice.recorded, "{scope:?} still gets its thread notice");
+            assert!(notice.push.is_none(), "{scope:?} has no push of its own");
+        }
+        let notice = budget::note_exhausted(
+            &conn,
+            "alice",
+            &pot.id,
+            Exhaustion {
+                scope: Scope::Pot,
+                unit: Unit::Tokens,
+            },
+            1,
+        )
+        .unwrap();
+        assert!(notice.recorded);
+        let push = notice.push.expect("a pot's own cap pushes its owner");
+        assert_eq!(push.category, Some(crate::push::Category::NeedsYou));
+        assert_eq!(push.title, "Tester is blocked by its budget");
+        assert_eq!(
+            push.body,
+            "A budget limit is used up. Open the thread to review its limits."
+        );
+        assert!(!push.body.contains("Please look at this"));
+        assert_eq!(
+            push.tag,
+            format!("budget-exhausted:{}:pot:tokens:1", pot.id)
+        );
+        let thread: String = conn
+            .query_row(
+                "SELECT id FROM threads
+                 WHERE owner_user='alice' AND kind='direct' AND pot_a=?1",
+                [&pot.id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(push.target, json!({ "potId": pot.id, "threadId": thread }));
+        // The same cap and window is already recorded, so it does not push.
+        let again = budget::note_exhausted(
+            &conn,
+            "alice",
+            &pot.id,
+            Exhaustion {
+                scope: Scope::Pot,
+                unit: Unit::Tokens,
+            },
+            1,
+        )
+        .unwrap();
+        assert!(!again.recorded);
+        assert!(again.push.is_none());
+    }
+
+    #[test]
+    fn a_failed_thread_notice_rolls_back_the_exhaustion_key() {
+        let db = db();
+        let mut conn = db.lock();
+        let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+        let exhaustion = Exhaustion {
+            scope: Scope::Pot,
+            unit: Unit::Money,
+        };
+        conn.execute_batch(
+            "CREATE TRIGGER fail_budget_notice BEFORE INSERT ON messages
+             BEGIN SELECT RAISE(ABORT, 'notice write failed'); END;",
+        )
+        .unwrap();
+        let error = budget::note_exhausted(&conn, "alice", &pot.id, exhaustion, 1).unwrap_err();
+        assert_eq!(error.status, 500);
+        let count = |table: &str| -> i64 {
+            conn.query_row(&format!("SELECT count(*) FROM {table}"), [], |r| r.get(0))
+                .unwrap()
+        };
+        let notices = |conn: &rusqlite::Connection| -> i64 {
+            conn.query_row(
+                "SELECT count(*) FROM pot_activity WHERE kind='budget_exhausted'",
+                [],
+                |r| r.get(0),
+            )
+            .unwrap()
+        };
+        assert_eq!(notices(&conn), 0, "the dedup activity rolled back");
+        assert_eq!(count("threads"), 0, "the notice's thread rolled back");
+        assert_eq!(count("messages"), 0);
+
+        conn.execute_batch("DROP TRIGGER fail_budget_notice")
+            .unwrap();
+        let notice = budget::note_exhausted(&conn, "alice", &pot.id, exhaustion, 1).unwrap();
+        assert!(notice.recorded);
+        assert!(notice.push.is_some());
+        assert_eq!(notices(&conn), 1);
+        assert_eq!(count("messages"), 1);
+
+        // The successful record still deduplicates this cap and window.
+        let again = budget::note_exhausted(&conn, "alice", &pot.id, exhaustion, 1).unwrap();
+        assert!(!again.recorded);
+        assert!(again.push.is_none());
+    }
+
+    #[tokio::test]
+    async fn a_blocked_wake_pushes_only_the_owner_through_the_real_dispatcher() {
+        let (app, _dir) = crate::test_support::app_with_models(json!({}));
+        super::db_setup(&app.db.lock());
+        let pot = {
+            let mut conn = app.db.lock();
+            let pot = create(&mut conn, "alice", input("Tester")).unwrap();
+            owner_caps(&conn, 100_000_000, 100_000_000);
+            conn.execute(
+                "UPDATE pot_permissions
+                 SET budget_money_month_micros=0,budget_tokens_day=0 WHERE pot_id=?1",
+                [&pot.id],
+            )
+            .unwrap();
+            wake(&conn, &pot.id);
+            pot
+        };
+
+        let (url, service) = crate::push::tests::push_service().await;
+        let alice = crate::push::tests::Subscriber::new();
+        let bob = crate::push::tests::Subscriber::new();
+        let push = std::sync::Arc::new(crate::push::Push::new(
+            app.db.clone(),
+            crate::push::generate_vapid_keys(),
+            "mailto:ops@example.com".into(),
+            true,
+        ));
+        for (owner, path, subscriber) in [("alice", "/alice", &alice), ("bob", "/bob", &bob)] {
+            push.subscribe(
+                owner,
+                &crate::push::tests::input(
+                    &format!("{url}{path}"),
+                    subscriber.keys(),
+                    "unifiedpush",
+                    None,
+                ),
+                None,
+            )
+            .unwrap();
+        }
+        app.slots.set(push);
+        let (alice_activity, _alice_activity_guard) = watch(&app.hints.activity, "alice");
+        let (alice_threads, _alice_threads_guard) = watch(&app.hints.threads, "alice");
+        let (bob_activity, _bob_activity_guard) = watch(&app.hints.activity, "bob");
+        let (bob_threads, _bob_threads_guard) = watch(&app.hints.threads, "bob");
+        let hits = |count: &std::sync::atomic::AtomicUsize| {
+            count.load(std::sync::atomic::Ordering::Relaxed)
+        };
+
+        runtime::pump(&app, "alice", &pot.id).await.unwrap();
+        for _ in 0..100 {
+            if !service.lock().unwrap().received.is_empty() {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+        assert_eq!(hits(&alice_activity), 1);
+        assert_eq!(hits(&alice_threads), 1);
+        assert_eq!(hits(&bob_activity), 0);
+        assert_eq!(hits(&bob_threads), 0);
+        let received = service.lock().unwrap().received.clone();
+        assert_eq!(received.len(), 1, "only the pot's owner is pushed");
+        assert_eq!(received[0].0, "/alice");
+        let payload = alice.read(&received[0].2);
+        assert_eq!(payload["category"], "needs_you");
+        assert_eq!(payload["title"], "Tester is blocked by its budget");
+        let thread: String = app
+            .db
+            .lock()
+            .query_row(
+                "SELECT id FROM threads
+                 WHERE owner_user='alice' AND kind='direct' AND pot_a=?1",
+                [&pot.id],
+                |r| r.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            payload["target"],
+            json!({ "potId": pot.id, "threadId": thread })
+        );
+
+        // Another sweep in the same window sends nothing new.
+        runtime::pump(&app, "alice", &pot.id).await.unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        assert_eq!(service.lock().unwrap().received.len(), 1);
+        assert_eq!(hits(&alice_activity), 1);
+        assert_eq!(hits(&alice_threads), 1);
     }
 }
 

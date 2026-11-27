@@ -576,6 +576,77 @@ fn an_exhausted_cap_refuses_typed_and_logs_once_per_window() {
     assert_eq!(error.details.as_ref().unwrap()["unit"], "money");
 }
 
+#[tokio::test]
+async fn a_refused_admission_pushes_the_owner_once_per_cap_and_window() {
+    let (app, _dir) = app();
+    owner_caps(&app, 100_000_000, 100_000_000);
+    let pot = pot_session(&app, "remote-pot", 0, 1_000_000);
+    let request = inference("work-anthropic", "claude-fable-5", Some(100));
+
+    let (url, service) = crate::push::tests::push_service().await;
+    let alice = crate::push::tests::Subscriber::new();
+    let push = std::sync::Arc::new(crate::push::Push::new(
+        app.db.clone(),
+        crate::push::generate_vapid_keys(),
+        "mailto:ops@example.com".into(),
+        true,
+    ));
+    push.subscribe(
+        "alice",
+        &crate::push::tests::input(&format!("{url}/alice"), alice.keys(), "unifiedpush", None),
+        None,
+    )
+    .unwrap();
+    app.slots.set(push);
+    let activity_hits = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let thread_hits = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let activity = activity_hits.clone();
+    let threads = thread_hits.clone();
+    let _activity_guard = app.hints.activity.add(
+        "alice".into(),
+        std::sync::Arc::new(move || {
+            activity.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        }),
+    );
+    let _thread_guard = app.hints.threads.add(
+        "alice".into(),
+        std::sync::Arc::new(move || {
+            threads.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        }),
+    );
+
+    for _ in 0..2 {
+        let error = admission::begin(&app, "node", "remote-pot", &request).unwrap_err();
+        assert_eq!(error.code, "budget_exhausted");
+    }
+    assert_eq!(activity_hits.load(std::sync::atomic::Ordering::Relaxed), 1);
+    assert_eq!(thread_hits.load(std::sync::atomic::Ordering::Relaxed), 1);
+    for _ in 0..100 {
+        if !service.lock().unwrap().received.is_empty() {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+    }
+    let received = service.lock().unwrap().received.clone();
+    assert_eq!(received.len(), 1, "one push per cap and window");
+    let payload = alice.read(&received[0].2);
+    assert_eq!(payload["category"], "needs_you");
+    let thread: String = app
+        .db
+        .lock()
+        .query_row(
+            "SELECT id FROM threads
+             WHERE owner_user='alice' AND kind='direct' AND pot_a=?1",
+            [&pot],
+            |r| r.get(0),
+        )
+        .unwrap();
+    assert_eq!(
+        payload["target"],
+        json!({ "potId": pot, "threadId": thread })
+    );
+}
+
 #[test]
 fn subscriptions_count_against_money_only_with_api_equivalent_accounting() {
     let (app, _dir) = app();

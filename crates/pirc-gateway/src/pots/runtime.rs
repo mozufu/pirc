@@ -244,17 +244,20 @@ async fn ensure_session(app: &AppState, owner: &str, pot_id: &str) -> Result<Ses
     Ok(session)
 }
 
+/// What one claim attempt found: the wake to deliver, if any, and the budget
+/// notice recorded while blocking it.
+#[derive(Default)]
+struct Claim {
+    wake: Option<(String, String, Value)>,
+    notice: Option<super::budget::ExhaustionNotice>,
+}
+
 /// Claim the pot's next queued wake, unless one is in flight or the pot is
 /// not active. The partial unique index makes a second claim fail.
-fn claim(
-    conn: &Connection,
-    owner: &str,
-    pot_id: &str,
-    zone: &str,
-) -> ApiResult<Option<(String, String, Value)>> {
+fn claim(conn: &Connection, owner: &str, pot_id: &str, zone: &str) -> ApiResult<Claim> {
     let pot = store::read(conn, owner, pot_id)?;
     if pot.state != PotState::Active {
-        return Ok(None);
+        return Ok(Claim::default());
     }
     // A suspended or stopped root delivers nothing: its wakes stay queued.
     let next: Option<QueuedWake> = conn
@@ -280,17 +283,22 @@ fn claim(
         )
         .optional()?;
     let Some((id, source, content, details, root, from_pot)) = next else {
-        return Ok(None);
+        return Ok(Claim::default());
     };
     // An exhausted pot's model wakes wait; the answer to its budget request
     // still reaches it so it learns the user's decision.
-    if source != "budget" && super::budget::wake_blocked(conn, owner, pot_id, zone)? {
-        return Ok(None);
+    if source != "budget"
+        && let Some(notice) = super::budget::wake_blocked(conn, owner, pot_id, zone)?
+    {
+        return Ok(Claim {
+            wake: None,
+            notice: Some(notice),
+        });
     }
     // Rate ceilings delay delivery: the oldest wake stays queued until the
     // root or the pair is allowed again.
     if super::guard::delivery_blocked(conn, root.as_deref(), from_pot.as_deref(), pot_id)? {
-        return Ok(None);
+        return Ok(Claim::default());
     }
     let claimed = conn.execute(
         "UPDATE pot_wakes SET state='delivering' WHERE id=?1 AND state='queued'
@@ -299,18 +307,21 @@ fn claim(
     );
     match claimed {
         Ok(1) => {}
-        Ok(_) => return Ok(None),
+        Ok(_) => return Ok(Claim::default()),
         Err(rusqlite::Error::SqliteFailure(failure, _))
             if failure.code == rusqlite::ErrorCode::ConstraintViolation =>
         {
-            return Ok(None);
+            return Ok(Claim::default());
         }
         Err(error) => return Err(error.into()),
     }
     let mut details: Value = serde_json::from_str(&details).unwrap_or_else(|_| json!({}));
     details["wakeId"] = json!(id);
     details["source"] = json!(source);
-    Ok(Some((id, content, details)))
+    Ok(Claim {
+        wake: Some((id, content, details)),
+        notice: None,
+    })
 }
 
 /// Claim the pot's next wake, for budget tests that must not need a Node.
@@ -321,13 +332,27 @@ pub fn claim_next(
     pot_id: &str,
     zone: &str,
 ) -> ApiResult<Option<String>> {
-    Ok(claim(conn, owner, pot_id, zone)?.map(|(id, _, _)| id))
+    Ok(claim(conn, owner, pot_id, zone)?.wake.map(|(id, _, _)| id))
 }
 
 /// Deliver the pot's next wake if nothing is in flight.
 pub async fn pump(app: &AppState, owner: &str, pot_id: &str) -> ApiResult<()> {
-    let Some((id, content, details)) = claim(&app.db.lock(), owner, pot_id, &app.config.timezone)?
-    else {
+    // The claim records any cap notice under the lock; its hints and push are
+    // sent only after the lock is released.
+    let claimed = {
+        let db = app.db.lock();
+        claim(&db, owner, pot_id, &app.config.timezone)?
+    };
+    if let Some(notice) = claimed.notice {
+        if notice.recorded {
+            app.activity_changed(owner);
+            app.threads_changed(owner);
+        }
+        if let Some(push) = notice.push {
+            crate::push::notify(app, owner, push);
+        }
+    }
+    let Some((id, content, details)) = claimed.wake else {
         return Ok(());
     };
     let session = match ensure_session(app, owner, pot_id).await {
