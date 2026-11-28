@@ -801,7 +801,7 @@ pub fn push_message(
     let first = shown.observations.first();
     Ok(crate::push::PushMessage {
         title: first.map_or_else(
-            || "A pot noticed something".to_owned(),
+            || crate::push::text::NOTICED_TITLE.to_owned(),
             |o| format!("{} noticed something", o.pot_name),
         ),
         body: first
@@ -811,6 +811,12 @@ pub fn push_message(
         target: json!({ "activityNotificationId": shown.id }),
         category: Some(crate::push::Category::Done),
         interaction: None,
+        text: first.map(|o| {
+            crate::push::text::PushText::new(
+                crate::push::text::POT_NOTICED,
+                &[("pot", &o.pot_name)],
+            )
+        }),
     })
 }
 

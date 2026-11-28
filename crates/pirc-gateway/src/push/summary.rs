@@ -188,6 +188,8 @@ fn summary_message(items: &[DigestItem]) -> PushMessage {
         target: json!({ "activity": true, "summary": { "count": count, "categories": categories } }),
         category: None,
         interaction: None,
+        // The app words the title from `target.summary.count`.
+        text: None,
     }
 }
 

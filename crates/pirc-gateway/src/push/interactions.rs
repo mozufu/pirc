@@ -108,7 +108,7 @@ pub(super) fn waiting_message(
         user,
         PushMessage {
             title: format!("{} is waiting for you", session.name),
-            body: asked.unwrap_or("It needs your answer to go on.").to_owned(),
+            body: asked.unwrap_or(super::text::QUESTION_BODY).to_owned(),
             tag: interaction
                 .as_ref()
                 .map(interaction_tag)
@@ -116,6 +116,8 @@ pub(super) fn waiting_message(
             target: json!({ "sessionId": session.id }),
             category: Some(Category::NeedsYou),
             interaction,
+            // The title is worded from `sessionName`.
+            text: None,
         },
     ))
 }
@@ -216,6 +218,7 @@ pub(super) fn answered_message(
             target: json!({ "sessionId": session.id }),
             category: Some(Category::NeedsYou),
             interaction,
+            text: None,
         },
     ))
 }

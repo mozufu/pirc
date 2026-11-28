@@ -182,7 +182,8 @@ fn message(
         .map(|local| local.format("%Y-%m-%d %H:%M").to_string())
         .unwrap_or_else(|_| occurrence.to_owned())
     };
-    let body = if start_at <= now && end_at > now {
+    let happening = start_at <= now && end_at > now;
+    let body = if happening {
         format!("This event {what} ({when} {}).", spec.timezone)
     } else {
         format!("This event starts at {when} ({}).", spec.timezone)
@@ -201,6 +202,18 @@ fn message(
         }),
         category: Some(crate::push::Category::Calendar),
         interaction: None,
+        text: Some(crate::push::text::PushText::new(
+            if happening {
+                crate::push::text::CALENDAR_NOW
+            } else {
+                crate::push::text::CALENDAR_STARTS
+            },
+            &[
+                ("event", &spec.title),
+                ("when", &when),
+                ("timezone", &spec.timezone),
+            ],
+        )),
     }
 }
 

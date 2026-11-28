@@ -202,6 +202,7 @@ fn audiences_topics_and_payloads_as_web_push_made_them() {
     assert_eq!(js_json_string(&clip("ab😀", 3)), r#""ab…""#);
     assert_eq!(js_json_string(&clip("a   b", 3)), r#""a…""#);
     let message = PushMessage {
+        text: None,
         title: format!("{}  tail", "t".repeat(119)),
         body: "b".into(),
         tag: "a\u{1}\"\\\n".into(),
@@ -217,6 +218,7 @@ fn audiences_topics_and_payloads_as_web_push_made_them() {
         )
     );
     let revoke = PushMessage {
+        text: None,
         title: String::new(),
         body: String::new(),
         tag: "interaction:7331:0:6d656d6f72793a703a30".into(),
@@ -341,6 +343,7 @@ pub(crate) fn input(
 
 fn message(tag: &str) -> PushMessage {
     PushMessage {
+        text: None,
         title: "t".into(),
         body: "b".into(),
         tag: tag.into(),
@@ -365,6 +368,7 @@ async fn sends_encrypted_signed_notifications_only_the_subscriber_can_read() {
         .notify(
             "me",
             &PushMessage {
+                text: None,
                 title: "CI check failed".into(),
                 body: "Scheduled run: open it to read the result.".into(),
                 tag: "session:s1".into(),
@@ -780,6 +784,7 @@ const MINUTE: i64 = 60_000;
 
 fn kind(category: Category, tag: &str) -> PushMessage {
     PushMessage {
+        text: None,
         title: format!("{} item", category.as_str()),
         body: "b".into(),
         tag: tag.into(),
@@ -1370,6 +1375,7 @@ async fn ending_quiet_hours_by_a_change_sends_what_they_held() {
 #[test]
 fn a_payload_stays_within_one_record() {
     let question = |target_bytes: usize| PushMessage {
+        text: None,
         title: "Session is waiting for you".into(),
         body: "b".repeat(200),
         tag: "t".into(),
@@ -1422,6 +1428,49 @@ fn a_payload_stays_within_one_record() {
     let tight = named(2800);
     assert!(tight.len() <= MAX_PAYLOAD_BYTES, "{}", tight.len());
     assert_eq!(read(&tight).get("sessionName"), None);
+    assert!(!read(&tight)["body"].as_str().unwrap().is_empty());
+}
+
+/// S3 (plans/m8-step8-acceptance.md): a push made from a name carries its
+/// words as `text: {key, args}` beside the English title and body.
+#[test]
+fn a_named_push_carries_its_text() {
+    let db = crate::db::Db::memory();
+    let message = crate::pots::notify::budget_exhausted(&db.lock(), "p-butler", "t1", "k");
+    assert_eq!(message.title, "p-butler is blocked by its budget");
+    assert_eq!(message.body, text::BUDGET_BLOCKED_BODY);
+    let read = |text: &str| serde_json::from_str::<Value>(text).unwrap();
+    let sent = read(&payload(&message, 1, Delivery::default()));
+    assert_eq!(sent["title"], "p-butler is blocked by its budget");
+    assert_eq!(
+        sent["text"],
+        json!({ "key": "potBudgetBlocked", "args": { "pot": "p-butler" } })
+    );
+
+    // An argument is clipped like the title; short of room `text` goes with
+    // the session name, before the body empties.
+    let named = |target_bytes: usize| {
+        let mut message = message.clone();
+        message.text = Some(text::PushText::new(
+            text::POT_REPLIED,
+            &[("pot", &"名".repeat(500))],
+        ));
+        message.body = "b".repeat(200);
+        message.target = json!({ "pad": "x".repeat(target_bytes) });
+        payload(&message, 1, Delivery::default())
+    };
+    let roomy = read(&named(100));
+    assert_eq!(
+        roomy["text"]["args"]["pot"]
+            .as_str()
+            .unwrap()
+            .chars()
+            .count(),
+        120
+    );
+    let tight = named(2700);
+    assert!(tight.len() <= MAX_PAYLOAD_BYTES, "{}", tight.len());
+    assert_eq!(read(&tight).get("text"), None);
     assert!(!read(&tight)["body"].as_str().unwrap().is_empty());
 }
 

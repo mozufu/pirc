@@ -46,6 +46,7 @@ use crate::util::{new_id, now_ms, present, random_bytes};
 mod interactions;
 mod preferences;
 mod summary;
+pub mod text;
 
 #[cfg(not(test))]
 use interactions::watch_interactions;
@@ -71,6 +72,8 @@ pub struct PushMessage {
     pub category: Option<Category>,
     /// Exact question metadata for create/revoke pushes. Refresh hints omit the tuple.
     pub interaction: Option<InteractionPush>,
+    /// The words for an app that shows its own language ([`text`]).
+    pub text: Option<text::PushText>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -501,7 +504,8 @@ const MAX_PAYLOAD_BYTES: usize = 3072;
 /// category, the target's lock screen setting and question details. It holds
 /// no secret: the app reads the state before it shows any answer. Past
 /// [`MAX_PAYLOAD_BYTES`] the choices go first, then the body shortens, then
-/// the session name goes (the app then shows the title as sent).
+/// the session name and `text` go (the app then shows the title and body as
+/// sent).
 fn payload(message: &PushMessage, at: i64, delivery: Delivery) -> String {
     let full = payload_text(message, at, delivery, BODY_UNITS);
     if full.len() <= MAX_PAYLOAD_BYTES {
@@ -520,6 +524,7 @@ fn payload(message: &PushMessage, at: i64, delivery: Delivery) -> String {
     if let Some(interaction) = smaller.interaction.as_mut() {
         interaction.session_name = None;
     }
+    smaller.text = None;
     let text = payload_text(&smaller, at, delivery, 80);
     if text.len() <= MAX_PAYLOAD_BYTES {
         return text;
@@ -585,6 +590,18 @@ fn payload_text(message: &PushMessage, at: i64, delivery: Delivery, body_units: 
             fields
         })
         .unwrap_or_default();
+    if let Some(text) = &message.text {
+        let args: Vec<String> = text
+            .args
+            .iter()
+            .map(|(name, value)| format!("\"{name}\":{}", js_json_string(&clip(value, 120))))
+            .collect();
+        extra.push_str(&format!(
+            ",\"text\":{{\"key\":\"{}\",\"args\":{{{}}}}}",
+            text.key,
+            args.join(",")
+        ));
+    }
     format!(
         r#"{{"title":{},"body":{},"tag":{},"target":{},"at":{at}{extra}{interaction}}}"#,
         js_json_string(&clip(&message.title, 120)),
@@ -1298,13 +1315,14 @@ async fn test_push(
         .notify(
             &identity.user,
             &PushMessage {
-                title: "pirc notifications work".into(),
-                body: "Scheduled runs and anything waiting for you will show up here.".into(),
+                title: text::TEST_TITLE.into(),
+                body: text::TEST_BODY.into(),
                 tag: "test".into(),
                 target: json!({ "schedules": true }),
                 // Shows whatever the settings are.
                 category: None,
                 interaction: None,
+                text: None,
             },
         )
         .await;

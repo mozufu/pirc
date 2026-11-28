@@ -1813,9 +1813,9 @@ impl Ctx<'_> {
         let message = PushMessage {
             title: format!("{} {what}", schedule.spec.title),
             body: match run.status {
-                RunStatus::Missed => "Allow it to run it now, or dismiss it.",
-                RunStatus::WaitingInput => "The scheduled run needs your answer to go on.",
-                _ => "Scheduled run: open it to read the result.",
+                RunStatus::Missed => crate::push::text::SCHEDULE_MISSED_BODY,
+                RunStatus::WaitingInput => crate::push::text::SCHEDULE_WAITING_BODY,
+                _ => crate::push::text::SCHEDULE_RESULT_BODY,
             }
             .to_owned(),
             // One notification per run session: its "waiting" push is the same one.
@@ -1838,6 +1838,16 @@ impl Ctx<'_> {
                 crate::push::Category::NeedsYou
             }),
             interaction: None,
+            text: match run.status {
+                RunStatus::Completed => Some(crate::push::text::SCHEDULE_FINISHED),
+                RunStatus::Failed => Some(crate::push::text::SCHEDULE_FAILED),
+                RunStatus::Missed => Some(crate::push::text::SCHEDULE_MISSED),
+                RunStatus::WaitingInput => Some(crate::push::text::SCHEDULE_WAITING),
+                RunStatus::Running | RunStatus::Dismissed | RunStatus::Skipped => None,
+            }
+            .map(|key| {
+                crate::push::text::PushText::new(key, &[("schedule", &schedule.spec.title)])
+            }),
         };
         self.fx
             .0
