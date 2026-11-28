@@ -179,10 +179,18 @@ Findings:
   read-only approval titles (question card and notification), and the question push
   title, built on the phone from a new `sessionName` push field. Checked on the
   emulator (zh): Other, 新對話 and the auto mode title. The push title is covered by
-  Kotlin tests only (the phone's adb dropped). Still English: the other push kinds
+  Kotlin tests only (the phone's adb dropped). Then still English: the other push kinds
   (pot requests and replies, schedules, calendar, the test push, digest summaries), the
   fallback body "It needs your answer to go on.", the approval body (Command…,
-  Reason…) and the agent's "Enter your answer" placeholder.
+  Reason…) and the agent's "Enter your answer" placeholder. **Fixed in the follow-up:**
+  pushes whose title holds a name (a pot's, a schedule's, an event's) carry
+  `text: {key, args}` beside the English title and body (`pirc-gateway/src/push/text.rs`),
+  the digest title comes from its count, and fixed push titles and bodies are matched as
+  sent; the app's approval card and the overlay show the frame (label, "in", "Reason:")
+  in the app's words, and the typed answer's hint too. The command and the classifier's
+  reason stay as sent: the model writes them. Checked on the emulator (zh): the
+  approval frame and the hint. The push wording is covered by Robolectric tests in zh;
+  not yet seen on the phone.
 - **S4 Text before stop is dropped.** After 停止 the streamed part of the reply is gone;
   only "已停止。" stays.
   **Fixed in `21333e44`, owner's decision: keep it.** The remote stream returned
