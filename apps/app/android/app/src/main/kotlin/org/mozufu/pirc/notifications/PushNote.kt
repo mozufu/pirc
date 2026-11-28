@@ -47,6 +47,13 @@ sealed interface PushKind {
     data object Other : PushKind
 }
 
+/**
+ * A push's words for this app's language: a key of `crates/pirc-gateway/src/push/text.rs`
+ * and the names that go into them ([KnownText.pushTitle]). The digest's comes from its
+ * count (`target.summary.count`).
+ */
+data class PushText(val key: String, val args: Map<String, String>)
+
 /** One decrypted push. It holds no secret and no answer; the app reads the state first. */
 data class PushNote(
     val title: String,
@@ -65,6 +72,8 @@ data class PushNote(
     val expiresAt: Long? = null,
     /** The session's name on a question, so the title is worded here. */
     val sessionName: String? = null,
+    /** The words for this app's language; null shows the title and body as sent. */
+    val text: PushText? = null,
 ) {
     companion object {
         /** Null for anything that is not a push of this Gateway's shape. */
@@ -84,8 +93,24 @@ data class PushNote(
                 kind = kind,
                 expiresAt = json.long("expiresAt"),
                 sessionName = json.text("sessionName"),
+                text = textOf(json, kind, target),
             )
         }
+
+        private fun textOf(json: JSONObject, kind: PushKind, target: JSONObject): PushText? {
+            if (kind is PushKind.Summary) {
+                val count = target.optJSONObject("summary")?.long("count") ?: return null
+                return PushText(SUMMARY_KEY, mapOf("count" to count.toString()))
+            }
+            val text = json.optJSONObject("text") ?: return null
+            val key = text.text("key") ?: return null
+            val args = text.optJSONObject("args") ?: JSONObject()
+            val names = args.keys().asSequence().mapNotNull { name -> (args.opt(name) as? String)?.let { name to it } }
+            return PushText(key, names.toMap())
+        }
+
+        /** Not a Gateway key: the digest's title from its count. */
+        const val SUMMARY_KEY = "summary"
 
         private val CATEGORIES = setOf("needs_you", "done", "progress", "calendar")
         private val LOCK_SCREENS = setOf("hidden", "title", "full")

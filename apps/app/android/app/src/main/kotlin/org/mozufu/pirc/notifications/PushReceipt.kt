@@ -93,6 +93,8 @@ data class NotificationSpec(
     val timeoutMillis: Long? = null,
     /** A question's session: the title becomes "<name> is waiting for you" in the system language. */
     val waitingSession: String? = null,
+    /** The push's words for the system language ([KnownText.pushTitle]). */
+    val text: PushText? = null,
 )
 
 sealed interface ReceiptStep {
@@ -291,6 +293,7 @@ class PushReceipt(
         silent = note.silent,
         open = open,
         waitingSession = note.sessionName?.takeIf { note.kind is PushKind.Question },
+        text = note.text,
     )
 
     companion object {

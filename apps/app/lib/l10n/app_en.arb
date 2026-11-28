@@ -437,6 +437,21 @@
   "sessionUntitled": "New session",
   "approvalAutoModeTitle": "Auto mode: allow a potentially dangerous action?",
   "approvalReadOnlyTitle": "Read-only mode: allow this action?",
+  "approvalMessage": "{label} ({tool}, in {place}):\n\n{text}\n\nReason: {reason}",
+  "@approvalMessage": {
+    "placeholders": {
+      "label": {"type": "String"},
+      "tool": {"type": "String"},
+      "place": {"type": "String"},
+      "text": {"type": "String"},
+      "reason": {"type": "String"}
+    }
+  },
+  "approvalLabelFileChange": "File change",
+  "approvalLabelInput": "Input",
+  "approvalLabelScript": "Script",
+  "approvalLabelCommand": "Command",
+  "questionInputPlaceholder": "Enter your answer",
   "questionWithdrawn": "Withdrawn",
   "questionStale": "Ended when the session restarted",
   "questionEnded": "{title} · ended",

@@ -198,6 +198,83 @@ class NotificationRendererTest {
         assertEquals("Build is waiting for you", renderer.build(spec()).title())
     }
 
+    private fun plain(title: String, body: String, text: PushText? = null) = spec().copy(
+        tag = "thread:t1",
+        title = title,
+        body = body,
+        actions = emptyList(),
+        choices = emptyList(),
+        text = text,
+    )
+
+    @Test fun pushWordsAreBuiltFromTheirText() {
+        val replied = renderer.build(plain("Butler replied", "Open the thread to read it.", PushText("potReplied", mapOf("pot" to "Butler"))))
+        assertEquals("Butler replied", replied.title())
+        assertEquals("Open the thread to read it.", replied.text())
+        val summary = renderer.build(plain("1 new update", "a", PushText(PushNote.SUMMARY_KEY, mapOf("count" to "1"))))
+        assertEquals("1 new update", summary.title())
+        // An unknown key or a missing name: the words as sent.
+        assertEquals("Sent", renderer.build(plain("Sent", "B", PushText("later", mapOf("pot" to "Butler")))).title())
+        assertEquals("Sent", renderer.build(plain("Sent", "B", PushText("potReplied", emptyMap()))).title())
+    }
+
+    @Test @Config(qualifiers = "zh-rTW")
+    fun pushWordsFollowTheSystemLanguage() {
+        fun shown(title: String, body: String, key: String? = null, vararg args: Pair<String, String>) =
+            renderer.build(plain(title, body, key?.let { PushText(it, args.toMap()) })).let { it.title() to it.text() }
+        assertEquals(
+            "Butler 想使用模型" to "openai/gpt-5，用於「iPad tests」",
+            shown("Butler asks to use a model", "openai/gpt-5 for \"iPad tests\"", "potApproval",
+                "pot" to "Butler", "provider" to "openai", "model" to "gpt-5", "work" to "iPad tests"),
+        )
+        assertEquals(
+            "Butler 的預算已用完" to "有一項預算上限已用完。開啟對話查看它的上限。",
+            shown("Butler is blocked by its budget", "A budget limit is used up. Open the thread to review its limits.",
+                "potBudgetBlocked", "pot" to "Butler"),
+        )
+        assertEquals(
+            "Butler 開了一項工作" to "iPad tests",
+            shown("Butler opened work", "iPad tests", "potOpenedWork", "pot" to "Butler"),
+        )
+        assertEquals(
+            "Daily digest 已錯過" to "現在執行，或略過這次。",
+            shown("Daily digest was missed", "Allow it to run it now, or dismiss it.", "scheduleMissed", "schedule" to "Daily digest"),
+        )
+        assertEquals(
+            "事件提醒：Dentist" to "這個事件將於 2026-11-28 09:30 開始（Asia/Taipei）。",
+            shown("Event reminder: Dentist", "This event starts at 2026-11-28 09:30 (Asia/Taipei).", "calendarStarts",
+                "event" to "Dentist", "when" to "2026-11-28 09:30", "timezone" to "Asia/Taipei"),
+        )
+        assertEquals(
+            "3 則新動態" to "a · b · c",
+            shown("3 new updates", "a · b · c", PushNote.SUMMARY_KEY, "count" to "3"),
+        )
+        assertEquals(
+            "pirc 通知正常運作" to "排程執行和等你處理的事都會顯示在這裡。",
+            shown("pirc notifications work", "Scheduled runs and anything waiting for you will show up here."),
+        )
+        assertEquals(
+            "有個 pot 注意到一件事" to "需要你的回答才能繼續。",
+            shown("A pot noticed something", "It needs your answer to go on."),
+        )
+        // Anything else is shown as sent.
+        assertEquals("Sent" to "Body", shown("Sent", "Body", "later", "pot" to "Butler"))
+        // The lock screen shows the same title.
+        val locked = renderer.build(plain("Butler replied", "Open the thread to read it.", PushText("potReplied", mapOf("pot" to "Butler"))))
+        assertEquals("Butler 回覆了", locked.publicVersion.title())
+    }
+
+    @Test @Config(qualifiers = "zh-rTW")
+    fun anApprovalsFrameFollowsTheSystemLanguage() {
+        val message = "Command (bash, in /repo):\n\nrm -rf build\n\nReason: x\n\nReason: deletes files"
+        assertEquals(
+            "指令（bash，位於 /repo）：\n\nrm -rf build\n\nReason: x\n\n原因：deletes files",
+            KnownText.questionMessage(context, KnownText.AUTO_MODE_APPROVAL_TITLE, message),
+        )
+        assertEquals(message, KnownText.questionMessage(context, "Q", message))
+        assertEquals("Odd (x):\n\ny\n\nReason: z", KnownText.questionMessage(context, KnownText.READ_ONLY_APPROVAL_TITLE, "Odd (x):\n\ny\n\nReason: z"))
+    }
+
     @Test @Config(qualifiers = "zh-rTW")
     fun knownServerTextFollowsTheSystemLanguage() {
         val waiting = renderer.build(

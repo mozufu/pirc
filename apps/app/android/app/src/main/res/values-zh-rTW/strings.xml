@@ -71,4 +71,39 @@
     <string name="overlay_run_failed">這次排程已經失敗。請開啟排程查看原因。</string>
     <string name="overlay_run_gone">這次排程已不需要處理。</string>
     <string name="files_share_title">分享</string>
+    <!-- 推播文字（crates/pirc-gateway/src/push/text.rs；notifications/KnownText.kt）。 -->
+    <string name="push_question_body">需要你的回答才能繼續。</string>
+    <string name="push_pot_approval_title">%1$s 想使用模型</string>
+    <string name="push_pot_approval_body">%1$s/%2$s，用於「%3$s」</string>
+    <string name="push_pot_budget_blocked_title">%1$s 的預算已用完</string>
+    <string name="push_pot_budget_blocked_body">有一項預算上限已用完。開啟對話查看它的上限。</string>
+    <string name="push_pot_budget_request_title">%1$s 申請更多預算</string>
+    <string name="push_pot_budget_request_body">開啟來核准或拒絕。</string>
+    <string name="push_pot_handover_title">%1$s 提出交接</string>
+    <string name="push_pot_handover_body">開啟對話查看。</string>
+    <string name="push_pot_replied_title">%1$s 回覆了</string>
+    <string name="push_pot_replied_body">開啟對話閱讀。</string>
+    <string name="push_pot_opened_work_title">%1$s 開了一項工作</string>
+    <string name="push_pot_noticed_title">%1$s 注意到一件事</string>
+    <string name="push_pot_noticed_unknown_title">有個 pot 注意到一件事</string>
+    <string name="push_schedule_finished_title">%1$s 已完成</string>
+    <string name="push_schedule_failed_title">%1$s 失敗了</string>
+    <string name="push_schedule_missed_title">%1$s 已錯過</string>
+    <string name="push_schedule_waiting_title">%1$s 正在等你回覆</string>
+    <string name="push_schedule_missed_body">現在執行，或略過這次。</string>
+    <string name="push_schedule_waiting_body">這次排程執行需要你的回答才能繼續。</string>
+    <string name="push_schedule_result_body">排程執行：開啟查看結果。</string>
+    <string name="push_calendar_title">事件提醒：%1$s</string>
+    <string name="push_calendar_now_body">這個事件正在進行（%1$s %2$s）。</string>
+    <string name="push_calendar_starts_body">這個事件將於 %1$s 開始（%2$s）。</string>
+    <plurals name="push_summary_title">
+        <item quantity="other">%d 則新動態</item>
+    </plurals>
+    <string name="push_test_title">pirc 通知正常運作</string>
+    <string name="push_test_body">排程執行和等你處理的事都會顯示在這裡。</string>
+    <string name="approval_message">%1$s（%2$s，位於 %3$s）：\n\n%4$s\n\n原因：%5$s</string>
+    <string name="approval_label_file_change">檔案變更</string>
+    <string name="approval_label_input">輸入</string>
+    <string name="approval_label_script">腳本</string>
+    <string name="approval_label_command">指令</string>
 </resources>

@@ -46,6 +46,19 @@ class PushNoteTest {
         assertNull(parse("""{"title":"T","body":"B","tag":"test","target":{"schedules":true},"at":1}""")!!.sessionName)
     }
 
+    @Test fun readsThePushText() {
+        val note = parse(
+            """{"title":"Butler replied","body":"B","tag":"thread:t1","target":{"potId":"p","threadId":"t1"},"at":1,
+               "text":{"key":"potReplied","args":{"pot":"Butler","odd":7}}}""",
+        )!!
+        assertEquals(PushText("potReplied", mapOf("pot" to "Butler")), note.text)
+        val summary = parse(
+            """{"title":"2 new updates","body":"a · b","tag":"summary","target":{"activity":true,"summary":{"count":2,"categories":{}}},"at":1}""",
+        )!!
+        assertEquals(PushText(PushNote.SUMMARY_KEY, mapOf("count" to "2")), summary.text)
+        assertNull(parse("""{"title":"T","body":"B","tag":"test","target":{"schedules":true},"at":1}""")!!.text)
+    }
+
     @Test fun defaultsWhenFieldsAreMissingOrUnknown() {
         val note = parse("""{"title":"T","body":"B","tag":"test","target":{"schedules":true},"at":1,"lockScreen":"odd","category":"odd"}""")!!
         assertEquals("title", note.lockScreen)

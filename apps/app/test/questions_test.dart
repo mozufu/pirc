@@ -171,6 +171,43 @@ void main() {
     expect(_answer(s, 'q1')['answer'], {'value': askOtherLabel});
   });
 
+  appTest('an approval\'s frame and the typed answer\'s hint show in the '
+      'app\'s language; the command and the reason stay as sent', (
+    tester,
+  ) async {
+    await _open(tester, language: 'zh-TW', [
+      _question(
+        'q1',
+        'confirm',
+        request: {
+          'title': autoModeApprovalTitle,
+          'message':
+              'Command (bash, in /repo):\n\nrm -rf build\n\nReason: x\n\n'
+              'Reason: deletes files',
+        },
+      ),
+      _question('q2', 'input', request: {'placeholder': askInputPlaceholder}),
+      // Under another title the same text is the agent's own.
+      _question(
+        'q3',
+        'confirm',
+        request: {'message': 'Command (bash, in /repo):\n\nls\n\nReason: r'},
+      ),
+    ]);
+    expect(
+      find.text(
+        '指令（bash，位於 /repo）：\n\nrm -rf build\n\nReason: x\n\n原因：deletes files',
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Command (bash, in /repo):\n\nls\n\nReason: r'),
+      findsOneWidget,
+    );
+    final hint = tester.widget<TextField>(find.byKey(const Key('answer-q2')));
+    expect(hint.decoration?.hintText, '輸入你的回答');
+  });
+
   appTest('select: several options', (tester) async {
     final s = await _open(tester, [
       _question(

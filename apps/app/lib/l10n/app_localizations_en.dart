@@ -729,6 +729,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get approvalReadOnlyTitle => 'Read-only mode: allow this action?';
 
   @override
+  String approvalMessage(
+    String label,
+    String tool,
+    String place,
+    String text,
+    String reason,
+  ) {
+    return '$label ($tool, in $place):\n\n$text\n\nReason: $reason';
+  }
+
+  @override
+  String get approvalLabelFileChange => 'File change';
+
+  @override
+  String get approvalLabelInput => 'Input';
+
+  @override
+  String get approvalLabelScript => 'Script';
+
+  @override
+  String get approvalLabelCommand => 'Command';
+
+  @override
+  String get questionInputPlaceholder => 'Enter your answer';
+
+  @override
   String get questionWithdrawn => 'Withdrawn';
 
   @override

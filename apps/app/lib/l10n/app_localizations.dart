@@ -1353,6 +1353,48 @@ abstract class AppLocalizations {
   /// **'Read-only mode: allow this action?'**
   String get approvalReadOnlyTitle;
 
+  /// No description provided for @approvalMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{label} ({tool}, in {place}):\n\n{text}\n\nReason: {reason}'**
+  String approvalMessage(
+    String label,
+    String tool,
+    String place,
+    String text,
+    String reason,
+  );
+
+  /// No description provided for @approvalLabelFileChange.
+  ///
+  /// In en, this message translates to:
+  /// **'File change'**
+  String get approvalLabelFileChange;
+
+  /// No description provided for @approvalLabelInput.
+  ///
+  /// In en, this message translates to:
+  /// **'Input'**
+  String get approvalLabelInput;
+
+  /// No description provided for @approvalLabelScript.
+  ///
+  /// In en, this message translates to:
+  /// **'Script'**
+  String get approvalLabelScript;
+
+  /// No description provided for @approvalLabelCommand.
+  ///
+  /// In en, this message translates to:
+  /// **'Command'**
+  String get approvalLabelCommand;
+
+  /// No description provided for @questionInputPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your answer'**
+  String get questionInputPlaceholder;
+
   /// No description provided for @questionWithdrawn.
   ///
   /// In en, this message translates to:

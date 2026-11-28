@@ -431,7 +431,7 @@ class _QuestionCardState extends ConsumerState<QuestionCard> {
               : null,
           onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
-            hintText: _q.placeholder,
+            hintText: inputPlaceholder(l10n, _q.placeholder),
             filled: true,
             fillColor: colors['fill.hover'],
             border: OutlineInputBorder(
@@ -528,7 +528,10 @@ class _QuestionCardState extends ConsumerState<QuestionCard> {
                         style: text.titleMedium,
                       ),
                       if (_q.description?.isNotEmpty ?? false)
-                        Text(_q.description!, style: text.bodySmall),
+                        Text(
+                          questionMessage(l10n, _q.title, _q.description!),
+                          style: text.bodySmall,
+                        ),
                     ],
                   ),
                 ),

@@ -713,6 +713,8 @@ impl AutoMode {
                 )
             });
         }
+        // Clients show this frame in their own words (`apps/app/lib/src/known_text.dart`,
+        // `KnownText.kt`): change it there too.
         let message = format!(
             "{} ({}, in {}):\n\n{}\n\nReason: {reason}",
             request.label,

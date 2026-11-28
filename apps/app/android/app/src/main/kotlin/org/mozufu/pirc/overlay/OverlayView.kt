@@ -186,7 +186,7 @@ class OverlayView(context: Context, private val actions: OverlayActions) {
         header(state.sessionName)
         state.expiresAt?.let { at -> expiryLine = contextLine(expiryText(at), warning = true) }
         title(state.title)
-        state.message?.let { body(it) }
+        state.message?.let { body(KnownText.questionMessage(ctx, state.title, it)) }
         if (state.choices.isEmpty()) {
             status(string(R.string.overlay_open_to_answer))
             buttons(

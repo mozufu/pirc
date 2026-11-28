@@ -202,6 +202,7 @@ async fn ask_one(ui: &dyn Ui, q: &Question, signal: &AbortSignal) -> Option<Ques
     let typed = async || -> Option<String> {
         while !signal.aborted() {
             let text = ui
+                // Clients show their own words for it (`pirc_client` `askInputPlaceholder`).
                 .input(&title, Some("Enter your answer"), dialog(signal))
                 .await?;
             let trimmed = js::trim(&text);

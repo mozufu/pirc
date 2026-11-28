@@ -696,6 +696,32 @@ class AppLocalizationsZh extends AppLocalizations {
   String get approvalReadOnlyTitle => '唯讀模式：要允許這個動作嗎？';
 
   @override
+  String approvalMessage(
+    String label,
+    String tool,
+    String place,
+    String text,
+    String reason,
+  ) {
+    return '$label（$tool，位於 $place）：\n\n$text\n\n原因：$reason';
+  }
+
+  @override
+  String get approvalLabelFileChange => '檔案變更';
+
+  @override
+  String get approvalLabelInput => '輸入';
+
+  @override
+  String get approvalLabelScript => '腳本';
+
+  @override
+  String get approvalLabelCommand => '指令';
+
+  @override
+  String get questionInputPlaceholder => '輸入你的回答';
+
+  @override
   String get questionWithdrawn => '已撤回';
 
   @override

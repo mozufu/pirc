@@ -74,4 +74,40 @@
     <string name="overlay_run_failed">This run has already failed. Open the schedule to read why.</string>
     <string name="overlay_run_gone">This run no longer waits for you.</string>
     <string name="files_share_title">Share</string>
+    <!-- Push words (crates/pirc-gateway/src/push/text.rs; notifications/KnownText.kt). -->
+    <string name="push_question_body">It needs your answer to go on.</string>
+    <string name="push_pot_approval_title">%1$s asks to use a model</string>
+    <string name="push_pot_approval_body">%1$s/%2$s for \"%3$s\"</string>
+    <string name="push_pot_budget_blocked_title">%1$s is blocked by its budget</string>
+    <string name="push_pot_budget_blocked_body">A budget limit is used up. Open the thread to review its limits.</string>
+    <string name="push_pot_budget_request_title">%1$s asks for more budget</string>
+    <string name="push_pot_budget_request_body">Open it to approve or deny.</string>
+    <string name="push_pot_handover_title">%1$s proposes a handover</string>
+    <string name="push_pot_handover_body">Open the thread to review it.</string>
+    <string name="push_pot_replied_title">%1$s replied</string>
+    <string name="push_pot_replied_body">Open the thread to read it.</string>
+    <string name="push_pot_opened_work_title">%1$s opened work</string>
+    <string name="push_pot_noticed_title">%1$s noticed something</string>
+    <string name="push_pot_noticed_unknown_title">A pot noticed something</string>
+    <string name="push_schedule_finished_title">%1$s finished</string>
+    <string name="push_schedule_failed_title">%1$s failed</string>
+    <string name="push_schedule_missed_title">%1$s was missed</string>
+    <string name="push_schedule_waiting_title">%1$s is waiting for you</string>
+    <string name="push_schedule_missed_body">Allow it to run it now, or dismiss it.</string>
+    <string name="push_schedule_waiting_body">The scheduled run needs your answer to go on.</string>
+    <string name="push_schedule_result_body">Scheduled run: open it to read the result.</string>
+    <string name="push_calendar_title">Event reminder: %1$s</string>
+    <string name="push_calendar_now_body">This event is happening now (%1$s %2$s).</string>
+    <string name="push_calendar_starts_body">This event starts at %1$s (%2$s).</string>
+    <plurals name="push_summary_title">
+        <item quantity="one">%d new update</item>
+        <item quantity="other">%d new updates</item>
+    </plurals>
+    <string name="push_test_title">pirc notifications work</string>
+    <string name="push_test_body">Scheduled runs and anything waiting for you will show up here.</string>
+    <string name="approval_message">%1$s (%2$s, in %3$s):\n\n%4$s\n\nReason: %5$s</string>
+    <string name="approval_label_file_change">File change</string>
+    <string name="approval_label_input">Input</string>
+    <string name="approval_label_script">Script</string>
+    <string name="approval_label_command">Command</string>
 </resources>

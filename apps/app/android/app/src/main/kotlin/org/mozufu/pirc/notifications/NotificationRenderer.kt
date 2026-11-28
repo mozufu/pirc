@@ -148,9 +148,10 @@ class NotificationRenderer(
     fun build(spec: NotificationSpec): Notification {
         val body = spec.answeredOn?.let { name ->
             context.getString(R.string.notification_answered_on, name.ifEmpty { context.getString(R.string.notification_another_device) })
-        } ?: KnownText.questionTitle(context, spec.body)
+        } ?: spec.text?.let { KnownText.pushBody(context, it) } ?: KnownText.pushFixed(context, spec.body)
         val title = spec.waitingSession?.let { context.getString(R.string.notification_waiting_title, KnownText.sessionName(context, it)) }
-            ?: spec.title.ifBlank { context.getString(R.string.notification_app_name) }
+            ?: spec.text?.let { KnownText.pushTitle(context, it) }
+            ?: KnownText.pushFixed(context, spec.title).ifBlank { context.getString(R.string.notification_app_name) }
         val builder = Notification.Builder(context, spec.channel)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
