@@ -219,8 +219,12 @@ Findings:
   Cause: Gateway startup recovery marks every session with a live runner stopped and
   sets its `updated_at` (`pirc-gateway/src/db.rs:819`), and runner state changes do the
   same (`db.rs:1420`); the Work list shows `updated_at` as the last activity, so a
-  Gateway restart moves every such session to the restart time. Not fixed:
-  `updated_at` may also drive sync.
+  Gateway restart moves every such session to the restart time. **Fixed:** startup
+  recovery, runner state changes and the new epoch on a Node reconnect no longer touch
+  a session's `updated_at`; a finished run or a question (the moments that mark it
+  unread) now sets it. The Gateway reads it only to order the session list, never for
+  sync; the web Sidebar and the app's Work list show it. A message the user sends
+  moves it only when that run finishes or asks. Not yet seen on the phone.
 
 ## Choices to confirm or change
 
