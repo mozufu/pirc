@@ -146,8 +146,19 @@ pub struct Journal {
     root: PathBuf,
     db: Mutex<Connection>,
     limits: Limits,
-    // A second live process must never interrupt the first's pending journal.
-    _lease: File,
+    // Drop after `db`: a second live process must never interrupt our journal.
+    _lease: JournalLease,
+}
+
+struct JournalLease(File);
+
+impl Drop for JournalLease {
+    fn drop(&mut self) {
+        // CLOEXEC closes the descriptor at exec, not at fork. A child which
+        // has not exec'd yet can keep the file description (and its flock)
+        // alive even after we close our descriptor.
+        let _ = rustix::fs::flock(&self.0, rustix::fs::FlockOperation::Unlock);
+    }
 }
 
 impl Journal {
@@ -195,6 +206,7 @@ impl Journal {
         let lease = open_private("journal.lock")?;
         rustix::fs::flock(&lease, rustix::fs::FlockOperation::NonBlockingLockExclusive)
             .map_err(err)?;
+        let lease = JournalLease(lease);
         let _index = open_private("index.sqlite")?;
         crate::private_dir::open_dir(&root, &["blobs"]).map_err(err)?;
         let db = Connection::open(root.join("index.sqlite")).map_err(err)?;
@@ -796,5 +808,28 @@ impl Journal {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod lease_tests {
+    use super::*;
+
+    #[test]
+    fn a_duplicate_descriptor_cannot_keep_a_closed_journal_locked() {
+        let dir = tempfile::tempdir().unwrap();
+        let state = dir.path().join("state");
+        let journal = Journal::open(&state, Limits::default()).unwrap();
+        // Like the descriptor inherited between fork and exec, this keeps the
+        // original open file description alive after the Journal closes its fd.
+        let inherited = journal._lease.0.try_clone().unwrap();
+        assert!(Journal::open(&state, Limits::default()).is_err());
+
+        drop(journal);
+        let reopened = Journal::open(&state, Limits::default()).unwrap();
+        drop(inherited);
+        assert!(Journal::open(&state, Limits::default()).is_err());
+        drop(reopened);
+        assert!(Journal::open(&state, Limits::default()).is_ok());
     }
 }
