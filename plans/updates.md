@@ -7,9 +7,9 @@ have known problems, tells the user in plain words with a link to the matching
 GitHub release, and the Gateway and its nodes can update themselves after the user
 agrees, without losing state or a reply in progress.
 
-**Delivery order.** M10A (steps 0–4, then 7) provides signed release information,
-advisories, manual update guidance and the migration/backup foundations. It is
-accepted independently and exposes no install action. M10B (steps 5–6) adds
+**Delivery order.** M10A (steps 0–4, then 7) provides release information from
+GitHub, advisories, manual update guidance and the migration/backup foundations.
+It is accepted independently and exposes no install action. M10B (steps 5–6) adds
 graceful replacement for supported installations after M10A passes. It is not
 accepted until the failure and recovery cases below pass. M11 completes the
 production Web service and phone pairing on Compose.
@@ -26,25 +26,35 @@ Examples of what the user sees (illustrative versions, not releases):
 
 ## Decisions (owner, 2026-11-28)
 
-- **The trust root is fixed in the binaries (P22).** The Gateway, Node and app
-  compile in the offline root public key. The root signs short-lived delegations
-  to release-manifest signing keys; it does not sign normal releases. A manifest
-  that fails verification is ignored and
-  reported as "could not check". Links shown to the user are only ever under
-  `https://github.com/mozufu/pirc/releases/`; anything else in a manifest is refused.
-  The Gateway relays the signed bytes to clients and every client verifies them
-  itself, so a Gateway cannot forge advice.
+- **Release information comes only from the repository's GitHub, over HTTPS (P22).**
+  The fixed URLs are compiled into the Gateway and the updaters: the release index
+  on `main` and the assets of each version's GitHub Release. Links shown to the
+  user are only ever under `https://github.com/mozufu/pirc/releases/`; anything
+  else in the data is refused. Clients take the information from their own Gateway,
+  which is the user's server; they do not fetch or verify it themselves.
 - **M10B adds graceful replacement (P23):** stop taking new work, let replies in
   progress finish, back up, replace the binaries, restart, restore on failure,
   report. There is no in-process hot swap. M10A ships only advisories and manual
   guidance.
-- **Only the delegated signing key is a CI secret (P28).** To keep a compromised
-  workflow from signing on its own, this key lives only in a GitHub
-  Environment (`manifest-signing`) that requires the owner's approval for every run,
-  is limited to the `main` branch and `v*` tags, and is used by one job that runs no
-  third-party action after the key is loaded. The job signs a reviewed manifest
-  tied to the verified tag, commit and artifact digests; it does not run code from
-  an unverified release checkout. The offline root is never loaded in CI.
+- **No pirc-managed signing keys (P28).** pirc does not run its own signing keys,
+  key rotation or revocation. Release integrity rests on three things:
+  - **Immutable releases.** The repository has GitHub immutable releases enabled,
+    so a published release's assets and tag cannot be changed; GitHub attaches a
+    signed release attestation listing the tag, commit and assets.
+  - **Checks by the updater.** Before installing, the updater fetches the release
+    from GitHub itself, requires it to be immutable, verifies the release attestation
+    if the step 0 spike shows that is practical, and checks every download's size and
+    SHA-256 against the release's own `pirc-release.json`.
+  - **A waiting period.** An update is offered only after the release has been
+    public for 48 hours (24 hours when it fixes a `security` advisory), counted
+    from the `published_at` that the GitHub Releases API reports, never from the
+    index. A release that should not have been published can be withdrawn in that
+    time.
+
+  What this does not cover: someone who controls the owner's GitHub account can
+  publish a normal-looking release. The waiting period and the owner's consent
+  are the remaining checks, as with a manual download. Securing the GitHub account
+  is the owner's (passkeys are in use) and is not part of this plan.
 
 ## Version model (existing, kept)
 
@@ -61,45 +71,32 @@ Examples of what the user sees (illustrative versions, not releases):
   number alone cannot establish that path. Installed state comes from the local
   process or its updater, not only from a version reported by another host.
 
-## The manifest
+## Release information
 
-Two JSON assets: `pirc-trust.json` (root-signed key delegation and revocation)
-and `pirc-manifest.json` (release-signed version and advisory data). Each is a
-single bounded envelope containing `format`, `keyId`, `payload` and `signature`.
-The signature covers the exact UTF-8 payload bytes, with a distinct signing
-domain for each asset. Encode payload and Ed25519 signature as base64url; do not
-re-serialize JSON before verification. The example below is the decoded release
-payload, not the envelope.
+Two kinds of document, both JSON, both read only over HTTPS from fixed URLs:
+
+- **The release index**, `release/index.json` on `main`, fetched from
+  `https://raw.githubusercontent.com/mozufu/pirc/main/release/index.json`. It holds
+  what changes after a release: each version's status and the advisories. Changes go
+  through ordinary commits, so they have public history.
+- **One release file per version**, `pirc-release.json`, an asset of that version's
+  immutable GitHub Release. It holds what is fixed at release time: API version,
+  node protocol, supported migration paths and every asset with its size and SHA-256,
+  image digests included. The release attestation covers it like any other asset.
+
+Release index (example):
 
 ```json
 {
   "format": 1,
-  "trustEpoch": 3,
-  "sequence": 42,
-  "generatedAt": "2026-12-20T08:00:00Z",
-  "expiresAt": "2027-01-20T08:00:00Z",
+  "updatedAt": "2026-12-20T08:00:00Z",
   "releases": [
     {
       "version": "0.12.2",
       "tag": "v0.12.2",
       "publishedAt": "2026-12-20T07:40:00Z",
-      "url": "https://github.com/mozufu/pirc/releases/tag/v0.12.2",
-      "apiVersion": 2,
-      "nodeProtocol": 17,
-      "schema": {
-        "gateway": { "target": 1121, "from": [1120, 1121] },
-        "node": { "target": 2102, "from": [2101, 2102] }
-      },
       "status": "supported",
-      "summary": { "en": "…", "zh-TW": "…" },
-      "assets": [
-        {
-          "name": "pirc-v0.12.2-darwin-arm64.tar.gz",
-          "platform": "macos-arm64",
-          "sha256": "…",
-          "size": 12345678
-        }
-      ]
+      "summary": { "en": "…", "zh-TW": "…" }
     }
   ],
   "advisories": [
@@ -113,8 +110,39 @@ payload, not the envelope.
       "publishedAt": "2026-12-20T07:40:00Z",
       "title": { "en": "…", "zh-TW": "…" },
       "summary": { "en": "…", "zh-TW": "…" },
-      "action": "update_now"
+      "action": "update_now",
+      "state": "active"
     }
+  ]
+}
+```
+
+Release file (example):
+
+```json
+{
+  "format": 1,
+  "version": "0.12.2",
+  "tag": "v0.12.2",
+  "commit": "…",
+  "url": "https://github.com/mozufu/pirc/releases/tag/v0.12.2",
+  "apiVersion": 2,
+  "nodeProtocol": 17,
+  "schema": {
+    "gateway": { "target": 1121, "from": [1120, 1121] },
+    "node": { "target": 2102, "from": [2101, 2102] }
+  },
+  "assets": [
+    {
+      "name": "pirc-v0.12.2-darwin-arm64.tar.gz",
+      "platform": "macos-arm64",
+      "sha256": "…",
+      "size": 12345678
+    }
+  ],
+  "images": [
+    { "name": "ghcr.io/mozufu/pirc-gateway", "digest": "sha256:…" },
+    { "name": "ghcr.io/mozufu/pirc-node", "digest": "sha256:…" }
   ]
 }
 ```
@@ -122,70 +150,88 @@ payload, not the envelope.
 - `kind`: `security`, `bug`, `performance`, `compatibility`. `severity`: `info`, `low`,
   `medium`, `high`, `critical`. `components`: `gateway`, `node`, `chat`, `app-android`,
   `app-web`, `app-macos`. `action`: `none`, `update`, `update_now`, `workaround`
-  (with `workaround` text). `status` of a release: `supported`, `deprecated`,
-  `withdrawn` (a withdrawn release is never offered).
-- **Freshness and replay.** Persist the highest root-signed trust epoch and,
-  within it, the highest release `sequence` together with an authenticated payload
-  digest. Reject lower values and conflicting contents at the same value;
-  identical payloads are idempotent. Only the offline root can advance the trust
-  epoch, so a released signing key cannot carry a sequence into a new epoch.
-  Require a valid clock, `generatedAt` before `expiresAt`, and an unexpired
-  delegation and manifest before offering or applying an update. An expired last
-  known manifest may be shown as stale, never as "up to date". The update
-  rollback must not roll back these verifier watermarks.
-- **Routine rotation.** The offline root signs a new trust epoch listing the
-  allowed key IDs and expiry (delegations last at most 30 days). Publish the
-  delegation before the first manifest signed under the new epoch. A verifier
-  accepts only manifests for its current verified epoch and a listed key.
-- **Emergency revocation.** The offline root publishes a higher epoch without
-  the compromised key, then a manifest signed by a replacement. A verified
-  higher epoch is persisted even if its matching release manifest is not yet
-  available; no cached manifest from the revoked epoch can authorize an update.
-  A client that has not received revocation may still trust an unexpired old
-  delegation, so revocation is not instantaneous. Compromise of the offline
-  root itself requires a reviewed rebuild with a new root and out-of-band notice.
-- **Partial publication or fetch.** Each asset contains its own signature, so
-  there is no detached-signature swap. A missing, malformed or mismatched pair
-  disables install offers until a current pair verifies. Keep independently
-  verified state and any cached advisory only for display, with freshness
-  indicated; do not lower the trust epoch or silently report success.
+  (with `workaround` text). `state` of an advisory: `active` or `retracted`; an
+  advisory is never deleted from the index, only retracted. `status` of a release:
+  `supported`, `deprecated`, `withdrawn`. A withdrawn release is never offered. An
+  update to it that has not started draining stops; one that has started draining
+  follows step 6: it finishes the same plan or rolls back every changed host, shows
+  `recovery_required` when an outcome is unknown, and never leaves mixed versions.
+- **Consistency.** A version is offered only when the index lists it as
+  `supported` or `deprecated`, its release exists and is immutable, the release
+  file's `version`, `tag` and `url` match the index entry, and the index
+  `publishedAt` equals the release's `published_at` from the GitHub API. A mismatch
+  refuses that version. A version lower than the installed one is never offered.
+- **Images.** `images` may be empty in a release file made before Docker images
+  exist (M10A dry runs). From 0.11.0 (M14), a release file without a digest for
+  each published image is refused.
+- **Index rollback.** The Gateway keeps the highest `updatedAt` it has accepted and
+  every advisory it has seen. An index with a lower `updatedAt` is ignored, and an
+  advisory missing from a newer index stays shown until the index marks it
+  `retracted`.
+- **Failures.** A fetch or parse failure is shown as "could not check" with the
+  time of the last good check; the last good data stays visible for display, marked
+  stale after 7 days, and never shown as "up to date". Install offers need a
+  successful check within the last 24 hours; checks run every 12 hours, so one
+  failed check does not hide an offer.
 - Advisory text says what is affected and what to do, never how to exploit it.
 - Strings come in English and Traditional Chinese; clients fall back to English.
 
-## Step 0 — Manifest format and verifier
+## Step 0 — Formats, parser and the attestation spike
 
-- `crates/pirc-protocol` (or a new small crate `pirc-manifest`): types, parsing with
-  `deny_unknown_fields` on known versions, SemVer range matching, signature check,
-  URL rule, sequence and expiry rules.
-- Dart: the same rules in `packages/pirc_client` (or a new `pirc_manifest`), with
-  shared test vectors in `fixtures/manifest/`: valid, bad signature, foreign URL,
-  lower sequence, same sequence with different content, expired, unknown fields,
-  routine rotation, revoked key, and mixed epochs.
-- `scripts/manifest.ts`: build the next manifest from the previous one plus a release
-  or advisory entry, and sign it with a key read from the environment (the CI secret)
-  or, for tests, from a key file given on the command line; no key is ever stored in
-  the repository.
+- **0a Formats.** Rust types and parsing (in `crates/pirc-protocol` or a small
+  `pirc-release-info` crate) with `deny_unknown_fields` on known formats, SemVer
+  range matching, the URL rule and the consistency rule. Dart parsing in
+  `packages/pirc_client` for the copy the Gateway relays. Shared fixtures in
+  `fixtures/release-info/`: valid, foreign URL, index and release file that
+  disagree, `publishedAt` different from the API value, withdrawn, retracted
+  advisory, older index, lower version, empty `images` before and after 0.11.0,
+  unknown fields, stale data.
+- **0b Validation script.** `scripts/release-info.ts check` validates
+  `release/index.json` (and a given release file). It runs in `bun run check`, so
+  it runs before every push, and again in CI. CI runs after a push and cannot stop
+  a malformed index from reaching `main`; that is acceptable because every Gateway
+  validates the index itself and keeps its last good copy, so a malformed index
+  only shows "could not check". This does not catch a valid but wrong advisory or
+  status; the owner reviews each index edit. Commands that edit the index for a
+  commit: `add-release <tag>` (P39), `add-advisory`, `retract-advisory`,
+  `withdraw`.
+- **0c Spike: verifying the release attestation.** GitHub signs immutable releases
+  with an attestation in the Sigstore bundle format. Measure whether the updater
+  can verify it in Rust (the `sigstore` crate or a small verifier for this one
+  bundle type): binary size, the trust root it needs and how that root is updated,
+  offline behavior, and how it fails. The `gh` CLI is not a runtime dependency.
+  Also confirm the API fields the updater relies on (the release's immutable flag,
+  asset digests). Outcome: either the updater verifies the attestation (repository,
+  tag, commit and the digest of `pirc-release.json`), or it relies on immutable
+  releases, HTTPS and SHA-256 alone. The owner chooses from the spike report;
+  M10B depends on it, M10A does not.
 
-**Done when:** Rust and Dart pass the same vectors; the script round-trips.
+**Done when:** Rust and Dart pass the same fixtures; the script refuses each bad
+fixture; the spike report is accepted.
 
 ## Step 1 — Gateway checks for updates
 
-- Setting **Check for updates** (default on; interval 24 hours; a **Check now**
-  button). The Gateway fetches the manifest and signature, verifies them, stores the
-  accepted bytes and replay watermarks separately from the restorable service
-  snapshot, and never sends anything about the installation in the request
-  (plain GET, generic user agent).
-- `GET /api/updates`: the stored signed envelopes, the Gateway's own version, API version,
-  node protocol, the versions of connected nodes, the install kind (step 6) and the
-  last check time and result. A hint (`updates=1`) tells clients when it changes.
-- The Gateway computes nothing the clients must trust; clients verify and match.
+- Setting **Check for updates** (default on; interval 12 hours; a **Check now**
+  button). The Gateway fetches the release index and, for each version newer than
+  its own, that release's `pirc-release.json`; validates them (step 0); and stores
+  the accepted data and the check time. Requests are plain GETs with a generic user
+  agent and send nothing about the installation.
+- `GET /api/updates`: the accepted index and release files, the Gateway's own version,
+  API version, node protocol, the versions of connected nodes, the install kind
+  (step 6), the last check time and result, and for each newer version when its
+  waiting period ends. A hint (`updates=1`) tells clients when it changes. The route
+  needs the same device authentication as every other route; only the API version
+  check is waived, so a client too old for the API can still learn which release
+  to install.
 
-**Done when:** conformance tests with a local manifest server cover accept, refuse,
-replay, expiry, offline; no request leaks host details.
+**Done when:** conformance tests with a local test server cover accept, foreign URL,
+disagreeing files, a backdated `publishedAt`, an older index, withdrawn, offline
+and stale; `/api/updates` refuses an unauthenticated request; no request leaks host
+details.
 
 ## Step 2 — Clients show compatibility and advisories
 
-- On start, on resume and on the `updates` hint, the client verifies the manifest and
+- On start, on resume and on the `updates` hint, the client reads `/api/updates` and
   matches: its own version against advisories for its component; the Gateway's and
   each node's version against theirs; newer releases eligible for the client API.
   A client match does not enable a server install action.
@@ -194,8 +240,8 @@ replay, expiry, offline; no request leaks host details.
   **View release** (opens the exact tag page in the browser).
 - **Banner** on the Chat and Work tabs for `update_now` or severity `high`/`critical`;
   it can be hidden per advisory and comes back when a new advisory matches.
-- **On `426 client_upgrade_required`**: the client reads `/api/capabilities` and the
-  manifest (both exempt from the version check) and names the release whose API
+- **On `426 client_upgrade_required`**: the client reads `/api/capabilities` and
+  `/api/updates` (both exempt from the version check) and names the release whose API
   version matches the server, with its link, instead of a generic message.
 - Android opens the release page; installing the APK stays the user's step in this
   milestone. Web reloads to get the bundle the server serves.
@@ -211,15 +257,18 @@ version.
 
 P5 stays in force for the cutover from 0.10.x or earlier to **pirc 0.11.0**:
 start with fresh state. From an installed 0.11.0 onward, updates keep data (P24).
-Every Gateway and Node schema change ships numbered forward migrations and a test
-against the previous supported release's database with fixture data. Record the
-0.11.0 schema fixtures for the first such update. A skip-version update is offered
+Every Gateway and Node schema change after 0.11.0 ships numbered forward migrations
+and a test against the previous supported release's database with fixture data.
+Order: M10 builds the migration runner and the fixture harness; the 0.11.0 release
+(M14) records its schema fixtures; the first schema change after 0.11.0 is the first
+one tested against a real previous-release fixture. A skip-version update is offered
 only if each installed schema has a verified path to the target; otherwise show
 the required intermediate release or manual instructions. No implicit downgrade
 migration; rollback restores the pre-update snapshot before writes resume.
 
-**Done when:** the migration runner exists for both databases; the test harness opens
-a previous-release fixture and migrates it; `releasing.md` lists the rule.
+**Done when:** the migration runner and the fixture harness exist for both databases
+and migrate a synthetic older schema in tests; `releasing.md` lists the rule,
+including recording the fixtures at each release.
 
 ## Step 4 — State bundle format
 
@@ -288,8 +337,8 @@ natively. The owner chooses from the spike's numbers.
 uses the `chat` subcommand), `linux/amd64` and `linux/arm64`, built by Release CI from
 the tagged commit; base images pinned by digest; a non-root user; read-only root file
 system; state only in named volumes (`/var/lib/pirc/gateway`, `/var/lib/pirc/chat`);
-secrets through files (`*_FILE` variables), never baked in. The manifest's release
-entry lists each image digest.
+secrets through files (`*_FILE` variables), never baked in. The release file
+(`pirc-release.json`) lists each image digest.
 
 **5c Compose.** `deploy/docker/compose.yaml` and `.env.example`: `gateway`, `chat`
 (per 5a) and `updater` in M10. Use a local test client and disposable credentials
@@ -301,11 +350,14 @@ user's choice; the example binds to loopback. A new guide `docs/deploy/docker.md
 
 **5d Updater.** `pirc-updater`, a small separate image, is the only service that
 mounts the Docker socket. Its control socket is shared only with the Gateway.
-The updater independently verifies the signed manifest, pulls exact digests and
-can recreate only the registered services in its own Compose project. Authenticate
-the local caller and bind apply or rollback to a specific approved update plan and
-its receipts; a Gateway connection alone is not consent. Never accept arbitrary
-images, commands or deployment definitions. The Gateway never holds the Docker
+The updater fetches the release from GitHub itself and runs the step 0 checks
+(immutable release, attestation if adopted, release file); it takes nothing from
+the Gateway beyond the version of the approved plan. It pulls exact digests and can
+recreate only the registered services in its own Compose project. On a Compose
+host it is the update coordinator (6a). It accepts apply or rollback only for a
+plan it prepared itself and with the consent token bound to that plan (step 6,
+P37); a Gateway connection alone is not consent. Never accept arbitrary images,
+commands or deployment definitions. The Gateway never holds the Docker
 socket and agents never see either socket. The updater stays minimal, has its
 own tests and is re-reviewed before release (M14).
 
@@ -320,8 +372,54 @@ Install kinds (P31):
 | Kind                                    | Who replaces the software                                             | Previous version kept as                  |
 | --------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------- |
 | Docker Compose (step 5)                 | the `pirc-updater` container                                          | the previous image digests                |
-| Native archive under systemd or launchd | an explicitly installed updater managed by systemd or launchd         | the previous binaries beside the new ones |
+| Native archive under systemd or launchd | the native `pirc-updater` (6a) under systemd or launchd               | the previous binaries beside the new ones |
 | Nix and NixOS                           | the user (pirc shows the advisory, the release link and the commands) | the previous generation                   |
+
+**6a The updater and the coordinator.**
+
+- **Deliverable.** A crate `crates/pirc-updater` with one binary, shipped in every
+  native archive and as the `pirc-updater` image (5d). It runs as the pirc service
+  user (or a dedicated user that owns the same state and install paths), never as
+  root, and holds no provider keys.
+- **Native install.** `pirc-updater install --service gateway|node|chat` detects
+  whether the pirc service is a system or user unit. For a system service it writes
+  a system unit for the updater, running as a dedicated unprivileged user, plus a
+  narrowly scoped polkit rule (or sudoers drop-in) that allows only
+  `systemctl start|stop|restart|is-active` on the registered pirc units. For a user
+  service it writes a user unit. On macOS it uses a LaunchDaemon for system
+  services or a LaunchAgent for user services. The updater never runs as root. It
+  records the service name and the install paths it may replace in its own
+  owner-only state directory and checks that it can restart that service. Native
+  binaries live in a versioned directory owned by that user, with a stable symlink
+  for the service unit; the updater refuses an install path it cannot write rather
+  than writing a root-owned path.
+  Installing a system unit and its polkit rule is a one-time administrator step
+  (root or sudo); the running updater is unprivileged. `pirc-updater uninstall`
+  removes the unit and the rule. `pirc-updater status` prints the registration.
+  The guide is [Upgrades](../docs/deploy/upgrades.md), extended with these steps.
+- **The coordinator** is the updater on the Gateway host (native or Compose), not
+  the Gateway, because the Gateway is itself replaced. It owns the plan and the
+  journal and drives every state: it asks the Gateway to drain, takes the backups,
+  swaps, checks health, commits, resumes or rolls back. The Gateway only shows the
+  plan, relays consent and obeys the drain fence.
+- **Participants** are the updaters on node hosts. Each participant connects
+  outbound to the Gateway over HTTPS with its existing node token and polls a
+  stable `/api/updates/agents` route (or an equivalent separate socket) for plans
+  and posts receipts. This update channel is versioned separately from
+  `NODE_PROTOCOL_VERSION`; it ships in 0.11.0 and a later release must keep its
+  older side compatible, so an update never depends on the node protocol of the
+  version being replaced. A node without the updater or channel is manual-only and
+  blocks a protocol/schema-changing update (P38). Each participant checks the plan
+  against GitHub itself. While the Gateway restarts, participants keep their state
+  durably and continue when the channel returns. Order within a plan: drain, back
+  up every host, swap remote nodes, swap the Gateway host, health of all, commit.
+- **Updating the updater** is never part of a plan. After a plan reaches `done`, a
+  newer updater is installed as its own small step: natively, the service manager
+  starts the new binary and a shipped fallback unit (systemd `OnFailure=`, a
+  launchd wrapper) restores the previous binary if it is not healthy within
+  60 seconds; on Compose, a one-shot helper container from the new image recreates
+  the `updater` service and restores the previous digest on the same failure. Each
+  updater can read the journal format of the previous release.
 
 An installation without a registered updater uses M10A guidance. Normal
 Gateway and Node processes do not get install permissions. A separately managed
@@ -348,21 +446,40 @@ still fenced. After it, retry resume and reporting as needed, but do not
 automatically restore a snapshot once new writes may have occurred.
 
 1. **Consent.** The owner explicitly approves the exact installation, host set and
-   target artifacts through a scoped management action. An ordinary paired device
-   session or pot cannot authorize it. The sheet shows the target version, its summary and
+   target artifacts. Mechanism (P37): a management grant
+   ([native management authorization](../docs/architecture/native-management.md))
+   with a new capability `updates:apply`, approved by the owner in the browser.
+   The grant is exchanged for a consent token bound to the plan digest (update ID,
+   target version, host set, artifact digests), valid 15 minutes. The coordinator
+   checks it at consent and again immediately before apply; if it expired, the
+   owner re-approves the same plan digest without downloading again. Web-only
+   owners use the equivalent forward-auth confirmation (or pair a device); an
+   ordinary paired device session or pot cannot authorize it. Threat model (P37): this
+   stops mistakes, stale plans and arbitrary commands over the Gateway connection.
+   It does not defend against an already compromised Gateway, which controls pots
+   and nodes anyway; such a Gateway can at most start an update to a release that
+   passes the updater's own GitHub checks. The sheet shows the target version, its summary and
    advisories, the estimated downtime, the nodes that will update, and what stops:
    runs that are waiting, side-panel terminals, background tasks and browsers that a
-   restart ends. Choices: **Update now**, **Update when idle**, **Not now**.
-2. **Download and verify.** Each host downloads its asset from the release URL in the
-   manifest and checks size and SHA-256 from the signed manifest; Docker pulls each
-   image by the digest in the manifest, never by tag. Remote nodes download their own
-   asset when the Gateway tells them; they report ready or a reason.
+   restart ends. Choices: **Update now**, **Update when idle**, **Not now**. The
+   sheet is offered only after the waiting period (P28); before that, the About
+   page shows when the update becomes available and **View release**.
+2. **Download and verify.** Each host's updater fetches the release itself (step 0
+   checks), downloads its asset from that release and checks size and SHA-256 from
+   `pirc-release.json`; Docker pulls each image by the digest in that file, never by
+   tag. Remote nodes download their own asset when their participant receives the
+   plan; they report ready or a reason.
 3. **Preflight.** Check disk space, local updater enrollment, previous binaries and
-   migration support for every required host. For the first implementation,
-   the required set is the Gateway and all registered, non-retired Nodes in the
-   installation. An offline or unsupported participant blocks the update before
-   draining; it cannot be silently omitted. Revalidate the plan and consent before
-   beginning the drain.
+   migration support for every required host. Required hosts (P38): when
+   the target changes the node protocol or a node schema, the Gateway and every
+   registered, non-retired node; an offline or unsupported one blocks the update
+   before draining. Otherwise, the Gateway host and the online nodes; offline nodes
+   are named in the consent sheet with a warning and are updated by their
+   participant when they reconnect, with their own snapshot, under the same
+   checks. On reconnect the participant re-reads the index (withdrawal and
+   advisory state), revalidates the plan and its consent token, and asks for a new
+   approval if the token expired; a withdrawn release is not applied. No host is
+   silently omitted. Revalidate the plan and consent before beginning the drain.
 4. **Drain.** The Gateway stops starting new runs, wakes and scheduled runs (they stay
    queued; nothing is dropped and nothing is re-sent through another path, N8), and
    waits until each run in progress ends its current reply. Default limit 10 minutes;
@@ -394,36 +511,48 @@ names them.
 **Done when:** tests on Linux CI (native and Compose) and macOS (native) update a
 Gateway and Node between two local builds, with a reply in progress, a queued
 wake and a schedule due during the update, and show all three complete once.
-Tests also cover an offline or unsupported Node before drain, a participant lost
-after swapping, a failing migration, and a killed updater or host after drain,
+Tests also cover an offline Node with a protocol change (blocks before drain), an
+offline Node without one (updated on reconnect), an unsupported Node, a
+participant lost after swapping, a withdrawal after draining started, an expired
+or mismatched consent token, the updater updating itself and falling back, a failing migration, and a killed updater or host after drain,
 backup, swap, migration and commit. Verify that recovery follows the same update
 ID, no mixed-version installation processes work, pre-commit rollback preserves
 data, and post-commit recovery does not discard new writes.
 
 ## Step 7 — Release pipeline (M10A)
 
-- Release CI adds the release entry (archive and APK sizes and hashes, image
-  digests) to the manifest and signs it in the `manifest-signing` environment after
-  the owner approves the run (P28). The separate root delegation and its
-  emergency-revocation process are not part of the release signing job.
-- **Where it is published:** a release with the fixed tag `manifest`, marked as a
-  pre-release so it is never "latest", whose two assets are replaced on every
-  change; clients fetch
-  `https://github.com/mozufu/pirc/releases/download/manifest/pirc-manifest.json`
-  and `pirc-trust.json` in the same directory. A trust update may briefly make
-  the old manifest unusable; clients follow the partial-publication rule above.
-  Each version release also carries the verified pair it was published with,
-  as an unchangeable record. `releasing.md` names `manifest` as the one release
-  whose assets are replaced, and documents recovery without the ordinary key.
-- A separate `workflow_dispatch` workflow publishes an advisory or withdraws a release
-  without a new version, through the same environment.
-- `releasing.md` gains: when to add an advisory, how to withdraw a release, how to
-  publish an advisory without a release.
+- **Precondition, checked first.** Confirm in the repository settings that
+  immutable releases are available and enabled, and that a test release receives a
+  release attestation. If either is missing, stop and ask the owner; the trust
+  model of P28 is not built on a feature that is off.
+- **Uploads only while a draft.** Nothing is uploaded after publishing (a later
+  upload is refused and would not be covered by the attestation).
+- **Release CI** builds from the tag. After the final assets exist (the APKs
+  signed), it computes sizes and SHA-256, writes `pirc-release.json` (assets, image
+  digests, API version, node protocol, migration paths; `images` may be empty in
+  M10A) and `SHA256SUMS`, and uploads them with the assets to the draft release.
+  It then downloads the draft's assets again and checks them against both files
+  before the release is offered to the owner to publish. Actions in the release
+  workflow are pinned to commit SHAs.
+- **Index change (P39).** After the owner publishes the release, the owner
+  runs `scripts/release-info.ts add-release <tag>`, which reads the release from the
+  GitHub API (immutable flag, `published_at`, the hash of `pirc-release.json`) and
+  adds the entry as `supported`; the commit goes to `main` as usual (P11). CI holds
+  no permission to push to `main`. Until the index lists a version, it is not
+  offered.
+- **Advisories and withdrawals** without a new version are index commits
+  (`add-advisory`, `retract-advisory`, `withdraw`); they take effect at each
+  Gateway's next check.
+- `releasing.md` gains: the precondition, enabling immutable releases, when to add
+  an advisory, how to withdraw a release, and that a release published by mistake
+  is withdrawn, never edited.
 
-**Done when:** a dry run produces a signed pair from a draft release and every
-verifier accepts it. A drill revokes a test CI key using only the offline root,
-then verifies that the replacement works, the superseded key is refused, and a
-partial publication cannot enable install. M10A can then be accepted without M10B.
+**Done when:** a dry run in a test repository publishes an immutable pre-release
+with `images: []` whose attestation verifies (`gh release verify`, and the updater
+check if step 0c adopts it); the re-download check catches a replaced draft asset;
+`add-release` refuses a mutable release; an invalid index fails `bun run check`; a
+withdrawn version stops being offered at the next check. M10A can then be accepted
+without M10B.
 
 **Not in M10:** installing the Android APK from inside the app, delta updates,
 automatic updates without consent, updating Nix installations, a Docker image for

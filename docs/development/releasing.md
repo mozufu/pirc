@@ -129,7 +129,7 @@ still use the debug key. Forks must configure their own secrets.
    analysis, macOS font-dependent Flutter tests, JVM tests, builds signed
    `standard` and `tailscale` release APKs, verifies both manifests, the ML Kit
    reflected constructors and the signing certificate, and publishes only the
-   standard beta APK until M11. Final assembly checks the exact asset set and
+   standard beta APK until M14. Final assembly checks the exact asset set and
    hashes the downloaded bytes into a single `SHA256SUMS`:
    - `pirc-v<version>-darwin-arm64.tar.gz`
    - `pirc-web-v<version>.tar.gz`

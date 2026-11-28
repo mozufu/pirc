@@ -42,7 +42,7 @@ On one machine, run the gateway and a node next to each other. For more than one
 | [`crates/`](crates)                               | Rust gateway, node, agent, model providers, protocol and conformance suite |
 | [`apps/app/`](apps/app/README.md)                 | The new Flutter client (Android, Web, macOS)                               |
 | [`packages/`](packages)                           | Dart packages of the new client: transport, UI and native rendering        |
-| [`apps/web/`](apps/web/README.md)                 | Old Svelte web client; deleted at M9                                       |
+| [`apps/web/`](apps/web/README.md)                 | Old Svelte web client; deleted at M11                                      |
 | [`plans/`](plans/README.md)                       | Direction, decisions, roadmap and open work for the rewrite                |
 | [`docs/`](docs/README.md)                         | Guides, architecture, deployment and design                                |
 | [`nix/`](nix/README.md), [`flake.nix`](flake.nix) | Nix packages, development shell and NixOS module                           |

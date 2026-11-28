@@ -156,7 +156,7 @@ jobs:
             --apk build/app/outputs/flutter-apk/app-tailscale-release.apk \
             --mapping build/app/outputs/mapping/tailscaleRelease/mapping.txt \
             --cert-der "$RUNNER_TEMP/pirc-signing.der"
-          # The published beta asset remains the standard flavor (M11 adds tailscale).
+          # The published beta asset remains the standard flavor; M14 decides on publishing tailscale.
           mkdir -p ../../dist/ci/android
           cp build/app/outputs/flutter-apk/app-standard-release.apk "../../dist/ci/android/pirc-$VERSION-beta.apk"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7

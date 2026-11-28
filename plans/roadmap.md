@@ -1513,8 +1513,8 @@ assume the model does whatever injected text says.
    dispatch, memory and long-lived state, execution boundary, earlier findings,
    dependencies and supply chain.
 2. Authorization at the point of effect; one-time approvals bound to the operation.
-3. Trust levels, effect classes, per-pot presets and the gate (P29); an external
-   content reader (P30).
+3. Trust levels, effect classes, per-pot presets and the gate (P29, P40); an
+   external content reader (P30).
 4. Memory provenance (P26).
 5. Capability combinations at pot configuration.
 6. Browser and sandbox isolation for native installations, per platform. M10 owns the container spike.
@@ -1525,14 +1525,15 @@ assume the model does whatever injected text says.
 
 ## M10 Versions and updates
 
-Steps and details: [updates.md](updates.md). **M10A** delivers signed release
-information, advisories and manual update guidance (steps 0–4 and 7). **M10B**
+Steps and details: [updates.md](updates.md). **M10A** delivers release
+information from GitHub, advisories and manual update guidance (steps 0–4 and 7). **M10B**
 delivers Docker and operator-approved graceful replacement (steps 5–6) after
 M10A's verification passes. M10 checks Compose without the new Web app; the
 complete Compose install is accepted in M11. Data is kept across updates
 starting from an installed 0.11.0 (P24).
 
-0. Manifest format and verifier (Rust and Dart, shared vectors), signing script.
+0. Release index and release file formats, parser (Rust and Dart, shared fixtures),
+   validation script, and the spike on verifying GitHub release attestations.
 1. Gateway checks for updates; `GET /api/updates`.
 2. Clients show compatibility, advisories, new releases; `426` names the matching
    release.
@@ -1541,10 +1542,11 @@ starting from an installed 0.11.0 (P24).
 5. Docker install for Linux hosts: Docker installs and updates, the agent sandbox
    stays the security boundary; spike for the sandbox in a container, images,
    Compose file, `pirc-updater` (P31, P36).
-6. Graceful update: consent, download and verify, preflight, drain, back up, swap,
-   restart, migrate, resume, roll back.
-7. Release pipeline (part of M10A, before M10B): CI signing in a protected
-   environment (P28), the `manifest` release, and an offline-root revocation drill.
+6. Graceful update: consent (P37), required-host policy (P38), download and verify,
+   preflight, drain, back up, swap, restart, migrate, resume, roll back.
+7. Release pipeline (part of M10A, before M10B): immutable releases with
+   `pirc-release.json`, the release index on `main`, advisories and withdrawals as
+   index commits (P28, P39).
 
 ## M11 Web and macOS cutover
 
@@ -1559,8 +1561,9 @@ the `pirc://pair` token link, the Devices page "Pair a new device"); device acce
 of answering the same question on Web and on the phone at the same time (moved from
 M8, whose Web is the old `apps/web`, not kept working with the rewritten Gateway);
 Nix packaging and nginx headers; delete `apps/web`. Add the production Flutter Web
-service to M10's Compose setup and verify fresh install, v2 phone pairing, and a
-signed update without regressing either. macOS desktop target, building on the scaffold from M5: Keychain
+service to M10's Compose setup and verify fresh install, v2 phone pairing, and an
+M10B update between two local test builds on Compose with the Web service, without
+regressing either. The first update between real releases follows 0.11.0. macOS desktop target, building on the scaffold from M5: Keychain
 credentials, pairing, tiers 1–2 rendering with script-bearing HTML shown statically (P34),
 notifications while running.
 
@@ -1594,11 +1597,11 @@ Outline: release **pirc 0.11.0**, tag `v0.11.0` (P35). Update `README.md`,
 requested by the owner; publish the breaking-cutover notice in the changelog.
 Android artifacts: both the `standard` and the `tailscale` APK.
 
-Also: publish M10A's initial trust delegation and manifest with this release, listing
-0.11.0 as supported; `SECURITY.md` (M9 step 8)
+Also: enable immutable releases, publish the release, then add 0.11.0 as supported
+to the release index; `SECURITY.md` (M9 step 8)
 names it as supported; the M9 findings list has no open item the owner has not
-accepted. Re-review the new security boundaries in M10–M13: manifest signing and
-revocation, updates and Docker, Web/macOS and pairing, Tailscale, and export.
+accepted. Re-review the new security boundaries in M10–M13: release information and
+its checks, updates and Docker, Web/macOS and pairing, Tailscale, and export.
 Record the reviewed revision, regression evidence and any owner-accepted
 exceptions locally. The release notes distinguish the fresh start from
 0.10.x or earlier from data-preserving updates starting at 0.11.0 (P5, P24).

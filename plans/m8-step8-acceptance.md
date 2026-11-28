@@ -116,6 +116,8 @@ Phone: Xiaomi `2412DPC0AG` (`rodin`) Android version: 16 OEM skin: HyperOS 3.0
 
 ### E. Quick-reply overlay (needs a distributor)
 
+Earlier agent run; the owner's acceptance above supersedes these results.
+
 | #   | Check                                                                                                                                                              | Result                                                                                                                                                   |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | E1  | The "display over other apps" permission prompt and its setting                                                                                                    | pass (granted by the owner; the setting shows it)                                                                                                        |
@@ -124,6 +126,8 @@ Phone: Xiaomi `2412DPC0AG` (`rodin`) Android version: 16 OEM skin: HyperOS 3.0
 | E4  | Sending from the overlay while another device holds control: it takes control, asks first if the holder acted in the last 30 s, and shows who holds it if it fails | partial: the send took control from another client and the answer arrived; the 30 s question was not triggered (the other holder had no recorded action) |
 
 ### F. Release build
+
+Earlier agent run; the owner's acceptance above supersedes these results.
 
 | #   | Check                                                                                      | Result                                                               |
 | --- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------- |

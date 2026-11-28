@@ -17,7 +17,6 @@ packages/pirc_client/        API models, transport, timeline reducer, repositori
 packages/pirc_ui/            design tokens, theme, shared components, adaptive scaffold
 packages/pirc_render/        chat content: Markdown, code, math, tables, images, HTML (static and forms), Mermaid
 packages/pirc_render_document/  fetched documents and the script runtime (Android only; tier 3 lives here)
-apps/android/                old app; keeps building until M8 deletes it
 apps/web/                    old web app; keeps building until M11 deletes it
 ```
 

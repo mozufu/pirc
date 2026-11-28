@@ -193,6 +193,9 @@ Intended behavior (P29):
   - _irreversible or outbound_: `git push` and other network writes from work, sending
     anything beyond pirc, deleting, handing over, starting an `ask` model, asking for
     money, changing settings.
+  - _raw page access_ (a pot's `web_read(raw)`, `web_fetch` or `browser_*` page
+    read): classed _read_ but always an approval card for pots (P40), even under
+    Trusted.
 
   Classify by the effect the backend can enforce, not by the tool name or the
   model's explanation. If a call can perform several effects, use the most
@@ -202,18 +205,20 @@ Intended behavior (P29):
 
 - **Per-pot trust preset**, chosen when the pot is created and in its settings:
 
-  | Preset             | At _external_ trust                                                                                                        |
-  | ------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-  | Strict             | _reversible effect_ and _irreversible or outbound_ calls become approval cards                                             |
-  | Standard (default) | _reversible effect_ calls run within the pot's permissions; _irreversible or outbound_ calls become approval cards         |
-  | Trusted            | the trust level adds no approvals; the pot's permissions still apply, and the step 5 combination warning must be confirmed |
+  | Preset             | At _external_ trust                                                                                                                                              |
+  | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | Strict             | _reversible effect_ and _irreversible or outbound_ calls become approval cards                                                                                   |
+  | Standard (default) | _reversible effect_ calls run within the pot's permissions; _irreversible or outbound_ calls become approval cards                                               |
+  | Trusted            | the trust level adds no approvals, except a pot's raw page access (P40); the pot's permissions still apply, and the step 5 combination warning must be confirmed |
 
-  At _clean_ trust every preset behaves as today: permissions decide.
-  In any row, a missing permission, unsupported operation, or stale revision
-  is a refusal, not an approval card. A preset cannot widen a permission.
+  At _clean_ trust every preset behaves as today for ordinary effects: permissions
+  decide. P40 raw page access still needs its approval. In any row, a missing
+  permission, unsupported operation, or stale revision is a refusal, not an approval
+  card. A preset cannot widen a permission.
 
-- **The gate** is in the step 2 decision function and in the Node's tool path for work
-  sessions. Work opened or instructed from an _external_ context starts _external_ and
+- **The gate** is in the step 2 decision function, in the Node's tool path for work
+  sessions, and in the pot's raw page tools (P40). Work opened or instructed from an
+  _external_ context starts _external_ and
   uses the opener's preset, so a chain through another pot or a work session cannot
   wash the level clean. Reminders, notes and self-settings written from an _external_
   context carry that level forward (step 4).
@@ -255,10 +260,11 @@ when they need to.
 
 Design:
 
-- **A reader run** with no tools, no memory, no prompt of the pot's and no user data.
-  It sees only the page's visible text (from the accessibility tree, so hidden text is
-  dropped) and, optionally, the pot's question. It holds only one leg of the Rule of
-  Two (untrusted input): it cannot act and has nothing private to leak.
+- **A reader run** with no tools, no pot memory, no prompt of the pot's and no user
+  data other than the optional short question. It sees only the page's visible text
+  (from the accessibility tree, so hidden text is dropped) and that question. It
+  holds only one leg of the Rule of Two (untrusted input): it cannot act and has
+  nothing private to leak.
 - **Typed output**, validated by the Gateway: title, up to N short facts (each length
   capped), the answer to the pot's question if one was given, and links. A link is
   kept only if it appears in the page itself; anything that fails the schema is
@@ -266,9 +272,13 @@ Design:
 - **Asking the page.** `web_read(url, question?)` returns the digest; with a question
   the reader answers it from the page, which covers most "find the command / the date
   / the price" needs without the page entering the pot's context.
-- **The page itself.** `web_read(url, raw: true)` with a stated reason. Strict: it is
-  an approval card. Standard: allowed, logged with the reason in the pot's activity.
-  Trusted: allowed.
+- **The page itself.** A pot normally uses the digest. It may read the page with
+  `web_read(url, raw: true)`, `web_fetch` or `browser_*` only after stating why the
+  digest is insufficient and getting the user's approval for that page access (P40).
+  The approval is per request or a short task grant bound to the page and reason,
+  expires, applies even under Trusted, and is logged in the pot's activity. When
+  `browser_*` is approved, the sheet says it uses the workspace's browser profile
+  and any logged-in sites. Work sessions keep their existing preset behavior.
 - **Trust does not change.** The digest still makes the context _external_: a digest
   written by a model that read a hostile page can carry the hostile page's request
   (summaries are a known laundering path). The reader lowers how often a pot is
@@ -279,10 +289,51 @@ Design:
   default), separate from the pot's models; a per-pot setting is not planned.
 - Later, the same reader may front observed events' free text and long pot messages.
 
-**Done when:** tests that the reader's request carries nothing but the
-page and the question; schema validation drops forged links and oversized fields; a
-conformance case where the page tells the reader to tell the pot to push still meets
-the step 3 card.
+Implementation (`web_read` does not exist yet; today pots and work sessions have
+`web_fetch`, which loads the page in the workspace's browser tab):
+
+- **The tool.** Add `web_read` to the pot mode's tool list in
+  `crates/pirc-protocol/src/mode.rs`, with its prompt in
+  `crates/pirc-agent/prompts/tools/`, its PTC signature and untrusted-content note
+  in `crates/pirc-agent/src/ptc/signatures.rs`, and its registry entry in
+  `crates/pirc-agent/src/ptc/registry.rs` (an untrusted `read`). The step 3 gate
+  classes it as _read_; `raw: true` follows P40. The pot mode keeps `web_fetch` and
+  the `browser_*` tools, but every `browser_*` call and every `web_fetch` is gated by
+  P40; the tool prompt tells the pot to use the digest first and give a reason when
+  it cannot.
+  Work sessions keep their existing tools and preset behavior.
+- **Who fetches the page.** The chat node, in a fresh browser context made for this
+  one read: no profile, no cookies or storage from any workspace or earlier read,
+  no logged-in state, no downloads and no permission prompts, closed afterwards.
+  It uses the same network egress rules and private-host filtering as other agent
+  traffic. It never reuses a workspace's browser profile or the pot's own browser tab.
+- **Limits.** Page load 30 seconds; the reader gets at most 200,000 characters of
+  visible text, cut with a note when longer; the digest holds at most 20 facts of
+  300 characters, an answer of 2,000 characters and 50 links. Links are kept only
+  for `http(s)` URLs that are not private addresses and appear in the page. A raw
+  read is paged and marked untrusted, from the same fresh context.
+- **Who runs the reader.** The chat node fetches and extracts the page, then sends
+  the reader request through the Gateway's inference path with a distinct `reader`
+  purpose, the pot and causal-root identity, and no session messages. The Gateway
+  admits budget to that pot and root ([usage.md](usage.md)) and validates the typed
+  result; the request contains the page text and the pot's optional question only.
+  The question is pot-authored and is sent to the reader provider, so keep it a
+  short query and never include pot memory, secrets or session transcripts.
+- **The reader model setting.** Settings → Pots → **Reader model**: one model for
+  all pots, chosen from the configured providers, with the smallest configured
+  model as the default (Gateway route under the existing settings API). Without a
+  usable reader model, `web_read` without `raw` fails with a message naming the
+  setting, and `raw: true` follows the preset as usual.
+
+**Done when:** tests that the reader's request carries nothing but the page and
+the question, and that the question stays a short query; reader usage is admitted
+to the pot and causal root; the fresh context carries no cookie set by a workspace
+browser or an earlier read and obeys private-host filtering; the limits hold;
+schema validation drops forged, non-http(s) and private-address links and
+oversized fields; a pot cannot call `web_fetch`, `browser_*` or `web_read(raw)`
+without the P40 approval, and the approval binds the page and reason; a
+conformance case where the page tells the reader to tell the pot to push still
+meets the step 3 card.
 
 ## Step 4 — Memory provenance
 
@@ -345,7 +396,7 @@ they are fixed when the test confirms them, or closed with the test as evidence.
 - Add `cargo deny` (advisories, licenses, sources) to the Check workflow; record each
   allowed exception with its reason and an expiry date.
 - Add `SECURITY.md` with GitHub private vulnerability reporting, the supported
-  versions (from the M10 manifest once it exists) and what counts as in scope.
+  versions (from the M10 release index once it exists) and what counts as in scope.
 
 **Done when:** `cargo deny check` passes in CI; `SECURITY.md` is published; the
 dependency changes are listed in `CHANGELOG.md` under Unreleased.
