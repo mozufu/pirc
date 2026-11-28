@@ -437,18 +437,40 @@ async fn guards_requests_websockets_and_service_workers() {
     )
     .await;
     assert_eq!(fetched, "error");
+    // Learn the frame id while it is still attached to this page. Some
+    // Chromium versions move a cross-site error frame out of the parent's
+    // CDP frame tree, even though the guard refused the navigation.
+    let mut frames = page.listen();
     eval(
         &page,
-        &format!(
-            "new Promise(resolve => {{ const f = document.createElement('iframe'); f.onload = () => resolve(0); f.src = '{base}/redirect-doc'; document.body.append(f); }})"
-        ),
+        "document.body.append(document.createElement('iframe')); 0",
     )
     .await;
-    let tree = page.call("Page.getFrameTree", json!({})).await.unwrap();
-    let frame = &tree["frameTree"]["childFrames"][0]["frame"];
-    assert_eq!(frame["url"], "chrome-error://chromewebdata/", "{tree}");
+    let frame = tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            let event = frames.recv().await.expect("CDP events");
+            if event.method == "Page.frameAttached" {
+                break event.params["frameId"].as_str().unwrap().to_owned();
+            }
+        }
+    })
+    .await
+    .expect("iframe attached");
+    let navigation = page
+        .call(
+            "Page.navigate",
+            json!({ "frameId": frame, "url": format!("{base}/redirect-doc") }),
+        )
+        .await
+        .unwrap();
+    assert!(
+        navigation["errorText"]
+            .as_str()
+            .is_some_and(|error| error.starts_with("net::ERR_BLOCKED_BY_CLIENT")),
+        "{navigation}"
+    );
     assert_eq!(
-        guard.refused_hop(frame["id"].as_str().unwrap()),
+        guard.refused_hop(&frame),
         Some((
             format!("http://127.0.0.2:{private_port}/hopdoc#part"),
             "127.0.0.2 is a loopback address".to_owned()
