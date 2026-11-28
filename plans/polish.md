@@ -14,8 +14,9 @@ to filter the list. It has only a name and a text color.
 
 Rules:
 
-- A role grants nothing and is invisible to pots: it is not in any prompt, tool
-  result or permission summary (pots.md, Invariant 4). It is presentation only.
+- A role grants nothing (pots.md, Invariant 4: only the permission settings grant)
+  and is invisible to pots: it is not in any prompt, tool result or permission
+  summary. It is presentation only.
 - A pot has zero or more roles. Roles belong to the owner; names are unique per
   owner (compared case-insensitively after trimming), 1–24 characters. The color is
   one of the role tokens (step 1c), not a free value.
@@ -30,7 +31,7 @@ Rules:
 `PUT /api/pot-roles/order`; a pot's roles are a `roles` array of IDs in the pot
 create and update bodies and in pot reads; the pots list returns them so the Chat
 list needs no extra request. A `pots=1` hint is sent on change. Capability:
-`features.pots.version` becomes 2.
+`features.pots.version` is raised by one from the value M9 leaves (it is 1 today).
 
 **1b Where the user sets roles.**
 
@@ -52,7 +53,8 @@ list needs no extra request. A `pots=1` hint is sent on change. Capability:
   line under the chips says "Showing roles: 研究, 生活 · Clear".
 - The selection is kept per device (preferences), not on the Gateway.
 - Pot rows show up to two role labels in their colors after the name, then "+n".
-- Role colors: eight tokens added to `pirc_ui` with light and dark values that meet
+- Role colors: eight tokens added to `docs/design/tokens.json` (and generated into
+  `pirc_ui` with `tool/generate_tokens.dart`), with light and dark values that meet
   4.5:1 contrast on the list background; the design handoff gets a short addendum
   (E-roles) with the sheet and the row.
 
@@ -69,9 +71,10 @@ item is scanned by a review model as well as checked by the rules below (see
 "Later: import").
 
 Builds on the [M10 bundle format](updates.md#step-4--state-bundle-format)
-(`kind: export`): one archive with `bundle.json`, a human-readable copy of each part
-(Markdown, CSV or iCalendar) and a versioned machine-readable copy (JSON), so a later
-import can read it.
+(`kind: export`): one archive with `bundle.json` and each item in the formats the
+table lists: a human-readable copy (Markdown, CSV or iCalendar) where one is useful,
+and a versioned machine-readable copy (JSON; CSV for usage), so a later import can
+read it.
 
 **What Settings → Data → Export offers** (P33; each item is a check box, and some
 take a selection):
@@ -119,7 +122,8 @@ does not promise to detect or remove those secrets.
   giving to someone else, with a reminder to check the personality text for personal
   details.
 
-**Done when:** each item's machine copy matches the stored data and marked
+**Done when:** each item's machine copy (JSON, or CSV for usage) matches the stored
+data and marked
 system secrets never appear in an archive; a paired device without fresh
 approval cannot export conversations or memory; changed scope, wrong owner or
 device, expired approval and revoked device are rejected. Test interrupted

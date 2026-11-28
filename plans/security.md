@@ -44,7 +44,7 @@ listed at the end of this section). pirc adopts these principles:
    origins inform, never authorize.
 
 Ordering: step 0 first; step 1 (the review) next, its parts in parallel; steps 2–6
-(3b included) are designs that the owner reviews before code, then code in the order 2, 3, 4, 5, 6;
+(3b included) are designs that the owner reviews before code, then code in the order 2, 3, 3b, 4, 5, 6;
 step 7 holds the remaining fixes from step 1 in priority order; step 8 can run any
 time after step 0; step 9 grows with steps 2–7; step 10 closes the milestone.
 Implementation is done in small steps by delegated agents; the reviewing agent
@@ -54,8 +54,7 @@ checks each step against its **Done when**.
 
 - Record the baseline commit of the review.
 - Update the milestone numbers in source comments and documents outside `plans/`
-  (P21): `README.md`, `docs/development/releasing.md`,
-  `docs/development/gateway-and-node.md`, `.github/workflows/release.yml`,
+  (P21): `docs/development/gateway-and-node.md`,
   `apps/app/android/app/build.gradle.kts`,
   `apps/app/android/app/src/main/res/xml/network_security_config.xml`,
   `apps/app/android/app/src/main/kotlin/org/mozufu/pirc/background/GatewayHttp.kt`,
@@ -64,6 +63,8 @@ checks each step against its **Done when**.
   `apps/app/lib/src/settings/pairing_approval.dart`,
   `crates/pirc-gateway/src/auth.rs` (old M9 → M11, M10 → M12, M11 → M14; the
   "M0–M9 records" in `historical-records.md` are the earlier Rust port and stay).
+  `README.md`, `docs/development/releasing.md` and `.github/workflows/release.yml`
+  already use the new numbers.
 - Write the **inventory of sources and sinks** (local notes):
   - _Sources_ of content neither the user nor pirc wrote: every wake source of
     pots.md § Runtime (user message, group message, pot DM, observed event, approval
@@ -192,7 +193,7 @@ Intended behavior (P29):
     covered by checkpoints), messages or wakes another pot inside pirc;
   - _irreversible or outbound_: `git push` and other network writes from work, sending
     anything beyond pirc, deleting, handing over, starting an `ask` model, asking for
-    money, changing settings.
+    money, changing any setting other than the pot's own _internal_ ones.
   - _raw page access_ (a pot's `web_read(raw)`, `web_fetch` or `browser_*` page
     read): classed _read_ but always an approval card for pots (P40), even under
     Trusted.
@@ -261,8 +262,9 @@ when they need to.
 Design:
 
 - **A reader run** with no tools, no pot memory, no prompt of the pot's and no user
-  data other than the optional short question. It sees only the page's visible text
-  (from the accessibility tree, so hidden text is dropped) and that question. It
+  data other than the optional short question. It sees only the text of the page's
+  accessibility tree (which leaves out much hidden text, not all of it; nothing
+  relies on this) and that question. It
   holds only one leg of the Rule of Two (untrusted input): it cannot act and has
   nothing private to leak.
 - **Typed output**, validated by the Gateway: title, up to N short facts (each length
@@ -323,7 +325,7 @@ Implementation (`web_read` does not exist yet; today pots and work sessions have
   all pots, chosen from the configured providers, with the smallest configured
   model as the default (Gateway route under the existing settings API). Without a
   usable reader model, `web_read` without `raw` fails with a message naming the
-  setting, and `raw: true` follows the preset as usual.
+  setting, and `raw: true` still needs its P40 approval.
 
 **Done when:** tests that the reader's request carries nothing but the page and
 the question, and that the question stays a short query; reader usage is admitted

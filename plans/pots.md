@@ -8,6 +8,12 @@ Pots talk to the user, to each other and in groups, and open or join work sessio
 within their permissions. This document is the backend specification; the screens
 are in the design handoff (E1–E36).
 
+M9 ([security.md](security.md): P26, P29, P30, P40) and M13
+([polish.md](polish.md)) change parts of this specification: which notes go into a
+pot's prompt, the web tools, trust presets and roles. Until their steps land and
+this file is updated with them, it describes what is built today; where they
+differ, those files give the intended behavior.
+
 ## Invariants
 
 These hold for every feature below and are tested directly.

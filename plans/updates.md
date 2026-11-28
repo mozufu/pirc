@@ -521,10 +521,11 @@ data, and post-commit recovery does not discard new writes.
 
 ## Step 7 — Release pipeline (M10A)
 
-- **Precondition, checked first.** Confirm in the repository settings that
-  immutable releases are available and enabled, and that a test release receives a
-  release attestation. If either is missing, stop and ask the owner; the trust
-  model of P28 is not built on a feature that is off.
+- **Precondition, checked first.** Confirm that immutable releases are available
+  for `mozufu/pirc` and enabled in the test repository used for the dry run, and
+  that a test release there receives a release attestation. If either is missing,
+  stop and ask the owner; the trust model of P28 is not built on a feature that is
+  off. The real repository is switched on in M14, before 0.11.0 is published.
 - **Uploads only while a draft.** Nothing is uploaded after publishing (a later
   upload is refused and would not be covered by the attestation).
 - **Release CI** builds from the tag. After the final assets exist (the APKs
