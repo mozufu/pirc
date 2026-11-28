@@ -1,24 +1,20 @@
-# M8 step 8: device acceptance checklist (working note)
+# M8 step 8: device acceptance record
 
-A working note for [roadmap](roadmap.md) M8 step 8, the owner's acceptance on a physical
-Android phone with a real account. Delete it when step 8 closes, after the results are in
-the status table's Notes. A skipped check is not a pass (N8): mark it `skipped` with the
-reason.
+A record for [roadmap](roadmap.md) M8 step 8, the owner's acceptance on a physical
+Android phone with a real account. A skipped check is not a pass (N8).
 
-**Owner update (2026-11-27):** sections A–D passed on a physical device. The
-owner approved proceeding with cutover before finishing E (quick-reply overlay)
-and F (release APK on a phone); both remain to be verified. G1 is optional and
-was not confirmed. The detailed run below is the earlier agent run, not the
-owner's results.
+**Owner acceptance (2026-11-28):** sections A–F passed on a physical device,
+including E (quick-reply overlay) and F (release APK). G1 is optional and was
+not separately confirmed. The detailed tables below preserve the earlier
+agent run; they do not supersede the owner's results.
 
-**Cutover:** the old app was removed in `34a49c41`. Use the current Android
-build for the remaining E–F checks. CI verified the signed standard release APK
-at the cutover revision; the smoke run did not publish or upload that APK and
-does not replace F on a physical phone.
+**Cutover:** the old app was removed in `34a49c41`. CI verified the signed
+standard release APK at the cutover revision without publishing or uploading
+it. The owner confirmed F separately on a physical phone.
 
 ## Before you start
 
-- **Gateway and Node from current `main`.** Steps 0–7 need the pirc 2
+- **Gateway and Node from current `main`.** Steps 0–7 need the 0.11.0
   Gateway (pairing v2 tables, `POST /api/device/rotate`, notification preferences,
   compact endpoints for the background client).
 - **APKs**, built from the same revision in `apps/app/build/app/outputs/flutter-apk/`:
@@ -35,7 +31,7 @@ does not replace F on a physical phone.
   owner chooses the distributor's server. A public relay is the owner's own decision
   (roadmap M8, "Not in M8").
 - **Where the v1 pairing link comes from.** Pairing v2 is hidden behind
-  `PIRC_PAIRING_V2` (off) until M9 serves its approval page, so it is **not** checked
+  `PIRC_PAIRING_V2` (off) until M11 serves its approval page, so it is **not** checked
   here. A v1 `pirc://pair?url=&token=` link and QR code come from either:
   - Settings → Devices → Phones in the browser (forward auth), or
   - Settings → Devices → "Pair a new device" in `apps/app` on a device that holds a
@@ -61,7 +57,7 @@ window remains, i.e. 23 days for the default 30-day window
   and bring the app to the foreground (a `401` is treated the same as expiry).
 - Put the defaults (7 and 30) back afterwards.
 
-## Checks
+## Earlier agent checks (2026-11-27)
 
 Write `pass`, `fail (what happened)` or `skipped (why)` in the Result column. Note the
 phone model and Android version once at the top of the results.
@@ -251,9 +247,7 @@ They are decisions, not device tests. Write `keep` or what to change.
 | K8  | Message documents keep storage and cookies in memory only, per document                                                        |                                                                     |
 | K9  | Kotlin notification and overlay text follows the system language                                                               |                                                                     |
 
-## After the run
+## Close
 
-- Copy a short summary into the status table's Notes for M8 (for example "step 8: 38
-  pass, 2 fail (D7, C3), 3 skipped (G1, …)") and list each failure under M8 Progress.
-- Failures become fixes before step 9. Step 9 deletes `apps/android` only after this
-  acceptance.
+The owner's A–F result is recorded in the roadmap. Remaining findings that are
+not part of the required Android checklist stay in their own milestones.

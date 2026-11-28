@@ -3,28 +3,28 @@
 A private, self-hosted workspace for persistent coding-agent sessions and named agents ("pots"). The servers are two native Rust executables, `pirc-gateway` and `pirc-node`. The clients reach the gateway through a forward-authenticated reverse proxy.
 
 > [!WARNING]
-> **pirc 2 is a breaking rewrite, and it is not finished.** The rewrite started on 2026-11-24. Until it is released:
+> **The next release, pirc 0.11.0, is a breaking rewrite and is not finished.** The rewrite started on 2026-11-24. Until it is released:
 >
 > - `main` can fail to build or run, and CI can be red between steps.
-> - pirc 2 keeps no data from earlier versions and supports no old clients. It refuses old databases.
+> - The 0.11.0 cutover does not migrate state from 0.10.x or earlier and does not support old clients. Updates starting from 0.11.0 will keep state.
 > - Parts of this repository still describe or contain the old product. The old parts are deleted milestone by milestone.
 >
 > For a working version, use the last stable release, [`v0.10.0`](CHANGELOG.md#0100---2026-10-25). The current state and the next steps are in [Open work](plans/README.md) and the [roadmap status table](plans/roadmap.md#status).
 
-## What pirc 2 keeps and what it changes
+## What pirc 0.11.0 keeps and what it changes
 
-pirc 2 keeps these parts:
+pirc 0.11.0 keeps these parts:
 
 - the topology: one **gateway**, a **chat node**, and one or more **coding nodes**;
 - the built-in agent, its tools, and the native OS sandbox;
 - the [security model](#security-model) and its deployment safeguards.
 
-pirc 2 changes the product that the user sees:
+pirc 0.11.0 changes the product that the user sees:
 
-- **One Flutter client for Android, Web and macOS** ([`apps/app`](apps/app/README.md)). It follows design direction E ([design handoff](docs/design/README.md)). It replaced the old Flutter Android client at the M8 cutover. It replaces the Svelte web app ([`apps/web`](apps/web/README.md)) at the Web and macOS cutover (M9). The old web client receives no new work.
+- **One Flutter client for Android, Web and macOS** ([`apps/app`](apps/app/README.md)). It follows design direction E ([design handoff](docs/design/README.md)). It replaced the old Flutter Android client at the M8 cutover. It replaces the Svelte web app ([`apps/web`](apps/web/README.md)) at the Web and macOS cutover (M11). The old web client receives no new work.
 - **Named pots replace the assistant chat.** Each pot is a persistent agent with its own personality, memory, permissions, models and budget. See [pots.md](plans/pots.md).
 - **Four tabs.** The Chat tab holds pots and groups of pots. The Work tab holds coding sessions, grouped by project. Activity and Calendar are the other two tabs.
-- **New flows only.** First-send is the only way to create a session. The database schemas start again from a new baseline, and no migrations are written.
+- **New flows only.** First-send is the only way to create a session. The database schemas start from a new baseline in 0.11.0; later schema changes ship forward migrations.
 - **Usage ledger.** pirc records token use and cost for each model request, and pots spend from their own budgets. See [usage.md](plans/usage.md).
 
 ## How it works
@@ -130,7 +130,7 @@ nix build .#pirc-node
 
 The NixOS module runs the gateway and, by default, a local node, as two unprivileged service accounts. It can generate an nginx virtual host that uses an Authelia-compatible `auth_request` endpoint. Model providers, agent configuration, secrets, TLS certificates, workspace permissions and host names are explicit inputs, not unsafe defaults.
 
-The [deployment guides](docs/deploy/README.md) cover topology, configuration, the reverse proxy, the NixOS module, macOS launchd nodes, secrets, backups and troubleshooting. They describe the current servers. pirc 2 has no upgrade path from 0.x: back up your state, then start with new state, pair the devices again and log in to the providers again.
+The [deployment guides](docs/deploy/README.md) cover topology, configuration, the reverse proxy, the NixOS module, macOS launchd nodes, secrets, backups and troubleshooting. To move from 0.10.x or earlier to 0.11.0, back up your state, then start with new state, pair the devices again and log in to the providers again.
 
 ## Documentation
 
@@ -140,7 +140,7 @@ The [deployment guides](docs/deploy/README.md) cover topology, configuration, th
 - [Changelog](CHANGELOG.md) and [release policy](docs/development/releasing.md)
 - [Historical records](docs/development/historical-records.md): plans and designs from before the rewrite
 
-Some guides still describe the 0.x product. The rewrite updates `README.md` and `docs/` for pirc 2 in its last milestone (M11).
+Some guides still describe releases before 0.11.0. M14 updates `README.md` and `docs/` for the release.
 
 ## License
 

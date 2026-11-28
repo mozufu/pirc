@@ -5,7 +5,7 @@
 Today, token usage exists only inside each session's message history
 (`pirc-llm-types` `Usage`), and the model catalog drops prices
 (`crates/pirc-providers/src/catalog.rs` keeps pi-ai's `Model` "without `cost`").
-pirc 2 needs a ledger for pot budgets and for the user and usage pages.
+pirc 0.11.0 needs a ledger for pot budgets and for the user and usage pages.
 
 ## Recording
 

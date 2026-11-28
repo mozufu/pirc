@@ -6,7 +6,7 @@ Completed implementation diaries and evaluation artifacts are kept in Git rather
 
 ## Retired plans (2026-11-24)
 
-The pirc 2 plan reset replaced every earlier plan with [Open work](../../plans/README.md),
+The 0.11.0 plan reset replaced every earlier plan with [Open work](../../plans/README.md),
 the [roadmap](../../plans/roadmap.md) and its specifications. The behavioral contracts
 that still apply were extracted into [Behavioral contracts](../architecture/contracts.md),
 and the remaining acceptance gaps into the roadmap's carried-over items. The last
@@ -78,9 +78,9 @@ The old acceptance instructions are available at
 `git show b32b0554:docs/development/first-send-acceptance.md`; marking those
 fixtures removed does not record them as passed.
 
-## Upgrade notes before pirc 2
+## Upgrade notes before 0.11.0
 
-`docs/deploy/upgrades.md` was reset for pirc 2, which starts from fresh state. The
+`docs/deploy/upgrades.md` was reset for 0.11.0, which starts from fresh state. The
 release-by-release upgrade notes and local checkpoint notes up to 0.10.0 and the
 unreleased work that followed are in commit `b643ff4c9fe698bee998537eb999a4f8183b7944`:
 

@@ -3,13 +3,13 @@
 A working note for the rest of [roadmap](roadmap.md) M8 step 6. Delete it when step 6
 closes. Part 1 is commit `3ac162b9`.
 
-**Groups B and C are on hold: pirc 2 has no entry point for script documents (owner
+**Groups B and C are on hold: pirc 0.11.0 has no entry point for script documents (owner
 decision, 2026-11-27).** Step 6 stops after group A. The rest of this note is what B and C
 start from if an entry point is chosen later.
 
 ## Entry point
 
-There is none in pirc 2 today, and the Gateway serves no documents.
+There is none in 0.11.0 today, and the Gateway serves no documents.
 
 - The old app opened document windows only for pages of the paired Gateway origin. These
   were the web app shell, its same-origin links and forms in messages
@@ -18,7 +18,7 @@ There is none in pirc 2 today, and the Gateway serves no documents.
   `<a download>`. Plain `http(s)` links in messages went to `external`
   (`common.dart:251-263`). Kotlin fetched those documents with the device token and the
   pairing's cookies (`GatewayRuntime.document`, `NativeDocumentTransport`).
-- The pirc 2 Gateway has `/api/*` JSON, the session relays (`files`, `files/content`,
+- The 0.11.0 Gateway has `/api/*` JSON, the session relays (`files`, `files/content`,
   `git`, `panel`) and a 404 fallback (`crates/pirc-gateway/src/app.rs:377-488`). It has
   no web app shell and no HTML route.
 - `apps/app` passes no link handler to `NativeMarkdown` (`work/timeline.dart:195,235`,
@@ -55,7 +55,7 @@ dynamic styles and script images, so they move with it.
 - **C (on hold):** `document_navigation` (the fetched-document view), the `apps/app` wiring
   (`fetchedDocumentHost`, the entry point, `RenderHost.documentRuntime`), and the
   remaining tests. `app_document_route` and `app_document_shell` recognise the web app
-  shell served by the Gateway. pirc 2 serves no shell, so they are not ported: notification
+  shell served by the Gateway. 0.11.0 serves no shell, so they are not ported: notification
   and link routes are `apps/app/lib/src/router.dart` and `notifications/`.
 
 ## Call sort
@@ -77,7 +77,7 @@ dynamic styles and script images, so they move with it.
 | `gateway.events` `documentStorageChanged`  | dropped: storage is per session, so no other writer exists                      |
 | `documentStorageWindowOpen/Close`          | dropped: no shared `sessionStorage` across windows                              |
 
-(ii) Old Gateway HTTP calls. None has a pirc 2 route:
+(ii) Old Gateway HTTP calls. None has a 0.11.0 route:
 
 | Old call                 | New                                                                              |
 | ------------------------ | -------------------------------------------------------------------------------- |
@@ -127,7 +127,7 @@ Storage and cookies stay in memory only, kept per session by Kotlin. They end wh
 document closes. Reasons:
 
 - The old app persisted them per pairing and origin. Such a key is shared by every
-  document of one origin, and pirc 2 forbids that ("no storage of another message").
+  document of one origin, and 0.11.0 forbids that ("no storage of another message").
 - A per-document key would need a stable document identity and new Kotlin disk storage
   with a wipe on unpair. Tier 3 is frozen ("no expansion").
 - The Web (sandboxed iframe) and macOS (non-persistent store) plans keep nothing either.

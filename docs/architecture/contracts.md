@@ -2,7 +2,7 @@
 
 [All documentation](../README.md) · [Architecture references](README.md) · [Open work](../../plans/README.md) · [Pots](../../plans/pots.md) · [Usage](../../plans/usage.md) · [Client](../../plans/client.md)
 
-These are the behavioral contracts of the Gateway, Node and agent that pirc 2 keeps
+These are the behavioral contracts of the Gateway, Node and agent that pirc 0.11.0 keeps
 from the earlier unified-conversation design. They state required behavior, not
 delivery status: some invariants still lack acceptance on a platform, listed under
 [Open acceptance gaps](#open-acceptance-gaps). Pots, usage accounting and the client
@@ -841,7 +841,7 @@ Invariants above that are specified but not yet accepted:
 
 ## Dropped as obsolete
 
-Contracts in the sources that pirc 2 does not keep (decisions P1–P19 in
+Contracts in the sources that pirc 0.11.0 does not keep (decisions P1–P19 in
 [Open work](../../plans/README.md#decisions)):
 
 - `unified-completion-contracts.md` § C0 status snapshot, four-state table and format

@@ -2,13 +2,13 @@
 
 [Deployment guide](README.md)
 
-## pirc 2: fresh start
+## pirc 0.11.0: fresh start from 0.10.x or earlier
 
-pirc 2 is not compatible with earlier releases and does not migrate their data.
+pirc 0.11.0 does not migrate state from 0.10.x or earlier.
 
 - The Gateway and every Node refuse a database created by an earlier release, with
   a message naming the file. Stop the old services, move each state directory away
-  (or delete it), and start pirc 2 on empty state directories.
+  after making a backup, and start 0.11.0 on empty state directories.
 - Pair every phone again, log in to subscription backends again and recreate
   workspaces, projects, schedules and pots. Configuration files (`models.json`, a
   Node's `config.json`, role files, skills) are read as before; check them against
@@ -18,8 +18,9 @@ pirc 2 is not compatible with earlier releases and does not migrate their data.
 - Upgrade the Gateway, the chat node, every coding node and every client together:
   only matching versions talk to each other.
 
-Upgrade notes for releases before pirc 2 are in Git history; see
-[historical records](../development/historical-records.md#upgrade-notes-before-pirc-2).
+Later updates from an installed 0.11.0 keep data through supported forward
+migrations ([update plan](../../plans/updates.md#step-3--schema-migrations-from-the-release-on)).
+Upgrade notes for older releases are in [historical records](../development/historical-records.md#upgrade-notes-before-0110).
 
 ## TLS trust update: October 2026
 

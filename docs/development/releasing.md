@@ -56,7 +56,7 @@ release. All actions/toolchains are pinned. macOS runs use GitHub's
 2. Choose and securely back up a **persistent** Android signing keystore. The
    application ID is `org.mozufu.pirc`; this is beta sideload distribution, not
    Play Store signing or production certification. Use the same key for later
-   pirc 2 APKs; a changed key requires uninstalling the app and can remove its
+   pirc APKs from 0.11.0 onward; a changed key requires uninstalling the app and can remove its
    local data. Do not generate a fresh key on every run.
 3. Add these repository Actions secrets (**Settings → Secrets and variables →
    Actions**), or use the GitHub CLI commands below. Never commit a keystore,
@@ -98,7 +98,7 @@ The original repository's dedicated release key was configured on 2026-10-19;
 [Release setup passed](https://github.com/iceice666/pirc/actions/runs/39224437750).
 Its public certificate SHA-256 is
 `f612b5ff5a6f60155debbaa671e2d0ca9248d75d16f65dc64fcd11f7c99f9d81`.
-Release CI signs both Android flavors with this identity; until M11 the published
+Release CI signs both Android flavors with this identity; until M14 the published
 beta asset is the `standard` flavor. Local builds without CI signing variables
 still use the debug key. Forks must configure their own secrets.
 

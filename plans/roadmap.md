@@ -1,4 +1,4 @@
-# pirc 2 roadmap
+# pirc 0.11.0 roadmap
 
 [Open work](README.md) · [Pots](pots.md) · [Usage](usage.md) · [Client](client.md) · [Design (E)](../docs/design/README.md)
 
@@ -9,20 +9,29 @@ acceptance, activation.
 
 ## Status
 
-| Milestone                                                     | Design   | Code        | Acceptance | Notes                                                                                                          |
-| ------------------------------------------------------------- | -------- | ----------- | ---------- | -------------------------------------------------------------------------------------------------------------- |
-| [M0 Unify the working tree](#m0-unify-the-working-tree)       | complete | complete    | n/a        | `e1a08db9`, `162c113b`                                                                                         |
-| [M1 Plans reset](#m1-plans-reset)                             | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)                                                            |
-| [M2 Backend baseline](#m2-backend-baseline)                   | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11                                                      |
-| [M3 Usage ledger](#m3-usage-ledger)                           | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4                                                    |
-| [M4 Pots backend](#m4-pots-backend)                           | complete | complete    |            | steps 0–13 done; 232 conformance tests on Linux                                                                |
-| [M5 Client foundation](#m5-client-foundation)                 | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`                                                                  |
-| [M6 Work and settings screens](#m6-work-and-settings-screens) | complete | complete    |            | finished after review; 12 rewritten; Memory panel removed                                                      |
-| [M7 Pots screens](#m7-pots-screens)                           | complete | complete    |            | steps 0–14 done; goldens of every E screen at four widths                                                      |
-| [M8 Android cutover](#m8-android-cutover)                     | complete | complete    | partial    | Step 9 merged in `34a49c41`; Client, signed APK and Check passed. Owner passed A–D; E–F deferred, G1 optional. |
-| [M9 Web and macOS cutover](#m9-web-and-macos-cutover)         | outline  |             |            | Q8                                                                                                             |
-| [M10 Embedded Tailscale](#m10-embedded-tailscale)             | spike    |             |            |                                                                                                                |
-| [M11 Release](#m11-release)                                   | outline  |             |            |                                                                                                                |
+| Milestone                                                             | Design   | Code        | Acceptance | Notes                                                                                                                   |
+| --------------------------------------------------------------------- | -------- | ----------- | ---------- | ----------------------------------------------------------------------------------------------------------------------- |
+| [M0 Unify the working tree](#m0-unify-the-working-tree)               | complete | complete    | n/a        | `e1a08db9`, `162c113b`                                                                                                  |
+| [M1 Plans reset](#m1-plans-reset)                                     | complete | in progress |            | steps 1–3 done (`287f1152`, `a165ee7a`, retirement)                                                                     |
+| [M2 Backend baseline](#m2-backend-baseline)                           | complete | complete    |            | 6 moved to M4; 88 conformance tests set aside until M4.11                                                               |
+| [M3 Usage ledger](#m3-usage-ledger)                                   | complete | complete    |            | P20; steps 1–4 done, step 5 is built with pot budgets in M4                                                             |
+| [M4 Pots backend](#m4-pots-backend)                                   | complete | complete    |            | steps 0–13 done; 232 conformance tests on Linux                                                                         |
+| [M5 Client foundation](#m5-client-foundation)                         | complete | complete    |            | `f81ba7fd`…`f2fed4aa`; CI green at `02f1ad55`                                                                           |
+| [M6 Work and settings screens](#m6-work-and-settings-screens)         | complete | complete    |            | finished after review; 12 rewritten; Memory panel removed                                                               |
+| [M7 Pots screens](#m7-pots-screens)                                   | complete | complete    |            | steps 0–14 done; goldens of every E screen at four widths                                                               |
+| [M8 Android cutover](#m8-android-cutover)                             | complete | complete    | passed     | Step 9 merged in `34a49c41`; Client, signed APK and Check passed. Owner passed A–F; optional G1 not recorded as passed. |
+| [M9 Security review and hardening](#m9-security-review-and-hardening) | design   |             |            | [security.md](security.md)                                                                                              |
+| [M10 Versions and updates](#m10-versions-and-updates)                 | design   |             |            | [updates.md](updates.md)                                                                                                |
+| [M11 Web and macOS cutover](#m11-web-and-macos-cutover)               | outline  |             |            | P34                                                                                                                     |
+| [M12 Embedded Tailscale](#m12-embedded-tailscale)                     | spike    |             |            |                                                                                                                         |
+| [M13 Final review and polish](#m13-final-review-and-polish)           | design   |             |            | [polish.md](polish.md)                                                                                                  |
+| [M14 Release](#m14-release)                                           | outline  |             |            |                                                                                                                         |
+
+**Renumbered on 2026-11-28 (P21).** M9, M10 and M13 were inserted; the former M9
+(Web and macOS cutover) is now M11, the former M10 (Embedded Tailscale) M12 and the
+former M11 (Release) M14. This folder uses the new numbers. Source comments and
+documents outside `plans/` written before that date still use the old numbers until
+M9 step 0 updates them.
 
 "Outline" milestones get their detailed steps written (rule P12) before they start,
 using what the earlier milestones produced.
@@ -86,7 +95,7 @@ a current instruction.
 ## M2 Backend baseline
 
 Goal: the backend speaks only the new flows, reports one capability document and
-starts from a fresh schema. Old clients may break (P13); they are replaced in M6–M9
+starts from a fresh schema. Old clients may break (P13); they are replaced in M6–M11
 and not patched in the meantime.
 
 1. **Delete legacy creation and the first-send gate.**
@@ -123,11 +132,11 @@ and not patched in the meantime.
      `attachments.sql` and `calendar/schema.sql`); version `1100`. Node: same,
      version `2100`. The checkpoint journal keeps its own version.
    - Any other `user_version` is refused at startup: "This state directory was created
-     by an earlier pirc. pirc 2 cannot read it; move or delete `<dir>`."
+     by an earlier pirc. pirc 0.11.0 cannot read it; move or delete `<dir>`."
    - Delete `MIGRATIONS`, `migrate()`, fence-only steps, TypeScript-era detection,
      the `remove_*.sql`/`test_remove_*.sql` files and the migration tests; rewrite the
      few fail-closed tests that used downgrade helpers to drop the table directly.
-   - `docs/deploy/upgrades.md`: pirc 2 needs fresh state directories.
+   - `docs/deploy/upgrades.md`: starting 0.11.0 from 0.10.x or earlier needs fresh state directories.
      Deletes: about 3,000 lines.
 6. **Legacy observational-memory archive: removed in M4 step 10c-2.** The legacy
    per-session ledger, panel, serializer and settings are gone; the workspace
@@ -141,13 +150,13 @@ and not patched in the meantime.
      each with its own confirmation text; pairing says it adds a long-lived device and
      shows its lifetime.
 8. **Old-client code that only served deleted paths** is not edited; `apps/web` and
-   `apps/android` are deleted wholesale in M8/M9.
+   `apps/android` are deleted wholesale in M8/M11.
 9. **Conformance and CI repair.** Done: the conformance suite is verified on Linux
    through a temporary survey workflow, 193 tests pass. Device-token requests send
    `X-Pirc-Client`; follow-up commands name their binding; chat workspaces are
    created by `mode`; side-request snapshots gained only their `purpose`. 88 tests
-   that create sessions through the removed `POST /api/sessions` carry a declared
-   `#[ignore = "pirc 2: …"]` and are rewritten in M4 step 11; the passing floor is
+   that create sessions through the removed `POST /api/sessions` carry explicit
+   ignore reasons for the rewrite and are rewritten in M4 step 11; the passing floor is
    185 until then (`scripts/conformance-accounting.ts`). The Linux sandbox tests
    compile again and the Nix vendor hash is current.
 
@@ -592,7 +601,7 @@ or gives two answers.
   Context inspector item.
 - **G. Entry to a project.** A tap on a project group header in the Work tab opens
   the project page.
-- **H. Management approval screen.** M6 builds the screen. M9 only makes the Web
+- **H. Management approval screen.** M6 builds the screen. M11 only makes the Web
   build the served one.
 
 The design uses 接管 for "take over a work session". 接手 means the receiver of a pot
@@ -1142,13 +1151,13 @@ then closes the milestone.
 The steps below use them.
 
 - **A. Pairing v2 and v1 (steps 0, 2).** The approval page of pairing v2 is a route of
-  the `apps/app` Web build, which is served only from M9; `apps/web` gets no new work
+  the `apps/app` Web build, which is served only from M11; `apps/web` gets no new work
   (P14). So M8 builds v2 completely and keeps v1 (the `pirc://pair?url=&token=` link
   and the Devices page that shows it) working: the Android app scans and opens v1
   links. Until the approval page is served, the app's v2 entry is hidden behind the
   define `PIRC_PAIRING_V2` (off by default; tests turn it on), and the two v2 routes
   without identity stay behind forward auth, so M8 opens no public route that nothing
-  uses yet. M9 deploys the Web build, switches the app to v2 only, and deletes v1
+  uses yet. M11 deploys the Web build, switches the app to v2 only, and deletes v1
   (`POST /api/devices` returning a token, the link, and the Devices page "Pair a new
   device").
 - **B. Token rotation (A7, steps 0, 2).** `POST /api/device/rotate` gives a new token
@@ -1157,7 +1166,7 @@ The steps below use them.
   or extends a management grant or a capability.
 - **C. Who applies notification preferences (steps 0, 3).** The Gateway applies them
   per push target before it sends anything, so a muted category is never sent and Web
-  Push (M9) uses the same settings.
+  Push (M11) uses the same settings.
 - **D. Digest (steps 0, 3).** Items at level "digest" are not pushed one by one. The
   Gateway sends one summary push per target at the digest time (default 18:00 in the
   target's time zone) and one at the end of quiet hours, each only when there are new
@@ -1171,7 +1180,7 @@ The steps below use them.
   (environment variables `PIRC_ANDROID_KEYSTORE`, `PIRC_ANDROID_STORE_PASSWORD`,
   `PIRC_ANDROID_KEY_ALIAS`, `PIRC_ANDROID_KEY_PASSWORD`, `PIRC_ANDROID_REQUIRE_SIGNING`)
   into `apps/app/android/app/build.gradle.kts`, so `release.yml` keeps making a signed
-  APK. Distribution and the production key are still M11.
+  APK. Distribution and the production key are still M14.
 
 **More defaults the owner accepted on 2026-11-26.**
 
@@ -1212,11 +1221,11 @@ an agent never runs it.
 `462ba176`. Step 6 has the scripts channel, the isolation of message documents and the
 moved fixtures (`3ac162b9`), and the core of the document runtime (`31731564`). The rest
 of step 6 (navigation, the window manager, the document view and the app wiring) waits,
-because pirc 2 has no place that opens a script document (owner decision, 2026-11-27; see
-[m8-step6-port.md](m8-step6-port.md)). The owner confirmed sections A–D of
-[step 8](m8-step8-acceptance.md) and authorized step 9 to proceed before sections
-E–F are finished. Those checks remain open, and optional G1 is not recorded as
-passed. Step 9 removed the old app in `34a49c41`, after verifying both debug
+because 0.11.0 has no place that opens a script document (owner decision, 2026-11-27; see
+[m8-step6-port.md](m8-step6-port.md)). The owner first confirmed sections A–D of
+[step 8](m8-step8-acceptance.md), authorized the cutover, and on 2026-11-28
+confirmed that E–F also passed on a physical device. Optional G1 is not recorded
+as passed. Step 9 removed the old app in `34a49c41`, after verifying both debug
 builds and the new signed release build in CI. At the cutover revision,
 [Client](https://github.com/mozufu/pirc/actions/runs/46010197541) (both debug APKs,
 Web build and Kotlin tests) and
@@ -1224,8 +1233,7 @@ Web build and Kotlin tests) and
 (signed standard release APK, validation only, no release) passed. The subsequent
 [Check](https://github.com/mozufu/pirc/actions/runs/46013278877) at `a136de2e`
 passed: 551 Gateway tests and 232 Linux conformance tests, with six existing
-ignores. Step 9 is complete; this build verification does not count as physical
-acceptance for E or F.
+ignores. Both the code cutover and the required physical acceptance are complete.
 
 Choices made while building, to confirm in step 8:
 
@@ -1267,8 +1275,8 @@ Choices made while building, to confirm in step 8:
         codes end the request. The token is the same `pirc_dev_` token as v1, with
         the same limits (10 phones, `Cache-Control: no-store`).
       - The two routes without identity still need a trusted proxy peer and an
-        allowed `Host`. Until M9 they stay behind forward auth like every other
-        route (default A). In M9, `docs/deploy/` and the Traefik example in
+        allowed `Host`. Until M11 they stay behind forward auth like every other
+        route (default A). In M11, `docs/deploy/` and the Traefik example in
         `gateway-and-node.md` gain the router that sends exactly these two paths to
         the Gateway without forward auth.
    2. _Rotation_ (default B): `POST /api/device/rotate` (device token only) returns a
@@ -1317,7 +1325,7 @@ Choices made while building, to confirm in step 8:
      (P5): a phone that ran one of them pairs again.
    - Background client: one OkHttp factory (redirects off, `Authorization: Bearer`,
      `X-Pirc-Client: pirc-app/<apiVersion>`, `X-Pirc-Request: 1` on every non-GET, a
-     proxy hook for M10). It reads only the compact routes of step 0.5 and sends
+     proxy hook for M12). It reads only the compact routes of step 0.5 and sends
      answers and schedule decisions with a client-generated command ID. It never
      re-sends a request whose outcome is unknown (N8); it reports "Not sure it
      arrived" instead. A `401` is a known refusal, not an unknown outcome: the client
@@ -1345,7 +1353,7 @@ Choices made while building, to confirm in step 8:
    - The approval route `/?pair=<id>` of the Web build (as `/?nativeManagement=<id>`
      in M6 step 15): device name, platform, the device lifetime and Approve and
      Deny; after Approve it shows the code in large digits. It is tested here and
-     served from M9.
+     served from M11.
    - Rotation (default B): when the app comes to the foreground and less than 23 days
      of the maximum window remain, it rotates once and saves the new token before it
      uses it. The idle window needs no check, because every use resets it. If rotation
@@ -1422,7 +1430,7 @@ Choices made while building, to confirm in step 8:
 6. **Documents and the script runtime (tier 3).** Rebuild the old `live/document_*`
    files on `pirc_client` inside `pirc_render_document`, and install
    `RenderHost.documentRuntime` in `apps/app` on Android only (Web and macOS keep
-   null until M9).
+   null until M11).
    - Kotlin `scripts` channel: the `JavaScriptSandbox` host, script resources,
      document cookies and document storage, as in `NativeDocumentScripts.kt` and the
      files next to it.
@@ -1437,7 +1445,7 @@ Choices made while building, to confirm in step 8:
      that the import-graph test still finds no tier-3 file in the chat surface.
    - Move `apps/android/tool/parity/fixtures/` to `packages/pirc_render/test/fixtures/parity/`
      and change the four tests that read it. The `apps/web/tool/parity/*.mjs`
-     scripts, which write to `apps/android/build/parity`, are left broken until M9
+     scripts, which write to `apps/android/build/parity`, are left broken until M11
      deletes `apps/web` (P13, P14).
      Done when: the moved tier-3 tests pass with `-t tier3`; new default-suite safety
      tests show that a message document gets no token, no Gateway cookie and no
@@ -1466,7 +1474,7 @@ Choices made while building, to confirm in step 8:
    - Signing (default F): port the old signing block into
      `apps/app/android/app/build.gradle.kts`. `release.yml` builds the `standard`
      flavor of `apps/app` (and the `tailscale` flavor, still the same app until
-     M10) and keeps its checks; `release-setup.yml` and `scripts/release-ci.ts`
+     M12) and keeps its checks; `release-setup.yml` and `scripts/release-ci.ts`
      check `client.yml` instead of `android.yml` and name `org.mozufu.pirc`.
    - `scripts/version.ts` and `scripts/test/version.test.ts` read
      `apps/app/pubspec.yaml`. Delete `scripts/e2e/jvm.mjs` and
@@ -1493,25 +1501,72 @@ Choices made while building, to confirm in step 8:
      the default suites pass for the workspace; both debug APKs and a signed release
      APK build in CI.
 
-## M9 Web and macOS cutover
+## M9 Security review and hardening
+
+Steps and details: [security.md](security.md). Before the release, pirc as it
+stands (pots, the Flutter client, the Gateway and the nodes) is reviewed, fixed and
+brought up to date. The backend decides every effect at the moment it happens; tests
+assume the model does whatever injected text says.
+
+0. Baseline, milestone numbers outside `plans/`, inventory of sources and sinks.
+1. Review in six parallel parts: authorization and revocation, provenance and
+   dispatch, memory and long-lived state, execution boundary, earlier findings,
+   dependencies and supply chain.
+2. Authorization at the point of effect; one-time approvals bound to the operation.
+3. Trust levels, effect classes, per-pot presets and the gate (P29); an external
+   content reader (P30).
+4. Memory provenance (P26).
+5. Capability combinations at pot configuration.
+6. Browser and sandbox isolation for native installations, per platform. M10 owns the container spike.
+7. Remaining fixes in priority order.
+8. Dependencies, `cargo deny` in CI, `SECURITY.md`.
+9. Adversarial tests with a scripted model that obeys injections.
+10. Close.
+
+## M10 Versions and updates
+
+Steps and details: [updates.md](updates.md). **M10A** delivers signed release
+information, advisories and manual update guidance (steps 0–4 and 7). **M10B**
+delivers Docker and operator-approved graceful replacement (steps 5–6) after
+M10A's verification passes. M10 checks Compose without the new Web app; the
+complete Compose install is accepted in M11. Data is kept across updates
+starting from an installed 0.11.0 (P24).
+
+0. Manifest format and verifier (Rust and Dart, shared vectors), signing script.
+1. Gateway checks for updates; `GET /api/updates`.
+2. Clients show compatibility, advisories, new releases; `426` names the matching
+   release.
+3. Schema migrations from the release on.
+4. State bundle format, shared with M13 export (and a later import).
+5. Docker install for Linux hosts: Docker installs and updates, the agent sandbox
+   stays the security boundary; spike for the sandbox in a container, images,
+   Compose file, `pirc-updater` (P31, P36).
+6. Graceful update: consent, download and verify, preflight, drain, back up, swap,
+   restart, migrate, resume, roll back.
+7. Release pipeline (part of M10A, before M10B): CI signing in a protected
+   environment (P28), the `manifest` release, and an offline-root revocation drill.
+
+## M11 Web and macOS cutover
 
 Outline: Flutter Web build (self-hosted CanvasKit and fonts, CSP with
 `'wasm-unsafe-eval'`, no inline scripts, hand-written service worker with build ID,
-Web Push, cache headers); agent HTML in a sandboxed opaque-origin iframe (Q3);
+Web Push, cache headers); agent HTML in a sandboxed opaque-origin iframe (P15);
 web-only screens (management approval, pairing QR, the pairing v2 approval route
-built in M8); if M8 default A stands, the app switches to pairing v2 only
+built in M8); the app switches to pairing v2 only
 (`PIRC_PAIRING_V2` removed, v2 always on), the deploy docs gain the router for the two
 v2 routes without identity, and v1 is deleted (`POST /api/devices` returning a token,
 the `pirc://pair` token link, the Devices page "Pair a new device"); device acceptance
 of answering the same question on Web and on the phone at the same time (moved from
-M8, whose Web is the old `apps/web`, not kept working with the pirc 2 Gateway); Nix packaging and nginx headers;
-delete `apps/web`. macOS desktop target, building on the scaffold from M5: Keychain
-credentials, pairing, isolated web view for script-bearing documents (Q8),
+M8, whose Web is the old `apps/web`, not kept working with the rewritten Gateway);
+Nix packaging and nginx headers; delete `apps/web`. Add the production Flutter Web
+service to M10's Compose setup and verify fresh install, v2 phone pairing, and a
+signed update without regressing either. macOS desktop target, building on the scaffold from M5: Keychain
+credentials, pairing, tiers 1–2 rendering with script-bearing HTML shown statically (P34),
 notifications while running.
 
-## M10 Embedded Tailscale
+## M12 Embedded Tailscale
 
-Spike first, then build (P16, [client.md](client.md#embedded-tailscale-m10)). Every
+Spike first, then build (P16, [client.md](client.md#embedded-tailscale-m12)). Every
 Android release has two variants, `standard` (no Tailscale code) and `tailscale`;
 M5 already sets up the two Gradle flavors and the `PIRC_TAILSCALE` define so the
 variants exist from the first build, with the `tailscale` one identical until this
@@ -1521,18 +1576,39 @@ background client, with in-app sign-in through Tailscale's login page. The spike
 measures binary size, idle battery use, start-up time from a push and coexistence
 with the system Tailscale app.
 
-## M11 Release
+## M13 Final review and polish
 
-Outline: rewrite `README.md` and `docs/` for pirc 2, full validation run requested by
-the owner, changelog with the breaking-change notice, version bump. Android
-artifacts: both the `standard` and the `tailscale` APK.
+Steps and details: [polish.md](polish.md). The last milestone before the release.
+
+1. Pot roles: a name and a text color, set when creating a pot and in its settings;
+   a filter button in the Chat list (P27). Roles grant nothing and pots never see
+   them.
+2. Export on the M10 bundle format; pots without memory; import later (P32, P33).
+3. Owner trial and polish: items the owner reports while trying the release
+   candidate.
+
+## M14 Release
+
+Outline: release **pirc 0.11.0**, tag `v0.11.0` (P35). Update `README.md`,
+`docs/`, version manifests and any live product labels; run the full validation
+requested by the owner; publish the breaking-cutover notice in the changelog.
+Android artifacts: both the `standard` and the `tailscale` APK.
+
+Also: publish M10A's initial trust delegation and manifest with this release, listing
+0.11.0 as supported; `SECURITY.md` (M9 step 8)
+names it as supported; the M9 findings list has no open item the owner has not
+accepted. Re-review the new security boundaries in M10–M13: manifest signing and
+revocation, updates and Docker, Web/macOS and pairing, Tailscale, and export.
+Record the reviewed revision, regression evidence and any owner-accepted
+exceptions locally. The release notes distinguish the fresh start from
+0.10.x or earlier from data-preserving updates starting at 0.11.0 (P5, P24).
 
 ---
 
 ## Carried-over items
 
 Open acceptance gaps, accepted limitations and watch items from the retired plans that
-still apply to pirc 2. Gaps in the backend contracts (native Linux, transitions,
+still apply to 0.11.0. Gaps in the backend contracts (native Linux, transitions,
 bindings, folders, checkpoints) are listed in
 [contracts](../docs/architecture/contracts.md#open-acceptance-gaps). "Old README"
 means `git show 162c113b:plans/README.md`; other sources are files in `plans/` as of
@@ -1540,18 +1616,11 @@ that commit.
 
 **Acceptance and validation**
 
-- **M8** Physical Android acceptance with a real account: pairing,
-  streaming/cancel/reconnect, panels, management consent (simultaneous Web/App
-  confirmations moved to M9); keyboard and CJK IME, safe areas, rotation, background, low memory,
-  OEM notifications and permissions, terminal HTTPS asset origin, release build.
-  (mobile.md § Remaining work; old README § Manual validation)
-- **M8** On a device: full multi-line approval bodies and labels, PTC approval
-  declines and rendering, browser takeover (tap mapping, IME, drag scrolling), WebM
-  playback. (old README § Existing work 1, § Manual validation)
-- **M8** Calendar reminders and background behavior on a physical Android device.
-  (calendar.md § Implementation record)
-- **M8/M9** Real remote push delivery (UnifiedPush and Web Push) is unverified; the
-  owner declined third-party relay testing, so it is not run without authorization.
+- **M8 (closed)** Required physical Android acceptance A–F is recorded in the
+  [checklist](m8-step8-acceptance.md). Optional public-relay test G1 is not
+  recorded as passed. Cross-device Web/Android acceptance remains in M11.
+- **M11** Real Web Push delivery remains unverified; third-party relay testing is
+  not run without the owner's authorization.
   (mobile.md, calendar.md, release-0.9.3.md)
 - **M8** Pairing credential lifetime: rotation before the 30-day expiry versus
   re-pairing, with a near-expiry warning (A7); decided by pairing v2. (old README
@@ -1562,31 +1631,31 @@ that commit.
   validation warnings, which today are only logged (M6 step 14). (modes.md § Phase 3)
   Still open: the page lists the modes, but the Gateway reports no source file or
   warnings yet.
-- **M9** `/api/hints` refuses any query key outside its hint names, so the Web build's
+- **M11** `/api/hints` refuses any query key outside its hint names, so the Web build's
   `client=` query is refused and its hint stream cannot connect.
-- **M9** Answering the same question on Web and on the phone at the same time, once
+- **M11** Answering the same question on Web and on the phone at the same time, once
   the Flutter Web build is served (moved from M8).
-- **M9** Browser acceptance of the approval-mode picker and warning, and of project
+- **M11** Browser acceptance of the approval-mode picker and warning, and of project
   deletion including recovery after a real Node disconnect; installed-PWA Web Push on
   a real iPhone; iOS Safari keyboard and safe areas. (old README § Manual validation)
-- **M9/M11** macOS builds are unsigned and not notarized. (old README § Manual
+- **M11/M14** macOS builds are unsigned and not notarized. (old README § Manual
   validation)
-- **M11** Linux/NixOS: a full agent session with browser on a non-container x86_64
+- **M14** Linux/NixOS: a full agent session with browser on a non-container x86_64
   host at native speed, boot-time tmpfiles, bubblewrap and `/proc` privacy cases (run
   only in Linux CI) and Nix build validation (previously waived). (old README § Manual
   validation; release-0.9.3.md § Remaining release gates)
-- **M11** Not covered by macOS end-to-end checks: TLS, a real identity provider,
+- **M14** Not covered by macOS end-to-end checks: TLS, a real identity provider,
   phone pairing, push, terminals; TLS fixtures do not verify OS CA updates or
   curl/Git trust stores. (old README § Manual validation; release-0.9.3.md)
-- **M11** PTC with real providers: Anthropic direct calls with `null`/extra
+- **M14** PTC with real providers: Anthropic direct calls with `null`/extra
   arguments, a real model reading agent-data fences; real-provider smoke tests and
   polyglot evaluation were waived, not passed. (old README § Manual validation,
   § Accepted limitations)
-- **M11** Release procedure: Check and Android workflows pass on the exact `main`
+- **M14** Release procedure: Check and Client workflows pass on the exact `main`
   commit before the tag; verify draft assets, checksums and the Android signing
   identity. Distribution (sideload, F-Droid or Play) and production signing are still
   to decide. (release-0.9.3.md; mobile.md § Distribution decisions)
-- **M11** Modes guide screenshots. (modes.md § Phase 3)
+- **M14** Modes guide screenshots. (modes.md § Phase 3)
 - **Watch** The one-off `node_link_side_runs` CI timeout, if it recurs. (old README
   § Manual validation)
 - **Open, no milestone** On macOS a Node state directory path longer than about 76
@@ -1695,7 +1764,7 @@ compatibility boundaries)
 - Flutter Web as an "evaluation option" and Chromium-parity growth (dialog
   positioning beyond block flow, invoker scheduling, wider framework coverage):
   decided by P4 and frozen by N1. (mobile.md)
-- 0.9.3-specific tag and asset checks: superseded by M11. (release-0.9.3.md)
+- 0.9.3-specific tag and asset checks: superseded by M14. (release-0.9.3.md)
 - Library stages for pots, App connection security and optional Flutter Web
   migration: replaced by pots.md, P16 and P4. (library-extraction.md)
 - Chat default mode and forbidden combinations involving `assistant: full`: chat

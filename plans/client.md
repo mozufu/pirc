@@ -1,6 +1,6 @@
 # Client (Flutter, Android and Web)
 
-[Open work](README.md) · [Roadmap M5–M10](roadmap.md#m5-client-foundation) · Design: [handoff](../docs/design/README.md), [rules](../docs/design/design-rules.md), [tokens](../docs/design/tokens.json)
+[Open work](README.md) · [Roadmap M5–M12](roadmap.md#m5-client-foundation) · Design: [handoff](../docs/design/README.md), [rules](../docs/design/design-rules.md), [tokens](../docs/design/tokens.json)
 
 One Flutter codebase replaces the Svelte web app (`apps/web`) and the current Flutter
 UI (`apps/android/lib/live`). The native rendering engine (`apps/android/lib/rendering`)
@@ -18,7 +18,7 @@ packages/pirc_ui/            design tokens, theme, shared components, adaptive s
 packages/pirc_render/        chat content: Markdown, code, math, tables, images, HTML (static and forms), Mermaid
 packages/pirc_render_document/  fetched documents and the script runtime (Android only; tier 3 lives here)
 apps/android/                old app; keeps building until M8 deletes it
-apps/web/                    old web app; keeps building until M9 deletes it
+apps/web/                    old web app; keeps building until M11 deletes it
 ```
 
 The new app's Android application ID and macOS bundle ID are `org.mozufu.pirc`
@@ -40,7 +40,7 @@ Reasons:
   moving foreground networking to Dart does not add background cost.
 - **One implementation.** The Web and desktop builds need a Dart transport anyway;
   reconnect, cursors, command identities and the reducer are kept correct once
-  instead of three times (TypeScript, Kotlin, Dart). Embedded Tailscale (M10) then
+  instead of three times (TypeScript, Kotlin, Dart). Embedded Tailscale (M12) then
   has one place to plug in a proxy.
 - **Escape hatch.** HTTP goes through the `package:http` `Client` interface. If
   measurements show `dart:io`'s HTTP/1.1 client is a bottleneck on Android, swap in an
@@ -56,7 +56,7 @@ pairs like a phone.
 | State-changing requests | `X-Pirc-Request: 1` on every non-GET                                                                  | Same                                                                             |
 | HTTP                    | `package:http` over `dart:io` `HttpClient` (redirects off, so credentials never cross origins)        | `package:http` `BrowserClient` with credentials                                  |
 | WebSocket               | `dart:io` `WebSocket` with headers                                                                    | Browser `WebSocket` (cookies and `Origin` sent automatically; no custom headers) |
-| Proxy                   | `HttpClient.findProxy` → loopback proxy when embedded Tailscale is on (M10)                           | n/a                                                                              |
+| Proxy                   | `HttpClient.findProxy` → loopback proxy when embedded Tailscale is on (M12)                           | n/a                                                                              |
 | Local storage           | Files and `shared_preferences`; drafts and first-send journal in app storage                          | IndexedDB / `localStorage`                                                       |
 
 Shared logic in `pirc_client`:
@@ -130,18 +130,23 @@ Extraction (M5.2), from the inventory of `apps/android/lib/rendering`:
    compiles for Web.
 5. Pin `flutter_math_fork` (42 imports of its internals) and record why.
 
-**Web** (Q3 default): `pirc_render` (tiers 1 and 2) runs on Web unchanged. Fetched
+**Web** (P15): `pirc_render` (tiers 1 and 2) runs on Web unchanged. Fetched
 documents and script-bearing HTML are shown by the browser in a sandboxed iframe
 (`sandbox` without `allow-same-origin`, so the content has an opaque origin and no
 access to the app's cookies, storage or API). The 7.2 MB Canvas-text WebAssembly and
 the script runtime bundle are not shipped to Web.
 
-**Desktop** (P14, Q8 default): macOS uses `pirc_render` for tiers 1 and 2. Script-bearing
-documents open in an isolated web view (non-persistent data store, no JavaScript
-bridge to the app, no app credentials), the desktop counterpart of the Web iframe.
+**Desktop** (P14, P34): macOS uses `pirc_render` for tiers 1 and 2. Like Android
+today, pirc 0.11.0 opens no script document on macOS: script-bearing HTML is shown
+statically, its scripts not run, with a note that it holds scripts. When script
+documents get an entry point on every platform, macOS shows them in a `WKWebView` with
+a non-persistent data store, no script message handlers (no bridge to the app, no app
+credentials), an opaque origin (no base URL), every network load blocked by a
+`WKContentRuleList` unless the user activates remote content, navigation and new
+windows refused, and no file access: the desktop counterpart of the Web iframe.
 Desktop has no background push; notifications are shown while the app runs.
 
-## Embedded Tailscale (M10)
+## Embedded Tailscale (M12)
 
 Android first (P16). The deployment is reachable only inside the tailnet (Gateway,
 nginx and Authelia), on the official Tailscale service.
@@ -174,7 +179,7 @@ nginx and Authelia), on the official Tailscale service.
 - Spike questions: binary size, battery use with the node idle, start-up time from a
   push, behavior when both the system Tailscale and the embedded node are on.
 
-## Web build (M9)
+## Web build (M11)
 
 - CanvasKit and fonts are self-hosted (`--no-web-resources-cdn`, font fallback base
   URL), including Noto Sans TC and emoji; measure the first-load size.
