@@ -536,3 +536,48 @@ fn a_database_from_a_newer_gateway_is_refused_and_left_untouched() {
         .unwrap();
     assert_eq!(version, newer);
 }
+
+/// S10 (plans/m8-step8-acceptance.md): a Gateway restart, a Node going away and
+/// coming back are runner bookkeeping. They must not move a session's last
+/// activity, which the Work list shows and orders by; a finished run or a
+/// question does.
+#[test]
+fn runner_bookkeeping_keeps_the_session_last_activity() {
+    let db = Db::memory();
+    with_workspace(&db);
+    let conn = db.lock();
+    let older = conn
+        .create_session("n1:w", "node://n1/r1", "n1", "r1", "u")
+        .unwrap();
+    let newer = conn
+        .create_session("n1:w", "node://n1/r2", "n1", "r2", "u")
+        .unwrap();
+    conn.execute(
+        "UPDATE sessions SET updated_at=CASE id WHEN ?1 THEN 100 ELSE 200 END, runner_state='running'",
+        [&older.id],
+    )
+    .unwrap();
+    let last_activity = |id: &str| conn.get_session(id).unwrap().updated_at;
+
+    conn.recover_startup().unwrap();
+    conn.set_runner_state(&older.id, "failed").unwrap();
+    conn.interrupt_remote_session(&older.id).unwrap();
+    let epoch = conn.increment_epoch(&older.id).unwrap();
+
+    let session = conn.get_session(&older.id).unwrap();
+    assert_eq!(session.runner_state, "failed");
+    assert_eq!(epoch, older.runner_epoch + 1);
+    assert_eq!(last_activity(&older.id), 100);
+    assert_eq!(last_activity(&newer.id), 200);
+    let order: Vec<String> = conn
+        .list_sessions()
+        .unwrap()
+        .into_iter()
+        .map(|s| s.id)
+        .collect();
+    assert_eq!(order, [newer.id.clone(), older.id.clone()]);
+
+    conn.mark_session_activity(&older.id).unwrap();
+    assert!(last_activity(&older.id) > 200);
+    assert_eq!(conn.list_sessions().unwrap()[0].id, older.id);
+}

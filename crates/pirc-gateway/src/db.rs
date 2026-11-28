@@ -816,8 +816,8 @@ impl Store for Connection {
             [stamp],
         )?;
             tx.execute(
-            "UPDATE sessions SET runner_state='stopped', partial_output_lost=1, updated_at=? WHERE runner_state!='stopped'",
-            [stamp],
+            "UPDATE sessions SET runner_state='stopped', partial_output_lost=1 WHERE runner_state!='stopped'",
+            [],
         )?;
             tx.execute("DELETE FROM leases", [])?;
             // Removal probes have no node-side effects. An interrupted probe
@@ -1283,10 +1283,13 @@ impl Store for Connection {
     }
 
     /// The agent finished a run or stopped to ask something: unread until read.
+    /// This is also the session's last activity (`updated_at`, which orders the
+    /// list); runner bookkeeping (restarts, reconnects) never moves it.
     fn mark_session_activity(&self, session_id: &str) -> ApiResult<()> {
+        let stamp = now_ms();
         self.execute(
-            "UPDATE sessions SET activity_at=? WHERE id=?",
-            params![now_ms(), session_id],
+            "UPDATE sessions SET activity_at=?, updated_at=? WHERE id=?",
+            params![stamp, stamp, session_id],
         )?;
         Ok(())
     }
@@ -1417,16 +1420,16 @@ impl Store for Connection {
 
     fn set_runner_state(&self, session_id: &str, state: &str) -> ApiResult<()> {
         self.execute(
-            "UPDATE sessions SET runner_state=?, updated_at=? WHERE id=?",
-            params![state, now_ms(), session_id],
+            "UPDATE sessions SET runner_state=? WHERE id=?",
+            params![state, session_id],
         )?;
         Ok(())
     }
 
     fn increment_epoch(&self, session_id: &str) -> ApiResult<i64> {
         self.execute(
-            "UPDATE sessions SET runner_epoch=runner_epoch+1, partial_output_lost=0, updated_at=? WHERE id=?",
-            params![now_ms(), session_id],
+            "UPDATE sessions SET runner_epoch=runner_epoch+1, partial_output_lost=0 WHERE id=?",
+            [session_id],
         )?;
         Ok(self.get_session(session_id)?.runner_epoch)
     }
